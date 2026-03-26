@@ -22,9 +22,8 @@ Gem::Specification.new do |spec|
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   gemspec = File.basename(__FILE__)
-  tracked_files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL, &:readlines)&.map do |file|
-    file.delete_suffix("\x0")
-  end
+  tracked_files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL, &:read)&.split("\x0")
+  tracked_files&.reject!(&:empty?)
   if tracked_files.nil? || tracked_files.empty?
     tracked_files = Dir.glob("**/*", File::FNM_DOTMATCH, base: __dir__).select do |file|
       next false if %w[. ..].include?(file)
