@@ -1,0 +1,457 @@
+# frozen_string_literal: true
+
+RSpec.describe 'FetchUtil extractor integration' do
+  include_context 'extractor integration helpers'
+
+  it "converts tables into markdown instead of raw html" do
+    html = <<~HTML
+      <html>
+        <body>
+          <main>
+            <article>
+              <h1>Table Test</h1>
+              <p>Reference data follows.</p>
+              <table>
+                <tr><th>Name</th><th>Value</th></tr>
+                <tr><td>Alpha</td><td>One</td></tr>
+              </table>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.pinterest.com/search/pins/?q=ruby+programming", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("| Name | Value |")
+      expect(payload["markdown"]).to include("| Alpha | One |")
+      expect(payload["markdown"]).not_to include("<table")
+    end
+  end
+
+  it "prepends the page title when generic article markdown starts mid-content" do
+    html = <<~HTML
+      <html>
+        <head><title>Definition of STEWARDESS</title></head>
+        <body>
+          <main>
+            <article>
+              <a href="/simple/stewardess">Simplify</a>
+              <p><strong>:</strong> a woman who performs the duties of a steward</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["markdown"]).to start_with("# Definition of STEWARDESS")
+      expect(payload["markdown"]).to include("a woman who performs the duties of a steward")
+    end
+  end
+
+  it "falls back to a safe clone when deep DOM cloning triggers custom-element errors" do
+    html = <<~HTML
+      <html>
+        <body>
+          <main>
+            <article>
+              <h1>Flight updates</h1>
+              <p>Primary itinerary details remain readable.</p>
+              <date-calendar-component>
+                <div>June 12 departure</div>
+              </date-calendar-component>
+            </article>
+          </main>
+          <script>
+            (() => {
+              const originalCloneNode = Node.prototype.cloneNode;
+              Node.prototype.cloneNode = function(deep) {
+                if (deep && this.nodeType === Node.ELEMENT_NODE && this.tagName === 'DATE-CALENDAR-COMPONENT') {
+                  throw new TypeError("Cannot read properties of undefined (reading 'slice')");
+                }
+                return originalCloneNode.call(this, deep);
+              };
+            })();
+          </script>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Primary itinerary details remain readable.")
+      expect(payload["warnings"]).not_to include("empty_extraction")
+    end
+  end
+
+  it "falls back to shared article heuristics when Readability construction fails" do
+    html = <<~HTML
+      <html>
+        <body>
+          <main>
+            <article>
+              <h1>Forum updates</h1>
+              <p>Main post text stays visible.</p>
+              <section class="comments">
+                <h2>Comments</h2>
+                <p>Alice: First reply stays visible.</p>
+                <p>Bob: Thanks for the update.</p>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      page.evaluate <<~JS
+        Object.defineProperty(window, 'Readability', {
+          configurable: true,
+          set(value) {
+            const BrokenReadability = function() {
+              throw new TypeError("Cannot read properties of undefined (reading 'slice')");
+            };
+
+            BrokenReadability.prototype = value.prototype;
+            Object.defineProperty(window, 'Readability', {
+              value: BrokenReadability,
+              configurable: true,
+              writable: true
+            });
+          },
+          get() {
+            return undefined;
+          }
+        });
+      JS
+
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Main post text stays visible.")
+      expect(payload["markdown"]).to include("Comments")
+      expect(payload["markdown"]).to include("Alice: First reply stays visible.")
+      expect(payload["markdown"]).to include("Bob: Thanks for the update.")
+      expect(payload["warnings"]).not_to include("empty_extraction")
+    end
+  end
+
+  it "drops obvious related-entry utility sections before markdown conversion" do
+    html = <<~HTML
+      <html>
+        <head><title>Rare Entry</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Rare Entry</h1>
+              <p>The main definition should stay in markdown.</p>
+              <section>
+                <h2>Nearby entries</h2>
+                <ul>
+                  <li><a href="/entry/one">Entry One</a></li>
+                  <li><a href="/entry/two">Entry Two</a></li>
+                  <li><a href="/entry/three">Entry Three</a></li>
+                </ul>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["markdown"]).to include("The main definition should stay in markdown.")
+      expect(payload["markdown"]).not_to include("Nearby entries")
+      expect(payload["markdown"]).not_to include("Entry One")
+    end
+  end
+
+  it "extracts glossary pages from definition-heavy roots instead of nearby-word chrome" do
+    html = <<~HTML
+      <html>
+        <head><title>CONFEDERATIONIST Definition &amp; Meaning - Merriam-Webster</title></head>
+        <body>
+          <main>
+            <article id="dictionary-entry-1" class="entry-body">
+              <h1>confederationist</h1>
+              <h2>noun</h2>
+              <div class="dtText">: a supporter or adherent of a confederation or of a policy of confederating</div>
+            </article>
+            <section>
+              <h2>Browse Nearby Words</h2>
+              <ul>
+                <li><a href="/dictionary/confederative">confederative</a></li>
+                <li><a href="/dictionary/confederator">confederator</a></li>
+                <li><a href="/dictionary/conferee">conferee</a></li>
+              </ul>
+            </section>
+            <section>
+              <h2>More from Merriam-Webster</h2>
+              <p>Top Lookups</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.merriam-webster.com/dictionary/confederationist", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("a supporter or adherent of a confederation")
+      expect(payload["markdown"]).not_to include("Browse Nearby Words")
+      expect(payload["markdown"]).not_to include("Top Lookups")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
+  it "removes repeated HTML5 audio fallback text from pronunciation output" do
+    html = <<~HTML
+      <html>
+        <head><title>non-Celtic | Pronunciation in English</title></head>
+        <body>
+          <main>
+            <article class="dictionary">
+              <h1>non-Celtic</h1>
+              <p>Your browser doesn't support HTML5 audio</p>
+              <p>UK /non-kel-tik/</p>
+              <ul>
+                <li>Your browser doesn't support HTML5 audio /n/ as in name</li>
+                <li>Your browser doesn't support HTML5 audio /k/ as in cat</li>
+              </ul>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("UK /non-kel-tik/")
+      expect(payload["markdown"]).to include("/n/ as in name")
+      expect(payload["markdown"]).not_to include("Your browser doesn't support HTML5 audio")
+    end
+  end
+
+  it "falls back to metadata summaries when glossary extraction is dominated by utility chrome" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>DEPOPULATOR Definition &amp; Meaning - Merriam-Webster</title>
+          <meta name="description" content="The meaning of DEPOPULATOR is one that depopulates. See the full definition.">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Definition of DEPOPULATOR</h1>
+              <section>
+                <h2>Word History</h2>
+                <p>Middle English, devastator.</p>
+              </section>
+              <section>
+                <h2>Browse Nearby Words</h2>
+                <ul>
+                  <li><a href="/dictionary/depopulate">depopulate</a></li>
+                  <li><a href="/dictionary/depopulation">depopulation</a></li>
+                </ul>
+              </section>
+              <section>
+                <h2>Cite this Entry</h2>
+                <p>"Depopulator." Merriam-Webster.com Dictionary.</p>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.merriam-webster.com/dictionary/depopulator", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("one that depopulates")
+      expect(payload["markdown"]).not_to include("Browse Nearby Words")
+      expect(payload["markdown"]).not_to include("Cite this Entry")
+    end
+  end
+
+  it "uses metadata fallback for query-driven translation dictionary pages" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>whores - Tlumaczenie po polsku - Slownik angielsko-polski Diki</title>
+          <meta name="description" content="whore - tlumaczenie na polski oraz definicja. Co znaczy i jak powiedziec whore po polsku? - zdzira, dziwka, kurwa; prostytutka">
+        </head>
+        <body>
+          <main>
+            <div class="promo-links">
+              <a href="/dictionary/about">O slowniku Diki</a>
+              <a href="https://www.etutor.pl/">Kurs angielskiego</a>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/lookup?q=whores", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("tlumaczenie na polski")
+      expect(payload["markdown"]).to include("prostytutka")
+      expect(payload["contentType"]).to eq("article")
+    end
+  end
+
+  it "pairs term and description blocks on glossary pages that use p.term and p.desc" do
+    html = <<~HTML
+      <html>
+        <head><title>Definitions for Whores</title></head>
+        <body>
+          <main>
+            <h1>Definitions for Whores</h1>
+            <section id="definitions-list">
+              <div id="wikipedia">
+                <p class="term">whore</p>
+                <ol>
+                  <li><p class="desc">A prostitute.</p></li>
+                </ol>
+              </div>
+              <div id="wikidata">
+                <p class="term">whore</p>
+                <ol>
+                  <li><p class="desc">An insulting term for a promiscuous person.</p></li>
+                </ol>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.definitions.net/definition/Whores", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("A prostitute")
+      expect(payload["markdown"]).to include("promiscuous person")
+      expect(payload["markdown"]).not_to include("Wikidata")
+    end
+  end
+
+  it "extracts recipe schema content when the visible DOM is only a teaser" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>오이냉국 황금레시피</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Recipe",
+              "name": "오이냉국 황금레시피",
+              "description": "새콤하고 시원한 오이냉국 레시피입니다.",
+              "recipeYield": "2 servings",
+              "recipeIngredient": ["오이 1개", "물 800ml", "식초 2큰술"],
+              "recipeInstructions": [
+                "오이를 얇게 썬다.",
+                "양념을 물에 풀어 냉국물을 만든다.",
+                "오이를 넣고 차갑게 식혀 낸다."
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>오이냉국 황금레시피</h1>
+              <p>물 800ml, 식초 2큰술</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.10000recipe.com/recipe/7054210", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["markdown"]).to include("## Ingredients")
+      expect(payload["markdown"]).to include("오이 1개")
+      expect(payload["markdown"]).to include("## Instructions")
+      expect(payload["markdown"]).to include("양념을 물에 풀어 냉국물을 만든다")
+    end
+  end
+
+  it "keeps long-form article pages in article mode even when related cards are present" do
+    html = <<~HTML
+      <html>
+        <head><title>推しカラーの取り入れ方ガイド</title></head>
+        <body>
+          <main>
+            <article class="article-body">
+              <h1>推しカラーの取り入れ方ガイド</h1>
+              <p>推しカラーを日常のメイクに取り入れるときは、色そのものの強さだけでなく、質感や配置のバランスを見ることが大切です。</p>
+              <p>たとえば目もとに鮮やかな色を使う場合は、チークやリップを少し落ち着かせることで全体がまとまり、派手になりすぎずに楽しめます。</p>
+              <p>また、ベースカラーを肌になじむ色に整えておくと、推しカラーがアクセントとして自然に見えやすくなります。</p>
+              <p>イベント当日は写真写りも意識して、ラメ感やツヤ感を部分的に足すと、色の印象がよりきれいに伝わります。</p>
+            </article>
+            <aside class="related-grid">
+              <h2>関連記事</h2>
+              <ul>
+                <li><a href="/related/1">推し活メイクの基本</a></li>
+                <li><a href="/related/2">赤を使ったポイントメイク</a></li>
+                <li><a href="/related/3">オレンジ系シャドウのなじませ方</a></li>
+                <li><a href="/related/4">グリーンメイクの抜け感</a></li>
+                <li><a href="/related/5">イベント向けの写真映えテク</a></li>
+                <li><a href="/related/6">推し活ポーチの中身</a></li>
+              </ul>
+            </aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/column/favorite-color", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("推しカラーを日常のメイクに取り入れるときは")
+      expect(payload["markdown"]).not_to include("- [推し活メイクの基本]")
+    end
+  end
+
+  it "compacts long glossary descriptions from repeated source blocks" do
+    html = <<~HTML
+      <html>
+        <head><title>What does Whores mean?</title></head>
+        <body>
+          <main>
+            <h1>Definitions for Whores</h1>
+            <section id="definitions-list">
+              <div id="wikipedia" class="rc5">
+                <h3>Wikipedia Rate this definition: 0.0 / 0 votes</h3>
+                <ol>
+                  <li class="wselect-cnt">
+                    <p class="term">whores</p>
+                    <p class="desc">Prostitution is the business or practice of engaging in sexual activity in exchange for payment. The definition of sexual activity varies, and is often defined as an activity requiring physical contact with the customer. The requirement of physical contact also creates the risk of transferring diseases. It occurs in a variety of forms and its legal status varies from country to country.</p>
+                  </li>
+                </ol>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.definitions.net/definition/Whores", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Prostitution is the business or practice")
+      expect(payload["markdown"]).not_to include("risk of transferring diseases")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+end
