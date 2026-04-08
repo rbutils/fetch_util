@@ -37,11 +37,10 @@ module FetchUtil
     def fetch(*urls)
       raise ArgumentError, "at least one URL is required" if urls.empty?
 
-      urls.each { |url| request_log.append(url) }
       results = if urls.length == 1
-                  [FetchUtil.fetch(urls.first, **fetch_options)]
+                  [FetchUtil.fetch(urls.first, **fetch_options, request_log: request_log)]
                 else
-                  FetchUtil.fetch_many(urls, **fetch_options, concurrency: options[:concurrency])
+                  FetchUtil.fetch_many(urls, **fetch_options, request_log: request_log, concurrency: options[:concurrency])
                 end
 
       emit(urls.length == 1 && options[:format] == "json" ? result_payload(results.first) : results.map { |result| result_payload(result) })

@@ -9,6 +9,7 @@ module FetchUtil
       @browser = browser || Browser.new(**browser_options(options))
       @extractor = extractor || Extractor.new(reader_mode: options.fetch(:reader_mode, true))
       @raw_docs_fallback = options[:raw_docs_fallback] || RawDocsFallback.new(timeout: @timeout)
+      @request_log = options[:request_log]
     end
 
     # Shut down the underlying browser process. Delegates to +Browser#quit+.
@@ -18,18 +19,24 @@ module FetchUtil
     end
 
     def fetch(url)
+      t0 = monotonic_now
       result = @browser.with_page(url) do |page|
         payload = @extractor.extract(page)
         build_result(url, page.current_url, payload)
       end
       fallback = docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
-      return build_result(url, *fallback) if fallback
-
+      result = build_result(url, *fallback) if fallback
+      log_request(url, t0)
       result
     rescue BrowserError, ExtractionError => e
       fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
-      return build_result(url, *fallback) if fallback
+      if fallback
+        result = build_result(url, *fallback)
+        log_request(url, t0)
+        return result
+      end
 
+      log_request(url, t0)
       raise e
     end
 
@@ -119,6 +126,14 @@ module FetchUtil
     def browser_options(options)
       options.slice(:timeout, :wait, :wait_for_idle, :idle_duration, :viewport,
                     :user_agent, :accept_language, :browser_path, :browser_options)
+    end
+
+    def log_request(url, t0)
+      @request_log&.append(url, duration: monotonic_now - t0)
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
     def poor_docs_result?(result)

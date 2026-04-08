@@ -13,11 +13,11 @@ module FetchUtil
 
     attr_reader :path
 
-    def append(entry)
+    def append(entry, duration: nil)
       FileUtils.mkdir_p(File.dirname(path))
-      File.open(path, "a") do |file|
-        file.puts("#{Time.now.utc.iso8601}\t#{entry}")
-      end
+      line = "#{Time.now.utc.iso8601}\t#{entry}"
+      line = "#{line}\t#{format("%.2f", duration)}s" if duration
+      File.open(path, "a") { |file| file.puts(line) }
       path
     end
   end

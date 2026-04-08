@@ -22,7 +22,7 @@ module FetchUtil
       @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s)
       @limit = limit.to_i
       @verbose = verbose
-      @fetcher = fetcher || ParallelFetcher.new(concurrency: concurrency, **fetch_options)
+      @fetcher = fetcher || ParallelFetcher.new(concurrency: concurrency, request_log: request_log, **fetch_options)
     end
 
     def search(query)

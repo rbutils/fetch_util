@@ -446,4 +446,27 @@ RSpec.describe FetchUtil::Fetcher do
 
     expect(browser).to have_received(:quit).once
   end
+
+  it 'logs each fetch with duration to the request log' do
+    log = instance_double(FetchUtil::RequestLog)
+    allow(log).to receive(:append)
+    allow(browser).to receive(:with_page).with('https://example.com/input').and_yield(page)
+    allow(extractor).to receive(:extract).with(page).and_return(payload)
+
+    described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback, request_log: log).fetch('https://example.com/input')
+
+    expect(log).to have_received(:append).with('https://example.com/input', duration: a_value >= 0)
+  end
+
+  it 'logs duration even when fetch raises' do
+    log = instance_double(FetchUtil::RequestLog)
+    allow(log).to receive(:append)
+    allow(browser).to receive(:with_page).and_raise(FetchUtil::BrowserError, 'boom')
+
+    expect do
+      described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback, request_log: log).fetch('https://nonexistent.example')
+    end.to raise_error(FetchUtil::BrowserError)
+
+    expect(log).to have_received(:append).with('https://nonexistent.example', duration: a_value >= 0)
+  end
 end

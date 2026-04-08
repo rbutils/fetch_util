@@ -58,12 +58,11 @@ RSpec.describe FetchUtil::CLI do
       wait: 0.75,
       wait_for_idle: true,
       reader_mode: true,
+      request_log: request_log,
       concurrency: 4
     ).and_return([first, second])
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
-    expect(request_log).to receive(:append).with("https://a.test")
-    expect(request_log).to receive(:append).with("https://b.test")
 
     output = capture_stdout do
       described_class.start(["fetch", "https://a.test", "https://b.test", "--format", "jsonl"])
@@ -118,11 +117,11 @@ RSpec.describe FetchUtil::CLI do
       timeout: 20,
       wait: 0.75,
       wait_for_idle: true,
-      reader_mode: true
+      reader_mode: true,
+      request_log: request_log
     ).and_return(result)
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
-    expect(request_log).to receive(:append).with("https://a.test")
 
     output = capture_stdout do
       described_class.start(["fetch", "https://a.test", "--include-html"])
