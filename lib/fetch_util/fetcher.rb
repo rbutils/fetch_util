@@ -11,6 +11,12 @@ module FetchUtil
       @raw_docs_fallback = options[:raw_docs_fallback] || RawDocsFallback.new(timeout: @timeout)
     end
 
+    # Shut down the underlying browser process. Delegates to +Browser#quit+.
+    # Safe to call multiple times.
+    def quit
+      @browser.quit
+    end
+
     def fetch(url)
       result = @browser.with_page(url) do |page|
         payload = @extractor.extract(page)

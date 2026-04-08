@@ -31,7 +31,13 @@ module FetchUtil
 
       urls = search_urls(encoded_query)
       @request_log.append(search_request_uri(encoded_query))
-      fetched = @fetcher.fetch(urls.values)
+      fetched = begin
+        @fetcher.fetch(urls.values)
+      rescue ParallelFetcher::ParallelFetchError => e
+        raise unless e.results&.compact&.any?
+
+        e.results
+      end
 
       {
         query: encoded_query,

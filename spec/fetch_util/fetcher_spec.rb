@@ -437,4 +437,13 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.final_url).to eq('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
     expect(result.site_name).to eq('HashiCorp Developer')
   end
+
+  it 'delegates quit to the underlying browser' do
+    allow(browser).to receive(:quit)
+
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    fetcher.quit
+
+    expect(browser).to have_received(:quit).once
+  end
 end

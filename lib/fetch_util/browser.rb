@@ -61,38 +61,70 @@ module FetchUtil
         default_opts["enable-automation"] = false # override Ferrum default
       end
       @browser_options = default_opts.merge(browser_options || {})
+      @ferrum = nil
+      @mutex = Mutex.new
     end
 
+    # Navigate to +url+ in a fresh browser tab, stabilize the page, then yield
+    # the +Ferrum::Page+ to the caller. The page is closed after the block
+    # returns (or on error), but the underlying Chromium process is kept alive
+    # for reuse by subsequent calls.
     def with_page(url)
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
-      browser = Ferrum::Browser.new(
-        headless: true,
-        browser_path: @browser_path,
-        timeout: @timeout,
-        window_size: [@viewport.fetch(:width), @viewport.fetch(:height)],
-        browser_options: @browser_options
-      )
-      browser.evaluate_on_new_document(navigator_patch)
-      browser.headers.set(default_headers)
-      browser.bypass_csp
+      ferrum = ensure_browser
+      page = ferrum.create_page
+      page.headers.set(default_headers)
+      page.bypass_csp
       retries = 0
       begin
-        browser.go_to(url)
+        page.go_to(url)
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError
-        unless page_loaded_enough?(browser)
+        unless page_loaded_enough?(page)
           raise if retries >= NAVIGATION_MAX_RETRIES
 
           retries += 1
           retry
         end
       end
-      stabilize_page(browser, url)
-      yield browser
+      stabilize_page(page, url)
+      yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message
     ensure
-      browser&.quit
+      page&.close
+    end
+
+    # Shut down the underlying Chromium process. Safe to call multiple times or
+    # when no browser has been started yet. After +quit+, a subsequent
+    # +with_page+ call will transparently launch a new process.
+    def quit
+      @mutex.synchronize do
+        @ferrum&.quit
+        @ferrum = nil
+      end
+    end
+
+    private
+
+    # Lazily start the shared Chromium process on first use. The
+    # +evaluate_on_new_document+ call registers the navigator patch once;
+    # Ferrum automatically applies it to every new page/context created
+    # afterwards.
+    def ensure_browser
+      @mutex.synchronize do
+        return @ferrum if @ferrum
+
+        @ferrum = Ferrum::Browser.new(
+          headless: true,
+          browser_path: @browser_path,
+          timeout: @timeout,
+          window_size: [@viewport.fetch(:width), @viewport.fetch(:height)],
+          browser_options: @browser_options
+        )
+        @ferrum.evaluate_on_new_document(navigator_patch)
+        @ferrum
+      end
     end
   end
 end

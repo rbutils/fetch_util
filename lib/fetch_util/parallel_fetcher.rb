@@ -5,10 +5,11 @@ module FetchUtil
     Failure = Struct.new(:index, :url, :error, keyword_init: true)
 
     class ParallelFetchError < Error
-      attr_reader :failures
+      attr_reader :failures, :results
 
-      def initialize(failures)
+      def initialize(failures, results = nil)
         @failures = failures.freeze
+        @results = results&.freeze
         super(self.class.build_message(@failures))
       end
 
@@ -47,19 +48,22 @@ module FetchUtil
         Thread.new do
           fetcher = @fetcher_factory.call
 
-          loop do
-            begin
-              index, url = jobs.pop(true)
-            rescue ThreadError
-              break
-            end
+          begin
+            loop do
+              begin
+                index, url = jobs.pop(true)
+              rescue ThreadError
+                break
+              end
 
-            begin
-              results[index] = fetcher.fetch(url)
-            rescue StandardError => e
-              failures << Failure.new(index: index, url: url, error: e)
-              break
+              begin
+                results[index] = fetcher.fetch(url)
+              rescue StandardError => e
+                failures << Failure.new(index: index, url: url, error: e)
+              end
             end
+          ensure
+            fetcher.quit if fetcher.respond_to?(:quit)
           end
         rescue StandardError => e
           failures << Failure.new(index: nil, url: nil, error: e)
@@ -67,7 +71,7 @@ module FetchUtil
       end
 
       threads.each(&:join)
-      raise_for_failures(drain_queue(failures))
+      raise_for_failures(drain_queue(failures), results)
 
       results
     end
@@ -84,11 +88,10 @@ module FetchUtil
       items
     end
 
-    def raise_for_failures(failures)
+    def raise_for_failures(failures, results)
       return if failures.empty?
-      raise failures.first.error if failures.length == 1
 
-      raise ParallelFetchError, failures
+      raise ParallelFetchError.new(failures, results)
     end
   end
 end
