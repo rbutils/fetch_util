@@ -36,6 +36,7 @@ module FetchUtil
     CONTENT_READY_MIN_LENGTH = 200
     SPA_HYDRATION_TIMEOUT = 2.0
     SPA_HYDRATION_POLL = 0.15
+    NAVIGATION_MAX_RETRIES = 2
 
     def initialize(timeout: 20, wait: 0.75, wait_for_idle: true, idle_duration: 0.35,
                    viewport: DEFAULT_VIEWPORT, user_agent: DEFAULT_USER_AGENT,
@@ -75,10 +76,16 @@ module FetchUtil
       browser.evaluate_on_new_document(navigator_patch)
       browser.headers.set(default_headers)
       browser.bypass_csp
+      retries = 0
       begin
         browser.go_to(url)
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError
-        raise unless page_loaded_enough?(browser)
+        unless page_loaded_enough?(browser)
+          raise if retries >= NAVIGATION_MAX_RETRIES
+
+          retries += 1
+          retry
+        end
       end
       stabilize_page(browser, url)
       yield browser
