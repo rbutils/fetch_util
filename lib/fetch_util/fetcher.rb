@@ -49,6 +49,9 @@ module FetchUtil
       content_type = resolved_content_type(homepage_like, payload)
       warnings = resolved_warnings(content_type, homepage_like, payload)
       suspect = warnings.any?
+      completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
+      content_format = payload["contentFormat"]
+      paywall_state = payload["paywallState"]
 
       metadata = {
         title: payload["title"],
@@ -62,7 +65,10 @@ module FetchUtil
         reader_mode: payload["readerMode"],
         content_type: content_type,
         suspect: suspect,
-        warnings: warnings
+        warnings: warnings,
+        content_completeness_ratio: completeness_ratio,
+        content_format: content_format,
+        paywall_state: paywall_state
       }.freeze
 
       Result.new(
@@ -81,7 +87,10 @@ module FetchUtil
         reader_mode: payload["readerMode"],
         content_type: content_type,
         suspect: suspect,
-        warnings: warnings
+        warnings: warnings,
+        content_completeness_ratio: completeness_ratio,
+        content_format: content_format,
+        paywall_state: paywall_state
       )
     end
 
