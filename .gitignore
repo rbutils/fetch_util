@@ -5,3 +5,4 @@
 /.rspec_status
 /.ruby-lsp/
 /lib/fetch_util/assets/extract.js
+Gemfile.lock
