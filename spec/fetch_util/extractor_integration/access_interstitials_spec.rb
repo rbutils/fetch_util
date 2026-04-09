@@ -220,8 +220,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("Help Us Protect Glassdoor")
-      expect(payload["warnings"]).to include("human_verification_interstitial")
+      # "Just a moment..." title triggers Cloudflare challenge detection;
+      # challenge content is simplified to sentinel-only output
+      expect(payload["markdown"]).to include("Challenge: Cloudflare")
+      expect(payload["warnings"]).to include("cloudflare_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end
   end

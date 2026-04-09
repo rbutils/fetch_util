@@ -26,8 +26,10 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("# Making sure you're not a bot!")
-      expect(payload["markdown"]).to include("Sadly, you must enable JavaScript to get past this challenge.")
+      expect(payload["markdown"]).to include("Challenge: Anubis")
       expect(payload["markdown"]).not_to include("This website is running Anubis version")
+      # Challenge pages emit minimal sentinel content — no DOM highlights
+      expect(payload["markdown"]).not_to include("Sadly, you must enable JavaScript")
       expect(payload["warnings"]).to include("anubis_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end
@@ -54,7 +56,9 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("# Just a moment...")
-      expect(payload["markdown"]).to include("Performing security verification")
+      expect(payload["markdown"]).to include("Challenge: Cloudflare")
+      # Challenge pages emit minimal sentinel content — no DOM highlights
+      expect(payload["markdown"]).not_to include("Performing security verification")
       expect(payload["markdown"]).not_to include("Cloudflare Ray ID")
       expect(payload["warnings"]).to include("cloudflare_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
@@ -99,7 +103,8 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("Managed challenge")
+      # Challenge pages emit simplified sentinel content (no DOM highlights)
+      expect(payload["markdown"]).to include("Challenge: Cloudflare")
       expect(payload["warnings"]).to include("cloudflare_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end

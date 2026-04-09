@@ -84,6 +84,7 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not recompute url mismatches that the extractor did not emit' do
+    so_page = instance_double('FerrumPage', current_url: 'https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
     mismatched_payload = payload.merge(
       'title' => 'returning multiple values in python',
       'markdown' => 'A python question about map reduce.',
@@ -91,8 +92,8 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby').and_yield(page)
-    allow(extractor).to receive(:extract).with(page).and_return(mismatched_payload)
+    allow(browser).to receive(:with_page).with('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby').and_yield(so_page)
+    allow(extractor).to receive(:extract).with(so_page).and_return(mismatched_payload)
 
     result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
 
@@ -436,6 +437,127 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.title).to eq('terraform_data')
     expect(result.final_url).to eq('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
     expect(result.site_name).to eq('HashiCorp Developer')
+  end
+
+  it 'relabels German homepage indexes as list content' do
+    de_page = instance_double('FerrumPage', current_url: 'https://www.bild.de/')
+    de_payload = payload.merge(
+      'title' => 'BILD.de: Aktuelle Nachrichten',
+      'markdown' => "## Aktuelle Nachrichten\n\n1. Bundestag beschließt neues Gesetz\n2. Scholz trifft Macron\n3. Neue Studie zur Inflation\n",
+      'contentType' => 'article'
+    )
+
+    allow(browser).to receive(:with_page).with('https://www.bild.de/').and_yield(de_page)
+    allow(extractor).to receive(:extract).with(de_page).and_return(de_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.bild.de/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to include('homepage_index_page')
+  end
+
+  it 'relabels Hungarian homepage indexes as list content' do
+    hu_page = instance_double('FerrumPage', current_url: 'https://www.444.hu/')
+    hu_payload = payload.merge(
+      'title' => '444 - Pair - legfrissebb hírek',
+      'markdown' => "## Legfrissebb\n\n- Orbán felszólalt a parlamentben\n- Új intézkedések a járvány ellen\n- Sport: Fradi győzött\n",
+      'contentType' => 'article'
+    )
+
+    allow(browser).to receive(:with_page).with('https://www.444.hu/').and_yield(hu_page)
+    allow(extractor).to receive(:extract).with(hu_page).and_return(hu_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.444.hu/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to include('homepage_index_page')
+  end
+
+  it 'relabels French homepage indexes as list content' do
+    fr_page = instance_double('FerrumPage', current_url: 'https://www.lemonde.fr/')
+    fr_payload = payload.merge(
+      'title' => 'Le Monde.fr - Actualités et Infos en France et dans le monde - À la une',
+      'markdown' => "## À la une\n\n- Macron annonce un plan de relance\n- Réforme des retraites\n- Européennes 2026\n",
+      'contentType' => 'article'
+    )
+
+    allow(browser).to receive(:with_page).with('https://www.lemonde.fr/').and_yield(fr_page)
+    allow(extractor).to receive(:extract).with(fr_page).and_return(fr_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.lemonde.fr/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to include('homepage_index_page')
+  end
+
+  it 'does not relabel non-homepage article pages with matching phrases' do
+    article_page = instance_double('FerrumPage', current_url: 'https://www.bild.de/politik/inland/article-12345')
+    article_payload = payload.merge(
+      'title' => 'Aktuelle Nachrichten zur Bundestagswahl',
+      'markdown' => "# Aktuelle Nachrichten zur Bundestagswahl\n\nDie neuesten Ergebnisse der Wahl zeigen...",
+      'contentType' => 'article'
+    )
+
+    allow(browser).to receive(:with_page).with('https://www.bild.de/politik/inland/article-12345').and_yield(article_page)
+    allow(extractor).to receive(:extract).with(article_page).and_return(article_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.bild.de/politik/inland/article-12345')
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
+  it 'flags cross-domain redirects in warnings' do
+    redirected_page = instance_double('FerrumPage', current_url: 'https://www.economx.hu/gazdasag/some-article')
+    redirect_payload = payload.merge(
+      'title' => 'Gazdasági hírek',
+      'markdown' => "# Gazdasági hírek\n\nA magyar gazdaság...",
+      'warnings' => []
+    )
+
+    allow(browser).to receive(:with_page).with('https://www.napi.hu/gazdasag/some-article').and_yield(redirected_page)
+    allow(extractor).to receive(:extract).with(redirected_page).and_return(redirect_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.napi.hu/gazdasag/some-article')
+
+    expect(result.warnings).to include('cross_domain_redirect')
+    expect(result.suspect).to eq(true)
+  end
+
+  it 'does not flag same-domain redirects as cross-domain' do
+    same_domain_page = instance_double('FerrumPage', current_url: 'https://www.example.com/new-path')
+    same_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www.example.com/old-path').and_yield(same_domain_page)
+    allow(extractor).to receive(:extract).with(same_domain_page).and_return(same_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.example.com/old-path')
+
+    expect(result.warnings).not_to include('cross_domain_redirect')
+  end
+
+  it 'does not flag www-only differences as cross-domain redirects' do
+    www_page = instance_double('FerrumPage', current_url: 'https://www.spectator.com/article')
+    www_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://spectator.com/article').and_yield(www_page)
+    allow(extractor).to receive(:extract).with(www_page).and_return(www_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://spectator.com/article')
+
+    expect(result.warnings).not_to include('cross_domain_redirect')
+  end
+
+  it 'flags cross-domain redirect for co.uk TLD changes' do
+    uk_page = instance_double('FerrumPage', current_url: 'https://www.spectator.com/article')
+    uk_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www.spectator.co.uk/article').and_yield(uk_page)
+    allow(extractor).to receive(:extract).with(uk_page).and_return(uk_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.spectator.co.uk/article')
+
+    expect(result.warnings).to include('cross_domain_redirect')
   end
 
   it 'delegates quit to the underlying browser' do

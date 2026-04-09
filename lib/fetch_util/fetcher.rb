@@ -47,7 +47,7 @@ module FetchUtil
       canonical_url = normalized_result_url(payload["canonicalUrl"])
       homepage_like = homepage_like?(final_url)
       content_type = resolved_content_type(homepage_like, payload)
-      warnings = resolved_warnings(content_type, homepage_like, payload)
+      warnings = resolved_warnings(content_type, homepage_like, payload, requested_url: url, final_url: final_url)
       suspect = warnings.any?
       completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
       content_format = payload["contentFormat"]
@@ -102,9 +102,10 @@ module FetchUtil
       content_type
     end
 
-    def resolved_warnings(content_type, homepage_like, payload)
+    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil)
       warnings = Array(payload["warnings"]).dup
       warnings << "homepage_index_page" if content_type == "list" && homepage_like
+      warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
       warnings.uniq
     end
 
@@ -117,7 +118,8 @@ module FetchUtil
 
     def homepage_index_markdown?(title, markdown)
       snippet = [title, markdown].compact.join(" ")
-      return false unless snippet.match?(/top stories|breaking news|latest news|headlines/i)
+      # Multilingual homepage indicator phrases
+      return false unless snippet.match?(/top stories|breaking news|latest news|headlines|aktuelle nachrichten|schlagzeilen|neueste nachrichten|à la une|dernières nouvelles|actualités|últimas noticias|noticias principales|notizie principali|ultime notizie|najnowsze wiadomości|najważniejsze|ostatnie wiadomości|aktualności|actualiteit|laatste nieuws|senaste nyheter|seneste nyheder|siste nytt|tuoreimmat uutiset|aktuálně|legfrissebb|cele mai noi știri|aktualności|најновије вести|останні новини|τελευταία νέα|güncel haberler|son dakika|senaste nyheterna|viktigaste nyheterna|aktualitātes|jaunākās ziņas|naujienos|svarbiausios naujienos|главные новости|últimas notícias|najnovšie správy|najnovije vijesti|derniers articles/i)
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
     end
@@ -156,6 +158,34 @@ module FetchUtil
       return true if title.match?(/documentation|docs|the ultimate server/i) && markdown.scan(/^# /).length >= 2
 
       false
+    end
+
+    # Extract the registrable domain (eTLD+1 approximation) from a URL.
+    # Strips www. prefix and returns the last two dot-separated labels
+    # (or three when the second-level label is a known country ccTLD part like co.uk).
+    def effective_domain(url)
+      host = URI.parse(url).host.to_s.downcase.sub(/\Awww\./, "")
+      parts = host.split(".")
+      return host if parts.length <= 2
+
+      # Handle common two-part TLDs: co.uk, com.au, co.jp, com.br, etc.
+      if parts.length >= 3 && parts[-2].match?(/\A(co|com|org|net|gov|edu|ac)\z/) && parts[-1].length == 2
+        parts.last(3).join(".")
+      else
+        parts.last(2).join(".")
+      end
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def cross_domain_redirect?(requested_url, final_url)
+      return false if requested_url.nil? || final_url.nil?
+
+      req_domain = effective_domain(requested_url)
+      fin_domain = effective_domain(final_url)
+      return false if req_domain.nil? || fin_domain.nil?
+
+      req_domain != fin_domain
     end
 
     def normalized_result_url(url)
