@@ -109,6 +109,30 @@ module FetchUtil
                 clicked = true;
               }
 
+              // Fallback: some sites use bare <div> or <span> as consent buttons without
+              // role="button" (e.g. TVP Info's div.tvp-covl__ab). Scan only inside known
+              // consent overlay containers to keep the search scoped and fast.
+              if (!clicked) {
+                const consentContainerSel =
+                  '[id*="cookie" i], [class*="cookie" i], ' +
+                  '[id*="consent" i], [class*="consent" i], ' +
+                  '[id*="privacy" i], [class*="privacy" i], ' +
+                  '[id*="gdpr" i], [class*="gdpr" i], ' +
+                  '[id*="ccpa" i], [class*="ccpa" i]';
+                for (const container of queryAllRoots(consentContainerSel)) {
+                  if (!visible(container)) continue;
+                  for (const el of container.querySelectorAll('div, span')) {
+                    const text = textFor(el);
+                    if (!text || !visible(el) || !pattern.test(text)) continue;
+                    // Avoid clicking large containers — accept buttons have short text.
+                    if (text.length > 120) continue;
+                    el.click();
+                    clicked = true;
+                  }
+                  if (clicked) break;
+                }
+              }
+
               for (const el of queryAllRoots('[role="dialog"], [aria-modal="true"], dialog')) {
                 const attrs = consentAttrs(el);
                 if (!consentContext(el) && !containerPattern.test(attrs)) continue;

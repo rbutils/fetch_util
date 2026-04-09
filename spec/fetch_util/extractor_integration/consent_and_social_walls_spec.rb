@@ -409,6 +409,43 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes large cookie consent overlays exceeding 5000 chars of privacy text" do
+    # Regression test: cookieNoticeText() had a 5000-char limit that let verbose
+    # consent walls (e.g. TVP Info's 6,511-char overlay) escape cleanup.
+    # The fix in cookieChromeNode() now bypasses cookieNoticeText() for elements
+    # whose class/id already matches a cookie/consent pattern when text > 5000 chars.
+    privacy_text = "Wykorzystujemy pliki cookie do celów analitycznych i marketingowych. " * 80 # ~5,600 chars
+    html = <<~HTML
+      <html>
+        <head><title>Wiadomości - TVP Info</title></head>
+        <body>
+          <div class="tvp-cookie-overlay" style="position:fixed; inset:0; z-index:999">
+            <div class="tvp-covl">
+              <h2>Szanowny Użytkowniku</h2>
+              <p>#{privacy_text}</p>
+              <div class="tvp-covl__ab">Akceptuję i przechodzę do serwisu</div>
+            </div>
+          </div>
+          <section class="wallpaper">
+            <article>
+              <h1>Prorosyjska oś wpływów rozbita</h1>
+              <p>Służby zatrzymały podejrzanych o szpiegostwo na rzecz obcego wywiadu w ramach międzynarodowej operacji.</p>
+              <p>Śledztwo objęło kilka krajów Europy Środkowej i trwało ponad rok.</p>
+            </article>
+          </section>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.tvp.info/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Prorosyjska oś wpływów rozbita")
+      expect(payload["markdown"]).not_to include("Szanowny Użytkowniku")
+      expect(payload["markdown"]).not_to include("Wykorzystujemy pliki cookie")
+    end
+  end
+
   it "removes hidden cookie declaration text when real section content is present" do
     html = <<~HTML
       <html>
