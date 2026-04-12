@@ -502,6 +502,222 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  # Newsletter / hub / digest format detection
+  it "detects newsletter digest pages with many short heading-delimited blocks" do
+    # Build a page that looks like a newsletter / flash-news digest:
+    # many headings, each followed by a short summary + link
+    # Title avoids matching the "briefing" pattern to test newsletter-specific heuristic
+    items = 7.times.map do |i|
+      <<~ITEM
+        <h2>Story #{i + 1}: Headline about topic #{i + 1}</h2>
+        <p>Brief summary of the story with a <a href="/story-#{i + 1}">read more link</a>.</p>
+      ITEM
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>Today's Flash Coverage</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Today's Flash Coverage</h1>
+              #{items}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.meta.mk/todays-flash-coverage", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+    end
+  end
+
+  it "detects link-dominated hub pages as newsletter format" do
+    # Build a page dominated by links with very little prose — typical hub/index
+    links = 12.times.map do |i|
+      "<h3><a href=\"/article-#{i}\">Article headline number #{i + 1}</a></h3>"
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>News Hub - Today's Stories</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>News Hub</h1>
+              #{links}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-hub.com/todays-stories", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+    end
+  end
+
+  it "does not flag a regular article with a few headings as newsletter" do
+    paragraphs = 6.times.map do |i|
+      <<~SECTION
+        <h2>Section #{i + 1}</h2>
+        <p>This is a detailed paragraph providing in-depth analysis and context for section #{i + 1}. The content discusses multiple aspects of the topic with sufficient depth to demonstrate this is a genuine article rather than a digest of short items. Additional sentences provide more context and nuance to the discussion at hand.</p>
+      SECTION
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>Comprehensive Analysis Report</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Comprehensive Analysis Report</h1>
+              #{paragraphs}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example.com/comprehensive-analysis-report", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+    end
+  end
+
+  # Paywall third-tier detection: longer teasers with very low body-to-page ratio
+  it "flags paywall_partial_content for longer teasers with very low ratio to page" do
+    # Article body ~8K-10K chars (above 8000 threshold) but page text much larger
+    article_text = 50.times.map do |i|
+      "<p>Detailed teaser paragraph #{i + 1} with financial analysis and market data discussion for premium subscribers only.</p>"
+    end.join("\n")
+    # Large nav/footer to inflate page text well beyond article
+    nav_links = 300.times.map { |i| "<a href='/section-#{i}'>Section #{i + 1} navigation with extended label</a>" }.join(" | \n")
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Premium Market Analysis Report</title>
+          <meta property="article:content_tier" content="premium">
+        </head>
+        <body>
+          <nav>#{nav_links}</nav>
+          <main>
+            <article>
+              <h1>Premium Market Analysis Report</h1>
+              #{article_text}
+            </article>
+          </main>
+          <footer>#{nav_links}</footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-premium.com/premium-market-analysis-report", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("paywall_partial_content")
+      expect(payload["paywallState"]).to eq("detected")
+    end
+  end
+
+  # Consent interstitial: Nordic language detection
+  it "detects Norwegian consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Dine personverninnstillinger</title></head>
+        <body>
+          <main>
+            <h1>Dine personverninnstillinger</h1>
+            <p>Vi bruker informasjonskapsler og lignende teknologier for å gi deg en bedre opplevelse.</p>
+            <p>Vi og våre partnere lagrer og bruker informasjonskapsler for å tilpasse innhold og annonser.</p>
+            <button>Godta alle</button>
+            <button>Avvis valgfrie informasjonskapsler</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.document.no/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
+  it "detects Swedish consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Cookie-inställningar</title></head>
+        <body>
+          <main>
+            <h1>Vi använder kakor</h1>
+            <p>Vi anvander kakor och liknande tekniker for att ge dig en battre upplevelse.</p>
+            <p>Samtycke till personanpassade annonser och innehall.</p>
+            <button>Acceptera alla</button>
+            <button>Avvisa valfria kakor</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.svd.se/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
+  it "detects Finnish consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Evästeasetukset</title></head>
+        <body>
+          <main>
+            <h1>Evästeasetukset</h1>
+            <p>Käytämme evästeitä ja vastaavia teknologioita parantaaksemme käyttökokemustasi.</p>
+            <p>Me ja kumppanimme käytämme evästeitä mainonnan ja sisällön personointiin.</p>
+            <button>Hyväksy kaikki</button>
+            <button>Hylkää valinnaiset evästeet</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.hs.fi/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
+  it "detects Lithuanian consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Slapukų nustatymai</title></head>
+        <body>
+          <main>
+            <h1>Naudojame slapukus</h1>
+            <p>Naudojame slapukus ir panašias technologijas, kad pagerintume jūsų patirtį.</p>
+            <p>Slapukų nustatymai leidžia jums pasirinkti kokius slapukus naudojame.</p>
+            <button>Priimti visus</button>
+            <button>Atmesti pasirinktinius slapukus</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.delfi.lt/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
   # Syndicated repost detection
   it "flags syndicated_repost for wire service content" do
     html = <<~HTML

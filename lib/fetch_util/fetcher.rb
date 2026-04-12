@@ -106,6 +106,7 @@ module FetchUtil
       warnings = Array(payload["warnings"]).dup
       warnings << "homepage_index_page" if content_type == "list" && homepage_like
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
+      warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings.uniq
     end
 
@@ -186,6 +187,29 @@ module FetchUtil
       return false if req_domain.nil? || fin_domain.nil?
 
       req_domain != fin_domain
+    end
+
+    # Detect URLs that point to news aggregators or redirect services rather than
+    # direct article pages. These URLs typically redirect to the actual publisher
+    # and are unreliable as stable source references.
+    def aggregator_url?(url)
+      return false if url.nil?
+
+      host = URI.parse(url).host.to_s.downcase.sub(/\Awww\./, "")
+      path = URI.parse(url).path.to_s
+
+      # Google News: news.google.com (RSS feeds, redirect links)
+      return true if host == "news.google.com"
+
+      # Google AMP cache: serves cached AMP versions, not canonical URLs
+      return true if host == "cdn.ampproject.org" || host.end_with?(".cdn.ampproject.org")
+
+      # Google redirect URLs (e.g. google.com/url?...)
+      return true if host.match?(/\Agoogle\.[a-z.]+\z/) && path == "/url"
+
+      false
+    rescue URI::InvalidURIError
+      false
     end
 
     def normalized_result_url(url)

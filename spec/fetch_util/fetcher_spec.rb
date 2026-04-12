@@ -560,6 +560,79 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('cross_domain_redirect')
   end
 
+  it 'flags aggregator_redirect_url for news.google.com URLs' do
+    google_news_page = instance_double('FerrumPage', current_url: 'https://www.reuters.com/world/europe/article-123')
+    google_news_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://news.google.com/rss/articles/some-encoded-id').and_yield(google_news_page)
+    allow(extractor).to receive(:extract).with(google_news_page).and_return(google_news_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://news.google.com/rss/articles/some-encoded-id')
+
+    expect(result.warnings).to include('aggregator_redirect_url')
+    expect(result.suspect).to eq(true)
+  end
+
+  it 'flags aggregator_redirect_url for AMP cache URLs' do
+    amp_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
+    amp_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://cdn.ampproject.org/c/s/www.example.com/article').and_yield(amp_page)
+    allow(extractor).to receive(:extract).with(amp_page).and_return(amp_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://cdn.ampproject.org/c/s/www.example.com/article')
+
+    expect(result.warnings).to include('aggregator_redirect_url')
+  end
+
+  it 'flags aggregator_redirect_url for AMP cache subdomain URLs' do
+    amp_sub_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
+    amp_sub_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article').and_yield(amp_sub_page)
+    allow(extractor).to receive(:extract).with(amp_sub_page).and_return(amp_sub_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article')
+
+    expect(result.warnings).to include('aggregator_redirect_url')
+  end
+
+  it 'flags aggregator_redirect_url for Google redirect URLs' do
+    google_redir_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
+    google_redir_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www.google.com/url?q=https://www.example.com/article').and_yield(google_redir_page)
+    allow(extractor).to receive(:extract).with(google_redir_page).and_return(google_redir_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.google.com/url?q=https://www.example.com/article')
+
+    expect(result.warnings).to include('aggregator_redirect_url')
+  end
+
+  it 'does not flag regular publisher URLs as aggregator_redirect_url' do
+    regular_page = instance_double('FerrumPage', current_url: 'https://www.reuters.com/world/europe/article-123')
+    regular_payload = payload.merge('warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www.reuters.com/world/europe/article-123').and_yield(regular_page)
+    allow(extractor).to receive(:extract).with(regular_page).and_return(regular_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.reuters.com/world/europe/article-123')
+
+    expect(result.warnings).not_to include('aggregator_redirect_url')
+  end
+
+  it 'does not flag google.com search URLs as aggregator_redirect_url' do
+    search_page = instance_double('FerrumPage', current_url: 'https://www.google.com/search?q=test')
+    search_payload = payload.merge('contentType' => 'search', 'warnings' => [])
+
+    allow(browser).to receive(:with_page).with('https://www.google.com/search?q=test').and_yield(search_page)
+    allow(extractor).to receive(:extract).with(search_page).and_return(search_payload)
+
+    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.google.com/search?q=test')
+
+    expect(result.warnings).not_to include('aggregator_redirect_url')
+  end
+
   it 'delegates quit to the underlying browser' do
     allow(browser).to receive(:quit)
 
