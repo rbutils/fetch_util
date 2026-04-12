@@ -763,4 +763,137 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["warnings"]).not_to include("syndicated_repost")
     end
   end
+
+  # --- Liveblog false-positive prevention ---
+
+  it "does not flag liveblog for a regular article with sidebar time elements" do
+    # Simulates an article page where <time> elements exist in a sidebar (related articles)
+    # but the main content is a single article — should NOT trigger liveblog
+    sidebar_times = (1..6).map do |i|
+      %(<li><a href="/article-#{i}"><time datetime="2026-04-0#{i}T10:00:00">April #{i}</time> Related story #{i}</a></li>)
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head><title>Regular News Article</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Regular News Article</h1>
+              <time datetime="2026-04-10T08:30:00">April 10, 2026</time>
+              <p>This is a regular news article with substantial content about an important topic. The journalist reports from the scene with detailed observations and expert commentary that spans multiple paragraphs.</p>
+              <p>Additional reporting provides context and background information that helps readers understand the significance of the events described in this article.</p>
+              <h2>Expert Analysis</h2>
+              <p>Leading researchers have weighed in on the implications, noting that similar patterns have been observed in previous years across multiple regions.</p>
+              <h2>Public Reaction</h2>
+              <p>Community members have expressed a range of opinions about the developments, with some welcoming the changes and others expressing concern about potential consequences.</p>
+            </article>
+          </main>
+          <aside class="sidebar">
+            <h3>Related Articles</h3>
+            <ul>
+              #{sidebar_times}
+            </ul>
+          </aside>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.tagesschau.de/inland/article-example", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "still flags liveblog for a genuine liveblog page with many timestamped entries" do
+    entries = (1..10).map do |i|
+      <<~ENTRY
+        <h2>Update #{i}: Development at #{8 + i}:00</h2>
+        <time datetime="2026-04-10T#{format("%02d", 8 + i)}:00:00">#{8 + i}:00 CET</time>
+        <p>Breaking development number #{i} with details about the ongoing situation and reporter commentary.</p>
+      ENTRY
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head><title>Live: Breaking Event Coverage</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Live: Breaking Event Coverage</h1>
+              #{entries}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example.com/live-coverage", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("multi_topic_page")
+    end
+  end
+
+  # --- Outbrain/Taboola ad URL stripping ---
+
+  it "strips Outbrain and Taboola ad links from extracted markdown" do
+    html = <<~HTML
+      <html>
+        <head><title>Article With Ad Links</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Article With Ad Links</h1>
+              <p>This is a legitimate article about technology trends in 2026. The industry has seen remarkable growth in several key areas including artificial intelligence and renewable energy.</p>
+              <p>Read more: <a href="https://paid.outbrain.com/network/redir?key=abc123&url=https://spam.example.com">Sponsored: Amazing Product</a></p>
+              <p>Experts predict continued growth in the sector, driven by consumer demand and regulatory support for green initiatives across Europe and North America.</p>
+              <p><a href="https://trc.taboola.com/campaign/click?item=12345">You Won't Believe This</a></p>
+              <p>The article continues with substantial analysis of market dynamics and competitive positioning among the major players.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.lemonde.fr/article-with-ads", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).not_to match(/outbrain\.com/i)
+      expect(payload["markdown"]).not_to match(/taboola\.com/i)
+      # The actual article content should still be present
+      expect(payload["markdown"]).to include("technology trends")
+    end
+  end
+
+  # --- Newsletter/hub detection threshold ---
+
+  it "detects hub/newsletter pages with 4 headings" do
+    # A page with exactly 4 headings and many links — should now be caught
+    # with the lowered threshold (was >= 5, now >= 4)
+    items = (1..6).map do |i|
+      <<~ITEM
+        <h2>Story #{i}: Notable Event</h2>
+        <p>Brief summary of story #{i}. <a href="https://example.com/story-#{i}">Read more</a></p>
+      ITEM
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head><title>Daily News Digest</title></head>
+        <body>
+          <main>
+            #{items}
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.channel4.com/news", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("multi_topic_page")
+    end
+  end
 end
