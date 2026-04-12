@@ -446,6 +446,116 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  # Consent wall extraction cascade: real article behind a consent wall
+  it "extracts the real article when a consent wall is detected but real content exists behind it" do
+    # Simulates the case where Ruby-side consent dismissal partially worked:
+    # the consent wall DOM is still present (so JS detects consent_wall interstitial)
+    # but the real article is also accessible in the DOM.
+    paragraphs = 8.times.map do |i|
+      "<p>Detailed analysis paragraph #{i + 1} about the economic policy impact on Nordic countries and their trade agreements with neighboring states.</p>"
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>Dine personverninnstillinger</title></head>
+        <body>
+          <div class="cookie-consent" style="position:fixed; z-index:999">
+            <h1>Dine personverninnstillinger</h1>
+            <p>Vi bruker informasjonskapsler og lignende teknologier for å gi deg en bedre opplevelse.</p>
+            <p>Vi og våre partnere lagrer og bruker informasjonskapsler for å tilpasse innhold og annonser.</p>
+            <button>Godta alle</button>
+          </div>
+          <main>
+            <article>
+              <h1>Nordic Trade Agreement Analysis</h1>
+              #{paragraphs}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.document.no/nordic-trade-analysis", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      # Should extract the real article, not the synthetic interstitial
+      expect(payload["markdown"]).to include("economic policy impact on Nordic countries")
+      expect(payload["markdown"]).not_to include("Interstitial:")
+    end
+  end
+
+  it "returns synthetic content when consent wall dominates and no real article exists" do
+    html = <<~HTML
+      <html>
+        <head><title>Cookie-inställningar</title></head>
+        <body>
+          <main>
+            <h1>Vi använder kakor</h1>
+            <p>Vi anvander kakor och liknande tekniker for att ge dig en battre upplevelse.</p>
+            <p>Samtycke till personanpassade annonser och innehall.</p>
+            <p>Vi anvander kakor for att forbattra prestanda.</p>
+            <button>Acceptera alla</button>
+            <button>Avvisa valfria kakor</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.svd.se/consent-only-page", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      # Should flag as consent interstitial since there's no real content
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
+  # Latvian consent wall detection
+  it "detects Latvian consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Sīkdatņu iestatījumi</title></head>
+        <body>
+          <main>
+            <h1>Sīkdatņu iestatījumi</h1>
+            <p>Izmantojam sīkdatnes un līdzīgas tehnoloģijas, lai uzlabotu jūsu pieredzi.</p>
+            <p>Sīkdatņu iestatījumi ļauj jums izvēlēties kādus sīkfailus izmantojam.</p>
+            <button>Pieņemt visus</button>
+            <button>Noraidīt izvēles sīkdatnes</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.delfi.lv/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
+  # Hungarian consent wall detection
+  it "detects Hungarian consent wall interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title>Süti beállítások</title></head>
+        <body>
+          <main>
+            <h1>Sütiket használunk</h1>
+            <p>Sütiket és hasonló technológiákat használunk az élmény javítása érdekében.</p>
+            <p>Adatvédelmi beállítások lehetővé teszik a sütik kezelését.</p>
+            <button>Elfogadom</button>
+            <button>Elutasítom az opcionális sütiket</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.index.hu/some-article", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
+
   it "removes hidden cookie declaration text when real section content is present" do
     html = <<~HTML
       <html>
