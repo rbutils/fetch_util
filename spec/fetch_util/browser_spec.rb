@@ -258,7 +258,7 @@ RSpec.describe FetchUtil::Browser do
     call_count = 0
     allow(page).to receive(:go_to) do
       call_count += 1
-      raise Ferrum::PendingConnectionsError.new(nil) if call_count < 3
+      raise Ferrum::PendingConnectionsError, nil if call_count < 3
     end
     allow(page).to receive(:network).and_return(network)
     allow(network).to receive(:idle?).and_return(true)

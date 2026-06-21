@@ -120,7 +120,23 @@ module FetchUtil
     def homepage_index_markdown?(title, markdown)
       snippet = [title, markdown].compact.join(" ")
       # Multilingual homepage indicator phrases
-      return false unless snippet.match?(/top stories|breaking news|latest news|headlines|aktuelle nachrichten|schlagzeilen|neueste nachrichten|à la une|dernières nouvelles|actualités|últimas noticias|noticias principales|notizie principali|ultime notizie|najnowsze wiadomości|najważniejsze|ostatnie wiadomości|aktualności|actualiteit|laatste nieuws|senaste nyheter|seneste nyheder|siste nytt|tuoreimmat uutiset|aktuálně|legfrissebb|cele mai noi știri|aktualności|најновије вести|останні новини|τελευταία νέα|güncel haberler|son dakika|senaste nyheterna|viktigaste nyheterna|aktualitātes|jaunākās ziņas|naujienos|svarbiausios naujienos|главные новости|últimas notícias|najnovšie správy|najnovije vijesti|derniers articles/i)
+      return false unless snippet.match?(
+        Regexp.new(
+          "top stories|breaking news|latest news|headlines|" \
+          "aktuelle nachrichten|schlagzeilen|neueste nachrichten|" \
+          "à la une|dernières nouvelles|actualités|últimas noticias|" \
+          "noticias principales|notizie principali|ultime notizie|" \
+          "najnowsze wiadomości|najważniejsze|ostatnie wiadomości|aktualności|" \
+          "actualiteit|laatste nieuws|senaste nyheter|seneste nyheder|" \
+          "siste nytt|tuoreimmat uutiset|aktuálně|legfrissebb|" \
+          "cele mai noi știri|aktualności|најновије вести|останні новини|" \
+          "τελευταία νέα|güncel haberler|son dakika|senaste nyheterna|" \
+          "viktigaste nyheterna|aktualitātes|jaunākās ziņas|naujienos|" \
+          "svarbiausios naujienos|главные новости|últimas notícias|" \
+          "najnovšie správy|najnovije vijesti|derniers articles",
+          Regexp::IGNORECASE
+        )
+      )
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
     end
