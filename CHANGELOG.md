@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add generic portal, marketplace, and booking homepage root selection so lead-story lists are extracted from shell pages the previous docs, repo, and community dispatchers missed; already-handled homepages are unaffected.
+- Improve dictionary, glossary, and citation definition root extraction with a reusable definition-reference metadata scorer, `dl`/`dt`/`dd` and `itemprop=description` container boosts, and repeated-sense dedupe that strips numbering, term prefixes, and citation tails.
+- Surface commerce product card details from JSON-LD `Product`, `Offer`, `AggregateRating`, and `ItemList` structures with conservative DOM fallback via itemprop, price and rating classes, aria-label, and visible stock text; non-commerce lists are unchanged.
+- Recover GitHub README content across multiple selector variants (`article.markdown-body`, `[data-testid='readme-content']`, aria containers) with a compact project-summary fallback when no README is present; GitLab behavior is unchanged.
+- Enrich Google-style consent summaries with visible headings, consent paragraphs, bullets, and option/control labels; prefer a visible heading over the page title so control labels are not pushed past the highlight cutoff. No bypass or dismissal behavior is added.
+- Deepen Antora landing card detail extraction with card-scoped boundaries and preserved relative hrefs; add nested STLDocs schema property groups and method-local parameter/response field bullets with shared docs-scoped text helpers.
+- Fix pre-existing RuboCop offenses: split the 724-character multilingual homepage-phrase regex in `fetcher.rb` into a `Regexp.new` with string continuations, and correct `Style/RaiseArgs` in `browser_spec.rb`.
+
 ## v0.2.1 - 2026-04-09
 
 - Detect liveblog and briefing/digest content formats via structured data, DOM heuristics, and multilingual title patterns; expose `content_format` field and `multi_topic_page` warning.
