@@ -4,10 +4,7 @@ module FetchUtil
   class Regulatory
     module Page
       def page_record(requested_uri)
-        cache_fetch("page:#{requested_uri}") do
-          response = safe_get(requested_uri.to_s)
-          next empty_page_record unless response
-
+        fetch_record("page:#{requested_uri}", requested_uri.to_s, fallback: empty_page_record, require_success: false) do |_body, response|
           final_uri = parse_http_uri(response.url)
           final_path = request_target(final_uri)
           xrobotstag = []

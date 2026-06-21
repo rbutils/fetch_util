@@ -60,7 +60,7 @@ module FetchUtil
         end
 
         def preserve_consent_wall?(page, url)
-          host = URI.parse(url).host.to_s.downcase.sub(/\Awww\./, "")
+          host = FetchUtil.strip_www_host(url)
           return false unless host == "youtube.com" || host.end_with?(".youtube.com") || host.match?(/\Agoogle\.[a-z.]+\z/)
 
           state = page.evaluate(<<~JS)

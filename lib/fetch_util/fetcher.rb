@@ -181,7 +181,7 @@ module FetchUtil
     # Strips www. prefix and returns the last two dot-separated labels
     # (or three when the second-level label is a known country ccTLD part like co.uk).
     def effective_domain(url)
-      host = URI.parse(url).host.to_s.downcase.sub(/\Awww\./, "")
+      host = FetchUtil.strip_www_host(url)
       parts = host.split(".")
       return host if parts.length <= 2
 
@@ -211,7 +211,7 @@ module FetchUtil
     def aggregator_url?(url)
       return false if url.nil?
 
-      host = URI.parse(url).host.to_s.downcase.sub(/\Awww\./, "")
+      host = FetchUtil.strip_www_host(url)
       path = URI.parse(url).path.to_s
 
       # Google News: news.google.com (RSS feeds, redirect links)

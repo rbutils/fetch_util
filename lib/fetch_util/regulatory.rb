@@ -222,11 +222,17 @@ module FetchUtil
     def sort_specificity_signals(signals)
       Array(signals).sort_by do |signal|
         [
-          -path_specificity(signal["path"]),
-          allow_signal?(signal) ? 0 : 1,
+          *signal_sort_prefix(signal),
           signal.dig("conditions", "policy").to_s
         ]
       end
+    end
+
+    def signal_sort_prefix(signal)
+      [
+        -path_specificity(signal["path"]),
+        allow_signal?(signal) ? 0 : 1
+      ]
     end
 
     def sort_generic_signals(signals)
@@ -347,6 +353,24 @@ module FetchUtil
       payload
     end
 
+    def fetch_record(key, uri, fallback: nil, require_success: true)
+      cache_fetch(key) do
+        response = record_response(uri, require_success: require_success)
+        response ? yield(response.body, response) : fallback
+      end
+    end
+
+    def record_response(uri, require_success:)
+      Array(uri).each do |candidate|
+        response = safe_get(candidate)
+        next unless response
+
+        return response if !require_success || response.status&.between?(200, 299)
+      end
+
+      nil
+    end
+
     def cache_file_path(key)
       digest = Digest::SHA256.hexdigest("v#{CACHE_VERSION}:#{key}")
       File.join(cache_path, "#{digest}.json")
@@ -429,10 +453,11 @@ module FetchUtil
 
     def sort_robot_signals(signals)
       signals.sort_by do |signal|
+        prefix = signal_sort_prefix(signal)
         [
-          -path_specificity(signal["path"]),
+          prefix.first,
           wildcard_signal?(signal) ? 1 : 0,
-          allow_signal?(signal) ? 0 : 1,
+          prefix.last,
           signal.dig("conditions", "user-agent").to_s
         ]
       end

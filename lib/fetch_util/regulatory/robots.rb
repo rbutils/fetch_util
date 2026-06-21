@@ -24,16 +24,8 @@ module FetchUtil
         unavailable_after
       ].freeze
       def robots_record(requested_uri)
-        cache_fetch("robotstxt:#{origin_key(requested_uri)}") do
-          response = safe_get(robots_uri(requested_uri))
-          payload = {
-            "robotstxt" => [],
-            "contentsignal" => [],
-            "contentusagerobots" => []
-          }
-          if response&.status&.between?(200, 299)
-            payload = extract_robots_source_signals(response.body)
-          end
+        fetch_record("robotstxt:#{origin_key(requested_uri)}", robots_uri(requested_uri), fallback: empty_robots_record) do |body|
+          payload = extract_robots_source_signals(body)
           {
             "signals" => {
               "robotstxt" => sort_robot_signals(payload["robotstxt"]),
@@ -96,6 +88,16 @@ module FetchUtil
       end
 
       private
+
+      def empty_robots_record
+        {
+          "signals" => {
+            "robotstxt" => [],
+            "contentsignal" => [],
+            "contentusagerobots" => []
+          }
+        }
+      end
 
       def robot_signal(field, user_agent, value)
         verb = value.to_s.strip.empty? ? "allow" : field

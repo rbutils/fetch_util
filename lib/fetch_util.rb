@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 require_relative "fetch_util/version"
 
 module FetchUtil
@@ -86,11 +88,15 @@ module FetchUtil
     text.gsub(/\u00A0/, " ").gsub(/\s+/, " ").strip
   end
 
+  def strip_www_host(url)
+    URI.parse(url.to_s).host.to_s.downcase.sub(/\Awww\./, "")
+  end
+
   def docs_like_url?(value)
     uri = value.is_a?(URI::Generic) ? value : URI.parse(value.to_s.strip)
     return false unless uri.is_a?(URI::HTTP) && uri.host
 
-    host = uri.host.to_s.downcase.sub(/\Awww\./, "")
+    host = strip_www_host(uri)
     path = uri.path.to_s.downcase
     path_terms = path.split(/[^a-z0-9]+/)
 

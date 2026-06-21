@@ -4,17 +4,12 @@ module FetchUtil
   class Regulatory
     module TrustTxt
       def trusttxt_record(requested_uri)
-        cache_fetch("trusttxt:#{origin_key(requested_uri)}") do
-          response = safe_get(trusttxt_uri(requested_uri))
-          unless response&.status&.between?(200, 299)
-            response = safe_get(trusttxt_well_known_uri(requested_uri))
-          end
-
-          signals = []
-          if response&.status&.between?(200, 299)
-            signals = extract_trusttxt_signals(response.body)
-          end
-
+        fetch_record(
+          "trusttxt:#{origin_key(requested_uri)}",
+          [trusttxt_uri(requested_uri), trusttxt_well_known_uri(requested_uri)],
+          fallback: { "signals" => [] }
+        ) do |body|
+          signals = extract_trusttxt_signals(body)
           { "signals" => sort_usage_preference_signals(signals) }
         end
       end

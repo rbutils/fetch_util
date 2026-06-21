@@ -222,7 +222,7 @@ module FetchUtil
     end
 
     def host_for(url)
-      URI.parse(url).host.to_s.sub(/\Awww\./, "")
+      FetchUtil.strip_www_host(url)
     rescue URI::InvalidURIError
       nil
     end
