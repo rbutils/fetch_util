@@ -17,6 +17,7 @@
 - Extract shared Ruby helpers: `FetchUtil.strip_www_host` (4 sites), `Regulatory#fetch_record` (4 record methods), and `Regulatory#signal_sort_prefix` (2 sort methods); `tdm_rep.rb` now calls existing `extract_tdm_value_signals`.
 - Extract shared spec support (`fetcher_spec_helpers.rb`, `fixture_html.rb`) and split large spec files: 4 Nordic/Baltic consent examples from `content_quality_spec.rb` into `consent_language_walls_spec.rb`, 6 Reddit/Behance examples from `consent_and_social_walls_spec.rb` into `social_platform_walls_spec.rb`.
 - Remove `require "bundler/setup"` from the installed executable so `fetch_util` works from inside any Ruby project, even ones whose Gemfile does not list fetch_util. Bundler is still activated by `bundle exec` for repo-local development.
+- Change `fetch` default output format from JSON to pure markdown so agents get clean readable content without parsing JSON. Use `--format json` for structured output with metadata, warnings, and content_type fields.
 
 ## v0.2.1 - 2026-04-09
 

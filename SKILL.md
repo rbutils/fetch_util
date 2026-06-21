@@ -29,10 +29,17 @@ Use it first because it usually returns cleaner, more agent-friendly markdown th
 
 ## Core Commands
 
-Fetch known URLs:
+Fetch known URLs (returns pure markdown by default):
 
 ```sh
 fetch_util fetch https://example.com
+fetch_util fetch https://example.com/a https://example.com/b
+```
+
+Fetch with structured JSON output (when you need metadata, warnings, or content_type):
+
+```sh
+fetch_util fetch https://example.com --format json
 fetch_util fetch https://example.com/a https://example.com/b --format jsonl
 ```
 
@@ -58,7 +65,7 @@ bundle exec exe/fetch_util search ruby language
 - if you are in a subagent without the `skill` tool, treat `fetch_util` as a normal installed CLI and call it directly
 - use `fetch_util` first because its output is usually cleaner and more compact for agents than generic page fetch output
 - treat `fetch_util` as cheap to use; it is fine to make multiple fetch/search passes when that helps answer the task well
-- prefer the compact default output; use `--format jsonl` for multi-result pipelines
+- prefer the compact default output; use `--format json` when you need metadata, warnings, or content_type fields, and `--format jsonl` for multi-result pipelines
 - use `--include-html` only when raw HTML is actually needed
 - treat `suspect` and `warnings` as signals that the page may be an interstitial, challenge, or mismatch
 - only fall back to other web tooling after `fetch_util` is unavailable or clearly insufficient

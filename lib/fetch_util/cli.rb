@@ -20,7 +20,7 @@ module FetchUtil
     ].freeze
 
     class_option :log_path, type: :string, desc: "Append-only request log path"
-    class_option :format, type: :string, default: "json", enum: %w[json jsonl], desc: "Output format"
+    class_option :format, type: :string, default: "markdown", enum: %w[markdown json jsonl], desc: "Output format"
     class_option :timeout, type: :numeric, default: 20
     class_option :wait, type: :numeric, default: 0.75
     class_option :concurrency, type: :numeric, default: 4
@@ -43,7 +43,14 @@ module FetchUtil
                   FetchUtil.fetch_many(urls, **fetch_options, request_log: request_log, concurrency: options[:concurrency])
                 end
 
-      emit(urls.length == 1 && options[:format] == "json" ? result_payload(results.first) : results.map { |result| result_payload(result) })
+      if options[:format] == "markdown"
+        results.each_with_index do |result, index|
+          puts "\n---\n\n" if index > 0
+          puts result.markdown
+        end
+      else
+        emit(urls.length == 1 && options[:format] == "json" ? result_payload(results.first) : results.map { |result| result_payload(result) })
+      end
     end
 
     desc "search QUERY", "Search across configured engines and aggregate results"

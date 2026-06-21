@@ -92,6 +92,45 @@ RSpec.describe FetchUtil::CLI do
                                                                                       ])
   end
 
+  it "outputs pure markdown by default for fetch" do
+    result = instance_double(
+      FetchUtil::Result,
+      to_h: {
+        url: "https://a.test",
+        final_url: "https://a.test/final",
+        canonical_url: "https://a.test/canonical",
+        title: "A",
+        excerpt: "about a",
+        byline: nil,
+        markdown: "# A\n\nbody a",
+        content_type: "article",
+        suspect: false,
+        warnings: [],
+        html: "<p>A</p>"
+      },
+      markdown: "# A\n\nbody a",
+      html: "<p>A</p>"
+    )
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://a.test",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = capture_stdout do
+      described_class.start(["fetch", "https://a.test"])
+    end
+
+    expect(output).to eq("# A\n\nbody a\n")
+  end
+
   it "includes html only when requested" do
     result = instance_double(
       FetchUtil::Result,
@@ -124,7 +163,7 @@ RSpec.describe FetchUtil::CLI do
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
 
     output = capture_stdout do
-      described_class.start(["fetch", "https://a.test", "--include-html"])
+      described_class.start(["fetch", "https://a.test", "--include-html", "--format", "json"])
     end
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(
