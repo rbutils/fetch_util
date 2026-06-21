@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.0 - 2026-06-21
+
 - Add generic portal, marketplace, and booking homepage root selection so lead-story lists are extracted from shell pages the previous docs, repo, and community dispatchers missed; already-handled homepages are unaffected.
 - Improve dictionary, glossary, and citation definition root extraction with a reusable definition-reference metadata scorer, `dl`/`dt`/`dd` and `itemprop=description` container boosts, and repeated-sense dedupe that strips numbering, term prefixes, and citation tails.
 - Surface commerce product card details from JSON-LD `Product`, `Offer`, `AggregateRating`, and `ItemList` structures with conservative DOM fallback via itemprop, price and rating classes, aria-label, and visible stock text; non-commerce lists are unchanged.
