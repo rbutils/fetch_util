@@ -556,6 +556,100 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves richer visible copy for Google-style consent shells and keeps consent warnings" do
+    html = <<~HTML
+      <html>
+        <head><title>Google</title></head>
+        <body>
+          <main>
+            <h1>Before you continue to Google</h1>
+            <p>We use cookies and data to deliver and maintain Google services, track outages, and protect against spam, fraud, and abuse.</p>
+            <ul>
+              <li>Develop and improve new services</li>
+              <li>Deliver and measure the effectiveness of ads</li>
+              <li>Show personalized content, depending on your settings</li>
+            </ul>
+            <button>Reject all</button>
+            <button>More options</button>
+            <button>Accept all</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.google.com/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Before you continue to Google")
+      expect(payload["markdown"]).to include("We use cookies and data to deliver and maintain Google services")
+      expect(payload["markdown"]).to include("Develop and improve new services")
+      expect(payload["markdown"]).to include("Control: Reject all")
+      expect(payload["markdown"]).to include("Control: More options")
+      expect(payload["warnings"]).to include("consent_interstitial")
+      expect(payload["suspect"]).to eq(true)
+    end
+  end
+
+  it "keeps non-Google consent walls compact and flagged" do
+    html = <<~HTML
+      <html>
+        <head><title>Cookie Settings</title></head>
+        <body>
+          <main>
+            <h1>Cookie Settings</h1>
+            <p>We use cookies to keep this service reliable and to measure audience activity.</p>
+            <p>Essential cookies are always active.</p>
+            <button>Reject optional cookies</button>
+            <button>Accept all cookies</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.org/privacy/consent", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Cookie Settings")
+      expect(payload["markdown"]).to include("We use cookies to keep this service reliable")
+      expect(payload["markdown"]).to include("Control: Accept all cookies")
+      expect(payload["warnings"]).to include("consent_interstitial")
+      expect(payload["suspect"]).to eq(true)
+    end
+  end
+
+  it "keeps richer consent summaries classified as consent walls" do
+    html = <<~HTML
+      <html>
+        <head><title>Your privacy choices</title></head>
+        <body>
+          <main>
+            <h1>Before you continue</h1>
+            <p>We use cookies and data to provide maps, video recommendations, personalized content, product features, security monitoring, outage tracking, audience measurement, and advertising controls across this service.</p>
+            <p>You can manage privacy settings for personalized ads, browsing history, device identifiers, and partner measurement before continuing.</p>
+            <ul>
+              <li>Personalized content and recommendations</li>
+              <li>Personalized ads and measurement</li>
+              <li>Privacy settings for cookies and data</li>
+            </ul>
+            <button>Reject all</button>
+            <button>Manage options</button>
+            <button>Accept all</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://accounts.example.org/consent", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Before you continue")
+      expect(payload["markdown"]).to include("Personalized content and recommendations")
+      expect(payload["markdown"]).to include("Control: Manage options")
+      expect(payload["warnings"]).to include("consent_interstitial")
+      expect(payload["suspect"]).to eq(true)
+    end
+  end
+
   it "removes hidden cookie declaration text when real section content is present" do
     html = <<~HTML
       <html>
