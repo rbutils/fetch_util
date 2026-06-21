@@ -9,6 +9,13 @@
 - Enrich Google-style consent summaries with visible headings, consent paragraphs, bullets, and option/control labels; prefer a visible heading over the page title so control labels are not pushed past the highlight cutoff. No bypass or dismissal behavior is added.
 - Deepen Antora landing card detail extraction with card-scoped boundaries and preserved relative hrefs; add nested STLDocs schema property groups and method-local parameter/response field bullets with shared docs-scoped text helpers.
 - Fix pre-existing RuboCop offenses: split the 724-character multilingual homepage-phrase regex in `fetcher.rb` into a `Regexp.new` with string continuations, and correct `Style/RaiseArgs` in `browser_spec.rb`.
+- Remove ~1,337 lines of manifest-ordered dead code where later source files silently overrode earlier ones: collapse `dom_base.js` (9 functions overridden by `dom_cleanup.js`), `lists.js` (18 functions overridden by `list_extraction.js`), and `generic_docs.js` (15 functions overridden by `generic_docs_frameworks.js`); remove `generic_docs.js` from the asset manifest.
+- Restore missing forum/thread selectors in the live `list_extraction.js` that were present only in the dead `lists.js` override: `[class*='thread']`, `[class*='topic-list']`, `.structItem`, `.discussionListItem`.
+- Merge mintlify docs selectors from the dead `generic_docs.js` into the live `generic_docs_frameworks.js`: table-of-contents, context menu, eyebrow, ctrl keybindings, ask-an-ai cleanup, and pagination selectors.
+- Extract and adopt shared JS helpers: `listContentResult` and `bodyInnerText` in `core/metadata.js`; adopt existing `docsHostSignature` (7 sites) and `cleanDocsHeadings` (6 sites); refactor `listChromeOrNavigationNode` and `parseInstagramStats`.
+- Extract a shared `COOKIE_CONSENT_KEYWORDS` multilingual constant in `challenges.js` consumed by `consentWallDominates`, `consentLikeInterstitial`, and `consentWallPage`; remove dead `challengeNoiseText`.
+- Extract shared Ruby helpers: `FetchUtil.strip_www_host` (4 sites), `Regulatory#fetch_record` (4 record methods), and `Regulatory#signal_sort_prefix` (2 sort methods); `tdm_rep.rb` now calls existing `extract_tdm_value_signals`.
+- Extract shared spec support (`fetcher_spec_helpers.rb`, `fixture_html.rb`) and split large spec files: 4 Nordic/Baltic consent examples from `content_quality_spec.rb` into `consent_language_walls_spec.rb`, 6 Reddit/Behance examples from `consent_and_social_walls_spec.rb` into `social_platform_walls_spec.rb`.
 
 ## v0.2.1 - 2026-04-09
 
