@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe FetchUtil::Fetcher do
+  include_context 'fetcher spec helpers'
+
   let(:page) do
     instance_double('FerrumPage', current_url: 'https://example.com/final')
   end
@@ -36,10 +38,9 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'returns a result object with metadata' do
-    allow(browser).to receive(:with_page).with('https://example.com/input').and_yield(page)
-    allow(extractor).to receive(:extract).with(page).and_return(payload)
+    stub_browser_extraction('https://example.com/input', page: page, payload: payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://example.com/input')
+    result = fetch_with_dependencies('https://example.com/input')
 
     expect(result).to be_a(FetchUtil::Result)
     expect(result.title).to eq('Example title')
@@ -74,10 +75,12 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => ['url_content_mismatch']
     )
 
-    allow(browser).to receive(:with_page).with('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby').and_yield(page)
-    allow(extractor).to receive(:extract).with(page).and_return(mismatched_payload)
+    stub_browser_extraction(
+      'https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby',
+      page: page, payload: mismatched_payload
+    )
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
+    result = fetch_with_dependencies('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
 
     expect(result.suspect).to eq(true)
     expect(result.warnings).to include('url_content_mismatch')
@@ -92,10 +95,12 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby').and_yield(so_page)
-    allow(extractor).to receive(:extract).with(so_page).and_return(mismatched_payload)
+    stub_browser_extraction(
+      'https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby',
+      page: so_page, payload: mismatched_payload
+    )
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
+    result = fetch_with_dependencies('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
 
     expect(result.suspect).to eq(false)
     expect(result.warnings).not_to include('url_content_mismatch')
@@ -109,10 +114,9 @@ RSpec.describe FetchUtil::Fetcher do
       'contentType' => 'article'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.nytimes.com/').and_yield(homepage_page)
-    allow(extractor).to receive(:extract).with(homepage_page).and_return(homepage_payload)
+    stub_browser_extraction('https://www.nytimes.com/', page: homepage_page, payload: homepage_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.nytimes.com/')
+    result = fetch_with_dependencies('https://www.nytimes.com/')
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).to include('homepage_index_page')
@@ -127,10 +131,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.google.com/search?q=ruby+language').and_yield(search_page)
-    allow(extractor).to receive(:extract).with(search_page).and_return(search_payload)
+    stub_browser_extraction('https://www.google.com/search?q=ruby+language', page: search_page, payload: search_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.google.com/search?q=ruby+language')
+    result = fetch_with_dependencies('https://www.google.com/search?q=ruby+language')
 
     expect(result.content_type).to eq('search')
     expect(result.warnings).not_to include('homepage_index_page')
@@ -146,10 +149,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.pinterest.com/search/pins/?q=ruby+programming').and_yield(search_list_page)
-    allow(extractor).to receive(:extract).with(search_list_page).and_return(list_payload)
+    stub_browser_extraction('https://www.pinterest.com/search/pins/?q=ruby+programming', page: search_list_page, payload: list_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.pinterest.com/search/pins/?q=ruby+programming')
+    result = fetch_with_dependencies('https://www.pinterest.com/search/pins/?q=ruby+programming')
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).not_to include('url_content_mismatch')
@@ -164,10 +166,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://developers.openai.com/api/reference/resources/chat').and_yield(docs_page)
-    allow(extractor).to receive(:extract).with(docs_page).and_return(docs_payload)
+    stub_browser_extraction('https://developers.openai.com/api/reference/resources/chat', page: docs_page, payload: docs_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://developers.openai.com/api/reference/resources/chat')
+    result = fetch_with_dependencies('https://developers.openai.com/api/reference/resources/chat')
 
     expect(result.warnings).not_to include('url_content_mismatch')
   end
@@ -194,10 +195,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://pinia.vuejs.org/core-concepts/').and_yield(docs_page)
-    allow(extractor).to receive(:extract).with(docs_page).and_return(docs_payload)
+    stub_browser_extraction('https://pinia.vuejs.org/core-concepts/', page: docs_page, payload: docs_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://pinia.vuejs.org/core-concepts/')
+    result = fetch_with_dependencies('https://pinia.vuejs.org/core-concepts/')
 
     expect(result.warnings).not_to include('url_content_mismatch')
   end
@@ -211,10 +211,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.ncbi.nlm.nih.gov/books/NBK553156/').and_yield(docs_page)
-    allow(extractor).to receive(:extract).with(docs_page).and_return(docs_payload)
+    stub_browser_extraction('https://www.ncbi.nlm.nih.gov/books/NBK553156/', page: docs_page, payload: docs_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.ncbi.nlm.nih.gov/books/NBK553156/')
+    result = fetch_with_dependencies('https://www.ncbi.nlm.nih.gov/books/NBK553156/')
 
     expect(result.warnings).not_to include('url_content_mismatch')
   end
@@ -233,10 +232,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.diki.pl/slownik-angielskiego?q=whores').and_yield(glossary_page)
-    allow(extractor).to receive(:extract).with(glossary_page).and_return(glossary_payload)
+    stub_browser_extraction('https://www.diki.pl/slownik-angielskiego?q=whores', page: glossary_page, payload: glossary_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.diki.pl/slownik-angielskiego?q=whores')
+    result = fetch_with_dependencies('https://www.diki.pl/slownik-angielskiego?q=whores')
 
     expect(result.warnings).not_to include('url_content_mismatch')
   end
@@ -251,10 +249,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.cssn.cn/skgz/bwyc/202412/t20241225_5826232.shtml').and_yield(page)
-    allow(extractor).to receive(:extract).with(page).and_return(cjk_payload)
+    stub_browser_extraction('https://www.cssn.cn/skgz/bwyc/202412/t20241225_5826232.shtml', page: page, payload: cjk_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.cssn.cn/skgz/bwyc/202412/t20241225_5826232.shtml')
+    result = fetch_with_dependencies('https://www.cssn.cn/skgz/bwyc/202412/t20241225_5826232.shtml')
 
     expect(result.warnings).not_to include('url_content_mismatch')
   end
@@ -266,10 +263,9 @@ RSpec.describe FetchUtil::Fetcher do
       'title' => 'systemd.service'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html').and_yield(challenge_page)
-    allow(extractor).to receive(:extract).with(challenge_page).and_return(challenge_payload)
+    stub_browser_extraction('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html', page: challenge_page, payload: challenge_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html')
+    result = fetch_with_dependencies('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html')
 
     expect(result.final_url).to eq('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html')
     expect(result.canonical_url).to eq('https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html')
@@ -285,10 +281,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => ['homepage_index_page']
     )
 
-    allow(browser).to receive(:with_page).with('https://www.digi24.ro/').and_yield(tracked_page)
-    allow(extractor).to receive(:extract).with(tracked_page).and_return(tracked_payload)
+    stub_browser_extraction('https://www.digi24.ro/', page: tracked_page, payload: tracked_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.digi24.ro/')
+    result = fetch_with_dependencies('https://www.digi24.ro/')
 
     expect(result.final_url).to eq('https://www.digi24.ro/')
     expect(result.canonical_url).to eq('https://www.digi24.ro/')
@@ -304,10 +299,9 @@ RSpec.describe FetchUtil::Fetcher do
       'siteName' => 'Instagram'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.instagram.com/cristiano/').and_yield(redirected_page)
-    allow(extractor).to receive(:extract).with(redirected_page).and_return(redirected_payload)
+    stub_browser_extraction('https://www.instagram.com/cristiano/', page: redirected_page, payload: redirected_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.instagram.com/cristiano/')
+    result = fetch_with_dependencies('https://www.instagram.com/cristiano/')
 
     expect(result.final_url).to eq('https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F')
     expect(result.canonical_url).to eq('https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F')
@@ -330,10 +324,9 @@ RSpec.describe FetchUtil::Fetcher do
     )
 
     expect(instagram_page).not_to receive(:network)
-    allow(browser).to receive(:with_page).with('https://www.instagram.com/cristiano/').and_yield(instagram_page)
-    allow(extractor).to receive(:extract).with(instagram_page).and_return(instagram_payload)
+    stub_browser_extraction('https://www.instagram.com/cristiano/', page: instagram_page, payload: instagram_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.instagram.com/cristiano/')
+    result = fetch_with_dependencies('https://www.instagram.com/cristiano/')
 
     expect(result.markdown).to eq(instagram_payload['markdown'])
     expect(result.excerpt).to eq('673M Followers, 643 Following, 4,027 Posts.')
@@ -347,14 +340,10 @@ RSpec.describe FetchUtil::Fetcher do
       'siteName' => 'kubernetes.io'
     )
 
-    allow(browser).to receive(:with_page).with('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core').and_raise(FetchUtil::ExtractionError, 
-                                                                                                                                             'timeout')
-    allow(raw_docs_fallback).to receive(:fetch).with('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core').and_return([
-                                                                                                                                                      'https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core',
-                                                                                                                                                      fallback_payload
-                                                                                                                                                    ])
+    stub_browser_failure('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core', FetchUtil::ExtractionError, 'timeout')
+    stub_raw_docs_fallback('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core', payload: fallback_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core')
+    result = fetch_with_dependencies('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core')
 
     expect(result.title).to eq('Pod v1 core')
     expect(result.final_url).to eq('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core')
@@ -376,14 +365,10 @@ RSpec.describe FetchUtil::Fetcher do
       'siteName' => 'Caddy Documentation'
     )
 
-    allow(browser).to receive(:with_page).with('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy').and_yield(docs_page)
-    allow(extractor).to receive(:extract).with(docs_page).and_return(weak_payload)
-    allow(raw_docs_fallback).to receive(:fetch).with('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy').and_return([
-                                                                                                                                     'https://caddyserver.com/docs/caddyfile/directives/reverse_proxy',
-                                                                                                                                     fallback_payload
-                                                                                                                                   ])
+    stub_browser_extraction('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy', page: docs_page, payload: weak_payload)
+    stub_raw_docs_fallback('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy', payload: fallback_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy')
+    result = fetch_with_dependencies('https://caddyserver.com/docs/caddyfile/directives/reverse_proxy')
 
     expect(result.title).to eq('reverse_proxy')
     expect(result.markdown).to include('Proxies requests to one or more backends')
@@ -404,14 +389,10 @@ RSpec.describe FetchUtil::Fetcher do
       'siteName' => 'Example Docs'
     )
 
-    allow(browser).to receive(:with_page).with('https://example.com/go/widgets').and_yield(redirected_page)
-    allow(extractor).to receive(:extract).with(redirected_page).and_return(weak_payload)
-    allow(raw_docs_fallback).to receive(:fetch).with('https://example.com/go/widgets').and_return([
-                                                                                                    'https://docs.example.dev/reference/widgets',
-                                                                                                    fallback_payload
-                                                                                                  ])
+    stub_browser_extraction('https://example.com/go/widgets', page: redirected_page, payload: weak_payload)
+    stub_raw_docs_fallback('https://example.com/go/widgets', final_url: 'https://docs.example.dev/reference/widgets', payload: fallback_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://example.com/go/widgets')
+    result = fetch_with_dependencies('https://example.com/go/widgets')
 
     expect(result.title).to eq('Widgets')
     expect(result.final_url).to eq('https://docs.example.dev/reference/widgets')
@@ -426,13 +407,10 @@ RSpec.describe FetchUtil::Fetcher do
       'siteName' => 'HashiCorp Developer'
     )
 
-    allow(browser).to receive(:with_page).with('https://developer.hashicorp.com/terraform/language/resources/terraform-data').and_raise(FetchUtil::BrowserError, 'boom')
-    allow(raw_docs_fallback).to receive(:fetch).with('https://developer.hashicorp.com/terraform/language/resources/terraform-data').and_return([
-                                                                                                                                                 'https://developer.hashicorp.com/terraform/language/resources/terraform-data',
-                                                                                                                                                 fallback_payload
-                                                                                                                                               ])
+    stub_browser_failure('https://developer.hashicorp.com/terraform/language/resources/terraform-data', FetchUtil::BrowserError, 'boom')
+    stub_raw_docs_fallback('https://developer.hashicorp.com/terraform/language/resources/terraform-data', payload: fallback_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
+    result = fetch_with_dependencies('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
 
     expect(result.title).to eq('terraform_data')
     expect(result.final_url).to eq('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
@@ -447,10 +425,9 @@ RSpec.describe FetchUtil::Fetcher do
       'contentType' => 'article'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.bild.de/').and_yield(de_page)
-    allow(extractor).to receive(:extract).with(de_page).and_return(de_payload)
+    stub_browser_extraction('https://www.bild.de/', page: de_page, payload: de_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.bild.de/')
+    result = fetch_with_dependencies('https://www.bild.de/')
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).to include('homepage_index_page')
@@ -464,10 +441,9 @@ RSpec.describe FetchUtil::Fetcher do
       'contentType' => 'article'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.444.hu/').and_yield(hu_page)
-    allow(extractor).to receive(:extract).with(hu_page).and_return(hu_payload)
+    stub_browser_extraction('https://www.444.hu/', page: hu_page, payload: hu_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.444.hu/')
+    result = fetch_with_dependencies('https://www.444.hu/')
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).to include('homepage_index_page')
@@ -481,10 +457,9 @@ RSpec.describe FetchUtil::Fetcher do
       'contentType' => 'article'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.lemonde.fr/').and_yield(fr_page)
-    allow(extractor).to receive(:extract).with(fr_page).and_return(fr_payload)
+    stub_browser_extraction('https://www.lemonde.fr/', page: fr_page, payload: fr_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.lemonde.fr/')
+    result = fetch_with_dependencies('https://www.lemonde.fr/')
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).to include('homepage_index_page')
@@ -498,10 +473,9 @@ RSpec.describe FetchUtil::Fetcher do
       'contentType' => 'article'
     )
 
-    allow(browser).to receive(:with_page).with('https://www.bild.de/politik/inland/article-12345').and_yield(article_page)
-    allow(extractor).to receive(:extract).with(article_page).and_return(article_payload)
+    stub_browser_extraction('https://www.bild.de/politik/inland/article-12345', page: article_page, payload: article_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.bild.de/politik/inland/article-12345')
+    result = fetch_with_dependencies('https://www.bild.de/politik/inland/article-12345')
 
     expect(result.content_type).to eq('article')
     expect(result.warnings).not_to include('homepage_index_page')
@@ -515,10 +489,9 @@ RSpec.describe FetchUtil::Fetcher do
       'warnings' => []
     )
 
-    allow(browser).to receive(:with_page).with('https://www.napi.hu/gazdasag/some-article').and_yield(redirected_page)
-    allow(extractor).to receive(:extract).with(redirected_page).and_return(redirect_payload)
+    stub_browser_extraction('https://www.napi.hu/gazdasag/some-article', page: redirected_page, payload: redirect_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.napi.hu/gazdasag/some-article')
+    result = fetch_with_dependencies('https://www.napi.hu/gazdasag/some-article')
 
     expect(result.warnings).to include('cross_domain_redirect')
     expect(result.suspect).to eq(true)
@@ -528,10 +501,9 @@ RSpec.describe FetchUtil::Fetcher do
     same_domain_page = instance_double('FerrumPage', current_url: 'https://www.example.com/new-path')
     same_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www.example.com/old-path').and_yield(same_domain_page)
-    allow(extractor).to receive(:extract).with(same_domain_page).and_return(same_payload)
+    stub_browser_extraction('https://www.example.com/old-path', page: same_domain_page, payload: same_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.example.com/old-path')
+    result = fetch_with_dependencies('https://www.example.com/old-path')
 
     expect(result.warnings).not_to include('cross_domain_redirect')
   end
@@ -540,10 +512,9 @@ RSpec.describe FetchUtil::Fetcher do
     www_page = instance_double('FerrumPage', current_url: 'https://www.spectator.com/article')
     www_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://spectator.com/article').and_yield(www_page)
-    allow(extractor).to receive(:extract).with(www_page).and_return(www_payload)
+    stub_browser_extraction('https://spectator.com/article', page: www_page, payload: www_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://spectator.com/article')
+    result = fetch_with_dependencies('https://spectator.com/article')
 
     expect(result.warnings).not_to include('cross_domain_redirect')
   end
@@ -552,10 +523,9 @@ RSpec.describe FetchUtil::Fetcher do
     uk_page = instance_double('FerrumPage', current_url: 'https://www.spectator.com/article')
     uk_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www.spectator.co.uk/article').and_yield(uk_page)
-    allow(extractor).to receive(:extract).with(uk_page).and_return(uk_payload)
+    stub_browser_extraction('https://www.spectator.co.uk/article', page: uk_page, payload: uk_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.spectator.co.uk/article')
+    result = fetch_with_dependencies('https://www.spectator.co.uk/article')
 
     expect(result.warnings).to include('cross_domain_redirect')
   end
@@ -564,10 +534,9 @@ RSpec.describe FetchUtil::Fetcher do
     google_news_page = instance_double('FerrumPage', current_url: 'https://www.reuters.com/world/europe/article-123')
     google_news_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://news.google.com/rss/articles/some-encoded-id').and_yield(google_news_page)
-    allow(extractor).to receive(:extract).with(google_news_page).and_return(google_news_payload)
+    stub_browser_extraction('https://news.google.com/rss/articles/some-encoded-id', page: google_news_page, payload: google_news_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://news.google.com/rss/articles/some-encoded-id')
+    result = fetch_with_dependencies('https://news.google.com/rss/articles/some-encoded-id')
 
     expect(result.warnings).to include('aggregator_redirect_url')
     expect(result.suspect).to eq(true)
@@ -577,10 +546,9 @@ RSpec.describe FetchUtil::Fetcher do
     amp_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
     amp_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://cdn.ampproject.org/c/s/www.example.com/article').and_yield(amp_page)
-    allow(extractor).to receive(:extract).with(amp_page).and_return(amp_payload)
+    stub_browser_extraction('https://cdn.ampproject.org/c/s/www.example.com/article', page: amp_page, payload: amp_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://cdn.ampproject.org/c/s/www.example.com/article')
+    result = fetch_with_dependencies('https://cdn.ampproject.org/c/s/www.example.com/article')
 
     expect(result.warnings).to include('aggregator_redirect_url')
   end
@@ -589,10 +557,9 @@ RSpec.describe FetchUtil::Fetcher do
     amp_sub_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
     amp_sub_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article').and_yield(amp_sub_page)
-    allow(extractor).to receive(:extract).with(amp_sub_page).and_return(amp_sub_payload)
+    stub_browser_extraction('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article', page: amp_sub_page, payload: amp_sub_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article')
+    result = fetch_with_dependencies('https://www-example-com.cdn.ampproject.org/c/s/www.example.com/article')
 
     expect(result.warnings).to include('aggregator_redirect_url')
   end
@@ -601,10 +568,9 @@ RSpec.describe FetchUtil::Fetcher do
     google_redir_page = instance_double('FerrumPage', current_url: 'https://www.example.com/article')
     google_redir_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www.google.com/url?q=https://www.example.com/article').and_yield(google_redir_page)
-    allow(extractor).to receive(:extract).with(google_redir_page).and_return(google_redir_payload)
+    stub_browser_extraction('https://www.google.com/url?q=https://www.example.com/article', page: google_redir_page, payload: google_redir_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.google.com/url?q=https://www.example.com/article')
+    result = fetch_with_dependencies('https://www.google.com/url?q=https://www.example.com/article')
 
     expect(result.warnings).to include('aggregator_redirect_url')
   end
@@ -613,10 +579,9 @@ RSpec.describe FetchUtil::Fetcher do
     regular_page = instance_double('FerrumPage', current_url: 'https://www.reuters.com/world/europe/article-123')
     regular_payload = payload.merge('warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www.reuters.com/world/europe/article-123').and_yield(regular_page)
-    allow(extractor).to receive(:extract).with(regular_page).and_return(regular_payload)
+    stub_browser_extraction('https://www.reuters.com/world/europe/article-123', page: regular_page, payload: regular_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.reuters.com/world/europe/article-123')
+    result = fetch_with_dependencies('https://www.reuters.com/world/europe/article-123')
 
     expect(result.warnings).not_to include('aggregator_redirect_url')
   end
@@ -625,10 +590,9 @@ RSpec.describe FetchUtil::Fetcher do
     search_page = instance_double('FerrumPage', current_url: 'https://www.google.com/search?q=test')
     search_payload = payload.merge('contentType' => 'search', 'warnings' => [])
 
-    allow(browser).to receive(:with_page).with('https://www.google.com/search?q=test').and_yield(search_page)
-    allow(extractor).to receive(:extract).with(search_page).and_return(search_payload)
+    stub_browser_extraction('https://www.google.com/search?q=test', page: search_page, payload: search_payload)
 
-    result = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch('https://www.google.com/search?q=test')
+    result = fetch_with_dependencies('https://www.google.com/search?q=test')
 
     expect(result.warnings).not_to include('aggregator_redirect_url')
   end
@@ -645,10 +609,9 @@ RSpec.describe FetchUtil::Fetcher do
   it 'logs each fetch with duration to the request log' do
     log = instance_double(FetchUtil::RequestLog)
     allow(log).to receive(:append)
-    allow(browser).to receive(:with_page).with('https://example.com/input').and_yield(page)
-    allow(extractor).to receive(:extract).with(page).and_return(payload)
+    stub_browser_extraction('https://example.com/input', page: page, payload: payload)
 
-    described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback, request_log: log).fetch('https://example.com/input')
+    fetch_with_dependencies('https://example.com/input', request_log: log)
 
     expect(log).to have_received(:append).with('https://example.com/input', duration: a_value >= 0)
   end
@@ -659,7 +622,7 @@ RSpec.describe FetchUtil::Fetcher do
     allow(browser).to receive(:with_page).and_raise(FetchUtil::BrowserError, 'boom')
 
     expect do
-      described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback, request_log: log).fetch('https://nonexistent.example')
+      fetch_with_dependencies('https://nonexistent.example', request_log: log)
     end.to raise_error(FetchUtil::BrowserError)
 
     expect(log).to have_received(:append).with('https://nonexistent.example', duration: a_value >= 0)
