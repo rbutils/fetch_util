@@ -14,8 +14,9 @@ Use it first because it usually returns cleaner, more agent-friendly markdown th
 ## Default Rule
 
 - Use `fetch_util` first for ordinary web-page retrieval or search.
-- If `fetch_util` is installed on PATH, use the `fetch_util ...` command first from any working directory.
+- If `fetch_util` is installed on PATH, use the `fetch_util ...` command first from any working directory. It works inside any Ruby project, even ones whose Gemfile does not list fetch_util.
 - If you are developing inside the repository and want the local worktree version specifically, use `bundle exec exe/fetch_util ...` from `/srv/code/rbutils/fetch_util`.
+- Never use `bundle exec fetch_util` inside another Ruby project. Bundler restricts executable lookup to the project's Gemfile and will reject fetch_util if it is not listed there. Use bare `fetch_util ...` instead.
 - If you are running inside a delegated subagent that does not expose the `skill` tool, use the installed `fetch_util ...` CLI directly instead of falling back to built-in web fetch/search right away.
 - Use built-in `webfetch` or other web tooling only after `fetch_util` is unavailable, the target is not a normal web page, or the task needs something `fetch_util` does not provide.
 - `fetch_util` is cheap to use, so an agent can use this tool as much as it needs for normal retrieval, search, and follow-up fetches.
@@ -61,6 +62,7 @@ bundle exec exe/fetch_util search ruby language
 - use `--include-html` only when raw HTML is actually needed
 - treat `suspect` and `warnings` as signals that the page may be an interstitial, challenge, or mismatch
 - only fall back to other web tooling after `fetch_util` is unavailable or clearly insufficient
+- never prefix with `bundle exec` when running inside another Ruby project; use bare `fetch_util ...` instead
 
 ## Installation
 
