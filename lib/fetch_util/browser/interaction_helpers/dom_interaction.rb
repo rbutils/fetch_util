@@ -13,38 +13,13 @@ module FetchUtil
           safe_evaluate(page, <<~JS)
             (() => {
               const labelGroups = #{JSON.generate(groups)};
-              const queryAllRoots = (selectors) => {
-                const matches = [];
-                const queue = [document];
-                while (queue.length) {
-                  const root = queue.shift();
-                  if (!root || !root.querySelectorAll) continue;
-                  root.querySelectorAll(selectors).forEach((el) => matches.push(el));
-                  root.querySelectorAll('*').forEach((el) => {
-                    if (el.shadowRoot) queue.push(el.shadowRoot);
-                  });
-                }
-                return matches;
-              };
+              #{js_dom_helpers}
               const buttons = queryAllRoots(#{selectors.to_json});
-
-              const visible = (el) => {
-                const rect = el.getBoundingClientRect();
-                const style = window.getComputedStyle(el);
-                return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
-              };
-
-              const textFor = (el) => [el.innerText, el.textContent, el.value, el.getAttribute('aria-label'), el.getAttribute('title')]
-                .filter(Boolean)
-                .join(' ')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .toLowerCase();
 
               for (const labels of labelGroups) {
                 const allowed = new Set(labels.map((label) => String(label).toLowerCase()));
                 for (const button of buttons) {
-                  if (!visible(button) || !allowed.has(textFor(button))) continue;
+                  if (!visible(button) || !allowed.has(textFor(button).toLowerCase())) continue;
                   button.click();
                   return true;
                 }
@@ -71,34 +46,7 @@ module FetchUtil
               const config = #{JSON.generate(config)};
               const dialogPattern = new RegExp(config.dialogPattern || '', 'i');
               const closeLabelPattern = config.closeLabelPattern ? new RegExp(config.closeLabelPattern, 'i') : null;
-              const queryAllRoots = (selectors) => {
-                const matches = [];
-                const queue = [document];
-                while (queue.length) {
-                  const root = queue.shift();
-                  if (!root || !root.querySelectorAll) continue;
-                  root.querySelectorAll(selectors).forEach((el) => matches.push(el));
-                  root.querySelectorAll('*').forEach((el) => {
-                    if (el.shadowRoot) queue.push(el.shadowRoot);
-                  });
-                }
-                return matches;
-              };
-
-              const visible = (el) => {
-                const rect = el.getBoundingClientRect();
-                const style = window.getComputedStyle(el);
-                return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
-              };
-
-              const textFor = (el) => (el && (el.innerText || el.textContent || el.getAttribute('aria-label') || '') || '')
-                .replace(/\s+/g, ' ')
-                .trim();
-
-              const restoreScroll = () => {
-                if (document.body) document.body.style.overflow = 'auto';
-                if (document.documentElement) document.documentElement.style.overflow = 'auto';
-              };
+              #{js_dom_helpers}
 
               const matchingNodes = [];
               const collectMatchingNodes = (selectors, requireOverlayPrompt) => {
@@ -154,6 +102,43 @@ module FetchUtil
               if (removed) restoreScroll();
               return removed;
             })()
+          JS
+        end
+
+        def js_dom_helpers
+          <<~JS
+            const queryAllRoots = (selectors) => {
+              const matches = [];
+              const queue = [document];
+              while (queue.length) {
+                const root = queue.shift();
+                if (!root || !root.querySelectorAll) continue;
+                root.querySelectorAll(selectors).forEach((el) => matches.push(el));
+                root.querySelectorAll('*').forEach((el) => {
+                  if (el.shadowRoot) queue.push(el.shadowRoot);
+                });
+              }
+              return matches;
+            };
+
+            const visible = (el) => {
+              const rect = el.getBoundingClientRect();
+              const style = window.getComputedStyle(el);
+              return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+            };
+
+            const textFor = (el) => {
+              const values = [el.innerText, el.textContent, el.value, el.getAttribute('aria-label'), el.getAttribute('title')]
+                .filter(Boolean)
+                .map((value) => value.replace(/\\s+/g, ' ').trim())
+                .filter(Boolean);
+              return values[0] || '';
+            };
+
+            const restoreScroll = () => {
+              if (document.body) document.body.style.overflow = 'auto';
+              if (document.documentElement) document.documentElement.style.overflow = 'auto';
+            };
           JS
         end
 

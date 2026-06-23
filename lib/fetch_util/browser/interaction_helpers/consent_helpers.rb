@@ -50,19 +50,7 @@ module FetchUtil
               const pattern = /^(accept(?: all(?: cookies?)?)?|allow all(?: cookies)?|allow cookies|agree(?: to cookies| and continue| & continue)?|i agree|ok(?:ay)?|accept & continue|continue with cookies|consent|got it|i understand|continue|accept and close|close|accept recommended settings|przejdź do serwisu|zaakceptuj(?:\s+(?:wszystkie|wszystko))?|akceptuję|zgadzam się|zgoda|akzeptieren|alle akzeptieren|zustimmen|accepter (?:tout|les cookies|et continuer)|tout accepter|j'accepte|accepter|aceptar (?:todo|todas|cookies)|acepto|accetta (?:tutto|tutti)|accetto|aceitar(?:\s+(?:tudo|todos|cookies|todos os cookies))?|aceitar cookies|aceitar todos os cookies|aceitar e continuar|aceitar e fechar|aceito|accetta e continua|akkoord|ga akkoord|alles accepteren|accepteer alles|すべて受け入れる|すべて許可|同意する|同意して閉じる|쿠키 허용|모두 허용|동의하고 계속|동의|接受全部|全部接受|同意并继续|接受并继续|принять все|согласен|согласиться|souhlasím|přijmout vše|přijmout(?:\s+(?:všechny|vše))?|povolit vše|souhlasit|godkänn alla|acceptera alla|tillåt alla|jag godkänner|godkänn|accepter alle|tillad alle|jeg accepterer|acceptér|godta alle|tanggap semua|setuju|terima semua|godkjenn alle|aksepter alle|aksepter|jeg godtar|godta|accepta-ho tot|accepta|accepto|d'acord|razumem|prihvatam|прихватам|прихвати све|qəbul edirəm|ყველას მიღება|සියල්ල පිළිගන්න|පිළිගන්න|همه را بپذیرید|ተቀበል|ሁሉንም ተቀበል|allow all|confirm my choices|pokračovat|hyväksy(?:\s+kaikki)?|salli kaikki|salli evästeet|hyväksyn|priimti visus|sutinku|leisti visus|прифати(?:\s+(?:ги\s+)?сите)?|се согласувам|acceptă(?:\s+tot(?:ul)?)?|accept toate|acceptă toate|sunt de acord|pieņemt(?:\s+visus)?|piekrītu|atļaut(?:\s+visus)?|apstiprināt|elfogad(?:om)?|mindent elfogad(?:ok)?|összes elfogadása|elfogadom az összeset|hozzájárulok)(?:\s+and\s+.*)?$/i;
               const consentPattern = /(cookie|cookies|privacy|consent|gdpr|ccpa|onetrust|before you continue|we use cookies and data|device identifiers|personalized ads|personalized content|trusted third party partners?|privacy preference center|your privacy settings|your privacy choices|manage privacy preferences|manage consent preferences|cookie information|cookie list|cookies details|list of partners(?: \(vendors\))?|configurações avançadas de cookies|declaração de cookies|gerenciar cookies|utilizamos cookies|dados pessoais|pliki cookie|datenschutz|données personnelles|datos personales|dati personali|wish to store|access information on your devices|preferenze cookie|クッキー|Cookieプリファレンス|Cookie設定|同意設定|쿠키|동의|개인정보|接受|隐私设置|cookie 偏好设置|файлы cookie|настройки cookie|souhlas|personalizac|soukromí|nastavení souhlasu|kakor|sekretess|samtycke|cookies og data|privatlivs|samtykke|privatliv|personvern|informasjonskapsler|informasjonskapslar|aller media|dine data|galetes|protecció de dades|política de privadesa|ግላዊነት|ኩኪ|ኩኪዎች|pro pokračování vyberte|technické cookies|jakou formou vám máme zobrazovat obsah|evästeet|evästeasetukset|tietosuoja|yksityisyys|hyväksy evästeet|slapukai|privatumas|slapukų nustatymai|kolačinji|приватност|поставки за колачиња|cookie-uri|confidențialitate|setări cookie|protecția datelor|sīkdatnes|sīkfailus|privātums|privātuma iestatījumi|sīkdatņu iestatījumi|sütiket|adatvédelem|adatvédelmi beállítások|süti beállítások)/i;
               const containerPattern = /(cookie|consent|privacy|onetrust|cookiebot|usercentrics|trustarc|didomi|quantcast|gdpr|ccpa)/i;
-              const queryAllRoots = (selectors) => {
-                const matches = [];
-                const queue = [document];
-                while (queue.length) {
-                  const root = queue.shift();
-                  if (!root || !root.querySelectorAll) continue;
-                  root.querySelectorAll(selectors).forEach((el) => matches.push(el));
-                  root.querySelectorAll('*').forEach((el) => {
-                    if (el.shadowRoot) queue.push(el.shadowRoot);
-                  });
-                }
-                return matches;
-              };
+              #{js_dom_helpers}
               const parentOrHost = (node) => {
                 if (!node) return null;
                 if (node.parentElement) return node.parentElement;
@@ -70,20 +58,6 @@ module FetchUtil
                 return root && root.host ? root.host : null;
               };
               const candidates = queryAllRoots('button, [role="button"], a, input[type="button"], input[type="submit"]');
-
-              const visible = (el) => {
-                const rect = el.getBoundingClientRect();
-                const style = window.getComputedStyle(el);
-                return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
-              };
-
-              const textFor = (el) => {
-                const values = [el.innerText, el.textContent, el.value, el.getAttribute('aria-label'), el.getAttribute('title')]
-                  .filter(Boolean)
-                  .map((value) => value.replace(/\s+/g, ' ').trim())
-                  .filter(Boolean);
-                return values[0] || '';
-              };
 
               const consentContext = (el) => {
                 let node = el;
@@ -163,8 +137,7 @@ module FetchUtil
               }
 
               if (clicked) {
-                if (document.body) document.body.style.overflow = 'auto';
-                if (document.documentElement) document.documentElement.style.overflow = 'auto';
+                restoreScroll();
               }
 
               return clicked;

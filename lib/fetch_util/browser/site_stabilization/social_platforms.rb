@@ -7,10 +7,8 @@ module FetchUtil
         private
 
         def instagram_url?(url)
-          host = URI.parse(url).host.to_s.downcase
+          host = FetchUtil.strip_www_host(url)
           host == "instagram.com" || host.end_with?(".instagram.com")
-        rescue URI::InvalidURIError
-          false
         end
 
         def stabilize_instagram(page)
@@ -67,10 +65,8 @@ module FetchUtil
         end
 
         def facebook_url?(url)
-          host = URI.parse(url).host.to_s.downcase
+          host = FetchUtil.strip_www_host(url)
           host == "facebook.com" || host.end_with?(".facebook.com")
-        rescue URI::InvalidURIError
-          false
         end
 
         def stabilize_facebook(page)

@@ -7,10 +7,8 @@ module FetchUtil
         private
 
         def reddit_url?(url)
-          host = URI.parse(url).host.to_s.downcase
+          host = FetchUtil.strip_www_host(url)
           host == "reddit.com" || host.end_with?(".reddit.com")
-        rescue URI::InvalidURIError
-          false
         end
 
         def stabilize_reddit(page)
@@ -96,6 +94,7 @@ module FetchUtil
 
           safe_evaluate(page, <<~JS)
             (() => {
+              #{js_dom_helpers}
               let removed = false;
               document.querySelectorAll('section, div, aside, form, footer, shreddit-experience-tree').forEach((node) => {
                 const text = (node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
@@ -106,8 +105,7 @@ module FetchUtil
               });
 
               if (removed) {
-                if (document.body) document.body.style.overflow = 'auto';
-                if (document.documentElement) document.documentElement.style.overflow = 'auto';
+                restoreScroll();
               }
 
               return removed;

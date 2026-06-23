@@ -56,4 +56,14 @@ RSpec.shared_context 'extractor integration helpers' do
   ensure
     browser&.quit
   end
+
+  def extract(page, reader_mode: true)
+    FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+  end
+
+  def extract_from_url(url, html, reader_mode: true, &block)
+    with_url_page(url, html) do |page|
+      block.call(FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page))
+    end
+  end
 end
