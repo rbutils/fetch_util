@@ -78,9 +78,11 @@ module FetchUtil
         when Array
           value.map { |item| json_safe(item) }
         when Hash
-          value.each_with_object({}) do |(key, item), memo|
-            memo[json_safe(key)] = json_safe(item)
+          safe = {}
+          value.each do |key, item|
+            safe[json_safe(key)] = json_safe(item)
           end
+          safe
         else
           value
         end

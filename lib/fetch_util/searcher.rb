@@ -17,83 +17,9 @@ module FetchUtil
 
     DEFAULT_SOURCES = %w[duckduckgo google].freeze
 
-    module ResultFiltering
-      private
-
-      def search_engine_self_link?(title, url, snippet)
-        host = host_for(url)
-        path = path_for(url)
-        text = compact_text([title, snippet].compact.join(" ")).downcase
-        return false if host.nil? || host.empty?
-
-        action_text = /\b(redo search without this site|block this site from all results|go to google home|duckduckgo)\b/
-
-        if host.end_with?("duckduckgo.com")
-          return true if path == "/" && (title.casecmp?("DuckDuckGo") || action_text.match?(text))
-          return true if path.start_with?("/html") && action_text.match?(text)
-        end
-
-        if host.end_with?("google.com")
-          return true if path == "/" && action_text.match?(text)
-          return true if %w[/search /preferences /advanced_search /setprefs].include?(path)
-        end
-
-        if host.match?(/\Agoogle\.[a-z.]+\z/)
-          google_home_shell = /before you continue to google|go to google home/.match?(text) || title.casecmp?("Before you continue to Google")
-          return true if %w[/ /webhp].include?(path) && google_home_shell
-          return true if path.start_with?("/intl/") && /\bgoogle apps|about google|products\b/.match?(text)
-        end
-
-        return true if host.end_with?("search.brave.com") && path == "/search" && title.casecmp?("Brave Search")
-        return true if host.end_with?("bing.com") && path == "/search" && title.casecmp?("Bing")
-        return true if host.end_with?("ecosia.org") && path == "/search" && title.casecmp?("Ecosia")
-
-        false
-      end
-
-      def low_value_result?(title, url, snippet)
-        host = host_for(url)
-        path = path_for(url)
-        return false if host.nil? || host.empty?
-        return true if non_html_document_url?(url)
-        return true if host == "duckduckgo.com" && path == "/y.js"
-        return true if host.start_with?("translate.google.")
-
-        if host.end_with?("facebook.com")
-          return true if path.match?(%r{\A/(groups|events|watch|share|reel|photo)\b})
-          return true if title.end_with?(" - Facebook")
-          return true if title.match?(/\(@[^)]+\)/)
-          return true if snippet.to_s.match?(/\b\d+[,.\dKMB+]*\s*(followers?|likes?|members?)\b/i)
-        end
-
-        if host.include?("pinterest.")
-          return true unless path.match?(%r{\A/search/})
-          return true if title.end_with?(" - Pinterest")
-        end
-
-        return true if host.end_with?("threads.net") || host.end_with?("threads.com")
-
-        if host.end_with?("tiktok.com")
-          return true if host.start_with?("shop.")
-          return true if path.match?(%r{\A/@[^/]+/video/})
-          return true if snippet.to_s.match?(/\bAll Categories\b/i)
-        end
-
-        return true if host.end_with?("walmart.com") && path.match?(%r{\A/(search|browse|c|cp|b)\b})
-
-        false
-      end
-
-      def non_html_document_url?(url)
-        normalized = url.to_s.downcase
-        path = path_for(normalized).downcase
-
-        path.end_with?(".pdf") || path.match?(%r{/pdf(?:/|\z)}) || normalized.match?(/[?&](?:format|download)=pdf\b/)
-      end
-    end
-
-    private_constant :ResultFiltering
+    autoload :ResultFiltering, "fetch_util/searcher/result_filtering"
     include ResultFiltering
+    private_constant :ResultFiltering
 
     def initialize(fetcher: nil, request_log: RequestLog.new, sources: nil, limit: 10, concurrency: 2, verbose: false, **fetch_options)
       @request_log = request_log

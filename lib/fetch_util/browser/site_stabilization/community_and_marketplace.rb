@@ -4,11 +4,22 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module CommunityAndMarketplace
+        COOKIE_BUTTON_SELECTORS = 'button, [role="button"], a, input[type="button"], input[type="submit"]'
+        EBAY_COOKIE_ACCEPT_LABELS = [
+          "accept all",
+          "accept all cookies",
+          "accept cookies",
+          "allow all",
+          "allow cookies",
+          "agree to cookies",
+          "continue with cookies"
+        ].freeze
+        private_constant :COOKIE_BUTTON_SELECTORS, :EBAY_COOKIE_ACCEPT_LABELS
+
         private
 
         def reddit_url?(url)
-          host = FetchUtil.strip_www_host(url)
-          host == "reddit.com" || host.end_with?(".reddit.com")
+          host_matches?(url, "reddit.com")
         end
 
         def stabilize_reddit(page)
@@ -32,22 +43,13 @@ module FetchUtil
         end
 
         def stabilize_ebay_search(page)
-          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + capped_timeout(6.0)
           accepted_cookies = false
 
-          loop do
+          retry_until_timeout(capped_timeout(6.0), interval: 0.15) do
             accepted_cookies ||= click_visible_button_by_text(
               page,
-              [
-                "accept all",
-                "accept all cookies",
-                "accept cookies",
-                "allow all",
-                "allow cookies",
-                "agree to cookies",
-                "continue with cookies"
-              ],
-              selectors: 'button, [role="button"], a, input[type="button"], input[type="submit"]'
+              EBAY_COOKIE_ACCEPT_LABELS,
+              selectors: COOKIE_BUTTON_SELECTORS
             )
 
             state = safe_evaluate(page, <<~JS, default: { "itemCount" => 0, "challengeVisible" => false })
@@ -60,10 +62,7 @@ module FetchUtil
               })()
             JS
 
-            break if state["itemCount"].to_i >= 4
-            break if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-
-            sleep(state["challengeVisible"] ? 0.35 : 0.15)
+            state["itemCount"].to_i >= 4 || (state["challengeVisible"] ? 0.35 : false)
           end
 
           settle_after_stabilization(0.25) if accepted_cookies

@@ -75,13 +75,15 @@ module FetchUtil
 
       def dedupe_policy_refs(policy_refs)
         seen = {}
-        Array(policy_refs).compact.each_with_object([]) do |policy_ref, list|
+        list = []
+        Array(policy_refs).compact.each do |policy_ref|
           key = [policy_ref["url"], policy_ref["path"]]
           next if seen[key]
 
           seen[key] = true
           list << policy_ref
         end
+        list
       end
 
       def odrl_token(value)

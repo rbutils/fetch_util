@@ -40,6 +40,14 @@ RSpec.shared_context 'fetcher spec helpers' do
     allow(extractor).to receive(:extract).with(page).and_return(payload)
   end
 
+  def page_at(url)
+    instance_double('FerrumPage', current_url: url)
+  end
+
+  def payload_with(**overrides)
+    payload.merge(overrides.transform_keys(&:to_s))
+  end
+
   def stub_browser_failure(url, error_class, message)
     allow(browser).to receive(:with_page).with(url).and_raise(error_class, message)
   end

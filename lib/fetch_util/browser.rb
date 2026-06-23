@@ -126,5 +126,10 @@ module FetchUtil
         @ferrum
       end
     end
+
+    def host_matches?(url, host)
+      normalized_host = FetchUtil.strip_www_host(url)
+      normalized_host == host || normalized_host.end_with?(".#{host}")
+    end
   end
 end

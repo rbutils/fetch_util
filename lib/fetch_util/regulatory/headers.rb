@@ -4,13 +4,13 @@ module FetchUtil
   class Regulatory
     module Headers
       def extract_x_robot_signals(headers, path:)
-        headers.fetch("x-robots-tag", []).flat_map do |value|
+        header_values(headers, "x-robots-tag").flat_map do |value|
           extract_robot_directive_signals(value, path: path)
         end
       end
 
       def extract_content_usage_header_signals(headers, path:)
-        headers.fetch("content-usage", []).flat_map do |value|
+        header_values(headers, "content-usage").flat_map do |value|
           extract_content_usage_statement_signals(value, path: path)
         end
       end

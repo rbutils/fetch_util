@@ -10,10 +10,11 @@ module FetchUtil
           deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
 
           loop do
-            return true if yield
+            result = yield
+            return true if result == true
             return false if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
 
-            sleep interval
+            sleep(result.is_a?(Numeric) ? result : interval)
           end
         end
 

@@ -3,6 +3,8 @@
 require 'spec_helper'
 
 RSpec.describe FetchUtil::Browser do
+  include_context 'browser spec helpers'
+
   it 'raises when no browser executable is available' do
     browser = described_class.new(browser_path: nil)
     browser.instance_variable_set(:@browser_path, nil)
@@ -11,7 +13,7 @@ RSpec.describe FetchUtil::Browser do
   end
 
   it 'patches empty userAgentData values to a consistent browser profile' do
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     script = browser.send(:navigator_patch)
 
     expect(script).to include('uaData.brands.length === 0')
@@ -25,20 +27,15 @@ RSpec.describe FetchUtil::Browser do
     page1 = instance_double('FerrumPage1')
     page2 = instance_double('FerrumPage2')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page1, page2)
+    stub_ferrum_page_creation(ferrum, page1, page2)
 
     [page1, page2].each do |page|
-      allow(page).to receive(:headers).and_return(double(set: true))
-      allow(page).to receive(:bypass_csp)
-      allow(page).to receive(:go_to)
-      allow(page).to receive(:network).and_return(instance_double('FerrumNetwork', idle?: true))
-      allow(page).to receive(:evaluate).and_return(false)
-      allow(page).to receive(:close)
+      stub_page_navigation(page)
+      stub_page_network(page, instance_double('FerrumNetwork', idle?: true))
+      stub_page_evaluate_and_close(page, false)
     end
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
 
     results = []
     browser.with_page('https://example.com') { |p| results << p }
@@ -55,18 +52,13 @@ RSpec.describe FetchUtil::Browser do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
+    stub_ferrum_page_creation(ferrum, page)
     allow(ferrum).to receive(:quit)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(instance_double('FerrumNetwork', idle?: true))
-    allow(page).to receive(:evaluate).and_return(false)
-    allow(page).to receive(:close)
+    stub_page_navigation(page)
+    stub_page_network(page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(page, false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://example.com') {}
     browser.quit
 
@@ -74,7 +66,7 @@ RSpec.describe FetchUtil::Browser do
   end
 
   it 'is safe to call quit without any prior with_page calls' do
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect { browser.quit }.not_to raise_error
   end
 end

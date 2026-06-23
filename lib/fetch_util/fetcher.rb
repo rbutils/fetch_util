@@ -4,6 +4,30 @@ require "uri"
 
 module FetchUtil
   class Fetcher
+    HOMEPAGE_INDEX_PATTERN = Regexp.new(
+      "top stories|breaking news|latest news|headlines|" \
+      "aktuelle nachrichten|schlagzeilen|neueste nachrichten|" \
+      "à la une|dernières nouvelles|actualités|últimas noticias|" \
+      "noticias principales|notizie principali|ultime notizie|" \
+      "najnowsze wiadomości|najważniejsze|ostatnie wiadomości|aktualności|" \
+      "actualiteit|laatste nieuws|senaste nyheter|seneste nyheder|" \
+      "siste nytt|tuoreimmat uutiset|aktuálně|legfrissebb|" \
+      "cele mai noi știri|aktualności|најновије вести|останні новини|" \
+      "τελευταία νέα|güncel haberler|son dakika|senaste nyheterna|" \
+      "viktigaste nyheterna|aktualitātes|jaunākās ziņas|naujienos|" \
+      "svarbiausios naujienos|главные новости|últimas notícias|" \
+      "najnovšie správy|najnovije vijesti|derniers articles",
+      Regexp::IGNORECASE
+    ).freeze
+    DOCS_PORTAL_TITLE_PATTERN = /documentation|docs|the ultimate server/i
+    STRIPPED_QUERY_PARAM_PATTERNS = [
+      /\A(?:__goaway_|__cf_chl_)/,
+      /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
+      /\A__gr(?:sc|ts|ua|rn)\z/
+    ].freeze
+    SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
+    GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
+
     def initialize(browser: nil, extractor: nil, **options)
       @timeout = options.fetch(:timeout, 20)
       @browser = browser || Browser.new(**browser_options(options))
@@ -23,13 +47,13 @@ module FetchUtil
         build_result(url, page.current_url, payload)
       end
       fallback = docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
-      result = build_result(url, *fallback) if fallback
+      result = fallback_result(url, fallback) if fallback
       log_request(url, t0)
       result
     rescue BrowserError, ExtractionError => e
       fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
       if fallback
-        result = build_result(url, *fallback)
+        result = fallback_result(url, fallback)
         log_request(url, t0)
         return result
       end
@@ -117,25 +141,13 @@ module FetchUtil
 
     def homepage_index_markdown?(title, markdown)
       snippet = [title, markdown].compact.join(" ")
-      return false unless snippet.match?(
-        Regexp.new(
-          "top stories|breaking news|latest news|headlines|" \
-          "aktuelle nachrichten|schlagzeilen|neueste nachrichten|" \
-          "à la une|dernières nouvelles|actualités|últimas noticias|" \
-          "noticias principales|notizie principali|ultime notizie|" \
-          "najnowsze wiadomości|najważniejsze|ostatnie wiadomości|aktualności|" \
-          "actualiteit|laatste nieuws|senaste nyheter|seneste nyheder|" \
-          "siste nytt|tuoreimmat uutiset|aktuálně|legfrissebb|" \
-          "cele mai noi știri|aktualności|најновије вести|останні новини|" \
-          "τελευταία νέα|güncel haberler|son dakika|senaste nyheterna|" \
-          "viktigaste nyheterna|aktualitātes|jaunākās ziņas|naujienos|" \
-          "svarbiausios naujienos|главные новости|últimas notícias|" \
-          "najnovšie správy|najnovije vijesti|derniers articles",
-          Regexp::IGNORECASE
-        )
-      )
+      return false unless snippet.match?(HOMEPAGE_INDEX_PATTERN)
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
+    end
+
+    def fallback_result(url, fallback)
+      build_result(url, *fallback)
     end
 
     def docs_fallback_candidate?(requested_url, result = nil)
@@ -168,8 +180,8 @@ module FetchUtil
 
       return true if result.warnings.include?("not_found_interstitial") || result.warnings.include?("empty_extraction") || result.warnings.include?("short_extraction")
       return true if markdown.include?("Interstitial: requested page is unavailable")
-      return true if text_length < 160 && title.match?(/documentation|docs|the ultimate server/i)
-      return true if title.match?(/documentation|docs|the ultimate server/i) && markdown.scan(/^# /).length >= 2
+      return true if text_length < 160 && title.match?(DOCS_PORTAL_TITLE_PATTERN)
+      return true if title.match?(DOCS_PORTAL_TITLE_PATTERN) && markdown.scan(/^# /).length >= 2
 
       false
     end
@@ -179,7 +191,7 @@ module FetchUtil
       parts = host.split(".")
       return host if parts.length <= 2
 
-      if parts.length >= 3 && parts[-2].match?(/\A(co|com|org|net|gov|edu|ac)\z/) && parts[-1].length == 2
+      if parts.length >= 3 && parts[-2].match?(SECOND_LEVEL_COUNTRY_TLDS) && parts[-1].length == 2
         parts.last(3).join(".")
       else
         parts.last(2).join(".")
@@ -208,7 +220,7 @@ module FetchUtil
 
       return true if host == "cdn.ampproject.org" || host.end_with?(".cdn.ampproject.org")
 
-      return true if host.match?(/\Agoogle\.[a-z.]+\z/) && path == "/url"
+      return true if host.match?(GOOGLE_HOST_PATTERN) && path == "/url"
 
       false
     rescue URI::InvalidURIError
@@ -220,11 +232,7 @@ module FetchUtil
 
       uri = URI.parse(url)
       params = URI.decode_www_form(uri.query.to_s)
-      params.reject! do |key, _value|
-        key.match?(/\A(?:__goaway_|__cf_chl_)/) ||
-          key.match?(/\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/) ||
-          key.match?(/\A__gr(?:sc|ts|ua|rn)\z/)
-      end
+      params.reject! { |key, _value| STRIPPED_QUERY_PARAM_PATTERNS.any? { |pattern| key.match?(pattern) } }
       uri.query = params.empty? ? nil : URI.encode_www_form(params)
       uri.to_s
     rescue URI::InvalidURIError

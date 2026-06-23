@@ -4,11 +4,30 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module SocialPlatforms
+        COOKIE_BUTTON_SELECTORS = 'button, [role="button"], a, input[type="button"], input[type="submit"]'
+        INSTAGRAM_COOKIE_ACCEPT_LABELS = ["accept", "accept all", "accept all cookies"].freeze
+        INSTAGRAM_COOKIE_FALLBACK_LABELS = ["allow all cookies", "allow all", "allow cookies"].freeze
+        FACEBOOK_COOKIE_DECLINE_LABELS = [
+          "decline optional cookies",
+          "optionale cookies ablehnen",
+          "refuser les cookies optionnels",
+          "rechazar cookies opcionales",
+          "rifiuta i cookie opzionali"
+        ].freeze
+        FACEBOOK_COOKIE_ACCEPT_LABELS = [
+          "allow all cookies",
+          "alle cookies erlauben",
+          "autoriser tous les cookies",
+          "permitir todas las cookies",
+          "consenti tutti i cookie"
+        ].freeze
+        private_constant :COOKIE_BUTTON_SELECTORS, :INSTAGRAM_COOKIE_ACCEPT_LABELS, :INSTAGRAM_COOKIE_FALLBACK_LABELS,
+                         :FACEBOOK_COOKIE_DECLINE_LABELS, :FACEBOOK_COOKIE_ACCEPT_LABELS
+
         private
 
         def instagram_url?(url)
-          host = FetchUtil.strip_www_host(url)
-          host == "instagram.com" || host.end_with?(".instagram.com")
+          host_matches?(url, "instagram.com")
         end
 
         def stabilize_instagram(page)
@@ -24,9 +43,9 @@ module FetchUtil
         def accept_instagram_cookie_dialog(page)
           click_visible_button_by_text(
             page,
-            ["accept", "accept all", "accept all cookies"],
-            ["allow all cookies", "allow all", "allow cookies"],
-            selectors: 'button, [role="button"], a, input[type="button"], input[type="submit"]'
+            INSTAGRAM_COOKIE_ACCEPT_LABELS,
+            INSTAGRAM_COOKIE_FALLBACK_LABELS,
+            selectors: COOKIE_BUTTON_SELECTORS
           )
         end
 
@@ -65,8 +84,7 @@ module FetchUtil
         end
 
         def facebook_url?(url)
-          host = FetchUtil.strip_www_host(url)
-          host == "facebook.com" || host.end_with?(".facebook.com")
+          host_matches?(url, "facebook.com")
         end
 
         def stabilize_facebook(page)
@@ -81,20 +99,8 @@ module FetchUtil
         def dismiss_facebook_cookie_dialog(page)
           click_visible_button_by_text(
             page,
-            [
-              "decline optional cookies",
-              "optionale cookies ablehnen",
-              "refuser les cookies optionnels",
-              "rechazar cookies opcionales",
-              "rifiuta i cookie opzionali"
-            ],
-            [
-              "allow all cookies",
-              "alle cookies erlauben",
-              "autoriser tous les cookies",
-              "permitir todas las cookies",
-              "consenti tutti i cookie"
-            ]
+            FACEBOOK_COOKIE_DECLINE_LABELS,
+            FACEBOOK_COOKIE_ACCEPT_LABELS
           )
         end
 

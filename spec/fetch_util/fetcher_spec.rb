@@ -36,11 +36,11 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'surfaces extractor mismatch warnings as suspect' do
-    mismatched_payload = payload.merge(
-      'title' => 'returning multiple values in python',
-      'markdown' => 'A python question about map reduce.',
-      'excerpt' => 'A python question',
-      'warnings' => ['url_content_mismatch']
+    mismatched_payload = payload_with(
+      title: 'returning multiple values in python',
+      markdown: 'A python question about map reduce.',
+      excerpt: 'A python question',
+      warnings: ['url_content_mismatch']
     )
 
     stub_browser_extraction(
@@ -55,12 +55,12 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not recompute url mismatches that the extractor did not emit' do
-    so_page = instance_double('FerrumPage', current_url: 'https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
-    mismatched_payload = payload.merge(
-      'title' => 'returning multiple values in python',
-      'markdown' => 'A python question about map reduce.',
-      'excerpt' => 'A python question',
-      'warnings' => []
+    so_page = page_at('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
+    mismatched_payload = payload_with(
+      title: 'returning multiple values in python',
+      markdown: 'A python question about map reduce.',
+      excerpt: 'A python question',
+      warnings: []
     )
 
     stub_browser_extraction(
@@ -75,12 +75,12 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not flag docs reference pages as url mismatches' do
-    docs_page = instance_double('FerrumPage', current_url: 'https://developers.openai.com/api/reference/resources/chat')
-    docs_payload = payload.merge(
-      'title' => 'Chat',
-      'markdown' => "# Chat\n\nGiven a list of messages comprising a conversation, the model will return a response.",
-      'contentType' => 'article',
-      'warnings' => []
+    docs_page = page_at('https://developers.openai.com/api/reference/resources/chat')
+    docs_payload = payload_with(
+      title: 'Chat',
+      markdown: "# Chat\n\nGiven a list of messages comprising a conversation, the model will return a response.",
+      contentType: 'article',
+      warnings: []
     )
 
     stub_browser_extraction('https://developers.openai.com/api/reference/resources/chat', page: docs_page, payload: docs_payload)
@@ -91,11 +91,11 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not flag structured docs articles as url mismatches even when url terms differ from section titles' do
-    docs_page = instance_double('FerrumPage', current_url: 'https://pinia.vuejs.org/core-concepts/')
-    docs_payload = payload.merge(
-      'title' => 'Defining a Store',
-      'excerpt' => 'Intuitive, type safe, light and flexible Store for Vue',
-      'markdown' => <<~MARKDOWN.chomp,
+    docs_page = page_at('https://pinia.vuejs.org/core-concepts/')
+    docs_payload = payload_with(
+      title: 'Defining a Store',
+      excerpt: 'Intuitive, type safe, light and flexible Store for Vue',
+      markdown: <<~MARKDOWN.chomp,
         # Defining a Store
 
         Intuitive, type safe, light and flexible Store for Vue.
@@ -108,8 +108,8 @@ RSpec.describe FetchUtil::Fetcher do
         export const useStore = defineStore('main', () => {})
         ```
       MARKDOWN
-      'contentType' => 'article',
-      'warnings' => []
+      contentType: 'article',
+      warnings: []
     )
 
     stub_browser_extraction('https://pinia.vuejs.org/core-concepts/', page: docs_page, payload: docs_payload)
@@ -120,12 +120,12 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not flag ncbi books reference pages as url mismatches' do
-    docs_page = instance_double('FerrumPage', current_url: 'https://www.ncbi.nlm.nih.gov/books/NBK553156/')
-    docs_payload = payload.merge(
-      'title' => 'Intra-abdominal and Pelvic Swellings',
-      'markdown' => "# Intra-abdominal and Pelvic Swellings\n\nThe diagnosis of abdominal swellings follows careful clinical evaluation.",
-      'contentType' => 'article',
-      'warnings' => []
+    docs_page = page_at('https://www.ncbi.nlm.nih.gov/books/NBK553156/')
+    docs_payload = payload_with(
+      title: 'Intra-abdominal and Pelvic Swellings',
+      markdown: "# Intra-abdominal and Pelvic Swellings\n\nThe diagnosis of abdominal swellings follows careful clinical evaluation.",
+      contentType: 'article',
+      warnings: []
     )
 
     stub_browser_extraction('https://www.ncbi.nlm.nih.gov/books/NBK553156/', page: docs_page, payload: docs_payload)
@@ -136,17 +136,17 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not flag query-driven dictionary translation pages as url mismatches' do
-    glossary_page = instance_double('FerrumPage', current_url: 'https://www.diki.pl/slownik-angielskiego?q=whores')
-    glossary_payload = payload.merge(
-      'title' => 'whore potocznie *',
-      'excerpt' => 'whore - tlumaczenie na polski oraz definicja. Co znaczy i jak powiedziec whore po polsku? - zdzira, dziwka, kurwa; prostytutka',
-      'markdown' => <<~MARKDOWN.chomp,
+    glossary_page = page_at('https://www.diki.pl/slownik-angielskiego?q=whores')
+    glossary_payload = payload_with(
+      title: 'whore potocznie *',
+      excerpt: 'whore - tlumaczenie na polski oraz definicja. Co znaczy i jak powiedziec whore po polsku? - zdzira, dziwka, kurwa; prostytutka',
+      markdown: <<~MARKDOWN.chomp,
         # whore potocznie *
 
         whore - tlumaczenie na polski oraz definicja. Co znaczy i jak powiedziec whore po polsku? - zdzira, dziwka, kurwa; prostytutka
       MARKDOWN
-      'contentType' => 'article',
-      'warnings' => []
+      contentType: 'article',
+      warnings: []
     )
 
     stub_browser_extraction('https://www.diki.pl/slownik-angielskiego?q=whores', page: glossary_page, payload: glossary_payload)
@@ -157,13 +157,13 @@ RSpec.describe FetchUtil::Fetcher do
   end
 
   it 'does not flag substantial non-latin article content as a url mismatch' do
-    page = instance_double('FerrumPage', current_url: 'https://example.com/final')
-    cjk_payload = payload.merge(
-      'language' => 'zh-CN',
-      'title' => '推进中国式现代化',
-      'excerpt' => '理论研究持续深化。',
-      'markdown' => '# 推进中国式现代化\n\n建设哲学社会科学体系，推进中国式现代化理论研究不断深化，形成更多高质量成果。文化传承与创新协同推进，教育改革持续展开。',
-      'warnings' => []
+    page = page_at('https://example.com/final')
+    cjk_payload = payload_with(
+      language: 'zh-CN',
+      title: '推进中国式现代化',
+      excerpt: '理论研究持续深化。',
+      markdown: '# 推进中国式现代化\n\n建设哲学社会科学体系，推进中国式现代化理论研究不断深化，形成更多高质量成果。文化传承与创新协同推进，教育改革持续展开。',
+      warnings: []
     )
 
     stub_browser_extraction('https://www.cssn.cn/skgz/bwyc/202412/t20241225_5826232.shtml', page: page, payload: cjk_payload)

@@ -75,6 +75,10 @@ module FetchUtil
         Array(headers[name]).first.to_s.strip
       end
 
+      def header_values(headers, name)
+        headers.fetch(name, [])
+      end
+
       def html_content?(headers, body)
         content_type = first_header_value(headers, "content-type")
         return true if content_type.include?("text/html") || content_type.include?("application/xhtml+xml")
@@ -84,9 +88,11 @@ module FetchUtil
 
       def parse_meta_tags(body)
         body.to_s.scan(/<meta\b[^>]*>/im).map do |tag|
-          tag.scan(/([A-Za-z_:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/).each_with_object({}) do |(name, quoted, single, bare), attributes|
+          attributes = {}
+          tag.scan(/([A-Za-z_:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/).each do |name, quoted, single, bare|
             attributes[name.downcase] = CGI.unescapeHTML(quoted || single || bare || "")
           end
+          attributes
         end
       end
 

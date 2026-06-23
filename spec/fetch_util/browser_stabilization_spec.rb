@@ -3,24 +3,20 @@
 require 'spec_helper'
 
 RSpec.describe FetchUtil::Browser do
+  include_context 'browser spec helpers'
+
   it 'uses fast reddit stabilization instead of idle waits and cookie clicks' do
     network = instance_double('FerrumNetwork')
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:wait_for_idle)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, wait_for_idle: true)
     allow(page).to receive(:at_xpath).and_return(nil)
-    allow(page).to receive(:evaluate).and_return(true)
-    allow(page).to receive(:close)
+    stub_page_evaluate_and_close(page, true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://www.reddit.com/r/ruby/comments/1') {}
 
     expect(network).not_to have_received(:wait_for_idle)
@@ -32,18 +28,12 @@ RSpec.describe FetchUtil::Browser do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:wait_for_idle)
-    allow(page).to receive(:evaluate).and_return({ 'clicked' => false, 'itemCount' => 4, 'challengeVisible' => false })
-    allow(page).to receive(:close)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, wait_for_idle: true)
+    stub_page_evaluate_and_close(page, { 'clicked' => false, 'itemCount' => 4, 'challengeVisible' => false })
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://www.ebay.com/sch/i.html?_nkw=ruby+programming') {}
 
     expect(network).not_to have_received(:wait_for_idle)
@@ -54,7 +44,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:dismiss_reddit_cookie_dialog, page)).to eq(true)
 
     expect(page).to have_received(:evaluate).with(include('before you continue to reddit'))
@@ -71,7 +61,7 @@ RSpec.describe FetchUtil::Browser do
       end
     end
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     browser.send(:stabilize_ebay_search, page)
 
     expect(page).to have_received(:evaluate).with(include('accept all cookies'))
@@ -82,7 +72,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:dismiss_facebook_cookie_dialog, page)).to eq(true)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -95,7 +85,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:dismiss_instagram_login_modal, page)).to eq(true)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -111,7 +101,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_instagram_cookie_dialog, page)).to eq(true)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -121,7 +111,7 @@ RSpec.describe FetchUtil::Browser do
   end
 
   it 'uses a fixed post-overlay pause when wait is zero' do
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     allow(browser).to receive(:sleep)
 
     browser.send(:social_login_phase_pause)
@@ -130,7 +120,7 @@ RSpec.describe FetchUtil::Browser do
   end
 
   it 'reuses the shared settling helper for post-overlay pauses when wait is positive' do
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0.75)
+    browser = browser_without_idle(wait: 0.75)
     allow(browser).to receive(:settle_after_stabilization)
 
     browser.send(:social_login_phase_pause)
@@ -140,7 +130,7 @@ RSpec.describe FetchUtil::Browser do
 
   it 'uses the shared post-overlay pause sequence for instagram stabilization' do
     page = instance_double(Ferrum::Browser)
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
 
     expect(browser).to receive(:wait_for_idle_or_content).with(page).ordered
     expect(browser).to receive(:accept_instagram_cookie_dialog).with(page).ordered.and_return(true)
@@ -156,7 +146,7 @@ RSpec.describe FetchUtil::Browser do
 
   it 'uses the shared post-overlay pause sequence for facebook stabilization' do
     page = instance_double(Ferrum::Browser)
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
 
     expect(browser).to receive(:wait_for_idle_or_content).with(page).ordered
     expect(browser).to receive(:social_login_phase_pause).ordered

@@ -3,24 +3,19 @@
 require 'spec_helper'
 
 RSpec.describe FetchUtil::Browser do
+  include_context 'browser spec helpers'
+
   it 'accepts visible cookie prompts by default before yielding' do
     network = instance_double('FerrumNetwork')
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:idle?).and_return(true)
-    allow(network).to receive(:wait_for_idle)
-    allow(page).to receive(:evaluate).and_return(true)
-    allow(page).to receive(:close)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, idle: true, wait_for_idle: true)
+    stub_page_evaluate_and_close(page, true)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     yielded = nil
 
     browser.with_page('https://example.com') { |result| yielded = result }
@@ -35,19 +30,12 @@ RSpec.describe FetchUtil::Browser do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:idle?).and_return(true)
-    allow(network).to receive(:wait_for_idle)
-    allow(page).to receive(:evaluate).and_return(false)
-    allow(page).to receive(:close)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, idle: true, wait_for_idle: true)
+    stub_page_evaluate_and_close(page, false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://example.com') {}
 
     expect(network).not_to have_received(:wait_for_idle)
@@ -56,7 +44,7 @@ RSpec.describe FetchUtil::Browser do
   it 'retries cookie acceptance after spa hydration on generic pages' do
     network = instance_double('FerrumNetwork')
     page = instance_double(Ferrum::Browser, network: network)
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
 
     allow(browser).to receive(:wait_for_idle_or_content).and_return(true)
     allow(browser).to receive(:preserve_consent_wall?).and_return(false)
@@ -76,7 +64,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -93,7 +81,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -107,7 +95,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -120,7 +108,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -134,7 +122,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -148,7 +136,7 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
     expect(browser.send(:accept_cookie_consent, page)).to eq(false)
 
     expect(page).to have_received(:evaluate) do |script|
@@ -161,7 +149,7 @@ RSpec.describe FetchUtil::Browser do
 
   it 'tries common privacy-preference action labels when a privacy overlay is present' do
     page = instance_double(Ferrum::Browser)
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0)
+    browser = browser_without_idle
 
     allow(browser).to receive(:safe_evaluate).and_return(true)
     allow(browser).to receive(:click_visible_button_by_text).and_return(true)
@@ -180,15 +168,9 @@ RSpec.describe FetchUtil::Browser do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:idle?).and_return(true)
-    allow(network).to receive(:wait_for_idle)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, idle: true, wait_for_idle: true)
     allow(page).to receive(:close)
     allow(page).to receive(:evaluate) do |script|
       if script.include?('title: document.title')
@@ -201,7 +183,7 @@ RSpec.describe FetchUtil::Browser do
       end
     end
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://www.google.com/webhp?hl=en') {}
 
     expect(network).not_to have_received(:wait_for_idle)
@@ -212,19 +194,13 @@ RSpec.describe FetchUtil::Browser do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
-    allow(Ferrum::Browser).to receive(:new).and_return(ferrum)
-    allow(ferrum).to receive(:evaluate_on_new_document)
-    allow(ferrum).to receive(:create_page).and_return(page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to)
-    allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:idle?).and_return(true)
-    allow(network).to receive(:wait_for_idle)
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    stub_page_network(page, network, idle: true, wait_for_idle: true)
     allow(page).to receive(:evaluate).and_raise(Ferrum::TimeoutError)
     allow(page).to receive(:close)
 
-    browser = described_class.new(browser_path: '/usr/bin/chromium', wait: 0, wait_for_idle: true)
+    browser = browser_with_idle
     browser.with_page('https://example.com') {}
 
     expect(network).not_to have_received(:wait_for_idle)

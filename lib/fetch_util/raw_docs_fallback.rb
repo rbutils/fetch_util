@@ -13,6 +13,7 @@ module FetchUtil
     }.freeze
 
     BLOCK_ELEMENTS = %w[h1 h2 h3 h4 h5 h6 p pre ul ol li table tr].freeze
+    BLOCK_SELECTOR = BLOCK_ELEMENTS.join(", ").freeze
     DROP_SELECTORS = [
       "script",
       "style",
@@ -27,6 +28,15 @@ module FetchUtil
       ".copybutton",
       "button"
     ].freeze
+    DOCS_ROOT_SELECTORS = [
+      "main article",
+      "main",
+      "article",
+      "[role='main']",
+      ".content",
+      ".resource-container"
+    ].freeze
+    PRUNED_TEXT_PATTERN = /\A(?:on this page|table of contents|edit this page|copy page|copy item path|search|settings|help|expand description)\z/i
 
     def initialize(timeout: 20)
       @timeout = timeout.to_i
@@ -139,16 +149,7 @@ module FetchUtil
     end
 
     def docs_root(document)
-      selectors = [
-        "main article",
-        "main",
-        "article",
-        "[role='main']",
-        ".content",
-        ".resource-container"
-      ]
-
-      selectors.each do |selector|
+      DOCS_ROOT_SELECTORS.each do |selector|
         node = document.at_css(selector)
         return node.dup if node && clean_text(node.text).length >= 120
       end
@@ -161,7 +162,7 @@ module FetchUtil
       DROP_SELECTORS.each { |selector| root.css(selector).remove }
       root.css("*").each do |node|
         text = clean_text(node.text)
-        node.remove if text.match?(/\A(?:on this page|table of contents|edit this page|copy page|copy item path|search|settings|help|expand description)\z/i)
+        node.remove if text.match?(PRUNED_TEXT_PATTERN)
       end
     end
 
@@ -179,7 +180,7 @@ module FetchUtil
 
     def markdown_from_root(root, title)
       sections = []
-      root.css(BLOCK_ELEMENTS.join(", ")).each do |node|
+      root.css(BLOCK_SELECTOR).each do |node|
         text = clean_text(node.text)
         next if text.empty?
 
