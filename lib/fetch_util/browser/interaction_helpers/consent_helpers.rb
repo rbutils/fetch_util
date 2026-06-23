@@ -5,35 +5,46 @@ module FetchUtil
     module InteractionHelpers
       # rubocop:disable Metrics/ModuleLength
       module ConsentHelpers
+        CONSENT_ACTION_LABELS = [
+          "Accept All", "Allow all", "Confirm My Choices", "Save preferences", "Customize Choices",
+          "Alle akzeptieren", "Alles akzeptieren", "Alle zulassen",
+          "Tout accepter", "Accepter tout", "Autoriser tout",
+          "Aceptar todo", "Aceptar todas",
+          "Accetta tutto", "Accetta tutti",
+          "Aceitar tudo", "Aceitar todos", "Aceitar todos os cookies",
+          "Alles accepteren", "Accepteer alles",
+          "Godta alle", "Aksepter alle", "Godkjenn alle",
+          "Acceptera alla", "Godkänn alla", "Tillåt alla",
+          "Accepter alle", "Tillad alle",
+          "Hyväksy kaikki", "Salli kaikki",
+          "Priimti visus", "Leisti visus",
+          "Pieņemt visus", "Atļaut visus",
+          "Přijmout vše", "Povolit vše",
+          "Zaakceptuj wszystkie", "Akceptuję",
+          "Mindent elfogadok", "Összes elfogadása", "Elfogadom",
+          "Acceptă tot", "Acceptă toate",
+          "Прифати сите", "Прихвати све",
+          "すべて受け入れる", "すべて許可",
+          "모두 허용", "全部接受"
+        ].freeze
+        CONSENT_FALLBACK_LABELS = [
+          "Essential only", "Reject All",
+          "Alle ablehnen", "Tout refuser", "Rechazar todo",
+          "Rifiuta tutto", "Rejeitar tudo", "Alles weigeren",
+          "Avvis alle", "Avvisa alla", "Afvis alle",
+          "Hylkää kaikki", "Atmesti visus", "Noraidīt visus",
+          "Odmítnout vše", "Odrzuć wszystkie",
+          "Összes elutasítása", "Respinge tot",
+          "Одбиј ги сите", "Одбиј све"
+        ].freeze
+        private_constant :CONSENT_ACTION_LABELS, :CONSENT_FALLBACK_LABELS
+
         private
 
         def accept_cookie_consent(page)
           safe_evaluate(page, <<~JS)
             (() => {
-              // Fast pre-check: skip expensive DOM scan when no consent indicators exist.
-              // On large pages (e.g. 89K DOM elements), the full scan can take 90+ seconds
-              // due to innerText calls on huge parent containers forcing layout reflows.
-              // Only check CMP-specific selectors, not generic patterns like
-              // [id*="consent" i] which false-positive on API docs with "consent"
-              // in operation IDs (e.g. Allegro's /allegro-prices-offer-consents).
-              const quickIndicator = document.querySelector(
-                '[id*="onetrust" i], [class*="onetrust" i], ' +
-                '[id*="cookiebot" i], [class*="cookiebot" i], ' +
-                '[id*="usercentrics" i], [class*="usercentrics" i], ' +
-                '[id*="trustarc" i], [class*="trustarc" i], ' +
-                '[id*="didomi" i], [class*="didomi" i], ' +
-                '[id*="quantcast" i], [class*="quantcast" i], ' +
-                '[id*="cookie-consent" i], [class*="cookie-consent" i], ' +
-                '[id*="cookie_consent" i], [class*="cookie_consent" i], ' +
-                '[id*="cookieconsent" i], [class*="cookieconsent" i], ' +
-                '[id*="cookie-banner" i], [class*="cookie-banner" i], ' +
-                '[id*="cookie_banner" i], [class*="cookie_banner" i], ' +
-                '[id*="cookie-notice" i], [class*="cookie-notice" i], ' +
-                '[id*="gdpr" i], [class*="gdpr" i], ' +
-                '[id*="ccpa" i], [class*="ccpa" i], ' +
-                '[id*="privacy-banner" i], [class*="privacy-banner" i], ' +
-                '[id*="privacy_banner" i], [class*="privacy_banner" i]'
-              );
+              const quickIndicator = document.querySelector(#{consent_quick_indicator_selector_js});
               const bodyPreview = ((document.body && (document.body.textContent || document.body.innerText)) || '')
                 .replace(/\s+/g, ' ')
                 .trim()
@@ -83,22 +94,13 @@ module FetchUtil
                 clicked = true;
               }
 
-              // Fallback: some sites use bare <div> or <span> as consent buttons without
-              // role="button" (e.g. TVP Info's div.tvp-covl__ab). Scan only inside known
-              // consent overlay containers to keep the search scoped and fast.
               if (!clicked) {
-                const consentContainerSel =
-                  '[id*="cookie" i], [class*="cookie" i], ' +
-                  '[id*="consent" i], [class*="consent" i], ' +
-                  '[id*="privacy" i], [class*="privacy" i], ' +
-                  '[id*="gdpr" i], [class*="gdpr" i], ' +
-                  '[id*="ccpa" i], [class*="ccpa" i]';
+                const consentContainerSel = #{consent_container_selector_js};
                 for (const container of queryAllRoots(consentContainerSel)) {
                   if (!visible(container)) continue;
                   for (const el of container.querySelectorAll('div, span')) {
                     const text = textFor(el);
                     if (!text || !visible(el) || !pattern.test(text)) continue;
-                    // Avoid clicking large containers — accept buttons have short text.
                     if (text.length > 120) continue;
                     el.click();
                     clicked = true;
@@ -115,18 +117,7 @@ module FetchUtil
                 clicked = true;
               }
 
-              const consentOverlaySelector =
-                '[id*="cookie" i], [class*="cookie" i], ' +
-                '[id*="consent" i], [class*="consent" i], ' +
-                '[id*="privacy" i], [class*="privacy" i], ' +
-                '[id*="gdpr" i], [class*="gdpr" i], ' +
-                '[id*="ccpa" i], [class*="ccpa" i], ' +
-                '[id*="onetrust" i], [class*="onetrust" i], ' +
-                '[id*="cookiebot" i], [class*="cookiebot" i], ' +
-                '[id*="usercentrics" i], [class*="usercentrics" i], ' +
-                '[id*="trustarc" i], [class*="trustarc" i], ' +
-                '[id*="didomi" i], [class*="didomi" i], ' +
-                '[id*="quantcast" i], [class*="quantcast" i]';
+              const consentOverlaySelector = #{consent_overlay_selector_js};
               for (const el of queryAllRoots(consentOverlaySelector)) {
                 if (el.matches('[role="dialog"], [aria-modal="true"], dialog')) continue;
                 const style = window.getComputedStyle(el);
@@ -171,40 +162,60 @@ module FetchUtil
 
           click_visible_button_by_text(
             page,
-            [
-              "Accept All", "Allow all", "Confirm My Choices", "Save preferences", "Customize Choices",
-              "Alle akzeptieren", "Alles akzeptieren", "Alle zulassen",
-              "Tout accepter", "Accepter tout", "Autoriser tout",
-              "Aceptar todo", "Aceptar todas",
-              "Accetta tutto", "Accetta tutti",
-              "Aceitar tudo", "Aceitar todos", "Aceitar todos os cookies",
-              "Alles accepteren", "Accepteer alles",
-              "Godta alle", "Aksepter alle", "Godkjenn alle",
-              "Acceptera alla", "Godkänn alla", "Tillåt alla",
-              "Accepter alle", "Tillad alle",
-              "Hyväksy kaikki", "Salli kaikki",
-              "Priimti visus", "Leisti visus",
-              "Pieņemt visus", "Atļaut visus",
-              "Přijmout vše", "Povolit vše",
-              "Zaakceptuj wszystkie", "Akceptuję",
-              "Mindent elfogadok", "Összes elfogadása", "Elfogadom",
-              "Acceptă tot", "Acceptă toate",
-              "Прифати сите", "Прихвати све",
-              "すべて受け入れる", "すべて許可",
-              "모두 허용", "全部接受"
-            ],
-            [
-              "Essential only", "Reject All",
-              "Alle ablehnen", "Tout refuser", "Rechazar todo",
-              "Rifiuta tutto", "Rejeitar tudo", "Alles weigeren",
-              "Avvis alle", "Avvisa alla", "Afvis alle",
-              "Hylkää kaikki", "Atmesti visus", "Noraidīt visus",
-              "Odmítnout vše", "Odrzuć wszystkie",
-              "Összes elutasítása", "Respinge tot",
-              "Одбиј ги сите", "Одбиј све"
-            ],
+            CONSENT_ACTION_LABELS,
+            CONSENT_FALLBACK_LABELS,
             selectors: 'button, [role="button"], a, input[type="button"], input[type="submit"]'
           )
+        end
+
+        def consent_quick_indicator_selector_js
+          selector = <<~JS
+            [id*="onetrust" i], [class*="onetrust" i],
+            [id*="cookiebot" i], [class*="cookiebot" i],
+            [id*="usercentrics" i], [class*="usercentrics" i],
+            [id*="trustarc" i], [class*="trustarc" i],
+            [id*="didomi" i], [class*="didomi" i],
+            [id*="quantcast" i], [class*="quantcast" i],
+            [id*="cookie-consent" i], [class*="cookie-consent" i],
+            [id*="cookie_consent" i], [class*="cookie_consent" i],
+            [id*="cookieconsent" i], [class*="cookieconsent" i],
+            [id*="cookie-banner" i], [class*="cookie-banner" i],
+            [id*="cookie_banner" i], [class*="cookie_banner" i],
+            [id*="cookie-notice" i], [class*="cookie-notice" i],
+            [id*="gdpr" i], [class*="gdpr" i],
+            [id*="ccpa" i], [class*="ccpa" i],
+            [id*="privacy-banner" i], [class*="privacy-banner" i],
+            [id*="privacy_banner" i], [class*="privacy_banner" i]
+          JS
+          selector.gsub(/\s+/, " ").strip.inspect
+        end
+
+        def consent_container_selector_js
+          selector = <<~JS
+            [id*="cookie" i], [class*="cookie" i],
+            [id*="consent" i], [class*="consent" i],
+            [id*="privacy" i], [class*="privacy" i],
+            [id*="gdpr" i], [class*="gdpr" i],
+            [id*="ccpa" i], [class*="ccpa" i]
+          JS
+          selector.gsub(/\s+/, " ").strip.inspect
+        end
+
+        def consent_overlay_selector_js
+          selector = <<~JS
+            [id*="cookie" i], [class*="cookie" i],
+            [id*="consent" i], [class*="consent" i],
+            [id*="privacy" i], [class*="privacy" i],
+            [id*="gdpr" i], [class*="gdpr" i],
+            [id*="ccpa" i], [class*="ccpa" i],
+            [id*="onetrust" i], [class*="onetrust" i],
+            [id*="cookiebot" i], [class*="cookiebot" i],
+            [id*="usercentrics" i], [class*="usercentrics" i],
+            [id*="trustarc" i], [class*="trustarc" i],
+            [id*="didomi" i], [class*="didomi" i],
+            [id*="quantcast" i]
+          JS
+          selector.gsub(/\s+/, " ").strip.inspect
         end
       end
       # rubocop:enable Metrics/ModuleLength

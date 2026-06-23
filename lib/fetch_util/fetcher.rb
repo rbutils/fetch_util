@@ -12,8 +12,6 @@ module FetchUtil
       @request_log = options[:request_log]
     end
 
-    # Shut down the underlying browser process. Delegates to +Browser#quit+.
-    # Safe to call multiple times.
     def quit
       @browser.quit
     end
@@ -119,7 +117,6 @@ module FetchUtil
 
     def homepage_index_markdown?(title, markdown)
       snippet = [title, markdown].compact.join(" ")
-      # Multilingual homepage indicator phrases
       return false unless snippet.match?(
         Regexp.new(
           "top stories|breaking news|latest news|headlines|" \
@@ -177,15 +174,11 @@ module FetchUtil
       false
     end
 
-    # Extract the registrable domain (eTLD+1 approximation) from a URL.
-    # Strips www. prefix and returns the last two dot-separated labels
-    # (or three when the second-level label is a known country ccTLD part like co.uk).
     def effective_domain(url)
       host = FetchUtil.strip_www_host(url)
       parts = host.split(".")
       return host if parts.length <= 2
 
-      # Handle common two-part TLDs: co.uk, com.au, co.jp, com.br, etc.
       if parts.length >= 3 && parts[-2].match?(/\A(co|com|org|net|gov|edu|ac)\z/) && parts[-1].length == 2
         parts.last(3).join(".")
       else
@@ -205,22 +198,16 @@ module FetchUtil
       req_domain != fin_domain
     end
 
-    # Detect URLs that point to news aggregators or redirect services rather than
-    # direct article pages. These URLs typically redirect to the actual publisher
-    # and are unreliable as stable source references.
     def aggregator_url?(url)
       return false if url.nil?
 
       host = FetchUtil.strip_www_host(url)
       path = URI.parse(url).path.to_s
 
-      # Google News: news.google.com (RSS feeds, redirect links)
       return true if host == "news.google.com"
 
-      # Google AMP cache: serves cached AMP versions, not canonical URLs
       return true if host == "cdn.ampproject.org" || host.end_with?(".cdn.ampproject.org")
 
-      # Google redirect URLs (e.g. google.com/url?...)
       return true if host.match?(/\Agoogle\.[a-z.]+\z/) && path == "/url"
 
       false

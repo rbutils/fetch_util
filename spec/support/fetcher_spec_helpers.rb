@@ -1,6 +1,40 @@
 # frozen_string_literal: true
 
 RSpec.shared_context 'fetcher spec helpers' do
+  let(:page) do
+    instance_double('FerrumPage', current_url: 'https://example.com/final')
+  end
+
+  let(:browser) do
+    instance_double(FetchUtil::Browser)
+  end
+
+  let(:extractor) do
+    instance_double(FetchUtil::Extractor)
+  end
+
+  let(:raw_docs_fallback) do
+    instance_double(FetchUtil::RawDocsFallback, fetch: nil)
+  end
+
+  let(:payload) do
+    {
+      'title' => 'Example title',
+      'byline' => 'Jane Author',
+      'excerpt' => 'Short summary',
+      'siteName' => 'Example',
+      'publishedTime' => '2026-03-22T10:00:00Z',
+      'canonicalUrl' => 'https://example.com/article',
+      'language' => 'en',
+      'html' => '<p>Hello</p>',
+      'markdown' => 'Hello',
+      'readerMode' => true,
+      'contentType' => 'article',
+      'suspect' => false,
+      'warnings' => []
+    }
+  end
+
   def stub_browser_extraction(url, page:, payload:)
     allow(browser).to receive(:with_page).with(url).and_yield(page)
     allow(extractor).to receive(:extract).with(page).and_return(payload)

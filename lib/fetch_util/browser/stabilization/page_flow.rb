@@ -20,7 +20,6 @@ module FetchUtil
           accepted_cookies = (!preserve_consent && accept_cookie_consent(page)) || accepted_cookies
           accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies
 
-          # Wait for SPA framework hydration when a framework is detected
           wait_for_spa_hydration(page) if @wait_for_idle && reached_idle
           accepted_cookies = (!preserve_consent && accept_cookie_consent(page)) || accepted_cookies
           accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies

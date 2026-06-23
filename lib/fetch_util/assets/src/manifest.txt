@@ -14,26 +14,35 @@ profiles/docs_hosts.js
 profiles/rails_rdoc.js
 systems/docs_detector.js
 systems/stldocs.js
+systems/stldocs_methods.js
+systems/stldocs_schemas.js
 systems/antora.js
 systems/reference_engines.js
 profiles/social_search.js
 profiles/media_and_commerce.js
 profiles/repo_hosts.js
- profiles/community_wikis.js
- profiles/community_pages/telegram.js
- profiles/community_pages/reddit.js
- profiles/community_pages/behance.js
- profiles/community_pages/quora.js
- profiles/community_pages/glassdoor.js
- profiles/community_pages/wykop.js
- profiles/meta_social.js
- profiles/host_aware.js
+profiles/community_wikis.js
+profiles/community_pages/telegram.js
+profiles/community_pages/reddit.js
+profiles/community_pages/behance.js
+profiles/community_pages/quora.js
+profiles/community_pages/glassdoor.js
+profiles/community_pages/wykop.js
+profiles/meta_social.js
+profiles/meta_social/instagram.js
+profiles/meta_social/facebook.js
+profiles/meta_social/threads.js
+profiles/host_aware.js
 markdown/code_helpers.js
 markdown/tables.js
 markdown/runtime.js
 core/dom_cleanup.js
 extractors/list_extraction.js
 systems/generic_docs_frameworks.js
+systems/generic_docs_core_frameworks.js
+systems/generic_docs_modern_frameworks.js
+systems/generic_docs_api_engines.js
+systems/generic_docs_sphinx.js
 profiles/twitter.js
 profiles/linkedin.js
 profiles/bluesky.js
