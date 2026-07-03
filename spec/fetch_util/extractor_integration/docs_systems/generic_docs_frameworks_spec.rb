@@ -82,6 +82,81 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
     end
   end
 
+  it "keeps mkdocs reference index navigation links" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Reference - FastAPI</title>
+          <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+        </head>
+        <body>
+          <nav class="md-nav">
+            <ul class="md-nav__list">
+              <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+                <a href="https://fastapi.example.test/reference/" class="md-nav__link md-nav__link--active">Reference</a>
+                <nav class="md-nav"><ul>
+                  <li><a href="https://fastapi.example.test/reference/fastapi/" class="md-nav__link">FastAPI class</a></li>
+                  <li><a href="https://fastapi.example.test/reference/parameters/" class="md-nav__link">Request Parameters</a></li>
+                  <li><a href="https://fastapi.example.test/reference/status/" class="md-nav__link">Status Codes</a></li>
+                  <li><a href="https://fastapi.example.test/reference/apirouter/" class="md-nav__link">APIRouter class</a></li>
+                </ul></nav>
+              </li>
+            </ul>
+          </nav>
+          <main><div class="md-content"><article class="md-content__inner">
+            <h1>Reference</h1>
+            <p>Here's the reference or code API for the framework.</p>
+          </article></div></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://fastapi.example.test/reference/", html) do |page|
+      payload = extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("# Reference")
+      expect(markdown).to include("[FastAPI class](https://fastapi.example.test/reference/fastapi/)")
+      expect(markdown).to include("[APIRouter class](https://fastapi.example.test/reference/apirouter/)")
+      expect(markdown).not_to include("md-nav")
+    end
+  end
+
+  it "extracts dartdoc library indexes through generic docs-system detection" do
+    html = <<~HTML
+      <html>
+        <head><title>Dart API docs</title></head>
+        <body>
+          <header><div class="self-name">Dart</div></header>
+          <main><div id="dartdoc-main-content">
+            <section class="desc markdown"><h1>Welcome!</h1><p>Dart API docs, for the Dart programming language.</p></section>
+            <section class="summary"><h2>Libraries</h2><dl>
+              <dt id="dart:async"><span class="name"><a href="dart-async/">dart:async</a></span></dt>
+              <dd>Support for asynchronous programming, with Future and Stream.</dd>
+              <dt id="dart:collection"><span class="name"><a href="dart-collection/">dart:collection</a></span></dt>
+              <dd>Classes and utilities that supplement collection support.</dd>
+              <dt id="dart:core"><span class="name"><a href="dart-core/">dart:core</a></span></dt>
+              <dd>Built-in types, collections, and other core functionality.</dd>
+              <dt id="dart:io"><span class="name"><a href="dart-io/">dart:io</a></span></dt>
+              <dd>File, socket, HTTP, and other I/O support.</dd>
+            </dl></section>
+          </div></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://api.example.test/stable/", html) do |page|
+      payload = extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to include("# Welcome!")
+      expect(markdown).to include("[dart:async](https://api.example.test/stable/dart-async/)")
+      expect(markdown).to include("[dart:core](https://api.example.test/stable/dart-core/)")
+      expect(markdown).to include("[dart:io](https://api.example.test/stable/dart-io/)")
+    end
+  end
+
   it "extracts docusaurus docs through generic docs-system detection" do
     html = <<~HTML
       <html>
