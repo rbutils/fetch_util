@@ -103,6 +103,104 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "extracts compact marketplace cards from image and aria-label product links" do
+    html = <<~HTML
+      <html>
+        <head><title>Desks | Office Furniture &amp; Home Desk</title></head>
+        <body>
+          <main>
+            <section data-hb-id="BrowseProductGrid">
+              <div data-hb-id="ProductCard">
+                <a href="/furniture/pdp/inbox-zero-l-shaped-standing-desk-adjustable-height-electric-desk-with-memory-controller-w113542819.html" aria-label="L-shaped Standing Desk Adjustable Height Electric Desk Memory Controller">
+                  <span>July 4th Deal</span>
+                  <img alt="L-shaped Standing Desk Adjustable Height Electric Desk Memory Controller">
+                </a>
+                <p>The L-shaped standing desk is perfect for home offices, gaming, and multi-device setups. Its spacious design maximizes workspace efficiency while reviews and buying-guide copy make generic article extraction noisy.</p>
+                <span>$179.99</span>
+              </div>
+              <div data-hb-id="ProductCard">
+                <a href="/furniture/pdp/latitude-run-fort-myers-reversible-multi-functional-desk-with-storage-drawers-and-open-shelving-w006001447.html" aria-label="Fort Myers Reversible Multi-Functional Desk Storage Drawers Open Shelving"></a>
+                <p>This multi-functional desk features a clean-lined silhouette with a multi-level design that is ideal for gaming or a productive workspace.</p>
+                <span>$149.99 was $173.99</span>
+              </div>
+              <div data-hb-id="ProductCard">
+                <a href="/furniture/pdp/martha-stewart-hutton-shaker-style-home-office-desk-with-storage-mstt5903.html">
+                  <img alt="Martha Stewart Hutton Shaker Style Home Office Desk with Storage">
+                </a>
+                <p>The Martha Stewart Hutton Home Office Desk adds timeless elegance and functional storage to any workspace.</p>
+                <span>$299.00</span>
+              </div>
+              <div data-hb-id="ProductCard">
+                <a href="/furniture/pdp/ebern-designs-jasine-desk-w111204350.html" aria-label="Office Desk"></a>
+                <p>This computer desk provides a comfortable workspace with a clean, modern design, ideal for a home office or study area.</p>
+                <span>Rated 4.7 out of 5 stars. 871 total votes</span>
+                <span>$219.99</span>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.wayfair.com/furniture/sb0/desks-c1780384.html?redir=desk", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include(
+        "- [Fort Myers Reversible Multi-Functional Desk Storage Drawers Open Shelving]" \
+        "(https://www.wayfair.com/furniture/pdp/" \
+        "latitude-run-fort-myers-reversible-multi-functional-desk-with-storage-drawers-and-open-shelving-w006001447.html) - $149.99"
+      )
+      expect(payload["markdown"]).to include(
+        "- [Martha Stewart Hutton Shaker Style Home Office Desk with Storage]" \
+        "(https://www.wayfair.com/furniture/pdp/martha-stewart-hutton-shaker-style-home-office-desk-with-storage-mstt5903.html) - $299.00"
+      )
+      expect(payload["markdown"]).not_to include("reviews and buying-guide copy")
+    end
+  end
+
+  it "prefers compact product cards over promo-heavy marketplace list output" do
+    html = <<~HTML
+      <html>
+        <head><title>ssd - Search Results | Example Marketplace</title></head>
+        <body>
+          <main>
+            <p>+ $50 off w/ promo code JSF583, limited offer</p>
+            <p>By clicking Submit above, you consent to allow Example Marketplace to store and process personal information.</p>
+            <div class="item-cells-wrap items-list-view is-list">
+              <div class="item-cell">
+                <div class="item-container">
+                  <a href="/samsung-2tb-990-pro-nvme-2-0/p/N82E16820147861" class="item-img"><img alt="SAMSUNG 990 PRO 2TB SSD"></a>
+                  <div class="item-info"><a href="/samsung-2tb-990-pro-nvme-2-0/p/N82E16820147861" class="item-title">SAMSUNG 990 PRO 2TB SSD, PCIe Gen4 M.2 2280</a></div>
+                  <div class="item-action"><ul class="price"><li class="price-current">$<strong>369</strong><sup>.99</sup></li></ul></div>
+                </div>
+              </div>
+              <div class="item-cell"><a href="/crucial-2tb-p310-nvme/p/N82E16820156413" class="item-title">Crucial P310 M.2 2280 2TB PCI-Express 4.0 x4 NVMe SSD</a><span class="price-current">$290.95</span></div>
+              <div class="item-cell"><a href="/western-digital-2tb-sn7100-nvme/p/N82E16820250275" class="item-title">WD_BLACK SN7100 M.2 2280 2TB PCI-Express 4.0 x4 SSD</a><span class="price-current">$275.49</span></div>
+              <div class="item-cell"><a href="/samsung-4tb-990-pro-nvme-2-0/p/N82E16820147879" class="item-title">SAMSUNG 990 PRO SSD 4TB</a><span class="price-current">$779.95</span></div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.newegg.com/p/pl?d=ssd", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include(
+        "- [SAMSUNG 990 PRO 2TB SSD, PCIe Gen4 M.2 2280]" \
+        "(https://www.newegg.com/samsung-2tb-990-pro-nvme-2-0/p/N82E16820147861) - $369.99"
+      )
+      expect(payload["markdown"]).to include(
+        "- [WD_BLACK SN7100 M.2 2280 2TB PCI-Express 4.0 x4 SSD]" \
+        "(https://www.newegg.com/western-digital-2tb-sn7100-nvme/p/N82E16820250275) - $275.49"
+      )
+      expect(payload["markdown"]).not_to include("promo code")
+      expect(payload["markdown"]).not_to include("By clicking Submit")
+    end
+  end
+
   it "does not fabricate commerce details on non-commerce list pages" do
     html = <<~HTML
       <html>
