@@ -491,6 +491,83 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers the prose article column over CTA and recent-posts sidebars" do
+    article_paragraphs = 10.times.map do |index|
+      "<p>Main article paragraph #{index + 1} explains how engineering teams diagnose user-impacting software issues before they become backlog clutter.</p>"
+    end.join("\n")
+
+    recent_cards = 4.times.map do |index|
+      <<~HTML
+        <article class="post-card">
+          <a href="/recent-#{index + 1}"><h4>Recent product post #{index + 1}</h4></a>
+          <p>Short sidebar summary #{index + 1} for another post.</p>
+        </article>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Self-improving software</title></head>
+        <body>
+          <main class="page-layout">
+            <article class="article-content lr-content">
+              <h1>Self-improving software</h1>
+              #{article_paragraphs}
+              <h2>How the system works</h2>
+              <p>The article body continues with concrete implementation details and customer examples.</p>
+            </article>
+            <aside class="sidebar-container">
+              <section class="footer-cta-container">
+                <h2>Stop guessing about your digital experience</h2>
+                <a href="/signup">Get started for free</a>
+              </section>
+              <section id="recent-posts">
+                <h4>Recent posts:</h4>
+                #{recent_cards}
+              </section>
+            </aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://blog.example.com/self-improving-software/", html) do |page|
+      page.evaluate <<~JS
+        Object.defineProperty(window, 'Readability', {
+          configurable: true,
+          set(value) {
+            const SidebarReadability = function() {};
+            SidebarReadability.prototype.parse = function() {
+              const sidebar = document.querySelector('.sidebar-container');
+              return {
+                title: 'Self-improving software',
+                content: sidebar.outerHTML,
+                textContent: sidebar.textContent
+              };
+            };
+
+            Object.defineProperty(window, 'Readability', {
+              value: SidebarReadability,
+              configurable: true,
+              writable: true
+            });
+          },
+          get() {
+            return undefined;
+          }
+        });
+      JS
+
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Self-improving software")
+      expect(payload["markdown"]).to include("Main article paragraph 10 explains")
+      expect(payload["markdown"]).to include("The article body continues with concrete implementation details")
+      expect(payload["markdown"]).not_to include("Recent posts")
+      expect(payload["markdown"]).not_to include("Get started for free")
+    end
+  end
+
   it "compacts long glossary descriptions from repeated source blocks" do
     html = <<~HTML
       <html>
