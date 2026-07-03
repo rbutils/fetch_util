@@ -166,4 +166,43 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).not_to include("Chi siamo")
     end
   end
+
+  it "cleans malformed markdown from image-led card grids" do
+    html = <<~HTML
+      <html>
+        <head><title>Daily Section</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Daily Section</h1>
+              <p>Lead coverage and analysis from the day.</p>
+              <ul class="card-grid">
+                <li>
+                  <a href="/world/one">
+                    <img src="/one.jpg" alt="">
+                    <h3>First headline from the card grid</h3>
+                  </a>
+                </li>
+                <li>
+                  <a href="/world/two">
+                    <img src="/two.jpg" alt="Reporter at border [US side.]">
+                    <h3>Second headline from the card grid</h3>
+                  </a>
+                </li>
+              </ul>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/international", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["markdown"]).to include("- [First headline from the card grid](https://example.test/world/one)")
+      expect(payload["markdown"]).to include("- [Second headline from the card grid](https://example.test/world/two)")
+      expect(payload["markdown"]).not_to include("- !###")
+      expect(payload["markdown"]).not_to match(/\]\([^)]*\)\]/)
+    end
+  end
 end
