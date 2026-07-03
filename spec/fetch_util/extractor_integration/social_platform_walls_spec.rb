@@ -174,4 +174,83 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       expect(payload["warnings"]).not_to include("consent_interstitial")
     end
   end
+
+  it "extracts Mastodon public profile bio and posts instead of footer nav" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Ruby on Rails (@rubyonrails@mastodon.social) - Mastodon</title>
+          <meta property="og:site_name" content="Mastodon">
+        </head>
+        <body>
+          <main class="columns-area__panels__main">
+            <section class="account__header">
+              <div class="display-name"><strong>Ruby on Rails</strong> <span>@rubyonrails@mastodon.social</span></div>
+              <div class="account__header__content">Compress the complexity of modern web apps with Rails.</div>
+            </section>
+            <article class="status status-public">
+              <a class="status__display-name" href="/@rubyonrails">Ruby on Rails @rubyonrails@mastodon.social</a>
+              <time datetime="2026-07-01T12:00:00Z">2d</time>
+              <div class="status__content"><p>Rails 8.1 beta is available with improvements for database-backed apps.</p></div>
+            </article>
+            <article class="status status-public">
+              <a class="status__display-name" href="/@rubyonrails">Ruby on Rails @rubyonrails@mastodon.social</a>
+              <div class="status__content"><p>New Active Record examples are published for application developers.</p></div>
+            </article>
+          </main>
+          <footer>
+            <a href="/directory">Profiles directory</a>
+            <a href="/keyboard-shortcuts">Keyboard shortcuts</a>
+            <a href="https://github.com/mastodon/mastodon">View source code</a>
+          </footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://mastodon.social/@RubyOnRails", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("# Ruby on Rails")
+      expect(payload["markdown"]).to include("- Handle: @RubyOnRails@mastodon.social")
+      expect(payload["markdown"]).to include("Compress the complexity of modern web apps")
+      expect(payload["markdown"]).to include("Rails 8.1 beta is available")
+      expect(payload["markdown"]).to include("New Active Record examples")
+      expect(payload["markdown"]).not_to include("Profiles directory")
+      expect(payload["markdown"]).not_to include("Keyboard shortcuts")
+    end
+  end
+
+  it "classifies Mastodon hashtag timelines as social lists" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>#ruby - Mastodon</title>
+          <meta property="og:site_name" content="Mastodon">
+        </head>
+        <body>
+          <main class="columns-area__panels__main">
+            <h1>#ruby</h1>
+            <article class="status status-public">
+              <a class="status__display-name" href="/@dev@example.social">Dev @dev@example.social</a>
+              <div class="status__content"><p>Ruby pattern matching makes this data transformation easier to read.</p></div>
+            </article>
+            <article class="status status-public">
+              <a class="status__display-name" href="/@ops@example.social">Ops @ops@example.social</a>
+              <div class="status__content"><p>Shipping a tiny Rails service today with a smaller dependency graph.</p></div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://mastodon.social/tags/ruby", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("# #ruby on Mastodon")
+      expect(payload["markdown"]).to include("Ruby pattern matching")
+      expect(payload["markdown"]).to include("tiny Rails service")
+    end
+  end
 end
