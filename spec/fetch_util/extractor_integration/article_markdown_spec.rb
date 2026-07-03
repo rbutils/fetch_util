@@ -141,6 +141,74 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers a full long document body over a short reader-mode fragment" do
+    articles = (1..18).map do |index|
+      <<~HTML
+        <section class="cxl-section">
+          <h2>Article #{index}</h2>
+          <p>#{index}. This official instrument keeps operative clause #{index} in the consolidated body.</p>
+          <p>The document paragraph for article #{index} remains part of the same legal text.</p>
+        </section>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Consolidated Official Instrument</title></head>
+        <body>
+          <main id="MainContent">
+            <article id="notice-fragment">
+              <table>
+                <tr><td>1.1.2030</td><td>EN</td><td>Official Journal</td><td>C 1/1</td></tr>
+              </table>
+              <h1>Consolidated Official Instrument</h1>
+              <p>Article 1</p>
+              <p>Opening clause from the first visible fragment.</p>
+            </article>
+            <section id="text" class="cxl-body">
+              <h1>Consolidated Official Instrument</h1>
+              #{articles}
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/legal-content/EN/TXT/?uri=CELEX:LONGDOC", html) do |page|
+      page.evaluate <<~JS
+        Object.defineProperty(window, 'Readability', {
+          configurable: true,
+          set(value) {
+            const FragmentReadability = function() {};
+            FragmentReadability.prototype.parse = function() {
+              return {
+                title: 'Consolidated Official Instrument',
+                content: document.querySelector('#notice-fragment').outerHTML,
+                textContent: document.querySelector('#notice-fragment').textContent
+              };
+            };
+
+            Object.defineProperty(window, 'Readability', {
+              value: FragmentReadability,
+              configurable: true,
+              writable: true
+            });
+          },
+          get() {
+            return undefined;
+          }
+        });
+      JS
+
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Article 1")
+      expect(payload["markdown"]).to include("Article 18")
+      expect(payload["markdown"]).to include("operative clause 18")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
   it "drops obvious related-entry utility sections before markdown conversion" do
     html = <<~HTML
       <html>
