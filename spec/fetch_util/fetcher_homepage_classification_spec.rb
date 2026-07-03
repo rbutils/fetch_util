@@ -56,6 +56,48 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('url_content_mismatch')
   end
 
+  it 'relabels section pages with linked headline markdown as list content' do
+    section_markdown = <<~MARKDOWN
+      # World News
+
+      ## Highlights
+
+      1. ### [First dispatch from overseas](https://www.example.com/2026/07/03/world/first.html)
+      2. ### [Second dispatch from overseas](https://www.example.com/2026/07/03/world/second.html)
+      3. ### [Third dispatch from overseas](https://www.example.com/2026/07/03/world/third.html)
+      4. ### [Fourth dispatch from overseas](https://www.example.com/2026/07/03/world/fourth.html)
+    MARKDOWN
+    section_url = 'https://www.example.com/section/world'
+
+    stub_browser_extraction(
+      section_url,
+      page: page_at(section_url),
+      payload: payload_with(title: 'World News', markdown: section_markdown, contentType: 'article')
+    )
+
+    result = fetch_with_dependencies(section_url)
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
+  it 'relabels thin commerce search pages as list content' do
+    search_url = 'https://www.example.com/keyword.php?keyword=desk'
+    search_payload = payload_with(
+      title: 'Search results for desk',
+      markdown: 'Shop desk ideas for home offices. Use filters to narrow the marketplace category.',
+      byline: nil,
+      publishedTime: nil,
+      contentType: 'article'
+    )
+
+    stub_browser_extraction(search_url, page: page_at(search_url), payload: search_payload)
+
+    result = fetch_with_dependencies(search_url)
+
+    expect(result.content_type).to eq('list')
+  end
+
   [
     [
       'German',
@@ -104,5 +146,31 @@ RSpec.describe FetchUtil::Fetcher do
 
     expect(result.content_type).to eq('article')
     expect(result.warnings).not_to include('homepage_index_page')
+  end
+
+  it 'does not relabel article pages with related links as list content' do
+    article_url = 'https://www.example.com/2026/07/03/world/investigation-details.html'
+    article_markdown = <<~MARKDOWN
+      # Investigation reveals planning gaps
+
+      The investigation found a consistent pattern across public records and interviews with officials.
+
+      Another long paragraph provides continuous standalone article prose with enough context and evidence to outweigh the related links that follow the story.
+
+      - [Related background story one](https://www.example.com/world/related-1)
+      - [Related background story two](https://www.example.com/world/related-2)
+      - [Related background story three](https://www.example.com/world/related-3)
+      - [Related background story four](https://www.example.com/world/related-4)
+    MARKDOWN
+
+    stub_browser_extraction(
+      article_url,
+      page: page_at(article_url),
+      payload: payload_with(title: 'Investigation reveals planning gaps', markdown: article_markdown, contentType: 'article')
+    )
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('article')
   end
 end

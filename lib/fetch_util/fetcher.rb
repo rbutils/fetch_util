@@ -20,6 +20,17 @@ module FetchUtil
       Regexp::IGNORECASE
     ).freeze
     DOCS_PORTAL_TITLE_PATTERN = /documentation|docs|the ultimate server/i
+    INDEX_OR_SEARCH_PATH_PATTERN = %r{
+      /(?:search|s|shop|browse|category|categories|collections?|catalog|keyword|wholesale|
+      products?|section|sections|topics?|tags?|archive|archives|latest|headlines|news)/?
+    }ix
+    ARTICLE_PATH_PATTERN = %r{
+      /(?:20\d{2}|\d{4}/\d{2}/\d{2}|article|articles|blog|blogs|column|columns|
+      entry|entries|post|posts|\d{5,}[\w-]*\.html?)\b
+    }ix
+    LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
+    LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
+    INDEX_QUERY_PATTERN = /(?:^|[&?])(?:q|query|search|searchtext|keyword|k)=/i
     STRIPPED_QUERY_PARAM_PATTERNS = [
       /\A(?:__goaway_|__cf_chl_)/,
       /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
@@ -68,7 +79,7 @@ module FetchUtil
       final_url = normalized_result_url(final_url)
       canonical_url = normalized_result_url(payload["canonicalUrl"])
       homepage_like = homepage_like?(final_url)
-      content_type = resolved_content_type(homepage_like, payload)
+      content_type = resolved_content_type(final_url, homepage_like, payload)
       warnings = resolved_warnings(content_type, homepage_like, payload, requested_url: url, final_url: final_url)
       suspect = warnings.any?
       completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
@@ -116,10 +127,12 @@ module FetchUtil
       )
     end
 
-    def resolved_content_type(homepage_like, payload)
+    def resolved_content_type(final_url, homepage_like, payload)
       content_type = payload["contentType"] || "article"
       return content_type unless content_type == "article"
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
+      return "list" if index_list_markdown?(final_url, payload)
+      return "list" if thin_index_page?(final_url, payload)
 
       content_type
     end
@@ -144,6 +157,45 @@ module FetchUtil
       return false unless snippet.match?(HOMEPAGE_INDEX_PATTERN)
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
+    end
+
+    def index_list_markdown?(url, payload)
+      return false unless index_or_search_url?(url)
+      return false if article_like_url?(url)
+
+      markdown = payload["markdown"].to_s
+      linked_headlines = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count
+      linked_items = markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
+
+      linked_headlines + linked_items >= 4
+    end
+
+    def thin_index_page?(url, payload)
+      return false unless index_or_search_url?(url)
+      return false if article_like_url?(url)
+      return false if payload["byline"].to_s.strip != "" || payload["publishedTime"].to_s.strip != ""
+
+      markdown = FetchUtil.normalize_whitespace(payload["markdown"].to_s)
+      markdown.length < 2400
+    end
+
+    def index_or_search_url?(url)
+      uri = URI.parse(url)
+      path = uri.path.to_s
+      return true if path.match?(INDEX_OR_SEARCH_PATH_PATTERN)
+      return true if uri.query.to_s.match?(INDEX_QUERY_PATTERN)
+
+      segments = path.split("/").reject(&:empty?)
+      segments.length.between?(1, 2) && !segments.last.to_s.include?("-") &&
+        !path.match?(/\.(?:html?|php|aspx?|jsp)\z/i)
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def article_like_url?(url)
+      URI.parse(url).path.to_s.match?(ARTICLE_PATH_PATTERN)
+    rescue URI::InvalidURIError
+      false
     end
 
     def fallback_result(url, fallback)
