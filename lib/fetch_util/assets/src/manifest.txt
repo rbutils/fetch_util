@@ -28,6 +28,7 @@ profiles/media_and_commerce.js
 profiles/repo_hosts.js
 profiles/community_wikis.js
 profiles/community_pages/telegram.js
+profiles/community_pages/discourse.js
 profiles/community_pages/reddit.js
 profiles/community_pages/behance.js
 profiles/community_pages/quora.js
