@@ -78,7 +78,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "prefers ordered dictionary senses over examples and etymology sections" do
+  it "leads with ordered dictionary senses while retaining examples and etymology" do
     html = <<~HTML
       <html>
         <head>
@@ -110,8 +110,10 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(markdown).to include("# ruby")
       expect(markdown).to match(/A clear, deep, red variety.*A deep red colour.*The tincture red or gules/m)
-      expect(markdown).not_to include("Examples of ruby in a Sentence")
-      expect(markdown).not_to include("Middle English, from Anglo-French")
+      expect(markdown.index("A clear, deep, red variety")).to be < markdown.index("Examples of ruby in a Sentence")
+      expect(markdown).to include("Examples of ruby in a Sentence")
+      expect(markdown).to include("The ring contained a ruby")
+      expect(markdown).to include("Middle English, from Anglo-French")
       expect(markdown).not_to include("Word of the Day")
     end
   end
