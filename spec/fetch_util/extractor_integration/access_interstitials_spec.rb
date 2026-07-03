@@ -361,6 +361,52 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags login interstitials returned for browse paths" do
+    html = <<~HTML
+      <html>
+        <head><title>Log in - Example Community</title></head>
+        <body>
+          <main>
+            <h1>Log in</h1>
+            <p>Connect an account to browse your community projects.</p>
+            <a href="/accounts/github/login/">Log in with GitHub</a>
+            <a href="/accounts/gitlab/login/">Log in with GitLab</a>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/projects/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Log in")
+      expect(payload["warnings"]).to include("auth_or_login_interstitial")
+    end
+  end
+
+  it "does not flag expected login paths as unexpected auth interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>Log in - Example Community</title></head>
+        <body>
+          <main>
+            <h1>Log in</h1>
+            <form action="/login" method="post">
+              <input type="email" name="email">
+              <input type="password" name="password">
+            </form>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/login/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).not_to include("auth_or_login_interstitial")
+    end
+  end
+
   it "summarizes cookie-led consent prompts as interstitials" do
     html = <<~HTML
       <html>

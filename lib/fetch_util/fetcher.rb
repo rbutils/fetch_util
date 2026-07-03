@@ -22,7 +22,11 @@ module FetchUtil
     DOCS_PORTAL_TITLE_PATTERN = /documentation|docs|the ultimate server/i
     INDEX_OR_SEARCH_PATH_PATTERN = %r{
       /(?:search|s|shop|browse|category|categories|collections?|catalog|keyword|wholesale|
-      products?|section|sections|topics?|tags?|archive|archives|latest|headlines|news)/?
+      products?|projects?|section|sections|topics?|tags?|archive|archives|latest|headlines|news)/?
+    }ix
+    AUTH_PATH_PATTERN = %r{
+      /(?:log(?:in|-in)|sign(?:in|-in)|auth|oauth|sso|session|sessions|
+      accounts?/login|users?/sign_in|password|forgot)(?:/|$)
     }ix
     ARTICLE_PATH_PATTERN = %r{
       /(?:20\d{2}|\d{4}/\d{2}/\d{2}|article|articles|blog|blogs|column|columns|
@@ -143,6 +147,7 @@ module FetchUtil
       warnings << "homepage_index_page" if content_type == "list" && homepage_like
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
+      warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
       warnings.uniq
     end
 
@@ -195,6 +200,23 @@ module FetchUtil
 
     def article_like_url?(url)
       URI.parse(url).path.to_s.match?(ARTICLE_PATH_PATTERN)
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def auth_redirect_interstitial?(requested_url, final_url, payload)
+      return false if requested_url.nil? || final_url.nil?
+      return false unless auth_path?(final_url)
+      return false if auth_path?(requested_url)
+      return false unless index_or_search_url?(requested_url)
+
+      text = FetchUtil.normalize_whitespace([payload["title"], payload["markdown"], payload["excerpt"]].compact.join(" ")).downcase
+      text.match?(/\b(?:log in|login|sign in|sign-in)\b/) &&
+        text.match?(/\b(?:github|gitlab|google|oauth|sso|single sign-on|password|account)\b/)
+    end
+
+    def auth_path?(url)
+      URI.parse(url).path.to_s.match?(AUTH_PATH_PATTERN)
     rescue URI::InvalidURIError
       false
     end

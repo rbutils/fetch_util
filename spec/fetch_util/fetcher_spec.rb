@@ -54,6 +54,43 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('url_content_mismatch')
   end
 
+  it 'flags auth redirects from browse paths as login interstitials' do
+    login_page = page_at('https://readthedocs.org/accounts/login/')
+    login_payload = payload_with(
+      title: 'Log in - Read the Docs Community',
+      markdown: <<~MARKDOWN.chomp,
+        # Log in - Read the Docs Community
+
+        Read the Docs supports GitHub OAuth app login for connected accounts.
+      MARKDOWN
+      excerpt: 'Connect your GitHub account.',
+      contentType: 'list',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://readthedocs.org/projects/', page: login_page, payload: login_payload)
+
+    result = fetch_with_dependencies('https://readthedocs.org/projects/')
+
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to include('auth_or_login_interstitial')
+  end
+
+  it 'does not flag direct login paths as unexpected auth interstitials' do
+    login_page = page_at('https://example.com/login/')
+    login_payload = payload_with(
+      title: 'Log in - Example',
+      markdown: '# Log in - Example\n\nUse your account password.',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://example.com/login/', page: login_page, payload: login_payload)
+
+    result = fetch_with_dependencies('https://example.com/login/')
+
+    expect(result.warnings).not_to include('auth_or_login_interstitial')
+  end
+
   it 'does not recompute url mismatches that the extractor did not emit' do
     so_page = page_at('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
     mismatched_payload = payload_with(
