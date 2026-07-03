@@ -37,6 +37,44 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'classifies publisher section pages with prose intros and flattened article feeds as lists' do
+    cards = (1..7).map do |i|
+      <<~HTML
+        <div class="duet--content-cards--content-card">
+          <a href="/tech/#{960_000 + i}/new-device-story-#{i}">
+            <img src="/images/device-#{i}.jpg" alt="Device story #{i}">
+            New device story #{i} reveals a useful hardware detail for readers
+          </a>
+          <p>Short teaser copy explains the news item without becoming the body of a standalone article.</p>
+          <p>Reporter #{i} Jul #{i}</p>
+        </div>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Tech - Example Publisher</title></head>
+        <body>
+          <main id="content">
+            <h1>Tech</h1>
+            <div>
+              <p>The latest tech news about the world's best hardware, apps, and services. From large platform companies to tiny startups, this section explains what matters in technology daily.</p>
+            </div>
+            <div class="river-feed">
+              #{cards}
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.com/tech', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('- [New device story 1 reveals a useful hardware detail for readers]')
+      expect(payload['markdown']).to include('https://www.example.com/tech/960007/new-device-story-7')
+    end
+  end
+
   it 'classifies thin commerce search and category pages as lists without fabricating products' do
     html = <<~HTML
       <html>
@@ -158,6 +196,45 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/news/2026/07/03/investigation-reveals-gaps', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('continuous article prose')
+    end
+  end
+
+  it 'keeps section-named real articles with related links classified as articles' do
+    related = (1..4).map do |i|
+      %(<li><a href="/tech/#{950_000 + i}/related-background-#{i}">Related background story #{i} with context</a></li>)
+    end.join
+    paragraphs = (1..6).map do |i|
+      <<~HTML
+        <p>The product team described the launch in detail, including interviews, chronology, and evidence.
+        Paragraph #{i} is continuous article prose that should outweigh the short related links below.</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>New headphones show why premium audio keeps changing</title>
+          <meta property="article:published_time" content="2026-07-03T12:00:00Z">
+          <meta name="author" content="J. Reviewer">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>New headphones show why premium audio keeps changing</h1>
+              #{paragraphs}
+              <aside class="related-links">
+                <h2>Related stories</h2>
+                <ul>#{related}</ul>
+              </aside>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.com/tech/new-headphones-premium-audio-review', html) do |payload|
       expect(payload['contentType']).to eq('article')
       expect(payload['markdown']).to include('continuous article prose')
     end
