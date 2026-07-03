@@ -26,7 +26,7 @@ module FetchUtil
     }ix
     ARTICLE_PATH_PATTERN = %r{
       /(?:20\d{2}|\d{4}/\d{2}/\d{2}|article|articles|blog|blogs|column|columns|
-      entry|entries|post|posts|\d{5,}[\w-]*\.html?)\b
+      entry|entries|post|posts|wiki|dictionary|definition|definitions|thesaurus|\d{5,}[\w-]*\.html?)\b
     }ix
     LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/

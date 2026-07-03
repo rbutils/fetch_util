@@ -78,6 +78,44 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers ordered dictionary senses over examples and etymology sections" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>ruby - Example Dictionary</title>
+          <meta property="og:site_name" content="Example Dictionary">
+        </head>
+        <body>
+          <main id="mw-content-text">
+            <h1>ruby</h1>
+            <p><span class="headword-line"><strong class="headword">ruby</strong> (plural rubies)</span></p>
+            <ol>
+              <li>A clear, deep, red variety of corundum, valued as a precious stone.
+                <ul class="wikt-quote-container"><li>A long quotation about gemstones.</li></ul>
+              </li>
+              <li>A deep red colour.</li>
+              <li>The tincture red or gules.</li>
+            </ol>
+            <section class="examples"><h2>Examples of ruby in a Sentence</h2><p>The ring contained a ruby.</p></section>
+            <section class="etymology"><h2>Etymology</h2><p>Middle English, from Anglo-French rubi.</p></section>
+          </main>
+          <aside>Word of the Day Top Lookups More from Example Dictionary</aside>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/dictionary/ruby", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("# ruby")
+      expect(markdown).to match(/A clear, deep, red variety.*A deep red colour.*The tincture red or gules/m)
+      expect(markdown).not_to include("Examples of ruby in a Sentence")
+      expect(markdown).not_to include("Middle English, from Anglo-French")
+      expect(markdown).not_to include("Word of the Day")
+    end
+  end
+
   it "does not claim non-glossary article pages" do
     html = <<~HTML
       <html>
