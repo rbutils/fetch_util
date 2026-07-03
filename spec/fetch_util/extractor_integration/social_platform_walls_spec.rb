@@ -184,18 +184,23 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
         </head>
         <body>
           <main class="columns-area__panels__main">
-            <section class="account__header">
-              <div class="display-name"><strong>Ruby on Rails</strong> <span>@rubyonrails@mastodon.social</span></div>
-              <div class="account__header__content">Compress the complexity of modern web apps with Rails.</div>
+            <section class="_comp_account_header__barWrapper">
+              <div class="_comp_account_header__name"><h1><bdi><span>Ruby on Rails</span></bdi></h1></div>
+              <button class="_comp_account_header__handleHelpButton">@rubyonrails@mastodon.social</button>
+              <div class="_comp_account_bio__bio">Compress the complexity of modern web apps with Rails.</div>
             </section>
-            <article class="status status-public">
+            <article class="status__wrapper status-public">
               <a class="status__display-name" href="/@rubyonrails">Ruby on Rails @rubyonrails@mastodon.social</a>
               <time datetime="2026-07-01T12:00:00Z">2d</time>
-              <div class="status__content"><p>Rails 8.1 beta is available with improvements for database-backed apps.</p></div>
+              <div class="status__content status__content--with-action">
+                <div class="status__content__text"><p>Rails 8.1 beta is available with improvements for database-backed apps.</p></div>
+              </div>
             </article>
-            <article class="status status-public">
+            <article class="status__wrapper status-public">
               <a class="status__display-name" href="/@rubyonrails">Ruby on Rails @rubyonrails@mastodon.social</a>
-              <div class="status__content"><p>New Active Record examples are published for application developers.</p></div>
+              <div class="status__content status__content--with-action">
+                <div class="status__content__text"><p>New Active Record examples are published for application developers.</p></div>
+              </div>
             </article>
           </main>
           <footer>
