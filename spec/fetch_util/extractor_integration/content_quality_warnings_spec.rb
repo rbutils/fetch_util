@@ -130,6 +130,10 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
         <head>
           <title>Dublin Sea Level Report</title>
           <meta property="article:published_time" content="2021-03-15T10:00:00Z">
+          <meta property="article:section" content="News">
+          <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"NewsArticle","headline":"Dublin Sea Level Report","datePublished":"2021-03-15T10:00:00Z"}
+          </script>
         </head>
         <body>
           <main>
@@ -146,6 +150,39 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       payload = extract(page)
 
       expect(payload["warnings"]).to include("stale_content")
+    end
+  end
+
+  it "does not flag stale_content for old evergreen reference pages" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Ruby (programming language) - Wikipedia</title>
+          <meta property="article:published_time" content="2021-03-15T10:00:00Z">
+          <meta property="og:type" content="article">
+        </head>
+        <body>
+          <main id="content">
+            <h1>Ruby (programming language)</h1>
+            <div id="mw-content-text">
+              <div class="mw-parser-output">
+                <p>Ruby is a high-level, general-purpose programming language. It was designed with an emphasis on programming productivity and simplicity.</p>
+                <h2>History</h2>
+                <p>The language has remained useful as reference material for programmers learning its object model and standard library.</p>
+                <h2>References</h2>
+                <ol><li>Business Wire, archived product announcement cited as background material.</li></ol>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://en.wikipedia.org/wiki/Ruby_(programming_language)", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Ruby is a high-level")
+      expect(payload["warnings"]).not_to include("stale_content")
     end
   end
 
