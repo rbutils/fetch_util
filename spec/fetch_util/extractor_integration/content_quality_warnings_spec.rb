@@ -291,4 +291,32 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       expect(payload["warnings"]).not_to include("syndicated_repost")
     end
   end
+
+  it "does not flag syndicated_repost for incidental wire-service references" do
+    html = <<~HTML
+      <html>
+        <head><title>Ruby (programming language) - Reference Article</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Ruby (programming language)</h1>
+              <p>Ruby is a high-level, general-purpose programming language with dynamic typing and a focus on developer productivity.</p>
+              <p>The language reference explains objects, classes, modules, blocks, exceptions, and the standard library in detail.</p>
+              <h2>References</h2>
+              <ol>
+                <li>A historical company announcement archived by Business Wire is cited as background for an implementation milestone.</li>
+              </ol>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.org/reference/ruby-programming-language", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Business Wire")
+      expect(payload["warnings"]).not_to include("syndicated_repost")
+    end
+  end
 end
