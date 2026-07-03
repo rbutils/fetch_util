@@ -77,4 +77,62 @@ RSpec.describe 'FetchUtil extractor integration - consent language walls' do
       expect(payload["warnings"]).to include("consent_interstitial")
     end
   end
+
+  it "does not flag residual cookie navigation on accessible public pages" do
+    html = <<~HTML
+      <html>
+        <head><title>GOV.UK</title></head>
+        <body>
+          <header>
+            <button>Cookies on GOV.UK</button>
+            <a href="/help/cookies">Manage cookie preferences</a>
+          </header>
+          <main>
+            <h1>Welcome to GOV.UK</h1>
+            <p>Find government services and information including benefits, births, citizenship, business, tax, and working in the UK.</p>
+            <p>Use this service index to renew documents, check official guidance, apply for support, and find departments responsible for public services.</p>
+            <section>
+              <h2>Services and information</h2>
+              <a href="/browse/benefits">Benefits</a>
+              <a href="/browse/tax">Money and tax</a>
+              <a href="/browse/working">Working, jobs and pensions</a>
+              <a href="/browse/education">Education and learning</a>
+            </section>
+            <section>
+              <h2>Government activity</h2>
+              <p>Read announcements, consultations, statistics, policy papers, and transparency updates from departments and agencies.</p>
+              <a href="/government/organisations">Departments</a>
+              <a href="/search/news-and-communications">News</a>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.gov.uk/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Welcome to GOV.UK")
+      expect(payload["markdown"]).to include("Education and learning")
+      expect(payload["warnings"]).not_to include("consent_interstitial")
+    end
+  end
+
+  it "still flags compact pages dominated by cookie consent copy" do
+    html = simple_consent_wall_html(
+      title: "Cookies on GOV.UK",
+      heading: "Cookies on GOV.UK",
+      paragraphs: [
+        "We use some essential cookies to make this website work.",
+        "We would like to set additional cookies to understand how you use GOV.UK, remember your settings and improve government services."
+      ],
+      buttons: ["Accept additional cookies", "Reject additional cookies"]
+    )
+
+    with_url_page("https://www.gov.uk/some-service", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("consent_interstitial")
+    end
+  end
 end

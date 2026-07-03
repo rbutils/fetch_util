@@ -181,4 +181,40 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
       expect(payload["markdown"]).not_to include("privacy preferences")
     end
   end
+
+  it 'does not flag accessible portal homepages as paywall partial content' do
+    html = <<~HTML
+      <html>
+        <head><title>Daily Portal</title></head>
+        <body>
+          <main>
+            <h1>Daily Portal</h1>
+            <section class="lead-card">
+              <a href="https://portal.example/news/a">Morning briefing with transport, weather, and market updates</a>
+              <p>Editors collect the main public updates for readers.</p>
+            </section>
+            <section class="lead-card">
+              <a href="https://portal.example/news/b">Schools publish holiday timetable and exam guidance</a>
+              <p>Important dates and links for families.</p>
+            </section>
+            <section class="paywall-promo">
+              <a href="https://portal.example/subscribe">Support independent reporting</a>
+              <p>Subscription offers appear in the homepage chrome, but the public story list remains accessible.</p>
+            </section>
+            <section class="lead-card">
+              <a href="https://portal.example/news/c">Council approves new public library opening hours</a>
+              <p>Branches will extend weekend access next month.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://portal.example/', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Morning briefing with transport")
+      expect(payload["warnings"]).not_to include("paywall_partial_content")
+    end
+  end
 end

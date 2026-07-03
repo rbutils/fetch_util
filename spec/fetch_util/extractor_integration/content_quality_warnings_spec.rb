@@ -246,6 +246,33 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "still flags paywall_partial_content for article teasers with paywall signals" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Subscriber Investigation</title>
+          <meta property="article:content_tier" content="metered">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Subscriber Investigation</h1>
+              <p>This opening section summarizes a long investigation and gives readers enough context to understand the topic.</p>
+              <p>The remaining interviews, documents, and source material are part of the member edition.</p>
+              <div class="paywall">Member edition includes the full investigation.</div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-premium.com/news/subscriber-investigation", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).to include("paywall_partial_content")
+    end
+  end
+
   # Syndicated repost detection
   it "flags syndicated_repost for wire service content" do
     html = <<~HTML
