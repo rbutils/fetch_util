@@ -11,6 +11,7 @@ module FetchUtil
           return stabilize_instagram(page) if instagram_url?(url)
           return stabilize_facebook(page) if facebook_url?(url)
           return stabilize_ebay_search(page) if ebay_search_url?(url)
+          return stabilize_gitlab_repo(page) if gitlab_repo_url?(url)
 
           reached_idle = !@wait_for_idle || wait_for_idle_or_content(page)
           preserve_consent = preserve_consent_wall?(page, url)

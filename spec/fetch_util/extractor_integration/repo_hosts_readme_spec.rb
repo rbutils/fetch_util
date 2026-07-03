@@ -152,15 +152,29 @@ RSpec.describe 'FetchUtil repo host README extraction' do
               <a href="/help/user/workspace/workspaces_troubleshooting.html">Workspaces documentation</a>
               <p>A workspace is a virtual sandbox environment for your code in GitLab.</p>
             </aside>
-            <article class="file-holder limited-width-container readme-holder">
-              <div class="file-title">README.md</div>
-              <div class="file-content js-markup-content md">
-                <h1>GitLab</h1>
-                <p>GitLab is an open-source DevSecOps platform that provides a complete software development lifecycle toolchain.</p>
-                <h2>Canonical source</h2>
-                <p>The canonical source of GitLab where all development takes place is hosted on GitLab.com.</p>
+            <div class="js-file-title file-title-flex-parent">
+              <a href="/gitlab-org/gitlab/-/blob/master/README.md"><strong>README.md</strong></a>
+            </div>
+            <div data-testid="blob-viewer-content" itemprop="about" class="blob-viewer">
+              <div>
+                <div class="blob-viewer" data-path="README.md" data-rich-type="markup">
+                  <div class="file-content js-markup-content md">
+                    <h1 id="user-content-gitlab">GitLab</h1>
+                    <p>GitLab is an open-source DevSecOps platform that provides a complete software development lifecycle toolchain.</p>
+                    <h2 id="user-content-canonical-source">Canonical source</h2>
+                    <p>The canonical source of GitLab where all development takes place is hosted on GitLab.com.</p>
+                    <h2 id="user-content-documentation">Documentation</h2>
+                    <p>Project documentation links should not make the repository README look like a generic list page.</p>
+                    <ul>
+                      <li><a href="/gitlab-org/gitlab/-/blob/master/doc/install/requirements.md">requirements documentation</a></li>
+                      <li><a href="https://docs.gitlab.com/install/installation/">install and configure all dependencies</a></li>
+                      <li><a href="https://docs.gitlab.com/install/self_compiled/">self-compiled installation</a></li>
+                      <li><a href="https://docs.gitlab.com/">GitLab documentation</a></li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-            </article>
+            </div>
           </main>
         </body>
       </html>
@@ -173,6 +187,7 @@ RSpec.describe 'FetchUtil repo host README extraction' do
       expect(payload["markdown"]).to include("# GitLab.org / GitLab")
       expect(payload["markdown"]).to include("GitLab is an open-source DevSecOps platform")
       expect(payload["markdown"]).to include("## Canonical source")
+      expect(payload["markdown"]).to include("Project documentation links should not make the repository README look like a generic list page.")
       expect(payload["markdown"]).not_to include("Workspaces documentation")
       expect(payload["markdown"]).not_to include("README.md](")
     end
