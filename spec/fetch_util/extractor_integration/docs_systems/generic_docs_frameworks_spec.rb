@@ -5,6 +5,49 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - generic framework docs systems' do
   include_context 'extractor integration helpers'
 
+  it "prefers starlight markdown content over promo cards" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Getting Started | Astro Docs</title>
+          <meta name="generator" content="Astro v5.0.0" />
+          <meta property="og:site_name" content="Starlight" />
+        </head>
+        <body>
+          <starlight-menu-button>Menu</starlight-menu-button>
+          <aside id="starlight__sidebar">Sidebar navigation</aside>
+          <main>
+            <article class="card sl-flex">
+              <p class="title">What will you build with Astro?</p>
+              <div class="body">
+                <p>Explore Astro starter themes for blogs, portfolios, docs, landing pages, SaaS, marketing, ecommerce sites, and more!</p>
+              </div>
+            </article>
+            <div class="sl-markdown-content" data-pagefind-body>
+              <h1>Getting Started</h1>
+              <p>Astro is a web framework for building content-driven websites including blogs, marketing pages, and documentation.</p>
+              <h2>Start a New Project</h2>
+              <p>Use the create astro command to scaffold a new site.</p>
+              <pre><code>npm create astro@latest</code></pre>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://docs.example.test/en/getting-started/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["title"]).to eq("Getting Started")
+      expect(payload["markdown"]).to include("# Getting Started")
+      expect(payload["markdown"]).to include("Astro is a web framework")
+      expect(payload["markdown"]).to include("## Start a New Project")
+      expect(payload["markdown"]).to include("npm create astro@latest")
+      expect(payload["markdown"]).not_to include("What will you build with Astro")
+      expect(payload["markdown"]).not_to include("Explore Astro starter themes")
+    end
+  end
+
   it "extracts mkdocs material pages through generic docs-system detection" do
     html = <<~HTML
       <html>

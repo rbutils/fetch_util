@@ -29,6 +29,10 @@ module FetchUtil
       "button"
     ].freeze
     DOCS_ROOT_SELECTORS = [
+      "main .sl-markdown-content",
+      "main [data-pagefind-body]",
+      ".sl-markdown-content",
+      "[data-pagefind-body]",
       "main article",
       "main",
       "article",
@@ -160,9 +164,21 @@ module FetchUtil
 
     def prune!(root)
       DROP_SELECTORS.each { |selector| root.css(selector).remove }
+      prune_leading_promo_cards!(root)
       root.css("*").each do |node|
         text = clean_text(node.text)
         node.remove if text.match?(PRUNED_TEXT_PATTERN)
+      end
+    end
+
+    def prune_leading_promo_cards!(root)
+      return unless root.at_css("h1, h2")
+
+      root.css("article.card, .card").each do |node|
+        text = clean_text(node.text)
+        next if text.empty? || text.length > 600 || node.at_css("h1, h2, h3, h4, h5, h6")
+
+        node.remove
       end
     end
 
