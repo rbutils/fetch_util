@@ -222,6 +222,56 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' d
     end
   end
 
+  it "extracts all operations from GitHub REST reference pages" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>REST API endpoints for repositories - GitHub Docs</title>
+          <meta property="og:site_name" content="GitHub Docs">
+        </head>
+        <body>
+          <main id="main-content">
+            <nav data-testid="breadcrumbs-in-article">REST API / Repositories</nav>
+            <h1>REST API endpoints for repositories</h1>
+            <p>Use the REST API to manage repositories on GitHub.</p>
+            <div class="MarkdownContent_markdownBody__v5MYy markdown-body pt-3 pb-4"></div>
+            <div class="MarkdownContent_markdownBody__v5MYy markdown-body pt-3 pb-4">
+              <section>
+                <h2>List organization repositories</h2>
+                <p>Lists repositories for the specified organization.</p>
+                <h3>Parameters for "List organization repositories"</h3>
+                <table><tbody><tr><td><code>org</code> <span>string</span><p>The organization name.</p></td></tr></tbody></table>
+              </section>
+              <section>
+                <h2>Create an organization repository</h2>
+                <p>Creates a new repository in the specified organization.</p>
+                <h3>Code samples for "Create an organization repository"</h3>
+                <div class="RestCodeSamples_requestCodeBlock__SgBKI">POST /orgs/{org}/repos</div>
+              </section>
+              <section>
+                <h2>Get a repository</h2>
+                <p>Gets a repository using the owner and repository name.</p>
+              </section>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://docs.github.com/en/rest/repos/repos", html) do |page|
+      payload = extract(page)
+      markdown = payload["markdown"].delete("\\")
+
+      expect(markdown).to include("# REST API endpoints for repositories")
+      expect(markdown).to include("## List organization repositories")
+      expect(markdown).to include("## Create an organization repository")
+      expect(markdown).to include("Creates a new repository in the specified organization")
+      expect(markdown).to include("## Get a repository")
+      expect(markdown).to include("POST /orgs/{org}/repos")
+      expect(markdown).not_to include("REST API / Repositories")
+    end
+  end
+
   it "extracts baselinker method pages from inline examples when the DOM is empty" do
     html = <<~HTML
             <html>
