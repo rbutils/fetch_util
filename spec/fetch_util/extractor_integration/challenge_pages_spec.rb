@@ -154,6 +154,38 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not flag substantial docs pages for incidental unavailable response text" do
+    sections = (1..12).map do |index|
+      <<~HTML
+        <section>
+          <h2>HTTP server topic #{index}</h2>
+          <p>The HTTP API describes streaming requests, responses, sockets, and header handling for application code.</p>
+          <p>When a server limit is reached, a later request can receive a <code>503 Service Unavailable</code> response.</p>
+        </section>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>HTTP | Node.js API</title></head>
+        <body>
+          <main>
+            <h1>HTTP</h1>
+            <p>This module contains client and server interfaces for HTTP applications.</p>
+            #{sections}
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://nodejs.org/api/http.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("HTTP server topic 12")
+      expect(payload["warnings"]).not_to include("site_unavailable_interstitial")
+    end
+  end
+
   it "does not add url mismatch warnings on unavailable deep-link pages" do
     html = <<~HTML
       <html>
