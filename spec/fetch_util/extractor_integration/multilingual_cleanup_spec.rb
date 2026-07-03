@@ -326,6 +326,54 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
         expect(payload["warnings"]).not_to include("url_content_mismatch")
       end
     end
+
+    it "does not flag Polish legal text that matches the page language" do
+      html = <<~HTML
+        <html lang="pl">
+          <head><title>II K 84/16 Szczegóły orzeczenia</title></head>
+          <body>
+            <main>
+              <article>
+                <h1>II K 84/16 Szczegóły orzeczenia</h1>
+                <p>Sąd Rejonowy po rozpoznaniu sprawy w dniu dwudziestego maja wskazał, że oskarżony działał w warunkach opisanych w akcie oskarżenia.</p>
+                <p>W ocenie sądu materiał dowodowy został zgromadzony prawidłowo, a zeznania świadków oraz dokumenty z akt sprawy są spójne.</p>
+                <p>Ponadto sąd zważył, że kara powinna uwzględniać stopień winy, cele zapobiegawcze oraz okoliczności dotyczące zachowania po zdarzeniu.</p>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_url_page("https://www.saos.org.pl/judgments/227221", html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
+
+        expect(payload["markdown"]).to include("Sąd Rejonowy po rozpoznaniu sprawy")
+        expect(payload["warnings"]).not_to include("url_content_mismatch")
+      end
+    end
+
+    it "still flags English content on a Polish-language URL" do
+      html = <<~HTML
+        <html lang="pl">
+          <head><title>Portal information</title></head>
+          <body>
+            <main>
+              <article>
+                <h1>Portal information</h1>
+                <p>This article describes a public information portal with account settings, service notices, and general navigation for visitors. The page explains how readers can browse categories, manage saved searches, and review support resources without presenting Polish-language article content.</p>
+                <p>Editors update the homepage throughout the week with summaries, links, and background material for international readers.</p>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_url_page("https://www.example.com/pl/portal/informacje", html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
+
+        expect(payload["warnings"]).to include("url_content_mismatch")
+      end
+    end
   end
 
   describe "opaque article urls with strong metadata" do
