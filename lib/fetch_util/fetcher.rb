@@ -35,6 +35,7 @@ module FetchUtil
     LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
     INDEX_QUERY_PATTERN = /(?:^|[&?])(?:q|query|search|searchtext|keyword|k)=/i
+    PDF_PATH_PATTERN = %r{(?:\.pdf\z|/pdf(?:/|\z)|[?&](?:format|download)=pdf\b)}i
     STRIPPED_QUERY_PARAM_PATTERNS = [
       /\A(?:__goaway_|__cf_chl_)/,
       /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
@@ -148,6 +149,7 @@ module FetchUtil
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
+      warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
       warnings.uniq
     end
 
@@ -217,6 +219,17 @@ module FetchUtil
 
     def auth_path?(url)
       URI.parse(url).path.to_s.match?(AUTH_PATH_PATTERN)
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def pdf_document?(requested_url, final_url, payload)
+      return true if payload["contentType"].to_s == "pdf"
+
+      [requested_url, final_url, payload["canonicalUrl"]].compact.any? do |url|
+        parsed = URI.parse(url)
+        [parsed.path, parsed.query].compact.join("?").match?(PDF_PATH_PATTERN)
+      end
     rescue URI::InvalidURIError
       false
     end

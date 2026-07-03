@@ -104,6 +104,38 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(true)
   end
 
+  it 'flags PDF document URLs explicitly' do
+    pdf_page = page_at('https://arxiv.org/pdf/1706.03762')
+    pdf_payload = payload_with(
+      title: '1706.03762',
+      markdown: '',
+      contentType: 'article',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://arxiv.org/pdf/1706.03762', page: pdf_page, payload: pdf_payload)
+
+    result = fetch_with_dependencies('https://arxiv.org/pdf/1706.03762')
+
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to include('pdf_document')
+  end
+
+  it 'does not flag non-PDF article URLs as PDF documents' do
+    article_page = page_at('https://example.com/articles/1706-03762')
+    article_payload = payload_with(
+      title: 'A transformer article',
+      markdown: '# A transformer article\n\nReadable HTML article text.',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://example.com/articles/1706-03762', page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies('https://example.com/articles/1706-03762')
+
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'does not flag same-domain redirects as cross-domain' do
     same_domain_page = page_at('https://www.example.com/new-path')
     same_payload = payload_with(warnings: [])
