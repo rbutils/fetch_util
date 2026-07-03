@@ -165,6 +165,90 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
     end
   end
 
+  it "keeps stldocs api reference content instead of downgrading to chrome links" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Chat | OpenAI API Reference</title>
+          <meta name="generator" content="Astro v6.0.4">
+          <meta property="og:site_name" content="OpenAI API Reference">
+        </head>
+        <body>
+          <nav>
+            <a href="/api/docs/guides/production-best-practices">Production best practices</a>
+            <a href="/api/docs/actions/production">Production</a>
+            <a href="/commerce/specs/api/products">Products</a>
+            <a href="/ads/product-feeds">Product feeds</a>
+          </nav>
+          <main class="astro-jftc2ajk">
+            <div class="stl-ui-prose stl-content-panel astro-efu33vlz">
+              <div class="sl-markdown-content">
+                <div class="not-content">
+                  <div class="stldocs-root stl-ui-not-prose">
+                    <div class="stldocs-overview">
+                      <h1>Chat</h1>
+                      <div class="stldocs-resource">
+                        <div class="stldocs-resource-content">
+                          <h2>ChatCompletions</h2>
+                          <div class="stldocs-resource-description">Given a list of messages comprising a conversation, the model will return a response.</div>
+                          <div class="stldocs-resource-content-group">
+                            <div class="stldocs-method-summary">
+                              <div class="stldocs-method-header">
+                                <h5 class="stldocs-method-title"><a href="#create-chat-completion">Create chat completion</a></h5>
+                                <div class="stldocs-method-route">POST /chat/completions</div>
+                              </div>
+                            </div>
+                            <div class="stldocs-method-summary">
+                              <div class="stldocs-method-header">
+                                <h5 class="stldocs-method-title"><a href="#list-chat-completions">List Chat Completions</a></h5>
+                                <div class="stldocs-method-route">GET /chat/completions</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="stldocs-resource-content-group">
+                            <h3>Models</h3>
+                            <details class="stldocs-property">
+                              <summary class="stldocs-expander-summary">
+                                <div class="stldocs-property-info">
+                                  <div class="stldocs-property-declaration">ChatCompletion = object { id, choices, created }</div>
+                                  <div class="stldocs-property-description">Represents a chat completion response returned by model, based on the provided input.</div>
+                                </div>
+                              </summary>
+                              <div class="stldocs-expander-content">
+                                <div class="stldocs-properties">
+                                  <details class="stldocs-property">
+                                    <summary><div class="stldocs-property-declaration">id: string</div><div class="stldocs-property-description">A unique identifier for the chat completion.</div></summary>
+                                  </details>
+                                </div>
+                              </div>
+                            </details>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://developers.openai.com/api/reference/resources/chat', html) do |page|
+      payload = extract(page)
+      markdown = payload['markdown'].delete('\\')
+
+      expect(payload['contentType']).to eq('article')
+      expect(markdown).to include('# Chat')
+      expect(markdown).to include('Given a list of messages comprising a conversation')
+      expect(markdown).to include('- Create chat completion (POST/chat/completions)')
+      expect(markdown).to include('- List Chat Completions (GET/chat/completions)')
+      expect(markdown).to include('### ChatCompletion = object { id, choices, created }')
+      expect(markdown).not_to include('Production best practices')
+    end
+  end
+
   it "extracts redoc api docs into readable parameters and json samples" do
     html = <<~HTML
             <html>
