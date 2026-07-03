@@ -205,4 +205,40 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).not_to match(/\]\([^)]*\)\]/)
     end
   end
+
+  it "does not duplicate nested layout table content when converting comments" do
+    html = <<~HTML
+      <html>
+        <head><title>Example thread</title></head>
+        <body>
+          <center>
+            <table id="hnmain">
+              <tr><td>
+                <table><tr><td><span class="pagetop"><b>Hacker News</b><a href="/newest">new</a> | <a href="/front">past</a></span></td></tr></table>
+              </td></tr>
+              <tr><td>
+                <table class="fatitem">
+                  <tr class="athing submission" id="1"><td class="title"><span class="titleline"><a href="http://ycombinator.com/">Y Combinator</a></span></td></tr>
+                  <tr><td class="subtext"><span class="score">57 points</span> by <a class="hnuser">pg</a> <span class="age">on Oct 9, 2006</span> | <a>3 comments</a></td></tr>
+                </table>
+                <table class="comment-tree">
+                  <tr class="athing comtr" id="15"><td><table><tr><td class="default"><span class="comhead">sama on Oct 9, 2006 | next [–]</span><div class="comment"><div class="commtext c00">the rising star of venture capital</div></div></td></tr></table></td></tr>
+                  <tr class="athing comtr" id="17"><td><table><tr><td class="default"><span class="comhead">pg on Oct 9, 2006 | parent | next [–]</span><div class="comment"><div class="commtext c00">Is there anywhere to eat on Sandhill Road?</div></div></td></tr></table></td></tr>
+                  <tr class="athing comtr" id="1079"><td><table><tr><td class="default"><span class="comhead">dmon on Feb 25, 2007 | root | parent | next [–]</span><div class="comment"><div class="commtext c00">sure</div></div></td></tr></table></td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </center>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://news.ycombinator.com/item?id=1", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"].scan("the rising star of venture capital").length).to eq(1)
+      expect(payload["markdown"].scan("Is there anywhere to eat on Sandhill Road?").length).to eq(1)
+      expect(payload["markdown"]).not_to include("Hacker Newsnew | past")
+    end
+  end
 end
