@@ -20,6 +20,7 @@ module FetchUtil
       "nav",
       "aside",
       "footer",
+      ".discord",
       ".toc",
       ".sidebar",
       ".breadcrumbs",
@@ -62,7 +63,9 @@ module FetchUtil
       return nil unless root
 
       prune!(root)
-      title = clean_text(fragment_title(document, final_url) || first_heading(root) || meta_title(document) || document.title)
+      title = [fragment_title(document, final_url), first_heading(root), meta_title(document), document.title]
+              .map { |candidate| clean_text(candidate) }
+              .find { |candidate| !candidate.empty? }
       markdown = markdown_from_root(root, title)
       return nil if clean_text(markdown).length < 40
 
@@ -176,10 +179,16 @@ module FetchUtil
 
       root.css("article.card, .card").each do |node|
         text = clean_text(node.text)
+        next if node.ancestors.any? { |ancestor| class_list(ancestor).any? { |klass| %w[landing-card card--fullwidth].include?(klass) } }
+        next if node.at_css(".title, .body")
         next if text.empty? || text.length > 600 || node.at_css("h1, h2, h3, h4, h5, h6")
 
         node.remove
       end
+    end
+
+    def class_list(node)
+      node["class"].to_s.split
     end
 
     def meta_title(document)

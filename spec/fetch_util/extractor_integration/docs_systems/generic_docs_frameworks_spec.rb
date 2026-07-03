@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - generic framework docs systems' do
   include_context 'extractor integration helpers'
 
-  it "prefers starlight markdown content over promo cards" do
+  it "preserves real starlight landing cards inside markdown content" do
     html = <<~HTML
       <html>
         <head>
@@ -17,18 +17,43 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
           <starlight-menu-button>Menu</starlight-menu-button>
           <aside id="starlight__sidebar">Sidebar navigation</aside>
           <main>
-            <article class="card sl-flex">
-              <p class="title">What will you build with Astro?</p>
-              <div class="body">
-                <p>Explore Astro starter themes for blogs, portfolios, docs, landing pages, SaaS, marketing, ecommerce sites, and more!</p>
+            <div class="hero">
+              <h1>Astro Docs</h1>
+              <p>Guides, resources, and API references to help you build with Astro.</p>
+            </div>
+            <div class="sl-markdown-content">
+              <div class="card-grid">
+                <div class="landing-card">
+                  <article class="card sl-flex">
+                    <p class="title sl-flex"><span>What will you build with Astro?</span></p>
+                    <div class="body">
+                      <p>Explore <a href="https://astro.build/themes/">Astro starter themes</a> for blogs, portfolios, docs, landing pages, SaaS, marketing, ecommerce sites, and more!</p>
+                    </div>
+                  </article>
+                </div>
+                <div class="card--fullwidth">
+                  <article class="card sl-flex">
+                    <p class="title sl-flex"><span>Start a new project</span></p>
+                    <div class="body">
+                      <div class="split">
+                        <pre><code>npm create astro@latest</code></pre>
+                        <p>Our <a href="/en/install-and-setup/">installation guide</a> has step-by-step instructions for installing Astro using our CLI wizard.</p>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <div class="landing-card">
+                  <article class="card sl-flex">
+                    <p class="title sl-flex"><span>Learn</span></p>
+                    <div class="body">
+                      <ul>
+                        <li><a href="/en/concepts/why-astro/">Astro's main features</a></li>
+                        <li><a href="/en/basics/astro-components/">Astro components</a></li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
               </div>
-            </article>
-            <div class="sl-markdown-content" data-pagefind-body>
-              <h1>Getting Started</h1>
-              <p>Astro is a web framework for building content-driven websites including blogs, marketing pages, and documentation.</p>
-              <h2>Start a New Project</h2>
-              <p>Use the create astro command to scaffold a new site.</p>
-              <pre><code>npm create astro@latest</code></pre>
             </div>
           </main>
         </body>
@@ -38,13 +63,13 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
     with_url_page("https://docs.example.test/en/getting-started/", html) do |page|
       payload = extract(page)
 
-      expect(payload["title"]).to eq("Getting Started")
-      expect(payload["markdown"]).to include("# Getting Started")
-      expect(payload["markdown"]).to include("Astro is a web framework")
-      expect(payload["markdown"]).to include("## Start a New Project")
+      expect(payload["title"]).to eq("Astro Docs")
+      expect(payload["markdown"]).to include("# Astro Docs")
+      expect(payload["markdown"]).to include("What will you build with Astro?")
+      expect(payload["markdown"]).to include("Explore [Astro starter themes](https://astro.build/themes/)")
+      expect(payload["markdown"]).to include("Start a new project")
       expect(payload["markdown"]).to include("npm create astro@latest")
-      expect(payload["markdown"]).not_to include("What will you build with Astro")
-      expect(payload["markdown"]).not_to include("Explore Astro starter themes")
+      expect(payload["markdown"]).to include("Astro's main features")
     end
   end
 
