@@ -676,4 +676,43 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["warnings"]).not_to include("meta_login_wall")
     end
   end
+
+  it "prefers legal provision text over legislation navigation chrome" do
+    html = <<~HTML
+      <html>
+        <head><title>Example Rights Act 1998</title></head>
+        <body>
+          <div id="layout2" class="legContent">
+            <h1 id="pageTitle">Example Rights Act 1998</h1>
+            <div id="breadCrumb"><h2>You are here:</h2><a href="/acts">Acts</a><span>Section 1</span></div>
+            <div id="legNav">
+              <ul><li>Table of Contents</li><li>Content</li><li>More Resources</li></ul>
+              <section><h2>What Version</h2><p>Legislation is available in different versions.</p></section>
+              <section><h2>Opening Options</h2><p>Open whole Act, schedules, or this section only.</p></section>
+            </div>
+            <div id="changesOverTime"><h2>Changes over time for: Section 1</h2><p>Timeline of Changes help text.</p></div>
+            <div id="content">
+              <div id="viewLegContents">
+                <div class="LegislationSection">
+                  <h3>1 The Protected Rights</h3>
+                  <p>(1) In this Act the protected rights mean the rights and fundamental freedoms set out in the Convention.</p>
+                  <p>(2) Those rights have effect subject to any designated derogation or reservation.</p>
+                  <p>(3) The Articles are set out in Schedule 1.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.legislation.example/ukpga/1998/42/section/1", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("1 The Protected Rights")
+      expect(payload["markdown"]).to include("(1) In this Act the protected rights")
+      expect(payload["markdown"]).not_to include("What Version")
+      expect(payload["markdown"]).not_to include("Timeline of Changes help text")
+      expect(payload["markdown"]).not_to include("More Resources")
+    end
+  end
 end

@@ -159,6 +159,7 @@ module FetchUtil
     def resolved_content_type(final_url, homepage_like, payload)
       content_type = payload["contentType"] || "article"
       return content_type unless content_type == "article"
+      return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
