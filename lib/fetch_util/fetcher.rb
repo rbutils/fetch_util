@@ -41,6 +41,17 @@ module FetchUtil
       /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
       /\A__gr(?:sc|ts|ua|rn)\z/
     ].freeze
+    TITLE_SLUG_STOPWORDS = %w[
+      about all and article articles blog book books browse category categories chapter
+      collection collections content docs edition editions en for from guide home html
+      index latest new news page pages post posts product products search show shop st
+      street tag tags the this topic topics unit with work works www your
+    ].freeze
+    SEARCH_OR_LIST_PATH_SEGMENTS = %w[
+      archive archives browse catalog categories category collection collections headlines
+      jobs keyword latest news product products projects s search section sections shop
+      tag tags topic topics wholesale
+    ].freeze
     SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
     GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
 
@@ -85,7 +96,10 @@ module FetchUtil
       canonical_url = normalized_result_url(payload["canonicalUrl"])
       homepage_like = homepage_like?(final_url)
       content_type = resolved_content_type(final_url, homepage_like, payload)
-      warnings = resolved_warnings(content_type, homepage_like, payload, requested_url: url, final_url: final_url)
+      warnings = resolved_warnings(
+        content_type, homepage_like, payload,
+        requested_url: url, final_url: final_url, canonical_url: canonical_url
+      )
       suspect = warnings.any?
       completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
       content_format = payload["contentFormat"]
@@ -143,7 +157,7 @@ module FetchUtil
       content_type
     end
 
-    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil)
+    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
       warnings = Array(payload["warnings"]).dup
       if content_type == "list" && homepage_like && !substantial_homepage_landing?(payload)
         warnings << "homepage_index_page"
@@ -152,6 +166,9 @@ module FetchUtil
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
       warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
+      if redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
+        warnings << "url_content_mismatch"
+      end
       warnings.uniq
     end
 
@@ -248,6 +265,87 @@ module FetchUtil
       end
     rescue URI::InvalidURIError
       false
+    end
+
+    def redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
+      return false unless content_type == "article"
+      return false if homepage_like || payload["docsLike"]
+      return false if requested_url.nil? || final_url.nil?
+      return false if [requested_url, final_url, canonical_url].compact.any? { |url| search_or_list_resource_url?(url) }
+
+      resource_url = mismatched_resource_url(requested_url, final_url, canonical_url)
+      return false if resource_url.nil?
+
+      requested_keywords = title_slug_keywords(requested_url)
+      return false if requested_keywords.length < 2
+
+      resolved_keywords = significant_slug_tokens([resource_url, payload["title"]].compact.join(" "))
+      return false if resolved_keywords.empty?
+
+      (requested_keywords & resolved_keywords).empty?
+    end
+
+    def mismatched_resource_url(requested_url, final_url, canonical_url)
+      requested_path = normalized_path_key(requested_url)
+      return nil if requested_path.empty?
+
+      final_path = normalized_path_key(final_url)
+      return final_url if !final_path.empty? && final_path != requested_path
+
+      return nil unless same_effective_domain?(final_url, canonical_url)
+
+      canonical_path = normalized_path_key(canonical_url)
+      return canonical_url if !canonical_path.empty? && canonical_path != requested_path
+
+      nil
+    end
+
+    def same_effective_domain?(left_url, right_url)
+      return false if left_url.nil? || right_url.nil?
+
+      left_domain = effective_domain(left_url)
+      right_domain = effective_domain(right_url)
+      !left_domain.nil? && left_domain == right_domain
+    end
+
+    def search_or_list_resource_url?(url)
+      uri = URI.parse(url)
+      return true if uri.query.to_s.match?(INDEX_QUERY_PATTERN)
+
+      uri.path.to_s.split("/").reject(&:empty?).any? do |segment|
+        SEARCH_OR_LIST_PATH_SEGMENTS.include?(segment.downcase)
+      end
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def normalized_path_key(url)
+      path = URI.parse(url).path.to_s.downcase.gsub(%r{/+}, "/")
+      path = path.delete_suffix("/") unless path == "/"
+      path
+    rescue URI::InvalidURIError
+      ""
+    end
+
+    def title_slug_keywords(url)
+      URI.parse(url).path.to_s.split("/").reject(&:empty?).reverse_each do |segment|
+        tokens = significant_slug_tokens(segment)
+        return tokens if tokens.length >= 2
+      end
+
+      []
+    rescue URI::InvalidURIError
+      []
+    end
+
+    def significant_slug_tokens(text)
+      decoded = URI.decode_www_form_component(text.to_s.tr("+", " "))
+      decoded.downcase.gsub(/[^a-z0-9]+/, " ").split.select do |token|
+        token.length >= 3 && token.match?(/[a-z]/) && !token.match?(/\d/) &&
+          !TITLE_SLUG_STOPWORDS.include?(token)
+      end.uniq
+    rescue ArgumentError
+      []
     end
 
     def fallback_result(url, fallback)
