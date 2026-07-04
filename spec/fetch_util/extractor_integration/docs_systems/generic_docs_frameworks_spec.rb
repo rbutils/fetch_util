@@ -306,6 +306,53 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
     end
   end
 
+  it "preserves nextra category card links from pagefind body content" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Guide - Nextra</title>
+        </head>
+        <body>
+          <a href="#nextra-skip-nav" class="nextra-skip-nav">Skip to Content</a>
+          <nav class="nextra-nav-container">Global nav</nav>
+          <article>
+            <div class="nextra-breadcrumb">Documentation / Guide</div>
+            <main data-pagefind-body="true">
+              <h1>Guide</h1>
+              <p>The following features are configured via the Next.js configuration and are available in all themes.</p>
+              <div class="nextra-cards x:grid not-prose" style="--rows:3">
+                <a class="nextra-card x:flex" href="/docs/guide/markdown">
+                  <span title="Markdown"><svg><path></path></svg><span class="_truncate">Markdown</span></span>
+                </a>
+                <a class="nextra-card x:flex" href="/docs/guide/syntax-highlighting">
+                  <span title="Syntax Highlighting"><span class="_truncate">Syntax Highlighting</span></span>
+                </a>
+                <a class="nextra-card x:flex" href="/docs/guide/image">
+                  <span title="Image"><span class="_truncate">Image</span></span>
+                  <p>Optimize image rendering in Nextra documents.</p>
+                </a>
+              </div>
+            </main>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://nextra.site/docs/guide", html) do |page|
+      payload = extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["title"]).to eq("Guide")
+      expect(markdown).to include("# Guide")
+      expect(markdown).to include("available in all themes")
+      expect(markdown).to include("[Markdown](https://nextra.site/docs/guide/markdown)")
+      expect(markdown).to include("[Syntax Highlighting](https://nextra.site/docs/guide/syntax-highlighting)")
+      expect(markdown).to include("Optimize image rendering in Nextra documents")
+      expect(markdown).not_to include("Global nav")
+      expect(markdown).not_to include("Documentation / Guide")
+    end
+  end
+
   it "extracts vitepress docs through generic docs-system detection" do
     html = <<~HTML
       <html>
