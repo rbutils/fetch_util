@@ -63,6 +63,35 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "repairs a dropped leading character when card detail starts with a title word" do
+    html = <<~HTML
+      <html>
+        <head><title>Research Reports</title></head>
+        <body>
+          <main>
+            <section>
+              <h2>Featured</h2>
+              <article class="report-card">
+                <h3><a href="/human-capital-report">Building Human Capital Where It Matters</a></h3>
+                <p>uman capital -- people's health, skills, knowledge, and experience -- is the foundation of economic growth.</p>
+                <p>This report brings new evidence on how human capital is formed.</p>
+              </article>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/research", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("[Building Human Capital Where It Matters](https://example.test/human-capital-report)")
+      expect(markdown).to include("Human capital -- people's health, skills, knowledge, and experience")
+      expect(markdown).not_to match(/^uman capital -- people's/i)
+    end
+  end
+
   it "preserves legal citation link text with emphasized section letters" do
     html = <<~HTML
       <html>
