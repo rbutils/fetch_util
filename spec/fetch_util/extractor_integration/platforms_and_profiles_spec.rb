@@ -186,6 +186,78 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves Drupal institutional body paragraphs" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>International Covenant | Example UN</title>
+          <meta name="Generator" content="Drupal 10">
+        </head>
+        <body class="path-instruments node-123">
+          <header><a href="/donate">Donate</a><a href="/topics">Topics</a></header>
+          <main>
+            <article class="node node--type-instrument">
+              <h1>International Covenant on Example Rights</h1>
+              <div class="field field--name-body field--type-text-long">
+                <h2>Preamble</h2>
+                <p>The States Parties to the present Covenant,</p>
+                <p>Considering that recognition of inherent dignity is the foundation of freedom, justice and peace.</p>
+                <h3>Article 1</h3>
+                <p>1. All peoples have the right of self-determination.</p>
+                <p>2. All peoples may freely pursue their economic, social and cultural development.</p>
+              </div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://institution.example/en/instruments/example-covenant", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# International Covenant on Example Rights")
+      expect(payload["markdown"]).to include("## Preamble\n\nThe States Parties to the present Covenant,")
+      expect(payload["markdown"]).to include("### Article 1")
+      expect(payload["markdown"]).to include("All peoples have the right of self-determination.")
+      expect(payload["markdown"]).not_to include("Donate")
+    end
+  end
+
+  it "extracts institutional topic cards as clean list items" do
+    topic_cards = Array.new(9) do |index|
+      topic = ["Abortion", "Abuse of older people", "Addictive behaviour", "Adolescent health", "Ageing", "Air pollution", "Alcohol", "Anaemia", "Cancer"][index]
+      category = index.even? ? "Conditions" : "Health interventions"
+      slug = topic.downcase.gsub(/[^a-z0-9]+/, "-").sub(/-\z/, "")
+
+      <<~CARD
+        <div><a href="https://institution.example/health-topics/#{slug}" aria-label="#{topic}" role="link">
+          <div><p><span>#{category}</span></p><p>#{topic}</p></div>
+        </a></div>
+      CARD
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Health topics</title></head>
+        <body>
+          <main>
+            <h1>Health topics</h1>
+            <div id="listView-healthtopics" data-sf-element="Row">
+              #{topic_cards}
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://institution.example/health-topics", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("- [Abortion](https://institution.example/health-topics/abortion)")
+      expect(payload["markdown"]).to include("- [Cancer](https://institution.example/health-topics/cancer)")
+      expect(payload["markdown"]).not_to include("[\n\nHealth interventions")
+      expect(payload["markdown"]).not_to include("\n\n](")
+    end
+  end
+
   it "extracts pinterest search pages into compact pin bullets" do
     html = <<~HTML
       <html>
