@@ -438,6 +438,74 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes reference article left-rail toc and quiz chrome before body text" do
+    html = <<~HTML
+      <html>
+        <head><title>Physics | Reference</title></head>
+        <body>
+          <main>
+            <article class="topic-desktop article-content">
+              <div class="topic-left-rail md-article-drawer">
+                <div class="toc">
+                  <a href="/science/physics-science">Introduction &amp; Top Questions</a>
+                  <a href="/science/physics-science#mechanics">Mechanics</a>
+                  <a href="/science/physics-science#optics">Optics</a>
+                  <a href="/science/physics-science/additional-info">References &amp; Edit History</a>
+                </div>
+                <section class="tlr-quiz-sidebar">
+                  <h2>Quizzes</h2>
+                  <a href="/quiz/faces-of-science">Faces of Science</a>
+                  <a href="/quiz/all-about-physics">All About Physics Quiz</a>
+                </section>
+              </div>
+              <div class="topic-content">
+                <h1>Physics</h1>
+                <p>Physics is the branch of science that deals with the structure of matter and how the fundamental constituents of the universe interact.</p>
+                <p>Classical mechanics describes the motion of bodies under the action of forces.</p>
+              </div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://reference.example/science/physics-science", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to include("Physics is the branch of science")
+      expect(markdown).to include("Classical mechanics describes")
+      expect(markdown).not_to include("Introduction & Top QuestionsMechanicsOptics")
+      expect(markdown).not_to include("Faces of Science")
+      expect(markdown).not_to include("All About Physics Quiz")
+    end
+
+    flattened_html = <<~HTML
+      <html>
+        <head><title>Physics | Reference</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Physics</h1>
+              <p>physics Introduction &amp; Top QuestionsThe scope of physicsMechanicsOptics References &amp; Edit History Related Topics Images &amp; Videos At a Glance physics summary Quizzes Faces of Science All About Physics Quiz physics science Written by Example Author Fact-checked by Reference Editors Last updated June 4, 2026 •History Top Questions What is physics?Physics is the branch of science that deals with the structure of matter and how the fundamental constituents of the universe interact. Why does physics work in SI units? Physics uses defined units for measurement.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://reference.example/science/physics-science", flattened_html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("Top Questions What is physics? Physics is the branch of science")
+      expect(markdown).not_to include("Introduction & Top QuestionsThe scope")
+      expect(markdown).not_to include("All About Physics Quiz")
+      expect(markdown).not_to include("Written by Example Author")
+    end
+  end
+
   it "removes trailing AI summaries and related legal marketing after case bodies" do
     html = <<~HTML
       <html>
