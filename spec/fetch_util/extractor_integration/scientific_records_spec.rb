@@ -3,6 +3,82 @@
 RSpec.describe 'FetchUtil scientific record extraction' do
   include_context 'extractor integration helpers'
 
+  it 'extracts NCBI Gene records as articles from the record report root' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>EGFR epidermal growth factor receptor [Homo sapiens (human)] - Gene - NCBI</title>
+          <meta name="ncbi_db" content="gene">
+          <meta property="og:site_name" content="NCBI">
+        </head>
+        <body>
+          <aside class="facet_cont"><a href="#">Protein-coding</a><a href="#">Current</a></aside>
+          <div class="rprt full-rprt">
+            <div class="rprt-header">
+              <h1 class="title" id="gene-name"><span class="gn">EGFR</span> epidermal growth factor receptor [<em class="tax">Homo sapiens</em> (human)]</h1>
+              <span class="geneid">Gene ID: 1956, updated on 16-Jun-2026</span>
+            </div>
+            <div class="download-datasets"><a href="#">Download Datasets</a></div>
+            <div class="rprt-body">
+              <section class="rprt-section gene-summary" data-section="summary">
+                <div class="rprt-section-header" id="summary">
+                  <h2 id="header-summary"><a href="#"><span class="ui-ncbitoggler-master-text">Summary</span></a></h2>
+                  <div class="rprt-section-tools"><a href="#top" class="gene-top-page">Go to the top of the page</a><a class="gene-section-help" href="/books/NBK3841/#EntrezGene.Summary_2">Help</a></div>
+                </div>
+                <div class="rprt-section-body">
+                  <dl id="summaryDl">
+                    <dt>Official Symbol</dt><dd>EGFR<span class="prov">provided by <a href="https://www.genenames.org/">HGNC</a></span></dd>
+                    <dt>Official Full Name</dt><dd>epidermal growth factor receptor<span class="prov">provided by <a href="https://www.genenames.org/">HGNC</a></span></dd>
+                    <dt>Gene type</dt><dd>protein coding</dd>
+                    <dt>Organism</dt><dd><a href="/Taxonomy/Browser/wwwtax.cgi?id=9606">Homo sapiens</a></dd>
+                    <dt>Summary</dt><dd>The protein encoded by this gene is a transmembrane glycoprotein and receptor for members of the epidermal growth factor family.</dd>
+                    <dt>Expression</dt><dd>Broad expression in placenta, skin and 22 other tissues <a href="#gene-expression">See more</a></dd>
+                    <dt></dt><dd><strong>Try the new <a href="/datasets/gene/1956/">Gene page</a></strong></dd>
+                  </dl>
+                </div>
+              </section>
+              <section class="rprt-section gene-genomic-context" data-section="genomic-context">
+                <div class="rprt-section-header" id="genomic-context"><h2><a href="#"><span class="ui-ncbitoggler-master-text">Genomic context</span></a></h2></div>
+                <div class="rprt-section-body">
+                  <dl class="dl-chr-info"><dt>Location:</dt><dd>7p11.2</dd><dt>Exon count:</dt><dd>32</dd></dl>
+                  <table class="jig-ncbigrid"><thead><tr><th>Assembly</th><th>Chr</th><th>Location</th></tr></thead><tbody><tr><td>GRCh38.p14</td><td>7</td><td>NC_000007.14 (55019017..55211628)</td></tr></tbody></table>
+                </div>
+              </section>
+              <section class="rprt-section gene-gene-expression" data-section="gene-expression">
+                <div class="rprt-section-header" id="gene-expression"><h2><a href="#"><span class="ui-ncbitoggler-master-text">Expression</span></a></h2></div>
+                <div class="rprt-section-body"><ul id="project-summary"><li id="project-summary-title">Project title: Tissue-specific circular RNA induction during human fetal development</li><li id="project-summary-bioprojects">BioProject: <a href="/bioproject/PRJNA270632/">PRJNA270632</a></li></ul></div>
+              </section>
+              <section class="rprt-section gene-interactions" data-section="interactions">
+                <div class="rprt-section-header" id="interactions"><h2><a href="#"><span class="ui-ncbitoggler-master-text">Interactions</span></a></h2></div>
+                <div class="rprt-section-body"><table summary="Gene Interaction"><thead><tr><th>Products</th><th>Interactant</th><th>Description</th></tr></thead><tbody><tr><td>EGFR</td><td>ERBB2</td><td>EGFR and ERBB2 form heterodimers in signaling complexes.</td></tr></tbody></table></div>
+              </section>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.ncbi.nlm.nih.gov/gene/1956', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to start_with('# EGFR epidermal growth factor receptor')
+      expect(markdown).to include('Official Symbol')
+      expect(markdown).to include('The protein encoded by this gene is a transmembrane glycoprotein')
+      expect(markdown).to include('Genomic context')
+      expect(markdown).to include('NC_000007.14 (55019017..55211628)')
+      expect(markdown).to include('Expression')
+      expect(markdown).to include('Tissue-specific circular RNA induction')
+      expect(markdown).to include('Interactions')
+      expect(markdown).to include('EGFR and ERBB2 form heterodimers')
+      expect(markdown).not_to start_with('- [')
+      expect(markdown.scan('Official Symbol').length).to eq(1)
+      expect(markdown).not_to include('Download Datasets')
+      expect(markdown).not_to include('Go to the top of the page')
+    end
+  end
+
   it 'extracts OEIS sequence records in canonical section order' do
     html = <<~HTML
       <html>
