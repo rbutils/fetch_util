@@ -438,6 +438,48 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes trailing AI summaries and related legal marketing after case bodies" do
+    html = <<~HTML
+      <html>
+        <head><title>Example v. Board, 347 U.S. 483</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Example v. Board</h1>
+              <p>MR. CHIEF JUSTICE WARREN delivered the opinion of the Court.</p>
+              <p>Separate educational facilities are inherently unequal.</p>
+              <p>It is so ordered.</p>
+              <section class="feedback-summary related-content">
+                <p>Was this summary helpful? Thank you for feedback!</p>
+                <h2>AI Summary</h2>
+                <p>AI-generated summaries may contain mistakes and should be verified.</p>
+                <h2>You May Also Like</h2>
+                <a href="/related">Understanding this case</a>
+                <h2>Need Find Attorney?</h2>
+                <p>Search our directory by legal issue.</p>
+                <p>For Legal Professionals Sign Up Get updates.</p>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://case.example/court/supreme/347/483.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to include("MR. CHIEF JUSTICE WARREN")
+      expect(markdown).to include("It is so ordered.")
+      expect(markdown).not_to include("Was this summary helpful")
+      expect(markdown).not_to include("AI-generated summaries")
+      expect(markdown).not_to include("You May Also Like")
+      expect(markdown).not_to include("Need Find Attorney")
+      expect(markdown).not_to include("For Legal Professionals")
+    end
+  end
+
   it "does not duplicate nested layout table content when converting comments" do
     html = <<~HTML
       <html>
