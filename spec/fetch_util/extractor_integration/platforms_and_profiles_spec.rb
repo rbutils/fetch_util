@@ -284,6 +284,61 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts Drupal paragraph component hubs beyond the intro paragraph" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Legal Affairs | UNESCO</title>
+          <meta name="Generator" content="Drupal 10">
+        </head>
+        <body class="path-legal-affairs node-66535">
+          <header><a href="/en/search">Search</a><a href="/en/donate">Donate</a></header>
+          <article class="node--view-mode-full node node--type-structured-data-hub node--promoted">
+            <h1>Legal Affairs</h1>
+            <nav class="hub-menu"><a href="/en/legal-affairs/oisla">Our team</a></nav>
+            <div class="field field--name-field-paragraphs field--type-entity-reference-revisions field--label-hidden field__items">
+              <div class="field__item fadein">
+                <div data-trk="{&quot;block&quot;:{&quot;name&quot;:&quot;Legal Affairs &gt; Paragraphs&quot;,&quot;format&quot;:&quot;rich_text&quot;}}" class="paragraph paragraph--type--rich-text paragraph--view-mode--default">
+                  <div class="rich-text field field--name-field-text field--type-text-long field__item">
+                    <p>The Office of International Standards and Legal Affairs provides centralized and independent legal advice to the General Conference, the Executive Board and other intergovernmental bodies.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="field__item fadein">
+                <div id="highlights" data-trk="{&quot;block&quot;:{&quot;name&quot;:&quot;Highlights&quot;,&quot;format&quot;:&quot;cards_landing&quot;}}" class="paragraph paragraph--type--cards-landing paragraph--view-mode--default">
+                  <div class="field field--name-field-title field__item"><h2>Highlights</h2></div>
+                  <div class="card-list row">
+                    <article class="card"><h3><a href="/en/legal-affairs/monitoring">New one-stop-shop for monitoring the implementation of standard-setting instruments</a></h3><p>Discover monitoring and assessment tools.</p></article>
+                    <article class="card"><h3><a href="/en/legal-affairs/calendar">Calendar of major meetings in 2026</a></h3><p>Governing bodies, conventions and other meetings.</p></article>
+                    <article class="card"><h3><a href="/en/legal-affairs/legal-texts">Legal texts on UNESCO Conventions</a></h3><p>Rules of procedure, operational guidelines, decisions and documents.</p></article>
+                  </div>
+                </div>
+              </div>
+              <div class="field__item fadein">
+                <div data-trk="{&quot;block&quot;:{&quot;name&quot;:&quot;Priorities&quot;,&quot;format&quot;:&quot;cards_landing&quot;}}" class="paragraph paragraph--type--cards-landing paragraph--view-mode--default">
+                  <h2>UNESCO Constitution</h2>
+                  <div class="card-list"><article class="card"><h3><a href="/en/legal-affairs/constitution">Constitution and basic texts</a></h3><p>Constitutional instruments of the Organization.</p></article></div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.unesco.org/en/legal-affairs", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Legal Affairs")
+      expect(payload["markdown"]).to include("The Office of International Standards and Legal Affairs")
+      expect(payload["markdown"]).to include("## Highlights")
+      expect(payload["markdown"]).to include("New one-stop-shop for monitoring")
+      expect(payload["markdown"]).to include("Legal texts on UNESCO Conventions")
+      expect(payload["markdown"]).to include("## UNESCO Constitution")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(payload["markdown"]).not_to include("Donate")
+    end
+  end
+
   it "extracts legal convention index lists from institutional page content" do
     html = <<~HTML
       <html>
