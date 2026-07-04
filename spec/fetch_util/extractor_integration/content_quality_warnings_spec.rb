@@ -224,6 +224,33 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "does not flag url_content_mismatch for normalized patent publication identifiers" do
+    html = <<~HTML
+      <html>
+        <head><title>Vehicle Location Prediction Method and Apparatus</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Vehicle Location Prediction Method and Apparatus</h1>
+              <p><span>Publication Number</span> <span>WO/2023/123456</span></p>
+              <p><span>Publication Date</span> <span>06.07.2023</span></p>
+              <p><span>International Application No.</span> <span>PCT/CN2021/143925</span></p>
+              <p>This patent record describes vehicle location prediction methods, storage media, apparatus components, claims, inventors, applicants, and publication metadata.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://patents.example.org/search/en/detail.jsf?docId=WO2023123456", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Publication Number")
+      expect(payload["markdown"]).to include("WO/2023/123456")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+    end
+  end
+
   it "flags stale_content for articles published more than 30 days ago" do
     html = <<~HTML
       <html>
