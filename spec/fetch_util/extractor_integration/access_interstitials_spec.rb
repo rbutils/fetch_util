@@ -369,6 +369,51 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags structured publisher not-found shells despite heavy chrome" do
+    html = <<~HTML
+      <html>
+        <head><title>Error (Publisher Platform)</title></head>
+        <body>
+          <header>
+            <a href="/">Publisher Home</a>
+            <a href="/journals">Journals A-Z</a>
+            <a href="/action/ssostart">Access through institution</a>
+            <a href="/login">Log In</a>
+          </header>
+          <main>
+            <div class="container">
+              <h1>Page Not Found</h1>
+              <h3>We're sorry, but the page you requested cannot be accessed for one of the following reasons:</h3>
+              <ul>
+                <li>The address was typed incorrectly</li>
+                <li>The page does not exist</li>
+                <li>The page cannot be found</li>
+                <li>Cookies and/or Javascript may need to be enabled to view this page</li>
+              </ul>
+              <h3>Please try one of the following pages to find what you're looking for:</h3>
+              <ul>
+                <li><a href="/">Publications Home Page</a></li>
+                <li><a href="/search/advanced">Publications Search</a></li>
+                <li><a href="/help">Help</a></li>
+              </ul>
+            </div>
+          </main>
+          <footer>
+            <a href="/references">References</a>
+            <a href="/subscriptions">Subscription Information</a>
+          </footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://publisher.example/doi/10.1021/example", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("page you requested cannot")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
   it "flags court-style soft 404 pages where the error is in the opinion title" do
     html = <<~HTML
       <html>

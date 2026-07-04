@@ -70,6 +70,57 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
+  it 'extracts ACS abstracts without metrics and access chrome' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Learning Chemical Equilibrium with Studio Activities - ACS Publications</title>
+          <meta property="og:site_name" content="ACS Publications">
+          <meta name="citation_doi" content="10.1021/acs.jchemeduc.4c00045">
+          <meta name="citation_journal_title" content="Journal of Chemical Education">
+          <meta name="citation_publisher" content="American Chemical Society">
+        </head>
+        <body>
+          <header>
+            <a href="/action/ssostart">Access through institution</a>
+            <a href="/action/showLogin">Log In</a>
+          </header>
+          <main>
+            <article>
+              <h1 class="article_header-title">Learning Chemical Equilibrium with Studio Activities</h1>
+              <div class="article_abstract">
+                <h2>Abstract</h2>
+                <p>Students in a general chemistry course completed studio activities that connected equilibrium constants, reaction quotients, and particulate-level models.</p>
+                <p>Assessment responses showed improved explanations of dynamic equilibrium without relying on unrelated metrics widgets.</p>
+              </div>
+            </article>
+            <aside class="articleMetrics"><h2>Metrics</h2><p>Article Views 12,431 Altmetric Citations</p></aside>
+            <section class="access-options"><h2>Get Access</h2><p>Purchase short-term access or sign in through your institution.</p></section>
+            <section class="recommended"><h2>Recommended Articles</h2><p>Recommended chemistry education article chrome.</p></section>
+            <section class="references"><h2>References</h2><p>Google Scholar Crossref citation chrome.</p></section>
+            <div class="advertisement">Advertisement</div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://pubs.acs.org/doi/10.1021/acs.jchemeduc.4c00045', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to include('# Learning Chemical Equilibrium with Studio Activities')
+      expect(markdown).to include('## Abstract')
+      expect(markdown).to include('connected equilibrium constants, reaction quotients')
+      expect(markdown).to include('improved explanations of dynamic equilibrium')
+      expect(markdown).not_to include('Article Views')
+      expect(markdown).not_to include('Purchase short-term access')
+      expect(markdown).not_to include('Recommended chemistry education')
+      expect(markdown).not_to include('Google Scholar Crossref')
+      expect(markdown).not_to include('Advertisement')
+    end
+  end
+
   it 'extracts Elsevier article bodies instead of citation and supplementary chrome' do
     html = <<~HTML
       <html>
