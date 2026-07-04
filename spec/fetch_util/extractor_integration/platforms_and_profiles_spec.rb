@@ -159,6 +159,50 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts Substack post bodies instead of related links and comments" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>The end of the vibecession? - Example Stack</title>
+          <meta property="og:image" content="https://substackcdn.com/image/fetch/example.jpg">
+        </head>
+        <body>
+          <article class="typography newsletter-post post">
+            <div class="post-header">
+              <h1 class="post-title published">The end of the vibecession?</h1>
+              <div class="byline-names">Example Writer</div>
+            </div>
+            <div class="available-content">
+              <div dir="auto" class="body markup">
+                <p>One constant source of frustration for econ writers and economists is that the connection between public perceptions of the economy and the actual state of the economy is not clear.</p>
+                <p>That does not mean the connection does not exist, or that people's perceptions are simply random noise.</p>
+                <p>The more useful question is whether wages, prices, and employment are moving in ways that match what people say they feel.</p>
+                <p>Those facts make the vibecession debate a real article body rather than a list of recommended posts.</p>
+              </div>
+            </div>
+          </article>
+          <section class="related-posts">
+            <a href="/p/yes-were-probably-in-a-recession">have a recession</a>
+            <a href="/p/another-post">Another related post</a>
+          </section>
+          <div class="comment-list post-page-root-comment-list">
+            <a href="/p/the-end/comment/1">Jun 28, 2023</a>
+            <a href="/p/the-end/comments">102 more comments...</a>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://example.substack.com/p/the-end-of-the-vibecession", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# The end of the vibecession?")
+      expect(payload["markdown"]).to include("One constant source of frustration")
+      expect(payload["markdown"]).to include("vibecession debate a real article body")
+      expect(payload["markdown"]).not_to include("102 more comments")
+      expect(payload["markdown"]).not_to include("have a recession")
+    end
+  end
+
   it "does not misclassify non-meta pages that mention facebook in share chrome" do
     html = <<~HTML
       <html>
