@@ -79,6 +79,72 @@ RSpec.describe 'FetchUtil scientific record extraction' do
     end
   end
 
+  it 'extracts Ensembl gene summaries without transition and species chrome' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Gene: TP53 (ENSG00000141510) - Summary - Homo_sapiens - Ensembl genome browser 116</title>
+          <meta property="og:site_name" content="Ensembl">
+        </head>
+        <body>
+          <div id="min_width_holder">
+            <div class="warning" id="announcement-banner"><h2>Upcoming Ensembl Platform Transition</h2><p>This is the final release of its kind on this website.</p></div>
+            <div class="spbar_holder"><span class="species">Human</span><div class="dropdown species"><h4>Favourite species</h4><ul><li><a href="/Homo_sapiens/Info/Index">Human</a></li><li><a href="/Mus_musculus/Info/Index">Mouse</a></li></ul><h4>All species</h4><ul><li><a href="/Vicugna_pacos/Info/Index">Alpaca</a></li></ul></div></div>
+            <div id="page_nav"><div class="header">Gene-based displays</div><ul><li><a href="/Homo_sapiens/Gene/Sequence?g=ENSG00000141510">Sequence</a></li></ul></div>
+            <div id="main">
+              <div class="panel js_panel" id="ensembl_panel_2">
+                <div class="nav-heading"><h1 class="summary-heading">Gene: TP53 <span class="summary-subhead">ENSG00000141510</span></h1></div>
+                <div class="content">
+                  <div class="summary_panel">
+                    <div class="twocol">
+                      <div class="row"><div class="lhs">Description</div><div class="rhs"><p>tumor protein p53 [Source:HGNC Symbol;Acc:<a href="https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/HGNC:11998">HGNC:11998</a>]</p></div></div>
+                      <div class="row"><div class="lhs">Gene Synonyms</div><div class="rhs"><p>LFS1, P53</p></div></div>
+                      <div class="row"><div class="lhs">Location</div><div class="rhs"><p><a href="/Homo_sapiens/Location/View?g=ENSG00000141510">Chromosome 17: 7,661,779-7,687,546</a> reverse strand.</p><p>GRCh38:CM000679.2</p></div></div>
+                      <div class="row"><div class="lhs">About this gene</div><div class="rhs"><p>This gene has 40 transcripts, 255 orthologues, 2 paralogues and is associated with 431 phenotypes.</p></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel js_panel" id="ensembl_panel_1">
+                <div class="nav-heading"><h1 class="caption"><a href="/Help/View?id=143"><span>Summary</span></a></h1></div>
+                <div class="content">
+                  <div class="session_messages js_panel" id="ensembl_panel_3"></div>
+                  <div class="ajax initial_panel"><div class="js_panel" id="GeneSummary"><div class="twocol">
+                    <div class="row"><div class="lhs">Name</div><div class="rhs"><p><a href="https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/HGNC:11998">TP53</a> (HGNC Symbol)</p></div></div>
+                    <div class="row"><div class="lhs">MANE</div><div class="rhs"><p>This gene contains MANE Select <a href="/Homo_sapiens/Transcript/Summary?t=ENST00000269305">ENST00000269305</a>, <a href="/Homo_sapiens/Transcript/ProteinSummary?t=ENST00000269305">ENSP00000269305</a></p></div></div>
+                    <div class="row"><div class="lhs">UniProtKB</div><div class="rhs"><p>This gene has proteins that correspond to the following UniProtKB identifiers: <a href="http://www.uniprot.org/uniprot/P04637">P04637</a></p></div></div>
+                    <div class="row"><div class="lhs">RefSeq</div><div class="rhs"><p>This Ensembl/Gencode gene contains selected identical RefSeq transcripts.</p></div></div>
+                    <div class="row"><div class="lhs">CCDS</div><div class="rhs"><p>This gene is a member of the Human CCDS set: <a href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?DATA=CCDS11118.1">CCDS11118.1</a></p></div></div>
+                  </div></div></div>
+                  <div class="ajax initial_panel image_panel"><div class="image_toolbar"><a href="/Config/Gene/TranscriptsImage">Add/remove tracks</a></div><img alt="" src="/img-tmp/transcripts.png"><div class="hover_label"><p>Track configuration pop-up</p></div></div>
+                  <div class="transcripts_table"><table id="transcripts_table"><thead><tr><th>Transcript ID</th><th>Name</th><th>bp</th><th>Protein</th><th>Biotype</th></tr></thead><tbody><tr><td><a href="/Homo_sapiens/Transcript/Summary?t=ENST00000269305">ENST00000269305.9</a></td><td>TP53-201</td><td>2512</td><td>393aa</td><td>Protein coding</td></tr></tbody></table></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000141510', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to start_with('# Gene: TP53 ENSG00000141510')
+      expect(markdown).to include('Description')
+      expect(markdown).to include('tumor protein p53')
+      expect(markdown).to include('Chromosome 17: 7,661,779-7,687,546')
+      expect(markdown).to include('This gene has 40 transcripts')
+      expect(markdown).to include('MANE Select')
+      expect(markdown).to include('ENST00000269305.9')
+      expect(markdown).not_to include('Upcoming Ensembl Platform Transition')
+      expect(markdown).not_to include('Favourite species')
+      expect(markdown).not_to include('Gene-based displays')
+      expect(markdown).not_to include('Add/remove tracks')
+    end
+  end
+
   it 'extracts OEIS sequence records in canonical section order' do
     html = <<~HTML
       <html>
