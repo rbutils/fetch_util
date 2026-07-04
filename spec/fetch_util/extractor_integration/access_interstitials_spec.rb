@@ -465,6 +465,45 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not flag rich public pages with incidental subscription access copy" do
+    html = <<~HTML
+      <html>
+        <head><title>The Shawshank Redemption Reviews | Example Reviews</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>The Shawshank Redemption</h1>
+              <p>Wrongly convicted, Andy Dufresne is sentenced to two consecutive life terms in Shawshank prison for the murders of his wife and her lover.</p>
+              <p>The film follows Andy as he learns to survive inside the prison, builds friendships, and keeps hope alive over many years.</p>
+              <section>
+                <h2>Critic Reviews</h2>
+                <p>Universal acclaim based on twenty-two critic reviews, with praise for Frank Darabont's direction and the performances by Tim Robbins and Morgan Freeman.</p>
+                <a href="/movie/the-shawshank-redemption/critic-reviews">Read critic reviews</a>
+              </section>
+              <section>
+                <h2>User Reviews</h2>
+                <p>Audiences describe the drama as moving, humane, and memorable, with many reviews highlighting the long friendship at the center of the story.</p>
+                <a href="/movie/the-shawshank-redemption/user-reviews">Read user reviews</a>
+                <a href="/movie/the-shawshank-redemption/cast">View cast</a>
+                <a href="/movie/the-shawshank-redemption/details">View details</a>
+              </section>
+            </article>
+            <aside>
+              <p>Read with a subscription for premium industry newsletters.</p>
+            </aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-reviews.test/movie/the-shawshank-redemption", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Wrongly convicted, Andy Dufresne")
+      expect(payload["warnings"]).not_to include("subscription_interstitial")
+    end
+  end
+
   it "flags generic auth pages such as password-reset screens" do
     html = <<~HTML
       <html>
