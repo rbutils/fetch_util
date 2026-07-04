@@ -38,6 +38,10 @@ module FetchUtil
       "main",
       "article",
       "[role='main']",
+      "[class*='content']",
+      "[id*='content']",
+      "[class*='article']",
+      "[id*='article']",
       ".content",
       ".resource-container"
     ].freeze
@@ -156,10 +160,18 @@ module FetchUtil
     end
 
     def docs_root(document)
+      candidates = []
       DOCS_ROOT_SELECTORS.each do |selector|
-        node = document.at_css(selector)
-        return node.dup if node && clean_text(node.text).length >= 120
+        document.css(selector).each do |node|
+          text = clean_text(node.text)
+          next if text.length < 120
+
+          candidates << [node, text.length + (node.css("p").length * 200)]
+        end
       end
+
+      best = candidates.max_by { |_node, score| score }
+      return best.first.dup if best
 
       body = document.at_css("body")
       body&.dup

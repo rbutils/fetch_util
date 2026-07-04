@@ -30,7 +30,7 @@ module FetchUtil
     }ix
     ARTICLE_PATH_PATTERN = %r{
       /(?:20\d{2}|\d{4}/\d{2}/\d{2}|article|articles|blog|blogs|column|columns|
-      entry|entries|post|posts|wiki|dictionary|definition|definitions|thesaurus|\d{5,}[\w-]*\.html?)\b
+      entry|entries|post|posts|news/[\w-]+|wiki|dictionary|definition|definitions|thesaurus|\d{5,}[\w-]*\.html?)\b
     }ix
     LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
@@ -74,6 +74,7 @@ module FetchUtil
         build_result(url, page.current_url, payload)
       end
       fallback = docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
+      fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
       result = fallback_result(url, fallback) if fallback
       log_request(url, t0)
       result
@@ -263,6 +264,22 @@ module FetchUtil
         parsed = URI.parse(url)
         [parsed.path, parsed.query].compact.join("?").match?(PDF_PATH_PATTERN)
       end
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def article_body_fallback_candidate?(result)
+      return false unless result.content_type == "list"
+      return false if result.byline.to_s.strip.empty? && result.published_time.to_s.strip.empty?
+      return false unless article_like_url?(result.final_url) || slug_article_url?(result.final_url)
+
+      markdown = result.markdown.to_s
+      markdown.length < 1_500 && markdown.lines.grep(/^\s*[-*]\s+\[/).count >= 4
+    end
+
+    def slug_article_url?(url)
+      segments = URI.parse(url).path.to_s.split("/").reject(&:empty?)
+      segments.length == 1 && segments.first.include?("-")
     rescue URI::InvalidURIError
       false
     end

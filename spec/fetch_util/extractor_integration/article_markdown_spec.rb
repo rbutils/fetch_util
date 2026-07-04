@@ -141,6 +141,50 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves a focused news article body over donation and footer chrome" do
+    paragraphs = (1..8).map do |index|
+      "<p>Article body paragraph #{index} explains the switchback experiment design with enough standalone prose to identify the real content region.</p>"
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Switchback Experiment Design</title></head>
+        <body>
+          <main id="site-main">
+            <aside class="donation-cta">
+              <h2>Support our charity</h2>
+              <p>Donate to help people learn to code and support our nonprofit mission.</p>
+              <a href="/donate">Donate now</a>
+            </aside>
+            <article>
+              <h1>Switchback Experiment Design</h1>
+              <section data-test-label="post-content" class="article-content prose">
+                #{paragraphs}
+                <h2>How Switchback Design Restores a Clean Comparison</h2>
+                <p>The whole platform alternates between treatment and control slots, so shared model capacity no longer contaminates only one user group.</p>
+              </section>
+            </article>
+            <footer>
+              <h2>About freeCodeCamp</h2>
+              <p>Our mission is to help people learn to code for free.</p>
+              <a href="/news/about/">About</a>
+              <a href="/donate/">Donate</a>
+            </footer>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://www.freecodecamp.org/news/switchback-experiments-for-ai-platform-features-in-python/', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Article body paragraph 8")
+      expect(payload["markdown"]).to include("How Switchback Design Restores a Clean Comparison")
+      expect(payload["markdown"]).not_to include("Support our charity")
+    end
+  end
+
   it "prefers a full long document body over a short reader-mode fragment" do
     articles = (1..18).map do |index|
       <<~HTML

@@ -183,6 +183,67 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('homepage_index_page')
   end
 
+  it 'keeps news article slugs as articles instead of section indexes' do
+    article_url = 'https://www.freecodecamp.org/news/switchback-experiments-for-ai-platform-features-in-python/'
+    article_markdown = <<~MARKDOWN
+      # Product Experimentation for LLM Platforms
+
+      Your team ships an intelligent query-routing feature for an LLM SaaS platform. The feature reads each incoming request in real time and decides whether to send it to the fast standard model or the more capable premium model.
+
+      Switchback experiments are the standard fix for shared-resource product experiments where user-level randomization would break the comparison.
+
+      - [Why User-Level A/B Testing Fails](#heading-why-user-level-ab-testing-fails)
+      - [How Switchback Design Restores a Clean Comparison](#heading-how-switchback-design-restores-a-clean-comparison)
+      - [Step 1: Build the Switchback Time Series](#heading-step-1-build-the-switchback-time-series)
+      - [Step 2: Naive Estimate](#heading-step-2-naive-estimate)
+    MARKDOWN
+
+    stub_browser_extraction(
+      article_url,
+      page: page_at(article_url),
+      payload: payload_with(
+        title: 'Product Experimentation for LLM Platforms',
+        markdown: article_markdown,
+        contentType: 'article'
+      )
+    )
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('multi_topic_page')
+  end
+
+  it 'falls back to raw article prose when browser extraction returns a short related-link list' do
+    article_url = 'https://blog.example.com/introducing-self-improving-software/'
+    list_payload = payload_with(
+      title: 'Introducing self-improving software',
+      byline: 'Matt Arbesfeld',
+      publishedTime: '2026-06-23T13:53:32+00:00',
+      markdown: <<~MARKDOWN.chomp,
+        - [Product Management](https://blog.example.com/product-management)
+        - [Related story one](https://blog.example.com/product-management/one)
+        - [Related story two](https://blog.example.com/product-management/two)
+        - [Related story three](https://blog.example.com/product-management/three)
+      MARKDOWN
+      contentType: 'list'
+    )
+    article_payload = payload_with(
+      title: 'Introducing self-improving software',
+      byline: 'Matt Arbesfeld',
+      markdown: 'Today, I am excited to announce self-improving capabilities in LogRocket Galileo.',
+      contentType: 'article'
+    )
+
+    stub_browser_extraction(article_url, page: page_at(article_url), payload: list_payload)
+    stub_raw_docs_fallback(article_url, payload: article_payload)
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.markdown).to include('self-improving capabilities')
+  end
+
   it 'does not relabel article pages with related links as list content' do
     article_url = 'https://www.example.com/2026/07/03/world/investigation-details.html'
     article_markdown = <<~MARKDOWN
