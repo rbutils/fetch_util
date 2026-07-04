@@ -478,6 +478,7 @@ module FetchUtil
       return false unless same_effective_domain?(requested_url, final_url)
       return false if FetchUtil.strip_www_host(requested_url) == FetchUtil.strip_www_host(final_url)
       return false if [requested_url, final_url, canonical_url].compact.any? { |url| search_or_list_resource_url?(url) }
+      return true if matching_apex_instrument_redirect?(payload, requested_url, final_url)
 
       tokens = requested_identifier_tokens(requested_url)
       return false if tokens.empty?
@@ -502,6 +503,25 @@ module FetchUtil
       end.uniq
     rescue ArgumentError, URI::InvalidURIError
       []
+    end
+
+    def matching_apex_instrument_redirect?(payload, requested_url, final_url)
+      requested_instrument = apex_instrument_id(requested_url)
+      final_instrument = apex_instrument_id(final_url)
+      return false if requested_instrument.nil? || final_instrument.nil?
+      return false unless requested_instrument == final_instrument
+
+      content = FetchUtil.normalize_whitespace([payload["title"], payload["markdown"]].compact.join(" "))
+      content.match?(/\b(?:Convention|Recommendation|Protocol)\s+[A-Z]\d{2,4}\b/i) &&
+        content.match?(/\b(?:International Labour|Labou?r Organisation|General Conference|Article\s+1)\b/i)
+    end
+
+    def apex_instrument_id(url)
+      query = URI.parse(url).query.to_s
+      decoded = URI.decode_www_form_component(query.tr("+", " "))
+      decoded[/\bP\d+_INSTRUMENT_ID[:=](\d+)\b/i, 1]
+    rescue ArgumentError, URI::InvalidURIError
+      nil
     end
 
     def code_like_identifier?(token)

@@ -187,6 +187,62 @@ RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnin
     expect(result.suspect).to eq(true)
   end
 
+  it 'does not flag same-organization APEX instrument redirects when the numeric instrument id is stable' do
+    html = <<~HTML
+      <html>
+        <head><title>Convention C047 - Forty-Hour Week Convention, 1935 (No. 47)</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Convention C047 - Forty-Hour Week Convention, 1935 (No. 47)</h1>
+              <p>The General Conference of the International Labour Organisation adopts this Convention.</p>
+              <h2>Article 1</h2>
+              <p>Each Member of the International Labour Organisation which ratifies this Convention declares its approval of the principle of a forty-hour week.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://www.example.org/dyn/normlex/en/f?p=NORMLEXPUB:12100:0::NO::P12100_INSTRUMENT_ID:312192',
+      'https://normlex.example.org/dyn/nrmlx_en/f?p=NORMLEXPUB%3A12100%3A0%3A%3ANO%3A%3AP12100_INSTRUMENT_ID%3A312192',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).not_to include('url_content_mismatch')
+    expect(result.suspect).to eq(false)
+  end
+
+  it 'keeps same-organization APEX redirect mismatches when the instrument id changes' do
+    html = <<~HTML
+      <html>
+        <head><title>Convention C047 - Forty-Hour Week Convention, 1935 (No. 47)</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Convention C047 - Forty-Hour Week Convention, 1935 (No. 47)</h1>
+              <p>The General Conference of the International Labour Organisation adopts this Convention.</p>
+              <h2>Article 1</h2>
+              <p>Each Member of the International Labour Organisation which ratifies this Convention declares its approval of the principle of a forty-hour week.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://www.example.org/dyn/normlex/en/f?p=NORMLEXPUB:12100:0::NO::P12100_INSTRUMENT_ID:312192',
+      'https://normlex.example.org/dyn/nrmlx_en/f?p=NORMLEXPUB%3A12100%3A0%3A%3ANO%3A%3AP12100_INSTRUMENT_ID%3A999999',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).to include('url_content_mismatch')
+    expect(result.suspect).to eq(true)
+  end
+
   it 'does not flag single-word or id-only requested slugs' do
     html = <<~HTML
       <html>
