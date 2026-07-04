@@ -28,6 +28,7 @@ profiles/media_and_commerce.js
 profiles/academic.js
 profiles/substack.js
 profiles/package_registries.js
+profiles/statuspage.js
 profiles/repo_hosts.js
 profiles/community_wikis.js
 profiles/community_pages/telegram.js

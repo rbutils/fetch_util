@@ -159,7 +159,7 @@ module FetchUtil
 
     def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
       warnings = Array(payload["warnings"]).dup
-      if content_type == "list" && homepage_like && !substantial_homepage_landing?(payload)
+      if content_type == "list" && homepage_like && !payload["statusPage"] && !substantial_homepage_landing?(payload)
         warnings << "homepage_index_page"
       end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)

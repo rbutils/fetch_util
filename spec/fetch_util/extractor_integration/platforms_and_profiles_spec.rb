@@ -120,6 +120,72 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts Atlassian Statuspage components and incident updates" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Example Status</title>
+          <meta property="og:site_name" content="Example Status">
+          <meta name="description" content="Real-time status for Example services.">
+        </head>
+        <body class="status index status-none">
+          <div class="layout-content status status-index">
+            <div class="page-status status-none"><span class="status font-large">All Systems Operational</span></div>
+            <div class="text-section">Real-time status for Example services.</div>
+            <div class="components-section font-regular">
+              <div class="components-container one-column">
+                <div class="component-container border-color">
+                  <div data-component-id="api" class="component-inner-container status-green" data-component-status="operational">
+                    <span class="name">API</span>
+                    <button class="tooltip-base" data-original-title="Primary API requests">?</button>
+                    <span class="component-status">Operational</span>
+                    <span id="uptime-percent-api">99.99</span> % uptime
+                  </div>
+                </div>
+                <div class="component-container border-color">
+                  <div data-component-id="webhooks" class="component-inner-container status-yellow" data-component-status="degraded_performance">
+                    <span class="name">Webhooks</span>
+                    <button class="tooltip-base" data-original-title="Event delivery callbacks">?</button>
+                    <span class="component-status">Degraded Performance</span>
+                  </div>
+                </div>
+                <div class="component-container border-color" style="display: none;">
+                  <div data-component-status="operational"><span class="name">Visit www.example-status.com</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="incidents-list">
+              <div class="status-day font-regular">
+                <div class="date border-color font-large">Jul <var data-var="date">4</var>, <var data-var="year">2026</var></div>
+                <div class="incident-container">
+                  <div class="incident-title impact-minor font-large"><a class="whitespace-pre-wrap" href="/incidents/abc">Webhook delivery delays</a></div>
+                  <div class="updates-container">
+                    <div class="update font-regular resolved"><strong>Resolved</strong> - <span class="whitespace-pre-wrap">The backlog has cleared.</span><br><small>Jul <var data-var="date">4</var>, <var data-var="time">13:24</var> UTC</small></div>
+                    <div class="update font-regular investigating"><strong>Investigating</strong> - <span class="whitespace-pre-wrap">We are investigating delayed deliveries.</span><br><small>Jul <var data-var="date">4</var>, <var data-var="time">12:01</var> UTC</small></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <a class="powered-by" href="https://www.atlassian.com/software/statuspage">Powered by Atlassian Statuspage</a>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://status.example.com/", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("- Overall status: All Systems Operational")
+      expect(payload["markdown"]).to include("- API - operational")
+      expect(payload["markdown"]).to include("Primary API requests")
+      expect(payload["markdown"]).to include("- Webhooks - degraded performance")
+      expect(payload["markdown"]).to include("Event delivery callbacks")
+      expect(payload["markdown"]).to include("## Recent Incidents")
+      expect(payload["markdown"]).to include("Webhook delivery delays")
+      expect(payload["markdown"]).to include("Resolved - The backlog has cleared. - Jul 4, 13:24 UTC")
+      expect(payload["warnings"]).not_to include("homepage_index_page")
+    end
+  end
+
   it "extracts pinterest search pages into compact pin bullets" do
     html = <<~HTML
       <html>
