@@ -101,6 +101,76 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "flags lyrics pages when extraction misses the visible lyrics body" do
+    html = <<~HTML
+      <html>
+        <head><title>Example Artist - Example Song Lyrics | Example</title></head>
+        <body>
+          <main>
+            <aside>
+              <div data-lyrics-container="true" class="Lyrics__Container-sc-example">
+                9 Contributors
+                Example Song Lyrics
+                [Verse 1]
+                When the morning breaks over the city
+                Every quiet window catches fire
+                I am waiting there with empty pockets
+                Listening for the station choir
+
+                [Chorus]
+                Hold the line, hold the line
+                Sing it back one more time
+                Hold the line, hold the line
+                Let the signal climb
+
+                [Verse 2]
+                Every platform hums below the weather
+                Every passing train repeats the rhyme
+                If the lights go out before the ending
+                I will keep the rhythm keeping time
+              </div>
+            </aside>
+            <article class="Annotation__Container-sc-example">
+              <h1>Song Bio</h1>
+              <p>Written by the songwriter after a long tour, this commentary explains the recording process and the meaning of the single.</p>
+              <p>The annotation describes production choices, release history, chart performance, and fan response without including the actual lyric stanzas.</p>
+              <p>Contributors added background about the album campaign and interviews with the band.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://lyrics.example.com/example-artist-example-song-lyrics", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).to include("truncated_content")
+    end
+  end
+
+  it "does not flag short ordinary articles as missing primary content" do
+    html = <<~HTML
+      <html>
+        <head><title>Local Garden Opens New Exhibit</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Local Garden Opens New Exhibit</h1>
+              <p>The city garden opened a new exhibit today with native plants, guided tours, and workshops for families.</p>
+              <p>Organizers said the exhibit will remain open through the summer and will add new evening programs next month.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://news.example.com/local-garden-opens-new-exhibit", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
   # URL-content mismatch: lowered threshold
   it "flags url_content_mismatch when slug keywords poorly match body content" do
     html = <<~HTML
