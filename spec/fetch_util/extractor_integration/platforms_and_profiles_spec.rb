@@ -222,6 +222,68 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts Drupal institutional view, tab, and card components" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Treaty Bodies | Example UN</title>
+          <meta name="Generator" content="Drupal 10">
+        </head>
+        <body class="path-treaty-bodies node-731">
+          <header><a href="/en/search">Search</a><a href="/en/donate">Donate</a></header>
+          <main>
+            <article about="/en/treaty-bodies" class="overview-page-template">
+              <div class="field field--name-body field--type-text-long">
+                <p>Our Work boilerplate that is too short to represent the page.</p>
+              </div>
+              <div class="overview-inner-container">
+                <aside class="side-navigation"><a href="/en/treaty-bodies">Overview</a><a href="/en/treaty-bodies/sessions">Sessions</a></aside>
+                <section class="field field--name-field-view-block">
+                  <h1>Treaty Bodies</h1>
+                  <div class="paragraph paragraph--type--view-component">
+                    <div class="field--name-field-tab-content-block">
+                      <ul role="list" class="blocktab--tablist unstyled">
+                        <li><a href="#treaty-bodies-list">Treaty bodies</a></li>
+                        <li><a href="#countries-list">Countries</a></li>
+                      </ul>
+                      <div id="treaty-bodies-list" class="card-listing-component-container">
+                        <h2 class="card-heading-list__heading">Treaty bodies</h2>
+                        <article class="card-headline-vertical-list-wrapper">
+                          <h3 class="card-headline-list"><a href="/en/treaty-bodies/cerd">Committee on the Elimination of Racial Discrimination (CERD)</a></h3>
+                          <div class="field field--name-field-body"><p>Monitors implementation of the International Convention on the Elimination of All Forms of Racial Discrimination.</p></div>
+                        </article>
+                        <article class="card-headline-vertical-list-wrapper">
+                          <h3 class="card-headline-list"><a href="/en/treaty-bodies/cescr">Committee on Economic, Social and Cultural Rights (CESCR)</a></h3>
+                          <div class="field field--name-field-body"><p>Monitors implementation of the International Covenant on Economic, Social and Cultural Rights.</p></div>
+                        </article>
+                      </div>
+                      <div id="countries-list" class="card-listing-component-container">
+                        <h2 class="card-heading-list__heading">Africa Region</h2>
+                        <article about="/en/countries/angola"><h3 class="card-headline-list"><a href="/en/countries/angola">Angola</a></h3></article>
+                        <article about="/en/countries/benin"><h3 class="card-headline-list"><a href="/en/countries/benin">Benin</a></h3></article>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://institution.example/en/treaty-bodies", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Treaty Bodies")
+      expect(payload["markdown"]).to include("Committee on the Elimination of Racial Discrimination")
+      expect(payload["markdown"]).to include("Monitors implementation of the International Convention")
+      expect(payload["markdown"]).to include("Africa Region")
+      expect(payload["markdown"]).to include("[Angola](https://institution.example/en/countries/angola)")
+      expect(payload["markdown"]).not_to include("Sessions")
+      expect(payload["markdown"]).not_to include("Donate")
+    end
+  end
+
   it "extracts institutional topic cards as clean list items" do
     topic_cards = Array.new(9) do |index|
       topic = ["Abortion", "Abuse of older people", "Addictive behaviour", "Adolescent health", "Ageing", "Air pollution", "Alcohol", "Anaemia", "Cancer"][index]
