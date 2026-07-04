@@ -510,6 +510,32 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags non-English legal not-found pages as not-found interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>e-Gov 法令検索</title></head>
+        <body>
+          <main>
+            <div class="titleArea"><div class="titleMsg">ご利用のページが見つかりません</div></div>
+            <div class="wrap1"><div class="wrap2"><div class="detailsMsg">
+              <p>アクセスいただいたURLには、ページまたはファイルが存在しません。</p>
+              <p>・移動または削除されている場合があります。</p>
+              <p>・ご入力いただいたURLに誤りがある可能性があります。</p>
+              <p>・一時的に利用できない状況にある可能性があります。</p>
+            </div></div></div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://laws.e-gov.example/awcontents/41500AC0001E0010000/i_00001.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
   it "does not flag valid repository records as not-found interstitials" do
     html = <<~HTML
       <html>
@@ -535,6 +561,31 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("Valid climate observations dataset")
+      expect(payload["warnings"]).not_to include("not_found_interstitial")
+    end
+  end
+
+  it "does not flag valid non-English legal documents as not-found interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>民法 | e-Gov 法令検索</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>民法</h1>
+              <p>第一条　私権は、公共の福祉に適合しなければならない。</p>
+              <p>権利の行使及び義務の履行は、信義に従い誠実に行わなければならない。</p>
+              <p>この法令本文は、公布された条文、附則、改正履歴、施行日、引用情報を含む公式な法令データとして提供されています。</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://laws.e-gov.example/document/129AC0000000089", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# 民法")
       expect(payload["warnings"]).not_to include("not_found_interstitial")
     end
   end
