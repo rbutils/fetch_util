@@ -30,6 +30,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).not_to include("This website is running Anubis version")
       # Challenge pages emit minimal sentinel content — no DOM highlights
       expect(payload["markdown"]).not_to include("Sadly, you must enable JavaScript")
+      expect(payload["contentType"]).to eq("interstitial")
       expect(payload["warnings"]).to include("anubis_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end
@@ -60,6 +61,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       # Challenge pages emit minimal sentinel content — no DOM highlights
       expect(payload["markdown"]).not_to include("Performing security verification")
       expect(payload["markdown"]).not_to include("Cloudflare Ray ID")
+      expect(payload["contentType"]).to eq("interstitial")
       expect(payload["warnings"]).to include("cloudflare_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end

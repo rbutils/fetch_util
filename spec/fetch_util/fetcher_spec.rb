@@ -91,6 +91,48 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('auth_or_login_interstitial')
   end
 
+  it 'flags specific DOI content paths redirected to generic node pages as not found' do
+    node_page = page_at('https://www.biorxiv.org/node/')
+    node_payload = payload_with(
+      title: '| bioRxiv',
+      canonicalUrl: 'https://www.biorxiv.org/node',
+      markdown: <<~MARKDOWN.chomp,
+        - [Editorial Board](https://www.biorxiv.org/content/editorial-board)
+        - [Institutions](https://www.biorxiv.org/content/institutions)
+        - [Advertisers](https://www.biorxiv.org/content/advertisers)
+      MARKDOWN
+      contentType: 'list',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://www.biorxiv.org/content/10.1101/2021.01.01.425000v1', page: node_page, payload: node_payload)
+
+    result = fetch_with_dependencies('https://www.biorxiv.org/content/10.1101/2021.01.01.425000v1')
+
+    expect(result.content_type).to eq('list')
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to include('not_found_interstitial')
+  end
+
+  it 'does not flag valid DOI content paths that resolve to matching article pages' do
+    article_page = page_at('https://www.biorxiv.org/content/10.1101/2024.01.01.123456v1')
+    article_payload = payload_with(
+      title: 'A live preprint title',
+      canonicalUrl: 'https://www.biorxiv.org/content/10.1101/2024.01.01.123456v1',
+      markdown: '# A live preprint title\n\nThis preprint reports a complete article abstract and methods summary.',
+      contentType: 'article',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://www.biorxiv.org/content/10.1101/2024.01.01.123456v1', page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies('https://www.biorxiv.org/content/10.1101/2024.01.01.123456v1')
+
+    expect(result.content_type).to eq('article')
+    expect(result.suspect).to eq(false)
+    expect(result.warnings).not_to include('not_found_interstitial')
+  end
+
   it 'does not recompute url mismatches that the extractor did not emit' do
     so_page = page_at('https://stackoverflow.com/questions/14818673/what-is-the-difference-between-proc-and-lambda-in-ruby')
     mismatched_payload = payload_with(

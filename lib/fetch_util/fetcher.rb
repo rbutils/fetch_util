@@ -52,6 +52,7 @@ module FetchUtil
       jobs keyword latest news product products projects s search section sections shop
       tag tags topic topics wholesale
     ].freeze
+    CONTENT_ROUTE_SEGMENTS = %w[article articles content paper papers preprint preprints].freeze
     SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
     GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
 
@@ -167,6 +168,7 @@ module FetchUtil
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
       warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
+      warnings << "not_found_interstitial" if generic_redirect_not_found?(requested_url, final_url, payload)
       if redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
         warnings << "url_content_mismatch"
       end
@@ -274,6 +276,40 @@ module FetchUtil
       end
     rescue URI::InvalidURIError
       false
+    end
+
+    def generic_redirect_not_found?(requested_url, final_url, payload)
+      return false if requested_url.nil? || final_url.nil?
+      return false unless same_effective_domain?(requested_url, final_url)
+
+      requested_path = normalized_path_key(requested_url)
+      final_path = normalized_path_key(final_url)
+      return false if requested_path.empty? || requested_path == final_path
+      return false unless specific_content_path?(requested_path)
+      return false unless generic_redirect_path?(final_path)
+      return false if redirected_payload_matches_requested_path?(requested_path, payload)
+
+      true
+    end
+
+    def specific_content_path?(path)
+      return true if path.match?(%r{/10\.\d{4,9}/}i)
+      return true if path.match?(%r{/(?:content|article|articles|preprint|papers?)/.+[a-z0-9]}i)
+
+      false
+    end
+
+    def generic_redirect_path?(path)
+      path.empty? || path.match?(%r{\A/(?:node|index(?:\.html?)?|home)?\z}i)
+    end
+
+    def redirected_payload_matches_requested_path?(requested_path, payload)
+      requested_path.split(%r{[/._-]+}).select { |token| token.length >= 6 }.any? do |token|
+        next false if CONTENT_ROUTE_SEGMENTS.include?(token.downcase)
+
+        FetchUtil.normalize_whitespace([payload["title"], payload["markdown"], payload["canonicalUrl"]].compact.join(" "))
+                 .downcase.include?(token.downcase)
+      end
     end
 
     def article_body_fallback_candidate?(result)

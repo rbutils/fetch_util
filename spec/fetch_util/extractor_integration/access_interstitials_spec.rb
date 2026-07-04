@@ -198,6 +198,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("Activate and hold the button to confirm that you're human.")
+      expect(payload["contentType"]).to eq("interstitial")
       expect(payload["warnings"]).to include("human_verification_interstitial")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end
