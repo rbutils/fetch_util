@@ -101,6 +101,41 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "flags short hero video teasers on content-rich landing pages" do
+    landing_links = 120.times.map do |i|
+      "<a href=\"/science/#{i}\">Science update #{i + 1} mission research landing content for readers</a>"
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Science Landing</title>
+          <script type="application/ld+json">
+            {"@context":"https://schema.org","@type":"VideoObject","name":"A Legacy of Discovery, Built for the Future","uploadDate":"2026-07-01T05:30:39-07:00","duration":"PT1M45S","description":"For generations, pursuit knowledge transformed the unknown into discoveries and new frontiers."}
+          </script>
+        </head>
+        <body>
+          <nav>#{landing_links}</nav>
+          <main>
+            <section class="hero-video">
+              <h1>A Legacy of Discovery, Built for the Future</h1>
+              <p>For generations, pursuit knowledge transformed the unknown into discoveries and new frontiers.</p>
+              <a href="/legacy-video">Learn More</a>
+            </section>
+          </main>
+          <footer>#{landing_links}</footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://science.example.gov/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).to include("short_extraction")
+      expect(payload["suspect"]).to be(true)
+    end
+  end
+
   it "flags short nav-only extraction on detail record URLs" do
     html = <<~HTML
       <html>
