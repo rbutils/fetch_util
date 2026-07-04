@@ -202,6 +202,72 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'classifies legal table-of-contents pages as lists without truncation warnings' do
+    entries = (1..8).map do |i|
+      <<~HTML
+        <li class="LegContentsEntry">
+          <p class="LegContentsItem LegClearFix">
+            <span class="LegDS LegContentsNo"><a href="/ukpga/1998/42/section/#{i}">#{i}.</a></span>
+            <span class="LegDS LegContentsTitle"><a href="/ukpga/1998/42/section/#{i}">Example section #{i} rights and duties.</a></span>
+          </p>
+        </li>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Human Rights Act 1998</title></head>
+        <body>
+          <h1 id="pageTitle" class="pageTitle">Human Rights Act 1998</h1>
+          <div class="LegSnippet" id="tocControlsAdded">
+            <div class="LegContents LegClearFix">
+              <ul class="tocGlobalControls"><li><a href="#" class="tocExpandAll">Collapse all -</a></li></ul>
+              <ol>
+                <li class="LegContentsEntry"><p class="LegContentsItem LegClearFix"><span class="LegDS LegContentsTitle"><a href="/ukpga/1998/42/introduction">Introductory Text</a></span></p></li>
+                <li class="LegClearFix LegContentsPblock">
+                  <p class="LegContentsTitle"><a href="/ukpga/1998/42/crossheading/introduction">Introduction</a></p>
+                  <ol>#{entries}</ol>
+                </li>
+                <li class="LegClearFix LegContentsPblock"><p class="LegContentsTitle"><a href="/ukpga/1998/42/schedule/1">SCHEDULE 1 The Articles</a></p></li>
+              </ol>
+            </div>
+          </div>
+          <footer>Changes to legislation and print options are available from the service.</footer>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.legislation.gov.uk/ukpga/1998/42/contents', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['warnings']).not_to include('truncated_content')
+      expect(payload['markdown']).to include('Example section 8 rights and duties')
+    end
+  end
+
+  it 'keeps legislation section pages classified as articles' do
+    html = <<~HTML
+      <html>
+        <head><title>Human Rights Act 1998</title></head>
+        <body>
+          <nav id="legNav">Changes to legislation</nav>
+          <h1 id="pageTitle" class="pageTitle">Human Rights Act 1998</h1>
+          <div id="viewLegSnippet" class="LegislationSection">
+            <h2>1 The Convention Rights.U.K.</h2>
+            <p>(1) In this Act "the Convention rights" means the rights and fundamental freedoms set out in Articles 2 to 12 and 14 of the Convention.</p>
+            <p>(2) Those Articles are to have effect for the purposes of this Act subject to any designated derogation or reservation.</p>
+            <p>(3) The Articles are set out in Schedule 1.</p>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.legislation.gov.uk/ukpga/1998/42/section/1', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('The Convention Rights')
+      expect(payload['markdown']).to include('designated derogation or reservation')
+    end
+  end
+
   it 'keeps substantial table-based statute text classified as an article' do
     provisions = (1..24).map do |i|
       <<~HTML
