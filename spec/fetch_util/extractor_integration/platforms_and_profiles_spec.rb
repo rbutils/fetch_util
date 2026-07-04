@@ -41,6 +41,85 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers package registry descriptions over release history chrome" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>pandas · PyPI</title>
+          <meta name="description" content="Powerful data structures for data analysis.">
+        </head>
+        <body>
+          <main>
+            <div class="sidebar-section">
+              <h3>Navigation</h3>
+              <a href="#history">Release history</a>
+            </div>
+            <section id="history" class="vertical-tabs__content">
+              <h2 class="page-title split-layout">Release history</h2>
+              <div class="release-timeline">
+                <a class="card release__card" href="/project/pandas/3.0.4/">3.0.4 yanked Jun 28, 2026</a>
+                <a class="card release__card" href="/project/pandas/3.0.0rc2/">3.0.0rc2 pre-release Jan 14, 2026</a>
+              </div>
+            </section>
+            <section id="description" class="vertical-tabs__content">
+              <h2 class="page-title">Project description</h2>
+              <div class="project-description">
+                <h1>pandas: A Powerful Python Data Analysis Toolkit</h1>
+                <p>pandas is a Python package providing fast, flexible, and expressive data structures.</p>
+                <p>It aims to be the fundamental high-level building block for practical data analysis.</p>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://pypi.org/project/pandas/", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("pandas: A Powerful Python Data Analysis Toolkit")
+      expect(payload["markdown"]).to include("fast, flexible, and expressive data structures")
+      expect(payload["markdown"]).not_to include("3.0.4 yanked")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "does not flag single package pages as multi-topic compilations" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>rails | RubyGems.org | your community gem host</title>
+          <meta name="description" content="Ruby on Rails is a full-stack web framework.">
+        </head>
+        <body>
+          <main>
+            <div id="markup" class="gem__desc">
+              <p>Ruby on Rails is a full-stack web framework optimized for programmer happiness and sustainable productivity.</p>
+              <h2>Required Ruby Version</h2>
+              <time datetime="2026-01-01">Jan 1, 2026</time>
+              <h2>Required Rubygems Version</h2>
+              <time datetime="2026-02-01">Feb 1, 2026</time>
+              <h2>Authors</h2>
+              <time datetime="2026-03-01">Mar 1, 2026</time>
+              <h2>Links</h2>
+              <time datetime="2026-04-01">Apr 1, 2026</time>
+              <h2>Versions</h2>
+              <time datetime="2026-05-01">May 1, 2026</time>
+              <h2>Dependencies</h2>
+              <time datetime="2026-06-01">Jun 1, 2026</time>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://rubygems.org/gems/rails", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Ruby on Rails is a full-stack web framework")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload["suspect"]).to be(false)
+    end
+  end
+
   it "extracts pinterest search pages into compact pin bullets" do
     html = <<~HTML
       <html>
