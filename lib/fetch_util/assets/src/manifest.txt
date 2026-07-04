@@ -26,6 +26,7 @@ systems/reference_engines.js
 profiles/social_search.js
 profiles/media_and_commerce.js
 profiles/academic.js
+profiles/scientific_records.js
 profiles/substack.js
 profiles/package_registries.js
 profiles/statuspage.js
