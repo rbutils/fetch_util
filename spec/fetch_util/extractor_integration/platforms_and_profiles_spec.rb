@@ -258,6 +258,148 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts EUR-Lex document text without search and language chrome" do
+    html = <<~HTML
+      <html>
+        <head><title>EUR-Lex - 120120 - EN - EUR-Lex</title></head>
+        <body>
+          <header id="op-header">
+            <a href="/homepage.html">EUR-Lex home</a>
+            <a href="#language-list-overlay">Change language</a>
+            <p>Use quotation marks to search for an exact phrase. Need more search options?</p>
+          </header>
+          <div id="MainContent">
+            <div class="PageShare"><a class="PSHelp" href="/content/help.html">Help</a></div>
+            <div class="EurlexContent">
+              <div id="PP1Contents">
+                <p id="englishTitle" class="hidden">Consolidated version of the Treaty on the Functioning of the European Union - PART ONE#PRINCIPLES - Article 1</p>
+                <p id="title" class="title-bold">Consolidated version of the Treaty on the Functioning of the European Union - PART ONE<br>PRINCIPLES - Article 1</p>
+                <p>OJ C 326, 26.10.2012, p. 50-50</p>
+              </div>
+              <div id="PP4Contents">
+                <div id="text">
+                  <div id="textTabContent">
+                    <div id="document1" class="tabContent">
+                      <p class="doc-ti">CONSOLIDATED VERSION OF THE TREATY ON THE FUNCTIONING OF THE EUROPEAN UNION</p>
+                      <p class="ti-section-1">PART ONE</p>
+                      <p class="ti-section-2">PRINCIPLES</p>
+                      <p class="ti-art">Article 1</p>
+                      <p class="normal">1. This Treaty organises the functioning of the Union and determines the areas of, delimitation of, and arrangements for exercising its competences.</p>
+                      <p class="normal">2. This Treaty and the Treaty on European Union constitute the Treaties on which the Union is founded.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:12012E001", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Consolidated version of the Treaty on the Functioning of the European Union")
+      expect(payload["markdown"]).to include("This Treaty organises the functioning of the Union")
+      expect(payload["markdown"]).not_to include("Use quotation marks")
+      expect(payload["markdown"]).not_to include("Change language")
+      expect(payload["markdown"]).not_to include("Help")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
+  it "extracts government program microsite content instead of mega-menu links" do
+    html = <<~HTML
+      <html>
+        <head><title>Landslide Hazards Program</title></head>
+        <body>
+          <div class="usa-banner">Official websites use .gov</div>
+          <nav class="usa-nav">
+            <div id="extended-mega-nav-section-products-desktop" class="usa-nav__submenu usa-megamenu">
+              <a href="/products/data-and-tools/data-management">Data Management</a>
+              <a href="/products/data/data-releases">Data Releases</a>
+              <a href="/products/maps/map-releases">Map Releases</a>
+              <a href="/products/multimedia-gallery/videos">Videos</a>
+            </div>
+          </nav>
+          <main class="main-content usa-layout-docs usa-section" role="main" id="main-content">
+            <div class="group group--full group--microsite group--type--microsite microsite--type--programs group--view-mode--full">
+              <ul class="menu group-menu"><li>Home</li><li>Science</li></ul>
+              <div class="node-intro">
+                <h1 class="microsite-title">Landslide Hazards Program</h1>
+                <div class="field field--name--field-intro field--type--text-long field--label--hidden">
+                  <p>The primary objective of the National Landslide Hazards Program is to reduce long-term losses from landslide hazards by improving our understanding of ground failure and supporting public safety decisions.</p>
+                </div>
+              </div>
+              <div class="tablet:grid-col-4 field-info-links">
+                <h3>Landslide Basics</h3>
+                <p>What is a landslide? Where do they happen and what causes them? Learn all about the basics of landslides here.</p>
+                <a href="/programs/landslide-hazards/science/landslide-basics">Learn About Landslides</a>
+              </div>
+              <div class="tablet:grid-col-4 field-info-links">
+                <h3>U.S. and Puerto Rico Landslide Hazard Map</h3>
+                <p>New high-resolution map of landslide susceptibility for the entire U.S. and Puerto Rico.</p>
+                <a href="/programs/landslide-hazards/science/landslide-inventory-and-susceptibility-map">Learn More</a>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.usgs.gov/programs/landslide-hazards", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Landslide Hazards Program")
+      expect(payload["markdown"]).to include("The primary objective of the National Landslide Hazards Program")
+      expect(payload["markdown"]).to include("Landslide Basics")
+      expect(payload["markdown"]).not_to include("Data Management")
+      expect(payload["markdown"]).not_to include("Map Releases")
+      expect(payload["markdown"]).not_to include("Home\n\nScience")
+    end
+  end
+
+  it "extracts Your Europe landing content instead of the feedback form" do
+    html = <<~HTML
+      <html>
+        <head><title>Help and advice for EU nationals and family - Your Europe</title></head>
+        <body>
+          <main id="main-content" class="container">
+            <h1>Help and advice for EU nationals and their family</h1>
+            <div id="main-article">
+              <nav class="contents">
+                <ul>
+                  <li><h2><a href="/youreurope/citizens/travel/index_en.htm">Travel</a></h2>
+                    <ul><li><a href="/youreurope/citizens/travel/entry-exit/index_en.htm">Documents you need for travel in Europe</a></li><li><a href="/youreurope/citizens/travel/passenger-rights/index_en.htm">Passenger rights</a></li></ul>
+                  </li>
+                  <li><h2><a href="/youreurope/citizens/work/index_en.htm">Work and retirement</a></h2>
+                    <ul><li><a href="/youreurope/citizens/work/working-abroad/index_en.htm">Working abroad</a></li><li><a href="/youreurope/citizens/work/retire-abroad/index_en.htm">Retiring abroad</a></li></ul>
+                  </li>
+                  <li><h2><a href="/youreurope/citizens/consumers/index_en.htm">Consumers</a></h2>
+                    <ul><li><a href="/youreurope/citizens/consumers/shopping/index_en.htm">Shopping</a></li><li><a href="/youreurope/citizens/consumers/internet-telecoms/index_en.htm">Internet and telecoms</a></li></ul>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </main>
+          <form id="feedback-form" class="toggle-content">
+            <p class="success">Thank you for your feedback. If you are willing to give us more details, please fill in this survey.</p>
+            <label for="name">Name</label><input id="name">
+            <label for="suggestions">Help us improve</label><textarea id="suggestions"></textarea>
+          </form>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://europa.eu/youreurope/citizens/index_en.htm", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Help and advice for EU nationals and their family")
+      expect(payload["markdown"]).to include("Travel")
+      expect(payload["markdown"]).to include("Documents you need for travel in Europe")
+      expect(payload["markdown"]).to include("Work and retirement")
+      expect(payload["markdown"]).not_to include("Thank you for your feedback")
+      expect(payload["markdown"]).not_to include("Help us improve")
+    end
+  end
+
   it "extracts pinterest search pages into compact pin bullets" do
     html = <<~HTML
       <html>
