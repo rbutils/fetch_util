@@ -335,6 +335,63 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "cleans duplicated ASP.NET data-table labels and footnote markers" do
+    html = <<~HTML
+      <html>
+        <head><title>Convention declarations</title></head>
+        <body>
+          <main>
+            <h1>Declarations and Reservations</h1>
+            <table id="ctl00_ContentPlaceHolder1_dgDec">
+              <tr>
+                <td>
+                  <p>Austria <sup><a href="#15">15</a></sup></p>
+                  <div id="ctl00_ContentPlaceHolder1_dgDec_ctl03_divText">
+                    <p>Austria<superscript>15</superscript></p>
+                    <p><i>Declaration:</i></p>
+                    <p>Austria regards article 15 as the legal basis for inadmissibility.</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p>Bangladesh <sup><a href="#17">17</a>, <a href="#18">18</a></sup></p>
+                  <div id="ctl00_ContentPlaceHolder1_dgDec_ctl04_divText">
+                    <p>Bangladesh<superscript>17,18</superscript></p>
+                    <p><i>Declaration:</i></p>
+                    <p>The Government makes this declaration upon ratification.</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p>Bahamas (The)</p>
+                  <div id="ctl00_ContentPlaceHolder1_dgDec_ctl05_divText">
+                    <p>Bahamas (The)</p>
+                    <p><i>Reservations:</i></p>
+                    <p>The Government does not recognize article 20 competence.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://treaties.un.org/pages/ViewDetails.aspx?src=TREATY&mtdsg_no=IV-9&chapter=4", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("Austria 15 Declaration:")
+      expect(markdown).to include("Bangladesh 17, 18 Declaration:")
+      expect(markdown).to include("Bahamas (The) Reservations:")
+      expect(markdown).not_to include("Austria 15 Austria15")
+      expect(markdown).not_to include("Bangladesh 17, 18 Bangladesh17,18")
+      expect(markdown).not_to include("Bahamas (The) Bahamas (The)")
+    end
+  end
+
   it "does not duplicate nested layout table content when converting comments" do
     html = <<~HTML
       <html>
