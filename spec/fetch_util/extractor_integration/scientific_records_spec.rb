@@ -109,4 +109,56 @@ RSpec.describe 'FetchUtil scientific record extraction' do
       expect(markdown).not_to include('Clicking the button')
     end
   end
+
+  it 'extracts NIST WebBook compound data before related data links' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Water</title>
+          <meta property="og:site_name" content="NIST Chemistry WebBook">
+        </head>
+        <body>
+          <header><h1>NIST Chemistry WebBook</h1><nav><a href="/chemistry/">Search</a></nav></header>
+          <main id="main">
+            <h1 id="Top">Water</h1>
+            <ul>
+              <li><strong><a href="http://goldbook.iupac.org/E02063.html">Formula</a>:</strong> H<sub>2</sub>O</li>
+              <li><strong><a href="http://goldbook.iupac.org/R05271.html">Molecular weight</a>:</strong> 18.0153</li>
+              <li><strong>IUPAC Standard InChI:</strong> <span class="inchi-text">InChI=1S/H2O/h1H2</span><button class="copy-prior-text">Copy</button></li>
+              <li><strong>IUPAC Standard InChIKey:</strong> <span class="inchi-text">XLYOFNOQVPJJNP-UHFFFAOYSA-N</span></li>
+              <li><strong>CAS Registry Number:</strong> 7732-18-5</li>
+              <li><strong>Chemical structure:</strong> <img src="/cgi/cbook.cgi?Struct=C7732185&amp;Type=Color" alt="H2O"> View 3d structure</li>
+              <li><strong>Other names:</strong> Water vapor; Distilled water; Ice; H2O; Dihydrogen oxide; steam</li>
+              <li><strong>Other data available:</strong>
+                <ul>
+                  <li><a href="/cgi/cbook.cgi?ID=C7732185&amp;Mask=1#Thermo-Gas">Gas phase thermochemistry data</a></li>
+                  <li><a href="/cgi/cbook.cgi?ID=C7732185&amp;Mask=2#Thermo-Condensed">Condensed phase thermochemistry data</a></li>
+                </ul>
+              </li>
+            </ul>
+            <h2>Data at NIST subscription sites:</h2>
+            <ul><li><a href="https://wtt-pro.nist.gov/">NIST / TRC Web Thermo Tables</a></li></ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to start_with('# Water')
+      expect(markdown).to include('Formula')
+      expect(markdown).to include('H2O')
+      expect(markdown).to include('Molecular weight')
+      expect(markdown).to include('18.0153')
+      expect(markdown).to include('CAS Registry Number')
+      expect(markdown).to include('7732-18-5')
+      expect(markdown.index('Formula')).to be < markdown.index('Data at NIST subscription sites')
+      expect(markdown).to include('Gas phase thermochemistry data')
+      expect(markdown).not_to include('View 3d structure')
+      expect(markdown).not_to include('Copy')
+    end
+  end
 end
