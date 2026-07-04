@@ -3,6 +3,20 @@
 RSpec.describe 'FetchUtil extractor integration - portal homepages' do
   include_context 'extractor integration helpers'
 
+  def fetch_result_for_homepage(url, html, payload_overrides: {})
+    with_url_page(url, html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page).merge(payload_overrides)
+      browser = instance_double(FetchUtil::Browser)
+      extractor = instance_double(FetchUtil::Extractor)
+      raw_docs_fallback = instance_double(FetchUtil::RawDocsFallback, fetch: nil)
+
+      allow(browser).to receive(:with_page).with(url).and_yield(instance_double('FerrumPage', current_url: url))
+      allow(extractor).to receive(:extract).and_return(payload)
+
+      FetchUtil::Fetcher.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch(url)
+    end
+  end
+
   it 'extracts generic marketplace homepages into compact lead-story lists' do
     html = <<~HTML
       <html>
@@ -216,5 +230,73 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
       expect(payload["markdown"]).to include("Morning briefing with transport")
       expect(payload["warnings"]).not_to include("paywall_partial_content")
     end
+  end
+
+  it 'does not flag scientific database homepages as homepage index pages' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Welcome to ProteomicsDB</title>
+          <meta property="og:site_name" content="Proteomics Database">
+        </head>
+        <body>
+          <main>
+            <h1>Welcome to ProteomicsDB</h1>
+            <p>ProteomicsDB is a multi-omics and multi-organism database resource for life science research. It covers proteomics, transcriptomics, and phenomics data for human, mouse, arabidopsis, and rice. The scientific resource supports protein-centric interrogation, drug-centric interrogation, analytics workflows, downloadable evidence tables, and curated repository metadata for researchers comparing experiments across organisms and tissues.</p>
+            <p>The database homepage explains the scope of the resource, the available visualization modules, the status of public datasets, and the research workflows supported by the platform rather than presenting a general news index or unrelated latest headlines.</p>
+            <ul>
+              <li>Status</li>
+              <li>Protein-centric interrogation</li>
+              <li>Drug-centric interrogation</li>
+              <li>Analytics section</li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    database_markdown = <<~MARKDOWN
+      # Welcome to ProteomicsDB
+
+      ProteomicsDB is a multi-omics and multi-organism database resource for life science research. It covers proteomics, transcriptomics, and phenomics data for human, mouse, arabidopsis, and rice. The scientific resource supports protein-centric interrogation, drug-centric interrogation, analytics workflows, downloadable evidence tables, and curated repository metadata for researchers comparing experiments across organisms and tissues.
+
+      - Status
+      - Protein-centric interrogation
+      - Drug-centric interrogation
+      - Analytics section
+    MARKDOWN
+
+    result = fetch_result_for_homepage(
+      'https://researchdb.example.org/', html,
+      payload_overrides: { 'contentType' => 'list', 'markdown' => database_markdown }
+    )
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
+  it 'still flags generic news homepages as homepage index pages' do
+    html = <<~HTML
+      <html>
+        <head><title>Daily News</title></head>
+        <body>
+          <main>
+            <h1>Daily News</h1>
+            <h2>Top stories</h2>
+            <ul>
+              <li><a href="https://news.example.org/a">Breaking news from city hall after overnight talks</a></li>
+              <li><a href="https://news.example.org/b">Latest news on markets, sports, and weather</a></li>
+              <li><a href="https://news.example.org/c">Headlines from around the country this morning</a></li>
+              <li><a href="https://news.example.org/d">World updates and election analysis from reporters</a></li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    result = fetch_result_for_homepage('https://news.example.org/', html, payload_overrides: { 'contentType' => 'list' })
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to include('homepage_index_page')
   end
 end

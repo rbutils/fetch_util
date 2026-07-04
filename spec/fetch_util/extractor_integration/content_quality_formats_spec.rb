@@ -396,6 +396,51 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not warn multi_topic_page for a structured scientific compound record" do
+    sections = (1..8).map do |i|
+      <<~SECTION
+        <h2><a href="/compound/2244/section-#{i}">#{i} Compound Record Section</a></h2>
+        <table class="record-metadata">
+          <tr><th>CID</th><td>2244</td></tr>
+          <tr><th>Molecular Formula</th><td>C9H8O4</td></tr>
+          <tr><th>InChIKey</th><td>BSYNRYMUTXBXSQ-UHFFFAOYSA-N</td></tr>
+          <tr><th>Canonical SMILES</th><td>CC(=O)OC1=CC=CC=C1C(=O)O</td></tr>
+        </table>
+        <p><a href="/compound/2244/download-#{i}">Aspirin data export #{i}</a>.</p>
+      SECTION
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Aspirin | Compound Record</title>
+          <meta property="og:site_name" content="Chemical Database">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Aspirin</h1>
+              <time datetime="2026-01-01T08:00:00Z">08:00 UTC</time>
+              <time datetime="2026-01-01T09:00:00Z">09:00 UTC</time>
+              <time datetime="2026-01-01T10:00:00Z">10:00 UTC</time>
+              <time datetime="2026-01-01T11:00:00Z">11:00 UTC</time>
+              <time datetime="2026-01-01T12:00:00Z">12:00 UTC</time>
+              <time datetime="2026-01-01T13:00:00Z">13:00 UTC</time>
+              #{sections}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://science-records.example.org/compound/2244", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("liveblog")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "does not flag liveblog for a regular article with sidebar time elements" do
     # Simulates an article page where <time> elements exist in a sidebar (related articles)
     # but the main content is a single article — should NOT trigger liveblog

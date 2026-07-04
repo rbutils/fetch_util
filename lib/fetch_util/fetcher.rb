@@ -171,7 +171,8 @@ module FetchUtil
     def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
       warnings = Array(payload["warnings"]).dup
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
-         !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload)
+         !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload) &&
+         !research_database_landing?(payload)
         warnings << "homepage_index_page"
       end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
@@ -241,6 +242,21 @@ module FetchUtil
 
       prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
       prose_lines.any? { |line| FetchUtil.normalize_whitespace(line).length >= 120 }
+    end
+
+    def research_database_landing?(payload)
+      markdown = payload["markdown"].to_s
+      normalized = FetchUtil.normalize_whitespace(markdown)
+      return false if normalized.length < 250
+
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      research_terms = /\b(?:database|data resource|repository|multi-omics|proteomics|transcriptomics|
+        phenomics|genomics|metabolomics|life science research|scientific resource)\b/ix
+      return false unless context.match?(research_terms)
+      return false if context.match?(HOMEPAGE_INDEX_PATTERN)
+
+      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
+      prose_lines.any? { |line| FetchUtil.normalize_whitespace(line).length >= 100 }
     end
 
     def index_list_markdown?(url, payload)

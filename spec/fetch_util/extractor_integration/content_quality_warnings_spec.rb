@@ -194,6 +194,36 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "does not flag url_content_mismatch for dataset record URLs resolved by numeric IDs" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>MELK involvement in the apoptosis cascade through Bcl-G</title>
+          <meta property="og:site_name" content="Data Repository">
+          <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"Dataset","name":"MELK involvement in the apoptosis cascade through Bcl-G"}
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>MELK involvement in the apoptosis cascade through Bcl-G</h1>
+              <p>posted on 2011-12-30, 18:07 authored by Meng-Lay Lin, Jae-Hyun Park, Toshihiko Nishidate, Yusuke Nakamura, Toyomasa Katagiri.</p>
+              <p>This dataset record describes apoptosis cascade assays, MELK protein expression, Bcl-G interaction data, supplementary files, and DOI metadata for reuse.</p>
+              <p>Repository metadata includes file downloads, citation information, and study details for the dataset identified by record number 12345.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://repository.example.org/articles/dataset/_/12345", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+    end
+  end
+
   it "flags stale_content for articles published more than 30 days ago" do
     html = <<~HTML
       <html>
