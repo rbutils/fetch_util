@@ -258,6 +258,49 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts AEM custom-element service tiles from attributes" do
+    html = <<~HTML
+      <html>
+        <head><title>Find government payments and services</title></head>
+        <body>
+          <main id="main" class="cmp-container root responsivegrid" role="main">
+            <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+              <div class="page-title title aem-GridColumn aem-GridColumn--default--8">
+                <div data-cmp-data-layer='{"page-title":{"@type":"example/components/structure/page-title","dc:title":"Find government payments and services"}}'>
+                  <h1>Find government payments and services</h1>
+                </div>
+              </div>
+              <div class="list aem-GridColumn aem-GridColumn--default--8">
+                <gui-tile-list class="cmp-list-gui hydrated" role="list" variant="3up">
+                  <gui-tile class="example-tile hydrated" data-cmp-data-layer='{"tile-raising-kids":{"@type":"example/components/content/list/item","dc:title":"Raising kids","xdm:linkURL":"/en/services/raising-kids"}}'>
+                    <gui-tile-heading heading-text="Raising kids" heading-level="2" class="hydrated"></gui-tile-heading>
+                    <gui-tile-content content-text="Help when having a baby, as kids go through school and when parents separate." class="hydrated"></gui-tile-content>
+                  </gui-tile>
+                  <gui-tile class="example-tile hydrated" data-cmp-data-layer='{"tile-living-arrangements":{"@type":"example/components/content/list/item","dc:title":"Living arrangements","xdm:linkURL":"/en/services/living-arrangements"}}'>
+                    <gui-tile-heading heading-text="Living arrangements" heading-level="2" class="hydrated"></gui-tile-heading>
+                    <gui-tile-content content-text="Information to help with housing, natural disasters, family and domestic violence, online crime and travelling." class="hydrated"></gui-tile-content>
+                  </gui-tile>
+                  <gui-tile class="example-tile hydrated" data-cmp-data-layer='{"tile-ageing":{"@type":"example/components/content/list/item","dc:title":"Ageing","xdm:linkURL":"/en/services/ageing"}}'>
+                    <gui-tile-heading heading-text="Ageing" heading-level="2" class="hydrated"></gui-tile-heading>
+                    <gui-tile-content content-text="Help when retiring, getting older and accessing aged care services." class="hydrated"></gui-tile-content>
+                  </gui-tile>
+                </gui-tile-list>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://institution.example/en/services", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("- [Raising kids](https://institution.example/en/services/raising-kids) - Help when having a baby")
+      expect(payload["markdown"]).to include("- [Living arrangements](https://institution.example/en/services/living-arrangements) - Information to help with housing")
+      expect(payload["markdown"]).to include("- [Ageing](https://institution.example/en/services/ageing) - Help when retiring")
+      expect(payload["markdown"]).not_to include("gui-tile")
+    end
+  end
+
   it "extracts legal encyclopedia article bodies without duplicated related snippets" do
     html = <<~HTML
       <html>
