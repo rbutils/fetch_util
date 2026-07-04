@@ -180,6 +180,54 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
+  it 'extracts IEEE Xplore article abstracts without recommendations or account chrome' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Real-time MTL with durations as SMT with applications to schedulability analysis | IEEE Conference Publication | IEEE Xplore</title>
+          <meta property="og:site_name" content="ieeexplore.ieee.org">
+        </head>
+        <body>
+          <main>
+            <xpl-document-abstract>
+              <section class="document-abstract document-tab">
+                <div class="abstract-mobile-div hide-desktop">
+                  <h2>Abstract:</h2>
+                  <span class="abstract-text-content">This paper introduces a synthesis procedure for the satisfiability problem of RMTL- integral formulas as SAT solving modulo theories. RMTL-integral is a real-time version of metric temporal logic extended by a duration quantifier.</span>
+                </div>
+                <div class="u-pb-1"><span class="stats-document-abstract-publishedIn">Published in: 2020 International Symposium on Theoretical Aspects of Software Engineering (TASE)</span></div>
+                <div class="u-pb-1"><span>DOI: 10.1109/TASE49443.2020.00016</span></div>
+                <div class="abstract-desktop-div">
+                  <h2>Abstract:</h2>
+                  <span class="abstract-text-content">This paper introduces a synthesis procedure for the satisfiability problem of RMTL- integral formulas as SAT solving modulo theories. RMTL-integral is a real-time version of metric temporal logic extended by a duration quantifier allowing measurement of time durations. For any given formula, a SAT instance modulo theories is constructed and used to analyze schedulability for real-time systems.</span>
+                </div>
+              </section>
+            </xpl-document-abstract>
+            <section class="recommendations"><h2>Recommended Articles</h2><a href="/document/10992737">Application of Formal Methods in Design of Constrained Codes</a></section>
+            <section class="account-menu"><a href="/articleSale/purchaseHistory.jsp">View Purchased Documents</a><a href="/profile/changeusrpwd/showChangeUsrPwdPage.html">Change username/password</a></section>
+            <footer><a href="tel:+1-800-678-4333">US &amp; Canada: +1 800 678 4333</a></footer>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://ieeexplore.ieee.org/document/9405311', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to include('# Real-time MTL with durations as SMT with applications to schedulability analysis')
+      expect(markdown).to include('## Abstract')
+      expect(markdown).to include('quantifier allowing measurement of time durations')
+      expect(markdown).to include('Published in: 2020 International Symposium')
+      expect(markdown).to include('DOI: 10.1109/TASE49443.2020.00016')
+      expect(markdown).not_to include('Recommended Articles')
+      expect(markdown).not_to include('View Purchased Documents')
+      expect(markdown).not_to include('username/password')
+      expect(markdown).not_to include('US & Canada')
+    end
+  end
+
   it 'surfaces arXiv abstract details instead of sidebar tooling' do
     html = <<~HTML
       <html>
