@@ -441,6 +441,40 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not warn multi_topic_page for a substantive treaty article index" do
+    articles = (1..8).map do |i|
+      roman = %w[I II III IV V VI VII VIII][i - 1]
+      <<~ARTICLE
+        <h3><a href="/chemical-weapons-convention/articles/article-#{i}">Article #{roman} - Convention obligation #{i}</a></h3>
+        <p>Article #{roman} sets out requirements for States Parties under the Convention.</p>
+      ARTICLE
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head><title>Chemical Weapons Convention | International Organisation</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Chemical Weapons Convention</h1>
+              <p>The Convention on the Prohibition of the Development, Production, Stockpiling and Use of Chemical Weapons and on their Destruction is comprised of a Preamble, Articles, and Annexes.</p>
+              <p>States Parties agree to eliminate chemical weapons, submit declarations, and cooperate with verification measures administered under the Convention.</p>
+              <p>The instrument includes challenge inspection procedures, obligations for destruction, and implementation measures for activities not prohibited by the Convention.</p>
+              #{articles}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.institution.example.org/chemical-weapons-convention", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "does not flag liveblog for a regular article with sidebar time elements" do
     # Simulates an article page where <time> elements exist in a sidebar (related articles)
     # but the main content is a single article — should NOT trigger liveblog
