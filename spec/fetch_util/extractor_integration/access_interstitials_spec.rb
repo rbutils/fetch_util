@@ -400,6 +400,100 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags short repository project pages that redirect to a root not-found shell" do
+    html = <<~HTML
+      <html>
+        <head><title>OSF</title></head>
+        <body>
+          <main>
+            <h1>OSF</h1>
+            <p>Not found.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://repository.example.org/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Not found")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+      expect(payload["warnings"]).not_to include("short_extraction")
+    end
+  end
+
+  it "flags unavailable dataset record interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>Dataset unavailable</title></head>
+        <body>
+          <main>
+            <p>The dataset you are trying to view is not available.</p>
+            <p>If you are the owner of this dataset, you may visit your My datasets page to check the status of your submission.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://repository.example.org/dataset/doi:10.5061/example.dead", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
+  it "flags DOI system records that cannot be found as not-found interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>DOI Not Found</title></head>
+        <body>
+          <main>
+            <p>This DOI cannot be found in the DOI System. Possible reasons are:</p>
+            <ul>
+              <li><a href="https://www.doi.org/">DOI.ORG homepage</a> - You can try to search again from</li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://doi.example.org/10.5061/example.dead", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("not_found_interstitial")
+      expect(payload["warnings"]).not_to include("short_extraction")
+    end
+  end
+
+  it "does not flag valid repository records as not-found interstitials" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Valid climate observations dataset</title>
+          <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"Dataset","name":"Valid climate observations dataset"}
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Valid climate observations dataset</h1>
+              <p>This dataset is available for download and contains station observations, DOI metadata, authorship, version history, methods, and repository files.</p>
+              <p>Researchers can cite the record, inspect the data files, and reuse the observations under the repository license.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://repository.example.org/dataset/doi:10.5061/example.live", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Valid climate observations dataset")
+      expect(payload["warnings"]).not_to include("not_found_interstitial")
+    end
+  end
+
   it "does not flag real court opinions that mention legal citations" do
     paragraphs = (1..6).map do |index|
       <<~HTML
