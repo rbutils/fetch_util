@@ -252,6 +252,47 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "cleans orphan bracket fragments from nested card-grid links" do
+    html = <<~HTML
+      <html>
+        <head><title>Mission Cards</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Mission Cards</h1>
+              <section class="card-grid">
+                <div class="card">
+                  <a href="/facts"><img src="/folding.jpg" alt=""></a>
+                  <div>
+                    <a href="/facts"><h3>Folding Design</h3></a>
+                    <p>So big it has to fold origami-style to fit in the rocket.</p>
+                  </div>
+                </div>
+                <div class="card">
+                  <a href="/blog/one"><figure><img src="/one.jpg" alt=""></figure></a>
+                  <div>
+                    <a href="/blog/one"><p>Webb Detects Methane on Interstellar Comet</p></a>
+                    <p>A short science update from the observatory.</p>
+                  </div>
+                </div>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://science.example/mission/webb/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("### [Folding Design](https://science.example/facts)")
+      expect(markdown).to include("[Webb Detects Methane on Interstellar Comet](https://science.example/blog/one)")
+      expect(markdown).not_to match(/^\s*\[\s*$/)
+      expect(markdown).not_to match(%r{^\s*\]\(https?://[^)]+\)\[?\s*$})
+    end
+  end
+
   it "does not repeat sibling docs card text in every list item" do
     html = <<~HTML
       <html>

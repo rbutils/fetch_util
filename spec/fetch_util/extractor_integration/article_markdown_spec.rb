@@ -31,6 +31,45 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves legal citation link text with emphasized section letters" do
+    html = <<~HTML
+      <html>
+        <head><title>Regulatory Authority</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Regulatory Authority</h1>
+              <p>
+                Authority: <a href="https://www.govinfo.gov/link/uscode/15/78l">78<em>l,</em></a>
+                <a href="https://www.govinfo.gov/link/uscode/15/78o-4">78<em>o</em>-4</a>,
+                <a href="https://www.govinfo.gov/link/uscode/15/78o-7">15 U.S.C. 78<em>o</em>-7 note</a>,
+                <a href="https://www.govinfo.gov/link/uscode/15/78o78q">15 U.S.C. 78<em>o</em> 78q</a>,
+                <a href="https://www.govinfo.gov/link/uscode/15/78">78</a><em>q</em>,
+                and <a href="https://www.ecfr.gov/current/title-17/section-240.15">Section 240.15</a><em>l</em>-1.
+              </p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.ecfr.gov/current/title-17/chapter-II/part-240", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("[78l,](https://www.govinfo.gov/link/uscode/15/78l)")
+      expect(markdown).to include("[78o-4](https://www.govinfo.gov/link/uscode/15/78o-4)")
+      expect(markdown).to include("[15 U.S.C. 78o-7 note](https://www.govinfo.gov/link/uscode/15/78o-7)")
+      expect(markdown).to include("[15 U.S.C. 78o 78q](https://www.govinfo.gov/link/uscode/15/78o78q)")
+      expect(markdown).to include("[78q](https://www.govinfo.gov/link/uscode/15/78)")
+      expect(markdown).to include("[Section 240.15l-1](https://www.ecfr.gov/current/title-17/section-240.15)")
+      expect(markdown).not_to include("78_l,_")
+      expect(markdown).not_to include("78_o_")
+      expect(markdown).not_to include("](https://www.govinfo.gov/link/uscode/15/78)_q_")
+      expect(markdown).not_to include("_l_\\-1")
+    end
+  end
+
   it "prepends the page title when generic article markdown starts mid-content" do
     html = <<~HTML
       <html>
