@@ -448,6 +448,66 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts standards record details instead of product navigation links" do
+    nav_links = <<~HTML
+      <nav>
+        <a href="/products-programs/icap/">IEEE Conformity Assessment Program (ICAP)</a>
+        <a href="/products-programs/regauth/">Registration Authority</a>
+        <a href="/products-programs/ieee-get-program/">IEEE GET Program</a>
+      </nav>
+    HTML
+    html = <<~HTML
+      <html>
+        <head>
+          <title>IEEE SA - IEEE 1541-2021</title>
+          <meta name="type" content="Standard">
+          <meta name="designation" content="IEEE 1541-2021">
+        </head>
+        <body>
+          #{nav_links}
+          <main>
+            <section id="page-title" class="standard">
+              <div class="stnd-status">Active Standard</div>
+              <h1 id="stnd-designation">IEEE 1541-2021</h1>
+              <h2 id="stnd-title">IEEE Standard for Prefixes for Binary Multiples</h2>
+              <div id="purchase-options"><a id="stnd-buy-url" href="https://store.example/6867">Purchase</a></div>
+            </section>
+            <section id="content" class="standard">
+              <div id="main-content">
+                <div id="stnd-description">
+                  <p>Names and letter symbols for prefixes that denote multiplication of a unit by the binary multiplier 2 10n, where n = 1, 2, 3, 4, 5, 6, 7, or 8 are defined.</p>
+                </div>
+                <div id="standard-details">
+                  <dl>
+                    <dt>Standard Committee</dt><dd id="stnd-committee">BOG/QUSCom - Quantities, Units, and Symbols Standards Committee</dd>
+                    <dt>Status</dt><dd id="stnd-status">Active Standard</dd>
+                    <dt>Board Approval</dt><dd id="stnd-approval-date">2021-12-08</dd>
+                    <dt>Published</dt><dd id="stnd-published-date">2022-02-18</dd>
+                  </dl>
+                </div>
+                <div id="working-group-details">
+                  <dl><dt>Working Group Chair</dt><dd>Randall Curey</dd></dl>
+                  <div id="working-group-projects-standards"><a href="/ieee/260.1/6864">Other working group standard</a></div>
+                </div>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://standards.example.org/standard/1541-2021/", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("IEEE 1541-2021")
+      expect(payload["markdown"]).to include("IEEE Standard for Prefixes for Binary Multiples")
+      expect(payload["markdown"]).to include("Names and letter symbols for prefixes")
+      expect(payload["markdown"]).to include("Active Standard")
+      expect(payload["markdown"]).to include("2022-02-18")
+      expect(payload["markdown"]).not_to include("IEEE Conformity Assessment Program")
+      expect(payload["markdown"]).not_to include("Other working group standard")
+    end
+  end
+
   it "extracts Your Europe landing content instead of the feedback form" do
     html = <<~HTML
       <html>
