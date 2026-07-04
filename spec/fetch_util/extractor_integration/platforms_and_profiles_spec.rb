@@ -258,6 +258,54 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts legal encyclopedia article bodies without duplicated related snippets" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>res judicata | Legal Encyclopedia</title>
+          <meta property="og:site_name" content="Example Legal Information Institute">
+          <meta name="description" content="A legal reference definition for res judicata.">
+        </head>
+        <body>
+          <header><a href="/search">Search</a><a href="/topics">Topics</a></header>
+          <main id="main">
+            <div id="extracted-content">
+              <div id="main-content">
+                <h1 class="title" id="page-title">res judicata</h1>
+                <p><em>Res judicata</em> is a Latin phrase that translates to a matter judged.</p>
+                <p>Res judicata is also called claim preclusion, and the terms are used interchangeably.</p>
+                <h4>Bar and Merger</h4>
+                <p>Claim preclusion has two main applications:</p>
+                <ol>
+                  <li>Bar: A losing plaintiff cannot sue the same defendant again on the same cause of action.</li>
+                  <li>Merger: A winning plaintiff cannot sue the same defendant again to obtain additional recovery.</li>
+                </ol>
+                <h4>Public Policy</h4>
+                <p>Courts uphold claim preclusion to promote judicial economy and consistent judgments.</p>
+                <section class="related-entries">
+                  <h2>Related Wex entries</h2>
+                  <a href="/wex/collateral_estoppel">collateral estoppel</a>
+                  <p>res judicata Res judicata is a Latin phrase that translates to a matter judged. Res judicata is also called claim preclusion.</p>
+                </section>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://legal.example/wex/res_judicata", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# res judicata")
+      expect(payload["markdown"]).to include("#### Bar and Merger")
+      expect(payload["markdown"]).to include("1.  Bar: A losing plaintiff cannot sue the same defendant again")
+      expect(payload["markdown"]).to include("#### Public Policy")
+      expect(payload["markdown"]).not_to include("Related Wex entries")
+      expect(payload["markdown"].delete("*_").scan("Res judicata is a Latin phrase").length).to eq(1)
+      expect(payload["suspect"]).to be(false)
+    end
+  end
+
   it "extracts EUR-Lex document text without search and language chrome" do
     html = <<~HTML
       <html>
