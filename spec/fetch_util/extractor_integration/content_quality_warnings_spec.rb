@@ -527,6 +527,38 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "does not flag official translated statute pages as syndicated reposts" do
+    sections = 8.times.map do |i|
+      <<~SECTION
+        <h2>Section #{i + 1}</h2>
+        <p>The legal provisions of this Code apply to the rights and duties described in this section.</p>
+      SECTION
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>German Civil Code BGB</title></head>
+        <body>
+          <main id="paddingLR12">
+            <article>
+              <h1>German Civil Code BGB</h1>
+              <p>Translation provided by Langenscheidt Übersetzungsservice, updated by Neil Mussett. The translation has most recently been revised and updated by Samson Übersetzungen GmbH.</p>
+              <p>Version information: The translation includes the amendment to the Act by Article 1 of the Act of 10 August 2021 (Federal Law Gazette I p. 3515).</p>
+              <p>Translations may not be updated at the same time as the German legal provisions displayed on this website.</p>
+              #{sections}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.gesetze-im-internet.example/englisch_bgb/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Translation provided by")
+      expect(payload["warnings"]).not_to include("syndicated_repost")
+    end
+  end
+
   it "does not flag court judgment pages as URL mismatches or syndicated reposts" do
     paragraphs = 10.times.map do |i|
       "<p>Lord Example explained ground #{i + 1} of the appeal. The appellant and respondent addressed the " \
