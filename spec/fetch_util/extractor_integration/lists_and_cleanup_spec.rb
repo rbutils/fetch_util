@@ -42,6 +42,52 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps opaque id detail pages as articles and collapses duplicated responsive prose" do
+    plot = "After a banker is sentenced to life in Shawshank Prison, " \
+           "he forms an unlikely friendship with a seasoned inmate and clings to hope amid cruelty and corruption."
+    html = <<~HTML
+      <html>
+        <head><title>The Shawshank Redemption - Example Movies</title></head>
+        <body>
+          <main>
+            <h1>The Shawshank Redemption</h1>
+            <p data-testid="plot">
+              <span role="presentation" data-testid="plot-xs_to_m"><span>#{plot}</span></span>
+              <span role="presentation" data-testid="plot-l"><span>#{plot}</span></span>
+              <span role="presentation" data-testid="plot-xl"><span>#{plot}</span></span>
+            </p>
+            <section>
+              <h2>Top Cast</h2>
+              <a href="/name/nm0000209/">Tim Robbins</a>
+              <a href="/name/nm0000151/">Morgan Freeman</a>
+              <a href="/name/nm0348409/">Bob Gunton</a>
+            </section>
+            <section>
+              <h2>User Reviews</h2>
+              <a href="/title/tt0111161/reviews/?featured=rw1">Prepare to be moved</a>
+              <a href="/title/tt0111161/reviews/?featured=rw2">This is how movies should be made</a>
+              <a href="/title/tt0111161/reviews/?featured=rw3">Eternal Hope</a>
+            </section>
+            <section>
+              <h2>More Like This</h2>
+              <a href="/title/tt0068646/">The Godfather</a>
+              <a href="/title/tt0108052/">Schindler's List</a>
+              <a href="/title/tt0110912/">Pulp Fiction</a>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-movies.test/title/tt0111161/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"].scan(plot).length).to eq(1)
+      expect(payload["markdown"]).to include("Top Cast")
+    end
+  end
+
   it "removes cookie dialog chrome when real pinterest results are present" do
     html = <<~HTML
       <html>

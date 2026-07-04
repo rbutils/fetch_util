@@ -116,6 +116,28 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('homepage_index_page')
   end
 
+  it 'keeps opaque id detail pages with prose leads as articles' do
+    detail_url = 'https://www.example-movies.test/title/tt0111161/'
+    detail_markdown = <<~MARKDOWN
+      After a banker is sentenced to life in Shawshank Prison, he forms an unlikely friendship with a seasoned inmate and clings to hope amid cruelty and corruption.
+
+      - [User reviews](https://www.example-movies.test/title/tt0111161/reviews/)
+      - [Cast and crew](https://www.example-movies.test/title/tt0111161/fullcredits/)
+      - [Similar title](https://www.example-movies.test/title/tt0068646/)
+      - [Another similar title](https://www.example-movies.test/title/tt0108052/)
+    MARKDOWN
+
+    stub_browser_extraction(
+      detail_url,
+      page: page_at(detail_url),
+      payload: payload_with(title: 'The Shawshank Redemption', markdown: detail_markdown, contentType: 'article')
+    )
+
+    result = fetch_with_dependencies(detail_url)
+
+    expect(result.content_type).to eq('article')
+  end
+
   it 'relabels thin commerce search pages as list content' do
     search_url = 'https://www.example.com/keyword.php?keyword=desk'
     search_payload = payload_with(

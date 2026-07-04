@@ -228,10 +228,18 @@ module FetchUtil
       return true if uri.query.to_s.match?(INDEX_QUERY_PATTERN)
 
       segments = path.split("/").reject(&:empty?)
-      segments.length.between?(1, 2) && !segments.last.to_s.include?("-") &&
+      segments.length.between?(1, 2) && !opaque_detail_path_segments?(segments) && !segments.last.to_s.include?("-") &&
         !path.match?(/\.(?:html?|php|aspx?|jsp)\z/i)
     rescue URI::InvalidURIError
       false
+    end
+
+    def opaque_detail_path_segments?(segments)
+      return false unless segments.length == 2
+      return false if SEARCH_OR_LIST_PATH_SEGMENTS.include?(segments.first.to_s.downcase)
+
+      last = segments.last.to_s
+      last.length >= 6 && last.match?(/[[:alpha:]]/) && last.match?(/\d/) && last.match?(/\A[a-z0-9_-]+\z/i)
     end
 
     def article_like_url?(url)
