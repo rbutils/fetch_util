@@ -322,6 +322,80 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not warn multi_topic_page for a substantial institutional overview with focus cards" do
+    intro = 8.times.map do |i|
+      <<~PARAGRAPH
+        <p>UNICEF works across countries and territories to protect children, provide services, advocate for rights, and support communities before, during, and after emergencies.
+        Overview paragraph #{i + 1} explains the agency mission.</p>
+      PARAGRAPH
+    end.join("\n")
+    cards = 7.times.map do |i|
+      <<~CARD
+        <h2><a href="/focus-#{i + 1}">Focus area #{i + 1}</a></h2>
+        <p>Brief programme summary #{i + 1}.</p>
+      CARD
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>What we do | International Children's Agency</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>What we do</h1>
+              #{intro}
+              <h2>What we focus on</h2>
+              #{cards}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.institution.example.org/what-we-do", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "does not warn multi_topic_page for a substantial scholarly article with related reference blocks" do
+    long_abstract = 70.times.map do |i|
+      "Protein structure prediction paragraph #{i + 1} describes methods, results, discussion, data availability, and references for a single scientific article."
+    end.join(" ")
+    references = 8.times.map do |i|
+      <<~REF
+        <h2>Reference #{i + 1}</h2>
+        <p><a href="/articles/ref-#{i + 1}">Related scientific citation #{i + 1}</a>.</p>
+      REF
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>Highly accurate protein structure prediction with AlphaFold</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Highly accurate protein structure prediction with AlphaFold</h1>
+              <h2>Abstract</h2>
+              <p>#{long_abstract}</p>
+              <h2>Methods</h2>
+              <p>The methods section describes the model architecture, datasets, validation, and limitations.</p>
+              <h2>References</h2>
+              #{references}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.journal.example.org/articles/s41586-021-03819-2", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "does not flag liveblog for a regular article with sidebar time elements" do
     # Simulates an article page where <time> elements exist in a sidebar (related articles)
     # but the main content is a single article — should NOT trigger liveblog

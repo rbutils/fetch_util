@@ -256,6 +256,54 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "does not flag stale_content for evergreen science and data pages with dated secondary content" do
+    sections = 6.times.map do |i|
+      <<~SECTION
+        <h2>Science section #{i + 1}</h2>
+        <p>This mission reference explains telescope operations, science themes, instrumentation, data releases, and long-lived facts for researchers and students.</p>
+      SECTION
+    end.join("\n")
+    dated_cards = 4.times.map do |i|
+      <<~CARD
+        <aside class="related-card">
+          <time datetime="2021-0#{i + 1}-10T10:00:00Z">2021 update #{i + 1}</time>
+          <a href="/missions/webb/story-#{i + 1}">Related Webb science story #{i + 1}</a>
+        </aside>
+      CARD
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head>
+          <title>James Webb Space Telescope Mission</title>
+          <meta property="article:published_time" content="2021-03-15T10:00:00Z">
+          <meta property="og:type" content="article">
+          <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"NewsArticle","headline":"James Webb Space Telescope Mission","datePublished":"2021-03-15T10:00:00Z"}
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>James Webb Space Telescope Mission</h1>
+              <h2>Key Facts</h2>
+              <p>Key facts describe the observatory, orbit, sunshield, instruments, and mission overview for an evergreen NASA Science reference page.</p>
+              <h2>Data Explorer</h2>
+              <p>Researchers use the data explorer, charts, mission overview, and science themes as long-lived reference material.</p>
+              #{sections}
+              #{dated_cards}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://science.example.org/mission/webb/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).not_to include("stale_content")
+    end
+  end
+
   it "does not flag stale_content for recently published articles" do
     recent_date = (Time.now - (3 * 24 * 60 * 60)).strftime("%Y-%m-%dT%H:%M:%SZ")
     html = <<~HTML
@@ -413,6 +461,38 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       payload = extract(page)
 
       expect(payload["markdown"]).to include("Business Wire")
+      expect(payload["warnings"]).not_to include("syndicated_repost")
+    end
+  end
+
+  it "does not flag syndicated_repost for official legal instruments with wire-service words elsewhere" do
+    articles = 12.times.map do |i|
+      <<~ARTICLE
+        <h2>Article #{i + 1}</h2>
+        <p>The States Parties to the present Covenant undertake to respect and ensure the rights recognized in this article, in accordance with the Charter of the United Nations.</p>
+      ARTICLE
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>International Covenant on Civil and Political Rights | Official Instrument</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>International Covenant on Civil and Political Rights</h1>
+              <p>Adopted by General Assembly resolution 2200A. Entry into force: 23 March 1976. Ratification status is maintained by the United Nations depositary.</p>
+              <p>Preamble: The States Parties to the present Covenant recognize the inherent dignity of the human person.</p>
+              #{articles}
+              <footer>News and press release links may mention PR Newswire, Cision, or Business Wire in unrelated site chrome.</footer>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.ohchr.example.org/en/instruments/international-covenant-civil-and-political-rights", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("States Parties to the present Covenant")
       expect(payload["warnings"]).not_to include("syndicated_repost")
     end
   end
