@@ -203,6 +203,30 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags press-and-hold human verification gates" do
+    html = <<~HTML
+      <html>
+        <head><title>Access to this page has been denied</title></head>
+        <body>
+          <div id="px-captcha-wrapper" dir="auto">
+            <p><img height="40" src="https://www.zillowstatic.com/s3/pfs/static/z-logo-default.svg" alt="Logo"></p>
+            <p>Press &amp; Hold to confirm you are<br>a human (and not a bot).</p>
+            <p>Reference ID 5a1eb63e-7789-11f1-ba2c-bbc8a3f3072d</p>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.zillow.com/homedetails/3500-S-Washington-St-Arlington-VA-22227/52117882_zpid/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Press & Hold to confirm you are")
+      expect(payload["warnings"]).to include("human_verification_interstitial")
+      expect(payload["warnings"]).to include("bot_or_access_interstitial")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+    end
+  end
+
   it "flags help-us-protect verification pages" do
     html = <<~HTML
       <html>
