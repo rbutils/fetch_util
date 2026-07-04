@@ -448,6 +448,41 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies link-heavy not-found pages as interstitials" do
+    related_links = 8.times.map do |index|
+      <<~LINK
+        <li><a href="/resource/#{index}">Related standards resource #{index}</a> - Guidance and standards updates.</li>
+      LINK
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>ANSI Introduction</title></head>
+        <body>
+          <main>
+            <section class="score-pic-stripe" style="background-image: url('/404-hero.jpg')">
+              <h1>The page you are looking for can't be found.</h1>
+              <p>We're sorry for the error. Try using the search bar above to find what you're looking for.</p>
+              <p>If you're still having trouble, let us know the issue by emailing the web team. The page may have moved, the address may have changed, or the resource may no longer be available in this section. These navigation suggestions are provided only to help visitors recover from the missing page.</p>
+            </section>
+            <aside class="related-guidance">
+              <ul>
+                #{related_links}
+              </ul>
+            </aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.standards.example/about/ansi-introduction", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["markdown"]).to include("The page you are looking for can't be found")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
   it "flags court-style soft 404 pages where the error is in the opinion title" do
     html = <<~HTML
       <html>
