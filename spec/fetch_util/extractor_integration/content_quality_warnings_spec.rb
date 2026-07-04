@@ -526,4 +526,41 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       expect(payload["warnings"]).not_to include("syndicated_repost")
     end
   end
+
+  it "does not flag court judgment pages as URL mismatches or syndicated reposts" do
+    paragraphs = 10.times.map do |i|
+      "<p>Lord Example explained ground #{i + 1} of the appeal. The appellant and respondent addressed the " \
+        "House of Lords on statutory interpretation, detention, and the proper disposal of the cause.</p>"
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Reid v. Secretary of State for Scotland and Another [1998] UKHL 43</title>
+          <meta name="citation" content="[1998] UKHL 43">
+        </head>
+        <body>
+          <table><tr><td>Home</td><td>Databases</td><td>United Kingdom House of Lords Decisions</td></tr></table>
+          <main>
+            <article>
+              <h1>Reid v. Secretary of State for Scotland and Another [1998] UKHL 43</h1>
+              <p><strong>HOUSE OF LORDS</strong></p>
+              <p><strong>OPINIONS OF THE LORDS OF APPEAL FOR JUDGMENT IN THE CAUSE</strong></p>
+              <p>Hutchison Reid (Respondent) v. Secretary of State for Scotland and Another (Appellants).</p>
+              #{paragraphs}
+            </article>
+          </main>
+          <footer>Archive support links mention Business Wire, PR Newswire, and Cision in unrelated site chrome.</footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.bailii.example/uk/cases/UKHL/1998/43.html", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("OPINIONS OF THE LORDS OF APPEAL")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+      expect(payload["warnings"]).not_to include("syndicated_repost")
+    end
+  end
 end
