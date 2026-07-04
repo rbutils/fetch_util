@@ -129,6 +129,43 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'classifies repeated job result cards as lists' do
+    cards = (1..6).map do |i|
+      <<~HTML
+        <li data-jobid="10095549266#{i}" data-test="jobListing">
+          <div data-test="job-card-wrapper">
+            <p><a data-test="job-title" href="/job-listing/ruby-developer-example-#{i}.htm?jl=10095549266#{i}">Senior Ruby Developer #{i}</a></p>
+            <p>Remote</p>
+            <div data-test="descSnippet">
+              <p>Build and maintain Ruby services, APIs, background jobs, and production tooling for distributed product teams.</p>
+              <p><b>Skills:</b> Ruby, Rails, PostgreSQL, Redis, Git</p>
+            </div>
+          </div>
+        </li>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Ruby developer jobs in United States | Example Jobs</title></head>
+        <body>
+          <main>
+            <h1>Ruby developer jobs in United States</h1>
+            <ul aria-label="Jobs List">
+              #{cards}
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.com/Job/ruby-developer-jobs-SRCH_KO0,14.htm', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('- [Senior Ruby Developer 1]')
+      expect(payload['markdown']).to include('https://www.example.com/job-listing/ruby-developer-example-6.htm?jl=100955492666')
+    end
+  end
+
   it 'keeps substantial standalone articles classified as articles' do
     paragraphs = (1..7).map do |i|
       <<~HTML
@@ -159,6 +196,36 @@ RSpec.describe 'FetchUtil extractor integration' do
     extract_from_url('https://www.example.com/world/2026/jul/03/leaders-approve-climate-funding', html) do |payload|
       expect(payload['contentType']).to eq('article')
       expect(payload['markdown']).to include('marathon talks')
+    end
+  end
+
+  it 'keeps single job description pages classified as articles' do
+    paragraphs = (1..6).map do |i|
+      <<~HTML
+        <p>Responsibility #{i}: maintain production Ruby services, collaborate with product managers, review pull requests, improve deployment safety, and document operational decisions for the engineering team.</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Senior Ruby Developer | Example Company</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Senior Ruby Developer</h1>
+              <p>Example Company is hiring one engineer for a platform team.</p>
+              #{paragraphs}
+              <h2>How to apply</h2>
+              <p>Send a resume and a short note about a production system you improved.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.com/remote-jobs/remote-senior-ruby-developer-example-company-1134395', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Example Company is hiring one engineer')
     end
   end
 

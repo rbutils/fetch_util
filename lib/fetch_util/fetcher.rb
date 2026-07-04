@@ -22,7 +22,7 @@ module FetchUtil
     DOCS_PORTAL_TITLE_PATTERN = /documentation|docs|the ultimate server/i
     INDEX_OR_SEARCH_PATH_PATTERN = %r{
       /(?:search|s|shop|browse|category|categories|collections?|catalog|keyword|wholesale|
-      products?|projects?|section|sections|topics?|tags?|archive|archives|latest|headlines|news)/?
+      products?|projects?|jobs?|section|sections|topics?|tags?|archive|archives|latest|headlines|news)/?
     }ix
     AUTH_PATH_PATTERN = %r{
       /(?:log(?:in|-in)|sign(?:in|-in)|auth|oauth|sso|session|sessions|
