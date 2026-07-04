@@ -402,6 +402,28 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies short privacy choice fragments as consent interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>Legal Code of Conduct</title></head>
+        <body>
+          <main>
+            <a href="/privacy/choices">Do Not Sell or Share My Personal Information</a>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example.org/content/legal-code-of-conduct.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Do Not Sell or Share My Personal Information")
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["warnings"]).to include("consent_interstitial")
+      expect(payload["suspect"]).to eq(true)
+    end
+  end
+
   it "keeps richer consent summaries classified as consent walls" do
     html = <<~HTML
       <html>
