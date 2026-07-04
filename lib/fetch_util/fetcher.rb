@@ -170,7 +170,11 @@ module FetchUtil
     end
 
     def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
+      trusted_same_organization_redirect = trusted_same_organization_redirect?(
+        content_type, payload, requested_url, final_url, canonical_url
+      )
       warnings = Array(payload["warnings"]).dup
+      warnings.delete("url_content_mismatch") if trusted_same_organization_redirect
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
          !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload) &&
          !research_database_landing?(payload)
@@ -181,7 +185,8 @@ module FetchUtil
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
       warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
       warnings << "not_found_interstitial" if generic_redirect_not_found?(requested_url, final_url, payload)
-      if redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
+      if !trusted_same_organization_redirect &&
+         redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
         warnings << "url_content_mismatch"
       end
       warnings.uniq
@@ -401,6 +406,42 @@ module FetchUtil
       return false if resolved_keywords.empty?
 
       (requested_keywords & resolved_keywords).empty?
+    end
+
+    def trusted_same_organization_redirect?(content_type, payload, requested_url, final_url, canonical_url)
+      return false unless content_type == "article"
+      return false if requested_url.nil? || final_url.nil?
+      return false unless same_effective_domain?(requested_url, final_url)
+      return false if FetchUtil.strip_www_host(requested_url) == FetchUtil.strip_www_host(final_url)
+      return false if [requested_url, final_url, canonical_url].compact.any? { |url| search_or_list_resource_url?(url) }
+
+      tokens = requested_identifier_tokens(requested_url)
+      return false if tokens.empty?
+
+      content = FetchUtil.normalize_whitespace(
+        [payload["title"], payload["markdown"]].compact.join(" ")
+      ).downcase
+      matches = tokens.select { |token| content.include?(token) }
+
+      matches.any? { |token| code_like_identifier?(token) } || matches.length >= 2
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def requested_identifier_tokens(url)
+      uri = URI.parse(url)
+      raw = [uri.path, uri.query].compact.join(" ")
+      URI.decode_www_form_component(raw.tr("+", " ")).downcase
+         .gsub(/[^a-z0-9]+/, " ").split.select do |token|
+        token.length >= 3 && token.match?(/[a-z]/) && !TITLE_SLUG_STOPWORDS.include?(token) &&
+          !CONTENT_ROUTE_SEGMENTS.include?(token) && token != "www"
+      end.uniq
+    rescue ArgumentError, URI::InvalidURIError
+      []
+    end
+
+    def code_like_identifier?(token)
+      token.match?(/\A(?=.*[a-z])(?=.*\d)[a-z0-9]{3,16}\z/)
     end
 
     def mismatched_resource_url(requested_url, final_url, canonical_url)

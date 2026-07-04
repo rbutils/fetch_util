@@ -5,11 +5,12 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnings' do
   include_context 'extractor integration helpers'
 
-  def fetch_result_from_fixture(requested_url, final_url, html, canonical_url: nil, content_type: nil)
+  def fetch_result_from_fixture(requested_url, final_url, html, canonical_url: nil, content_type: nil, warnings: nil)
     with_url_page(final_url, html) do |page|
       payload = extract(page)
       payload = payload.merge('canonicalUrl' => canonical_url) if canonical_url
       payload = payload.merge('contentType' => content_type) if content_type
+      payload = payload.merge('warnings' => warnings) if warnings
       fetcher_for_payload(requested_url, final_url, payload).fetch(requested_url)
     end
   end
@@ -130,6 +131,60 @@ RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnin
     result = fetch_result_from_fixture('https://example.com/blog/my-post', 'https://example.com/blog/my-post-2', html)
 
     expect(result.warnings).not_to include('url_content_mismatch')
+  end
+
+  it 'does not flag same-organization subdomain redirects when the article matches the requested code' do
+    html = <<~HTML
+      <html>
+        <head><title>Convention C001 - Hours of Work (Industry) Convention, 1919</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Convention C001 - Hours of Work (Industry) Convention, 1919 (No. 1)</h1>
+              <p>The General Conference of the International Labour Organisation adopts the following Convention.</p>
+              <h2>Article 1</h2>
+              <p>For the purpose of this Convention, the term industrial undertaking includes mines, quarries, and manufacturing.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://www.example.org/dyn/normlex/en/f?p=NORMLEXPUB:12100:0::NO::P12100_ILO_CODE:C001',
+      'https://normlex.example.org/dyn/nrmlx_en/f?p=NORMLEXPUB%3A12100%3A0%3A%3ANO%3A%3AP12100_ILO_CODE%3AC001',
+      html
+    )
+
+    expect(result.warnings).not_to include('url_content_mismatch')
+    expect(result.suspect).to eq(false)
+  end
+
+  it 'keeps same-organization redirect mismatches when the requested code is absent from the article' do
+    html = <<~HTML
+      <html>
+        <head><title>Convention C999 - Maritime Labour Convention</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Convention C999 - Maritime Labour Convention</h1>
+              <p>This page describes maritime labour standards, shipboard employment, and seafarer protections.</p>
+              <p>The requested industrial-hours convention identifier does not appear in this unrelated convention text.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://www.example.org/dyn/normlex/en/f?p=NORMLEXPUB:12100:0::NO::P12100_ILO_CODE:C001',
+      'https://normlex.example.org/dyn/nrmlx_en/f?p=NORMLEXPUB%3A12100%3A0%3A%3ANO%3A%3AP12100_ILO_CODE%3AC999',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).to include('url_content_mismatch')
+    expect(result.suspect).to eq(true)
   end
 
   it 'does not flag single-word or id-only requested slugs' do
