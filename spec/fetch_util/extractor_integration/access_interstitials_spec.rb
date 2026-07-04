@@ -318,6 +318,107 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags soft-404 bodies after navigation chrome" do
+    html = <<~HTML
+      <html>
+        <head><title>RubyDoc.info: Documenting RubyGems, Stdlib, and GitHub Projects</title></head>
+        <body>
+          <nav>
+            <a href="/">Home</a>
+            <a href="/current">Current</a>
+            <a href="/downloads">Downloads</a>
+          </nav>
+          <main>
+            <h2>We're sorry, but that page cannot be found.</h2>
+            <a href="https://ruby-doc.org/">Return to the main page</a>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.ruby-doc.org/3.4.2/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("We're sorry, but that page cannot be found")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
+  it "does not flag substantial articles that mention not-found text incidentally" do
+    sections = (1..8).map do |index|
+      <<~HTML
+        <section>
+          <h2>Diagnostic step #{index}</h2>
+          <p>Section #{index} explains routing diagnostics, fallback handlers, cache invalidation, deployment checks, and how teams should investigate production behavior with structured logs, metrics, trace identifiers, release metadata, and reproducible request samples.</p>
+          <p><a href="/routing/#{index}">Read the routing guide #{index}</a></p>
+        </section>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Reliable routing diagnostics</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Reliable routing diagnostics</h1>
+              <p>A template may say Page not found when a route is missing, but this article is about preventing that outcome in production systems.</p>
+              #{sections}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/blog/reliable-routing-diagnostics", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Reliable routing diagnostics")
+      expect(payload["warnings"]).not_to include("not_found_interstitial")
+    end
+  end
+
+  it "flags empty SPA shells as empty extractions" do
+    html = <<~HTML
+      <html>
+        <head><title>Hashnode</title></head>
+        <body>
+          <div id="__next"></div>
+          <script src="/static/chunks/app.js"></script>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://hashnode.io/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("empty_extraction")
+    end
+  end
+
+  it "flags short generic error-title shells" do
+    html = <<~HTML
+      <html>
+        <head><title>Example Archive: Error</title></head>
+        <body>
+          <main>
+            <ul>
+              <li><a href="/apps/ios">Wayback Machine (iOS)</a></li>
+              <li><a href="/apps/android">Wayback Machine (Android)</a></li>
+              <li><a href="/explore">Explore the Collections</a></li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/details/missing_item", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).to include("access_error_interstitial")
+    end
+  end
+
   it "flags subscription and login-required pages as access interstitials" do
     html = <<~HTML
       <html>
