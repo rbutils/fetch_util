@@ -284,6 +284,49 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts legal convention index lists from institutional page content" do
+    html = <<~HTML
+      <html>
+        <head><title>HCCH | Conventions and other Instruments</title></head>
+        <body class="templ23 sectie49">
+          <nav class="navbar"><a href="/en/members">Members</a><a href="/en/instruments">Instruments</a></nav>
+          <div class="page-content">
+            <div class="container">
+              <div class="textblock"><div class="block-content">
+                <h2 class="text-center">Conventions and other Instruments</h2>
+                <p>Since its inception, over 40 Conventions and instruments have been adopted under the auspices of the organisation.</p>
+              </div></div>
+              <div class="textblock"><div class="block-content"><h2>Core Conventions and Instruments</h2></div></div>
+              <ul class="arrows">
+                <li><a href="/en/instruments/conventions/specialised-sections/apostille">1961 Apostille Convention</a> [12]</li>
+                <li><a href="/en/instruments/conventions/specialised-sections/service">1965 Service Convention</a> [14]</li>
+                <li><a href="/en/instruments/conventions/specialised-sections/evidence">1970 Evidence Convention</a> [20]</li>
+                <li><a href="/en/instruments/conventions/specialised-sections/child-abduction">1980 Child Abduction Convention</a> [28]</li>
+              </ul>
+              <div class="textblock"><div class="block-content"><h2>Other Conventions and Instruments</h2></div></div>
+              <ul class="arrows">
+                <li><a href="/en/instruments/conventions/full-text/?cid=33">Convention of 1 March 1954 on civil procedure</a> [02]</li>
+                <li><a href="/en/instruments/conventions/full-text/?cid=31">Convention of 15 June 1955 on the law applicable to international sales of goods</a> [03]</li>
+                <li><a href="/en/instruments/conventions/full-text/?cid=32">Convention of 15 April 1958 on the law governing transfer of title in international sales of goods</a> [04]</li>
+                <li><a href="/en/instruments/conventions/full-text/?cid=34">Convention of 15 April 1958 on the jurisdiction of the selected forum in international sales of goods</a> [05]</li>
+              </ul>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.legal-institution.example/en/instruments/conventions", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# HCCH | Conventions and other Instruments")
+      expect(payload["markdown"]).to include("## Core Conventions and Instruments")
+      expect(payload["markdown"]).to include("[1961 Apostille Convention](https://www.legal-institution.example/en/instruments/conventions/specialised-sections/apostille)")
+      expect(payload["markdown"]).to include("[Convention of 1 March 1954 on civil procedure](https://www.legal-institution.example/en/instruments/conventions/full-text/?cid=33)")
+      expect(payload["markdown"]).not_to include("Members")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
   it "extracts institutional topic cards as clean list items" do
     topic_cards = Array.new(9) do |index|
       topic = ["Abortion", "Abuse of older people", "Addictive behaviour", "Adolescent health", "Ageing", "Air pollution", "Alcohol", "Anaemia", "Cancer"][index]
