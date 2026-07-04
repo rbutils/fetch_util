@@ -202,6 +202,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'keeps substantial table-based statute text classified as an article' do
+    provisions = (1..24).map do |i|
+      <<~HTML
+        <tr>
+          <td>
+            <p><a href="/annotations/#{i}">Art. #{i}º</a> A Republica Federativa Exampleira assegura direitos fundamentais, organiza os poderes publicos e estabelece deveres permanentes para a administracao democratica, inclusive quando a materia for tratada em tabelas de consolidacao normativa.</p>
+            <p>#{i.even? ? "Paragrafo unico" : "Inciso I"} - Esta disposicao legal integra o texto constitucional e deve ser aplicada em harmonia com os demais principios, garantias, competencias e limitacoes previstos nesta constituicao.</p>
+          </td>
+        </tr>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Constituicao da Republica Federativa Exampleira</title></head>
+        <body>
+          <table class="layout">
+            <tr><td>Presidencia da Republica</td></tr>
+            <tr><td>Casa Civil Subchefia para Assuntos Juridicos</td></tr>
+            <tr><td><strong>PREAMBULO</strong><p>Nos, representantes do povo, promulgamos a seguinte Constituicao da Republica Federativa Exampleira.</p></td></tr>
+            <tr><td><strong>TITULO I</strong><strong>Dos Principios Fundamentais</strong></td></tr>
+            #{provisions}
+          </table>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.gov/ccivil_03/constituicao/constituicao.htm', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('PREAMBULO')
+      expect(payload['markdown']).to include('Art. 1º')
+      expect(payload['markdown']).not_to include('Presidencia da Republica')
+      expect(payload['markdown']).not_to start_with('- [Art. 1º')
+    end
+  end
+
   it 'keeps substantial standalone articles classified as articles' do
     paragraphs = (1..7).map do |i|
       <<~HTML

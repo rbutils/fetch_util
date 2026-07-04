@@ -162,7 +162,7 @@ module FetchUtil
       return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
       return "list" if institutional_case_record_list?(final_url, payload)
-      return content_type if legal_judgment_markdown?(payload["markdown"])
+      return content_type if legal_judgment_markdown?(payload["markdown"]) || legal_statute_markdown?(payload["markdown"])
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
       return "list" if index_list_markdown?(final_url, payload)
@@ -294,7 +294,7 @@ module FetchUtil
       return false if article_like_url?(url)
 
       markdown = payload["markdown"].to_s
-      return false if legal_judgment_markdown?(markdown)
+      return false if legal_judgment_markdown?(markdown) || legal_statute_markdown?(markdown)
 
       linked_headlines = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count
       linked_items = markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
@@ -308,7 +308,7 @@ module FetchUtil
       return false if payload["byline"].to_s.strip != "" || payload["publishedTime"].to_s.strip != ""
 
       markdown = FetchUtil.normalize_whitespace(payload["markdown"].to_s)
-      return false if legal_judgment_markdown?(markdown)
+      return false if legal_judgment_markdown?(markdown) || legal_statute_markdown?(markdown)
 
       markdown.length < 2400
     end
@@ -328,6 +328,25 @@ module FetchUtil
 
       prose_lines = markdown.to_s.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
       prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= 120 } >= 5 || text.length >= 20_000
+    end
+
+    def legal_statute_markdown?(markdown)
+      text = FetchUtil.normalize_whitespace(markdown.to_s)
+      return false if text.length < 5_000
+      return false if text.match?(/\bresults?\s+\d+\s*[-–]\s*\d+\s+(?:of|sur|von|de)\s+\d+\b/i)
+
+      context = text[0, 4_000]
+      legal_title = context.match?(
+        /(?:constitution|constitutional|constitui[cç]?[aã]o|c[oó]digo|codigo|code|statute|act|law|regulation|ordinance|decree|treaty|convention)/i
+      )
+      provision_markers = text.scan(/(?:^|\s)(?:Art\.?|Article|Section|Sec\.?|§)\s*(?:\d+[ºª]?|[IVXLCDM]+)/i).count
+      structural_markers = text.scan(/\b(?:title|chapter|part|book|t[ií]tulo|cap[ií]tulo|se[cç][aã]o)\s+(?:[IVXLCDM]+|\d+)/i).count
+      legal_terms = text.match?(
+        /(?:federal republic|rep[úu]blica federativa|republica federativa|civil rights|fundamental rights|
+          legal provisions?|official gazette|promulgat|enacted|amended|paragraph|par[áa]grafo|paragrafo|inciso|subsection)/ix
+      )
+
+      legal_title && provision_markers >= 8 && (structural_markers >= 3 || legal_terms || text.length >= 20_000)
     end
 
     def index_or_search_url?(url)
