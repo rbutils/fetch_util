@@ -101,6 +101,31 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
     end
   end
 
+  it "flags short nav-only extraction on detail record URLs" do
+    html = <<~HTML
+      <html>
+        <head><title>Drug Record DB00316</title></head>
+        <body>
+          <nav>
+            <ul class="dropdown-item-col">
+              <li><a href="/structures/search/small_molecule_drugs/structure">Chemical Structure</a></li>
+              <li><a href="/categories">Categories &amp; ATC Classifications</a></li>
+              <li><a href="/classyfication">Drug Classification</a></li>
+            </ul>
+          </nav>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://records.example.org/drugs/DB00316", html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Chemical Structure")
+      expect(payload["warnings"]).to include("short_extraction")
+      expect(payload["suspect"]).to be(true)
+    end
+  end
+
   it "flags lyrics pages when extraction misses the visible lyrics body" do
     html = <<~HTML
       <html>
