@@ -343,6 +343,40 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags publisher unavailable pages as interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>Page Unavailable | Springer Nature Link</title></head>
+        <body>
+          <header class="eds-c-header">
+            <a href="https://link.springer.example/" data-test="springerlink-logo">
+              <img src="/logo.svg" alt="Springer Nature Link">
+            </a>
+          </header>
+          <div class="eds-c-header__expander eds-c-header__expander--search">
+            <h2>Search</h2>
+          </div>
+          <div class="eds-c-header__expander eds-c-header__expander--menu">
+            <h2>Navigation</h2>
+            <ul>
+              <li><a href="/journals/">Find a journal</a></li>
+              <li><a href="https://www.springernature.example/authors">Publish with us</a></li>
+              <li><a href="/home/">Track your research</a></li>
+            </ul>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://publisher.example/articles/10.1186/s12859-023-05456-7", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["markdown"]).to include("# Page Unavailable | Springer Nature Link")
+      expect(payload["warnings"]).to include("site_unavailable_interstitial")
+    end
+  end
+
   it "flags soft-404 bodies after navigation chrome" do
     html = <<~HTML
       <html>
