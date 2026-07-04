@@ -206,6 +206,48 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not repeat sibling docs card text in every list item" do
+    html = <<~HTML
+      <html>
+        <head><title>Hugo Documentation</title></head>
+        <body>
+          <main>
+            <section class="docs-grid">
+                <a class="a--block group border" href="/about/"><h3>About</h3><p>Learn about Hugo and its features, privacy protections, and security model.</p></a>
+                <a class="a--block group border" href="/commands/"><h3>CLI</h3><p>Use the command line interface (CLI) to manage your project.</p></a>
+                <a class="a--block group border" href="/configuration/"><h3>Configuration</h3><p>Configure your site.</p></a>
+                <a class="a--block group border" href="/content-management/"><h3>Content management</h3><p>Hugo makes managing large static sites easy with support for archetypes, content types, menus, cross references, summaries, and more.</p></a>
+                <a class="a--block group border" href="/contribute/"><h3>Contribute</h3><p>Contribute to development, documentation, and themes.</p></a>
+                <a class="a--block group border" href="/tools/"><h3>Developer tools</h3><p>Third-party tools to help you create and manage sites.</p></a>
+                <a class="a--block group border" href="/functions/"><h3>Functions</h3><p>Use these functions within your templates and archetypes.</p></a>
+                <a class="a--block group border" href="/getting-started/"><h3>Getting started</h3><p>How to get started with Hugo.</p></a>
+                <a class="a--block group border" href="/host-and-deploy/"><h3>Host and deploy</h3><p>Services and tools to host and deploy your site.</p></a>
+                <a class="a--block group border" href="/hugo-modules/"><h3>Hugo modules</h3><p>Use Hugo modules to manage the content, presentation, and behavior of your site.</p></a>
+                <a class="a--block group border" href="/hugo-pipes/"><h3>Hugo Pipes</h3><p>Use asset pipelines to transform and optimize images, stylesheets, and JavaScript.</p></a>
+                <a class="a--block group border" href="/installation/"><h3>Installation</h3><p>Install Hugo on macOS, Linux, Windows, BSD, and on any machine that can run the Go compiler tool chain.</p></a>
+                <a class="a--block group border" href="/methods/"><h3>Methods</h3><p>Use these methods within your templates.</p></a>
+                <a class="a--block group border" href="/quick-reference/"><h3>Quick reference</h3><p>Use these quick reference guides for quick access to key information.</p></a>
+                <a class="a--block group border" href="/render-hooks/"><h3>Render hooks</h3><p>Create render hook templates to override the rendering of Markdown to HTML.</p></a>
+                <a class="a--block group border" href="/shortcodes/"><h3>Shortcodes</h3><p>Insert elements such as videos, images, and social media embeds into your content using Hugo's embedded shortcodes.</p></a>
+                <a class="a--block group border" href="/templates/"><h3>Templates</h3><p>Create templates to render your content, resources, and data.</p></a>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://gohugo.io/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("Content management")
+      expect(markdown).to include("Hugo makes managing large static sites easy")
+      expect(markdown.scan("Content management").length).to be <= 2
+      expect(markdown.scan("Hugo modules").length).to be <= 2
+      expect(markdown).not_to include("AboutLearn about Hugo")
+    end
+  end
+
   it "does not duplicate nested layout table content when converting comments" do
     html = <<~HTML
       <html>
