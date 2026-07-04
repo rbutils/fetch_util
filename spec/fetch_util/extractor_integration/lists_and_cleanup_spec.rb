@@ -548,6 +548,46 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes leading legal case table navigation before judgment bodies" do
+    html = <<~HTML
+      <html>
+        <head><title>White v Chief Constable [1998] UKHL 45</title></head>
+        <body>
+          <table>
+            <tr>
+              <td rowspan="2"><a href="/"><img alt="BAILII" src="/logo.jpg"></a></td>
+              <td>[<a href="/">Home</a>] [<a href="/databases.html">Databases</a>] [<a href="/world/">World Law</a>] [<a href="/search">Multidatabase Search</a>] [<a href="/help">Help</a>] [<a href="/donate">DONATE</a>]</td>
+            </tr>
+            <tr><td><h2>United Kingdom House of Lords Decisions</h2></td></tr>
+            <tr><td colspan="3"><p><b>THE FUTURE OF BAILII DEPENDS ON USERS LIKE YOU</b></p><p>Please consider making a donation to support free access to law.</p></td></tr>
+            <tr><td colspan="3"><small><b>You are here:</b> BAILII &gt;&gt; Databases &gt;&gt; United Kingdom House of Lords Decisions<br>URL: https://www.bailii.org/uk/cases/UKHL/1998/45.html<br>Cite as: [1998] UKHL 45</small></td></tr>
+          </table>
+          <p>[<a href="/form/search_cases.html">New search</a>] [Buy ICLR report: <a href="/report">[1998] 3 WLR 1509</a>] [<a href="/help">Help</a>]</p>
+          <p>JISCBAILII_CASE_TORT</p>
+          <h2>White and Others v. Chief Constable of South Yorkshire and Others [1998] UKHL 45 (3 December, 1998)</h2>
+          <p><b>HOUSE OF LORDS</b></p>
+          <p><b>OPINIONS OF THE LORDS OF APPEAL FOR JUDGMENT IN THE CAUSE</b></p>
+          <p><b>LORD BROWNE-WILKINSON</b></p>
+          <p>My Lords, I have read in draft the speeches of my noble and learned friends.</p>
+          <p><b>LORD GRIFFITHS</b></p>
+          <p>I have had the advantage of reading the speeches of your Lordships before giving my own opinion.</p>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.bailii.org/uk/cases/UKHL/1998/45.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to start_with("# White v Chief Constable [1998] UKHL 45\n\n## White and Others")
+      expect(markdown).to include("My Lords, I have read in draft")
+      expect(markdown).not_to include("Multidatabase Search")
+      expect(markdown).not_to include("THE FUTURE OF BAILII")
+      expect(markdown).not_to include("New search")
+    end
+  end
+
   it "does not duplicate nested layout table content when converting comments" do
     html = <<~HTML
       <html>
