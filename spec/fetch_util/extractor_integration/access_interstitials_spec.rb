@@ -369,6 +369,94 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "flags court-style soft 404 pages where the error is in the opinion title" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>404 U.S. ___, Page Not Found - Court Search</title>
+          <meta property="og:site_name" content="Court Search">
+        </head>
+        <body>
+          <main>
+            <h1>Court Search</h1>
+            <h2>404 U.S. ___, Page Not Found</h2>
+            <p>Sorry, that page does not exist.</p>
+            <ul>
+              <li><a href="/opinion/">Do a new search in the Case Law database</a></li>
+              <li><a href="/citation/">Try citation lookup</a></li>
+              <li><a href="/contact/">Let us know it is missing</a></li>
+              <li><a href="/faq/">Learn about neutral citations</a></li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://courts.example/opinion/1/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("404 U.S. ___, Page Not Found")
+      expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
+  it "does not flag real court opinions that mention legal citations" do
+    paragraphs = (1..6).map do |index|
+      <<~HTML
+        <p>Opinion paragraph #{index} discusses the record, the applicable standard, counsel arguments,
+        and the court's reasoning in a published case-law decision with enough continuous prose to be
+        treated as primary legal content.</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Brown v. Board of Education - Court Search</title>
+          <meta property="og:site_name" content="Court Search">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Brown v. Board of Education</h1>
+              <p>347 U.S. 483</p>
+              #{paragraphs}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://courts.example/opinion/105221/brown-v-board-of-education/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Brown v. Board of Education")
+      expect(payload["warnings"]).not_to include("not_found_interstitial")
+    end
+  end
+
+  it "flags retired service shutdown notices as access interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>Example Legal Research</title></head>
+        <body>
+          <main>
+            <h1>Example Legal Research</h1>
+            <p>This service is no longer available, but we appreciate you being a part of it.</p>
+            <p>For legal research, please visit our new research platform.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://research.example/case/brown-v-board", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("This service is no longer available")
+      expect(payload["warnings"]).to include("access_error_interstitial")
+    end
+  end
+
   it "does not flag substantial articles that mention not-found text incidentally" do
     sections = (1..8).map do |index|
       <<~HTML

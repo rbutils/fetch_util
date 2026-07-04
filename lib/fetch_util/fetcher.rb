@@ -152,6 +152,7 @@ module FetchUtil
       content_type = payload["contentType"] || "article"
       return content_type unless content_type == "article"
       return content_type if payload["hostAware"]
+      return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
       return "list" if index_list_markdown?(final_url, payload)
       return "list" if thin_index_page?(final_url, payload)
@@ -161,7 +162,8 @@ module FetchUtil
 
     def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
       warnings = Array(payload["warnings"]).dup
-      if content_type == "list" && homepage_like && !payload["statusPage"] && !substantial_homepage_landing?(payload)
+      if content_type == "list" && homepage_like && !payload["statusPage"] &&
+         !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload)
         warnings << "homepage_index_page"
       end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
@@ -187,6 +189,36 @@ module FetchUtil
       return false unless snippet.match?(HOMEPAGE_INDEX_PATTERN)
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
+    end
+
+    def government_service_portal?(url, payload)
+      markdown = payload["markdown"].to_s
+      normalized = FetchUtil.normalize_whitespace(markdown)
+      return false if normalized.length < 250
+      return false unless government_domain?(url) || government_service_language?(payload)
+
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      service_pattern = /\b(?:service|services|servi[cç]os?|servicio|servicios|service category|categories|
+        categorias?|citizens?|business(?:es)?|benefits?|permits?|licen[cs]es?)\b/ix
+      service_terms = context.scan(service_pattern).length
+      linked_items = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count + markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
+      plain_items = markdown.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count
+
+      service_terms >= 3 && (linked_items >= 4 || plain_items >= 4 || markdown.scan(%r{\]\(https?://}).count >= 6)
+    end
+
+    def government_domain?(url)
+      host = FetchUtil.strip_www_host(url)
+      labels = host.split(".")
+
+      host.end_with?(".gov") || labels.include?("gov")
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def government_service_language?(payload)
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], payload["markdown"]].join(" ")).downcase
+      context.match?(/\b(?:government|governance|public services?|servi[cç]os? p[úu]blicos?|national portal|citizen services?)\b/i)
     end
 
     def substantial_homepage_landing?(payload)

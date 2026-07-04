@@ -74,6 +74,54 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('homepage_index_page')
   end
 
+  it 'classifies government service portal homepages as lists without homepage-index warnings' do
+    gov_url = 'https://www.gov.example/'
+    gov_markdown = <<~MARKDOWN
+      # Government Services
+
+      ## Services for you
+
+      ## Browse by category
+
+      [Agriculture services](https://www.gov.example/categories/agriculture)
+      Support, permits, and assistance for farms, food producers, and exporters.
+
+      [Social assistance services](https://www.gov.example/categories/social-assistance)
+      Benefits, applications, and support services for citizens and communities.
+
+      [Business services](https://www.gov.example/categories/business)
+      Register a company, request licenses, and manage public-service filings.
+
+      [Education services](https://www.gov.example/categories/education)
+      Student, school, and research services from government departments.
+
+      [Transport permits](https://www.gov.example/categories/transport)
+      Driver, vehicle, infrastructure, and public transport services.
+
+      [Health services](https://www.gov.example/categories/health)
+      Public health programs, benefits, and medical-service information.
+    MARKDOWN
+
+    stub_browser_extraction(
+      gov_url,
+      page: page_at(gov_url),
+      payload: payload_with(
+        title: 'Government Services',
+        siteName: 'National public services portal',
+        markdown: gov_markdown,
+        contentType: 'article',
+        byline: nil,
+        publishedTime: nil
+      )
+    )
+
+    result = fetch_with_dependencies(gov_url)
+
+    expect(result.content_type).to eq('list')
+    expect(result.suspect).to eq(false)
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
   it 'does not flag query-driven list pages as url mismatches' do
     search_list_page = page_at('https://www.pinterest.com/search/pins/?q=ruby+programming')
     list_payload = payload_with(
