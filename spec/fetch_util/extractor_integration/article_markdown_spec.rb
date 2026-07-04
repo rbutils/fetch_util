@@ -31,6 +31,38 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes undefined image placeholder text from markdown links" do
+    html = <<~HTML
+      <html>
+        <head><title>Compound Record</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Compound Record</h1>
+              <p>
+                <a href="/compound.png" title="Download the structure image of undefined">
+                  Download image
+                </a>
+              </p>
+              <p><img src="/missing-alt.png" alt="undefined"></p>
+              <p>The compound summary remains readable.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/compound", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(markdown).to include("[Download image](https://example.test/compound.png)")
+      expect(markdown).to include("The compound summary remains readable.")
+      expect(markdown).not_to match(/undefined/i)
+      expect(markdown).not_to include('"Download the structure image of')
+    end
+  end
+
   it "preserves legal citation link text with emphasized section letters" do
     html = <<~HTML
       <html>
