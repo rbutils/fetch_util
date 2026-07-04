@@ -3,6 +3,73 @@
 RSpec.describe 'FetchUtil academic abstract extraction' do
   include_context 'extractor integration helpers'
 
+  it 'extracts PLOS style open-access article sections from the article text root' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Microbial activity across coastal wetlands | PLOS One</title>
+          <meta property="og:site_name" content="PLOS One">
+          <meta name="citation_doi" content="10.1371/journal.pone.0999999">
+          <meta name="citation_journal_title" content="PLOS One">
+        </head>
+        <body>
+          <header><a href="/">plos.org</a><a href="/metrics">Article metrics</a></header>
+          <main>
+            <div class="article-header">
+              <h1>Microbial activity across coastal wetlands</h1>
+              <p>Open Access Peer-reviewed Research Article</p>
+            </div>
+            <div id="nav-article">
+              <ul class="nav-page">
+                <li><a href="#abstract0">Abstract</a></li>
+                <li><a href="#s1">Introduction</a></li>
+                <li><a href="#s2">Materials and methods</a></li>
+                <li><a href="#s3">Results</a></li>
+              </ul>
+            </div>
+            <div class="article-content">
+              <div class="article-text" id="artText">
+                <div class="abstract toc-section abstract-type-"><a id="abstract0" data-toc="abstract0" title="Abstract"></a><h2>Abstract</h2>
+                  <div class="abstract-content"><p>Coastal wetland microbial activity was measured across restored marsh sites and reference habitats.</p></div>
+                </div>
+                <div id="figure-carousel-section"><h2>Figures</h2><div class="carousel-item">Figure chrome only</div></div>
+                <div class="articleinfo"><p><strong>Citation:</strong> Example Authors (2026) Coastal wetlands.</p></div>
+                <div id="section1" class="section toc-section"><a id="s1" name="s1" data-toc="s1" class="link-target" title="Introduction"></a><h2>Introduction</h2>
+                  <p>Introduction prose explains why restoration gradients need complete microbial measurements across multiple wetland zones.</p>
+                </div>
+                <div id="section2" class="section toc-section"><a id="s2" name="s2" data-toc="s2" class="link-target" title="Materials and methods"></a><h2>Materials and methods</h2>
+                  <p>Methods prose describes replicated sediment cores, porewater chemistry, sequencing, and enzyme assays collected by season.</p>
+                </div>
+                <div id="section3" class="section toc-section"><a id="s3" name="s3" data-toc="s3" class="link-target" title="Results"></a><h2>Results</h2>
+                  <p>Results prose reports higher denitrification potential in restored marsh interiors than in unvegetated reference plots.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="metrics-panel"><h2>Metrics</h2><p>Views Citations Saves</p></aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0999999', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to include('# Microbial activity across coastal wetlands')
+      expect(markdown).to include('## Abstract')
+      expect(markdown).to include('## Introduction')
+      expect(markdown).to include('restoration gradients need complete microbial measurements')
+      expect(markdown).to include('## Materials and methods')
+      expect(markdown).to include('replicated sediment cores')
+      expect(markdown).to include('## Results')
+      expect(markdown).to include('higher denitrification potential')
+      expect(markdown).not_to include('Article metrics')
+      expect(markdown).not_to include('Figure chrome only')
+      expect(markdown).not_to include('Views Citations Saves')
+    end
+  end
+
   it 'extracts Elsevier article bodies instead of citation and supplementary chrome' do
     html = <<~HTML
       <html>
