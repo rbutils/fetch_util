@@ -161,6 +161,7 @@ module FetchUtil
       return content_type unless content_type == "article"
       return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
+      return content_type if legal_judgment_markdown?(payload["markdown"])
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
       return "list" if index_list_markdown?(final_url, payload)
@@ -270,6 +271,8 @@ module FetchUtil
       return false if article_like_url?(url)
 
       markdown = payload["markdown"].to_s
+      return false if legal_judgment_markdown?(markdown)
+
       linked_headlines = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count
       linked_items = markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
 
@@ -282,7 +285,26 @@ module FetchUtil
       return false if payload["byline"].to_s.strip != "" || payload["publishedTime"].to_s.strip != ""
 
       markdown = FetchUtil.normalize_whitespace(payload["markdown"].to_s)
+      return false if legal_judgment_markdown?(markdown)
+
       markdown.length < 2400
+    end
+
+    def legal_judgment_markdown?(markdown)
+      text = FetchUtil.normalize_whitespace(markdown.to_s)
+      return false if text.length < 5_000
+      return false if text.match?(/\bresults?\s+\d+\s*[-–]\s*\d+\s+(?:of|sur|von|de)\s+\d+\b/i)
+
+      signals = 0
+      signals += 1 if text.match?(/\b(?:high court|supreme court|court of appeal|federal court|district court|tribunal)\b/i)
+      signals += 1 if text.match?(/\b(?:judg(?:e)?ment|opinion of the court|reasons for judgment|delivered by)\b/i)
+      signals += 1 if text.match?(/\b(?:appellant|respondent|plaintiff|defendant|petitioner|counsel|solicitor|certiorari)\b/i)
+      signals += 1 if text.match?(/\b[A-Z][A-Za-z'.-]+\s+v\.?\s+[A-Z][A-Za-z'.-]+\b/)
+      signals += 1 if text.match?(/\[[12][0-9]{3}\]\s+[A-Z][A-Z0-9.]{1,12}\s+\d+|\([12][0-9]{3}\)\s+\d+\s+[A-Z][A-Z0-9.]{1,12}\s+\d+/i)
+      return false if signals < 3
+
+      prose_lines = markdown.to_s.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
+      prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= 120 } >= 5 || text.length >= 20_000
     end
 
     def index_or_search_url?(url)

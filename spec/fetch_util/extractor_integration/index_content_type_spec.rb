@@ -306,4 +306,44 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload['markdown']).to include('continuous article prose')
     end
   end
+
+  it 'keeps long legal judgment pages classified as articles despite citation links' do
+    nav_links = (1..12).map do |i|
+      %(<li><a href="/au/cases/cth/HCA/1992/#{i}.html">High Court judgment #{i}</a></li>)
+    end.join
+    judgment_paragraphs = (1..18).map do |i|
+      <<~HTML
+        <p>The High Court considered the claim by the appellant and respondent in Mabo v Queensland.
+        This judgment explains the reasons for judgment, the authorities cited by counsel, and the
+        relationship between native title, Crown sovereignty, and the common law. Paragraph #{i}
+        records continuous judicial reasoning rather than a list of search results or an index page.</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Mabo v Queensland (No 2) [1992] HCA 23</title></head>
+        <body>
+          <nav>
+            <ul>#{nav_links}</ul>
+          </nav>
+          <main>
+            <article>
+              <h1>Mabo v Queensland (No 2) [1992] HCA 23</h1>
+              <p><strong>HIGH COURT OF AUSTRALIA</strong></p>
+              <p>MABO AND OTHERS v. QUEENSLAND (No. 2) [1992] HCA 23; (1992) 175 CLR 1</p>
+              #{judgment_paragraphs}
+              <p>Orders: appeal allowed. Solicitors and counsel were heard for the appellant and respondent.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example.test/cgi-bin/viewdoc/au/cases/cth/HCA/1992/23.html', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('HIGH COURT OF AUSTRALIA')
+      expect(payload['markdown']).to include('continuous judicial reasoning')
+    end
+  end
 end

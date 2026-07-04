@@ -252,6 +252,41 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('url_content_mismatch')
   end
 
+  it 'keeps long legal judgments on view paths classified as articles' do
+    page = page_at('https://www.example.test/cgi-bin/viewdoc/au/cases/cth/HCA/1992/23.html')
+    paragraphs = (1..18).map do |i|
+      "The High Court considered Mabo v Queensland and explained the reasons for judgment. " \
+        "The appellant and respondent addressed counsel on native title, Crown sovereignty, and common law. " \
+        "The reasons mention government services, citizens, business licences, and public permits as background context. " \
+        "Paragraph #{i} is continuous judicial reasoning rather than a result index."
+    end.join("\n\n")
+    judgment_payload = payload_with(
+      title: 'Mabo v Queensland (No 2) [1992] HCA 23',
+      markdown: <<~MARKDOWN.chomp,
+        # Mabo v Queensland (No 2) [1992] HCA 23
+
+        ## HIGH COURT OF AUSTRALIA
+
+        MABO AND OTHERS v. QUEENSLAND (No. 2) [1992] HCA 23; (1992) 175 CLR 1
+
+        - [High Court judgment 1](https://www.example.test/au/cases/cth/HCA/1992/1.html)
+        - [High Court judgment 2](https://www.example.test/au/cases/cth/HCA/1992/2.html)
+        - [High Court judgment 3](https://www.example.test/au/cases/cth/HCA/1992/3.html)
+        - [High Court judgment 4](https://www.example.test/au/cases/cth/HCA/1992/4.html)
+
+        #{paragraphs}
+      MARKDOWN
+      contentType: 'article',
+      warnings: []
+    )
+
+    stub_browser_extraction(page.current_url, page: page, payload: judgment_payload)
+
+    result = fetch_with_dependencies(page.current_url)
+
+    expect(result.content_type).to eq('article')
+  end
+
   it 'delegates quit to the underlying browser' do
     allow(browser).to receive(:quit)
 
