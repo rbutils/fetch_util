@@ -39,6 +39,41 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('url_content_mismatch')
   end
 
+  it 'does not warn on substantial docs product homepages with real intro content' do
+    docs_page = page_at('https://nextra.site/')
+    docs_payload = payload_with(
+      title: 'Make beautiful websites with Next.js & MDX',
+      siteName: 'Nextra',
+      markdown: <<~MARKDOWN.chomp,
+        # Make beautiful websites with Next.js & MDX
+
+        Build fast, customizable, and content-rich websites with Nextra. Powered by Next.js, it offers seamless Markdown support, customizable themes, file conventions, and easy integration with MDX, making it perfect for documentation, blogs, and static websites.
+
+        Nextra is designed for teams that want a polished documentation or product site without giving up control over the content model. Authors can keep pages in Markdown and MDX, compose reusable components, publish guides, and connect framework features while still presenting a coherent landing page for readers.
+
+        The homepage explains the product and points visitors toward documentation, examples, theming, search, internationalization, and deployment workflows. It is more than a thin index shell because the landing copy describes what the framework does and why a team would choose it.
+
+        Use it for API references, project handbooks, launch pages, changelogs, and long-form guides that benefit from file-based routing and modern React components.
+
+        - Full-power documentation in minutes
+        - Links and images are always optimized
+        - Advanced syntax highlighting solution
+        - I18n as easy as creating new files
+        - [Get started ->](https://nextra.site/docs)
+      MARKDOWN
+      contentType: 'list',
+      warnings: []
+    )
+
+    stub_browser_extraction('https://nextra.site/', page: docs_page, payload: docs_payload)
+
+    result = fetch_with_dependencies('https://nextra.site/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.suspect).to eq(false)
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
   it 'does not flag query-driven list pages as url mismatches' do
     search_list_page = page_at('https://www.pinterest.com/search/pins/?q=ruby+programming')
     list_payload = payload_with(

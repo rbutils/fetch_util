@@ -77,6 +77,38 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not flag long single-topic rails guides as multi-topic pages" do
+    sections = 7.times.map do |i|
+      <<~SECTION
+        <h2>#{i + 1}. Guide section #{i + 1}</h2>
+        <p>This section continues the same Rails guide with a focused explanation and a <a href="#example-#{i}">supporting example</a>.</p>
+      SECTION
+    end.join("\n")
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Getting Started with Rails — Ruby on Rails Guides</title>
+        </head>
+        <body>
+          <main id="main">
+            <h1>Getting Started with Rails</h1>
+            <p>This guide covers getting up and running with Ruby on Rails.</p>
+            <div id="column-main">
+              #{sections}
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://guides.rubyonrails.org/getting_started.html", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "extracts rails api docs without file-tree or anchor chrome" do
     html = <<~HTML
       <html>

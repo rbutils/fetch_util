@@ -145,7 +145,9 @@ module FetchUtil
 
     def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil)
       warnings = Array(payload["warnings"]).dup
-      warnings << "homepage_index_page" if content_type == "list" && homepage_like
+      if content_type == "list" && homepage_like && !substantial_homepage_landing?(payload)
+        warnings << "homepage_index_page"
+      end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
@@ -165,6 +167,20 @@ module FetchUtil
       return false unless snippet.match?(HOMEPAGE_INDEX_PATTERN)
 
       markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
+    end
+
+    def substantial_homepage_landing?(payload)
+      markdown = payload["markdown"].to_s
+      normalized = FetchUtil.normalize_whitespace(markdown)
+      return false if normalized.length < 1_200
+
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      landing_pattern = /\b(docs?|documentation|api|reference|guide|guides|developer|framework|next\.js|mdx|
+        static websites?|components?|themes?|product|platform)\b/x
+      return false unless context.match?(landing_pattern)
+
+      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
+      prose_lines.any? { |line| FetchUtil.normalize_whitespace(line).length >= 120 }
     end
 
     def index_list_markdown?(url, payload)
