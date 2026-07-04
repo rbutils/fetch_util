@@ -166,6 +166,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'classifies institutional case card indexes as lists despite long summaries' do
+    cards = %w[Abd-Al-Rahman Abu-Garda Al-Hassan Al-Mahdi Al-Bashir Bemba].map do |name|
+      <<~HTML
+        <div class="card">
+          <div class="card-header"><h3><a href="/darfur/#{name.downcase}">#{name.tr("-", " ")}</a></h3></div>
+          <div class="card-body">
+            <p>In ICC custody, Convicted</p>
+            <p>The warrant of arrest and charges in this case were addressed by the trial chamber after extensive proceedings before the court. This summary is intentionally long enough to resemble a case record teaser rather than a short news card.</p>
+            <p>Next steps: the chamber will continue to manage reparations, appeals, custody, and other case record matters.</p>
+          </div>
+        </div>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Cases | International Criminal Court</title></head>
+        <body class="cases path-cases">
+          <main id="main">
+            <h1>Cases</h1>
+            <form class="views-exposed-form cases-exposed-search-form"><label>Filter by defendant</label></form>
+            <div class="view view-case-listing">
+              <h2>34 Cases</h2>
+              #{cards}
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.example-court.int/cases', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Next steps: the chamber will continue to manage reparations')
+    end
+  end
+
   it 'keeps substantial standalone articles classified as articles' do
     paragraphs = (1..7).map do |i|
       <<~HTML

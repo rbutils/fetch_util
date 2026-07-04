@@ -161,6 +161,7 @@ module FetchUtil
       return content_type unless content_type == "article"
       return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
+      return "list" if institutional_case_record_list?(final_url, payload)
       return content_type if legal_judgment_markdown?(payload["markdown"])
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
@@ -235,6 +236,28 @@ module FetchUtil
     def government_service_language?(payload)
       context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], payload["markdown"]].join(" ")).downcase
       context.match?(/\b(?:government|governance|public services?|servi[cç]os? p[úu]blicos?|national portal|citizen services?)\b/i)
+    end
+
+    def institutional_case_record_list?(url, payload)
+      markdown = payload["markdown"].to_s
+      normalized = FetchUtil.normalize_whitespace(markdown)
+      return false if normalized.length < 500
+
+      path = URI.parse(url).path.to_s.downcase
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown.lines.first(20).join(" ")].join(" "))
+      return false unless path.match?(%r{/(?:cases?|defendants?|records?|dockets?|matters?)/?\z}) ||
+                          context.match?(/\b\d{1,4}\s+(?:cases?|defendants?|records?|matters?)\b/i)
+
+      linked_case_headings = markdown.scan(
+        %r{^\s*\#{1,6}\s+\[[^\]]{3,180}\]\([^)]*/(?:cases?|defendants?|situations?|darfur|mali|kenya|libya|uganda|congo|afghanistan|ukraine|records?|dockets?)[^)]*\)}i
+      ).count
+      case_terms = normalized.scan(
+        /\b(?:prosecutor|trial chamber|pre-trial chamber|charges?|warrant|summons|custody|convicted|acquitted|case closed|at large|defence|reparations|court record)\b/i
+      ).count
+
+      linked_case_headings >= 4 && case_terms >= 6
+    rescue URI::InvalidURIError
+      false
     end
 
     def substantial_homepage_landing?(payload)
