@@ -63,6 +63,40 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies legal search result pages with result cards as lists" do
+    html = <<~HTML
+      <html>
+        <head><title>Search Results - EUR-Lex</title></head>
+        <body>
+          <main>
+            <h1>Search Results</h1>
+            <p>Results <strong>1</strong> - <strong>10</strong> of <strong>12089</strong></p>
+            <section class="SearchResult">
+              <h2><a href="/legal-content/AUTO/?uri=CELEX:32016R0679&amp;qid=123">Regulation (EU) 2016/679 on the protection of natural persons</a></h2>
+              <p>OJ L 119, p. 1-88. In force. Languages: BG, ES, CS, DA, DE, EN, FR.</p>
+            </section>
+            <section class="SearchResult">
+              <h2><a href="/legal-content/AUTO/?uri=CELEX:52020DC0264&amp;qid=123">Communication on data protection and privacy</a></h2>
+              <p>European Commission document with privacy-related policy details.</p>
+            </section>
+            <section class="SearchResult">
+              <h2><a href="/legal-content/AUTO/?uri=CELEX:32002L0058&amp;qid=123">Directive 2002/58/EC concerning privacy and electronic communications</a></h2>
+              <p>Directive concerning the processing of personal data and privacy.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://eur-lex.example/search.html?type=quick&text=privacy", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("Regulation (EU) 2016/679")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+    end
+  end
+
   it "keeps full search-result detail text in markdown bullets" do
     long_detail = [
       "Ruby keeps the full search detail text visible to downstream agents even when the snippet is long enough",
