@@ -392,6 +392,52 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes empty headings and inline subscription promo modules from articles" do
+    html = <<~HTML
+      <html>
+        <head><title>Physics Overview</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Physics Overview</h1>
+              <section>
+                <h2>Top Questions</h2>
+                <h3><span class="anchor"></span></h3>
+                <p>Why does physics use SI units?</p>
+              </section>
+              <p>Physics studies matter, motion, and energy through observation and experiment.</p>
+              <section class="inline-subscription-promo marketing-module">
+                <p>The trusted destination for professionals, college students, and lifelong learners.</p>
+                <p>Save 30% on annual subscriptions this July Fourth!</p>
+                <img src="/marketing/inline-left.webp" alt="Penguin, ship, mountain, atlas">
+                <img src="/marketing/inline-right.webp" alt="Shohei Ohtani, plants, and art">
+              </section>
+              <p>Explore 30% SUBSCRIBE</p>
+              <p>Reference AIchevron_right AI-generated answers from reference articles. AI makes mistakes, so verify using source articles.</p>
+              <p>Classical mechanics describes forces and motion at everyday scales.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://reference.example/science/physics", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to include("Top Questions")
+      expect(markdown).to include("Why does physics use SI units?")
+      expect(markdown).to include("Classical mechanics describes forces")
+      expect(markdown).not_to match(/^###\s*$/)
+      expect(markdown).not_to include("Save 30%")
+      expect(markdown).not_to include("trusted destination")
+      expect(markdown).not_to include("marketing/inline-left")
+      expect(markdown).not_to include("Explore 30% SUBSCRIBE")
+      expect(markdown).not_to include("AI-generated answers")
+    end
+  end
+
   it "does not duplicate nested layout table content when converting comments" do
     html = <<~HTML
       <html>
