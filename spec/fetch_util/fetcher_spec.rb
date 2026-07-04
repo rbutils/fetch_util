@@ -271,6 +271,26 @@ RSpec.describe FetchUtil::Fetcher do
     expect(log).to have_received(:append).with('https://example.com/input', duration: a_value >= 0)
   end
 
+  it 'returns a structured suspect result for browser DNS failures' do
+    log = instance_double(FetchUtil::RequestLog)
+    allow(log).to receive(:append)
+    stub_browser_failure(
+      'https://missing.example.test/',
+      FetchUtil::BrowserError,
+      'Request https://missing.example.test/ failed (net::ERR_NAME_NOT_RESOLVED)'
+    )
+
+    result = fetch_with_dependencies('https://missing.example.test/', request_log: log)
+
+    expect(result).to be_a(FetchUtil::Result)
+    expect(result.markdown).to eq('')
+    expect(result.content_type).to eq('error')
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to eq(['dns_resolution_failed'])
+    expect(result.error_message).to include('net::ERR_NAME_NOT_RESOLVED')
+    expect(log).to have_received(:append).with('https://missing.example.test/', duration: a_value >= 0)
+  end
+
   it 'logs duration even when fetch raises' do
     log = instance_double(FetchUtil::RequestLog)
     allow(log).to receive(:append)

@@ -17,6 +17,7 @@ module FetchUtil
       content_type
       suspect
       warnings
+      error_message
     ].freeze
 
     class_option :log_path, type: :string, desc: "Append-only request log path"

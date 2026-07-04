@@ -55,6 +55,12 @@ module FetchUtil
     CONTENT_ROUTE_SEGMENTS = %w[article articles content paper papers preprint preprints].freeze
     SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
     GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
+    NETWORK_ERROR_PATTERN = Regexp.new(
+      "\\b(?:net::ERR_|ERR_NAME_NOT_RESOLVED|DNS|resolve|resolution|ENOTFOUND|" \
+      "EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|timed out|timeout|" \
+      "connection (?:refused|reset|closed)|disconnected|network)\\b",
+      Regexp::IGNORECASE
+    ).freeze
 
     def initialize(browser: nil, extractor: nil, **options)
       @timeout = options.fetch(:timeout, 20)
@@ -88,6 +94,8 @@ module FetchUtil
       end
 
       log_request(url, t0)
+      return network_error_result(url, e) if e.is_a?(BrowserError) && network_error?(e)
+
       raise e
     end
 
@@ -443,6 +451,46 @@ module FetchUtil
 
     def fallback_result(url, fallback)
       build_result(url, *fallback)
+    end
+
+    def network_error_result(url, error)
+      message = error.message.to_s.strip
+      warning = dns_resolution_error?(message) ? "dns_resolution_failed" : "network_error"
+      metadata = {
+        content_url: url,
+        content_type: "error",
+        suspect: true,
+        warnings: [warning],
+        error_message: message
+      }.freeze
+
+      Result.new(
+        url: url,
+        final_url: url,
+        title: nil,
+        byline: nil,
+        excerpt: nil,
+        site_name: nil,
+        published_time: nil,
+        canonical_url: nil,
+        language: nil,
+        html: nil,
+        markdown: "",
+        metadata: metadata,
+        reader_mode: nil,
+        content_type: "error",
+        suspect: true,
+        warnings: [warning],
+        error_message: message
+      )
+    end
+
+    def network_error?(error)
+      error.message.to_s.match?(NETWORK_ERROR_PATTERN)
+    end
+
+    def dns_resolution_error?(message)
+      message.match?(/ERR_NAME_NOT_RESOLVED|DNS|resolve|resolution|ENOTFOUND|EAI_AGAIN/i)
     end
 
     def docs_fallback_candidate?(requested_url, result = nil)

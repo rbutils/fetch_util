@@ -181,6 +181,52 @@ RSpec.describe FetchUtil::CLI do
     )
   end
 
+  it "prints structured json for network error results" do
+    result = instance_double(
+      FetchUtil::Result,
+      to_h: {
+        url: "https://missing.example.test/",
+        final_url: "https://missing.example.test/",
+        canonical_url: nil,
+        title: nil,
+        byline: nil,
+        markdown: "",
+        content_type: "error",
+        suspect: true,
+        warnings: ["dns_resolution_failed"],
+        error_message: "Request failed (net::ERR_NAME_NOT_RESOLVED)"
+      },
+      html: nil
+    )
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://missing.example.test/",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = capture_stdout do
+      described_class.start(["fetch", "https://missing.example.test/", "--format", "json"])
+    end
+
+    expect(JSON.parse(output, symbolize_names: true)).to eq(
+      {
+        url: "https://missing.example.test/",
+        final_url: "https://missing.example.test/",
+        content_type: "error",
+        suspect: true,
+        warnings: ["dns_resolution_failed"],
+        error_message: "Request failed (net::ERR_NAME_NOT_RESOLVED)"
+      }
+    )
+  end
+
   it "aggregates search results and prints json" do
     request_log = instance_double(FetchUtil::RequestLog)
     searcher = instance_double(FetchUtil::Searcher)
