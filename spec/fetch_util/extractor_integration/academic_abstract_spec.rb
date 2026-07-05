@@ -3,6 +3,64 @@
 RSpec.describe 'FetchUtil academic abstract extraction' do
   include_context 'extractor integration helpers'
 
+  def fetch_result_from_payload(url, payload, final_url: url)
+    browser = instance_double(FetchUtil::Browser)
+    extractor = instance_double(FetchUtil::Extractor)
+    raw_docs_fallback = instance_double(FetchUtil::RawDocsFallback, fetch: nil)
+
+    allow(browser).to receive(:with_page).with(url).and_yield(instance_double('FerrumPage', current_url: final_url))
+    allow(extractor).to receive(:extract).and_return(payload)
+
+    FetchUtil::Fetcher.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback).fetch(url)
+  end
+
+  def scholarly_article_payload(title:, site_name:, byline:, published_time: nil)
+    prose = Array.new(6) do |index|
+      "This article paragraph #{index} reports experimental observations, explains methodological controls, " \
+        "and compares results across conditions with enough continuous prose to distinguish a full " \
+        "scholarly article body from an index of linked article cards."
+    end.join("\n\n")
+    references = Array.new(5) do |index|
+      "- [Reference #{index} with linked scholarly citation](https://doi.org/10.1000/example#{index})"
+    end.join("\n")
+
+    {
+      'title' => title,
+      'siteName' => site_name,
+      'byline' => byline,
+      'publishedTime' => published_time,
+      'contentType' => 'list',
+      'markdown' => <<~MARKDOWN,
+        # #{title}
+
+        ## Abstract
+
+        #{prose}
+
+        ## Introduction
+
+        #{prose}
+
+        ## Methods
+
+        #{prose}
+
+        ## Results
+
+        #{prose}
+
+        ## Discussion
+
+        #{prose}
+
+        ## References
+
+        #{references}
+      MARKDOWN
+      'warnings' => []
+    }
+  end
+
   it 'extracts PLOS style open-access article sections from the article text root' do
     html = <<~HTML
       <html>
@@ -68,6 +126,37 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       expect(markdown).not_to include('Figure chrome only')
       expect(markdown).not_to include('Views Citations Saves')
     end
+  end
+
+  it 'keeps eLife-style open access article sections as articles when citations look list-like' do
+    payload = scholarly_article_payload(
+      title: 'Pathogenic Huntingtin aggregates alter actin organization and cellular stiffness',
+      site_name: 'eLife Sciences Publications, Ltd',
+      byline: 'Surya Bansi Singh, Shatruhan Singh Rajput',
+      published_time: '2024-10-09'
+    )
+
+    result = fetch_result_from_payload('https://elifesciences.org/articles/98363', payload)
+
+    expect(result.content_type).to eq('article')
+    expect(result.suspect).to eq(false)
+    expect(result.markdown).to include('## Abstract')
+    expect(result.markdown).to include('## Results')
+  end
+
+  it 'keeps PeerJ-style open access article bodies as articles when references look list-like' do
+    payload = scholarly_article_payload(
+      title: 'New agri-environmental measures have a direct effect on wildlife and economy',
+      site_name: 'PeerJ',
+      byline: 'Petr Marada, Jan Cukor, Michal Kubenka'
+    )
+
+    result = fetch_result_from_payload('https://peerj.com/articles/15000/', payload)
+
+    expect(result.content_type).to eq('article')
+    expect(result.suspect).to eq(false)
+    expect(result.markdown).to include('## Introduction')
+    expect(result.markdown).to include('## Discussion')
   end
 
   it 'extracts ACS abstracts without metrics and access chrome' do

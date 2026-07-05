@@ -158,11 +158,14 @@ module FetchUtil
 
     def resolved_content_type(final_url, homepage_like, payload)
       content_type = payload["contentType"] || "article"
+      return "article" if content_type == "list" && scholarly_article_markdown?(final_url, payload)
+
       return content_type unless content_type == "article"
       return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
       return "list" if institutional_case_record_list?(final_url, payload)
       return content_type if legal_judgment_markdown?(payload["markdown"]) || legal_statute_markdown?(payload["markdown"])
+      return content_type if scholarly_article_markdown?(final_url, payload)
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
       return "list" if index_list_markdown?(final_url, payload)
@@ -300,6 +303,32 @@ module FetchUtil
       linked_items = markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
 
       linked_headlines + linked_items >= 4
+    end
+
+    def scholarly_article_markdown?(url, payload)
+      markdown = payload["markdown"].to_s
+      normalized = FetchUtil.normalize_whitespace(markdown)
+      return false if normalized.length < 5_000
+      return false unless article_like_url?(url) || doi_article_url?(url) || doi_article_url?(payload["canonicalUrl"])
+      return false if payload["byline"].to_s.strip.empty? && payload["publishedTime"].to_s.strip.empty?
+
+      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown.lines.first(80).join(" ")].join(" "))
+      scholarly_context = context.match?(/\b(?:abstract|introduction|methods?|results?|discussion|references|doi|open access|peer[- ]reviewed|journal|article)\b/i)
+      section_headings = markdown.scan(/^\s*\#{1,4}\s+(?:Abstract|Introduction|Methods?|Materials and methods|Results?|Discussion|Conclusion|References)\b/i).count
+      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
+      long_prose_lines = prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= 140 }
+
+      return true if scholarly_context && section_headings >= 3 && long_prose_lines >= 5
+
+      doi_article_url?(url) && scholarly_context && normalized.length >= 8_000 && long_prose_lines >= 8
+    end
+
+    def doi_article_url?(url)
+      return false if url.nil? || url.empty?
+
+      URI.parse(url).path.to_s.match?(%r{/(?:articles?/)?10\.\d{4,9}/}i)
+    rescue URI::InvalidURIError
+      false
     end
 
     def thin_index_page?(url, payload)
