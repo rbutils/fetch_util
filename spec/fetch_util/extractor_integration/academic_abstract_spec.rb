@@ -159,6 +159,58 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     expect(result.markdown).to include('## Discussion')
   end
 
+  it 'extracts PLOS Biology article bodies with sec-prefixed section anchors' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Immune signaling sustains neuroinflammation | PLOS Biology</title>
+          <meta property="og:site_name" content="PLOS Biology">
+          <meta name="citation_doi" content="10.1371/journal.pbio.3002000">
+          <meta name="citation_journal_title" content="PLOS Biology">
+        </head>
+        <body>
+          <main>
+            <div class="article-header"><h1>Immune signaling sustains neuroinflammation</h1></div>
+            <div id="nav-article"><ul class="nav-page"><li><a href="#sec001">Introduction</a></li><li><a href="#sec002">Results</a></li><li><a href="#sec009">Discussion</a></li></ul></div>
+            <div class="article-content">
+              <div class="article-text" id="artText">
+                <div class="abstract toc-section abstract-type-"><a id="abstract0" data-toc="abstract0" title="Abstract"></a><h2>Abstract</h2>
+                  <div class="abstract-content"><p>Autoimmune neuroinflammation depends on T cell signaling and microbial metabolites across the gut environment.</p></div>
+                </div>
+                <div id="section1" class="section toc-section"><a id="sec001" name="sec001" data-toc="sec001" class="link-target" title="Introduction"></a><h2>Introduction</h2>
+                  <p>Introduction prose describes how multiple sclerosis pathogenesis is shaped by immune signaling, barrier tissues, and environmental cues.</p>
+                </div>
+                <div id="section2" class="section toc-section"><a id="sec002" name="sec002" data-toc="sec002" class="link-target" title="Results"></a><h2>Results</h2>
+                  <p>Results prose reports that T cell-specific receptor loss changes disease recovery, gut metabolites, and lymphocyte viability.</p>
+                </div>
+                <div id="section9" class="section toc-section"><a id="sec009" name="sec009" data-toc="sec009" class="link-target" title="Discussion"></a><h2>Discussion</h2>
+                  <p>Discussion prose explains that the gut microenvironment can sustain autoimmunity through metabolites that tune T cell fitness.</p>
+                </div>
+                <div id="section29" class="section toc-section"><a id="sec029" name="sec029" data-toc="sec029" title="Supporting information"></a><h2>Supporting information</h2><p>Supplementary figure chrome.</p></div>
+              </div>
+            </div>
+            <aside class="metrics-panel"><p>Article metrics and sharing controls</p></aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3002000', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to include('# Immune signaling sustains neuroinflammation')
+      expect(markdown).to include('## Introduction')
+      expect(markdown).to include('multiple sclerosis pathogenesis')
+      expect(markdown).to include('## Results')
+      expect(markdown).to include('gut metabolites')
+      expect(markdown).to include('## Discussion')
+      expect(markdown).to include('sustain autoimmunity')
+      expect(markdown).not_to include('Article metrics')
+    end
+  end
+
   it 'extracts ACS abstracts without metrics and access chrome' do
     html = <<~HTML
       <html>
