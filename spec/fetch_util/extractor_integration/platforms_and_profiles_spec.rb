@@ -339,6 +339,71 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts Drupal entity-block research hubs beyond the intro paragraph" do
+    html = <<~HTML
+      <html>
+        <head><title>Our research | CNRS</title></head>
+        <body class="path-node node-8005">
+          <main role="main">
+            <section class="node node--type-page article top node--view-mode-full">
+              <div class="left-column"><div class="sharing"><a href="/share">Share this content</a></div></div>
+              <div class="main-column">
+                <h1><span class="field field--name-title">Our research</span></h1>
+                <div class="introduction">
+                  <div class="field field--name-body field--type-text-with-summary field__item">
+                    <p>Research must deliver benefit. It must benefit society and help humanity to progress.</p>
+                  </div>
+                </div>
+                <div class="field field--name-field-entity-block field--type-entity-reference field__items">
+                  <div class="field__item"><div class="entity-block content-data">
+                    <div class="section-elements"><div class="field field--name-field-key-figures-paragraphs field__items">
+                      <div class="field__item"><div class="data-bloc"><div class="data"><span>1100</span> laboratories across France</div></div></div>
+                      <div class="field__item"><div class="data-bloc"><div class="data"><span>28,000</span> scientists of 90 different nationalities</div></div></div>
+                    </div></div>
+                  </div></div>
+                  <div class="field__item"><div class="block-description"><div class="field field--name-field-descriptive field__item"><h2>Research at the CNRS</h2></div></div></div>
+                  <div class="field__item"><article class="entity-block content-link">
+                    <div class="content-desc"><h3><a href="/en/disciplines">Disciplines</a></h3>
+                    <div class="field field--name-field-desc field__item">Since it explores all fields of science, research at the CNRS is intrinsically multidisciplinary.</div>
+                    <a href="/en/disciplines">/en/disciplines</a></div>
+                  </article></div>
+                  <div class="field__item"><article class="entity-block content-link">
+                    <div class="content-desc"><h3><a href="/en/partnerships">Partnerships</a></h3>
+                    <div class="field field--name-field-desc field__item">Bringing stakeholders together and fostering long-lasting collaboration.</div></div>
+                  </article></div>
+                  <div class="field__item"><div class="block-description"><div class="field field--name-field-descriptive field__item"><h2>Research for the benefit of society</h2></div></div></div>
+                  <div class="field__item"><article class="entity-block content-link">
+                    <div class="content-desc"><h3><a href="/en/our-innovations">Research driving innovation</a></h3>
+                    <div class="field field--name-field-desc field__item">Innovative inventions, technologies and businesses begin in laboratories conducting basic research.</div></div>
+                  </article></div>
+                  <div class="field__item"><div class="section-elements entity-block block-toggle">
+                    <div class="field field--name-field-toggle-paragraph field__items">
+                      <div class="field__item"><h3>The Higgs boson</h3><div class="field field--name-field-toggle-desc field__item">The existence of this particle was predicted in 1964 and observed in 2012.</div></div>
+                      <div class="field__item"><h3>Artificial brain</h3><div class="field field--name-field-toggle-desc field__item">Electronic synapses capable of independent learning have been developed by researchers.</div></div>
+                    </div>
+                  </div></div>
+                </div>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.cnrs.fr/en/our-research", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Our research")
+      expect(payload["markdown"]).to include("1100 laboratories across France")
+      expect(payload["markdown"]).to include("## Research at the CNRS")
+      expect(payload["markdown"]).to include("Disciplines")
+      expect(payload["markdown"]).to include("Research driving innovation")
+      expect(payload["markdown"]).to include("The Higgs boson")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(payload["markdown"]).not_to include("Share this content")
+      expect(payload["markdown"]).not_to include("/en/disciplines\n")
+    end
+  end
+
   it "extracts legal convention index lists from institutional page content" do
     html = <<~HTML
       <html>
