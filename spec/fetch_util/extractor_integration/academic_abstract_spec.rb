@@ -211,6 +211,50 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
+  it 'extracts HighWire article bodies from abstract and bodymatter sections' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Can Generative AI improve social science? | PNAS</title>
+          <meta property="og:site_name" content="PNAS">
+          <meta name="citation_doi" content="10.1073/pnas.2314021121">
+          <meta name="citation_journal_title" content="Proceedings of the National Academy of Sciences">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Can Generative AI improve social science?</h1>
+              <section id="abstract" role="doc-abstract"><h2>Abstract</h2><p>Generative AI can produce realistic text, images, and other human-like outputs that are transforming social science workflows.</p></section>
+              <section id="bodymatter" property="articleBody" typeof="Text">
+                <section id="sec-1"><h2>What is Generative AI?</h2><p>Generative AI describes tools developed by researchers to create synthetic text, images, music, and other creative forms from training data. These systems predict plausible outputs from large collections of examples and can be adapted to specific research tasks.</p></section>
+                <section id="sec-2"><h2>Opportunities for Social Science with Generative AI</h2><p>Social scientists can use generative models to improve simulation-based research, text analysis, and the design of research instruments. The body section contains substantive article prose rather than citation widgets, sharing controls, or abstract-only metadata.</p></section>
+                <section id="sec-3"><h2>Limitations and Possible Dangers</h2><p>Generative AI systems can reproduce human biases, generate junk science, and create ethical and replicability challenges. Careful validation, transparent prompts, and documented data handling are necessary before these tools can support reliable empirical claims.</p></section>
+              </section>
+              <section id="backmatter"><section id="references"><h2>References</h2><p>Reference list chrome should not define the extracted body.</p></section></section>
+            </article>
+            <section class="toolbar-metric__menu-section"><p>Total Views 53,531</p></section>
+            <aside class="article-tools"><p>Share on social media</p></aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.pnas.org/doi/10.1073/pnas.2314021121', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to include('# Can Generative AI improve social science?')
+      expect(markdown).to include('## Abstract')
+      expect(markdown).to include('## What is Generative AI?')
+      expect(markdown).to include('simulation-based research')
+      expect(markdown).to include('## Limitations and Possible Dangers')
+      expect(markdown).not_to include('Total Views')
+      expect(markdown).not_to include('Reference list chrome')
+      expect(markdown).not_to include('Share on social media')
+    end
+  end
+
   it 'extracts ACS abstracts without metrics and access chrome' do
     html = <<~HTML
       <html>
