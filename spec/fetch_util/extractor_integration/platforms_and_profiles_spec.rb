@@ -483,6 +483,66 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts institutional subsection card hubs as full page content" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Research | CSIRO</title>
+          <meta name="description" content="Our research focuses on the biggest challenges facing the nation.">
+        </head>
+        <body>
+          <header><a href="/en/search">Search</a><a href="/en/research">Research</a></header>
+          <section class="banner"><h1>Research</h1><p>Our research focuses on the biggest challenges facing the nation.</p></section>
+          <main>
+            <div class="page-content no-wrap">
+              <div class="page__section"><div class="standard-container">
+                <div class="grid grid--large-horizontal-gap grid--no-wrap grid--1-2">
+                  <div class="grid__item grid__item--primary">
+                    <h2>Australia's national science agency</h2>
+                    <p>We imagine. We collaborate. We innovate. We're Australia's national science research agency.</p>
+                    <p>We are one of the largest and most diverse scientific research organisations in the world.</p>
+                  </div>
+                  <div class="grid__item"><div class="embed"><p>Copy embed code</p></div></div>
+                </div>
+              </div></div>
+              <div class="page__section bg--grey featured-item">
+                <div class="teaser teaser--full-width"><div class="teaser__content">
+                  <h2 class="teaser__component-title">Medical research</h2>
+                  <h3 class="teaser__item-title">Understanding the virus that causes COVID-19</h3>
+                  <p class="teaser__text">Our first challenge has been to understand this new virus and how it impacts the respiratory system.</p>
+                  <a href="/en/research/health-medical/diseases/COVID-19-research">More about COVID-19</a>
+                </div></div>
+              </div>
+              <div class="page__section"><div class="standard-container">
+                <h2 class="text--remove-margin">Browse our research</h2>
+                <div class="grid grid--3 card--with-subsections">
+                  <div class="grid__item"><div class="card"><a href="/en/research/natural-environment"><div class="card__content card__content--reduced"><h3 class="card__title">Natural environments</h3><p class="card__summary">Our research helps maintain environments and ensure natural resources are used sustainably.</p></div></a><div class="card__content"><h4>Subcategories</h4><ul><li><a href="/en/research/natural-environment/atmosphere">Atmosphere</a></li><li><a href="/en/research/natural-environment/water">Water</a></li></ul></div></div></div>
+                  <div class="grid__item"><div class="card"><a href="/en/research/technology-space"><div class="card__content card__content--reduced"><h3 class="card__title">Technology and space</h3><p class="card__summary">Satellites, sensors and telescopes help secure Australia's digital future.</p></div></a><div class="card__content"><h4>Subcategories</h4><ul><li><a href="/en/research/technology-space/ai">Artificial Intelligence</a></li><li><a href="/en/research/technology-space/energy">Energy</a></li></ul></div></div></div>
+                  <div class="grid__item"><div class="card"><a href="/en/research/production"><div class="card__content card__content--reduced"><h3 class="card__title">Production</h3><p class="card__summary">Production that is innovative, productive, competitive and sustainable is vital to prosperity.</p></div></a><div class="card__content"><h4>Subcategories</h4><ul><li><a href="/en/research/production/biotechnology">Biotechnology</a></li><li><a href="/en/research/production/materials">Materials</a></li></ul></div></div></div>
+                  <div class="grid__item"><div class="card"><a href="/en/research/health-medical"><div class="card__content card__content--reduced"><h3 class="card__title">Health and medical</h3><p class="card__summary">We work to prevent illnesses and improve detection, treatment and recovery.</p></div></a><div class="card__content"><h4>Subcategories</h4><ul><li><a href="/en/research/health-medical/diagnostics">Diagnostics</a></li><li><a href="/en/research/health-medical/vaccines">Vaccines and drugs</a></li></ul></div></div></div>
+                </div>
+              </div></div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.csiro.au/en/research", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Research")
+      expect(payload["markdown"]).to include("Australia's national science agency")
+      expect(payload["markdown"]).to include("Medical research")
+      expect(payload["markdown"]).to include("Browse our research")
+      expect(payload["markdown"]).to include("Natural environments")
+      expect(payload["markdown"]).to include("Technology and space")
+      expect(payload["markdown"]).to include("Production that is innovative")
+      expect(payload["markdown"]).to include("Vaccines and drugs")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload["markdown"]).not_to include("Copy embed code")
+    end
+  end
+
   it "extracts AEM custom-element service tiles from attributes" do
     html = <<~HTML
       <html>
