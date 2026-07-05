@@ -30,6 +30,37 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies account login shells without public content as interstitials" do
+    html = <<~HTML
+      <html>
+        <head><title>The IUCN Red List of Threatened Species</title></head>
+        <body>
+          <main>
+            <h1>Page cannot be found</h1>
+            <section class="account-panel">
+              <h1>My Account</h1>
+              <h2>Log in</h2>
+              <p>You must log in to access advanced IUCN Red List functionality. Please enter your e-mail address and password below.</p>
+              <label>Email address</label><input type="email">
+              <label>Password</label><input type="password">
+              <a href="/users/password/new">Forgot your password?</a>
+              <p>Register for an account</p>
+              <a href="/users/sign_up">Register now</a>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://www.iucnredlist.org/species/9728/123456', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['contentType']).to eq('interstitial')
+      expect(payload['warnings']).to include('auth_or_login_interstitial')
+      expect(payload['markdown']).to include('Access notice: login or account required')
+    end
+  end
+
   it "summarizes Instagram login-required pages even without metadata descriptions" do
     html = <<~HTML
       <html>

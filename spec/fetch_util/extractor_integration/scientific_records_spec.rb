@@ -3,6 +3,51 @@
 RSpec.describe 'FetchUtil scientific record extraction' do
   include_context 'extractor integration helpers'
 
+  it 'extracts IUCN Red List species assessments before bibliography cards' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Panthera tigris (Tiger)</title>
+          <meta property="og:site_name" content="The IUCN Red List of Threatened Species">
+        </head>
+        <body>
+          <main>
+            <div id="redlist-js">
+              <div class="page-species">
+                <div class="layout-assessment">
+                  <div class="layout-headline__supplement layout-assessment"><p>Red List Assessment</p><p>Abstract Tiger Panthera tigris has been assessed for population decline across its range.</p></div>
+                  <article id="taxonomy" class="card card--1n"><h2 class="card__heading">Taxonomy</h2><h3>Kingdom</h3><p>Animalia</p><h3>Scientific name</h3><p>Panthera tigris</p><h3>Common names</h3><p>English Tiger</p></article>
+                  <article id="assessment-information" class="card card--1n"><h2 class="card__heading card__icon--assessment-information">Assessment Information</h2><h3>Global Assessment</h3><p>IUCN Red List Category and Criteria - Global Assessment: Endangered A2abcd; C1 ver 3.1</p><p>Date assessed 20 April 2014</p></article>
+                  <article id="geographic-range" class="card card--1n"><h2 class="card__heading">Geographic Range</h2><p>Native and extant in Bangladesh, Bhutan, India, Indonesia, Malaysia, Nepal, and Thailand.</p></article>
+                  <article id="population" class="card card--1n"><h2 class="card__heading">Population</h2><p>Current population trend Decreasing. Number of mature individuals 2,154-3,159.</p></article>
+                  <article id="habitat-ecology" class="card card--1n"><h2 class="card__heading">Habitat and Ecology</h2><p>System Terrestrial. Habitat type Forest, Shrubland, and Grassland.</p></article>
+                  <article id="threats" class="card card--1n"><h2 class="card__heading">Threats</h2><p>Residential and commercial development, agriculture, biological resource use, and human disturbance affect populations.</p></article>
+                  <article id="use-trade" class="card card--1n"><h2 class="card__heading">Use and Trade</h2><p>Pets and display, medicine, and local trade are recorded uses.</p></article>
+                  <article id="conservation-actions" class="card card--1n"><h2 class="card__heading">Conservation Actions</h2><p>In-place land and water protection and species management actions are needed.</p></article>
+                  <article id="bibliography" class="card card--1n"><h2 class="card__heading">Bibliography</h2><p>Reference-only card should not be selected as the leading species assessment.</p></article>
+                </div>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.iucnredlist.org/species/15955/50659951', html) do |payload|
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(markdown).to start_with('# Panthera tigris (Tiger)')
+      expect(markdown.index('## Taxonomy')).to be < markdown.index('## Assessment Information')
+      expect(markdown.index('## Assessment Information')).to be < markdown.index('## Geographic Range')
+      expect(markdown).to include('Endangered A2abcd')
+      expect(markdown).to include('Current population trend Decreasing')
+      expect(markdown).to include('Residential and commercial development')
+      expect(markdown).not_to include('Reference-only card')
+    end
+  end
+
   it 'extracts NCBI Gene records as articles from the record report root' do
     html = <<~HTML
       <html>
