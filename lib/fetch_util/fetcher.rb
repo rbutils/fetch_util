@@ -166,6 +166,7 @@ module FetchUtil
       return "list" if institutional_case_record_list?(final_url, payload)
       return content_type if legal_judgment_markdown?(payload["markdown"]) || legal_statute_markdown?(payload["markdown"])
       return content_type if scholarly_article_markdown?(final_url, payload)
+      return content_type if reference_table_article_markdown?(payload["markdown"])
       return "list" if government_service_portal?(final_url, payload)
       return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
       return "list" if index_list_markdown?(final_url, payload)
@@ -339,8 +340,27 @@ module FetchUtil
 
       markdown = FetchUtil.normalize_whitespace(payload["markdown"].to_s)
       return false if legal_judgment_markdown?(markdown) || legal_statute_markdown?(markdown)
+      return false if reference_table_article_markdown?(payload["markdown"])
 
       markdown.length < 2400
+    end
+
+    def reference_table_article_markdown?(markdown)
+      raw = markdown.to_s
+      text = FetchUtil.normalize_whitespace(raw)
+      return false if text.length < 700
+      return false unless raw.match?(/^\|\s*[-: ]+\|/)
+      return false if raw.lines.grep(/^\s*- \[/).count >= 3
+
+      prose_blocks = raw.split(/\n{2,}/).count do |block|
+        stripped = block.strip
+        normalized = FetchUtil.normalize_whitespace(stripped)
+        !stripped.empty? && !stripped.start_with?("|", "#") && normalized.length >= 80 && normalized.match?(/[.!?)]\z/)
+      end
+      table_rows = raw.lines.grep(/^\|/).count
+      headings = raw.lines.grep(/^(?:#){1,3}\s+/).count
+
+      headings >= 1 && prose_blocks >= 2 && table_rows.between?(4, 40)
     end
 
     def legal_judgment_markdown?(markdown)

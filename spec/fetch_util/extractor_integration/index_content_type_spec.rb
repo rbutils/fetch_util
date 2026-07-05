@@ -304,6 +304,43 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'keeps reference pages with prose and data tables classified as articles' do
+    html = <<~HTML
+      <html>
+        <head><title>SI base units - BIPM</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>The International System of Units (SI): Base units</h1>
+              <table>
+                <thead><tr><th>Base quantity</th><th>Typical symbol</th><th>Base unit</th><th>Symbol</th></tr></thead>
+                <tbody>
+                  <tr><td>time</td><td>t</td><td>second</td><td>s</td></tr>
+                  <tr><td>length</td><td>l, x, r</td><td>metre</td><td>m</td></tr>
+                  <tr><td>mass</td><td>m</td><td>kilogram</td><td>kg</td></tr>
+                  <tr><td>electric current</td><td>I</td><td>ampere</td><td>A</td></tr>
+                  <tr><td>thermodynamic temperature</td><td>T</td><td>kelvin</td><td>K</td></tr>
+                  <tr><td>amount of substance</td><td>n</td><td>mole</td><td>mol</td></tr>
+                  <tr><td>luminous intensity</td><td>Iv</td><td>candela</td><td>cd</td></tr>
+                </tbody>
+              </table>
+              <p>All other SI units can be derived from these, by multiplying together different powers of the base units.</p>
+              <p>In the 2018 revision of the SI, the definitions of four of the SI base units were changed and are based on fixed numerical values of constants.</p>
+              <p>Further, the definitions of all seven base units of the SI are now uniformly expressed using the explicit-constant formulation for practical realization.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.bipm.org/en/measurement-units/si-base-units', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('| time | t | second | s |')
+      expect(payload['markdown']).to include('All other SI units can be derived')
+      expect(payload['markdown']).to include('explicit-constant formulation')
+    end
+  end
+
   it 'keeps substantial standalone articles classified as articles' do
     paragraphs = (1..7).map do |i|
       <<~HTML
