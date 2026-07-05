@@ -543,6 +543,62 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts institutional block teaser page-builder hubs beyond the intro teaser" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Research and transfer | DLR</title>
+          <meta name="description" content="DLR conducts research in aeronautics, space, energy, transport, digitalisation and security.">
+        </head>
+        <body>
+          <header><a href="/en/about-us">About us</a><a href="/en/search">Search</a></header>
+          <main>
+            <div class="page-document ui container">
+              <h1 id="documentFirstHeading">Research and transfer</h1>
+              <div class="block __grid centered two has--backgroundColor--transparent has--headline">
+                <h2 class="headline">DLR's research areas</h2>
+                <div class="ui stackable stretched two column grid">
+                  <div class="column grid-block-teaser"><div class="block teaser"><div class="grid-teaser-item default"><div class="content"><h2><a href="/en/research/aeronautics">Aeronautics</a></h2><p>DLR aeronautics research develops efficient aircraft, sustainable aviation systems and safe flight operations.</p></div></div></div></div>
+                  <div class="column grid-block-teaser"><div class="block teaser"><div class="grid-teaser-item default"><div class="content"><h2><a href="/en/research/space">Space</a></h2><p>Space research explores Earth observation, robotic missions, satellite technology and astronaut training.</p></div></div></div></div>
+                </div>
+              </div>
+              <div class="block __grid centered two has--backgroundColor--transparent has--headline">
+                <h2 class="headline">Interdisciplinary and cross-divisional research</h2>
+                <div class="ui stackable stretched two column grid">
+                  <div class="column grid-block-teaser"><div class="block teaser"><div class="grid-teaser-item default"><div class="content"><h2><a href="/en/research/security">Security and defence</a></h2><p>Research for civil security and defence strengthens resilient infrastructure and operational capability.</p></div></div></div></div>
+                  <div class="column grid-block-teaser"><div class="block teaser"><div class="grid-teaser-item default"><div class="content"><h2><a href="/en/research/digitalisation">Digitalisation</a></h2><p>Digitalisation research connects simulation, artificial intelligence and data platforms across all DLR fields.</p></div></div></div></div>
+                </div>
+              </div>
+              <div class="block __grid centered one has--backgroundColor--grey has--headline">
+                <h2 class="headline">From research to application</h2>
+                <div class="ui stackable stretched one column grid">
+                  <div class="column grid-block-teaser"><div class="block teaser"><div class="grid-teaser-item default"><div class="content"><h2>Innovation and transfer</h2><p>Germany is a progressive and innovative country, open to sustainable solutions for environmental, technological, economic and geopolitical challenges.</p></div></div></div></div>
+                </div>
+              </div>
+              <div class="block heading"><h2 class="heading">Research infrastructure</h2></div>
+              <div class="block teaser has--align--left"><div class="grid-teaser-item default"><div class="content"><h2>Airbus A320 Advanced Technology Research Aircraft (D-ATRA)</h2><p>The ATRA research aircraft supports flight experiments and new aviation technologies.</p></div></div></div>
+              <div class="block teaser has--align--right"><div class="grid-teaser-item default"><div class="content"><h2>European Proximity Operations Simulator (EPOS 2.0)</h2><p>The simulator enables large-scale experiments for rendezvous and docking operations.</p></div></div></div>
+            </div>
+          </main>
+          <footer><a href="/en/privacy">Privacy Policy</a></footer>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://www.dlr.de/en/research-and-transfer", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Research and transfer")
+      expect(payload["markdown"]).to include("## DLR's research areas")
+      expect(payload["markdown"]).to include("Aeronautics")
+      expect(payload["markdown"]).to include("Interdisciplinary and cross-divisional research")
+      expect(payload["markdown"]).to include("Security and defence")
+      expect(payload["markdown"]).to include("## Research infrastructure")
+      expect(payload["markdown"]).to include("European Proximity Operations Simulator")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(payload["markdown"]).not_to include("Privacy Policy")
+    end
+  end
+
   it "extracts AEM custom-element service tiles from attributes" do
     html = <<~HTML
       <html>
