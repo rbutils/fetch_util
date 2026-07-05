@@ -243,6 +243,63 @@ RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnin
     expect(result.suspect).to eq(true)
   end
 
+  it 'does not flag cross-domain publisher redirects when the DOI and article content match' do
+    prose = Array.new(48) do |index|
+      "Mammalian gene function paragraph #{index} describes functional genomics, article methods, " \
+        "experimental results, and references with enough scholarly prose to identify a full article body " \
+        "rather than a publisher index, while preserving the requested DOI content."
+    end.join("\n\n")
+    payload = {
+      'contentType' => 'list',
+      'title' => 'How much do we know about the function of mammalian genes?',
+      'siteName' => 'SpringerLink',
+      'byline' => 'Pavlovic, Guillaume',
+      'canonicalUrl' => 'https://link.springer.com/article/10.1186/s12915-023-01794-w',
+      'markdown' => <<~MARKDOWN,
+        # How much do we know about the function of mammalian genes?
+
+        ## A work in progress in mammalian genome sequence assembly
+
+        #{prose}
+
+        ## References
+
+        - [Reference 1](https://link.springer.com/article/10.1186/s12915-023-01794-w#ref-CR1)
+      MARKDOWN
+      'warnings' => []
+    }
+
+    result = fetcher_for_payload(
+      'https://bmcbiol.biomedcentral.com/articles/10.1186/s12915-023-01794-w',
+      'https://link.springer.com/article/10.1186/s12915-023-01794-w',
+      payload
+    ).fetch('https://bmcbiol.biomedcentral.com/articles/10.1186/s12915-023-01794-w')
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('cross_domain_redirect')
+    expect(result.suspect).to eq(false)
+  end
+
+  it 'keeps cross-domain redirect warnings when publisher DOI redirects do not match' do
+    payload = {
+      'contentType' => 'article',
+      'title' => 'Different article title',
+      'siteName' => 'Publisher',
+      'byline' => 'Example Author',
+      'canonicalUrl' => 'https://publisher.example/article/10.1186/s12915-023-00000-x',
+      'markdown' => '# Different article title\n\nA short redirected article body with different DOI content.'
+    }
+
+    result = fetcher_for_payload(
+      'https://journal.example/articles/10.1186/s12915-023-01794-w',
+      'https://publisher.example/article/10.1186/s12915-023-00000-x',
+      payload
+    ).fetch('https://journal.example/articles/10.1186/s12915-023-01794-w')
+
+    expect(result.warnings).to include('cross_domain_redirect')
+    expect(result.suspect).to eq(true)
+  end
+
   it 'does not flag single-word or id-only requested slugs' do
     html = <<~HTML
       <html>

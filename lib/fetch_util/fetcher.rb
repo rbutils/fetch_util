@@ -178,6 +178,7 @@ module FetchUtil
       trusted_same_organization_redirect = trusted_same_organization_redirect?(
         content_type, payload, requested_url, final_url, canonical_url
       )
+      trusted_cross_domain_redirect = trusted_publisher_doi_redirect?(content_type, payload, requested_url, final_url, canonical_url)
       warnings = Array(payload["warnings"]).dup
       warnings.delete("url_content_mismatch") if trusted_same_organization_redirect
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
@@ -185,7 +186,7 @@ module FetchUtil
          !research_database_landing?(payload)
         warnings << "homepage_index_page"
       end
-      warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url)
+      warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url) && !trusted_cross_domain_redirect
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
       warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
       warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
@@ -520,6 +521,25 @@ module FetchUtil
       matches.any? { |token| code_like_identifier?(token) } || matches.length >= 2
     rescue URI::InvalidURIError
       false
+    end
+
+    def trusted_publisher_doi_redirect?(content_type, payload, requested_url, final_url, canonical_url)
+      return false unless content_type == "article"
+      return false unless cross_domain_redirect?(requested_url, final_url)
+      return false unless scholarly_article_markdown?(final_url, payload)
+
+      dois = [requested_url, final_url, canonical_url].filter_map { |url| doi_from_url(url) }.uniq
+      dois.length == 1
+    end
+
+    def doi_from_url(url)
+      return nil if url.nil? || url.empty?
+
+      path = URI.parse(url).path.to_s
+      match = path.match(%r{/(10\.\d{4,9}/[^?#/\s]+(?:/[^?#\s]+)*)}i)
+      match && match[1].downcase.delete_suffix("/")
+    rescue URI::InvalidURIError
+      nil
     end
 
     def requested_identifier_tokens(url)
