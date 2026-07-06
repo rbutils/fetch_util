@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v0.3.1 - 2026-07-06
+
+- Improve primary content-root selection across long documents, article pages, docs, Drupal and institutional pages, publisher abstracts, Substack, Discourse, Trope Wiki, PLOS, Elsevier, ACS, HighWire, and legal/statute pages so body content is preferred over chrome, teasers, and related rails.
+- Expand list, index, card, and hub classification for section feeds, job results, government and legal portals, legal contents/search pages, institutional case lists, AEM/Drupal/custom CMS cards, commerce product grids, Statuspage boards, standards records, package registries, and public Mastodon timelines.
+- Add or improve extraction for structured reference and scholarly records including arXiv abstracts, dictionary definitions, GitLab repository READMEs, Cornell Wex articles, legal conventions, US Code provisions, OEIS/RCSB/NIST records, NCBI/Ensembl gene records, IUCN species assessments, IEEE Xplore abstracts, and official statute text.
+- Reduce false positive warnings for stale content, reposts, consent/paywall walls, Polish language mismatches, docs pages, subscriptions, scientific/legal/institutional pages, legal cases, DOI/publisher redirects, same-organization redirects, statutes, and treaty indexes.
+- Improve error and interstitial handling for auth redirects, PDFs, dominant unavailable pages, soft errors, press-hold challenges, dead DOI redirects, legal soft 404s, publisher unavailable pages, not-found pages, nav-only records, short landing heroes, and privacy fragments.
+- Clean markdown artifacts from malformed card grids, legal citations, table-based content, nested tables, treaty collections, article promo widgets, reference rails, undefined image text, and repeated list card details.
+- Ensure browser extraction assets are rebuilt during verify, spec, build, and release paths; guard extraction asset manifest completeness.
+- Consolidate shared extraction helpers for CMS component hubs, scholarly articles, platform profiles, repository READMEs, card lists, not-found/interstitial detection, legal text, table markdown, cleanup vocabulary, result field mapping, profile HTML/articles, Chrome stripping, platform signatures, list item results, and spec assertions.
+- Ignore local Serena project metadata from Git.
+
 ## v0.3.0 - 2026-06-21
 
 - Add generic portal, marketplace, and booking homepage root selection so lead-story lists are extracted from shell pages the previous docs, repo, and community dispatchers missed; already-handled homepages are unaffected.
