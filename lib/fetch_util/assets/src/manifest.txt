@@ -46,6 +46,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/globo.js
 profiles/legal_reference.js
 markdown/code_helpers.js
 markdown/tables.js
