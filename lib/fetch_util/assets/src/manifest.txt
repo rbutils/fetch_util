@@ -49,6 +49,7 @@ profiles/legal_reference.js
 markdown/code_helpers.js
 markdown/tables.js
 markdown/runtime.js
+core/noise_patterns.js
 core/dom_cleanup.js
 core/markdown_cleanup.js
 extractors/list_extraction.js
