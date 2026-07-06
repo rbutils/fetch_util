@@ -192,4 +192,67 @@ RSpec.describe 'FetchUtil repo host README extraction' do
       expect(payload["markdown"]).not_to include("README.md](")
     end
   end
+
+  it "surfaces Gitea repository README content from markdown containers" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets - Gitea</title>
+          <meta name="generator" content="Gitea - Git with a cup of tea">
+          <meta name="description" content="Portable forge repository.">
+        </head>
+        <body class="repository view issue-ready">
+          <div class="repository">
+            <div class="repo-description">Portable forge repository.</div>
+            <div id="readme" class="markup markdown">
+              <h1>Widgets</h1>
+              <p>Rendered Gitea README content is available.</p>
+              <h2>Usage</h2>
+              <p>Clone widgets and run the setup command.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://git.example.test/acme/widgets", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Portable forge repository.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+      expect(payload["hostAware"]).to be(true)
+    end
+  end
+
+  it "does not claim Gitea issue pages as repository README content" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Issue #7 - acme/widgets - Gitea</title>
+          <meta name="generator" content="Gitea - Git with a cup of tea">
+        </head>
+        <body class="repository issue view">
+          <div class="repository">
+            <div class="repo-description">Portable forge repository.</div>
+            <div class="comment">
+              <div class="markup markdown">
+                <h1>Bug report</h1>
+                <p>This issue comment should not be treated as the repository README.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://git.example.test/acme/widgets/issues/7", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["hostAware"]).not_to be(true)
+      expect(payload["markdown"]).not_to include("Portable forge repository.\n\n# Bug report")
+    end
+  end
 end
