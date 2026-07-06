@@ -1,6 +1,7 @@
 00_prelude.js
 core/metadata.js
 core/dom_base.js
+core/profile_article.js
 core/docs_cleanup.js
 extractors/article_roots.js
 extractors/glossary.js
