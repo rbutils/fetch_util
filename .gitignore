@@ -4,5 +4,6 @@
 /tmp/
 /.rspec_status
 /.ruby-lsp/
+/.serena/
 /lib/fetch_util/assets/extract.js
 Gemfile.lock
