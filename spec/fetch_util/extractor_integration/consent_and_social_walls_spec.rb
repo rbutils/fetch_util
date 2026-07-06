@@ -4,6 +4,77 @@ RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
   include_context 'fixture html helpers'
 
+  it "dismisses a OneTrust banner before extracting the article" do
+    html = <<~HTML
+      <html>
+        <head><title>City council approves new transport plan</title></head>
+        <body style="overflow:hidden" class="modal-open">
+          <div id="onetrust-banner-sdk" role="dialog" aria-modal="true" style="position:fixed; inset:0; background:#fff; z-index:9999">
+            <h2>Your Privacy Settings</h2>
+            <p>We use cookies and similar technologies to personalize content and measure advertising.</p>
+            <button id="onetrust-accept-btn-handler" onclick="window.__acceptedCookies = true">Accept all</button>
+          </div>
+          <main>
+            <article>
+              <h1>City council approves new transport plan</h1>
+              <p>The city council approved a detailed transport plan after months of public consultation and engineering review.</p>
+              <p>The proposal adds dedicated bus lanes, safer crossings, and timetable changes for neighborhoods with limited service.</p>
+              <p>Officials said the first phase will begin this autumn, with progress reports published every quarter.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-news.test/2026/07/06/transport-plan", html) do |page|
+      browser = FetchUtil::Browser.new(browser_path: browser_path, wait: 0, wait_for_idle: false)
+
+      expect(browser.send(:accept_cookie_consent, page)).to eq(true)
+      expect(page.evaluate("window.__acceptedCookies === true")).to eq(true)
+      expect(page.evaluate("document.querySelector('#onetrust-banner-sdk') === null")).to eq(true)
+
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("The city council approved a detailed transport plan")
+      expect(payload["markdown"]).not_to include("Your Privacy Settings")
+      expect(payload["warnings"]).not_to include("consent_interstitial")
+    end
+  end
+
+  it "removes a Cookiebot overlay before extracting the article" do
+    html = <<~HTML
+      <html>
+        <head><title>Regional growers report stronger harvest</title></head>
+        <body style="overflow:hidden" class="scroll-lock">
+          <div id="CybotCookiebotDialog" style="position:fixed; inset:0; background:#fff; z-index:9999">
+            <h2>Cookie declaration</h2>
+            <p>This website uses cookies to collect personal data, manage consent preferences, and personalize advertising.</p>
+            <p>Necessary, statistics, and marketing cookies can be managed from this consent panel.</p>
+          </div>
+          <article>
+            <h1>Regional growers report stronger harvest</h1>
+            <p>Regional growers reported a stronger harvest after spring rainfall improved soil conditions across the valley.</p>
+            <p>Cooperatives said storage capacity and rail access remain the main constraints for smaller farms this season.</p>
+            <p>Market analysts expect stable prices if export demand continues through the next quarter.</p>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example-news.test/2026/07/06/harvest", html) do |page|
+      browser = FetchUtil::Browser.new(browser_path: browser_path, wait: 0, wait_for_idle: false)
+
+      expect(browser.send(:accept_cookie_consent, page)).to eq(true)
+      expect(page.evaluate("document.querySelector('#CybotCookiebotDialog') === null")).to eq(true)
+
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("Regional growers reported a stronger harvest")
+      expect(payload["markdown"]).not_to include("Cookie declaration")
+      expect(payload["warnings"]).not_to include("consent_interstitial")
+    end
+  end
+
   it "flags multilingual cookie centers as consent interstitials" do
     html = <<~HTML
       <html>

@@ -136,8 +136,20 @@ module FetchUtil
             };
 
             const restoreScroll = () => {
-              if (document.body) document.body.style.overflow = 'auto';
-              if (document.documentElement) document.documentElement.style.overflow = 'auto';
+              const unlock = (node) => {
+                if (!node) return;
+                node.style.overflow = '';
+                node.style.position = '';
+                node.style.top = '';
+                node.style.width = '';
+                Array.from(node.classList || []).forEach((name) => {
+                  if (/\b(?:modal|dialog|scroll|overflow|no)[_-]?(?:open|lock|locked|hidden|scroll)\b/i.test(name)) {
+                    node.classList.remove(name);
+                  }
+                });
+              };
+              unlock(document.body);
+              unlock(document.documentElement);
             };
           JS
         end
