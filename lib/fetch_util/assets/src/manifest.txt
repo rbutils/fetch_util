@@ -46,6 +46,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/naver_news.js
 profiles/osnova.js
 profiles/pikabu.js
 profiles/rcs_corriere.js
