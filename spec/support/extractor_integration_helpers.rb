@@ -61,9 +61,24 @@ RSpec.shared_context 'extractor integration helpers' do
     FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
   end
 
+  def extract_payload(page, reader_mode: true)
+    FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+  end
+
+  def expect_warnings(subject, include: [], exclude: [])
+    warnings = subject.is_a?(Hash) ? subject["warnings"] : subject.warnings
+
+    expect(warnings).to include(*Array(include)) unless Array(include).empty?
+    Array(exclude).each { |warning| expect(warnings).not_to include(warning) }
+  end
+
+  def expect_content_type(payload, type)
+    expect(payload["contentType"]).to eq(type)
+  end
+
   def extract_from_url(url, html, reader_mode: true, &block)
     with_url_page(url, html) do |page|
-      block.call(FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page))
+      block.call(extract_payload(page, reader_mode: reader_mode))
     end
   end
 end

@@ -22,11 +22,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_page(html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+      payload = extract_payload(page)
 
       expect(payload["markdown"]).to include("# Threads page")
-      expect(payload["warnings"]).to include("meta_login_wall")
-      expect(payload["warnings"]).to include("consent_interstitial")
+      expect_warnings(payload, include: %w[meta_login_wall consent_interstitial])
     end
   end
 
@@ -53,10 +52,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page('https://www.iucnredlist.org/species/9728/123456', html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+      payload = extract_payload(page)
 
-      expect(payload['contentType']).to eq('interstitial')
-      expect(payload['warnings']).to include('auth_or_login_interstitial')
+      expect_content_type(payload, 'interstitial')
+      expect_warnings(payload, include: 'auth_or_login_interstitial')
       expect(payload['markdown']).to include('Access notice: login or account required')
     end
   end
@@ -77,11 +76,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page("https://www.instagram.com/accounts/login/?next=%2Fgroundbirdsings%2F", html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+      payload = extract_payload(page)
 
       expect(payload["markdown"]).to include("# Groundbird (@groundbirdsings)")
       expect(payload["markdown"]).to include("Original content on this Instagram page for groundbirdsings is not available without login.")
-      expect(payload["warnings"]).to include("consent_interstitial")
+      expect_warnings(payload, include: "consent_interstitial")
     end
   end
 
@@ -226,12 +225,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_page(html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+      payload = extract_payload(page)
 
       expect(payload["markdown"]).to include("Activate and hold the button to confirm that you're human.")
-      expect(payload["contentType"]).to eq("interstitial")
-      expect(payload["warnings"]).to include("human_verification_interstitial")
-      expect(payload["warnings"]).to include("bot_or_access_interstitial")
+      expect_content_type(payload, "interstitial")
+      expect_warnings(payload, include: %w[human_verification_interstitial bot_or_access_interstitial])
     end
   end
 
@@ -250,12 +248,14 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page("https://www.zillow.com/homedetails/3500-S-Washington-St-Arlington-VA-22227/52117882_zpid/", html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+      payload = extract_payload(page)
 
       expect(payload["markdown"]).to include("Press & Hold to confirm you are")
-      expect(payload["warnings"]).to include("human_verification_interstitial")
-      expect(payload["warnings"]).to include("bot_or_access_interstitial")
-      expect(payload["warnings"]).not_to include("url_content_mismatch")
+      expect_warnings(
+        payload,
+        include: %w[human_verification_interstitial bot_or_access_interstitial],
+        exclude: "url_content_mismatch"
+      )
     end
   end
 

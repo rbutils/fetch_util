@@ -31,7 +31,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/international', html, reader_mode: false) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('- [Diplomats gather for regional summit as leaders weigh next steps 1]')
       expect(payload['markdown']).to include('https://www.example.com/world/2026/jul/9/diplomats-gather-for-regional-summit-9')
     end
@@ -69,7 +69,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/tech', html) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('- [New device story 1 reveals a useful hardware detail for readers]')
       expect(payload['markdown']).to include('https://www.example.com/tech/960007/new-device-story-7')
     end
@@ -92,7 +92,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/keyword.php?keyword=desk', html) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Shop desk ideas')
     end
   end
@@ -123,7 +123,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/section/world', html) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('World headline 1 from a section highlights rail')
       expect(payload['markdown']).to include('World headline 5 from a section highlights rail')
     end
@@ -160,7 +160,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example.com/Job/ruby-developer-jobs-SRCH_KO0,14.htm', html) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('- [Senior Ruby Developer 1]')
       expect(payload['markdown']).to include('https://www.example.com/job-listing/ruby-developer-example-6.htm?jl=100955492666')
     end
@@ -197,7 +197,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.example-court.int/cases', html) do |payload|
-      expect(payload['contentType']).to eq('list')
+      expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Next steps: the chamber will continue to manage reparations')
     end
   end
@@ -238,8 +238,8 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.legislation.gov.uk/ukpga/1998/42/contents', html) do |payload|
-      expect(payload['contentType']).to eq('list')
-      expect(payload['warnings']).not_to include('truncated_content')
+      expect_content_type(payload, 'list')
+      expect_warnings(payload, exclude: 'truncated_content')
       expect(payload['markdown']).to include('Example section 8 rights and duties')
     end
   end
@@ -262,7 +262,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url('https://www.legislation.gov.uk/ukpga/1998/42/section/1', html) do |payload|
-      expect(payload['contentType']).to eq('article')
+      expect_content_type(payload, 'article')
       expect(payload['markdown']).to include('The Convention Rights')
       expect(payload['markdown']).to include('designated derogation or reservation')
     end

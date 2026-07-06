@@ -4,51 +4,20 @@ require "json"
 require "stringio"
 
 RSpec.describe FetchUtil::CLI do
-  def capture_stdout
-    original = $stdout
-    $stdout = StringIO.new
-    yield
-    $stdout.string
-  ensure
-    $stdout = original
-  end
+  include_context 'cli spec helpers'
 
   it "fetches multiple urls in parallel and prints jsonl" do
-    first = instance_double(
-      FetchUtil::Result,
-      to_h: {
-        url: "https://a.test",
-        final_url: "https://a.test/final",
-        canonical_url: "https://a.test/canonical",
-        title: "A",
-        excerpt: "about a",
-        byline: nil,
-        markdown: "body a",
-        content_type: "article",
-        suspect: false,
-        warnings: [],
-        metadata: { noisy: true },
-        reader_mode: true,
-        html: "<p>A</p>"
-      }
-    )
-    second = instance_double(
-      FetchUtil::Result,
-      to_h: {
-        url: "https://b.test",
-        final_url: "https://b.test/final",
-        canonical_url: "https://b.test/canonical",
-        title: "B",
-        excerpt: "about b",
-        byline: nil,
-        markdown: "body b",
-        content_type: "article",
-        suspect: true,
-        warnings: ["warning"],
-        metadata: { noisy: true },
-        reader_mode: true,
-        html: "<p>B</p>"
-      }
+    first = result_double
+    second = result_double(
+      url: "https://b.test",
+      final_url: "https://b.test/final",
+      canonical_url: "https://b.test/canonical",
+      title: "B",
+      excerpt: "about b",
+      markdown: "body b",
+      suspect: true,
+      warnings: ["warning"],
+      html: "<p>B</p>"
     )
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
 
@@ -64,9 +33,7 @@ RSpec.describe FetchUtil::CLI do
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
 
-    output = capture_stdout do
-      described_class.start(["fetch", "https://a.test", "https://b.test", "--format", "jsonl"])
-    end
+    output = run_cli("fetch", "https://a.test", "https://b.test", "--format", "jsonl")
 
     expect(output.lines.map { |line| JSON.parse(line, symbolize_names: true) }).to eq([
                                                                                         {
@@ -93,24 +60,7 @@ RSpec.describe FetchUtil::CLI do
   end
 
   it "outputs pure markdown by default for fetch" do
-    result = instance_double(
-      FetchUtil::Result,
-      to_h: {
-        url: "https://a.test",
-        final_url: "https://a.test/final",
-        canonical_url: "https://a.test/canonical",
-        title: "A",
-        excerpt: "about a",
-        byline: nil,
-        markdown: "# A\n\nbody a",
-        content_type: "article",
-        suspect: false,
-        warnings: [],
-        html: "<p>A</p>"
-      },
-      markdown: "# A\n\nbody a",
-      html: "<p>A</p>"
-    )
+    result = result_double(markdown: "# A\n\nbody a")
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
 
     expect(FetchUtil).to receive(:fetch).with(
@@ -124,31 +74,13 @@ RSpec.describe FetchUtil::CLI do
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
 
-    output = capture_stdout do
-      described_class.start(["fetch", "https://a.test"])
-    end
+    output = run_cli("fetch", "https://a.test")
 
     expect(output).to eq("# A\n\nbody a\n")
   end
 
   it "includes html only when requested" do
-    result = instance_double(
-      FetchUtil::Result,
-      to_h: {
-        url: "https://a.test",
-        final_url: "https://a.test/final",
-        canonical_url: "https://a.test/canonical",
-        title: "A",
-        excerpt: "about a",
-        byline: nil,
-        markdown: "body a",
-        content_type: "article",
-        suspect: false,
-        warnings: [],
-        html: "<p>A</p>"
-      },
-      html: "<p>A</p>"
-    )
+    result = result_double
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
 
     expect(FetchUtil).to receive(:fetch).with(
@@ -162,9 +94,7 @@ RSpec.describe FetchUtil::CLI do
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
 
-    output = capture_stdout do
-      described_class.start(["fetch", "https://a.test", "--include-html", "--format", "json"])
-    end
+    output = run_cli("fetch", "https://a.test", "--include-html", "--format", "json")
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(
       {
@@ -182,20 +112,17 @@ RSpec.describe FetchUtil::CLI do
   end
 
   it "prints structured json for network error results" do
-    result = instance_double(
-      FetchUtil::Result,
-      to_h: {
-        url: "https://missing.example.test/",
-        final_url: "https://missing.example.test/",
-        canonical_url: nil,
-        title: nil,
-        byline: nil,
-        markdown: "",
-        content_type: "error",
-        suspect: true,
-        warnings: ["dns_resolution_failed"],
-        error_message: "Request failed (net::ERR_NAME_NOT_RESOLVED)"
-      },
+    result = result_double(
+      url: "https://missing.example.test/",
+      final_url: "https://missing.example.test/",
+      canonical_url: nil,
+      title: nil,
+      byline: nil,
+      markdown: "",
+      content_type: "error",
+      suspect: true,
+      warnings: ["dns_resolution_failed"],
+      error_message: "Request failed (net::ERR_NAME_NOT_RESOLVED)",
       html: nil
     )
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
@@ -211,9 +138,7 @@ RSpec.describe FetchUtil::CLI do
 
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
 
-    output = capture_stdout do
-      described_class.start(["fetch", "https://missing.example.test/", "--format", "json"])
-    end
+    output = run_cli("fetch", "https://missing.example.test/", "--format", "json")
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(
       {
@@ -249,9 +174,7 @@ RSpec.describe FetchUtil::CLI do
     ).and_return(searcher)
     expect(searcher).to receive(:search).with("ruby language").and_return(payload)
 
-    output = capture_stdout do
-      described_class.start(["search", "ruby language"])
-    end
+    output = run_cli("search", "ruby language")
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
   end
@@ -278,9 +201,7 @@ RSpec.describe FetchUtil::CLI do
     ).and_return(searcher)
     expect(searcher).to receive(:search).with("ruby language").and_return(payload)
 
-    output = capture_stdout do
-      described_class.start(["search", "ruby language", "--verbose-search"])
-    end
+    output = run_cli("search", "ruby language", "--verbose-search")
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
   end
@@ -300,16 +221,14 @@ RSpec.describe FetchUtil::CLI do
       timeout: 20
     ).and_return(payload)
 
-    output = capture_stdout do
-      described_class.start([
-                              "regulatory",
-                              "https://example.com",
-                              "--sources",
-                              "machine,-robotstxt",
-                              "--cache-path",
-                              "/tmp/regulatory-cache"
-                            ])
-    end
+    output = run_cli(
+      "regulatory",
+      "https://example.com",
+      "--sources",
+      "machine,-robotstxt",
+      "--cache-path",
+      "/tmp/regulatory-cache"
+    )
 
     expect(JSON.parse(output)).to eq(payload)
   end
