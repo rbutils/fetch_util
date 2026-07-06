@@ -36,6 +36,19 @@ module FetchUtil
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
     INDEX_QUERY_PATTERN = /(?:^|[&?])(?:q|query|search|searchtext|keyword|k)=/i
     PDF_PATH_PATTERN = %r{(?:\.pdf\z|/pdf(?:/|\z)|[?&](?:format|download)=pdf\b)}i
+    LEGAL_STATUTE_TITLE_PATTERN = Regexp.new(
+      "constitution|constitutional|constitui[cç]?[aã]o|c[oó]digo|codigo|code|statute|act|law|" \
+      "regulation|ordinance|decree|treaty|convention",
+      Regexp::IGNORECASE
+    ).freeze
+    LEGAL_PROVISION_MARKER_PATTERN = /(?:^|\s)(?:Art\.?|Article|Section|Sec\.?|§)\s*(?:\d+[ºª]?|[IVXLCDM]+)/i
+    LEGAL_PROVISION_STRUCTURAL_PATTERN = /\b(?:title|chapter|part|book|t[ií]tulo|cap[ií]tulo|se[cç][aã]o)\s+(?:[IVXLCDM]+|\d+)/i
+    LEGAL_PROVISION_TERMS_PATTERN = Regexp.new(
+      "federal republic|rep[úu]blica federativa|republica federativa|civil rights|fundamental rights|" \
+      "legal provisions?|official gazette|promulgat|enacted|amended|paragraph|par[áa]grafo|paragrafo|" \
+      "inciso|subsection",
+      Regexp::IGNORECASE
+    ).freeze
     STRIPPED_QUERY_PARAM_PATTERNS = [
       /\A(?:__goaway_|__cf_chl_)/,
       /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
@@ -386,15 +399,10 @@ module FetchUtil
       return false if text.match?(/\bresults?\s+\d+\s*[-–]\s*\d+\s+(?:of|sur|von|de)\s+\d+\b/i)
 
       context = text[0, 4_000]
-      legal_title = context.match?(
-        /(?:constitution|constitutional|constitui[cç]?[aã]o|c[oó]digo|codigo|code|statute|act|law|regulation|ordinance|decree|treaty|convention)/i
-      )
-      provision_markers = text.scan(/(?:^|\s)(?:Art\.?|Article|Section|Sec\.?|§)\s*(?:\d+[ºª]?|[IVXLCDM]+)/i).count
-      structural_markers = text.scan(/\b(?:title|chapter|part|book|t[ií]tulo|cap[ií]tulo|se[cç][aã]o)\s+(?:[IVXLCDM]+|\d+)/i).count
-      legal_terms = text.match?(
-        /(?:federal republic|rep[úu]blica federativa|republica federativa|civil rights|fundamental rights|
-          legal provisions?|official gazette|promulgat|enacted|amended|paragraph|par[áa]grafo|paragrafo|inciso|subsection)/ix
-      )
+      legal_title = context.match?(LEGAL_STATUTE_TITLE_PATTERN)
+      provision_markers = text.scan(LEGAL_PROVISION_MARKER_PATTERN).count
+      structural_markers = text.scan(LEGAL_PROVISION_STRUCTURAL_PATTERN).count
+      legal_terms = text.match?(LEGAL_PROVISION_TERMS_PATTERN)
 
       legal_title && provision_markers >= 8 && (structural_markers >= 3 || legal_terms || text.length >= 20_000)
     end
