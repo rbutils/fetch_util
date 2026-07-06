@@ -124,48 +124,15 @@ module FetchUtil
         requested_url: url, final_url: final_url, canonical_url: canonical_url
       )
       suspect = warnings.any?
-      completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
-      content_format = payload["contentFormat"]
-      paywall_state = payload["paywallState"]
 
-      metadata = {
-        title: payload["title"],
-        byline: payload["byline"],
-        excerpt: payload["excerpt"],
-        site_name: payload["siteName"],
-        published_time: payload["publishedTime"],
-        canonical_url: canonical_url,
-        language: payload["language"],
-        content_url: final_url,
-        reader_mode: payload["readerMode"],
-        content_type: content_type,
-        suspect: suspect,
-        warnings: warnings,
-        content_completeness_ratio: completeness_ratio,
-        content_format: content_format,
-        paywall_state: paywall_state
-      }.freeze
-
-      Result.new(
+      Result.from_payload(
         url: url,
         final_url: final_url,
-        title: payload["title"],
-        byline: payload["byline"],
-        excerpt: payload["excerpt"],
-        site_name: payload["siteName"],
-        published_time: payload["publishedTime"],
+        payload: payload,
         canonical_url: canonical_url,
-        language: payload["language"],
-        html: payload["html"],
-        markdown: payload["markdown"],
-        metadata: metadata,
-        reader_mode: payload["readerMode"],
         content_type: content_type,
         suspect: suspect,
-        warnings: warnings,
-        content_completeness_ratio: completeness_ratio,
-        content_format: content_format,
-        paywall_state: paywall_state
+        warnings: warnings
       )
     end
 
@@ -675,33 +642,7 @@ module FetchUtil
     def network_error_result(url, error)
       message = error.message.to_s.strip
       warning = dns_resolution_error?(message) ? "dns_resolution_failed" : "network_error"
-      metadata = {
-        content_url: url,
-        content_type: "error",
-        suspect: true,
-        warnings: [warning],
-        error_message: message
-      }.freeze
-
-      Result.new(
-        url: url,
-        final_url: url,
-        title: nil,
-        byline: nil,
-        excerpt: nil,
-        site_name: nil,
-        published_time: nil,
-        canonical_url: nil,
-        language: nil,
-        html: nil,
-        markdown: "",
-        metadata: metadata,
-        reader_mode: nil,
-        content_type: "error",
-        suspect: true,
-        warnings: [warning],
-        error_message: message
-      )
+      Result.error(url: url, warning: warning, message: message)
     end
 
     def network_error?(error)
