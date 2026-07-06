@@ -1078,6 +1078,48 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts public CSDN article bodies from the article container" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Java即将放弃Intel Mac：JDK 27起不再续命-CSDN博客</title>
+          <meta name="description" content="Intel 版 Mac 的退场又迎来一个标志性节点。">
+        </head>
+        <body>
+          <header><a href="/download">下载</a><a href="/login">登录</a></header>
+          <main>
+            <div class="title-box"><h1 id="article-tit">Java即将放弃Intel Mac：JDK 27起不再续命</h1></div>
+            <div class="article-bar-top"><span class="time">2026-07-06 11:16:42</span><a class="name" href="https://blog.csdn.net/csdnnews">csdnnews</a></div>
+            <article>
+              <div id="article_content" class="article_content clearfix">
+                <div id="content_views" class="markdown_views prism-atom-one-dark">
+                  <p>Intel 版 Mac 的退场又迎来一个标志性节点。</p>
+                  <p>OpenJDK 社区正在讨论在 JDK 27 中移除 macOS x64 的构建支持。</p>
+                  <h2>为什么是现在？</h2>
+                  <p>苹果转向 Apple Silicon 已经多年，维护旧平台的成本不断上升。</p>
+                  <p>开发者仍可继续使用较早版本的 JDK，但新的主线版本将聚焦现代硬件。</p>
+                </div>
+                <div class="readall_box">登录后阅读全文</div>
+              </div>
+            </article>
+            <aside class="recommend-box">相关推荐</aside>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://blog.csdn.net/csdnnews/article/details/162627987", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# Java即将放弃Intel Mac：JDK 27起不再续命")
+      expect(payload["markdown"]).to include("OpenJDK 社区正在讨论")
+      expect(payload["markdown"]).to include("## 为什么是现在？")
+      expect(payload["warnings"]).not_to include("empty_extraction")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+      expect(payload["markdown"]).not_to include("登录后阅读全文")
+      expect(payload["markdown"]).not_to include("相关推荐")
+    end
+  end
+
   it "prefers legal provision text over legislation navigation chrome" do
     html = <<~HTML
       <html>
