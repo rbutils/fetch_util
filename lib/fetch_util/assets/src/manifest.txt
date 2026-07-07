@@ -47,6 +47,8 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/joomla.js
+profiles/drupal.js
 profiles/blogger.js
 profiles/static_ssg.js
 profiles/ghost.js
