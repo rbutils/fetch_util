@@ -106,7 +106,6 @@ module FetchUtil
         end
 
         def wait_for_agora_article(page, _url)
-
           retry_until_timeout(7.0, interval: 0.25) do
             page.evaluate(<<~JS)
               (() => {
