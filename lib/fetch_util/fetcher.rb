@@ -75,6 +75,83 @@ module FetchUtil
       Regexp::IGNORECASE
     ).freeze
 
+    class PayloadSnapshot
+      attr_reader :payload, :requested_url, :final_url, :canonical_url, :raw_final_url, :raw_canonical_url,
+                  :markdown, :normalized_markdown, :content_downcase, :context, :context_downcase,
+                  :context_with_excerpt_downcase, :first_20_context,
+                  :first_80_context, :plain_list_item_count, :linked_heading_count, :linked_item_count,
+                  :markdown_link_count, :prose_lines, :long_prose_line_count_one_hundred,
+                  :long_prose_line_count_one_twenty, :long_prose_line_count_one_forty, :list_link_count,
+                  :table_row_count, :heading_count, :common_tokens, :resource_urls, :raw_resource_urls,
+                  :resource_url_facets
+
+      def initialize(payload:, requested_url:, final_url:, canonical_url:, raw_final_url:, raw_canonical_url:)
+        @payload = payload
+        @requested_url = requested_url
+        @final_url = final_url
+        @canonical_url = canonical_url
+        @raw_final_url = raw_final_url
+        @raw_canonical_url = raw_canonical_url
+        @markdown = payload["markdown"].to_s
+        @normalized_markdown = FetchUtil.normalize_whitespace(@markdown)
+        @content_downcase = FetchUtil.normalize_whitespace([payload["title"], @markdown].compact.join(" ")).downcase
+        @context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], @markdown].join(" "))
+        @context_downcase = @context.downcase
+        @context_with_excerpt_downcase = FetchUtil.normalize_whitespace(
+          [payload["title"], @markdown, payload["excerpt"]].compact.join(" ")
+        ).downcase
+        @first_20_context = first_lines_context(20)
+        @first_80_context = first_lines_context(80)
+        @plain_list_item_count = @markdown.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count
+        @linked_heading_count = @markdown.scan(Fetcher::LINKED_MARKDOWN_HEADING_PATTERN).count
+        @linked_item_count = @markdown.scan(Fetcher::LINKED_MARKDOWN_ITEM_PATTERN).count
+        @markdown_link_count = @markdown.scan(%r{\]\(https?://}).count
+        @prose_lines = @markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
+        @long_prose_line_count_one_hundred = long_prose_line_count(100)
+        @long_prose_line_count_one_twenty = long_prose_line_count(120)
+        @long_prose_line_count_one_forty = long_prose_line_count(140)
+        @list_link_count = @markdown.lines.grep(/^\s*- \[/).count
+        @table_row_count = @markdown.lines.grep(/^\|/).count
+        @heading_count = @markdown.lines.grep(/^(?:#){1,3}\s+/).count
+        @common_tokens = @context_downcase.scan(/[a-z0-9]{3,}/).uniq
+        @resource_urls = [requested_url, final_url, canonical_url].compact
+        @raw_resource_urls = [requested_url, raw_final_url, raw_canonical_url].compact
+        @resource_url_facets = @resource_urls.to_h { |url| [url, url_facets(url)] }
+      end
+
+      def search_or_list_resource_url?(url)
+        facet = resource_url_facets.fetch(url) { url_facets(url) }
+        facet[:index_query] || facet[:search_or_list_path]
+      end
+
+      def path_key(url)
+        resource_url_facets.fetch(url) { url_facets(url) }[:path_key]
+      end
+
+      private
+
+      def first_lines_context(count)
+        FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown.lines.first(count).join(" ")].join(" "))
+      end
+
+      def long_prose_line_count(length)
+        prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= length }
+      end
+
+      def url_facets(url)
+        uri = URI.parse(url)
+        path = uri.path.to_s
+        segments = path.split("/").reject(&:empty?)
+        {
+          path_key: path.downcase.gsub(%r{/+}, "/").then { |value| value == "/" ? value : value.delete_suffix("/") },
+          index_query: uri.query.to_s.match?(Fetcher::INDEX_QUERY_PATTERN),
+          search_or_list_path: segments.any? { |segment| Fetcher::SEARCH_OR_LIST_PATH_SEGMENTS.include?(segment.downcase) }
+        }
+      rescue URI::InvalidURIError
+        { path_key: "", index_query: false, search_or_list_path: false }
+      end
+    end
+
     def initialize(browser: nil, extractor: nil, **options)
       @timeout = options.fetch(:timeout, 20)
       @browser = browser || Browser.new(**browser_options(options))
@@ -120,12 +197,14 @@ module FetchUtil
       raw_canonical_url = payload["canonicalUrl"]
       final_url = normalized_result_url(final_url)
       canonical_url = normalized_result_url(raw_canonical_url)
-      homepage_like = homepage_like?(final_url)
-      content_type = resolved_content_type(final_url, homepage_like, payload)
-      warnings = resolved_warnings(
-        content_type, homepage_like, payload,
-        requested_url: url, final_url: final_url, canonical_url: canonical_url,
+      snapshot = PayloadSnapshot.new(
+        payload: payload, requested_url: url, final_url: final_url, canonical_url: canonical_url,
         raw_final_url: raw_final_url, raw_canonical_url: raw_canonical_url
+      )
+      homepage_like = homepage_like?(final_url)
+      content_type = resolved_content_type(homepage_like, snapshot)
+      warnings = resolved_warnings(
+        content_type, homepage_like, snapshot
       )
       suspect = warnings.any?
 
@@ -140,48 +219,54 @@ module FetchUtil
       )
     end
 
-    def resolved_content_type(final_url, homepage_like, payload)
+    def resolved_content_type(homepage_like, snapshot)
+      payload = snapshot.payload
+      final_url = snapshot.final_url
       content_type = payload["contentType"] || "article"
-      return "article" if content_type == "list" && scholarly_article_markdown?(final_url, payload)
+      return "article" if content_type == "list" && scholarly_article_markdown?(final_url, snapshot)
 
       return content_type unless content_type == "article"
       return content_type if payload["legalProvision"]
       return content_type if payload["hostAware"]
-      return "list" if institutional_case_record_list?(final_url, payload)
-      return content_type if legal_judgment_markdown?(payload["markdown"]) || legal_statute_markdown?(payload["markdown"])
-      return content_type if scholarly_article_markdown?(final_url, payload)
-      return content_type if reference_table_article_markdown?(payload["markdown"])
-      return "list" if government_service_portal?(final_url, payload)
-      return "list" if homepage_like && homepage_index_markdown?(payload["title"], payload["markdown"])
-      return "list" if index_list_markdown?(final_url, payload)
-      return "list" if thin_index_page?(final_url, payload)
+      return "list" if institutional_case_record_list?(final_url, snapshot)
+      return content_type if legal_judgment_markdown?(snapshot) || legal_statute_markdown?(snapshot)
+      return content_type if scholarly_article_markdown?(final_url, snapshot)
+      return content_type if reference_table_article_markdown?(snapshot)
+      return "list" if government_service_portal?(final_url, snapshot)
+      return "list" if homepage_like && homepage_index_markdown?(snapshot)
+      return "list" if index_list_markdown?(final_url, snapshot)
+      return "list" if thin_index_page?(final_url, snapshot)
 
       content_type
     end
 
-    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil,
-                          raw_final_url: nil, raw_canonical_url: nil)
+    def resolved_warnings(content_type, homepage_like, snapshot)
+      payload = snapshot.payload
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
+      canonical_url = snapshot.canonical_url
       trusted_same_organization_redirect = trusted_same_organization_redirect?(
-        content_type, payload, requested_url, final_url, canonical_url
+        content_type, snapshot
       )
-      trusted_cross_domain_redirect = trusted_publisher_doi_redirect?(content_type, payload, requested_url, final_url, canonical_url)
+      trusted_cross_domain_redirect = trusted_publisher_doi_redirect?(content_type, snapshot)
       warnings = Array(payload["warnings"]).dup
       warnings.delete("url_content_mismatch") if trusted_same_organization_redirect
-      if stripped_query_only_url_mismatch?(requested_url, final_url, canonical_url, raw_final_url, raw_canonical_url)
+      if stripped_query_only_url_mismatch?(requested_url, final_url, canonical_url, snapshot.raw_final_url,
+                                           snapshot.raw_canonical_url)
         warnings.delete("url_content_mismatch")
       end
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
-         !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload) &&
-         !research_database_landing?(payload)
+         !substantial_homepage_landing?(snapshot) && !government_service_portal?(final_url, snapshot) &&
+         !research_database_landing?(snapshot)
         warnings << "homepage_index_page"
       end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url) && !trusted_cross_domain_redirect
       warnings << "aggregator_redirect_url" if aggregator_url?(requested_url)
-      warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(requested_url, final_url, payload)
+      warnings << "auth_or_login_interstitial" if auth_redirect_interstitial?(snapshot)
       warnings << "pdf_document" if pdf_document?(requested_url, final_url, payload)
-      warnings << "not_found_interstitial" if generic_redirect_not_found?(requested_url, final_url, payload)
+      warnings << "not_found_interstitial" if generic_redirect_not_found?(snapshot)
       if !trusted_same_organization_redirect &&
-         redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
+         redirected_title_content_mismatch?(content_type, homepage_like, snapshot)
         warnings << "url_content_mismatch"
       end
       warnings.uniq
@@ -194,27 +279,25 @@ module FetchUtil
       false
     end
 
-    def homepage_index_markdown?(title, markdown)
-      snippet = [title, markdown].compact.join(" ")
-      return false unless snippet.match?(HOMEPAGE_INDEX_PATTERN)
+    def homepage_index_markdown?(snapshot)
+      return false unless snapshot.context.match?(HOMEPAGE_INDEX_PATTERN)
 
-      markdown.to_s.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count >= 3
+      snapshot.plain_list_item_count >= 3
     end
 
-    def government_service_portal?(url, payload)
-      markdown = payload["markdown"].to_s
-      normalized = FetchUtil.normalize_whitespace(markdown)
+    def government_service_portal?(url, snapshot)
+      normalized = snapshot.normalized_markdown
       return false if normalized.length < 250
-      return false unless government_domain?(url) || government_service_language?(payload)
+      return false unless government_domain?(url) || government_service_language?(snapshot)
 
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      context = snapshot.context_downcase
       service_pattern = /\b(?:service|services|servi[cç]os?|servicio|servicios|service category|categories|
         categorias?|citizens?|business(?:es)?|benefits?|permits?|licen[cs]es?)\b/ix
       service_terms = context.scan(service_pattern).length
-      linked_items = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count + markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
-      plain_items = markdown.lines.grep(/^\s*(?:\d+\.\s+|[-*]\s+)/).count
+      linked_items = snapshot.linked_heading_count + snapshot.linked_item_count
+      plain_items = snapshot.plain_list_item_count
 
-      service_terms >= 3 && (linked_items >= 4 || plain_items >= 4 || markdown.scan(%r{\]\(https?://}).count >= 6)
+      service_terms >= 3 && (linked_items >= 4 || plain_items >= 4 || snapshot.markdown_link_count >= 6)
     end
 
     def government_domain?(url)
@@ -226,22 +309,20 @@ module FetchUtil
       false
     end
 
-    def government_service_language?(payload)
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], payload["markdown"]].join(" ")).downcase
-      context.match?(/\b(?:government|governance|public services?|servi[cç]os? p[úu]blicos?|national portal|citizen services?)\b/i)
+    def government_service_language?(snapshot)
+      snapshot.context_downcase.match?(/\b(?:government|governance|public services?|servi[cç]os? p[úu]blicos?|national portal|citizen services?)\b/i)
     end
 
-    def institutional_case_record_list?(url, payload)
-      markdown = payload["markdown"].to_s
-      normalized = FetchUtil.normalize_whitespace(markdown)
+    def institutional_case_record_list?(url, snapshot)
+      normalized = snapshot.normalized_markdown
       return false if normalized.length < 500
 
       path = URI.parse(url).path.to_s.downcase
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown.lines.first(20).join(" ")].join(" "))
+      context = snapshot.first_20_context
       return false unless path.match?(%r{/(?:cases?|defendants?|records?|dockets?|matters?)/?\z}) ||
                           context.match?(/\b\d{1,4}\s+(?:cases?|defendants?|records?|matters?)\b/i)
 
-      linked_case_headings = markdown.scan(
+      linked_case_headings = snapshot.markdown.scan(
         %r{^\s*\#{1,6}\s+\[[^\]]{3,180}\]\([^)]*/(?:cases?|defendants?|situations?|darfur|mali|kenya|libya|uganda|congo|afghanistan|ukraine|records?|dockets?)[^)]*\)}i
       ).count
       case_terms = normalized.scan(
@@ -253,60 +334,56 @@ module FetchUtil
       false
     end
 
-    def substantial_homepage_landing?(payload)
-      markdown = payload["markdown"].to_s
-      normalized = FetchUtil.normalize_whitespace(markdown)
+    def substantial_homepage_landing?(snapshot)
+      normalized = snapshot.normalized_markdown
       return false if normalized.length < 1_200
 
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      context = snapshot.context_downcase
       landing_pattern = /\b(docs?|documentation|api|reference|guide|guides|developer|framework|next\.js|mdx|
         static websites?|components?|themes?|product|platform)\b/x
       return false unless context.match?(landing_pattern)
 
-      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
-      prose_lines.any? { |line| FetchUtil.normalize_whitespace(line).length >= 120 }
+      snapshot.long_prose_line_count_one_twenty.positive?
     end
 
-    def research_database_landing?(payload)
-      markdown = payload["markdown"].to_s
-      normalized = FetchUtil.normalize_whitespace(markdown)
+    def research_database_landing?(snapshot)
+      normalized = snapshot.normalized_markdown
       return false if normalized.length < 250
 
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown].join(" ")).downcase
+      context = snapshot.context_downcase
       research_terms = /\b(?:database|data resource|repository|multi-omics|proteomics|transcriptomics|
         phenomics|genomics|metabolomics|life science research|scientific resource)\b/ix
       return false unless context.match?(research_terms)
       return false if context.match?(HOMEPAGE_INDEX_PATTERN)
 
-      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
-      prose_lines.any? { |line| FetchUtil.normalize_whitespace(line).length >= 100 }
+      snapshot.long_prose_line_count_one_hundred.positive?
     end
 
-    def index_list_markdown?(url, payload)
+    def index_list_markdown?(url, snapshot)
       return false unless index_or_search_url?(url)
       return false if article_like_url?(url)
 
-      markdown = payload["markdown"].to_s
-      return false if legal_judgment_markdown?(markdown) || legal_statute_markdown?(markdown)
+      return false if legal_judgment_markdown?(snapshot) || legal_statute_markdown?(snapshot)
 
-      linked_headlines = markdown.scan(LINKED_MARKDOWN_HEADING_PATTERN).count
-      linked_items = markdown.scan(LINKED_MARKDOWN_ITEM_PATTERN).count
+      linked_headlines = snapshot.linked_heading_count
+      linked_items = snapshot.linked_item_count
 
       linked_headlines + linked_items >= 4
     end
 
-    def scholarly_article_markdown?(url, payload)
-      markdown = payload["markdown"].to_s
-      normalized = FetchUtil.normalize_whitespace(markdown)
+    def scholarly_article_markdown?(url, snapshot)
+      payload = snapshot.payload
+      normalized = snapshot.normalized_markdown
       return false if normalized.length < 5_000
       return false unless article_like_url?(url) || doi_article_url?(url) || doi_article_url?(payload["canonicalUrl"])
       return false if payload["byline"].to_s.strip.empty? && payload["publishedTime"].to_s.strip.empty?
 
-      context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], markdown.lines.first(80).join(" ")].join(" "))
+      context = snapshot.first_80_context
       scholarly_context = context.match?(/\b(?:abstract|introduction|methods?|results?|discussion|references|doi|open access|peer[- ]reviewed|journal|article)\b/i)
-      section_headings = markdown.scan(/^\s*\#{1,4}\s+(?:Abstract|Introduction|Methods?|Materials and methods|Results?|Discussion|Conclusion|References)\b/i).count
-      prose_lines = markdown.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
-      long_prose_lines = prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= 140 }
+      section_headings = snapshot.markdown.scan(
+        /^\s*\#{1,4}\s+(?:Abstract|Introduction|Methods?|Materials and methods|Results?|Discussion|Conclusion|References)\b/i
+      ).count
+      long_prose_lines = snapshot.long_prose_line_count_one_forty
 
       return true if scholarly_context && section_headings >= 3 && long_prose_lines >= 5
 
@@ -321,38 +398,39 @@ module FetchUtil
       false
     end
 
-    def thin_index_page?(url, payload)
+    def thin_index_page?(url, snapshot)
+      payload = snapshot.payload
       return false unless index_or_search_url?(url)
       return false if article_like_url?(url)
       return false if payload["byline"].to_s.strip != "" || payload["publishedTime"].to_s.strip != ""
 
-      markdown = FetchUtil.normalize_whitespace(payload["markdown"].to_s)
-      return false if legal_judgment_markdown?(markdown) || legal_statute_markdown?(markdown)
-      return false if reference_table_article_markdown?(payload["markdown"])
+      markdown = snapshot.normalized_markdown
+      return false if legal_judgment_markdown?(snapshot) || legal_statute_markdown?(snapshot)
+      return false if reference_table_article_markdown?(snapshot)
 
       markdown.length < 2400
     end
 
-    def reference_table_article_markdown?(markdown)
-      raw = markdown.to_s
-      text = FetchUtil.normalize_whitespace(raw)
+    def reference_table_article_markdown?(snapshot)
+      raw = snapshot.markdown
+      text = snapshot.normalized_markdown
       return false if text.length < 700
       return false unless raw.match?(/^\|\s*[-: ]+\|/)
-      return false if raw.lines.grep(/^\s*- \[/).count >= 3
+      return false if snapshot.list_link_count >= 3
 
       prose_blocks = raw.split(/\n{2,}/).count do |block|
         stripped = block.strip
         normalized = FetchUtil.normalize_whitespace(stripped)
         !stripped.empty? && !stripped.start_with?("|", "#") && normalized.length >= 80 && normalized.match?(/[.!?)]\z/)
       end
-      table_rows = raw.lines.grep(/^\|/).count
-      headings = raw.lines.grep(/^(?:#){1,3}\s+/).count
+      table_rows = snapshot.table_row_count
+      headings = snapshot.heading_count
 
       headings >= 1 && prose_blocks >= 2 && table_rows.between?(4, 40)
     end
 
-    def legal_judgment_markdown?(markdown)
-      text = FetchUtil.normalize_whitespace(markdown.to_s)
+    def legal_judgment_markdown?(snapshot)
+      text = snapshot.normalized_markdown
       return false if text.length < 5_000
       return false if text.match?(/\bresults?\s+\d+\s*[-–]\s*\d+\s+(?:of|sur|von|de)\s+\d+\b/i)
 
@@ -364,12 +442,11 @@ module FetchUtil
       signals += 1 if text.match?(/\[[12][0-9]{3}\]\s+[A-Z][A-Z0-9.]{1,12}\s+\d+|\([12][0-9]{3}\)\s+\d+\s+[A-Z][A-Z0-9.]{1,12}\s+\d+/i)
       return false if signals < 3
 
-      prose_lines = markdown.to_s.lines.reject { |line| line.match?(/^\s*(?:#|[-*]\s+|\d+\.\s+)/) }
-      prose_lines.count { |line| FetchUtil.normalize_whitespace(line).length >= 120 } >= 5 || text.length >= 20_000
+      snapshot.long_prose_line_count_one_twenty >= 5 || text.length >= 20_000
     end
 
-    def legal_statute_markdown?(markdown)
-      text = FetchUtil.normalize_whitespace(markdown.to_s)
+    def legal_statute_markdown?(snapshot)
+      text = snapshot.normalized_markdown
       return false if text.length < 5_000
       return false if text.match?(/\bresults?\s+\d+\s*[-–]\s*\d+\s+(?:of|sur|von|de)\s+\d+\b/i)
 
@@ -409,13 +486,15 @@ module FetchUtil
       false
     end
 
-    def auth_redirect_interstitial?(requested_url, final_url, payload)
+    def auth_redirect_interstitial?(snapshot)
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
       return false if requested_url.nil? || final_url.nil?
       return false unless auth_path?(final_url)
       return false if auth_path?(requested_url)
       return false unless index_or_search_url?(requested_url)
 
-      text = FetchUtil.normalize_whitespace([payload["title"], payload["markdown"], payload["excerpt"]].compact.join(" ")).downcase
+      text = snapshot.context_with_excerpt_downcase
       text.match?(/\b(?:log in|login|sign in|sign-in)\b/) &&
         text.match?(/\b(?:github|gitlab|google|oauth|sso|single sign-on|password|account)\b/)
     end
@@ -437,16 +516,18 @@ module FetchUtil
       false
     end
 
-    def generic_redirect_not_found?(requested_url, final_url, payload)
+    def generic_redirect_not_found?(snapshot)
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
       return false if requested_url.nil? || final_url.nil?
       return false unless same_effective_domain?(requested_url, final_url)
 
-      requested_path = normalized_path_key(requested_url)
-      final_path = normalized_path_key(final_url)
+      requested_path = snapshot.path_key(requested_url)
+      final_path = snapshot.path_key(final_url)
       return false if requested_path.empty? || requested_path == final_path
       return false unless specific_content_path?(requested_path)
       return false unless generic_redirect_path?(final_path)
-      return false if redirected_payload_matches_requested_path?(requested_path, payload)
+      return false if redirected_payload_matches_requested_path?(requested_path, snapshot.payload)
 
       true
     end
@@ -500,13 +581,16 @@ module FetchUtil
       false
     end
 
-    def redirected_title_content_mismatch?(content_type, homepage_like, payload, requested_url, final_url, canonical_url)
+    def redirected_title_content_mismatch?(content_type, homepage_like, snapshot)
+      payload = snapshot.payload
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
       return false unless content_type == "article"
       return false if homepage_like || payload["docsLike"]
       return false if requested_url.nil? || final_url.nil?
-      return false if [requested_url, final_url, canonical_url].compact.any? { |url| search_or_list_resource_url?(url) }
+      return false if snapshot.resource_urls.any? { |url| snapshot.search_or_list_resource_url?(url) }
 
-      resource_url = mismatched_resource_url(requested_url, final_url, canonical_url)
+      resource_url = mismatched_resource_url(snapshot)
       return false if resource_url.nil?
 
       requested_keywords = title_slug_keywords(requested_url)
@@ -518,20 +602,21 @@ module FetchUtil
       (requested_keywords & resolved_keywords).empty?
     end
 
-    def trusted_same_organization_redirect?(content_type, payload, requested_url, final_url, canonical_url)
+    def trusted_same_organization_redirect?(content_type, snapshot)
+      payload = snapshot.payload
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
       return false unless content_type == "article"
       return false if requested_url.nil? || final_url.nil?
       return false unless same_effective_domain?(requested_url, final_url)
       return false if FetchUtil.strip_www_host(requested_url) == FetchUtil.strip_www_host(final_url)
-      return false if [requested_url, final_url, canonical_url].compact.any? { |url| search_or_list_resource_url?(url) }
+      return false if snapshot.resource_urls.any? { |url| snapshot.search_or_list_resource_url?(url) }
       return true if matching_apex_instrument_redirect?(payload, requested_url, final_url)
 
       tokens = requested_identifier_tokens(requested_url)
       return false if tokens.empty?
 
-      content = FetchUtil.normalize_whitespace(
-        [payload["title"], payload["markdown"]].compact.join(" ")
-      ).downcase
+      content = snapshot.content_downcase
       matches = tokens.select { |token| content.include?(token) }
 
       matches.any? { |token| code_like_identifier?(token) } || matches.length >= 2
@@ -539,12 +624,14 @@ module FetchUtil
       false
     end
 
-    def trusted_publisher_doi_redirect?(content_type, payload, requested_url, final_url, canonical_url)
+    def trusted_publisher_doi_redirect?(content_type, snapshot)
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
       return false unless content_type == "article"
       return false unless cross_domain_redirect?(requested_url, final_url)
-      return false unless scholarly_article_markdown?(final_url, payload)
+      return false unless scholarly_article_markdown?(final_url, snapshot)
 
-      dois = [requested_url, final_url, canonical_url].filter_map { |url| doi_from_url(url) }.uniq
+      dois = snapshot.resource_urls.filter_map { |url| doi_from_url(url) }.uniq
       dois.length == 1
     end
 
@@ -593,16 +680,19 @@ module FetchUtil
       token.match?(/\A(?=.*[a-z])(?=.*\d)[a-z0-9]{3,16}\z/)
     end
 
-    def mismatched_resource_url(requested_url, final_url, canonical_url)
-      requested_path = normalized_path_key(requested_url)
+    def mismatched_resource_url(snapshot)
+      requested_url = snapshot.requested_url
+      final_url = snapshot.final_url
+      canonical_url = snapshot.canonical_url
+      requested_path = snapshot.path_key(requested_url)
       return nil if requested_path.empty?
 
-      final_path = normalized_path_key(final_url)
+      final_path = snapshot.path_key(final_url)
       return final_url if !final_path.empty? && final_path != requested_path
 
       return nil unless same_effective_domain?(final_url, canonical_url)
 
-      canonical_path = normalized_path_key(canonical_url)
+      canonical_path = snapshot.path_key(canonical_url)
       return canonical_url if !canonical_path.empty? && canonical_path != requested_path
 
       nil
@@ -614,25 +704,6 @@ module FetchUtil
       left_domain = effective_domain(left_url)
       right_domain = effective_domain(right_url)
       !left_domain.nil? && left_domain == right_domain
-    end
-
-    def search_or_list_resource_url?(url)
-      uri = URI.parse(url)
-      return true if uri.query.to_s.match?(INDEX_QUERY_PATTERN)
-
-      uri.path.to_s.split("/").reject(&:empty?).any? do |segment|
-        SEARCH_OR_LIST_PATH_SEGMENTS.include?(segment.downcase)
-      end
-    rescue URI::InvalidURIError
-      false
-    end
-
-    def normalized_path_key(url)
-      path = URI.parse(url).path.to_s.downcase.gsub(%r{/+}, "/")
-      path = path.delete_suffix("/") unless path == "/"
-      path
-    rescue URI::InvalidURIError
-      ""
     end
 
     def title_slug_keywords(url)
