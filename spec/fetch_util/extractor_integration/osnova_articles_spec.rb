@@ -43,8 +43,12 @@ RSpec.describe 'FetchUtil extractor integration for Osnova articles' do
                 <div class="entry">
                   <div class="recommendations">
                     <div class="content-list">
-                      <div class="content content--short"><div class="content__body">Привычка, которую все стесняются: почему разговор вслух с самим собой прокачивает мозг</div></div>
-                      <div class="rotator rotator--limitless"><div class="content content--short"><div class="content__body">Я уехал в США с $3000 в кармане, через 3,5 года вернулся в Россию</div></div></div>
+                      <div class="content content--short"><div class="content__body"><h2>Привычка, которую все стесняются: почему разговор вслух с самим собой прокачивает мозг</h2><time datetime="2026-07-07T08:00:00+03:00">08:00</time></div></div>
+                      <div class="content content--short"><div class="content__body"><h2>Как основатели стартапа искали первые инвестиции</h2><time datetime="2026-07-07T09:15:00+03:00">09:15</time></div></div>
+                      <div class="content content--short"><div class="content__body"><h2>Почему разработчики спорят о новых правилах платформ</h2><time datetime="2026-07-07T10:30:00+03:00">10:30</time></div></div>
+                      <div class="content content--short"><div class="content__body"><h2>Кейс недели: как команда автоматизировала поддержку</h2><time datetime="2026-07-07T11:45:00+03:00">11:45</time></div></div>
+                      <div class="content content--short"><div class="content__body"><h2>Инвесторы рассказали о спросе на ИИ-сервисы</h2><time datetime="2026-07-07T12:10:00+03:00">12:10</time></div></div>
+                      <div class="rotator rotator--limitless"><div class="content content--short"><div class="content__body"><h2>Я уехал в США с $3000 в кармане, через 3,5 года вернулся в Россию</h2><time datetime="2026-07-07T13:25:00+03:00">13:25</time></div></div></div>
                     </div>
                   </div>
                 </div>
@@ -62,7 +66,7 @@ RSpec.describe 'FetchUtil extractor integration for Osnova articles' do
       expect(payload["markdown"]).not_to include("Привычка, которую все стесняются")
       expect(payload["markdown"]).not_to include("Я уехал в США")
       expect(payload["markdown"]).not_to include("СМИ: правительство переработало")
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial multi_topic_page])
     end
   end
 end
