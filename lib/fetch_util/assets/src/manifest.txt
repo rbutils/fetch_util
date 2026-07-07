@@ -46,6 +46,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/skynewsarabia.js
 profiles/bt_dk.js
 profiles/milliyet_live.js
 profiles/tovima_gr.js
