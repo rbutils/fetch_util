@@ -46,6 +46,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/sozcu.js
 profiles/novosti.js
 profiles/b92.js
 profiles/interia.js
