@@ -129,6 +129,9 @@ RSpec.describe FetchUtil::Browser do
       expect(script).to include('privacy preference center')
       expect(script).to include('cookie information')
       expect(script).to include('confirm my choices')
+      expect(script).to include('sourcepoint')
+      expect(script).to include('sp_message')
+      expect(script).to include('uniconsent')
     end
   end
 
