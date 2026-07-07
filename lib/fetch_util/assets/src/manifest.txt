@@ -47,6 +47,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/blick.js
 profiles/oxu.js
 profiles/top_channel.js
 profiles/siol.js
