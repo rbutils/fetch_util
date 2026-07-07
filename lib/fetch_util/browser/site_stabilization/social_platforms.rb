@@ -4,26 +4,6 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module SocialPlatforms
-        COOKIE_BUTTON_SELECTORS = 'button, [role="button"], a, input[type="button"], input[type="submit"]'
-        INSTAGRAM_COOKIE_ACCEPT_LABELS = ["accept", "accept all", "accept all cookies"].freeze
-        INSTAGRAM_COOKIE_FALLBACK_LABELS = ["allow all cookies", "allow all", "allow cookies"].freeze
-        FACEBOOK_COOKIE_DECLINE_LABELS = [
-          "decline optional cookies",
-          "optionale cookies ablehnen",
-          "refuser les cookies optionnels",
-          "rechazar cookies opcionales",
-          "rifiuta i cookie opzionali"
-        ].freeze
-        FACEBOOK_COOKIE_ACCEPT_LABELS = [
-          "allow all cookies",
-          "alle cookies erlauben",
-          "autoriser tous les cookies",
-          "permitir todas las cookies",
-          "consenti tutti i cookie"
-        ].freeze
-        private_constant :COOKIE_BUTTON_SELECTORS, :INSTAGRAM_COOKIE_ACCEPT_LABELS, :INSTAGRAM_COOKIE_FALLBACK_LABELS,
-                         :FACEBOOK_COOKIE_DECLINE_LABELS, :FACEBOOK_COOKIE_ACCEPT_LABELS
-
         private
 
         def instagram_url?(url)
@@ -41,11 +21,16 @@ module FetchUtil
         end
 
         def accept_instagram_cookie_dialog(page)
+          config = consent_config(
+            accept_labels: ["accept", "accept all", "accept all cookies"],
+            fallback_labels: ["allow all cookies", "allow all", "allow cookies"]
+          )
+
           click_visible_button_by_text(
             page,
-            INSTAGRAM_COOKIE_ACCEPT_LABELS,
-            INSTAGRAM_COOKIE_FALLBACK_LABELS,
-            selectors: COOKIE_BUTTON_SELECTORS
+            consent_accept_labels(config),
+            consent_fallback_labels(config),
+            selectors: consent_button_selectors(config)
           )
         end
 
@@ -97,10 +82,17 @@ module FetchUtil
         end
 
         def dismiss_facebook_cookie_dialog(page)
+          config = consent_config(
+            accept_labels: ["decline optional cookies", "optionale cookies ablehnen", "refuser les cookies optionnels",
+                            "rechazar cookies opcionales", "rifiuta i cookie opzionali"],
+            fallback_labels: ["allow all cookies", "alle cookies erlauben", "autoriser tous les cookies", "permitir todas las cookies", "consenti tutti i cookie"]
+          )
+
           click_visible_button_by_text(
             page,
-            FACEBOOK_COOKIE_DECLINE_LABELS,
-            FACEBOOK_COOKIE_ACCEPT_LABELS
+            consent_accept_labels(config),
+            consent_fallback_labels(config),
+            selectors: consent_button_selectors(config)
           )
         end
 

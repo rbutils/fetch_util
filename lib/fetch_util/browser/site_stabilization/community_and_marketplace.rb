@@ -4,18 +4,6 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module CommunityAndMarketplace
-        COOKIE_BUTTON_SELECTORS = 'button, [role="button"], a, input[type="button"], input[type="submit"]'
-        EBAY_COOKIE_ACCEPT_LABELS = [
-          "accept all",
-          "accept all cookies",
-          "accept cookies",
-          "allow all",
-          "allow cookies",
-          "agree to cookies",
-          "continue with cookies"
-        ].freeze
-        private_constant :COOKIE_BUTTON_SELECTORS, :EBAY_COOKIE_ACCEPT_LABELS
-
         private
 
         def reddit_url?(url)
@@ -44,12 +32,23 @@ module FetchUtil
 
         def stabilize_ebay_search(page)
           accepted_cookies = false
+          cookie_config = consent_config(
+            accept_labels: [
+              "accept all",
+              "accept all cookies",
+              "accept cookies",
+              "allow all",
+              "allow cookies",
+              "agree to cookies",
+              "continue with cookies"
+            ]
+          )
 
           retry_until_timeout(capped_timeout(6.0), interval: 0.15) do
             accepted_cookies ||= click_visible_button_by_text(
               page,
-              EBAY_COOKIE_ACCEPT_LABELS,
-              selectors: COOKIE_BUTTON_SELECTORS
+              consent_accept_labels(cookie_config),
+              selectors: consent_button_selectors(cookie_config)
             )
 
             state = safe_evaluate(page, <<~JS, default: { "itemCount" => 0, "challengeVisible" => false })
