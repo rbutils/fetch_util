@@ -4,19 +4,16 @@ RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
   it 'extracts public Abril article bodies without false paywall warnings' do
-    html = File.read(File.expand_path('../../fixtures/abril_article.html', __dir__))
-    url = 'https://veja.abril.com.br/esporte/fifa-rejeita-pedido-da-belgica-para-rever-decisao-sobre-o-atacante-americano/'
-
-    extract_from_url(url, html) do |payload|
-      expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('A Fifa rejeitou o questionamento da Belgica sobre a elegibilidade de Folarin Balogun')
-      expect(payload['markdown']).to include('O presidente da Fifa, Gianni Infantino, afirmou ter discutido com Donald Trump')
-      expect(payload['markdown']).not_to include('Compartilhe essa materia')
-      expect(payload['markdown']).not_to include('LEIA MAIS')
-      expect(payload['markdown']).not_to include('Publicidade')
-      expect_warnings(payload, exclude: %w[truncated_content paywall_partial_content empty_extraction short_extraction consent_interstitial])
-      expect(payload['suspect']).to be(false)
-    end
+    expect_fixture_article(
+      url: 'https://veja.abril.com.br/esporte/fifa-rejeita-pedido-da-belgica-para-rever-decisao-sobre-o-atacante-americano/',
+      fixture_path: File.expand_path('../../fixtures/abril_article.html', __dir__),
+      includes: [
+        'A Fifa rejeitou o questionamento da Belgica sobre a elegibilidade de Folarin Balogun',
+        'O presidente da Fifa, Gianni Infantino, afirmou ter discutido com Donald Trump'
+      ],
+      excludes: ['Compartilhe essa materia', 'LEIA MAIS', 'Publicidade'],
+      warning_excludes: %w[truncated_content paywall_partial_content empty_extraction short_extraction consent_interstitial]
+    )
   end
 
   it 'keeps the paywall warning when Abril shows exclusive-content copy' do

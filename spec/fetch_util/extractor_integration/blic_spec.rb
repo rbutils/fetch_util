@@ -4,18 +4,13 @@ RSpec.describe 'FetchUtil Blic extraction' do
   include_context 'extractor integration helpers'
 
   it 'extracts Blic article bodies without article chrome or mismatch warnings' do
-    html = File.read(File.expand_path('../../fixtures/blic_article.html', __dir__))
-    url = 'https://www.blic.rs/vesti/drustvo/dramaticno-upozorenje-mup-a-sve-ce-da-vrvi-od-policije-sirom-srbije-pojacava-se/44pr4w6'
-
-    extract_from_url(url, html) do |payload|
-      expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('Dve osobe dnevno u proseku izgube zivot na putevima')
-      expect(payload['markdown']).to include('Pojacana kontrola saobracaja u Srbiji')
-      expect(payload['markdown']).not_to include('Slusaj vest')
-      expect(payload['markdown']).not_to include('Najnovije vesti')
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
-      expect(payload['suspect']).to be(false)
-    end
+    expect_fixture_article(
+      url: 'https://www.blic.rs/vesti/drustvo/dramaticno-upozorenje-mup-a-sve-ce-da-vrvi-od-policije-sirom-srbije-pojacava-se/44pr4w6',
+      fixture_path: File.expand_path('../../fixtures/blic_article.html', __dir__),
+      includes: ['Dve osobe dnevno u proseku izgube zivot na putevima', 'Pojacana kontrola saobracaja u Srbiji'],
+      excludes: ['Slusaj vest', 'Najnovije vesti'],
+      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
+    )
   end
 
   it 'classifies the Blic homepage as a story list instead of an article' do
