@@ -69,12 +69,15 @@ module FetchUtil
           accept_pattern: %q{^(accept(?: all(?: cookies?)?)?|allow all(?: cookies)?|allow cookies|agree(?: to cookies| and continue| & continue)?|i agree|ok(?:ay)?|accept & continue|continue with cookies|consent|got it|i understand|continue|accept and close|accept recommended settings|przejdź do serwisu|zaakceptuj(?:\s+(?:wszystkie|wszystko))?|akceptuj(?: wszystkie)?|akceptuję|zgadzam się|zgoda|akzeptieren|alle akzeptieren|zustimmen|accepter (?:tout|les cookies|et continuer)|tout accepter|j'accepte|accepter|aceptar (?:todo|todas|cookies)|aceptar|estoy de acuerdo|acepto|accetta (?:tutto|tutti)|accetta|accetto|aceitar(?:\s+(?:tudo|todos|cookies|todos os cookies))?|aceitar cookies|aceitar todos os cookies|aceitar e continuar|aceitar e fechar|concordo|aceito|accetta e continua|akkoord|ga akkoord|alles accepteren|accepteer alles|すべて受け入れる|すべて許可|許可|同意する|同意して閉じる|쿠키 허용|모두 동의|모두 허용|동의하고 계속|동의|수락|接受全部|全部接受|同意并继续|接受并继续|принять все|принять|согласен|согласиться|приеми всички|приеми|съгласен съм|souhlasím|přijmout vše|přijmout(?:\s+(?:všechny|vše))?|povolit vše|souhlasit|godkänn alla|acceptera alla|tillåt alla|jag godkänner|godkänn|accepter alle|tillad alle|jeg accepterer|acceptér|godta alle|tanggap semua|setuju|terima semua|godkjenn alle|aksepter alle|aksepter|jeg godtar|godta|accepta-ho tot|accepta|accepto|d'acord|razumem|prihvatam|прихватам|прихвати све|tümünü kabul et|kabul et|kabul ediyorum|qəbul edirəm|ყველას მიღება|සියල්ල පිළිගන්න|පිළිගන්න|همه را بپذیرید|ተቀበል|ሁሉንም ተቀበል|allow all|confirm my choices|pokračovat|hyväksy(?:\s+kaikki)?|salli kaikki|salli evästeet|hyväksyn|priimti visus|sutinku|leisti visus|прифати(?:\s+(?:ги\s+)?сите)?|се согласувам|acceptă(?:\s+tot(?:ul)?)?|accept toate|acceptă toate|sunt de acord|pieņemt(?:\s+visus)?|piekrītu|atļaut(?:\s+visus)?|apstiprināt|elfogad(?:om)?|mindent elfogad(?:ok)?|összes elfogadása|elfogadom az összeset|egyetértek|hozzájárulok|chấp nhận tất cả|chấp nhận|đồng ý|ยอมรับทั้งหมด|ยอมรับ|ตกลง|قبول الكل|موافق)(?:\s+and\s+.*)?$},
           close_pattern: %q{^(close|dismiss|ok(?:ay)?|got it|i understand|schließen|fermer|cerrar|fechar|chiudi|zamknij|zavřít|kapat|закрыть|затвори|bezár|tutup|đóng|ปิด|閉じる|닫기|إغلاق)$},
           context_pattern: %q{(cookie|cookies|privacy|consent|gdpr|ccpa|cmp|onetrust|cookiebot|didomi|quantcast|before you continue|we use cookies and data|device identifiers|personalized ads|personalized content|trusted third party partners?|privacy preference center|your privacy settings|your privacy choices|manage privacy preferences|manage consent preferences|cookie information|cookie list|cookies details|list of partners(?: \(vendors\))?|configurações avançadas de cookies|declaração de cookies|gerenciar cookies|utilizamos cookies|dados pessoais|pliki cookie|datenschutz|données personnelles|datos personales|dati personali|wish to store|access information on your devices|preferenze cookie|クッキー|Cookieプリファレンス|Cookie設定|同意設定|쿠키|동의|개인정보|接受|隐私设置|cookie 偏好设置|файлы cookie|настройки cookie|souhlas|personalizac|soukromí|nastavení souhlasu|kakor|sekretess|samtycke|cookies og data|privatlivs|samtykke|privatliv|personvern|informasjonskapsler|informasjonskapslar|aller media|dine data|galetes|protecció de dades|política de privadesa|ግላዊነት|ኩኪ|ኩኪዎች|pro pokračování vyberte|technické cookies|jakou formou vám máme zobrazovat obsah|evästeet|evästeasetukset|tietosuoja|yksityisyys|hyväksy evästeet|slapukai|privatumas|slapukų nustatymai|kolačinji|приватност|поставки за колачиња|cookie-uri|confidențialitate|setări cookie|protecția datelor|sīkdatnes|sīkfailus|privātums|privātuma iestatījumi|sīkdatņu iestatījumi|sütiket|adatvédelem|adatvédelmi beállítások|süti beállítások|kabul|çerez|gizlilik|лични данни|поверителност|terima|setuju|privasi|ยินยอม|คุกกี้|ความเป็นส่วนตัว)},
-          container_pattern: %q{(cookie|consent|privacy|onetrust|cookiebot|usercentrics|trustarc|didomi|quantcast|gdpr|ccpa)},
-          known_cmp_selectors: %w[
-            #onetrust-banner-sdk #onetrust-pc-sdk .qc-cmp2-container .qc-cmp2-summary
-            #CybotCookiebotDialog .cc-window .cc_banner #cookie-banner .cookie-banner
-            #consent-banner .consent-banner .fc-consent-root .cmp-modal .gdpr-banner
-            #gdpr-consent .js-cookies .cookie-notice #cookieNotice
+          container_pattern: %q{(cookie|consent|privacy|onetrust|cookiebot|usercentrics|trustarc|didomi|quantcast|sourcepoint|sp_message|uniconsent|osano|gdpr|ccpa)},
+          known_cmp_selectors: [
+            "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
+            "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
+            "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
+            "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
+            "[id*='sourcepoint']", "[class*='sourcepoint']", "[id*='sp_message']", "[class*='sp_message']",
+            "[id*='uniconsent']", "[class*='uniconsent']", "[id*='uni-consent']", "[class*='uni-consent']",
+            "[id*='osano']", "[class*='osano']"
           ].freeze,
           quick_indicator_selectors: [
             "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
@@ -84,6 +87,9 @@ module FetchUtil
             '[id*="onetrust" i]', '[class*="onetrust" i]', '[id*="cookiebot" i]', '[class*="cookiebot" i]',
             '[id*="usercentrics" i]', '[class*="usercentrics" i]', '[id*="trustarc" i]', '[class*="trustarc" i]',
             '[id*="didomi" i]', '[class*="didomi" i]', '[id*="quantcast" i]', '[class*="quantcast" i]',
+            '[id*="sourcepoint" i]', '[class*="sourcepoint" i]', '[id*="sp_message" i]', '[class*="sp_message" i]',
+            '[id*="uniconsent" i]', '[class*="uniconsent" i]', '[id*="uni-consent" i]', '[class*="uni-consent" i]',
+            '[id*="osano" i]', '[class*="osano" i]',
             '[id*="cookie-consent" i]', '[class*="cookie-consent" i]', '[id*="cookie_consent" i]', '[class*="cookie_consent" i]',
             '[id*="cookieconsent" i]', '[class*="cookieconsent" i]', '[id*="cookie-banner" i]', '[class*="cookie-banner" i]',
             '[id*="cookie_banner" i]', '[class*="cookie_banner" i]', '[id*="cookie-notice" i]', '[class*="cookie-notice" i]',
@@ -98,7 +104,10 @@ module FetchUtil
             "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
             '[id*="cookie" i]', '[class*="cookie" i]', '[id*="consent" i]', '[class*="consent" i]',
             '[class*="cookie-banner" i]', '[data-testid*="cookie" i]', '[id*="privacy" i]', '[class*="privacy" i]',
-            '[id*="gdpr" i]', '[class*="gdpr" i]', '[id*="ccpa" i]', '[class*="ccpa" i]'
+            '[id*="gdpr" i]', '[class*="gdpr" i]', '[id*="ccpa" i]', '[class*="ccpa" i]',
+            '[id*="sourcepoint" i]', '[class*="sourcepoint" i]', '[id*="sp_message" i]', '[class*="sp_message" i]',
+            '[id*="uniconsent" i]', '[class*="uniconsent" i]', '[id*="uni-consent" i]', '[class*="uni-consent" i]',
+            '[id*="osano" i]', '[class*="osano" i]'
           ].freeze,
           overlay_selectors: [
             "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
@@ -110,7 +119,10 @@ module FetchUtil
             '[id*="gdpr" i]', '[class*="gdpr" i]', '[id*="ccpa" i]', '[class*="ccpa" i]',
             '[id*="onetrust" i]', '[class*="onetrust" i]', '[id*="cookiebot" i]', '[class*="cookiebot" i]',
             '[id*="usercentrics" i]', '[class*="usercentrics" i]', '[id*="trustarc" i]', '[class*="trustarc" i]',
-            '[id*="didomi" i]', '[class*="didomi" i]', '[id*="quantcast" i]'
+            '[id*="didomi" i]', '[class*="didomi" i]', '[id*="quantcast" i]',
+            '[id*="sourcepoint" i]', '[class*="sourcepoint" i]', '[id*="sp_message" i]', '[class*="sp_message" i]',
+            '[id*="uniconsent" i]', '[class*="uniconsent" i]', '[id*="uni-consent" i]', '[class*="uni-consent" i]',
+            '[id*="osano" i]', '[class*="osano" i]'
           ].freeze,
           button_selectors: 'button, [role="button"], a, input[type="button"], input[type="submit"]'
         ).freeze

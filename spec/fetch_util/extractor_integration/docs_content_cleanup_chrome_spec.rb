@@ -110,6 +110,38 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' d
     end
   end
 
+  it "removes inline consent text that now lives in shared noise patterns" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Docs sample</title>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Docs sample</h1>
+              <p>Useful documentation content stays here.</p>
+            </article>
+            <footer>
+              <p>Cookie manager</p>
+              <p>Got it!</p>
+              <p>Your cookie preferences</p>
+            </footer>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      payload = extract(page)
+
+      expect(payload["markdown"]).to include("Useful documentation content stays here.")
+      expect(payload["markdown"]).not_to include("Cookie manager")
+      expect(payload["markdown"]).not_to include("Got it!")
+      expect(payload["markdown"]).not_to include("Your cookie preferences")
+    end
+  end
+
   it "removes mdn try-it chrome from docs pages" do
     html = <<~HTML
       <html>
