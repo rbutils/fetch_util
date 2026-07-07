@@ -91,6 +91,34 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('auth_or_login_interstitial')
   end
 
+  it 'falls back to public HTML when Novinky redirects headless Chrome to Seznam CMP' do
+    url = 'https://www.novinky.cz/clanek/domaci-zemrel-namestek-ministryne-pro-mistni-rozvoj-endal-40586881'
+    cmp_page = page_at('https://cmp.seznam.cz/nastaveni-souhlasu?service=bcr&return_url=https%3A%2F%2Fwww.novinky.cz%2Fclanek%2Fdomaci-zemrel-namestek-ministryne-pro-mistni-rozvoj-endal-40586881%3Fcwreturn%3D1')
+    cmp_payload = payload_with(
+      title: 'Nastavení souhlasu s personalizací',
+      canonicalUrl: 'https://cmp.seznam.cz/nastaveni-souhlasu',
+      markdown: '# Nastavení souhlasu s personalizací\n\nTechnical details: Unable to load CMP script.',
+      warnings: []
+    )
+    article_payload = payload_with(
+      title: 'Zemřel náměstek ministryně pro místní rozvoj Endal',
+      canonicalUrl: url,
+      markdown: 'Ve věku 51 let zemřel náměstek ministryně pro místní rozvoj Filip Endal.',
+      warnings: []
+    )
+
+    stub_browser_extraction(url, page: cmp_page, payload: cmp_payload)
+    stub_raw_docs_fallback(url, payload: article_payload)
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.final_url).to eq(url)
+    expect(result.content_type).to eq('article')
+    expect(result.markdown).to include('Filip Endal')
+    expect(result.warnings).not_to include('cross_domain_redirect')
+    expect(result.warnings).not_to include('consent_interstitial')
+  end
+
   it 'flags specific DOI content paths redirected to generic node pages as not found' do
     node_page = page_at('https://www.biorxiv.org/node/')
     node_payload = payload_with(

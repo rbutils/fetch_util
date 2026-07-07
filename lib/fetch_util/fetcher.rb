@@ -93,7 +93,8 @@ module FetchUtil
         payload = @extractor.extract(page)
         build_result(url, page.current_url, payload)
       end
-      fallback = docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
+      fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
+      fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
       fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
       result = fallback_result(url, fallback) if fallback
       log_request(url, t0)
@@ -477,6 +478,19 @@ module FetchUtil
 
       markdown = result.markdown.to_s
       markdown.length < 1_500 && markdown.lines.grep(/^\s*[-*]\s+\[/).count >= 4
+    end
+
+    def seznam_cmp_redirect_fallback_candidate?(requested_url, result)
+      requested_host = FetchUtil.strip_www_host(requested_url)
+      return false unless requested_host == "novinky.cz"
+
+      final_uri = URI.parse(result.final_url)
+      return false unless final_uri.host == "cmp.seznam.cz" && final_uri.path.start_with?("/nastaveni-souhlasu")
+
+      consent_text = FetchUtil.normalize_whitespace([result.title, result.markdown].compact.join(" "))
+      consent_text.match?(/nastavení souhlasu|souhlas s personalizací|unable to load/i)
+    rescue URI::InvalidURIError
+      false
     end
 
     def slug_article_url?(url)
