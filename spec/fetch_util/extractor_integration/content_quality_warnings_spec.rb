@@ -312,6 +312,9 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
   end
 
   it "flags stale_content for articles published more than 30 days ago" do
+    body = 18.times.map do |i|
+      "<p>Older reporting paragraph #{i + 1} describing the long-term policy response, the prior month's developments, and the broader context for the story.</p>"
+    end.join("\n")
     html = <<~HTML
       <html>
         <head>
@@ -326,7 +329,7 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
           <main>
             <article>
               <h1>Dublin Sea Level Report</h1>
-              <p>A comprehensive report on rising sea levels around the Dublin coast. The measurements show significant changes over the past decade.</p>
+              #{body}
             </article>
           </main>
         </body>
@@ -337,6 +340,32 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       payload = extract(page)
 
       expect(payload["warnings"]).to include("stale_content")
+    end
+  end
+
+  it "does not flag stale_content for a short dated article with clear structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Local Garden Opens New Exhibit</title>
+          <meta property="article:published_time" content="2021-03-15T10:00:00Z">
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Local Garden Opens New Exhibit</h1>
+              <p>The city garden opened a new exhibit today with native plants, guided tours, and workshops for families.</p>
+              <p>Organizers said the exhibit will remain open through the summer and will add new evening programs next month.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://news.example.com/local-garden-opens-new-exhibit", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).not_to include("stale_content")
     end
   end
 

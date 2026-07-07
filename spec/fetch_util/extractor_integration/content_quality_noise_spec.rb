@@ -99,6 +99,34 @@ RSpec.describe 'FetchUtil extractor integration - content quality noise' do
     end
   end
 
+  it "does not flag short_extraction for a compact article with clear article structure" do
+    nav_links = 80.times.map { |i| "<a href=\"/story-#{i}\">Section #{i + 1} with extra navigation text</a>" }.join(" | \n")
+    html = <<~HTML
+      <html>
+        <head><title>Brief Local Update</title></head>
+        <body>
+          <nav>#{nav_links}</nav>
+          <main>
+            <article>
+              <h1>Brief Local Update</h1>
+              <p>The council approved the new park plan.</p>
+              <p>Work starts next week and finishes before summer.</p>
+            </article>
+          </main>
+          <footer>#{nav_links}</footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://news.example.com/brief-local-update", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["warnings"]).not_to include("short_extraction")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
   it "strips Outbrain and Taboola ad links from extracted markdown" do
     html = <<~HTML
       <html>

@@ -396,6 +396,44 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not warn multi_topic_page for an article with related comment and recommendation widgets" do
+    article_paragraphs = 8.times.map do |i|
+      "<p>Detailed reporting paragraph #{i + 1} explains the event, the people involved, and the follow-up developments in a focused single story.</p>"
+    end.join("\n")
+    related_links = 6.times.map do |i|
+      "<li><a href=\"/related-#{i + 1}\">Related story #{i + 1}</a></li>"
+    end.join("\n")
+    html = <<~HTML
+      <html>
+        <head><title>Community Election Results</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Community Election Results</h1>
+              #{article_paragraphs}
+            </article>
+            <aside class="related-widget">
+              <h2>Recommended</h2>
+              <ul>
+                #{related_links}
+              </ul>
+            </aside>
+            <section class="comments-section">
+              <h2>Comments</h2>
+              <p>Reader reactions and moderation notes.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.example.com/community-election-results", html) do |page|
+      payload = extract(page)
+
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "does not warn multi_topic_page for a structured scientific compound record" do
     sections = (1..8).map do |i|
       <<~SECTION
