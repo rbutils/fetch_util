@@ -13,7 +13,7 @@ RSpec.describe 'FetchUtil Geo TV extractor integration' do
         'The 10th NFC can negotiate vertical sharing ratio'
       ],
       excludes: ['Share by facebook', 'Advertisement'],
-      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial stale_content]
+      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
 end

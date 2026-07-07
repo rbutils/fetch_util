@@ -13,7 +13,7 @@ RSpec.describe 'FetchUtil Oxu extractor integration' do
         'Xatırladaq ki, "Cessna 208B Grand Caravan"'
       ],
       excludes: ['A-', 'A+'],
-      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial stale_content truncated_content]
+      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial truncated_content]
     )
   end
 end

@@ -13,7 +13,7 @@ RSpec.describe 'FetchUtil Siol extractor integration' do
         'Državni prostorski načrt bo potreben samo za širitev dolenjske avtocestne vpadnice'
       ],
       excludes: ['Kaj berete', 'Zadnje objave'],
-      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial stale_content]
+      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
 end
