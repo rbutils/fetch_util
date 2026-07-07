@@ -4,9 +4,13 @@ require "json"
 
 module FetchUtil
   class Extractor
+    INLINE_ASSET_PATHS = %w[vendor/readability.js vendor/turndown.js extract.js].freeze
+
     def initialize(reader_mode: true, asset_root: nil)
       @reader_mode = reader_mode
       @asset_root = asset_root || File.join(__dir__, "assets")
+      @inline_asset_scripts = nil
+      @extraction_call = nil
     end
 
     def extract(page)
@@ -27,8 +31,7 @@ module FetchUtil
     end
 
     def inject_assets_inline(page)
-      %w[vendor/readability.js vendor/turndown.js extract.js].each do |relative_path|
-        script = File.read(asset_path(relative_path), encoding: "UTF-8")
+      inline_asset_scripts.each do |script|
         page.evaluate("#{script}\ntrue")
       end
     end
@@ -46,7 +49,13 @@ module FetchUtil
     end
 
     def extraction_call
-      "window.FetchUtilExtract.extract(#{JSON.generate(reader_mode: @reader_mode)})"
+      @extraction_call ||= "window.FetchUtilExtract.extract(#{JSON.generate(reader_mode: @reader_mode)})"
+    end
+
+    def inline_asset_scripts
+      @inline_asset_scripts ||= INLINE_ASSET_PATHS.map do |relative_path|
+        File.read(asset_path(relative_path), encoding: "UTF-8")
+      end
     end
 
     def asset_path(relative_path)
