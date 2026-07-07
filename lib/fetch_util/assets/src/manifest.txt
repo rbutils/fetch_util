@@ -47,6 +47,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/wordpress.js
 profiles/hindustantimes.js
 profiles/derstandard.js
 profiles/blick.js
