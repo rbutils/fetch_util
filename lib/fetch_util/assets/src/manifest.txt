@@ -73,6 +73,7 @@ profiles/interia.js
 profiles/clarin.js
 profiles/blic.js
 profiles/tempo.js
+profiles/unidad_editorial_engine.js
 profiles/marca.js
 profiles/faz.js
 profiles/agora_wyborcza.js
