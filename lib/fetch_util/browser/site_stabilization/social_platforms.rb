@@ -4,11 +4,17 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module SocialPlatforms
-        private
+        SOCIAL_PLATFORM_STABILIZATION_PROFILES = {
+          stabilize_instagram: { host: "instagram.com", strategy: :stabilize_instagram,
+                                 notes: "Accept Instagram cookie prompts and dismiss login modals before extraction.",
+                                 tests: "spec/fetch_util/browser_stabilization_spec.rb" },
+          stabilize_facebook: { host: "facebook.com", strategy: :stabilize_facebook,
+                                notes: "Decline/accept Facebook cookie dialogs, then dismiss login prompts.",
+                                tests: "spec/fetch_util/browser_stabilization_spec.rb" }
+        }.freeze
+        private_constant :SOCIAL_PLATFORM_STABILIZATION_PROFILES
 
-        def instagram_url?(url)
-          host_matches?(url, "instagram.com")
-        end
+        private
 
         def stabilize_instagram(page)
           wait_for_idle_or_content(page) if @wait_for_idle
@@ -66,10 +72,6 @@ module FetchUtil
             close_label_pattern: "^(?:close|dismiss|x|×)?$",
             allow_empty_close_label: true
           )
-        end
-
-        def facebook_url?(url)
-          host_matches?(url, "facebook.com")
         end
 
         def stabilize_facebook(page)
