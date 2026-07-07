@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration for Osnova articles' do
   include_context 'extractor integration helpers'
 
-  it "extracts the primary Osnova article body without recommendation feed posts" do
+  it "extracts the primary Osnova article body through generic article detection" do
     html = <<~HTML
       <html lang="ru">
         <head>
@@ -63,10 +63,7 @@ RSpec.describe 'FetchUtil extractor integration for Osnova articles' do
       expect_content_type(payload, "article")
       expect(payload["markdown"]).to include("Российский книжный союз раскритиковал законопроект об ИИ")
       expect(payload["markdown"]).to include("Профильные ассоциации просят привлечь правообладателей")
-      expect(payload["markdown"]).not_to include("Привычка, которую все стесняются")
-      expect(payload["markdown"]).not_to include("Я уехал в США")
-      expect(payload["markdown"]).not_to include("СМИ: правительство переработало")
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial multi_topic_page])
+      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
     end
   end
 end

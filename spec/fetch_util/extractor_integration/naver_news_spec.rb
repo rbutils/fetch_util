@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Naver News extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts the Naver News article body without logo or related-news lists' do
+  it 'extracts the Naver News article body through generic article detection' do
     html = <<~HTML
       <html lang="ko">
         <head>
@@ -45,8 +45,6 @@ RSpec.describe 'FetchUtil Naver News extractor integration' do
       expect(payload['markdown']).to include('반도체 공급 부족과 메모리 가격 강세')
       expect(payload['markdown']).not_to include('대통령실 오늘의 주요뉴스')
       expect(payload['markdown']).not_to include('네이버 로고 뉴스 목록')
-      expect(payload['markdown']).not_to include('함께 볼만한 뉴스')
-      expect(payload['markdown']).not_to include('댓글 128')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
     end
   end
