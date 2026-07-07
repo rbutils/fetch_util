@@ -67,6 +67,27 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('url_content_mismatch')
   end
 
+  it 'strips tracker query params from final urls while preserving content params' do
+    article_url = 'https://example.com/articles/normalization'
+    tracked_url = "#{article_url}?id=42&page=2&q=ruby&lp=1&utm_source=newsletter&fbclid=abc&gclid=def&ref=home&source=email"
+    normalized_url = "#{article_url}?id=42&page=2&q=ruby"
+    tracked_page = page_at(tracked_url)
+    tracked_payload = payload_with(
+      canonicalUrl: tracked_url,
+      title: 'Query normalization',
+      markdown: "# Query normalization\n\nReadable article text.",
+      warnings: ['url_content_mismatch']
+    )
+
+    stub_browser_extraction(normalized_url, page: tracked_page, payload: tracked_payload)
+
+    result = fetch_with_dependencies(normalized_url)
+
+    expect(result.final_url).to eq(normalized_url)
+    expect(result.canonical_url).to eq(normalized_url)
+    expect(result.warnings).not_to include('url_content_mismatch')
+  end
+
   it 'preserves instagram next redirect targets when the current session is bounced to login' do
     login_url = 'https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F&utm_source=ig_web'
     normalized_login_url = 'https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F'

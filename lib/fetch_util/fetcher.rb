@@ -49,9 +49,9 @@ module FetchUtil
       "inciso|subsection",
       Regexp::IGNORECASE
     ).freeze
-    STRIPPED_QUERY_PARAM_PATTERNS = [
+    TRACKING_QUERY_PARAM_PATTERNS = [
       /\A(?:__goaway_|__cf_chl_)/,
-      /\A(?:utm_[a-z]+|fbclid|gclid|lp|mc_cid|mc_eid)\z/,
+      /\A(?:utm_[a-z]+|fbclid|gclid|lp|mc_cid|mc_eid|ref|source)\z/i,
       /\A__gr(?:sc|ts|ua|rn)\z/
     ].freeze
     TITLE_SLUG_STOPWORDS = %w[
@@ -752,15 +752,23 @@ module FetchUtil
     end
 
     def normalized_result_url(url)
+      strip_tracking_params(url)
+    end
+
+    def strip_tracking_params(url)
       return url if url.nil? || url.empty?
 
       uri = URI.parse(url)
       params = URI.decode_www_form(uri.query.to_s)
-      params.reject! { |key, _value| STRIPPED_QUERY_PARAM_PATTERNS.any? { |pattern| key.match?(pattern) } }
+      params.reject! { |key, _value| tracking_query_param?(key) }
       uri.query = params.empty? ? nil : URI.encode_www_form(params)
       uri.to_s
     rescue URI::InvalidURIError
       url
+    end
+
+    def tracking_query_param?(key)
+      TRACKING_QUERY_PARAM_PATTERNS.any? { |pattern| key.match?(pattern) }
     end
 
     def stripped_query_only_url_mismatch?(requested_url, final_url, canonical_url, raw_final_url, raw_canonical_url)
