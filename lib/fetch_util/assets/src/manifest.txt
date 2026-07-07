@@ -46,6 +46,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/agora_wyborcza.js
 profiles/index_hu.js
 profiles/telex.js
 profiles/root_cz.js

@@ -24,6 +24,7 @@ module FetchUtil
           wait_for_spa_hydration(page) if @wait_for_idle && reached_idle
           accepted_cookies = (!preserve_consent && accept_cookie_consent(page)) || accepted_cookies
           accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies
+          wait_for_agora_article(page, url) if agora_article_url?(url)
 
           return unless accepted_cookies && @wait_for_idle && reached_idle
 
@@ -73,6 +74,30 @@ module FetchUtil
           combined = [state["title"], state["text"]].join(" ").downcase
           /before you continue to (google|youtube)|we use cookies and data|accept all|reject all|more options/.match?(combined)
         rescue URI::InvalidURIError, Ferrum::JavaScriptError, Ferrum::TimeoutError
+          false
+        end
+
+        def agora_article_url?(url)
+          host = FetchUtil.strip_www_host(url)
+          host == "wyborcza.pl" || host.end_with?(".wyborcza.pl") || host == "gazeta.pl" || host.end_with?(".gazeta.pl")
+        rescue URI::InvalidURIError
+          false
+        end
+
+        def wait_for_agora_article(page, url)
+          return unless url.match?(%r{/(?:\d+,){2}\d+,|/7,})
+
+          retry_until_timeout(7.0, interval: 0.25) do
+            page.evaluate(<<~JS)
+              (() => {
+                const selectors = ['.mrf-article-body', '.article_body', 'div.articleBody', '.art_content', '.article-inner', 'section.article', '[itemprop=articleBody]'];
+                if (selectors.some((selector) => document.querySelector(selector))) return true;
+                const text = document.body ? (document.body.innerText || '') : '';
+                return !(new RegExp('Wyłącz AdBlocka/uBlocka|Nieznany błąd', 'i')).test(text) && text.length > 1200;
+              })()
+            JS
+          end
+        rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
           false
         end
       end

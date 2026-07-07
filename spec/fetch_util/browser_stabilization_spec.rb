@@ -40,6 +40,25 @@ RSpec.describe FetchUtil::Browser do
     expect(page).to have_received(:evaluate).at_least(:once)
   end
 
+  it 'waits for delayed Agora article bodies after generic stabilization' do
+    page = instance_double(Ferrum::Browser)
+    network = instance_double('FerrumNetwork')
+    browser = browser_with_idle
+
+    allow(page).to receive(:network).and_return(network)
+    allow(network).to receive(:idle?).and_return(true)
+    allow(network).to receive(:wait_for_idle)
+    allow(browser).to receive(:wait_for_idle_or_content).with(page).and_return(true)
+    allow(browser).to receive(:preserve_consent_wall?).with(page, 'https://kalisz.wyborcza.pl/kalisz/7,181359,32893183,example.html').and_return(false)
+    allow(browser).to receive(:wait_for_spa_hydration).with(page)
+    allow(browser).to receive(:accept_cookie_consent).with(page).and_return(false)
+    allow(browser).to receive(:dismiss_privacy_preference_overlay).with(page).and_return(false)
+    allow(browser).to receive(:sleep)
+    expect(browser).to receive(:wait_for_agora_article).with(page, 'https://kalisz.wyborcza.pl/kalisz/7,181359,32893183,example.html')
+
+    browser.send(:stabilize_page, page, 'https://kalisz.wyborcza.pl/kalisz/7,181359,32893183,example.html')
+  end
+
   it 'configures reddit cookie dismissal through the shared overlay helper' do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(true)
