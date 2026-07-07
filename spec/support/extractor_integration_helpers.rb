@@ -81,4 +81,18 @@ RSpec.shared_context 'extractor integration helpers' do
       block.call(extract_payload(page, reader_mode: reader_mode))
     end
   end
+
+  # rubocop:disable Style/KeywordParametersOrder -- keep required call shape grouped by assertion order.
+  def expect_fixture_article(url:, fixture_path:, content_type: 'article', includes:, excludes:, warning_excludes:, suspect: false)
+    html = File.read(fixture_path)
+
+    extract_from_url(url, html) do |payload|
+      expect_content_type(payload, content_type)
+      Array(includes).each { |substring| expect(payload['markdown']).to include(substring) }
+      Array(excludes).each { |substring| expect(payload['markdown']).not_to include(substring) }
+      expect_warnings(payload, exclude: warning_excludes)
+      expect(payload['suspect']).to be(suspect)
+    end
+  end
+  # rubocop:enable Style/KeywordParametersOrder
 end
