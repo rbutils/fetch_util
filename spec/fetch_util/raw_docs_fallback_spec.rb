@@ -1,6 +1,43 @@
 # frozen_string_literal: true
 
 RSpec.describe FetchUtil::RawDocsFallback do
+  def http_response(url:, status: 200, body: "")
+    FetchUtil::HttpRedirectClient::Response.new(url: url, status: status, headers: {}, body: body, redirects: [])
+  end
+
+  it "uses the shared redirect client final response" do
+    html = <<~HTML
+      <html>
+        <head><title>Redirected docs</title></head>
+        <body>
+          <main>
+            <h1>Redirected docs</h1>
+            <p>This redirected documentation page has enough text to be extracted by the fallback.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+    http_client = instance_double(
+      FetchUtil::HttpRedirectClient,
+      get: http_response(url: "https://docs.example.com/final", body: html)
+    )
+
+    result = described_class.new(http_client: http_client).fetch("https://example.com/start")
+
+    expect(result.first).to eq("https://docs.example.com/final")
+    expect(result.last["title"]).to eq("Redirected docs")
+    expect(http_client).to have_received(:get).with("https://example.com/start")
+  end
+
+  it "returns nil for shared redirect client non-success responses" do
+    http_client = instance_double(
+      FetchUtil::HttpRedirectClient,
+      get: http_response(url: "https://example.com/missing", status: 404, body: "missing")
+    )
+
+    expect(described_class.new(http_client: http_client).fetch("https://example.com/missing")).to be_nil
+  end
+
   it "extracts fragment-scoped docs content from raw html" do
     html = <<~HTML
             <html lang="en">

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 require "cgi"
-require "net/http"
 require "nokogiri"
 require "uri"
+
+require_relative "regulatory/http_client"
 
 module FetchUtil
   class RawDocsFallback
@@ -47,8 +48,9 @@ module FetchUtil
     ].freeze
     PRUNED_TEXT_PATTERN = /\A(?:on this page|table of contents|edit this page|copy page|copy item path|search|settings|help|expand description)\z/i
 
-    def initialize(timeout: 20)
+    def initialize(timeout: 20, http_client: nil)
       @timeout = timeout.to_i
+      @http_client = http_client || FetchUtil::HttpRedirectClient.new(timeout: @timeout, headers: DEFAULT_HEADERS)
     end
 
     def fetch(url)
@@ -272,26 +274,11 @@ module FetchUtil
       %(concat(#{parts.join(%q(, "'", ))}))
     end
 
-    def fetch_html(url, limit: 5)
-      raise URI::InvalidURIError, "too many redirects" if limit <= 0
+    def fetch_html(url)
+      response = @http_client.get(url)
+      raise Error, "HTTP #{response.status}" unless response.status.between?(200, 299)
 
-      uri = URI.parse(url)
-      request = Net::HTTP::Get.new(uri)
-      DEFAULT_HEADERS.each { |key, value| request[key] = value }
-
-      response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: @timeout, read_timeout: @timeout) do |http|
-        http.request(request)
-      end
-
-      case response
-      when Net::HTTPSuccess
-        [uri.to_s, response.body]
-      when Net::HTTPRedirection
-        location = URI.join(uri, response["location"]).to_s
-        fetch_html(location, limit: limit - 1)
-      else
-        raise Error, "HTTP #{response.code}"
-      end
+      [response.url, response.body]
     end
   end
 end
