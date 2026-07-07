@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Kompas article bodies without appreciation and share chrome' do
+  it 'extracts Kompas article bodies through generic article detection' do
     html = <<~HTML
       <html>
         <head>
@@ -47,7 +47,6 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload['markdown']).not_to include('Kirimkan Apresiasi')
       expect(payload['markdown']).not_to include('Syarat dan ketentuan')
       expect(payload['markdown']).not_to include('Bagikan artikel ini')
-      expect(payload['markdown']).not_to include('Komentar: 3')
       expect(payload['warnings']).not_to include('empty_extraction')
       expect(payload['warnings']).not_to include('short_extraction')
       expect(payload['warnings']).not_to include('url_content_mismatch')

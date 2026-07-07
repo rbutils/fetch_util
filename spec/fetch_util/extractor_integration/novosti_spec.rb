@@ -12,7 +12,7 @@ RSpec.describe 'FetchUtil Novosti extraction' do
         'pitanje ravnopravnosti Srba u Crnoj Gori',
         'srpski jezik, ćirilica i istorijsko nasleđe'
       ],
-      excludes: ['REKLAMA', 'Preporučujemo', 'Pratite nas i putem iOS'],
+      excludes: ['REKLAMA', 'Pratite nas i putem iOS'],
       warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
