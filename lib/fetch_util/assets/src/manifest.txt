@@ -47,6 +47,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/geo_tv.js
 profiles/mwananchi.js
 profiles/eenadu.js
 profiles/daryo.js
