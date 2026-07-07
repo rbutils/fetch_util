@@ -12,7 +12,6 @@ module FetchUtil
                                 notes: "Decline/accept Facebook cookie dialogs, then dismiss login prompts.",
                                 tests: "spec/fetch_util/browser_stabilization_spec.rb" }
         }.freeze
-        private_constant :SOCIAL_PLATFORM_STABILIZATION_PROFILES
 
         private
 

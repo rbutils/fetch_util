@@ -19,7 +19,6 @@ module FetchUtil
             tests: "spec/fetch_util/browser_stabilization_spec.rb"
           }
         }.freeze
-        private_constant :COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES
 
         private
 
