@@ -48,6 +48,78 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
     end
   end
 
+  it 'extracts full public Sport article bodies without false paywall warnings' do
+    public_paragraphs = [
+      <<~TEXT.strip,
+        El Madrid sigue en su empeño de reventar el mercado de fichajes. Ayer oficializó la incorporación de Dumfries,
+        una manera de reconocer que la llegada de Trent Alexander-Arnold ha sido de momento un sonoro fracaso y que el
+        club blanco vuelve a corregir su propia planificación.
+      TEXT
+      <<~TEXT.strip,
+        Hay una primera lectura curiosa de los movimientos sísmicos en el mercado blanco: su innegable voluntad de
+        autoenmendarse la plana, como si los refuerzos que hizo hace solo doce meses fueran casi papel mojado para la
+        nueva dirección deportiva.
+      TEXT
+      <<~TEXT.strip,
+        Dicho esto, el movimiento Dumfries-Cucurella es sin duda estratégico e independientemente de cómo termine
+        resultando su rendimiento es consecuencia de una acertada visión sobre el creciente rol de los laterales en el
+        fútbol moderno.
+      TEXT
+      <<~TEXT.strip,
+        El doble fichaje Dumfries-Cucurella pone sobre la mesa que el Real Madrid va a intentar jugar la Champions de los
+        laterales y evidencia su obsesión con una posición que se ha convertido en decisiva para atacar y defender.
+      TEXT
+      <<~TEXT.strip,
+        La jugada de ajedrez de los laterales blancos pondrá inevitablemente deberes al Barça, tranquilo en la Liga,
+        donde solventa sus compromisos casi sin despeinarse, pero demasiado exigido en Europa, donde esta temporada ha
+        vuelto a comprobar que todavía le falta un peldaño para llegar a la élite continental.
+      TEXT
+      <<~TEXT.strip
+        El equipo de Flick necesita o bien recuperar la mejor versión de Balde y Koundé, o bien encontrar otra joya en La
+        Masia, o bien reforzar esa demarcación. También en el mercado, Madrid y Barça siguen siendo vasos comunicantes.
+      TEXT
+    ]
+
+    html = <<~HTML
+      <html lang="es">
+        <head>
+          <title>Dos fichajes, un mensaje: el mercato blanco que pone deberes al Barça</title>
+          <meta property="og:site_name" content="SPORT">
+          <script type="application/ld+json">
+            {"@context":"https://schema.org","@type":"NewsArticle","headline":"Dos fichajes, un mensaje: el mercato blanco que pone deberes al Barça","isAccessibleForFree":"False"}
+          </script>
+        </head>
+        <body>
+          <article>
+            <header>
+              <h1 class="ft-title">Dos fichajes, un mensaje: el mercato blanco que pone deberes al Barça</h1>
+              <div class="ft-mol-writer"><p class="ft-mol-writer__titleOpinion">Ernest Folch</p></div>
+            </header>
+            <div class="ft-layout-grid-flex__colXs-12 ft-layout-grid-flex__colSm-11">
+              <div class="ft-mol-multimedia">0 seconds of 0 seconds Volume 0% Cargando anuncio</div>
+              #{public_paragraphs.map { |paragraph| "<p class=\"ft-text\">#{paragraph}</p>" }.join("\n              ")}
+              <div class="ft-mol-related">Noticias relacionadas y más</div>
+              <div class="ft-ad ft-ad--taboola">CONTENIDO PATROCINADO</div>
+            </div>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    url = 'https://www.sport.es/es/noticias/opinion/fichajes-mensaje-mercato-blanco-pone-132148159'
+
+    extract_from_url(url, html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('# Dos fichajes, un mensaje')
+      expect(payload['markdown']).to include('El Madrid sigue en su empeño de reventar el mercado de fichajes')
+      expect(payload['markdown']).to include('El equipo de Flick necesita o bien recuperar la mejor versión de Balde')
+      expect(payload['markdown']).not_to include('Cargando anuncio')
+      expect(payload['markdown']).not_to include('Noticias relacionadas')
+      expect(payload['markdown']).not_to include('CONTENIDO PATROCINADO')
+      expect_warnings(payload, exclude: %w[paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
+    end
+  end
+
   it 'keeps El Mundo homepage story lists from using comment links as articles' do
     html = <<~HTML
       <html lang="es">
