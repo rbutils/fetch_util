@@ -193,6 +193,188 @@ RSpec.describe 'FetchUtil repo host README extraction' do
     end
   end
 
+  it "detects self-hosted GitLab repository pages by DOM structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets</title>
+          <meta name="gitlab-meta" content="GitLab">
+          <meta name="description" content="Self-hosted GitLab repository.">
+        </head>
+        <body class="gl-browser gl-platform">
+          <header class="project-home-panel">
+            <p class="project-description">Self-hosted GitLab repository.</p>
+          </header>
+          <main>
+            <section class="tree-holder">
+              <a href="/acme/widgets/-/tree/main">app</a>
+            </section>
+            <article class="file-holder readme-holder">
+              <div class="blob-content">
+                <div class="file-content js-markup-content md">
+                  <h1>Widgets</h1>
+                  <p>Rendered README content is available on the local GitLab instance.</p>
+                  <h2>Usage</h2>
+                  <p>Clone widgets and run the setup command.</p>
+                </div>
+              </div>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://gitlab.local/acme/widgets", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Self-hosted GitLab repository.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+    end
+  end
+
+  it "detects GitHub Enterprise repository pages by DOM structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets</title>
+        </head>
+        <body>
+          <div class="js-repo-pjax-container">
+            <div class="repository-content">
+              <p class="f4 my-3">Enterprise repository description.</p>
+              <div class="js-repo-content">
+                <article class="markdown-body" itemprop="text">
+                  <h1>Widgets</h1>
+                  <p>Rendered README content is available on GitHub Enterprise.</p>
+                  <h2>Usage</h2>
+                  <p>Clone widgets and run the setup command.</p>
+                </article>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://git.example.test/acme/widgets", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Enterprise repository description.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+    end
+  end
+
+  it "detects Bitbucket Server repository pages by DOM structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets</title>
+        </head>
+        <body>
+          <header class="bitbucket-header">Widgets</header>
+          <section data-module="repo">
+            <p data-testid="repo-overview-description">Enterprise Bitbucket repository description.</p>
+            <div data-testid="repository-readme">
+              <div data-testid="readme-content" class="markdown-body">
+                <h1>Widgets</h1>
+                <p>Rendered README content is available on Bitbucket Server.</p>
+                <h2>Usage</h2>
+                <p>Clone widgets and run the setup command.</p>
+              </div>
+            </div>
+          </section>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://bitbucket.local/projects/ACME/repos/widgets/browse", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Enterprise Bitbucket repository description.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+    end
+  end
+
+  it "detects SourceHut repository pages by DOM structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets</title>
+          <meta name="description" content="Portable sourcehut repository.">
+        </head>
+        <body>
+          <div id="repo-summary">
+            <p>Portable sourcehut repository.</p>
+          </div>
+          <nav class="repo-nav">
+            <a href="/~acme/widgets/tree/main">tree</a>
+            <a href="/~acme/widgets/log">log</a>
+          </nav>
+          <section id="readme">
+            <article class="markdown-body">
+              <h1>Widgets</h1>
+              <p>Rendered README content is available on SourceHut.</p>
+              <h2>Usage</h2>
+              <p>Clone widgets and run the setup command.</p>
+            </article>
+          </section>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/~acme/widgets", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Portable sourcehut repository.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+    end
+  end
+
+  it "detects Gitea and Forgejo repository pages by DOM structure" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>acme/widgets</title>
+        </head>
+        <body>
+          <div class="ui container">
+            <div class="repository">
+              <div class="repo-description">Portable forge repository.</div>
+              <div class="file-view markup markdown">
+                <h1>Widgets</h1>
+                <p>Rendered README content is available on Gitea or Forgejo.</p>
+                <h2>Usage</h2>
+                <p>Clone widgets and run the setup command.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://forge.example.test/acme/widgets", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("# acme/widgets")
+      expect(payload["markdown"]).to include("Portable forge repository.")
+      expect(payload["markdown"]).to include("# Widgets")
+      expect(payload["markdown"]).to include("## Usage")
+    end
+  end
+
   it "surfaces Gitea repository README content from markdown containers" do
     html = <<~HTML
       <html>
