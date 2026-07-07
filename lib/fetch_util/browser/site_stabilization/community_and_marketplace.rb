@@ -4,11 +4,24 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module CommunityAndMarketplace
-        private
+        COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES = {
+          stabilize_reddit: {
+            host: "reddit.com",
+            strategy: :stabilize_reddit,
+            notes: "Use fast Reddit cookie dismissal/content readiness instead of full idle waits.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb"
+          },
+          stabilize_ebay_search: {
+            host: "ebay.com",
+            path_query: ->(uri) { uri.path.include?("/sch/") || uri.query.to_s.include?("_nkw=") },
+            strategy: :stabilize_ebay_search,
+            notes: "Wait for search result items or short-lived eBay browser checks.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb"
+          }
+        }.freeze
+        private_constant :COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES
 
-        def reddit_url?(url)
-          host_matches?(url, "reddit.com")
-        end
+        private
 
         def stabilize_reddit(page)
           retry_until_timeout(capped_timeout(3.0), interval: 0.1) do
@@ -18,16 +31,6 @@ module FetchUtil
 
           settle_after_stabilization(0.25)
           dismiss_reddit_cookie_dialog(page)
-        end
-
-        def ebay_search_url?(url)
-          uri = URI.parse(url)
-          host = uri.host.to_s.downcase
-          return false unless host == "ebay.com" || host.end_with?(".ebay.com")
-
-          uri.path.include?("/sch/") || uri.query.to_s.include?("_nkw=")
-        rescue URI::InvalidURIError
-          false
         end
 
         def stabilize_ebay_search(page)
