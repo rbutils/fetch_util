@@ -25,6 +25,23 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(false)
   end
 
+  it 'builds one payload snapshot for Ruby finalization' do
+    snapshot_class = described_class.const_get(:PayloadSnapshot)
+    allow(snapshot_class).to receive(:new).and_call_original
+    stub_browser_extraction('https://example.com/input', page: page, payload: payload)
+
+    fetch_with_dependencies('https://example.com/input')
+
+    expect(snapshot_class).to have_received(:new).once.with(
+      payload: payload,
+      requested_url: 'https://example.com/input',
+      final_url: 'https://example.com/final',
+      canonical_url: 'https://example.com/article',
+      raw_final_url: 'https://example.com/final',
+      raw_canonical_url: 'https://example.com/article'
+    )
+  end
+
   it 'uses the top-level convenience method' do
     fetcher = instance_double(described_class)
     result = instance_double(FetchUtil::Result)
@@ -313,6 +330,29 @@ RSpec.describe FetchUtil::Fetcher do
     result = fetch_with_dependencies(page.current_url)
 
     expect(result.content_type).to eq('article')
+  end
+
+  it 'keeps homepage index reclassification behavior through the payload snapshot' do
+    homepage_page = page_at('https://news.example.test/')
+    homepage_payload = payload_with(
+      title: 'Latest news and headlines',
+      canonicalUrl: 'https://news.example.test/',
+      markdown: <<~MARKDOWN.chomp,
+        # Latest news and headlines
+
+        - [Story one](https://news.example.test/story-one)
+        - [Story two](https://news.example.test/story-two)
+        - [Story three](https://news.example.test/story-three)
+      MARKDOWN
+      contentType: 'article',
+      warnings: []
+    )
+    stub_browser_extraction('https://news.example.test/', page: homepage_page, payload: homepage_payload)
+
+    result = fetch_with_dependencies('https://news.example.test/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to include('homepage_index_page')
   end
 
   it 'delegates quit to the underlying browser' do
