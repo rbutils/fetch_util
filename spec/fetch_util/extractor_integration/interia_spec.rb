@@ -40,7 +40,12 @@ RSpec.describe 'FetchUtil extractor integration for Interia articles' do
               <p>"Tym, którzy od kilku dni straszą, że Polska traci zdolności obronne, udowadniamy, jak bardzo się mylą" - napisał minister.</p>
               <section data-component-0="article-list" class="ids-article-list-section-wrapper">
                 <h2>Zobacz również:</h2>
-                <article><h2>Przełom ws. rakiet Patriot? Media: Polska podpisze oświadczenie</h2></article>
+                <article><h2>Przełom ws. rakiet Patriot? Media: Polska podpisze oświadczenie</h2><time datetime="2026-07-07T08:15:00+02:00">08:15</time></article>
+                <article><h2>Nowe ustalenia po spotkaniu ministrów obrony</h2><time datetime="2026-07-07T09:05:00+02:00">09:05</time></article>
+                <article><h2>Europa zwiększa produkcję amunicji</h2><time datetime="2026-07-07T10:20:00+02:00">10:20</time></article>
+                <article><h2>NATO komentuje decyzję sojuszników</h2><time datetime="2026-07-07T11:45:00+02:00">11:45</time></article>
+                <article><h2>Eksperci oceniają konsekwencje porozumienia</h2><time datetime="2026-07-07T12:30:00+02:00">12:30</time></article>
+                <article><h2>Kolejne rozmowy zaplanowano na przyszły tydzień</h2><time datetime="2026-07-07T13:10:00+02:00">13:10</time></article>
               </section>
               <p>Podczas szczytu NATO podpisywane są też dokumenty dotyczące pocisków FIM-92 Stinger.</p>
               <div data-component-0="ad-rectangle" class="ids-ads-base">REKLAMA</div>
@@ -63,7 +68,7 @@ RSpec.describe 'FetchUtil extractor integration for Interia articles' do
       expect(payload['markdown']).not_to include('Audio generowane przez AI')
       expect(payload['markdown']).not_to include('Zobacz również')
       expect(payload['markdown']).not_to include('REKLAMA')
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial multi_topic_page])
     end
   end
 end
