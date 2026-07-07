@@ -47,6 +47,7 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/hindustantimes.js
 profiles/derstandard.js
 profiles/blick.js
 profiles/oxu.js
@@ -80,6 +81,7 @@ profiles/aktuality_sk.js
 profiles/sabah.js
 profiles/sozcu.js
 profiles/novosti.js
+profiles/hindustantimes.js
 profiles/b92.js
 profiles/interia.js
 profiles/clarin.js
