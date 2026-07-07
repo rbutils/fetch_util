@@ -51,7 +51,7 @@ module FetchUtil
     ).freeze
     STRIPPED_QUERY_PARAM_PATTERNS = [
       /\A(?:__goaway_|__cf_chl_)/,
-      /\A(?:utm_[a-z]+|fbclid|gclid|mc_cid|mc_eid)\z/,
+      /\A(?:utm_[a-z]+|fbclid|gclid|lp|mc_cid|mc_eid)\z/,
       /\A__gr(?:sc|ts|ua|rn)\z/
     ].freeze
     TITLE_SLUG_STOPWORDS = %w[
@@ -115,13 +115,16 @@ module FetchUtil
     private
 
     def build_result(url, final_url, payload)
+      raw_final_url = final_url
+      raw_canonical_url = payload["canonicalUrl"]
       final_url = normalized_result_url(final_url)
-      canonical_url = normalized_result_url(payload["canonicalUrl"])
+      canonical_url = normalized_result_url(raw_canonical_url)
       homepage_like = homepage_like?(final_url)
       content_type = resolved_content_type(final_url, homepage_like, payload)
       warnings = resolved_warnings(
         content_type, homepage_like, payload,
-        requested_url: url, final_url: final_url, canonical_url: canonical_url
+        requested_url: url, final_url: final_url, canonical_url: canonical_url,
+        raw_final_url: raw_final_url, raw_canonical_url: raw_canonical_url
       )
       suspect = warnings.any?
 
@@ -155,13 +158,17 @@ module FetchUtil
       content_type
     end
 
-    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil)
+    def resolved_warnings(content_type, homepage_like, payload, requested_url: nil, final_url: nil, canonical_url: nil,
+                          raw_final_url: nil, raw_canonical_url: nil)
       trusted_same_organization_redirect = trusted_same_organization_redirect?(
         content_type, payload, requested_url, final_url, canonical_url
       )
       trusted_cross_domain_redirect = trusted_publisher_doi_redirect?(content_type, payload, requested_url, final_url, canonical_url)
       warnings = Array(payload["warnings"]).dup
       warnings.delete("url_content_mismatch") if trusted_same_organization_redirect
+      if stripped_query_only_url_mismatch?(requested_url, final_url, canonical_url, raw_final_url, raw_canonical_url)
+        warnings.delete("url_content_mismatch")
+      end
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
          !substantial_homepage_landing?(payload) && !government_service_portal?(final_url, payload) &&
          !research_database_landing?(payload)
@@ -740,6 +747,15 @@ module FetchUtil
       uri.to_s
     rescue URI::InvalidURIError
       url
+    end
+
+    def stripped_query_only_url_mismatch?(requested_url, final_url, canonical_url, raw_final_url, raw_canonical_url)
+      normalized_requested_url = normalized_result_url(requested_url)
+      return false if normalized_requested_url.nil? || final_url.nil?
+      return false unless normalized_requested_url == final_url
+      return false if canonical_url && canonical_url != normalized_requested_url
+
+      [raw_final_url, raw_canonical_url].compact.any? { |url| normalized_result_url(url) != url }
     end
   end
 end

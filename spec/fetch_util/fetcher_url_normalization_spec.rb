@@ -44,6 +44,29 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.metadata[:content_url]).to eq(tracked_url)
   end
 
+  it 'strips list-position query params before comparing article urls' do
+    article_url = 'https://zpravy.aktualne.cz/zahranici/ve-srilanske-veznici-vypukly-nepokoje-vyzadaly-si-nejmene-19-obeti/r~aaa296307f095c25cbd8c2a75b9afce8/'
+    tracked_page = page_at("#{article_url}?lp=1")
+    tracked_payload = payload_with(
+      canonicalUrl: article_url,
+      title: 'Ve srílanské věznici vypukly nepokoje',
+      markdown: <<~MARKDOWN.chomp,
+        # Ve srílanské věznici vypukly nepokoje
+
+        Ve věznici vypukly nepokoje a vyžádaly si oběti.
+      MARKDOWN
+      warnings: ['url_content_mismatch']
+    )
+
+    stub_browser_extraction(article_url, page: tracked_page, payload: tracked_payload)
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.final_url).to eq(article_url)
+    expect(result.canonical_url).to eq(article_url)
+    expect(result.warnings).not_to include('url_content_mismatch')
+  end
+
   it 'preserves instagram next redirect targets when the current session is bounced to login' do
     login_url = 'https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F&utm_source=ig_web'
     normalized_login_url = 'https://www.instagram.com/accounts/login/?next=%2Fcristiano%2F'
