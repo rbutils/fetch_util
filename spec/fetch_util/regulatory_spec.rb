@@ -411,3 +411,38 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 end
+
+RSpec.describe FetchUtil::Regulatory::HttpClient do
+  it "maps shared redirect client responses to regulatory response chains" do
+    redirect = FetchUtil::HttpRedirectClient::Response.new(
+      url: "https://example.com/start",
+      status: 302,
+      headers: { "location" => ["https://example.com/final"], "x-robots-tag" => ["noai"] },
+      body: "",
+      redirects: []
+    )
+    final = FetchUtil::HttpRedirectClient::Response.new(
+      url: "https://example.com/final",
+      status: 200,
+      headers: { "content-type" => ["text/html"] },
+      body: "<html>ok</html>",
+      redirects: [redirect]
+    )
+    redirect_client = instance_double(FetchUtil::HttpRedirectClient, get: final)
+
+    response = described_class.new(timeout: 3, user_agent: "Spec Agent", redirect_client: redirect_client).get("https://example.com/start")
+
+    expect(response).to have_attributes(
+      url: "https://example.com/final",
+      status: 200,
+      headers: { "content-type" => ["text/html"] },
+      body: "<html>ok</html>"
+    )
+    expect(response.redirects.first).to have_attributes(
+      url: "https://example.com/start",
+      status: 302,
+      headers: { "location" => ["https://example.com/final"], "x-robots-tag" => ["noai"] }
+    )
+    expect(redirect_client).to have_received(:get).with("https://example.com/start", limit: FetchUtil::HttpRedirectClient::REDIRECT_LIMIT)
+  end
+end
