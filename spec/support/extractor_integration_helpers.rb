@@ -12,7 +12,11 @@ end
 
 RSpec.shared_context 'extractor integration helpers' do
   def browser_path
-    FetchUtil::Browser::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+    RSpec.configuration.instance_variable_get(:@fetch_util_browser_path) ||
+      RSpec.configuration.instance_variable_set(
+        :@fetch_util_browser_path,
+        FetchUtil::Browser::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+      )
   end
 
   def extractor_browser
@@ -70,11 +74,17 @@ RSpec.shared_context 'extractor integration helpers' do
   end
 
   def extract(page, reader_mode: true)
-    FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+    extractor_for(reader_mode).extract(page)
   end
 
   def extract_payload(page, reader_mode: true)
-    FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+    extractor_for(reader_mode).extract(page)
+  end
+
+  def extractor_for(reader_mode)
+    extractors = RSpec.configuration.instance_variable_get(:@fetch_util_extractors) ||
+                 RSpec.configuration.instance_variable_set(:@fetch_util_extractors, {})
+    extractors[reader_mode] ||= FetchUtil::Extractor.new(reader_mode: reader_mode)
   end
 
   def expect_warnings(subject, include: [], exclude: [])

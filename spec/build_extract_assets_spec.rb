@@ -50,9 +50,8 @@ RSpec.describe "extract asset bundle" do
       stdout, stderr, status = run_build_script(root: root)
       expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
 
-      stdout, stderr, status = run_build_script("--check", root: root)
-      expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
-      expect(stdout).to include("Verified")
+      output = File.join(root, "lib", "fetch_util", "assets", "extract.js")
+      expect(File.read(output)).to eq("window.fetchUtilAssetSmoke=!0;\n")
     end
   end
 
