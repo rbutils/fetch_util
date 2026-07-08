@@ -2,6 +2,7 @@
 
 module FetchUtil
   class Browser
+    # rubocop:disable Metrics/ModuleLength -- shared stabilization module is intentionally centralized.
     module Stabilization
       module PageFlow
         PAGE_FLOW_STABILIZATION_PROFILES = [
@@ -17,6 +18,10 @@ module FetchUtil
           { host: ["wyborcza.pl", "gazeta.pl"], path_query: ->(uri) { uri.path.match?(%r{/(?:\d+,){2}\d+,|/7,}) },
             strategy: :wait_for_agora_article,
             notes: "After generic consent/idle handling, wait briefly for delayed Agora article bodies.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb" },
+          { host: "france24.com", path_query: ->(uri) { uri.path.match?(%r{/\d{8}-}) },
+            strategy: :wait_for_france24_article,
+            notes: "After generic consent/idle handling, wait briefly for delayed France24 article bodies.",
             tests: "spec/fetch_util/browser_stabilization_spec.rb" }
         ].freeze
 
@@ -90,6 +95,7 @@ module FetchUtil
 
         def preserve_consent_wall?(page, url)
           host = FetchUtil.strip_www_host(url)
+          return true if host == "france24.com" || host.end_with?(".france24.com")
           return false unless host == "youtube.com" || host.end_with?(".youtube.com") || host.match?(/\Agoogle\.[a-z.]+\z/)
 
           state = page.evaluate(<<~JS)
@@ -119,7 +125,24 @@ module FetchUtil
         rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
           false
         end
+
+        def wait_for_france24_article(page, _url)
+          retry_until_timeout(15.0, interval: 0.25) do
+            page.evaluate(<<~JS)
+              (() => {
+                const body = document.querySelector('.t-content__body') || document.querySelector('.t-content--article');
+                if (!body) return false;
+                const text = (body.innerText || '').replace(/\s+/g, ' ').trim();
+                return body.querySelectorAll('p').length >= 3 && text.length > 1000;
+              })()
+            JS
+          end
+        rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
+          false
+        end
       end
     end
   end
 end
+
+# rubocop:enable Metrics/ModuleLength
