@@ -74,6 +74,8 @@ module FetchUtil
       "connection (?:refused|reset|closed)|disconnected|network)\\b",
       Regexp::IGNORECASE
     ).freeze
+    PENDING_CONNECTIONS_FETCH_RETRIES = 1
+    PENDING_CONNECTIONS_FETCH_RETRY_WAIT = 1.0
 
     class PayloadSnapshot
       attr_reader :payload, :requested_url, :final_url, :canonical_url, :raw_final_url, :raw_canonical_url,
@@ -166,28 +168,38 @@ module FetchUtil
 
     def fetch(url)
       t0 = monotonic_now
-      result = @browser.with_page(url) do |page|
-        payload = @extractor.extract(page)
-        build_result(url, page.current_url, payload)
-      end
-      fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
-      fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
-      fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
-      result = fallback_result(url, fallback) if fallback
-      log_request(url, t0)
-      result
-    rescue BrowserError, ExtractionError => e
-      fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
-      if fallback
-        result = fallback_result(url, fallback)
+      pending_connection_retries = 0
+
+      begin
+        result = @browser.with_page(url) do |page|
+          payload = @extractor.extract(page)
+          build_result(url, page.current_url, payload)
+        end
+        fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
+        fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
+        fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
+        result = fallback_result(url, fallback) if fallback
         log_request(url, t0)
-        return result
+        result
+      rescue BrowserError, ExtractionError => e
+        if e.is_a?(BrowserError) && pending_connections_error?(e) && pending_connection_retries < PENDING_CONNECTIONS_FETCH_RETRIES
+          pending_connection_retries += 1
+          sleep PENDING_CONNECTIONS_FETCH_RETRY_WAIT
+          retry
+        end
+
+        fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
+        if fallback
+          result = fallback_result(url, fallback)
+          log_request(url, t0)
+          return result
+        end
+
+        log_request(url, t0)
+        return network_error_result(url, e) if e.is_a?(BrowserError) && network_error?(e)
+
+        raise e
       end
-
-      log_request(url, t0)
-      return network_error_result(url, e) if e.is_a?(BrowserError) && network_error?(e)
-
-      raise e
     end
 
     private
@@ -740,6 +752,10 @@ module FetchUtil
 
     def network_error?(error)
       error.message.to_s.match?(NETWORK_ERROR_PATTERN)
+    end
+
+    def pending_connections_error?(error)
+      error.message.to_s.match?(/pending connections/i)
     end
 
     def dns_resolution_error?(message)

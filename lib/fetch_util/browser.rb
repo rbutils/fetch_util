@@ -36,7 +36,9 @@ module FetchUtil
     CONTENT_READY_MIN_LENGTH = 200
     SPA_HYDRATION_TIMEOUT = 2.0
     SPA_HYDRATION_POLL = 0.15
-    NAVIGATION_MAX_RETRIES = 1
+    PRE_EXTRACTION_SETTLE_WAIT = 0.25
+    HEAVY_SCRIPT_COUNT_THRESHOLD = 20
+    NAVIGATION_MAX_RETRIES = 2
     NAVIGATION_RETRY_WAIT = 2.0
 
     def initialize(timeout: 20, wait: 0.75, wait_for_idle: true, idle_duration: 0.35,
@@ -79,6 +81,7 @@ module FetchUtil
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
       page = load_page_with_retry(ensure_browser, url)
+      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, url)
       yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message
@@ -132,6 +135,16 @@ module FetchUtil
         error.message.to_s.match?(/pending connections/i)
     end
 
+    def heavy_script_page?(page, url)
+      return false if host_matches?(url, "google.com") || host_matches?(url, "youtube.com")
+
+      script_count = page.evaluate("document.scripts ? document.scripts.length : 0")
+      script_count = script_count.is_a?(Numeric) ? script_count.to_i : 0
+      script_count >= HEAVY_SCRIPT_COUNT_THRESHOLD
+    rescue Ferrum::Error
+      false
+    end
+
     def load_page_with_retry(ferrum, url)
       retries = 0
 
@@ -152,7 +165,7 @@ module FetchUtil
         raise if retries >= NAVIGATION_MAX_RETRIES
 
         retries += 1
-        sleep NAVIGATION_RETRY_WAIT
+        sleep NAVIGATION_RETRY_WAIT * (2**(retries - 1))
         retry
       end
     end

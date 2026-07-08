@@ -414,6 +414,28 @@ RSpec.describe FetchUtil::Fetcher do
     expect(log).to have_received(:append).with('https://slow.example.test/', duration: a_value >= 0)
   end
 
+  it 'retries the full fetch once for pending connection browser failures' do
+    log = instance_double(FetchUtil::RequestLog)
+    attempts = 0
+    page = instance_double('FerrumPage', current_url: 'https://example.com/final')
+
+    allow(log).to receive(:append)
+    allow(extractor).to receive(:extract).with(page).and_return(payload)
+    allow(browser).to receive(:with_page) do |_url, &block|
+      attempts += 1
+      raise FetchUtil::BrowserError, 'Request https://slow.example.test/ reached server, but there are still pending connections' if attempts == 1
+
+      block.call(page)
+    end
+
+    result = fetch_with_dependencies('https://slow.example.test/', request_log: log)
+
+    expect(result).to be_a(FetchUtil::Result)
+    expect(result.content_type).to eq('article')
+    expect(attempts).to eq(2)
+    expect(log).to have_received(:append).with('https://slow.example.test/', duration: a_value >= 0)
+  end
+
   it 'logs duration even when fetch raises' do
     log = instance_double(FetchUtil::RequestLog)
     allow(log).to receive(:append)
