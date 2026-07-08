@@ -37,6 +37,9 @@ module FetchUtil
     end
 
     def extract_payload(page)
+      original_timeout = page.timeout
+      page.timeout = [original_timeout.to_f, 60].max
+
       inject_assets(page)
       page.evaluate(extraction_call)
     rescue Ferrum::TimeoutError
@@ -46,6 +49,8 @@ module FetchUtil
       end
       inject_assets_inline(page)
       page.evaluate(extraction_call)
+    ensure
+      page.timeout = original_timeout if original_timeout
     end
 
     def extraction_call
