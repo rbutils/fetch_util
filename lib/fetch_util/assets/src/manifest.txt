@@ -47,6 +47,8 @@ profiles/meta_social/instagram.js
 profiles/meta_social/facebook.js
 profiles/meta_social/threads.js
 profiles/host_aware.js
+profiles/avesta.js
+profiles/opais.js
 profiles/walla.js
 profiles/france24.js
 profiles/chosun.js
