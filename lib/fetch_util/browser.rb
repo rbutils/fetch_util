@@ -37,6 +37,13 @@ module FetchUtil
     SPA_HYDRATION_TIMEOUT = 2.0
     SPA_HYDRATION_POLL = 0.15
     NAVIGATION_MAX_RETRIES = 2
+    NAVIGATION_RETRY_WAIT = 0.5
+    NAVIGATION_RETRY_PATTERN = Regexp.new(
+      "pending connections|ERR_NAME_NOT_RESOLVED|DNS|resolve|resolution|ENOTFOUND|" \
+      "EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|timed out|timeout|" \
+      "connection (?:refused|reset|closed)|disconnected|network",
+      Regexp::IGNORECASE
+    ).freeze
 
     def initialize(timeout: 20, wait: 0.75, wait_for_idle: true, idle_duration: 0.35,
                    viewport: DEFAULT_VIEWPORT, user_agent: DEFAULT_USER_AGENT,
@@ -79,11 +86,14 @@ module FetchUtil
       retries = 0
       begin
         page.go_to(url)
-      rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError
+      rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
+        raise unless retryable_navigation_error?(e)
+
         unless page_loaded_enough?(page)
           raise if retries >= NAVIGATION_MAX_RETRIES
 
           retries += 1
+          sleep NAVIGATION_RETRY_WAIT
           retry
         end
       end
@@ -130,6 +140,10 @@ module FetchUtil
     def host_matches?(url, host)
       normalized_host = FetchUtil.strip_www_host(url)
       normalized_host == host || normalized_host.end_with?(".#{host}")
+    end
+
+    def retryable_navigation_error?(error)
+      error.message.to_s.match?(NAVIGATION_RETRY_PATTERN)
     end
   end
 end

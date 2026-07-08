@@ -71,6 +71,32 @@ RSpec.describe FetchUtil::Browser do
     expect(yielded).to eq(page)
   end
 
+  it 'retries browser-level network errors before giving up' do
+    network = instance_double('FerrumNetwork')
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage')
+
+    stub_ferrum_page_creation(ferrum, page)
+    allow(page).to receive(:headers).and_return(double(set: true))
+    allow(page).to receive(:bypass_csp)
+    stub_page_network(page, network, idle: true, wait_for_idle: true)
+    call_count = 0
+    allow(page).to receive(:go_to) do
+      call_count += 1
+      raise Ferrum::Error, 'Request https://missing.example.test/ failed (net::ERR_NAME_NOT_RESOLVED)' if call_count < 2
+    end
+    allow(page).to receive(:evaluate).and_return(false)
+    allow(page).to receive(:close)
+
+    browser = browser_with_idle
+    yielded = nil
+
+    browser.with_page('https://missing.example.test/') { |result| yielded = result }
+
+    expect(yielded).to eq(page)
+    expect(call_count).to eq(2)
+  end
+
   it 'treats stable page content as ready before network idle' do
     network = instance_double('FerrumNetwork', idle?: false)
     page = instance_double(Ferrum::Browser, network: network)

@@ -69,7 +69,7 @@ module FetchUtil
     SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
     GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
     NETWORK_ERROR_PATTERN = Regexp.new(
-      "\\b(?:net::ERR_|ERR_NAME_NOT_RESOLVED|DNS|resolve|resolution|ENOTFOUND|" \
+      "\\b(?:net::ERR_|ERR_NAME_NOT_RESOLVED|pending connections|DNS|resolve|resolution|ENOTFOUND|" \
       "EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|timed out|timeout|" \
       "connection (?:refused|reset|closed)|disconnected|network)\\b",
       Regexp::IGNORECASE

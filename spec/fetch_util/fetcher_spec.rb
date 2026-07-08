@@ -394,6 +394,26 @@ RSpec.describe FetchUtil::Fetcher do
     expect(log).to have_received(:append).with('https://missing.example.test/', duration: a_value >= 0)
   end
 
+  it 'returns a structured suspect result for pending connection failures' do
+    log = instance_double(FetchUtil::RequestLog)
+    allow(log).to receive(:append)
+    stub_browser_failure(
+      'https://slow.example.test/',
+      FetchUtil::BrowserError,
+      'Request https://slow.example.test/ reached server, but there are still pending connections'
+    )
+
+    result = fetch_with_dependencies('https://slow.example.test/', request_log: log)
+
+    expect(result).to be_a(FetchUtil::Result)
+    expect(result.markdown).to eq('')
+    expect(result.content_type).to eq('error')
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to eq(['network_error'])
+    expect(result.error_message).to include('pending connections')
+    expect(log).to have_received(:append).with('https://slow.example.test/', duration: a_value >= 0)
+  end
+
   it 'logs duration even when fetch raises' do
     log = instance_double(FetchUtil::RequestLog)
     allow(log).to receive(:append)
