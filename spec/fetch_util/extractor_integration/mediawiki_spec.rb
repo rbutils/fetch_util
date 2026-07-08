@@ -20,6 +20,24 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'prefers the parser output container over the larger MediaWiki wrapper' do
+    fixture_path = File.expand_path('../../fixtures/mediawiki_wrapper_article.html', __dir__)
+
+    with_url_page('https://example.test/wiki/Slovenija', File.read(fixture_path)) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect_content_type(payload, 'article')
+      expect(payload['title']).to eq('Slovenija')
+      expect(payload['markdown']).to include('Slovenija is a country in Central Europe')
+      expect(payload['markdown']).to include('History')
+      expect(payload['markdown']).to include('Geography')
+      expect(payload['markdown']).not_to include('Redirected from')
+      expect(payload['markdown']).not_to include('Retrieved from Example Wiki')
+      expect(payload['warnings']).not_to include('empty_extraction')
+      expect(payload['warnings']).not_to include('short_extraction')
+    end
+  end
+
   it 'classifies category and special pages as lists' do
     html = <<~HTML
       <html>
