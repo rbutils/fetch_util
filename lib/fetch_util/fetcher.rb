@@ -258,6 +258,7 @@ module FetchUtil
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
          !substantial_homepage_landing?(snapshot) && !government_service_portal?(final_url, snapshot) &&
          !research_database_landing?(snapshot)
+        warnings.delete("url_content_mismatch")
         warnings << "homepage_index_page"
       end
       warnings << "cross_domain_redirect" if cross_domain_redirect?(requested_url, final_url) && !trusted_cross_domain_redirect
