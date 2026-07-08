@@ -6,7 +6,7 @@ core/simple_article_profile.js
 core/docs_cleanup.js
 extractors/article_roots.js
 extractors/glossary.js
-extractors/lists.js
+extractors/list_extraction.js
 extractors/search.js
 extractors/spa_data.js
 classifiers/challenges.js
@@ -118,7 +118,6 @@ markdown/runtime.js
 core/noise_patterns.js
 core/dom_cleanup.js
 core/markdown_cleanup.js
-extractors/list_extraction.js
 systems/generic_docs_frameworks.js
 systems/generic_docs_core_frameworks.js
 systems/generic_docs_modern_frameworks.js
