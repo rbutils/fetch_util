@@ -3,12 +3,14 @@
 require "open3"
 require "pathname"
 require "tempfile"
+require "digest"
 
 PROJECT_ROOT = Pathname(__dir__).join("..").expand_path
 ROOT = PROJECT_ROOT.join("lib", "fetch_util", "assets")
 SOURCE_ROOT = ROOT.join("src")
 MANIFEST = SOURCE_ROOT.join("manifest.txt")
 OUTPUT = ROOT.join("extract.js")
+DIGEST_OUTPUT = ROOT.join("extract.js.sha256")
 
 abort("Missing manifest: #{MANIFEST}") unless MANIFEST.file?
 
@@ -36,6 +38,20 @@ contents = entries.map do |entry|
 
   path.read
 end
+source = contents.join("\n")
+source_digest = Digest::SHA256.hexdigest("#{entries.join("\n")}\n#{source}")
+
+def cached_build_current?(source_digest)
+  return false unless OUTPUT.file? && DIGEST_OUTPUT.file?
+
+  cached_source_digest, cached_output_digest = DIGEST_OUTPUT.read.split(/\s+/, 3)
+  cached_source_digest == source_digest && cached_output_digest == Digest::SHA256.file(OUTPUT).hexdigest
+end
+
+if ARGV.include?("--check") && cached_build_current?(source_digest)
+  puts "Verified #{OUTPUT} is up to date"
+  exit 0
+end
 
 def terser_build(source)
   Tempfile.create(["fetch_util_extract", ".js"]) do |file|
@@ -49,7 +65,7 @@ def terser_build(source)
   end
 end
 
-built = terser_build(contents.join("\n"))
+built = terser_build(source)
 
 if ARGV.include?("--check")
   abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
@@ -63,4 +79,5 @@ if ARGV.include?("--check")
 end
 
 OUTPUT.write(built)
+DIGEST_OUTPUT.write("#{source_digest} #{Digest::SHA256.hexdigest(built)}\n")
 puts "Built #{OUTPUT} from #{entries.length} source files via terser"

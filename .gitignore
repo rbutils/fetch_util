@@ -6,4 +6,5 @@
 /.ruby-lsp/
 /.serena/
 /lib/fetch_util/assets/extract.js
+/lib/fetch_util/assets/extract.js.sha256
 Gemfile.lock

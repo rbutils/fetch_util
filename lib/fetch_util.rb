@@ -89,7 +89,8 @@ module FetchUtil
   end
 
   def strip_www_host(url)
-    URI.parse(url.to_s).host.to_s.downcase.sub(/\Awww\./, "")
+    uri = url.is_a?(URI::Generic) ? url : URI.parse(url.to_s)
+    uri.host.to_s.downcase.sub(/\Awww\./, "")
   end
 
   def docs_like_url?(value)
