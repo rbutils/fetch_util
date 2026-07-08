@@ -73,17 +73,12 @@ profiles/index_hr.js
 profiles/danas.js
 profiles/kurir.js
 profiles/almasryalyoum.js
-profiles/maroelamedia.js
 profiles/geo_tv.js
 profiles/kalerkantho.js
 profiles/trend.js
-profiles/civil_ge.js
-profiles/khaosod.js
 profiles/jang.js
 profiles/skynewsarabia.js
 profiles/milliyet_live.js
-profiles/tovima_gr.js
-profiles/newsit_gr.js
 profiles/yle_live.js
 profiles/aktuality_sk.js
 profiles/sabah.js
