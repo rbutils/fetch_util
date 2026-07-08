@@ -31,6 +31,7 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
         <head>
           <title>El juez no autoriza a Begoña Gómez a acompañar a Pedro Sánchez a la cumbre de la OTAN</title>
           <meta property="og:site_name" content="EL MUNDO">
+          <meta property="og:video" content="https://video.elmundo.es/embed/noticia.html">
           <meta name="description" content="La decisión la ha adoptado el magistrado Antonio Viejo.">
           <script type="application/ld+json">
             {"@context":"https://schema.org","@type":"NewsArticle","headline":"El juez no autoriza a Begoña Gómez a acompañar a Pedro Sánchez a la cumbre de la OTAN","isAccessibleForFree":"False"}
@@ -57,6 +58,7 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
       expect_content_type(payload, 'article')
       expect(payload['markdown']).to include('# El juez no autoriza a Begoña Gómez')
       expect(payload['markdown']).to include('La decisión la ha adoptado el magistrado Antonio Viejo')
+      expect(payload['markdown']).to include('causa número 5')
       expect(payload['markdown']).not_to include('Suscríbete para acceder')
       expect(payload['markdown']).not_to include('Comentarios')
       expect_warnings(payload, exclude: %w[paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
