@@ -20,6 +20,40 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'does not flag a link-heavy Wikipedia-style article as multi-topic' do
+    sections = %w[History Geography Demographics Culture Economy].map do |heading|
+      <<~HTML
+        <h2>#{heading}</h2>
+        <p>#{"This section keeps discussing one subject with <a href=\"/wiki/Example_A\">related context</a> and <a href=\"/wiki/Example_B\">background detail</a> in a single narrative. " * 4}</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Example City - Example Wiki</title>
+          <meta name="generator" content="MediaWiki 1.41.0">
+        </head>
+        <body class="mediawiki mw-body">
+          <h1 id="firstHeading" class="firstHeading">Example City</h1>
+          <div id="mw-content-text">
+            <div class="mw-parser-output">
+              <p>#{"Example City is a long encyclopedic article about a single place with <a href=\"/wiki/Example_Country\">national</a> and <a href=\"/wiki/Example_Region\">regional</a> context. " * 4}</p>
+              #{sections}
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://example.test/wiki/Example_City', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect_content_type(payload, 'article')
+      expect(payload['warnings']).not_to include('multi_topic_page')
+    end
+  end
+
   it 'prefers the parser output container over the larger MediaWiki wrapper' do
     fixture_path = File.expand_path('../../fixtures/mediawiki_wrapper_article.html', __dir__)
 
