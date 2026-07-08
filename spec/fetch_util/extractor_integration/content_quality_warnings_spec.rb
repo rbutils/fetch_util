@@ -240,7 +240,8 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
           <main>
             <article>
               <h1>Welcome to Our Portal</h1>
-              <p>This page contains general information about our news service and subscription options. Browse our categories to find the content you are looking for. We offer premium and free tiers for all readers.</p>
+              <p>This page contains general information about our news service and subscription options. Browse our categories to find the content you are looking for, review account settings, and compare premium and free tiers for readers across several sections of the site.</p>
+              <p>Editors publish summaries, explain navigation choices, and point visitors toward support resources, featured topics, and archived material so the homepage remains useful even when the specific article slug does not match the story body.</p>
             </article>
           </main>
         </body>

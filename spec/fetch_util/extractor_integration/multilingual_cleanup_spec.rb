@@ -327,6 +327,64 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
       end
     end
 
+    it "does not flag Wikipedia-style article slugs that only differ by diacritics" do
+      cases = [
+        {
+          url: "https://hu.wikipedia.org/wiki/Magyarorsz%C3%A1g",
+          lang: "hu",
+          title: "Magyarország",
+          body: [
+            "<table><tr><th>Főváros</th><td>Budapest</td></tr><tr><th>Nyelv</th><td>magyar</td></tr></table>",
+            "<p>Magyarország Közép-Európában található ország, amelyet a Duna és a Tisza folyó is meghatároz.</p>",
+            "<p>Az ország története, kultúrája és földrajza szorosan kapcsolódik a szomszédos régiók fejlődéséhez és a Kárpát-medence hagyományaihoz.</p>"
+          ].join("\n")
+        },
+        {
+          url: "https://cs.wikipedia.org/wiki/%C4%8Cesko",
+          lang: "cs",
+          title: "Česko",
+          body: [
+            "<table><tr><th>Hlavní město</th><td>Praha</td></tr><tr><th>Jazyk</th><td>čeština</td></tr></table>",
+            "<p>Česko leží ve střední Evropě a jeho krajina zahrnuje města, řeky i horské oblasti.</p>",
+            "<p>Historie státu je spojena s kulturní tradicí, průmyslem a dlouhodobým evropským vývojem.</p>"
+          ].join("\n")
+        },
+        {
+          url: "https://hr.wikipedia.org/wiki/Hrvatska",
+          lang: "hr",
+          title: "Hrvatska",
+          body: [
+            "<table><tr><th>Glavni grad</th><td>Zagreb</td></tr><tr><th>Jezik</th><td>hrvatski</td></tr></table>",
+            "<p>Hrvatska je država u jugoistočnoj Europi, a obala Jadranskog mora važan je dio njezina identiteta.</p>",
+            "<p>Povijest, kultura i gospodarstvo zemlje povezani su s regijom, trgovinom i dugotrajnom mediteranskom tradicijom.</p>"
+          ].join("\n")
+        }
+      ]
+
+      cases.each do |test_case|
+        html = <<~HTML
+          <html lang="#{test_case[:lang]}">
+            <head><title>#{test_case[:title]}</title></head>
+            <body>
+              <main>
+                <article>
+                  <h1>#{test_case[:title]}</h1>
+                  #{test_case[:body]}
+                </article>
+              </main>
+            </body>
+          </html>
+        HTML
+
+        with_url_page(test_case[:url], html) do |page|
+          payload = FetchUtil::Extractor.new.extract(page)
+
+          expect(payload["contentType"]).to eq("article")
+          expect(payload["warnings"]).not_to include("url_content_mismatch")
+        end
+      end
+    end
+
     it "does not flag Polish legal text that matches the page language" do
       html = <<~HTML
         <html lang="pl">
