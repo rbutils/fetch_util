@@ -21,6 +21,30 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('homepage_index_page')
   end
 
+  it 'drops url_content_mismatch from homepage index pages' do
+    homepage_page = page_at('https://www.hurriyet.com.tr/')
+    homepage_payload = payload_with(
+      title: 'Hürriyet - Haber, Son Dakika Haberler, Güncel Gazete Haberleri',
+      canonicalUrl: 'https://www.hurriyet.com.tr/',
+      markdown: <<~MARKDOWN.chomp,
+        ## Hürriyet
+
+        1. Son dakika
+        2. Gündem
+        3. Spor
+      MARKDOWN
+      contentType: 'list',
+      warnings: ['url_content_mismatch']
+    )
+
+    stub_browser_extraction('https://www.hurriyet.com.tr/', page: homepage_page, payload: homepage_payload)
+
+    result = fetch_with_dependencies('https://www.hurriyet.com.tr/')
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to eq(['homepage_index_page'])
+  end
+
   it 'keeps search result pages as search content' do
     search_page = page_at('https://www.google.com/search?q=ruby+language')
     search_payload = payload_with(
