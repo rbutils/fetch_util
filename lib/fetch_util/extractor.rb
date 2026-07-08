@@ -37,8 +37,9 @@ module FetchUtil
     end
 
     def extract_payload(page)
-      original_timeout = page.timeout
-      page.timeout = [original_timeout.to_f, 60].max
+      timeout_supported = page.respond_to?(:timeout) && page.respond_to?(:timeout=)
+      original_timeout = page.timeout if timeout_supported
+      page.timeout = [original_timeout.to_f, 60].max if timeout_supported
 
       inject_assets(page)
       page.evaluate(extraction_call)
@@ -50,7 +51,7 @@ module FetchUtil
       inject_assets_inline(page)
       page.evaluate(extraction_call)
     ensure
-      page.timeout = original_timeout if original_timeout
+      page.timeout = original_timeout if timeout_supported && original_timeout
     end
 
     def extraction_call
