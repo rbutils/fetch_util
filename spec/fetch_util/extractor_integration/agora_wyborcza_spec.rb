@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil extractor integration for Agora/Wyborcza articles' do
   include_context 'extractor integration helpers'
 
   it 'extracts the Wyborcza public article teaser behind the AdBlock shell and keeps the paywall warning' do
-    html = File.read(File.expand_path('../../fixtures/agora_wyborcza_article.html', __dir__))
+    html = fixture_contents(File.expand_path('../../fixtures/agora_wyborcza_article.html', __dir__))
 
     extract_from_url('https://kalisz.wyborcza.pl/kalisz/7,181359,32893183,co-dwie-godziny-pociag-do-berlina-co-godzine-do-warszawy-cpk.html', html) do |payload|
       expect_content_type(payload, 'article')

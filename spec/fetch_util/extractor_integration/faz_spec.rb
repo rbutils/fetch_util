@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
   it 'classifies the FAZ homepage as a story list' do
-    html = File.read(File.expand_path('../../fixtures/faz_homepage.html', __dir__))
+    html = fixture_contents(File.expand_path('../../fixtures/faz_homepage.html', __dir__))
 
     extract_from_url('https://www.faz.net/', html) do |payload|
       expect(payload['contentType']).to eq('list')

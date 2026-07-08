@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil Index.hr extractor integration' do
   include_context 'extractor integration helpers'
 
   it 'extracts Index.hr article bodies without stale_content on recirculated sport articles' do
-    html = File.read(File.expand_path('../../fixtures/index_hr_article.html', __dir__))
+    html = fixture_contents(File.expand_path('../../fixtures/index_hr_article.html', __dir__))
 
     extract_from_url('https://www.index.hr/sport/clanak/dinamo-vraca-projekt-na-kojemu-je-godinama-zaradjivao-milijune-evo-svih-detalja/2796419.aspx', html) do |payload|
       expect(payload['contentType']).to eq('article')

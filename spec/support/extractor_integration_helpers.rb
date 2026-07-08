@@ -7,10 +7,20 @@ RSpec.configure do |config|
     browser = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser)
     browser&.quit
     RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
+
+    page = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_page)
+    page&.close
+    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_page) if page
   end
 end
 
 RSpec.shared_context 'extractor integration helpers' do
+  def fixture_contents(path)
+    cache = RSpec.configuration.instance_variable_get(:@fetch_util_fixture_contents) ||
+            RSpec.configuration.instance_variable_set(:@fetch_util_fixture_contents, {})
+    cache[path] ||= File.read(path)
+  end
+
   def browser_path
     RSpec.configuration.instance_variable_get(:@fetch_util_browser_path) ||
       RSpec.configuration.instance_variable_set(
@@ -36,12 +46,23 @@ RSpec.shared_context 'extractor integration helpers' do
       )
   end
 
+  def extractor_page
+    extractor_browser
+    RSpec.configuration.instance_variable_get(:@fetch_util_extractor_page) ||
+      RSpec.configuration.instance_variable_set(
+        :@fetch_util_extractor_page,
+        begin
+          page = extractor_browser.create_page
+          page.bypass_csp
+          page
+        end
+      )
+  end
+
   def with_extractor_page
-    page = extractor_browser.create_page
-    page.bypass_csp
+    page = extractor_page
+    page.go_to('about:blank')
     yield page
-  ensure
-    page&.close
   end
 
   def with_page(html)
@@ -57,7 +78,7 @@ RSpec.shared_context 'extractor integration helpers' do
 
     with_extractor_page do |page|
       page.network.intercept(pattern: '*')
-      page.on(:request) do |request|
+      handler_id = page.on(:request) do |request|
         if request.url == request_url
           request.respond(
             body: html,
@@ -70,6 +91,8 @@ RSpec.shared_context 'extractor integration helpers' do
 
       page.go_to(url)
       yield page
+    ensure
+      page&.off(:request, handler_id) if handler_id
     end
   end
 
@@ -106,7 +129,7 @@ RSpec.shared_context 'extractor integration helpers' do
 
   # rubocop:disable Style/KeywordParametersOrder -- keep required call shape grouped by assertion order.
   def expect_fixture_article(url:, fixture_path:, content_type: 'article', includes:, excludes:, warning_excludes:, suspect: false)
-    html = File.read(fixture_path)
+    html = fixture_contents(fixture_path)
 
     extract_from_url(url, html) do |payload|
       expect_content_type(payload, content_type)

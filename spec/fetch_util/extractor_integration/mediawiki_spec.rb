@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration' do
   it 'extracts article pages from generic MediaWiki DOM signals' do
     fixture_path = File.expand_path('../../fixtures/mediawiki_article.html', __dir__)
 
-    with_url_page('https://example.test/wiki/Ruby', File.read(fixture_path)) do |page|
+    with_url_page('https://example.test/wiki/Ruby', fixture_contents(fixture_path)) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect_content_type(payload, 'article')
@@ -57,7 +57,7 @@ RSpec.describe 'FetchUtil extractor integration' do
   it 'prefers the parser output container over the larger MediaWiki wrapper' do
     fixture_path = File.expand_path('../../fixtures/mediawiki_wrapper_article.html', __dir__)
 
-    with_url_page('https://example.test/wiki/Slovenija', File.read(fixture_path)) do |page|
+    with_url_page('https://example.test/wiki/Slovenija', fixture_contents(fixture_path)) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect_content_type(payload, 'article')

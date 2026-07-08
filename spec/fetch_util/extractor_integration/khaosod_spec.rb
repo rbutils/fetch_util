@@ -4,8 +4,8 @@ RSpec.describe 'FetchUtil Khaosod extractor integration' do
   include_context 'extractor integration helpers'
 
   it 'extracts Khaosod article bodies from public WordPress REST content without cookie or sponsored chrome' do
-    html = File.read(File.expand_path('../fixtures/khaosod_article.html', __dir__))
-    rest_json = File.read(File.expand_path('../fixtures/khaosod_article_rest.json', __dir__))
+    html = fixture_contents(File.expand_path('../fixtures/khaosod_article.html', __dir__))
+    rest_json = fixture_contents(File.expand_path('../fixtures/khaosod_article_rest.json', __dir__))
     url = 'https://www.khaosod.co.th/breaking-news/news_10314048'
     rest_url = 'https://www.khaosod.co.th/wp-json/wp/v2/posts/10314048'
 
