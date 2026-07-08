@@ -1158,4 +1158,45 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).not_to include("More Resources")
     end
   end
+
+  it "extracts Xinhua weekly indexes as lists instead of footer copyright" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Biz China Weekly | English.news.cn</title>
+        </head>
+        <body>
+          <div id="categoryTitle" class="title">Biz China Weekly</div>
+          <div id="list" class="list-cont">
+            <div class="item">
+              <div class="img"><a href="https://www.news.cn/english/bizweekly/883.htm"><img src="cover-883.jpg" alt="Jun. 29 - Jul. 05"></a></div>
+              <div class="tit"><span><a href="https://www.news.cn/english/bizweekly/883.htm">Jun. 29 - Jul. 05</a></span></div>
+            </div>
+            <div class="item">
+              <div class="img"><a href="https://www.news.cn/english/bizweekly/882.htm"><img src="cover-882.jpg" alt="Jun. 22 - Jun. 28"></a></div>
+              <div class="tit"><span><a href="https://www.news.cn/english/bizweekly/882.htm">Jun. 22 - Jun. 28</a></span></div>
+            </div>
+            <div class="item">
+              <div class="img"><a href="https://www.news.cn/english/bizweekly/881.htm"><img src="cover-881.jpg" alt="Jun. 15 - Jun. 21"></a></div>
+              <div class="tit"><span><a href="https://www.news.cn/english/bizweekly/881.htm">Jun. 15 - Jun. 21</a></span></div>
+            </div>
+            <div class="item">
+              <div class="img"><a href="https://www.news.cn/english/bizweekly/880.htm"><img src="cover-880.jpg" alt="Jun. 08 - Jun. 14"></a></div>
+              <div class="tit"><span><a href="https://www.news.cn/english/bizweekly/880.htm">Jun. 08 - Jun. 14</a></span></div>
+            </div>
+          </div>
+          <div id="foot">Copyright © 2000- 2026 XINHUANET.com All rights reserved.</div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://english.news.cn/weekly.htm", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["title"]).to eq("Biz China Weekly | English.news.cn")
+      expect(payload["markdown"]).to include("- [Jun. 29 - Jul. 05](https://www.news.cn/english/bizweekly/883.htm)")
+      expect(payload["markdown"]).to include("- [Jun. 08 - Jun. 14](https://www.news.cn/english/bizweekly/880.htm)")
+      expect(payload["warnings"]).not_to include("short_extraction")
+      expect(payload["markdown"]).not_to include("Copyright © 2000- 2026 XINHUANET.com All rights reserved.")
+    end
+  end
 end
