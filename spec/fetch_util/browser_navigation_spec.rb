@@ -32,6 +32,25 @@ RSpec.describe FetchUtil::Browser do
     expect(call_count).to eq(3)
   end
 
+  it 'retries pending connections while waiting for network idle' do
+    network = instance_double('FerrumNetwork')
+    page = instance_double('FerrumPage')
+    browser = browser_with_idle
+    call_count = 0
+
+    allow(page).to receive(:network).and_return(network)
+    allow(network).to receive(:wait_for_idle) do
+      call_count += 1
+      raise Ferrum::PendingConnectionsError, 'Request to https://example.com reached server, but there are still pending connections' if call_count < 2
+
+      true
+    end
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:wait_for_network_idle, page)).to eq(true)
+    expect(call_count).to eq(2)
+  end
+
   it 'raises after exhausting navigation retries' do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
