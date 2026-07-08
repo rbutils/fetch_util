@@ -154,6 +154,63 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts compact non-Latin AMP article bodies from generic mobile CMS containers" do
+    html = <<~HTML
+      <html lang="zh-CN">
+        <head><title>城市更新项目进入新阶段</title></head>
+        <body>
+          <header><nav><a href="/">首页</a><a href="/news">新闻</a></nav></header>
+          <main>
+            <div class="amp-wp-article-content mobile-article-body">
+              <h1>城市更新项目进入新阶段</h1>
+              <p>多个社区将启动公共空间改造，居民代表参与方案讨论。</p>
+              <p>项目团队表示，改造重点包括步行环境、绿化设施和夜间照明。</p>
+              <p>相关部门将在下周公布施工安排，尽量减少对周边学校和商户的影响。</p>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.cn/amp/news/city-renewal-2026.html", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("城市更新项目进入新阶段")
+      expect(payload["markdown"]).to include("公共空间改造")
+      expect(payload["warnings"]).not_to include("short_extraction")
+      expect(payload["warnings"]).not_to include("truncated_content")
+    end
+  end
+
+  it "extracts international visible bylines and published dates" do
+    html = <<~HTML
+      <html lang="es">
+        <head><title>El barrio estrena biblioteca comunitaria</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>El barrio estrena biblioteca comunitaria</h1>
+              <p class="autor">Por María García</p>
+              <p class="fecha-publicacion">8 julio 2026</p>
+              <p>La nueva biblioteca comunitaria abrió sus puertas con talleres de lectura para familias y estudiantes.</p>
+              <p>Vecinos y docentes colaboraron durante meses para reunir libros, preparar actividades y organizar horarios de atención.</p>
+              <p>El municipio explicó que el espacio también funcionará como punto de encuentro para proyectos culturales del distrito.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.es/cultura/biblioteca-comunitaria", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["byline"]).to eq("María García")
+      expect(payload["publishedTime"]).to eq("8 julio 2026")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+    end
+  end
+
   it "falls back to a safe clone when deep DOM cloning triggers custom-element errors" do
     html = <<~HTML
       <html>

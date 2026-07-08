@@ -173,6 +173,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "removes multilingual related and sharing chrome from generic article bodies" do
+    html = <<~HTML
+      <html lang="ja">
+        <head><title>地域の学校で新しい給食計画</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>地域の学校で新しい給食計画</h1>
+              <p>市内の小学校では、地元農家と協力した新しい給食計画が始まりました。</p>
+              <p>献立には季節の野菜を多く使い、児童が食材について学ぶ時間も設けます。</p>
+              <p>教育委員会は、食育と地域経済の両方を支える取り組みにしたいと説明しています。</p>
+              <section class="share-buttons"><a href="/share">共有</a></section>
+              <section>
+                <h2>関連記事</h2>
+                <a href="/other-a">観光イベントの日程</a>
+                <a href="/other-b">週末の交通規制</a>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.jp/news/school-lunch-plan", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("article")
+      expect(markdown).to include("新しい給食計画")
+      expect(markdown).not_to include("関連記事")
+      expect(markdown).not_to include("観光イベント")
+      expect(markdown).not_to include("共有")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
   it "downgrades homepage card grids to list mode even when about text is long" do
     html = <<~HTML
       <html>
