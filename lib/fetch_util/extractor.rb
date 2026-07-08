@@ -5,11 +5,22 @@ require "json"
 module FetchUtil
   class Extractor
     INLINE_ASSET_PATHS = %w[vendor/readability.js vendor/turndown.js extract.js].freeze
+    @asset_cache = {}
+    @cache_mutex = Mutex.new
+
+    class << self
+      def inline_asset_scripts(asset_root)
+        @cache_mutex.synchronize do
+          @asset_cache[asset_root] ||= INLINE_ASSET_PATHS.map do |relative_path|
+            File.read(File.join(asset_root, relative_path), encoding: "UTF-8").freeze
+          end.freeze
+        end
+      end
+    end
 
     def initialize(reader_mode: true, asset_root: nil)
       @reader_mode = reader_mode
       @asset_root = asset_root || File.join(__dir__, "assets")
-      @inline_asset_scripts = nil
       @extraction_call = nil
     end
 
@@ -59,9 +70,7 @@ module FetchUtil
     end
 
     def inline_asset_scripts
-      @inline_asset_scripts ||= INLINE_ASSET_PATHS.map do |relative_path|
-        File.read(asset_path(relative_path), encoding: "UTF-8")
-      end
+      self.class.inline_asset_scripts(@asset_root)
     end
 
     def asset_path(relative_path)

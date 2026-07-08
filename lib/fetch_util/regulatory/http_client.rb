@@ -6,6 +6,7 @@ require "uri"
 module FetchUtil
   class HttpRedirectClient
     REDIRECT_LIMIT = 5
+    TRANSIENT_ERRORS = [EOFError, IOError, SocketError, SystemCallError, Timeout::Error].freeze
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
 
     def initialize(timeout:, headers: {})
@@ -14,7 +15,10 @@ module FetchUtil
     end
 
     def get(url, limit: REDIRECT_LIMIT)
+      @connections = {}
       fetch(parse_http_uri(url), limit, [])
+    ensure
+      close_connections
     end
 
     private
@@ -35,13 +39,45 @@ module FetchUtil
     end
 
     def request(uri)
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = uri.scheme == "https"
-      http.open_timeout = timeout
-      http.read_timeout = timeout
-      request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
-      headers.each { |key, value| request[key] = value }
-      http.request(request)
+      attempts = 0
+      begin
+        http = connection_for(uri)
+        request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
+        headers.each { |key, value| request[key] = value }
+        http.request(request)
+      rescue *TRANSIENT_ERRORS
+        close_connection(uri)
+        attempts += 1
+        retry if attempts <= 1
+        raise
+      end
+    end
+
+    def connection_for(uri)
+      key = [uri.scheme, uri.host, uri.port]
+      @connections[key] ||= Net::HTTP.start(
+        uri.host,
+        uri.port,
+        use_ssl: uri.scheme == "https",
+        open_timeout: timeout,
+        read_timeout: timeout
+      )
+    end
+
+    def close_connection(uri)
+      key = [uri.scheme, uri.host, uri.port]
+      @connections.delete(key)&.finish
+    rescue IOError
+      nil
+    end
+
+    def close_connections
+      @connections&.each_value do |http|
+        http.finish if http.started?
+      rescue IOError
+        nil
+      end
+      @connections = nil
     end
 
     def build_response(uri, response, redirects: [])

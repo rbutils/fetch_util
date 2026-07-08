@@ -56,6 +56,10 @@ module FetchUtil
       @viewport = DEFAULT_VIEWPORT.merge(symbolize_hash(viewport || {}))
       @user_agent = user_agent
       @accept_language = accept_language
+      @default_headers = {
+        "User-Agent" => @user_agent,
+        "Accept-Language" => @accept_language
+      }.freeze
       @browser_path = browser_path || ENV["BROWSER_PATH"] || BROWSER_CANDIDATES.find { |path| File.executable?(path) }
       @full_browser = @browser_path && !@browser_path.include?("headless_shell")
       default_opts = { "no-sandbox": nil }
@@ -68,6 +72,7 @@ module FetchUtil
         default_opts["enable-automation"] = false # override Ferrum default
       end
       @browser_options = default_opts.merge(browser_options || {})
+      @navigator_patch = build_navigator_patch
       @ferrum = nil
       @mutex = Mutex.new
     end
@@ -81,7 +86,7 @@ module FetchUtil
 
       ferrum = ensure_browser
       page = ferrum.create_page
-      page.headers.set(default_headers)
+      page.headers.set(@default_headers)
       page.bypass_csp
       retries = 0
       begin

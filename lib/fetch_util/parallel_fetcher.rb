@@ -38,11 +38,11 @@ module FetchUtil
       work = Array(urls).compact.map(&:to_s).reject(&:empty?)
       return [] if work.empty?
 
-      jobs = Queue.new
-      failures = Queue.new
-      work.each_with_index { |url, index| jobs << [index, url] }
       results = Array.new(work.length)
       worker_count = [@concurrency, work.length].min
+      failures = []
+      next_index = 0
+      mutex = Mutex.new
 
       threads = Array.new(worker_count) do
         Thread.new do
@@ -50,43 +50,38 @@ module FetchUtil
 
           begin
             loop do
-              begin
-                index, url = jobs.pop(true)
-              rescue ThreadError
-                break
+              index = mutex.synchronize do
+                if next_index < work.length
+                  current = next_index
+                  next_index += 1
+                  current
+                end
               end
+              break if index.nil?
+
+              url = work[index]
 
               begin
                 results[index] = fetcher.fetch(url)
               rescue StandardError => e
-                failures << Failure.new(index: index, url: url, error: e)
+                mutex.synchronize { failures << Failure.new(index: index, url: url, error: e) }
               end
             end
           ensure
             fetcher.quit if fetcher.respond_to?(:quit)
           end
         rescue StandardError => e
-          failures << Failure.new(index: nil, url: nil, error: e)
+          mutex.synchronize { failures << Failure.new(index: nil, url: nil, error: e) }
         end
       end
 
       threads.each(&:join)
-      raise_for_failures(drain_queue(failures), results)
+      raise_for_failures(failures, results)
 
       results
     end
 
     private
-
-    def drain_queue(queue)
-      items = []
-      loop do
-        items << queue.pop(true)
-      rescue ThreadError
-        break
-      end
-      items
-    end
 
     def raise_for_failures(failures, results)
       return if failures.empty?

@@ -6,7 +6,9 @@ module FetchUtil
       module NavigatorPatch
         private
 
-        def navigator_patch
+        def navigator_patch = @navigator_patch
+
+        def build_navigator_patch
           ua_version = @user_agent[%r{Chrome/([\d.]+)}, 1] || "136.0.7103.113"
           major = ua_version.split(".").first
           languages_json = JSON.generate(@accept_language.split(",").map { |part| part.split(";").first.strip })

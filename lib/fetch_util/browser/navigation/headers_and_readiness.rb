@@ -6,13 +6,6 @@ module FetchUtil
       module HeadersAndReadiness
         private
 
-        def default_headers
-          {
-            "User-Agent" => @user_agent,
-            "Accept-Language" => @accept_language
-          }
-        end
-
         def page_loaded_enough?(page)
           page.evaluate(<<~JS)
             (() => !!(document && document.body && (document.body.innerText || document.body.textContent || '').trim().length > 0))()
