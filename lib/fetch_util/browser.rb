@@ -80,8 +80,9 @@ module FetchUtil
     def with_page(url)
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
-      page = load_page_with_retry(ensure_browser, url)
-      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, url)
+      normalized_url = FetchUtil.normalize_url(url)
+      page = load_page_with_retry(ensure_browser, normalized_url)
+      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, normalized_url)
       yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message

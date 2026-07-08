@@ -22,6 +22,26 @@ RSpec.describe FetchUtil::Browser do
     expect(script).to include('Google Chrome')
   end
 
+  it 'normalizes non-ascii urls before navigation' do
+    browser = browser_without_idle
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage')
+
+    stub_ferrum_page_creation(ferrum, page)
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
+    allow(page).to receive(:headers).and_return(double(set: true))
+    allow(page).to receive(:bypass_csp)
+    allow(page).to receive(:close)
+    allow(browser).to receive(:stabilize_page)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+
+    normalized_url = 'https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC'
+
+    expect(page).to receive(:go_to).with(normalized_url)
+
+    browser.with_page('https://ja.wikipedia.org/wiki/日本') {}
+  end
+
   it 'reuses the browser process across multiple with_page calls' do
     ferrum = instance_double(Ferrum::Browser)
     page1 = instance_double('FerrumPage1')

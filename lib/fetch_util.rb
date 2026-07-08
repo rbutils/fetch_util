@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "addressable/uri"
 require "uri"
 
 require_relative "fetch_util/version"
@@ -88,13 +89,21 @@ module FetchUtil
     text.gsub(/\u00A0/, " ").gsub(/\s+/, " ").strip
   end
 
+  def normalize_url(url)
+    return url if url.nil? || url.to_s.empty?
+
+    Addressable::URI.parse(url.to_s).normalize.to_s
+  rescue Addressable::URI::InvalidURIError, URI::InvalidURIError
+    url.to_s
+  end
+
   def strip_www_host(url)
     uri = url.is_a?(URI::Generic) ? url : URI.parse(url.to_s)
     uri.host.to_s.downcase.sub(/\Awww\./, "")
   end
 
   def docs_like_url?(value)
-    uri = value.is_a?(URI::Generic) ? value : URI.parse(value.to_s.strip)
+    uri = value.is_a?(URI::Generic) ? value : URI.parse(normalize_url(value.to_s.strip))
     return false unless uri.is_a?(URI::HTTP) && uri.host
 
     host = strip_www_host(uri)
