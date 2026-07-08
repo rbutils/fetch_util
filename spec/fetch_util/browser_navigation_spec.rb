@@ -5,34 +5,42 @@ require 'spec_helper'
 RSpec.describe FetchUtil::Browser do
   include_context 'browser spec helpers'
 
-  it 'retries navigation on PendingConnectionsError before raising' do
-    network = instance_double('FerrumNetwork')
+  it 'retries full navigation once when pending connections hit network idle' do
     ferrum = instance_double(Ferrum::Browser)
-    page = instance_double('FerrumPage')
+    page1 = instance_double('FerrumPage')
+    page2 = instance_double('FerrumPage')
+    network1 = instance_double('FerrumNetwork')
+    network2 = instance_double('FerrumNetwork')
 
-    stub_ferrum_page_creation(ferrum, page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    call_count = 0
-    allow(page).to receive(:go_to) do
-      call_count += 1
-      raise Ferrum::PendingConnectionsError, nil if call_count < 3
-    end
-    stub_page_network(page, network, idle: true, wait_for_idle: true)
-    # page_loaded_enough? returns false on retries, then consent/stabilize evaluate calls return false
-    allow(page).to receive(:evaluate).and_return(false)
-    allow(page).to receive(:close)
-
+    stub_ferrum_page_creation(ferrum, page1, page2)
+    stub_page_navigation(page1)
+    stub_page_navigation(page2)
+    stub_page_network(page1, network1, idle: true, wait_for_idle: true)
+    stub_page_network(page2, network2, idle: true, wait_for_idle: true)
+    allow(page1).to receive(:evaluate).and_return(false)
+    allow(page2).to receive(:evaluate).and_return(false)
+    allow(page1).to receive(:close)
+    allow(page2).to receive(:close)
     browser = browser_with_idle
+    allow(browser).to receive(:sleep)
+    allow(browser).to receive(:accept_cookie_consent).and_return(true)
+    allow(browser).to receive(:dismiss_privacy_preference_overlay).and_return(false)
+    allow(browser).to receive(:wait_for_spa_hydration).and_return(true)
+    allow(network1).to receive(:wait_for_idle).and_raise(
+      Ferrum::PendingConnectionsError,
+      'Request to https://example.com reached server, but there are still pending connections'
+    )
+    allow(network2).to receive(:wait_for_idle).and_return(true)
+
     yielded = nil
 
     browser.with_page('https://example.com') { |result| yielded = result }
 
-    expect(yielded).to eq(page)
-    expect(call_count).to eq(3)
+    expect(yielded).to be(page2)
+    expect(ferrum).to have_received(:create_page).twice
   end
 
-  it 'retries pending connections while waiting for network idle' do
+  it 'bubbles pending connections from network idle without retrying them' do
     network = instance_double('FerrumNetwork')
     page = instance_double('FerrumPage')
     browser = browser_with_idle
@@ -41,32 +49,32 @@ RSpec.describe FetchUtil::Browser do
     allow(page).to receive(:network).and_return(network)
     allow(network).to receive(:wait_for_idle) do
       call_count += 1
-      raise Ferrum::PendingConnectionsError, 'Request to https://example.com reached server, but there are still pending connections' if call_count < 2
-
-      true
+      raise Ferrum::PendingConnectionsError, 'Request to https://example.com reached server, but there are still pending connections'
     end
-    allow(browser).to receive(:sleep)
 
-    expect(browser.send(:wait_for_network_idle, page)).to eq(true)
-    expect(call_count).to eq(2)
+    expect { browser.send(:wait_for_network_idle, page) }.to raise_error(Ferrum::PendingConnectionsError)
+    expect(call_count).to eq(1)
   end
 
-  it 'raises after exhausting navigation retries' do
+  it 'raises after one retry of pending-connection navigation errors' do
     ferrum = instance_double(Ferrum::Browser)
-    page = instance_double('FerrumPage')
+    page1 = instance_double('FerrumPage')
+    page2 = instance_double('FerrumPage')
 
-    stub_ferrum_page_creation(ferrum, page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    allow(page).to receive(:go_to).and_raise(Ferrum::PendingConnectionsError.new(nil))
-    # page_loaded_enough? always returns false
-    allow(page).to receive(:evaluate).and_return(false)
-    allow(page).to receive(:close)
+    stub_ferrum_page_creation(ferrum, page1, page2)
+    stub_page_navigation(page1)
+    stub_page_navigation(page2)
+    allow(page1).to receive(:go_to).and_raise(Ferrum::PendingConnectionsError.new(nil))
+    allow(page2).to receive(:go_to).and_raise(Ferrum::PendingConnectionsError.new(nil))
+    allow(page1).to receive(:close)
+    allow(page2).to receive(:close)
 
     browser = browser_with_idle
+    allow(browser).to receive(:sleep)
 
     expect { browser.with_page('https://example.com') {} }.to raise_error(FetchUtil::BrowserError)
-    expect(page).to have_received(:go_to).exactly(3).times
+    expect(page1).to have_received(:go_to).once
+    expect(page2).to have_received(:go_to).once
   end
 
   it 'continues after initial navigation timeout when page content already exists' do
@@ -90,30 +98,19 @@ RSpec.describe FetchUtil::Browser do
     expect(yielded).to eq(page)
   end
 
-  it 'retries browser-level network errors before giving up' do
-    network = instance_double('FerrumNetwork')
+  it 'does not retry DNS failures' do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
 
     stub_ferrum_page_creation(ferrum, page)
-    allow(page).to receive(:headers).and_return(double(set: true))
-    allow(page).to receive(:bypass_csp)
-    stub_page_network(page, network, idle: true, wait_for_idle: true)
-    call_count = 0
-    allow(page).to receive(:go_to) do
-      call_count += 1
-      raise Ferrum::Error, 'Request https://missing.example.test/ failed (net::ERR_NAME_NOT_RESOLVED)' if call_count < 2
-    end
-    allow(page).to receive(:evaluate).and_return(false)
+    stub_page_navigation(page)
+    allow(page).to receive(:go_to).and_raise(Ferrum::Error, 'Request https://missing.example.test/ failed (net::ERR_NAME_NOT_RESOLVED)')
     allow(page).to receive(:close)
 
     browser = browser_with_idle
-    yielded = nil
 
-    browser.with_page('https://missing.example.test/') { |result| yielded = result }
-
-    expect(yielded).to eq(page)
-    expect(call_count).to eq(2)
+    expect { browser.with_page('https://missing.example.test/') {} }.to raise_error(FetchUtil::BrowserError)
+    expect(page).to have_received(:go_to).once
   end
 
   it 'treats stable page content as ready before network idle' do

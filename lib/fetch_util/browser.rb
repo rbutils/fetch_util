@@ -36,14 +36,8 @@ module FetchUtil
     CONTENT_READY_MIN_LENGTH = 200
     SPA_HYDRATION_TIMEOUT = 2.0
     SPA_HYDRATION_POLL = 0.15
-    NAVIGATION_MAX_RETRIES = 2
-    NAVIGATION_RETRY_WAIT = 0.5
-    NAVIGATION_RETRY_PATTERN = Regexp.new(
-      "pending connections|ERR_NAME_NOT_RESOLVED|DNS|resolve|resolution|ENOTFOUND|" \
-      "EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|timed out|timeout|" \
-      "connection (?:refused|reset|closed)|disconnected|network",
-      Regexp::IGNORECASE
-    ).freeze
+    NAVIGATION_MAX_RETRIES = 1
+    NAVIGATION_RETRY_WAIT = 2.0
 
     def initialize(timeout: 20, wait: 0.75, wait_for_idle: true, idle_duration: 0.35,
                    viewport: DEFAULT_VIEWPORT, user_agent: DEFAULT_USER_AGENT,
@@ -84,25 +78,7 @@ module FetchUtil
     def with_page(url)
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
-      ferrum = ensure_browser
-      page = ferrum.create_page
-      page.headers.set(@default_headers)
-      page.bypass_csp
-      retries = 0
-      begin
-        page.go_to(url)
-      rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
-        raise unless retryable_navigation_error?(e)
-
-        unless page_loaded_enough?(page)
-          raise if retries >= NAVIGATION_MAX_RETRIES
-
-          retries += 1
-          sleep NAVIGATION_RETRY_WAIT
-          retry
-        end
-      end
-      stabilize_page(page, url)
+      page = load_page_with_retry(ensure_browser, url)
       yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message
@@ -147,8 +123,38 @@ module FetchUtil
       normalized_host == host || normalized_host.end_with?(".#{host}")
     end
 
+    def retryable_pending_connections_error?(error)
+      error.is_a?(Ferrum::PendingConnectionsError) || error.message.to_s.match?(/pending connections/i)
+    end
+
     def retryable_navigation_error?(error)
-      error.message.to_s.match?(NAVIGATION_RETRY_PATTERN)
+      error.is_a?(Ferrum::PendingConnectionsError) || error.is_a?(Ferrum::TimeoutError) ||
+        error.message.to_s.match?(/pending connections/i)
+    end
+
+    def load_page_with_retry(ferrum, url)
+      retries = 0
+
+      begin
+        page = ferrum.create_page
+        page.headers.set(@default_headers)
+        page.bypass_csp
+        begin
+          page.go_to(url)
+        rescue Ferrum::TimeoutError
+          raise unless page_loaded_enough?(page)
+        end
+        stabilize_page(page, url)
+        page
+      rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
+        page&.close
+        raise unless retryable_navigation_error?(e)
+        raise if retries >= NAVIGATION_MAX_RETRIES
+
+        retries += 1
+        sleep NAVIGATION_RETRY_WAIT
+        retry
+      end
     end
   end
 end

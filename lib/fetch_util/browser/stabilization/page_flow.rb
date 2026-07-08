@@ -81,22 +81,14 @@ module FetchUtil
         end
 
         def wait_for_network_idle(page)
-          retries = 0
+          page.network.wait_for_idle(duration: @idle_duration, timeout: POST_CONSENT_IDLE_TIMEOUT)
+          true
+        rescue Ferrum::TimeoutError
+          false
+        rescue Ferrum::Error => e
+          raise if retryable_pending_connections_error?(e)
 
-          begin
-            page.network.wait_for_idle(duration: @idle_duration, timeout: POST_CONSENT_IDLE_TIMEOUT)
-            true
-          rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
-            raise unless retryable_navigation_error?(e)
-
-            if retries >= NAVIGATION_MAX_RETRIES
-              false
-            else
-              retries += 1
-              sleep NAVIGATION_RETRY_WAIT
-              retry
-            end
-          end
+          false
         end
 
         def page_has_content?(page)
