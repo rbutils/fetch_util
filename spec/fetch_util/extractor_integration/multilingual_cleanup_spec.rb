@@ -385,6 +385,33 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
       end
     end
 
+    it "does not flag transliterated article slugs on localized Latin-script news URLs" do
+      url = "https://www.vijesti.me/mundijal-2026/vijesti/816881/" \
+            "kompletirani-parovi-cetvrtfinala-mundijala-u-srijedu-je-konacno-slobodan-dan-a-onda-krece-rasplet"
+      html = <<~HTML
+        <html lang="sr">
+          <head><title>Kompletirani parovi četvrtfinala Mundijala: U srijedu je konačno slobodan dan, a onda kreće rasplet</title></head>
+          <body>
+            <main>
+              <article>
+                <h1>Kompletirani parovi četvrtfinala Mundijala: U srijedu je konačno slobodan dan, a onda kreće rasplet</h1>
+                <p>Završeni su mečevi osmine finala na Svjetskom prvenstvu u fudbalu, poznati su svi parovi četvrtfinala.</p>
+                <p>U četvrtfinalu se sastaju: Francuska - Maroko, Španija - Belgija, Norveška - Engleska i Argentina - Švajcarska.</p>
+                <p>Na Mundijalu je u srijedu, konačno, slobodan dan, a u četvrtak počinje rasplet.</p>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_url_page(url, html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
+
+        expect(payload["markdown"]).to include("Kompletirani parovi četvrtfinala Mundijala")
+        expect(payload["warnings"]).not_to include("url_content_mismatch")
+      end
+    end
+
     it "does not flag Polish legal text that matches the page language" do
       html = <<~HTML
         <html lang="pl">
