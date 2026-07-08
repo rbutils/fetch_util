@@ -2,59 +2,71 @@
 
 require 'ferrum'
 
+RSpec.configure do |config|
+  config.after(:suite) do
+    browser = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser)
+    browser&.quit
+    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
+  end
+end
+
 RSpec.shared_context 'extractor integration helpers' do
   def browser_path
     FetchUtil::Browser::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
   end
 
-  def with_page(html)
+  def extractor_browser
     path = browser_path
     skip 'Chromium not available' unless path
 
-    browser = Ferrum::Browser.new(
-      headless: true,
-      browser_path: path,
-      timeout: 10,
-      window_size: [1280, 900],
-      browser_options: { 'no-sandbox': nil }
-    )
-    browser.bypass_csp
-    browser.go_to('about:blank')
-    browser.content = html
-    yield browser
+    RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser) ||
+      RSpec.configuration.instance_variable_set(
+        :@fetch_util_extractor_browser,
+        Ferrum::Browser.new(
+          headless: true,
+          browser_path: path,
+          timeout: 10,
+          window_size: [1280, 900],
+          browser_options: { 'no-sandbox': nil }
+        )
+      )
+  end
+
+  def with_extractor_page
+    page = extractor_browser.create_page
+    page.bypass_csp
+    yield page
   ensure
-    browser&.quit
+    page&.close
+  end
+
+  def with_page(html)
+    with_extractor_page do |page|
+      page.go_to('about:blank')
+      page.content = html
+      yield page
+    end
   end
 
   def with_url_page(url, html)
-    path = browser_path
-    skip 'Chromium not available' unless path
-
     request_url = url.sub(/#.*/u, '')
 
-    browser = Ferrum::Browser.new(
-      headless: true,
-      browser_path: path,
-      timeout: 10,
-      window_size: [1280, 900],
-      browser_options: { 'no-sandbox': nil }
-    )
-    browser.bypass_csp
-    browser.network.intercept(pattern: '*')
-    browser.on(:request) do |request|
-      if request.url == request_url
-        request.respond(
-          body: html,
-          responseHeaders: { 'content-type' => 'text/html; charset=UTF-8' }
-        )
-      else
-        request.abort
+    with_extractor_page do |page|
+      page.network.intercept(pattern: '*')
+      page.on(:request) do |request|
+        if request.url == request_url
+          request.respond(
+            body: html,
+            responseHeaders: { 'content-type' => 'text/html; charset=UTF-8' }
+          )
+        else
+          request.abort
+        end
       end
+
+      page.go_to(url)
+      yield page
     end
-    browser.go_to(url)
-    yield browser
-  ensure
-    browser&.quit
   end
 
   def extract(page, reader_mode: true)

@@ -32,14 +32,28 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
-  it "rebuilds deterministically and verifies the built extract.js" do
-    stdout, stderr, status = run_build_script
-    expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
-
+  it "verifies the checked-in extract.js is current" do
     stdout, stderr, status = run_build_script("--check")
 
     expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
     expect(stdout).to include("Verified")
+  end
+
+  it "rebuilds deterministically" do
+    with_asset_project(
+      manifest: "00_prelude.js\n99_outro.js\n",
+      files: {
+        "00_prelude.js" => "(function(){\n",
+        "99_outro.js" => "window.fetchUtilAssetSmoke = true;\n}());\n"
+      }
+    ) do |root|
+      stdout, stderr, status = run_build_script(root: root)
+      expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
+
+      stdout, stderr, status = run_build_script("--check", root: root)
+      expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
+      expect(stdout).to include("Verified")
+    end
   end
 
   it "fails check mode when the manifest lists a source file that does not exist" do
