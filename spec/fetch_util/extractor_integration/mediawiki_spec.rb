@@ -72,6 +72,21 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'removes Hindi Wikipedia short URL page tools from title and markdown' do
+    fixture_path = File.expand_path('../../fixtures/mediawiki_hindi_short_url_article.html', __dir__)
+
+    with_url_page('https://hi.wikipedia.org/wiki/%E0%A4%AD%E0%A4%BE%E0%A4%B0%E0%A4%A4', fixture_contents(fixture_path)) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect_content_type(payload, 'article')
+      expect(payload['title']).to eq('भारत')
+      expect(payload['markdown']).to include('भारत दक्षिण एशिया में स्थित एक देश है')
+      expect(payload['markdown']).not_to include('संक्षिप्त URL प्राप्त करें')
+      expect(payload['textContent']).not_to include('संक्षिप्त URL प्राप्त करें')
+      expect(payload['warnings']).not_to include('empty_extraction')
+    end
+  end
+
   it 'classifies category and special pages as lists' do
     html = <<~HTML
       <html>
