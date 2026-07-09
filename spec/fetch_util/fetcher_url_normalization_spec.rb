@@ -148,21 +148,37 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(true)
   end
 
-  it 'flags PDF document URLs explicitly' do
-    pdf_page = page_at('https://arxiv.org/pdf/1706.03762')
-    pdf_payload = payload_with(
-      title: '1706.03762',
-      markdown: '',
-      contentType: 'article',
-      warnings: []
-    )
+  it 'returns PDF document URLs before browser navigation' do
+    expect(browser).not_to receive(:with_page)
 
-    stub_browser_extraction('https://arxiv.org/pdf/1706.03762', page: pdf_page, payload: pdf_payload)
+    result = fetch_with_dependencies('https://arxiv.org/pdf/1706.03762.pdf')
 
-    result = fetch_with_dependencies('https://arxiv.org/pdf/1706.03762')
-
+    expect(result.content_type).to eq('pdf_document')
     expect(result.suspect).to eq(true)
-    expect(result.warnings).to include('pdf_document')
+    expect(result.warnings).to eq(['pdf_document'])
+    expect(result.markdown).to eq('')
+    expect(result.title).to eq('1706.03762.pdf')
+  end
+
+  it 'returns Content-Type PDF responses before browser navigation' do
+    probe = lambda do |_url|
+      {
+        final_url: 'https://example.com/download?id=paper',
+        headers: {
+          'content-type' => ['application/pdf; charset=binary'],
+          'content-disposition' => ['attachment; filename="paper.pdf"']
+        }
+      }
+    end
+    expect(browser).not_to receive(:with_page)
+
+    result = fetch_with_dependencies('https://example.com/download?id=paper', pdf_header_probe: probe)
+
+    expect(result.content_type).to eq('pdf_document')
+    expect(result.suspect).to eq(true)
+    expect(result.warnings).to eq(['pdf_document'])
+    expect(result.markdown).to eq('')
+    expect(result.title).to eq('paper.pdf')
   end
 
   it 'does not flag non-PDF article URLs as PDF documents' do
