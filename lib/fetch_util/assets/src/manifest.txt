@@ -86,7 +86,9 @@ profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
-profiles/families/financial.js
+profiles/families/financial/links.js
+profiles/financial/sec_edgar.js
+profiles/financial/index.js
 profiles/families/community_wikis.js
 profiles/community/mastodon.js
 profiles/community/telegram.js
