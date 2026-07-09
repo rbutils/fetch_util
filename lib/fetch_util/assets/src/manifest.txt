@@ -96,7 +96,7 @@ profiles/news/g_l/hindustantimes.js
 profiles/news/c_f/derstandard.js
 profiles/news/0_b/blick.js
 profiles/news/m_r/oxu.js
-profiles/news/g_l/top_channel.js
+profiles/news/s_z/top_channel.js
 profiles/news/g_l/index_hr.js
 profiles/news/c_f/danas.js
 profiles/news/g_l/kurir.js
