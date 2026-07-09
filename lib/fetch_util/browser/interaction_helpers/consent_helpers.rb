@@ -289,6 +289,11 @@ module FetchUtil
           )
         end
 
+        def dismiss_cookie_overlays(page)
+          accepted_cookies = accept_cookie_consent(page)
+          dismiss_privacy_preference_overlay(page) || accepted_cookies
+        end
+
         def consent_quick_indicator_selector_js
           consent_selector_js(DEFAULT_CONSENT_CONFIG.quick_indicator_selectors)
         end

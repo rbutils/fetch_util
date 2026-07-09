@@ -17,8 +17,7 @@ module FetchUtil
         private
 
         def stabilize_lodging_detail(page)
-          accepted_cookies = accept_cookie_consent(page)
-          accepted_cookies = dismiss_privacy_preference_overlay(page) || accepted_cookies
+          accepted_cookies = dismiss_cookie_overlays(page)
 
           retry_until_timeout(capped_timeout(8.0), interval: 0.25) do
             safe_evaluate(page, <<~JS, default: false)

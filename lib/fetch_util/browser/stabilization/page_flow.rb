@@ -35,18 +35,15 @@ module FetchUtil
 
           reached_idle = !@wait_for_idle || wait_for_idle_or_content(page)
           preserve_consent = preserve_consent_wall?(page, url)
-          accepted_cookies = preserve_consent ? false : accept_cookie_consent(page)
-          accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies
+          accepted_cookies = preserve_consent ? false : dismiss_cookie_overlays(page)
           if @wait.positive? && (!@wait_for_idle || accepted_cookies)
             sleep @wait
-            accepted_cookies = (!preserve_consent && accept_cookie_consent(page)) || accepted_cookies
-            accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies
+            accepted_cookies = dismiss_cookie_overlays(page) || accepted_cookies unless preserve_consent
           end
 
           wait_for_spa_hydration(page) if @wait_for_idle && reached_idle
           if accepted_cookies
-            accepted_cookies = (!preserve_consent && accept_cookie_consent(page)) || accepted_cookies
-            accepted_cookies = (!preserve_consent && dismiss_privacy_preference_overlay(page)) || accepted_cookies
+            accepted_cookies = dismiss_cookie_overlays(page) || accepted_cookies
           end
           if (profile = matching_stabilization_profile(url, POST_GENERIC_STABILIZATION_PROFILES))
             send(profile.fetch(:strategy), page, url)

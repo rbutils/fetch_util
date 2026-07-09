@@ -131,7 +131,7 @@ module FetchUtil
           url: result[:url]
         }
         item[:snippet] = result[:snippet] if result[:snippet]
-        if verbose?
+        if @verbose
           item[:sources] = result[:sources]
           item[:ranks] = result[:ranks]
         end
@@ -202,10 +202,6 @@ module FetchUtil
 
       item[:snippet] = normalized_snippet if normalized_snippet
       item
-    end
-
-    def verbose?
-      @verbose
     end
 
     def compact_text(value)
