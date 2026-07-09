@@ -3,6 +3,16 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
+  def expect_payload(payload, content_type: nil, title: nil, includes: [], excludes: [], warnings_include: [], warnings_exclude: [], suspect: nil)
+    expect(payload["contentType"]).to eq(content_type) if content_type
+    expect(payload["title"]).to eq(title) if title
+    includes.each { |text| expect(payload["markdown"]).to include(text) }
+    excludes.each { |text| expect(payload["markdown"]).not_to include(text) }
+    warnings_include.each { |warning| expect(payload["warnings"]).to include(warning) }
+    warnings_exclude.each { |warning| expect(payload["warnings"]).not_to include(warning) }
+    expect(payload["suspect"]).to be(suspect) unless suspect.nil?
+  end
+
   it "prefers project summary and readme content on generic gitlab instances" do
     html = <<~HTML
       <html>
@@ -213,12 +223,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://institution.example/en/instruments/example-covenant", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# International Covenant on Example Rights")
-      expect(payload["markdown"]).to include("## Preamble\n\nThe States Parties to the present Covenant,")
-      expect(payload["markdown"]).to include("### Article 1")
-      expect(payload["markdown"]).to include("All peoples have the right of self-determination.")
-      expect(payload["markdown"]).not_to include("Donate")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# International Covenant on Example Rights", "## Preamble\n\nThe States Parties to the present Covenant,",
+                                         "### Article 1", "All peoples have the right of self-determination."],
+                              excludes: ["Donate"])
     end
   end
 
@@ -273,14 +281,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://institution.example/en/treaty-bodies", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Treaty Bodies")
-      expect(payload["markdown"]).to include("Committee on the Elimination of Racial Discrimination")
-      expect(payload["markdown"]).to include("Monitors implementation of the International Convention")
-      expect(payload["markdown"]).to include("Africa Region")
-      expect(payload["markdown"]).to include("[Angola](https://institution.example/en/countries/angola)")
-      expect(payload["markdown"]).not_to include("Sessions")
-      expect(payload["markdown"]).not_to include("Donate")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Treaty Bodies", "Committee on the Elimination of Racial Discrimination",
+                                         "Monitors implementation of the International Convention", "Africa Region",
+                                         "[Angola](https://institution.example/en/countries/angola)"],
+                              excludes: %w[Sessions Donate])
     end
   end
 
@@ -327,15 +332,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.unesco.org/en/legal-affairs", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Legal Affairs")
-      expect(payload["markdown"]).to include("The Office of International Standards and Legal Affairs")
-      expect(payload["markdown"]).to include("## Highlights")
-      expect(payload["markdown"]).to include("New one-stop-shop for monitoring")
-      expect(payload["markdown"]).to include("Legal texts on UNESCO Conventions")
-      expect(payload["markdown"]).to include("## UNESCO Constitution")
-      expect(payload["warnings"]).not_to include("truncated_content")
-      expect(payload["markdown"]).not_to include("Donate")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Legal Affairs", "The Office of International Standards and Legal Affairs", "## Highlights",
+                                         "New one-stop-shop for monitoring", "Legal texts on UNESCO Conventions", "## UNESCO Constitution"],
+                              excludes: ["Donate"], warnings_exclude: ["truncated_content"])
     end
   end
 
@@ -391,16 +391,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.cnrs.fr/en/our-research", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Our research")
-      expect(payload["markdown"]).to include("1100 laboratories across France")
-      expect(payload["markdown"]).to include("## Research at the CNRS")
-      expect(payload["markdown"]).to include("Disciplines")
-      expect(payload["markdown"]).to include("Research driving innovation")
-      expect(payload["markdown"]).to include("The Higgs boson")
-      expect(payload["warnings"]).not_to include("truncated_content")
-      expect(payload["markdown"]).not_to include("Share this content")
-      expect(payload["markdown"]).not_to include("/en/disciplines\n")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Our research", "1100 laboratories across France", "## Research at the CNRS",
+                                         "Disciplines", "Research driving innovation", "The Higgs boson"],
+                              excludes: ["Share this content", "/en/disciplines\n"], warnings_exclude: ["truncated_content"])
     end
   end
 
@@ -437,13 +431,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.legal-institution.example/en/instruments/conventions", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# HCCH | Conventions and other Instruments")
-      expect(payload["markdown"]).to include("## Core Conventions and Instruments")
-      expect(payload["markdown"]).to include("[1961 Apostille Convention](https://www.legal-institution.example/en/instruments/conventions/specialised-sections/apostille)")
-      expect(payload["markdown"]).to include("[Convention of 1 March 1954 on civil procedure](https://www.legal-institution.example/en/instruments/conventions/full-text/?cid=33)")
-      expect(payload["markdown"]).not_to include("Members")
-      expect(payload["warnings"]).not_to include("truncated_content")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# HCCH | Conventions and other Instruments", "## Core Conventions and Instruments",
+                                         "[1961 Apostille Convention](https://www.legal-institution.example/en/instruments/conventions/specialised-sections/apostille)",
+                                         "[Convention of 1 March 1954 on civil procedure](https://www.legal-institution.example/en/instruments/conventions/full-text/?cid=33)"],
+                              excludes: ["Members"], warnings_exclude: ["truncated_content"])
     end
   end
 
@@ -529,17 +521,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.csiro.au/en/research", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Research")
-      expect(payload["markdown"]).to include("Australia's national science agency")
-      expect(payload["markdown"]).to include("Medical research")
-      expect(payload["markdown"]).to include("Browse our research")
-      expect(payload["markdown"]).to include("Natural environments")
-      expect(payload["markdown"]).to include("Technology and space")
-      expect(payload["markdown"]).to include("Production that is innovative")
-      expect(payload["markdown"]).to include("Vaccines and drugs")
-      expect(payload["warnings"]).not_to include("multi_topic_page")
-      expect(payload["markdown"]).not_to include("Copy embed code")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Research", "Australia's national science agency", "Medical research", "Browse our research",
+                                         "Natural environments", "Technology and space", "Production that is innovative", "Vaccines and drugs"],
+                              excludes: ["Copy embed code"], warnings_exclude: ["multi_topic_page"])
     end
   end
 
@@ -586,16 +571,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.dlr.de/en/research-and-transfer", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Research and transfer")
-      expect(payload["markdown"]).to include("## DLR's research areas")
-      expect(payload["markdown"]).to include("Aeronautics")
-      expect(payload["markdown"]).to include("Interdisciplinary and cross-divisional research")
-      expect(payload["markdown"]).to include("Security and defence")
-      expect(payload["markdown"]).to include("## Research infrastructure")
-      expect(payload["markdown"]).to include("European Proximity Operations Simulator")
-      expect(payload["warnings"]).not_to include("truncated_content")
-      expect(payload["markdown"]).not_to include("Privacy Policy")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Research and transfer", "## DLR's research areas", "Aeronautics",
+                                         "Interdisciplinary and cross-divisional research", "Security and defence", "## Research infrastructure",
+                                         "European Proximity Operations Simulator"],
+                              excludes: ["Privacy Policy"], warnings_exclude: ["truncated_content"])
     end
   end
 
@@ -679,14 +659,11 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://legal.example/wex/res_judicata", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# res judicata")
-      expect(payload["markdown"]).to include("#### Bar and Merger")
-      expect(payload["markdown"]).to include("1.  Bar: A losing plaintiff cannot sue the same defendant again")
-      expect(payload["markdown"]).to include("#### Public Policy")
-      expect(payload["markdown"]).not_to include("Related Wex entries")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# res judicata", "#### Bar and Merger",
+                                         "1.  Bar: A losing plaintiff cannot sue the same defendant again", "#### Public Policy"],
+                              excludes: ["Related Wex entries"], suspect: false)
       expect(payload["markdown"].delete("*_").scan("Res judicata is a Latin phrase").length).to eq(1)
-      expect(payload["suspect"]).to be(false)
     end
   end
 
@@ -729,13 +706,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:12012E001", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("Consolidated version of the Treaty on the Functioning of the European Union")
-      expect(payload["markdown"]).to include("This Treaty organises the functioning of the Union")
-      expect(payload["markdown"]).not_to include("Use quotation marks")
-      expect(payload["markdown"]).not_to include("Change language")
-      expect(payload["markdown"]).not_to include("Help")
-      expect(payload["warnings"]).not_to include("truncated_content")
+      expect_payload(payload, content_type: "article",
+                              includes: ["Consolidated version of the Treaty on the Functioning of the European Union",
+                                         "This Treaty organises the functioning of the Union"],
+                              excludes: ["Use quotation marks", "Change language", "Help"], warnings_exclude: ["truncated_content"])
     end
   end
 
@@ -779,13 +753,9 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://www.usgs.gov/programs/landslide-hazards", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Landslide Hazards Program")
-      expect(payload["markdown"]).to include("The primary objective of the National Landslide Hazards Program")
-      expect(payload["markdown"]).to include("Landslide Basics")
-      expect(payload["markdown"]).not_to include("Data Management")
-      expect(payload["markdown"]).not_to include("Map Releases")
-      expect(payload["markdown"]).not_to include("Home\n\nScience")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Landslide Hazards Program", "The primary objective of the National Landslide Hazards Program", "Landslide Basics"],
+                              excludes: ["Data Management", "Map Releases", "Home\n\nScience"])
     end
   end
 
@@ -838,14 +808,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://standards.example.org/standard/1541-2021/", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("IEEE 1541-2021")
-      expect(payload["markdown"]).to include("IEEE Standard for Prefixes for Binary Multiples")
-      expect(payload["markdown"]).to include("Names and letter symbols for prefixes")
-      expect(payload["markdown"]).to include("Active Standard")
-      expect(payload["markdown"]).to include("2022-02-18")
-      expect(payload["markdown"]).not_to include("IEEE Conformity Assessment Program")
-      expect(payload["markdown"]).not_to include("Other working group standard")
+      expect_payload(payload, content_type: "article",
+                              includes: ["IEEE 1541-2021", "IEEE Standard for Prefixes for Binary Multiples",
+                                         "Names and letter symbols for prefixes", "Active Standard", "2022-02-18"],
+                              excludes: ["IEEE Conformity Assessment Program", "Other working group standard"])
     end
   end
 
@@ -882,13 +848,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://europa.eu/youreurope/citizens/index_en.htm", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# Help and advice for EU nationals and their family")
-      expect(payload["markdown"]).to include("Travel")
-      expect(payload["markdown"]).to include("Documents you need for travel in Europe")
-      expect(payload["markdown"]).to include("Work and retirement")
-      expect(payload["markdown"]).not_to include("Thank you for your feedback")
-      expect(payload["markdown"]).not_to include("Help us improve")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# Help and advice for EU nationals and their family", "Travel",
+                                         "Documents you need for travel in Europe", "Work and retirement"],
+                              excludes: ["Thank you for your feedback", "Help us improve"])
     end
   end
 
@@ -915,10 +878,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [ruby programming logo with the words ruby programming written in red on a white background](/pin/1)")
-      expect(payload["markdown"]).to include("- [the six reasons why you should learn ruby today](/pin/3)")
-      expect(payload["warnings"]).not_to include("url_content_mismatch")
+      expect_payload(payload, content_type: "list",
+                              includes: ["- [ruby programming logo with the words ruby programming written in red on a white background](/pin/1)",
+                                         "- [the six reasons why you should learn ruby today](/pin/3)"],
+                              warnings_exclude: ["url_content_mismatch"])
     end
   end
 
@@ -942,9 +905,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# #ruby")
-      expect(payload["markdown"]).to include("- 1.2M posts")
-      expect(payload["warnings"]).to include("human_verification_interstitial")
+      expect_payload(payload, includes: ["# #ruby", "- 1.2M posts"], warnings_include: ["human_verification_interstitial"])
     end
   end
 
@@ -967,10 +928,8 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Ruby Programming for sale | eBay")
-      expect(payload["markdown"]).to include("Get the best deals for Ruby Programming at eBay.com.")
-      expect(payload["markdown"]).not_to include("We use cookies and other technologies")
-      expect(payload["warnings"]).to include("consent_interstitial")
+      expect_payload(payload, includes: ["# Ruby Programming for sale | eBay", "Get the best deals for Ruby Programming at eBay.com."],
+                              excludes: ["We use cookies and other technologies"], warnings_include: ["consent_interstitial"])
     end
   end
 
@@ -1045,12 +1004,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     extract_from_url("https://example.substack.com/p/the-end-of-the-vibecession", html) do |payload|
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("# The end of the vibecession?")
-      expect(payload["markdown"]).to include("One constant source of frustration")
-      expect(payload["markdown"]).to include("vibecession debate a real article body")
-      expect(payload["markdown"]).not_to include("102 more comments")
-      expect(payload["markdown"]).not_to include("have a recession")
+      expect_payload(payload, content_type: "article",
+                              includes: ["# The end of the vibecession?", "One constant source of frustration",
+                                         "vibecession debate a real article body"],
+                              excludes: ["102 more comments", "have a recession"])
     end
   end
 
@@ -1074,7 +1031,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["warnings"]).not_to include("meta_login_wall")
+      expect_payload(payload, warnings_exclude: ["meta_login_wall"])
     end
   end
 
