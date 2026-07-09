@@ -129,8 +129,44 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["markdown"]).to include("# Access verification required")
       expect(payload["markdown"]).to include("Challenge: DataDome")
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["suspect"]).to be(true)
       expect(payload["warnings"]).to include("datadome_challenge_page")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
+    end
+  end
+
+  it "summarizes Reuters-style DataDome access pages without partial-content warnings" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Reuters</title>
+          <script>
+            var dd = {
+              cid: 'challenge-client-id',
+              hsh: 'challenge-hash',
+              ddCaptchaUrl: 'https://geo.captcha-delivery.com/captcha/'
+            };
+          </script>
+          <script src="https://js.datadome.co/tags.js"></script>
+        </head>
+        <body>
+          <main>
+            <h1>Please enable JS and disable any ad blocker</h1>
+            <p>To continue browsing Reuters, please enable JavaScript and disable any ad blocker.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.reuters.com/world/us-court-rules-that-trumps-name-must-stay-off-kennedy-center-during-appeal-2026-07-09/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["markdown"]).to include("# Reuters")
+      expect(payload["markdown"]).to include("Challenge: DataDome")
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["suspect"]).to be(true)
+      expect(payload["warnings"]).to eq(%w[datadome_challenge_page bot_or_access_interstitial])
     end
   end
 
