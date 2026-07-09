@@ -160,7 +160,13 @@ profiles/news/europe/western/germany/zeit.js
 profiles/csdn.js
 profiles/hatena_blog.js
 profiles/naver_blog.js
-profiles/families/legal_reference.js
+profiles/families/legal_reference/shared.js
+profiles/families/legal_reference/reference_articles.js
+profiles/government/federal_register.js
+profiles/government/gov_uk.js
+profiles/legal/courtlistener.js
+profiles/legal/statutes.js
+profiles/families/legal_reference/index.js
 markdown/code_helpers.js
 markdown/tables.js
 markdown/runtime.js
