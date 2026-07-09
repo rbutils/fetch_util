@@ -13,6 +13,7 @@ module FetchUtil
       byline
       site_name
       published_time
+      language
       markdown
       content_type
       suspect
@@ -110,7 +111,7 @@ module FetchUtil
         payload = payload.select { |key, _value| DEFAULT_FETCH_FIELDS.include?(key) }
         payload[:html] = result.html if options[:include_html]
 
-        payload.reject { |_key, value| value.nil? || value == "" }
+        payload.reject { |key, value| key != :language && (value.nil? || value == "") }
       end
 
       def emit(payload)

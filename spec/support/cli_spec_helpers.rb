@@ -9,6 +9,7 @@ RSpec.shared_context 'cli spec helpers' do
       title: "A",
       excerpt: "about a",
       byline: nil,
+      language: nil,
       markdown: "body a",
       content_type: "article",
       suspect: false,

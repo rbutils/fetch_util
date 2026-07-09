@@ -211,6 +211,87 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "normalizes language from the html lang attribute" do
+    html = <<~HTML
+      <html lang="es-MX">
+        <head><title>Biblioteca comunitaria</title></head>
+        <body>
+          <main><article><h1>Biblioteca comunitaria</h1><p>La biblioteca abre sus puertas para estudiantes y familias del barrio.</p></article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.es/cultura/biblioteca", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("es")
+    end
+  end
+
+  it "normalizes language from Content-Language metadata" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Nouvelle bibliothèque</title>
+          <meta http-equiv="Content-Language" content="fr-CA, en">
+        </head>
+        <body>
+          <main><article><h1>Nouvelle bibliothèque</h1><p>La bibliothèque accueille les familles avec des ateliers de lecture.</p></article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/fr/bibliotheque", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("fr")
+    end
+  end
+
+  it "normalizes language from Open Graph locale metadata" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Biblioteca comunitária</title>
+          <meta property="og:locale" content="pt_BR">
+        </head>
+        <body>
+          <main><article><h1>Biblioteca comunitária</h1><p>A biblioteca oferece atividades culturais para moradores e estudantes.</p></article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/br/biblioteca", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("pt")
+    end
+  end
+
+  it "falls back to text language detection when metadata is absent" do
+    html = <<~HTML
+      <html>
+        <head><title>El barrio estrena biblioteca comunitaria</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>El barrio estrena biblioteca comunitaria</h1>
+              <p>La nueva biblioteca comunitaria abrió sus puertas con talleres de lectura para familias y estudiantes.</p>
+              <p>Vecinos y docentes colaboraron durante meses para reunir libros, preparar actividades y organizar horarios de atención.</p>
+              <p>El municipio explicó que el espacio también funcionará como punto de encuentro para proyectos culturales del distrito.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/cultura/biblioteca", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("es")
+    end
+  end
+
   it "falls back to a safe clone when deep DOM cloning triggers custom-element errors" do
     html = <<~HTML
       <html>
