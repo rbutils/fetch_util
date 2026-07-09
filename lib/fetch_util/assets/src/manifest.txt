@@ -115,7 +115,7 @@ profiles/news/middle_east/interia.js
 profiles/news/middle_east/clarin.js
 profiles/news/middle_east/blic.js
 profiles/news/middle_east/tempo.js
-profiles/news/engines/unidad_editorial_engine.js
+systems/news_engines/unidad_editorial_engine.js
 profiles/news/engines/marca.js
 profiles/news/engines/faz.js
 profiles/news/engines/agora_wyborcza.js
