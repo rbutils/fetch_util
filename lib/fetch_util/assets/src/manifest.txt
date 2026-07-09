@@ -61,6 +61,7 @@ profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
 profiles/families/community_wikis.js
+profiles/community/mastodon.js
 profiles/community/telegram.js
 profiles/community/discourse.js
 profiles/community/reddit.js
