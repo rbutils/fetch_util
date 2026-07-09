@@ -114,7 +114,6 @@ profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
-profiles/financial/index.js
 profiles/families/legal_reference/shared.js
 profiles/families/legal_reference/reference_articles.js
 profiles/government/federal_register.js
