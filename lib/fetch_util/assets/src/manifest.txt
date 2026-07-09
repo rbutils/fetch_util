@@ -6,6 +6,7 @@ core/simple_article_profile.js
 core/docs_cleanup.js
 extractors/article_roots.js
 extractors/glossary.js
+extractors/podcasts.js
 extractors/lists/relabeling.js
 extractors/lists/jobs.js
       extractors/lists/lodging.js
