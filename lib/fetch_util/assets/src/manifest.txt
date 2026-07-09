@@ -1,6 +1,9 @@
 00_prelude.js
+core/metadata/text_normalization.js
+core/metadata/language.js
+core/metadata/visible_metadata.js
 core/metadata/structured_data.js
-core/metadata/text_helpers.js
+core/metadata/content_results.js
 core/metadata/collect.js
 core/noise_patterns.js
 core/dom/text.js
@@ -90,6 +93,7 @@ profiles/families/academic/core.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
 profiles/families/academic/index.js
+profiles/hatena_blog.js
 profiles/families/scientific_records/iucn.js
 profiles/families/scientific_records/ensembl.js
 profiles/families/scientific_records/ncbi_gene.js
@@ -97,7 +101,6 @@ profiles/families/scientific_records/oeis.js
 profiles/families/scientific_records/rcsb.js
 profiles/families/scientific_records/nist.js
 profiles/families/scientific_records/index.js
-profiles/hatena_blog.js
 profiles/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
