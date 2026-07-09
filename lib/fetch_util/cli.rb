@@ -16,6 +16,7 @@ module FetchUtil
       language
       markdown
       content_type
+      price
       suspect
       warnings
       error_message

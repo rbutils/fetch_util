@@ -6,7 +6,7 @@ module FetchUtil
                 :published_time, :canonical_url, :language, :html, :markdown,
                 :metadata, :reader_mode, :content_type, :suspect, :warnings,
                 :content_completeness_ratio, :content_format, :paywall_state,
-                :error_message
+                :price, :error_message
 
     class << self
       def from_payload(url:, final_url:, payload:, canonical_url:, content_type:, warnings:, suspect:)
@@ -22,7 +22,8 @@ module FetchUtil
           warnings: warnings,
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
-          paywall_state: paywall_state
+          paywall_state: paywall_state,
+          price: payload["price"]
         )
 
         new(
@@ -44,7 +45,8 @@ module FetchUtil
           warnings: warnings,
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
-          paywall_state: paywall_state
+          paywall_state: paywall_state,
+          price: payload["price"]
         )
       end
 
@@ -81,7 +83,7 @@ module FetchUtil
       private
 
       def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
-                           content_completeness_ratio:, content_format:, paywall_state:)
+                           content_completeness_ratio:, content_format:, paywall_state:, price:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -97,14 +99,15 @@ module FetchUtil
           warnings: warnings,
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
-          paywall_state: paywall_state
+          paywall_state: paywall_state,
+          price: price
         }.freeze
       end
     end
 
     def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
                    canonical_url:, language:, html:, markdown:, metadata:, reader_mode:, content_type:, suspect:, warnings:,
-                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil, error_message: nil)
+                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil, price: nil, error_message: nil)
       @url = url
       @final_url = final_url
       @title = title
@@ -124,6 +127,7 @@ module FetchUtil
       @content_completeness_ratio = content_completeness_ratio
       @content_format = content_format&.freeze
       @paywall_state = paywall_state&.freeze
+      @price = price
       @error_message = error_message
     end
 
@@ -148,6 +152,7 @@ module FetchUtil
         content_completeness_ratio: content_completeness_ratio,
         content_format: content_format,
         paywall_state: paywall_state,
+        price: price,
         error_message: error_message
       }
     end

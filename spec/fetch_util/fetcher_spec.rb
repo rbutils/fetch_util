@@ -25,6 +25,22 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(false)
   end
 
+  it 'passes product prices through result metadata' do
+    product_payload = payload_with(
+      contentType: 'product',
+      price: '$199.99',
+      markdown: '# Contoso Surface Dock\n\n- Price: $199.99'
+    )
+    stub_browser_extraction('https://example.com/input', page: page, payload: product_payload)
+
+    result = fetch_with_dependencies('https://example.com/input')
+
+    expect(result.content_type).to eq('product')
+    expect(result.price).to eq('$199.99')
+    expect(result.to_h[:price]).to eq('$199.99')
+    expect(result.metadata[:price]).to eq('$199.99')
+  end
+
   it 'builds one payload snapshot for Ruby finalization' do
     snapshot_class = described_class.const_get(:PayloadSnapshot)
     allow(snapshot_class).to receive(:new).and_call_original

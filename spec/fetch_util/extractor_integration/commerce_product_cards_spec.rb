@@ -3,6 +3,78 @@
 RSpec.describe 'FetchUtil commerce product-card extraction' do
   include_context 'extractor integration helpers'
 
+  it "classifies JSON-LD product detail pages and extracts offer price" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Contoso Surface Dock | Microsoft Store</title>
+          <meta property="og:type" content="product">
+          <script type="application/ld+json">
+            {
+              "@context":"https://schema.org",
+              "@type":"Product",
+              "name":"Contoso Surface Dock",
+              "description":"Connect monitors, accessories, and power with one compact dock for hybrid desks.",
+              "sku":"SURFACE-DOCK-2",
+              "offers":{"@type":"Offer","price":"199.99","priceCurrency":"USD","availability":"https://schema.org/InStock"}
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Contoso Surface Dock</h1>
+            <p>Connect monitors, accessories, and power with one compact dock for hybrid desks.</p>
+            <section>
+              <h2>Product details</h2>
+              <p>Designed for modern workstations with fast charging, dual monitor output, and simple cable management.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.microsoft.com/en-us/d/contoso-surface-dock/abc123", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$199.99")
+      expect(payload["markdown"]).to include("- Price: $199.99")
+      expect(payload["markdown"]).to include("- SKU: SURFACE-DOCK-2")
+      expect(payload["suspect"]).to be(false)
+    end
+  end
+
+  it "classifies DOM product detail pages and extracts visible price" do
+    html = <<~HTML
+      <html>
+        <head><title>PlayBox Wireless Controller | Example Store</title></head>
+        <body>
+          <main itemscope itemtype="https://schema.org/Product">
+            <h1 itemprop="name">PlayBox Wireless Controller</h1>
+            <p itemprop="description">A responsive wireless controller with adaptive triggers, textured grips, and long battery life.</p>
+            <span class="sku">SKU: PB-WIRELESS-BLUE</span>
+            <div class="product-price" aria-label="Price $74.99">$74.99</div>
+            <button type="button" data-testid="add-to-cart">Add to cart</button>
+            <section>
+              <h2>Features</h2>
+              <p>Pairs quickly with consoles and PCs, includes USB-C charging, and supports low-latency gameplay.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/product/playbox-wireless-controller", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$74.99")
+      expect(payload["markdown"]).to include("- Price: $74.99")
+      expect(payload["markdown"]).to include("PlayBox Wireless Controller")
+      expect(payload["suspect"]).to be(false)
+    end
+  end
+
   it "surfaces JSON-LD product offer, rating, and availability details on category cards" do
     html = <<~HTML
       <html>
