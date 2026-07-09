@@ -47,6 +47,126 @@ RSpec.describe "extract asset bundle" do
     expect(registrations).to eq(1)
   end
 
+  it "preserves social profile registration precedence" do
+    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    register_path = "profiles/register.js"
+    register_index = manifest.index(register_path)
+    paths_before_register = manifest.take(register_index)
+    register_source = File.read(File.join(source_root, register_path))
+    calls = register_source.scan(/^\s*(register(?:[A-Z]\w*)?Profiles)\(\);$/).flatten
+
+    expect(calls).to eq(%w[
+                          registerCommunityWikiLeadProfiles
+                          registerSocialSearchProfiles
+                          registerGlassdoorProfiles
+                          registerMediaCommerceLeadProfiles
+                          registerNewsHomepageProfiles
+                          registerZeitProfiles
+                          registerBookingProfiles
+                          registerAcademicPublisherProfiles
+                          registerAcademicPreprintProfiles
+                          registerCsdnProfiles
+                          registerSubstackProfiles
+                          registerPackageRegistryProfiles
+                          registerStatuspageProfiles
+                          registerLegalReferenceProfiles
+                          registerWykopProfiles
+                          registerRailsRdocProfiles
+                          registerRepoHostProfiles
+                          registerGitHubThreadProfiles
+                          registerCommunityWikiProfiles
+                          registerHackerNewsProfiles
+                          registerMastodonProfiles
+                          registerDiscourseProfiles
+                          registerRedditProfiles
+                          registerStackOverflowProfiles
+                          registerBehanceProfiles
+                          registerInstagramProfiles
+                          registerFacebookProfiles
+                          registerTelegramProfiles
+                          registerTwitterProfiles
+                          registerThreadsProfiles
+                          registerLinkedinProfiles
+                          registerBlueskyProfiles
+                          registerQuoraProfiles
+                        ])
+    expect(register_source).to include(
+      "registerHostAwareProfile(true, hatenaBlogContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
+    )
+
+    expect(manifest.index("systems/social/content_type.js")).to be < manifest.index("boot/result_finalization.js")
+    expect(manifest.index("boot/result_finalization.js")).to be < manifest.index("boot/extract_api.js")
+    expect(manifest.index("profiles/host_aware.js")).to be < register_index
+    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/instagram.js")
+    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/facebook.js")
+    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/threads.js")
+    expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
+
+    calls.each do |call|
+      definitions = paths_before_register.flat_map do |path|
+        File.read(File.join(source_root, path)).scan(/function\s+#{Regexp.escape(call)}\s*\(/).map { path }
+      end
+      expect(definitions.length).to eq(1), "#{call}: #{definitions.inspect}"
+    end
+
+    direct_tail = manifest.drop(register_index + 1).select do |path|
+      File.read(File.join(source_root, path)).match?(/^\s*registerHostAwareProfile\(/)
+    end
+    expect(direct_tail).to eq(%w[
+                                profiles/news/global/xinhua.js
+                                profiles/news/middle_east/walla.js
+                                profiles/news/asia/east/chosun.js
+                                profiles/news/asia/south/india/dinakaran.js
+                                profiles/news/europe/southern/spain/20minutos.js
+                                profiles/news/asia/east/nhk.js
+                                profiles/news/europe/southern/protothema.js
+                                systems/cms/joomla.js
+                                systems/cms/drupal.js
+                                systems/cms/blogger.js
+                                systems/cms/static_ssg.js
+                                systems/cms/ghost.js
+                                systems/cms/mediawiki.js
+                                systems/cms/wordpress.js
+                                profiles/news/asia/south/india/hindustantimes.js
+                                profiles/news/asia/central/azerbaijan/oxu.js
+                                profiles/news/europe/eastern/index_hr.js
+                                profiles/news/europe/eastern/serbia/danas.js
+                                profiles/news/europe/eastern/serbia/kurir.js
+                                profiles/news/middle_east/almasryalyoum.js
+                                profiles/news/asia/south/kalerkantho.js
+                                profiles/news/asia/central/azerbaijan/trend.js
+                                profiles/news/asia/south/pakistan/jang.js
+                                profiles/news/middle_east/skynewsarabia.js
+                                profiles/news/middle_east/turkey/milliyet_live.js
+                                profiles/news/europe/central/aktuality_sk.js
+                                profiles/news/middle_east/turkey/sabah.js
+                                profiles/news/middle_east/turkey/sozcu.js
+                                profiles/news/europe/central/poland/interia.js
+                                profiles/news/americas/south/clarin.js
+                                profiles/news/europe/eastern/serbia/blic.js
+                                profiles/news/europe/central/hungary/tempo.js
+                                systems/news_engines/unidad_editorial.js
+                                profiles/news/europe/southern/spain/marca.js
+                                profiles/news/europe/western/germany/faz.js
+                                profiles/news/europe/central/poland/agora_wyborcza.js
+                                profiles/news/europe/central/hungary/index_hu.js
+                                profiles/news/europe/central/czech/root_cz.js
+                                profiles/news/americas/south/brazil/abril.js
+                                profiles/news/asia/east/netease_news.js
+                                profiles/ameba_blog.js
+                                profiles/news/europe/dnevnik.js
+                                profiles/segmentfault.js
+                                profiles/social/weibo_mobile.js
+                                profiles/community/pikabu.js
+                                profiles/news/europe/southern/rcs_corriere.js
+                                profiles/news/europe/western/le_monde.js
+                                profiles/news/europe/central/czech/idnes.js
+                                profiles/news/americas/south/brazil/folha.js
+                                profiles/naver_blog.js
+                              ])
+  end
+
   it "rebuilds deterministically" do
     with_asset_project(
       manifest: "00_prelude.js\n99_outro.js\n",
