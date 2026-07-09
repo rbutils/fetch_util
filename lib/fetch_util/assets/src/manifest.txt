@@ -68,7 +68,13 @@ profiles/families/academic/core.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
 profiles/families/academic/index.js
-profiles/families/scientific_records.js
+profiles/families/scientific_records/iucn.js
+profiles/families/scientific_records/ensembl.js
+profiles/families/scientific_records/ncbi_gene.js
+profiles/families/scientific_records/oeis.js
+profiles/families/scientific_records/rcsb.js
+profiles/families/scientific_records/nist.js
+profiles/families/scientific_records/index.js
 profiles/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
