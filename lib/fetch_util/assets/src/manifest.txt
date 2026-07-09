@@ -7,7 +7,9 @@ core/simple_article_profile.js
 core/docs_cleanup.js
 extractors/article_roots.js
 systems/content_types/recipes.js
-extractors/glossary.js
+extractors/glossary/cleanup.js
+extractors/glossary/detection.js
+extractors/glossary/extraction.js
 systems/content_types/podcasts.js
 extractors/lists/relabeling.js
   extractors/lists/jobs.js
@@ -17,7 +19,10 @@ extractors/lists/relabeling.js
   systems/content_types/events.js
   systems/content_types/sports.js
   systems/content_types/press_releases.js
-classifiers/list_pages.js
+classifiers/list_pages/context.js
+classifiers/list_pages/dominance.js
+classifiers/list_pages/search_category.js
+classifiers/list_pages/list_page.js
   extractors/lists/core.js
   extractors/lists/products.js
   systems/content_types/products.js
