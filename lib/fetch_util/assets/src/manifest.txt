@@ -71,6 +71,7 @@ profiles/social/meta_social/instagram.js
 profiles/social/meta_social/facebook.js
 profiles/social/meta_social/threads.js
 profiles/host_aware.js
+profiles/news/europe2/ringier_axel_springer.js
 profiles/register.js
 profiles/news/global/xinhua.js
 profiles/news/global/avesta.js
@@ -133,7 +134,6 @@ profiles/news/europe2/folha.js
 profiles/news/europe2/zeit.js
 profiles/csdn.js
 profiles/hatena_blog.js
-profiles/news/europe2/ringier_axel_springer.js
 profiles/naver_blog.js
 profiles/families/legal_reference.js
 markdown/code_helpers.js
