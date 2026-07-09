@@ -5,13 +5,13 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - Discourse topics' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Discourse topic threads as article output from DOM signals' do
+  it 'extracts Discourse topic threads as social output from DOM signals' do
     html = fixture_contents(File.expand_path('../../fixtures/discourse_topic.html', __dir__))
 
     with_url_page('https://forum.example/t/trust-levels-explained/123', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload['contentType']).to eq('article')
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Discourse', 'community' => nil)
       expect(payload['readerMode']).to eq(false)
       expect(payload['warnings']).to eq([])
       expect(payload['markdown']).to include('# Trust levels explained')
@@ -27,13 +27,13 @@ RSpec.describe 'FetchUtil extractor integration - Discourse topics' do
     end
   end
 
-  it 'keeps Discourse listing pages as list output' do
+  it 'classifies Discourse listing pages as social feeds' do
     html = fixture_contents(File.expand_path('../../fixtures/discourse_list.html', __dir__))
 
     with_url_page('https://forum.example/c/community', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload['contentType']).to eq('list')
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'feed', 'platform' => 'Discourse', 'community' => nil)
       expect(payload['readerMode']).to eq(false)
       expect(payload['warnings']).to eq([])
       expect(payload['markdown']).to include('Welcome to our forum')
