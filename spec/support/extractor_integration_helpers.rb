@@ -67,7 +67,6 @@ RSpec.shared_context 'extractor integration helpers' do
 
   def with_page(html)
     with_extractor_page do |page|
-      page.go_to('about:blank')
       page.content = html
       yield page
     end
@@ -101,7 +100,7 @@ RSpec.shared_context 'extractor integration helpers' do
   end
 
   def extract_payload(page, reader_mode: true)
-    extractor_for(reader_mode).extract(page)
+    extract(page, reader_mode: reader_mode)
   end
 
   def extractor_for(reader_mode)
