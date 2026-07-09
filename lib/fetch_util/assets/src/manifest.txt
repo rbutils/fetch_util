@@ -10,15 +10,18 @@ systems/content_types/recipes.js
 extractors/glossary.js
 systems/content_types/podcasts.js
 extractors/lists/relabeling.js
-extractors/lists/jobs.js
-systems/content_types/lodging.js
-extractors/lists/events.js
-systems/content_types/sports.js
-systems/content_types/press_releases.js
+  extractors/lists/jobs.js
+  systems/content_types/jobs.js
+  systems/content_types/lodging.js
+  extractors/lists/events.js
+  systems/content_types/events.js
+  systems/content_types/sports.js
+  systems/content_types/press_releases.js
 classifiers/list_pages.js
-extractors/lists/core.js
-extractors/lists/products.js
-systems/content_types/properties.js
+  extractors/lists/core.js
+  extractors/lists/products.js
+  systems/content_types/products.js
+  systems/content_types/properties.js
 extractors/lists/news_homepages.js
 extractors/search.js
 extractors/spa_data.js
@@ -33,11 +36,11 @@ classifiers/warnings/paywalls.js
 classifiers/warnings/stale_content.js
 classifiers/warnings/missing_content.js
 classifiers/warnings/content_format.js
-classifiers/warnings/index.js
-profiles/news/news_homepages.js
-systems/docs/hosted/index.js
+  classifiers/warnings/index.js
+  profiles/news/news_homepages.js
+  systems/docs/hosted/index.js
 systems/docs/hosted/frameworks.js
-systems/docs/hosted/stripe.js
+  systems/docs/hosted/stripe.js
 systems/docs/hosted/platforms.js
 systems/docs/hosted/baselinker.js
 systems/docs/hosted/ruby_api.js
