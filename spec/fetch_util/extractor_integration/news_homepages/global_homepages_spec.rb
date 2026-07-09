@@ -9,25 +9,25 @@ RSpec.describe 'FetchUtil extractor integration' do
         <head>
           <title>Home - Financial Times</title>
           <meta property="og:site_name" content="Financial Times">
-          <meta name="description" content="News, analysis and opinion from the Financial Times.">
+          <meta name="description" content="Brief reports, context and commentary from the daily desk.">
         </head>
         <body>
           <main>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a1">Iran threatens vital infrastructure in response to ultimatum</a>
-              <p>Tehran's military says its strategy has shifted from defensive to offensive.</p>
+              <a href="https://www.ft.com/content/a1">Harbor repairs continue after a late coastal alert</a>
+              <p>Officials say the response now focuses on restoring local services.</p>
             </section>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a2">World faces gas supply cliff edge as Gulf shipments approach ports</a>
-              <p>Energy traders warn of mounting supply risk.</p>
+              <a href="https://www.ft.com/content/a2">Regional freight schedules tighten as vessels reach port</a>
+              <p>Logistics teams report a narrow window for new arrivals.</p>
             </section>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a3">How the Iran war could derail the AI boom</a>
-              <p>Opinion content.</p>
+              <a href="https://www.ft.com/content/a3">Why a crowded timetable could slow the data boom</a>
+              <p>Commentary section.</p>
             </section>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a4">Global carmakers retreat from electric vehicle plans</a>
-              <p>Demand for petrol engines persists.</p>
+              <a href="https://www.ft.com/content/a4">Vehicle makers revise their plans for quieter roads</a>
+              <p>Customers continue to compare several power options.</p>
             </section>
           </main>
         </body>
@@ -38,8 +38,8 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Iran threatens vital infrastructure in response to ultimatum](https://www.ft.com/content/a1)")
-      expect(payload["markdown"]).to include("- [Global carmakers retreat from electric vehicle plans](https://www.ft.com/content/a4)")
+      expect(payload["markdown"]).to include("- [Harbor repairs continue after a late coastal alert](https://www.ft.com/content/a1)")
+      expect(payload["markdown"]).to include("- [Vehicle makers revise their plans for quieter roads](https://www.ft.com/content/a4)")
     end
   end
 
@@ -52,8 +52,8 @@ RSpec.describe 'FetchUtil extractor integration' do
         </head>
         <body>
           <main>
-            <h1>Find deals for any season</h1>
-            <h2>Trending destinations</h2>
+             <h1>Plan a stay for any season</h1>
+             <h2>Popular destinations</h2>
             <h2>Browse by property type</h2>
             <a href="https://www.booking.com/searchresults.html?dest_id=20079110&amp;dest_type=city">Las Vegas</a>
             <a href="https://www.booking.com/searchresults.html?dest_id=20088325&amp;dest_type=city">New York</a>
@@ -67,8 +67,8 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.booking.com/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Find deals for any season")
-      expect(payload["markdown"]).to include("- Trending destinations")
+      expect(payload["markdown"]).to include("# Plan a stay for any season")
+      expect(payload["markdown"]).to include("- Popular destinations")
       expect(payload["markdown"]).to include("- [Las Vegas](https://www.booking.com/searchresults.html?dest_id=20079110&dest_type=city)")
       expect(payload["contentType"]).to eq("list")
       expect(payload["warnings"]).not_to include("not_found_interstitial")
@@ -167,7 +167,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts wykop homepages into compact link bullets without privacy chrome" do
+  it "extracts wykop homepages as social feeds without privacy chrome" do
     html = <<~HTML
       <html>
         <head>
@@ -219,7 +219,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://wykop.pl/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["contentType"]).to eq("list")
+      expect(payload).to include("contentType" => "social", "socialKind" => "feed", "platform" => "Wykop")
       expect(payload["markdown"]).to include("- [Ruby 3.5 przyspiesza kompilacje](https://wykop.pl/link/1/ruby-3-5-przyspiesza-kompilacje)")
       expect(payload["markdown"]).to include("45 komentarzy")
       expect(payload["markdown"]).not_to include("We value your privacy")

@@ -17,16 +17,16 @@ RSpec.describe 'FetchUtil extractor integration' do
               <div class="homepage-card-grid">
                 <div class="homepage-card">
                   <h3><a class="homepage-link homepage-link-primary" href="../fedora/latest/">Fedora Linux</a></h3>
-                  <p>The Fedora Linux documentation hub.</p>
+                  <p>The Northwind documentation hub.</p>
                   <ul><li>Installation and administration guides.</li></ul>
                 </div>
                 <div class="homepage-card">
                   <h3><a class="homepage-link homepage-link-secondary" href="../quick-docs/">Quick Docs</a></h3>
-                  <p>Short how-to and FAQ-style documentation.</p>
+                  <p>Brief task notes and question-based documentation.</p>
                 </div>
                 <div class="homepage-card">
                   <h3><a class="homepage-link homepage-link-secondary" href="../epel/">EPEL</a></h3>
-                  <p>Extra Packages for Enterprise Linux.</p>
+                  <p>Additional packages for enterprise deployments.</p>
                 </div>
               </div>
             </article>
@@ -40,10 +40,27 @@ RSpec.describe 'FetchUtil extractor integration' do
       markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("list")
-      expect(markdown).to include("- [Fedora Linux](../fedora/latest/) - The Fedora Linux documentation hub.")
-      expect(markdown).to include("- [Quick Docs](../quick-docs/) - Short how-to and FAQ-style documentation.")
-      expect(markdown).to include("- [EPEL](../epel/) - Extra Packages for Enterprise Linux.")
-      expect(markdown).not_to include("Fedora Linux](../fedora/latest/) - The Fedora Linux documentation hub. Installation and administration guides. Quick Docs")
+      expect(markdown).to include("- [Fedora Linux](../fedora/latest/) - The Northwind documentation hub.")
+      expect(markdown).to include("- [Quick Docs](../quick-docs/) - Brief task notes and question-based documentation.")
+      expect(markdown).to include("- [EPEL](../epel/) - Additional packages for enterprise deployments.")
+      expect(markdown).not_to include("Fedora Linux](../fedora/latest/) - Northwind reference hub. Setup notes and release guides. Quick Docs")
+    end
+  end
+
+  it "keeps every Antora section and landing entry in DOM order" do
+    sections = (1..9).map { |index| "<h2>Section #{index}</h2>" }.join
+    cards = (1..14).map do |index|
+      "<div class=\"homepage-card\"><a class=\"homepage-link\" href=\"./item-#{index}/\">Item #{index}</a><p>Details #{index}.</p></div>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Project Docs :: Fedora Docs</title><meta name="generator" content="Antora 3.1.14"></head><body><main class="main"><article class="doc">#{sections}<div>#{cards}</div></article></main></body></html>
+    HTML
+
+    with_url_page("https://docs.example.test/", html) do |page|
+      markdown = extract(page)["markdown"]
+      expect(markdown).to include("- Section 9")
+      expect(markdown).to include("- [Item 14](./item-14/) - Details 14.")
+      expect(markdown.index("Item 1")).to be < markdown.index("Item 14")
     end
   end
 
@@ -60,7 +77,7 @@ RSpec.describe 'FetchUtil extractor integration' do
               <h2>Start Here</h2>
               <div class="homepage-card">
                 <a class="homepage-link homepage-link-primary" href="./guide/">User Guide</a>
-                <p>Read the main user guide.</p>
+                <p>Open the primary user guide.</p>
               </div>
             </article>
           </main>
@@ -73,7 +90,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("# Project Docs")
-      expect(payload["markdown"]).to include("- [User Guide](./guide/) - Read the main user guide.")
+      expect(payload["markdown"]).to include("- [User Guide](./guide/) - Open the primary user guide.")
     end
   end
 

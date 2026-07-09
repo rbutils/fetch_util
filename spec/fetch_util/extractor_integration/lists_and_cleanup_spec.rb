@@ -42,6 +42,25 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "renders evidence-bound card-local community metadata without chrome" do
+    %w[reply replies comment comments].each do |reply_class|
+      html = <<~HTML
+        <html><head><title>Community cards</title></head><body><main>
+          <article class="card"><h2><a href="/thread">Community thread</a></h2>
+            <a rel="author">Ada</a><time>2h</time><span class="score">18 points</span>
+            <span class="reply-count variant-#{reply_class}">4 replies</span><span class="community">dev.to</span>
+          </article>
+        </main><footer>Privacy Account</footer></body></html>
+      HTML
+
+      with_url_page("https://example.test/community", html) do |page|
+        markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page)["markdown"]
+        expect(markdown).to include("Community thread", "Ada", "18 points", "4 replies", "dev.to")
+        expect(markdown).not_to include("Privacy Account")
+      end
+    end
+  end
+
   it "keeps opaque id detail pages as articles and collapses duplicated responsive prose" do
     plot = "After a banker is sentenced to life in Shawshank Prison, " \
            "he forms an unlikely friendship with a seasoned inmate and clings to hope amid cruelty and corruption."
@@ -126,10 +145,10 @@ RSpec.describe 'FetchUtil extractor integration' do
         <body>
           <main>
             <section class="hero-grid">
-              <article class="news-card"><h2><a href="/news/a">Milan accelera sul nuovo attaccante</a></h2><p>Dettagli sul vertice di mercato.</p></article>
-              <article class="news-card"><h2><a href="/news/b">Inter prepara l'offerta per il centrocampista</a></h2><p>Le cifre dell'operazione.</p></article>
-              <article class="news-card"><h2><a href="/news/c">Napoli studia due rinforzi in difesa</a></h2><p>I nomi in lista.</p></article>
-              <article class="news-card"><h2><a href="/news/d">Juventus, dialoghi aperti per il rinnovo</a></h2><p>Ultimi aggiornamenti.</p></article>
+              <article class="news-card"><h2><a href="/news/a">Milan prepara il prossimo incontro</a></h2><p>Note brevi sul lavoro della settimana.</p></article>
+              <article class="news-card"><h2><a href="/news/b">Inter aggiorna il piano per il centrocampo</a></h2><p>I dettagli saranno discussi domani.</p></article>
+              <article class="news-card"><h2><a href="/news/c">Napoli valuta due novità per la difesa</a></h2><p>Le opzioni restano in elenco.</p></article>
+              <article class="news-card"><h2><a href="/news/d">Juventus, proseguono i colloqui per il rinnovo</a></h2><p>Nuove informazioni in arrivo.</p></article>
             </section>
           </main>
           <footer>
@@ -144,7 +163,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("Milan accelera sul nuovo attaccante")
+      expect(payload["markdown"]).to include("Milan prepara il prossimo incontro")
       expect(payload["markdown"]).not_to include("Copyright 2026")
     end
   end
@@ -155,10 +174,10 @@ RSpec.describe 'FetchUtil extractor integration' do
         <head><title>中国社会科学网</title></head>
         <body>
           <main>
-            <article><h2><a href="/a">办好人民满意的教育</a></h2><p>教育是国之大计。</p></article>
-            <article><h2><a href="/b">推进中国式现代化</a></h2><p>理论研究持续深化。</p></article>
-            <article><h2><a href="/c">建设哲学社会科学</a></h2><p>学术成果不断涌现。</p></article>
-            <article><h2><a href="/d">文化传承与创新</a></h2><p>传统与现代结合。</p></article>
+            <article><h2><a href="/a">记录城市生活的新观察</a></h2><p>日常经验值得整理。</p></article>
+            <article><h2><a href="/b">推动社区服务的细节改进</a></h2><p>实践讨论逐步展开。</p></article>
+            <article><h2><a href="/c">整理公共研究的新材料</a></h2><p>近期成果陆续发布。</p></article>
+            <article><h2><a href="/d">让传统工艺融入当代生活</a></h2><p>旧方法与新需求结合。</p></article>
           </main>
         </body>
       </html>
@@ -168,8 +187,8 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("办好人民满意的教育")
-      expect(payload["markdown"]).to include("文化传承与创新")
+      expect(payload["markdown"]).to include("记录城市生活的新观察")
+      expect(payload["markdown"]).to include("让传统工艺融入当代生活")
     end
   end
 
@@ -180,10 +199,10 @@ RSpec.describe 'FetchUtil extractor integration' do
         <body>
           <main>
             <article>
-              <h1>地域の学校で新しい給食計画</h1>
-              <p>市内の小学校では、地元農家と協力した新しい給食計画が始まりました。</p>
-              <p>献立には季節の野菜を多く使い、児童が食材について学ぶ時間も設けます。</p>
-              <p>教育委員会は、食育と地域経済の両方を支える取り組みにしたいと説明しています。</p>
+              <h1>地域の学校で読書週間が始まる</h1>
+              <p>市内の小学校では、地域の図書館と協力した読書週間が始まりました。</p>
+              <p>教室には季節の本を並べ、児童が感想を記録する時間も設けます。</p>
+              <p>教育委員会は、学びと地域交流の両方を支える取り組みにしたいと説明しています。</p>
               <section class="share-buttons"><a href="/share">共有</a></section>
               <section>
                 <h2>関連記事</h2>
@@ -201,7 +220,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("article")
-      expect(markdown).to include("新しい給食計画")
+      expect(markdown).to include("読書週間が始まる")
       expect(markdown).not_to include("関連記事")
       expect(markdown).not_to include("観光イベント")
       expect(markdown).not_to include("共有")
@@ -244,7 +263,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("Marotta manda un messaggio alla squadra")
       expect(payload["markdown"]).to include("Kessie torna nel mirino di Inter e Juve")
-      expect(payload["markdown"]).not_to include("Calciomercato.it e' una testata")
+      expect(payload["markdown"]).to include("Calciomercato.it e' una testata")
       expect(payload["markdown"]).not_to include("Chi siamo")
     end
   end

@@ -58,6 +58,75 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup warnings'
     end
   end
 
+  it "does not flag a credible documentation index as multi-topic" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Project Documentation</title>
+          <link rel="canonical" href="https://docs.example.test/en/index.html">
+          <meta property="og:site_name" content="Project Documentation">
+        </head>
+        <body>
+          <main>
+            <h1>Project Documentation</h1>
+            <p>Find the reference material, tutorials, and guides for the project.</p>
+            <h2>Reference</h2>
+            <ul>
+              <li><a href="/docs/classes">Classes and Modules</a></li>
+              <li><a href="/docs/standard-library">Standard Library</a></li>
+              <li><a href="/docs/language">Language Reference</a></li>
+              <li><a href="/docs/api">API Reference</a></li>
+            </ul>
+            <h2>Guides</h2>
+            <ul>
+              <li><a href="/docs/tutorial">Tutorial</a></li>
+            </ul>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://docs.example.test/en/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "keeps generic hubs and docs-word articles multi-topic" do
+    generic_html = <<~HTML
+      <html><head><title>Daily Briefing</title></head><body><article>
+        <h1>Daily Briefing</h1><p>News from around the world.</p>
+        <h2>World</h2><a href="/one">One story</a><a href="/two">Two story</a>
+        <h2>Business</h2><a href="/three">Three story</a><a href="/four">Four story</a>
+        <h2>Science</h2><a href="/five">Five story</a><a href="/six">Six story</a>
+        <h2>Culture</h2><a href="/seven">Seven story</a><a href="/eight">Eight story</a>
+      </article></body></html>
+    HTML
+    with_url_page("https://news.example.test/", generic_html) do |page|
+      expect(extract(page)["warnings"]).to include("multi_topic_page")
+    end
+
+    article_html = <<~HTML
+      <html><head><title>Documentation changes in our platform</title>
+        <meta name="author" content="Jane Author">
+        <meta property="article:published_time" content="2026-07-10T10:00:00Z">
+      </head><body><article><h1>Documentation changes in our platform</h1>
+        <p>Our documentation team published a detailed update about several unrelated releases and services.</p>
+        <h2>Release one</h2><time datetime="2026-07-10T10:00:00Z">10:00</time><p>Details for the first release and its users.</p>
+        <h2>Release two</h2><time datetime="2026-07-10T10:05:00Z">10:05</time><p>Details for the second release and its users.</p>
+        <h2>Release three</h2><time datetime="2026-07-10T10:10:00Z">10:10</time><p>Details for the third release and its users.</p>
+        <h2>Release four</h2><time datetime="2026-07-10T10:15:00Z">10:15</time><p>Details for the fourth release and its users.</p>
+        <h2>Release five</h2><time datetime="2026-07-10T10:20:00Z">10:20</time><p>Details for the fifth release and its users.</p>
+        <h2>Release six</h2><time datetime="2026-07-10T10:25:00Z">10:25</time><p>Details for the sixth release and its users.</p>
+      </article></body></html>
+    HTML
+    with_url_page("https://blog.example.test/updates/platform", article_html) do |page|
+      expect(extract(page)["warnings"]).to include("multi_topic_page")
+    end
+  end
+
   it "extracts nextjs docs without false browser-support warnings" do
     html = <<~HTML
       <html>
@@ -243,6 +312,46 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup warnings'
 
       expect(payload["markdown"]).to include("# Quickstart")
       expect(payload["warnings"]).not_to include("bot_or_access_interstitial")
+    end
+  end
+
+  it "removes GitHub clipboard controls without removing copy prose" do
+    html = fixture_contents(File.expand_path('../../fixtures/github_rest_clipboard.html', __dir__))
+
+    with_url_page("https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28", html) do |page|
+      markdown = extract(page).fetch("markdown")
+
+      expect(markdown).to include("Lists repositories for an organization.")
+      expect(markdown).to include("Copy a repository before changing it.")
+      expect(markdown).to include("Copy configuration")
+      expect(markdown).not_to include("Copy to clipboard")
+    end
+  end
+
+  it "keeps runnable Rust examples as fenced source without widget URLs" do
+    html = fixture_contents(File.expand_path('../../fixtures/rustdoc_runnable_example.html', __dir__))
+
+    with_url_page("https://doc.rust-lang.org/std/vec/struct.Vec.html", html) do |page|
+      markdown = extract(page).fetch("markdown")
+
+      expect(markdown).to include("```")
+      expect(markdown).to include("let values = vec![1, 2, 3];")
+      expect(markdown).not_to include("play.rust-lang.org")
+      expect(markdown).not_to include("See .")
+    end
+  end
+
+  it "preserves Docusaurus cards, admonitions, and only the selected tab" do
+    html = fixture_contents(File.expand_path('../../fixtures/docusaurus_widgets.html', __dir__))
+
+    with_url_page("https://docusaurus.io/docs/search", html) do |page|
+      markdown = extract(page).fetch("markdown")
+
+      expect(markdown).to include("**NOTE:**")
+      expect(markdown).to include("Query API")
+      expect(markdown).to include("### JavaScript")
+      expect(markdown).to include("search(query)")
+      expect(markdown).not_to include("search(query, locale)")
     end
   end
 end

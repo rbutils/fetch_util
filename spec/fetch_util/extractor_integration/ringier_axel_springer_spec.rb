@@ -80,4 +80,37 @@ RSpec.describe 'FetchUtil Ringier Axel Springer extraction' do
       expect_warnings(payload, exclude: %w[short_extraction truncated_content])
     end
   end
+
+  it 'preserves ordered Ringier article structure and meaningful media' do
+    fixture = File.expand_path('../../fixtures/ringier_ods_sport_article_fidelity.html', __dir__)
+
+    expect_fixture_article(
+      url: 'https://przegladsportowy.onet.pl/reprezentacja-polski-poznala-rywala/w5qrxz0',
+      fixture_path: fixture,
+      includes: [
+        '# Zespol poznal termin kolejnego spotkania',
+        '## Streszczenie',
+        '- Zespol otrzymal informacje o planowanym spotkaniu.',
+        'Zespol rozpocznie przygotowania do zaplanowanego spotkania.',
+        'Pierwszy akapit przedstawia decyzje organizacyjne',
+        'Drugi akapit porzadkuje dane dotyczace przygotowan',
+        '![Zespol podczas sesji przygotowawczej](https://cdn.example.test/poland-team.jpg)',
+        'Zespol podczas sesji przygotowawczej.',
+        '1. Pierwszy etap harmonogramu.',
+        '2. Kolejna sesja kontrolna.',
+        'Ostatni akapit porzadkuje notatke'
+      ],
+      excludes: [
+        'Dalszy ciąg artykułu pod materiałem wideo',
+        'Niezwiązana rekomendacja',
+        'advertising navigation chrome',
+        'Financial Statement Links',
+        'financial-report.pdf',
+        'Strona główna'
+      ],
+      warning_excludes: %w[short_extraction truncated_content],
+      byline: 'Edyta Kowalczyk',
+      published_time: '2026-07-10T12:30:00+02:00'
+    )
+  end
 end

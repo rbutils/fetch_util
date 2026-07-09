@@ -98,12 +98,12 @@ RSpec.describe 'FetchUtil extractor integration' do
       <html>
         <head>
           <title>rails | RubyGems.org | your community gem host</title>
-          <meta name="description" content="Ruby on Rails is a full-stack web framework.">
+          <meta name="description" content="A sample Ruby service framework for complete web projects.">
         </head>
         <body>
           <main>
             <div id="markup" class="gem__desc">
-              <p>Ruby on Rails is a full-stack web framework optimized for programmer happiness and sustainable productivity.</p>
+              <p>The sample Ruby framework supports complete web projects with a steady development workflow.</p>
               <h2>Required Ruby Version</h2>
               <time datetime="2026-01-01">Jan 1, 2026</time>
               <h2>Required Rubygems Version</h2>
@@ -124,7 +124,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     extract_from_url("https://rubygems.org/gems/rails", html) do |payload|
       expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("Ruby on Rails is a full-stack web framework")
+      expect(payload["markdown"]).to include("The sample Ruby framework supports complete web projects")
       expect(payload["warnings"]).not_to include("multi_topic_page")
       expect(payload["suspect"]).to be(false)
     end
@@ -193,6 +193,54 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("Webhook delivery delays")
       expect(payload["markdown"]).to include("Resolved - The backlog has cleared. - Jul 4, 13:24 UTC")
       expect(payload["warnings"]).not_to include("homepage_index_page")
+    end
+  end
+
+  it "extracts Statuspage selector fallbacks without Mastodon content" do
+    html = <<~HTML
+      <html>
+        <head><title>Example Status</title></head>
+        <body class="status">
+          <main class="layout-content status">
+            <div class="page-status"><span class="status-description">Systems are operating normally</span></div>
+            <div class="components-section">
+              <div class="component-container">
+                <h3>Public API</h3>
+                <span class="status-msg">Operational</span>
+                <span class="legend-item-uptime-value">100% uptime</span>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://status.example.com/", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("- Public API - Operational (100% uptime)")
+    end
+  end
+
+  it "preserves Statuspage collections beyond their former presentation caps" do
+    components = Array.new(31) do |index|
+      "<div class=\"component-container\"><span class=\"name\">Component #{index + 1}</span><span class=\"component-status\">Operational</span></div>"
+    end.join
+    updates = Array.new(5) do |index|
+      "<div class=\"update\"><strong>Update #{index + 1}</strong><span class=\"whitespace-pre-wrap\">Visible update #{index + 1}</span></div>"
+    end.join
+    incidents = Array.new(9) do |index|
+      "<div class=\"incident-container\"><div class=\"incident-title\">Incident #{index + 1}</div>#{updates}</div>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Over-cap Status</title></head>
+      <body class="status"><main class="layout-content status">
+        <div class="components-section">#{components}</div>
+        <div class="incidents">#{incidents}</div>
+      </main></body></html>
+    HTML
+
+    extract_from_url("https://status.example.com/", html) do |payload|
+      expect(payload["markdown"]).to include("Component 31", "Incident 9", "Visible update 5")
     end
   end
 
@@ -440,8 +488,14 @@ RSpec.describe 'FetchUtil extractor integration' do
   end
 
   it "extracts institutional topic cards as clean list items" do
-    topic_cards = Array.new(9) do |index|
-      topic = ["Abortion", "Abuse of older people", "Addictive behaviour", "Adolescent health", "Ageing", "Air pollution", "Alcohol", "Anaemia", "Cancer"][index]
+    topic_cards = Array.new(241) do |index|
+      topic = if index.zero?
+                "Abortion"
+              elsif index == 240
+                "Cancer"
+              else
+                "Topic #{index + 1}"
+              end
       category = index.even? ? "Conditions" : "Health interventions"
       slug = topic.downcase.gsub(/[^a-z0-9]+/, "-").sub(/-\z/, "")
 
@@ -470,6 +524,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("- [Abortion](https://institution.example/health-topics/abortion)")
       expect(payload["markdown"]).to include("- [Cancer](https://institution.example/health-topics/cancer)")
+      expect(payload["markdown"].index("Topic 2")).to be < payload["markdown"].index("Cancer")
       expect(payload["markdown"]).not_to include("[\n\nHealth interventions")
       expect(payload["markdown"]).not_to include("\n\n](")
     end
@@ -619,6 +674,30 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("- [Living arrangements](https://institution.example/en/services/living-arrangements) - Information to help with housing")
       expect(payload["markdown"]).to include("- [Ageing](https://institution.example/en/services/ageing) - Help when retiring")
       expect(payload["markdown"]).not_to include("gui-tile")
+    end
+  end
+
+  it "preserves every institutional custom tile beyond the former presentation cap" do
+    tiles = Array.new(241) do |index|
+      name = "Service #{index + 1}"
+      <<~TILE
+        <gui-tile>
+          <gui-tile-heading heading-text="#{name}"></gui-tile-heading>
+          <gui-tile-content content-text="Details for #{name}."></gui-tile-content>
+        </gui-tile>
+      TILE
+    end.join
+    html = <<~HTML
+      <html><head><title>Services</title></head><body>
+        <main><h1>Services</h1><gui-tile-list role="list">#{tiles}</gui-tile-list></main>
+      </body></html>
+    HTML
+
+    extract_from_url("https://institution.example/en/services", html) do |payload|
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("- [Service 1](https://institution.example/en/services)")
+      expect(payload["markdown"]).to include("Service 241")
+      expect(payload["markdown"].index("Service 1")).to be < payload["markdown"].index("Service 241")
     end
   end
 

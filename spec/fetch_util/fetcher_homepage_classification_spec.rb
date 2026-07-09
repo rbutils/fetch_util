@@ -8,7 +8,7 @@ RSpec.describe FetchUtil::Fetcher do
   it 'relabels homepage news indexes as list content' do
     homepage_page = page_at('https://www.nytimes.com/')
     homepage_payload = payload_with(
-      title: 'The New York Times - Breaking News, US News, World News and Videos',
+      title: 'Daily Ledger - Current Reports and Video Briefings',
       markdown: "## New York Times - Top Stories\n\n1. Story one\n2. Story two\n3. Story three\n",
       contentType: 'article'
     )
@@ -24,7 +24,7 @@ RSpec.describe FetchUtil::Fetcher do
   it 'drops url_content_mismatch from homepage index pages' do
     homepage_page = page_at('https://www.hurriyet.com.tr/')
     homepage_payload = payload_with(
-      title: 'Hürriyet - Haber, Son Dakika Haberler, Güncel Gazete Haberleri',
+      title: 'Mavi Gündem - Güncel Haberler ve Günün Notları',
       canonicalUrl: 'https://www.hurriyet.com.tr/',
       markdown: <<~MARKDOWN.chomp,
         ## Hürriyet
@@ -43,6 +43,95 @@ RSpec.describe FetchUtil::Fetcher do
 
     expect(result.content_type).to eq('list')
     expect(result.warnings).to eq(['homepage_index_page'])
+  end
+
+  [
+    ['WP', 'https://wp.pl/', 'WP portal', 'Informacje', 'Sport'],
+    ['Onet', 'https://onet.pl/', 'Onet portal', 'Wiadomości', 'Najlepsze w premium']
+  ].each do |name, url, title, first_section, second_section|
+    it "does not warn credible #{name} root list payloads as homepage indexes" do
+      markdown = <<~MARKDOWN
+        # #{title}
+
+        ## #{first_section}
+
+        - [Story one](#{url}story-one)
+        - [Story two](#{url}story-two)
+        - [Story three](#{url}story-three)
+
+        ## #{second_section}
+
+        - [Story four](#{url}story-four)
+        - [Story five](#{url}story-five)
+        - [Story six](#{url}story-six)
+      MARKDOWN
+      stub_browser_extraction(
+        url,
+        page: page_at(url),
+        payload: payload_with(
+          title: title,
+          siteName: title,
+          markdown: markdown,
+          contentType: 'list',
+          portalRootEvidence: { 'namedSectionCount' => 2, 'canonicalCardCount' => 6 },
+          byline: nil,
+          publishedTime: nil,
+          warnings: []
+        )
+      )
+
+      result = fetch_with_dependencies(url)
+
+      expect(result.content_type).to eq('list')
+      expect(result.suspect).to eq(false)
+      expect(result.warnings).not_to include('homepage_index_page')
+    end
+  end
+
+  it 'keeps non-root index mismatch warnings eligible' do
+    url = 'https://portal.example/section/world'
+    markdown = <<~MARKDOWN
+      # World
+      ## Latest
+      - [Story one](https://portal.example/one)
+      - [Story two](https://portal.example/two)
+      - [Story three](https://portal.example/three)
+      ## Analysis
+      - [Story four](https://portal.example/four)
+      - [Story five](https://portal.example/five)
+      - [Story six](https://portal.example/six)
+    MARKDOWN
+    stub_browser_extraction(
+      url,
+      page: page_at(url),
+      payload: payload_with(title: 'World', markdown: markdown, contentType: 'list', hostAware: true,
+                            byline: nil, publishedTime: nil, warnings: ['url_content_mismatch'])
+    )
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.warnings).to include('url_content_mismatch')
+  end
+
+  it 'does not treat weak, blocked, or status roots as credible portal evidence' do
+    [
+      ['https://weak.example/', { warnings: ['homepage_index_page'] }, ['homepage_index_page']],
+      ['https://blocked.example/', { warnings: %w[cloudflare_challenge_page] }, %w[cloudflare_challenge_page homepage_index_page]],
+      ['https://status.example/', { statusPage: true, warnings: ['status_page'] }, ['status_page']]
+    ].each do |url, overrides, expected_warnings|
+      payload = payload_with(
+        title: 'Portal root',
+        markdown: "## News\n\n- [One](#{url}one)\n\n## More\n\n- [Two](#{url}two)\n",
+        contentType: 'list',
+        portalRootEvidence: { 'namedSectionCount' => 2, 'canonicalCardCount' => 6 },
+        **overrides
+      )
+      stub_browser_extraction(url, page: page_at(url), payload: payload)
+
+      result = fetch_with_dependencies(url)
+
+      expect(result.warnings).to include(*expected_warnings)
+    end
   end
 
   it 'keeps search result pages as search content' do
@@ -362,5 +451,109 @@ RSpec.describe FetchUtil::Fetcher do
     result = fetch_with_dependencies(article_url)
 
     expect(result.content_type).to eq('article')
+  end
+
+  it 'keeps a BBC article route as a list when only related sections are materialized' do
+    article_url = 'https://www.bbc.com/somali/articles/c20yd8jwln1o'
+    related_markdown = <<~MARKDOWN
+      ## Related coverage
+      - [Related story one](https://www.bbc.com/somali/articles/one)
+      - [Related story two](https://www.bbc.com/somali/articles/two)
+      - [Related story three](https://www.bbc.com/somali/articles/three)
+      - [Related story four](https://www.bbc.com/somali/articles/four)
+    MARKDOWN
+
+    stub_browser_extraction(
+      article_url,
+      page: page_at(article_url),
+      payload: payload_with(title: 'BBC related coverage', publishedTime: '2026-07-08', markdown: related_markdown, contentType: 'list')
+    )
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('list')
+  end
+
+  it 'promotes a BBC article route only when focal prose is present' do
+    article_url = 'https://www.bbc.com/yoruba/articles/c8r07734dp4o'
+    article_markdown = <<~MARKDOWN
+      # Focal BBC report
+
+      The report describes a developing story with verified details from people familiar with the events, while officials review the evidence and explain the consequences for communities following the situation closely.
+
+      Officials explained what happened and said that further information would be published after the review, with witnesses and public records providing additional context for the continuing report and its documented timeline.
+    MARKDOWN
+
+    stub_browser_extraction(
+      article_url,
+      page: page_at(article_url),
+      payload: payload_with(title: 'Focal BBC report', publishedTime: '2026-07-08', markdown: article_markdown, contentType: 'list')
+    )
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('article')
+  end
+
+  it 'suppresses root index warnings only with browser structural portal evidence' do
+    markdown = <<~MARKDOWN
+      # International portal
+
+      ## Top stories
+      - [First story](https://portal.example/first)
+      - [Second story](https://portal.example/second)
+      - [Third story](https://portal.example/third)
+
+      ## More news
+      - [Fourth story](https://portal.example/fourth)
+      - [Fifth story](https://portal.example/fifth)
+      - [Sixth story](https://portal.example/sixth)
+    MARKDOWN
+    url = 'https://portal.example/'
+    stub_browser_extraction(
+      url,
+      page: page_at(url),
+      payload: payload_with(title: 'International portal', markdown: markdown, contentType: 'list',
+                            portalRootEvidence: { 'namedSectionCount' => 2, 'canonicalCardCount' => 6 }, warnings: [])
+    )
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.warnings).to be_empty
+  end
+
+  it 'keeps ownerless heading and link counts eligible for root index warnings' do
+    url = 'https://portal.example/'
+    markdown = <<~MARKDOWN
+      # International portal
+
+      ## Top stories
+      - [First story](https://portal.example/first)
+      - [Second story](https://portal.example/second)
+      - [Third story](https://portal.example/third)
+
+      ## More news
+      - [Fourth story](https://portal.example/fourth)
+      - [Fifth story](https://portal.example/fifth)
+      - [Sixth story](https://portal.example/sixth)
+    MARKDOWN
+    stub_browser_extraction(url, page: page_at(url),
+                                 payload: payload_with(title: 'International portal', markdown: markdown,
+                                                       contentType: 'list', warnings: []))
+
+    expect(fetch_with_dependencies(url).warnings).to include('homepage_index_page')
+  end
+
+  it 'keeps sparse root warnings eligible' do
+    url = 'https://sparse.example/'
+    stub_browser_extraction(
+      url,
+      page: page_at(url),
+      payload: payload_with(title: 'Sparse news', markdown: "## Latest\n- [Only story](https://sparse.example/story)\n", contentType: 'list')
+    )
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.warnings).to include('homepage_index_page')
   end
 end

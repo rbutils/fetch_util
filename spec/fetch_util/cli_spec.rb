@@ -2,11 +2,12 @@
 
 require "json"
 require "stringio"
+require "yaml"
 
 RSpec.describe FetchUtil::CLI do
   include_context 'cli spec helpers'
 
-  it "fetches multiple urls in parallel and prints jsonl" do
+  it "fetches multiple urls in parallel and prints jsonl without urls by default" do
     first = result_double
     second = result_double(
       url: "https://b.test",
@@ -14,6 +15,13 @@ RSpec.describe FetchUtil::CLI do
       canonical_url: "https://b.test/canonical",
       title: "B",
       excerpt: "about b",
+      language: "es",
+      social_kind: "post",
+      platform: "mastodon",
+      handle: "@fetcher@ruby.social",
+      reply_count: 7,
+      community: "Ruby",
+      score: 42,
       markdown: "body b",
       suspect: true,
       warnings: ["warning"],
@@ -35,31 +43,34 @@ RSpec.describe FetchUtil::CLI do
 
     output = run_cli("fetch", "https://a.test", "https://b.test", "--format", "jsonl")
 
-    expect(output.lines.map { |line| JSON.parse(line, symbolize_names: true) }).to eq([
-                                                                                        {
-                                                                                          url: "https://a.test",
-                                                                                          final_url: "https://a.test/final",
-                                                                                          canonical_url: "https://a.test/canonical",
-                                                                                          title: "A",
-                                                                                          markdown: "body a",
-                                                                                          content_type: "article",
-                                                                                          suspect: false,
-                                                                                          warnings: []
-                                                                                        },
-                                                                                        {
-                                                                                          url: "https://b.test",
-                                                                                          final_url: "https://b.test/final",
-                                                                                          canonical_url: "https://b.test/canonical",
-                                                                                          title: "B",
-                                                                                          markdown: "body b",
-                                                                                          content_type: "article",
-                                                                                          suspect: true,
-                                                                                          warnings: ["warning"]
-                                                                                        }
-                                                                                      ])
+    expected = [
+      {
+        title: "A",
+        language: nil,
+        markdown: "body a",
+        content_type: "article",
+        suspect: false,
+        warnings: []
+      },
+      {
+        title: "B",
+        language: "es",
+        social_kind: "post",
+        platform: "mastodon",
+        handle: "@fetcher@ruby.social",
+        reply_count: 7,
+        community: "Ruby",
+        score: 42,
+        markdown: "body b",
+        content_type: "article",
+        suspect: true,
+        warnings: ["warning"]
+      }
+    ]
+    expect(output.lines.map { |line| JSON.parse(line, symbolize_names: true) }).to eq(expected)
   end
 
-  it "outputs pure markdown by default for fetch" do
+  it "outputs YAML front matter followed by markdown by default for fetch" do
     result = result_double(markdown: "# A\n\nbody a")
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
 
@@ -76,7 +87,12 @@ RSpec.describe FetchUtil::CLI do
 
     output = run_cli("fetch", "https://a.test")
 
-    expect(output).to eq("# A\n\nbody a\n")
+    front_matter, body = output.split("---\n", 3).values_at(1, 2)
+    expect(YAML.safe_load(front_matter)).to eq(
+      "title" => "A", "language" => nil, "content_type" => "article",
+      "suspect" => false, "warnings" => []
+    )
+    expect(body).to eq("# A\n\nbody a\n")
   end
 
   it "includes html only when requested" do
@@ -98,16 +114,189 @@ RSpec.describe FetchUtil::CLI do
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(
       {
-        url: "https://a.test",
-        final_url: "https://a.test/final",
-        canonical_url: "https://a.test/canonical",
         title: "A",
+        language: nil,
         markdown: "body a",
         content_type: "article",
         suspect: false,
         warnings: [],
         html: "<p>A</p>"
       }
+    )
+  end
+
+  it "includes urls when explicitly requested" do
+    result = result_double
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    allow(FetchUtil).to receive(:fetch).and_return(result)
+
+    output = run_cli("fetch", "https://a.test", "--include-urls", "--format", "json")
+
+    expect(JSON.parse(output, symbolize_names: true)).to include(
+      url: "https://a.test", final_url: "https://a.test/final", canonical_url: "https://a.test/canonical"
+    )
+  end
+
+  it "keeps JSON and front matter fields in parity" do
+    result = result_double(warnings: ["warning"], suspect: false)
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    allow(FetchUtil).to receive(:fetch).and_return(result)
+
+    json = JSON.parse(run_cli("fetch", "https://a.test", "--format", "json"))
+    front_matter = run_cli("fetch", "https://a.test").split("---\n", 3)[1]
+    yaml = YAML.safe_load(front_matter)
+
+    expect(yaml.keys).to contain_exactly(*(json.keys - ["markdown"]))
+  end
+
+  it "emits html in front matter when requested" do
+    result = result_double
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    allow(FetchUtil).to receive(:fetch).and_return(result)
+
+    output = run_cli("fetch", "https://a.test", "--include-html")
+    front_matter = output.split("---\n", 3)[1]
+
+    expect(YAML.safe_load(front_matter)).to include("html" => "<p>A</p>")
+  end
+
+  it "emits separate front-matter documents for multiple results" do
+    first = result_double(markdown: "first")
+    second = result_double(markdown: "second", title: "B")
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    allow(FetchUtil).to receive(:fetch_many).and_return([first, second])
+
+    output = run_cli("fetch", "https://a.test", "https://b.test")
+    expect(output.scan(/^---$/).length).to eq(4)
+    expect(output).to include("---\nfirst\n\n---\n")
+    expect(output).to end_with("---\nsecond\n")
+  end
+
+  it "prints product price in json fetch output" do
+    result = result_double(content_type: "product", price: "$199.99")
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://a.test",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = run_cli("fetch", "https://a.test", "--format", "json")
+
+    expect(JSON.parse(output, symbolize_names: true)).to include(
+      content_type: "product",
+      price: "$199.99"
+    )
+  end
+
+  it "prints social fields in json fetch output" do
+    result = result_double(
+      content_type: "social",
+      social_kind: "post",
+      platform: "mastodon",
+      handle: "@fetcher@ruby.social",
+      reply_count: 7,
+      community: "Ruby",
+      score: 42
+    )
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://a.test",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = run_cli("fetch", "https://a.test", "--format", "json")
+
+    expect(JSON.parse(output, symbolize_names: true)).to include(
+      social_kind: "post",
+      platform: "mastodon",
+      handle: "@fetcher@ruby.social",
+      reply_count: 7,
+      community: "Ruby",
+      score: 42
+    )
+  end
+
+  it "prints property fields in json fetch output" do
+    result = result_double(
+      content_type: "property",
+      price: "£450,000",
+      location: "Cedar Lane, Bristol, BS1",
+      bedrooms: 3,
+      bathrooms: 2,
+      area_sqft: 1210
+    )
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://a.test",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = run_cli("fetch", "https://a.test", "--format", "json")
+
+    expect(JSON.parse(output, symbolize_names: true)).to include(
+      content_type: "property",
+      price: "£450,000",
+      location: "Cedar Lane, Bristol, BS1",
+      bedrooms: 3,
+      bathrooms: 2,
+      area_sqft: 1210
+    )
+  end
+
+  it "prints lodging structured fields in json fetch output" do
+    result = result_double(
+      content_type: "hotel",
+      name: "Harbor Lantern Hotel",
+      price: "£189",
+      rating: "Rating: 4.6/5 from 842 reviews",
+      address: "8 Cedar Quay, Brighton, East Sussex, BN1 1AA, GB"
+    )
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+
+    expect(FetchUtil).to receive(:fetch).with(
+      "https://a.test",
+      timeout: 20,
+      wait: 0.75,
+      wait_for_idle: true,
+      reader_mode: true,
+      request_log: request_log
+    ).and_return(result)
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+
+    output = run_cli("fetch", "https://a.test", "--format", "json")
+
+    expect(JSON.parse(output, symbolize_names: true)).to include(
+      content_type: "hotel",
+      name: "Harbor Lantern Hotel",
+      price: "£189",
+      rating: "Rating: 4.6/5 from 842 reviews",
+      address: "8 Cedar Quay, Brighton, East Sussex, BN1 1AA, GB"
     )
   end
 
@@ -118,6 +307,7 @@ RSpec.describe FetchUtil::CLI do
       canonical_url: nil,
       title: nil,
       byline: nil,
+      language: nil,
       markdown: "",
       content_type: "error",
       suspect: true,
@@ -142,8 +332,7 @@ RSpec.describe FetchUtil::CLI do
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(
       {
-        url: "https://missing.example.test/",
-        final_url: "https://missing.example.test/",
+        language: nil,
         content_type: "error",
         suspect: true,
         warnings: ["dns_resolution_failed"],
@@ -164,7 +353,7 @@ RSpec.describe FetchUtil::CLI do
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
       sources: %w[duckduckgo google],
-      limit: 10,
+      limit: nil,
       concurrency: 2,
       verbose: false,
       timeout: 20,
@@ -191,7 +380,7 @@ RSpec.describe FetchUtil::CLI do
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
       sources: %w[duckduckgo google],
-      limit: 10,
+      limit: nil,
       concurrency: 2,
       verbose: true,
       timeout: 20,

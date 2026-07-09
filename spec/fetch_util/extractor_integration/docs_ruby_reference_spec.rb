@@ -15,11 +15,11 @@ RSpec.describe 'FetchUtil extractor integration' do
           <div class="crumbs">Breadcrumbs</div>
           <main class="main">
             <article class="doc">
-              <p>The Fedora Docs Team Version F43 Last review: 2026-03-01</p>
-              <h1>Getting Started</h1>
-              <p>Fedora provides various methods to help you get started quickly.</p>
-              <h2>Introduction</h2>
-              <p>This guide introduces installation paths and help channels.</p>
+              <p>Northwind Docs Desk Edition Q Last review: 2026-03-01</p>
+              <h1>First Steps</h1>
+              <p>Several routes can help a new reader begin with confidence.</p>
+              <h2>Overview</h2>
+              <p>This guide maps setup paths and support channels.</p>
             </article>
           </main>
         </body>
@@ -29,10 +29,10 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Getting Started")
-      expect(payload["markdown"]).to include("Fedora provides various methods to help you get started quickly.")
-      expect(payload["markdown"]).not_to include("The Fedora Docs Team")
-      expect(payload["markdown"]).not_to include("Version F43")
+      expect(payload["markdown"]).to include("# First Steps")
+      expect(payload["markdown"]).to include("Several routes can help a new reader begin with confidence.")
+      expect(payload["markdown"]).not_to include("Northwind Docs Desk")
+      expect(payload["markdown"]).not_to include("Edition Q")
       expect(payload["markdown"]).not_to include("Breadcrumbs")
     end
   end
@@ -41,24 +41,24 @@ RSpec.describe 'FetchUtil extractor integration' do
     html = <<~HTML
       <html>
         <head>
-          <title>Getting Started with Rails — Ruby on Rails Guides</title>
+          <title>Building a Small Service — Ruby Guides</title>
         </head>
         <body>
           <div id="topNav">Rails nav</div>
           <main id="main">
             <a href="#main">Skip to main content</a>
-            <h1>Getting Started with Rails</h1>
-            <p>This guide covers getting up and running with Ruby on Rails.</p>
+            <h1>Building a Small Service</h1>
+            <p>This guide outlines a practical path for starting a small service.</p>
             <div>
-              <h2>Chapters</h2>
+              <h2>Sections</h2>
               <ul>
-                <li><a href="#introduction">Introduction</a></li>
-                <li><a href="#philosophy">Rails Philosophy</a></li>
+                <li><a href="#introduction">Overview</a></li>
+                <li><a href="#philosophy">Design Notes</a></li>
               </ul>
             </div>
             <div id="column-main">
-              <h2>1. Introduction</h2>
-              <p>Rails is a web framework built for the Ruby programming language.</p>
+              <h2>1. Overview</h2>
+              <p>The sample framework supports services written in the Ruby language.</p>
             </div>
           </main>
         </body>
@@ -69,31 +69,31 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
       markdown = payload["markdown"].delete("\\")
 
-      expect(markdown).to include("# Getting Started with Rails")
-      expect(markdown).to include("This guide covers getting up and running with Ruby on Rails.")
-      expect(markdown).to include("## 1. Introduction")
+      expect(markdown).to include("# Building a Small Service")
+      expect(markdown).to include("This guide outlines a practical path for starting a small service.")
+      expect(markdown).to include("## 1. Overview")
       expect(markdown).not_to include("Skip to main content")
-      expect(markdown).not_to include("## Chapters")
+      expect(markdown).not_to include("## Sections")
     end
   end
 
   it "does not flag long single-topic rails guides as multi-topic pages" do
     sections = 7.times.map do |i|
       <<~SECTION
-        <h2>#{i + 1}. Guide section #{i + 1}</h2>
-        <p>This section continues the same Rails guide with a focused explanation and a <a href="#example-#{i}">supporting example</a>.</p>
+        <h2>#{i + 1}. Reference section #{i + 1}</h2>
+        <p>This section extends the same service guide with a focused note and a <a href="#example-#{i}">working example</a>.</p>
       SECTION
     end.join("\n")
 
     html = <<~HTML
       <html>
         <head>
-          <title>Getting Started with Rails — Ruby on Rails Guides</title>
+          <title>Building a Small Service — Ruby Guides</title>
         </head>
         <body>
           <main id="main">
-            <h1>Getting Started with Rails</h1>
-            <p>This guide covers getting up and running with Ruby on Rails.</p>
+            <h1>Building a Small Service</h1>
+            <p>This guide outlines a practical path for starting a small service.</p>
             <div id="column-main">
               #{sections}
             </div>
@@ -181,6 +181,19 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "cleans current RDoc root anchors without dropping the reference body" do
+    html = fixture_contents(File.expand_path('../../fixtures/rdoc_root.html', __dir__))
+
+    with_url_page("https://ruby-doc.org/3.4.1/", html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch("markdown")
+
+      expect(markdown).to include("# Ruby 3.4.1")
+      expect(markdown).to include("## Core classes")
+      expect(markdown).to include("ruby --version")
+      expect(markdown).not_to include("¶")
+    end
+  end
+
   it "extracts rubyapi landing pages into compact class lists" do
     html = <<~HTML
       <html>
@@ -229,6 +242,23 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("- [String](https://rubyapi.org/4.0/o/string) - A String object holds and manipulates an arbitrary sequence of bytes.")
       expect(payload["markdown"]).to include("- [Integer](https://rubyapi.org/4.0/o/integer) - Represent whole numbers in Ruby.")
       expect(payload["markdown"]).not_to include("Main navigation")
+    end
+  end
+
+  it "keeps every Ruby API landing card in DOM order" do
+    cards = (1..15).map do |index|
+      <<~HTML
+        <article><h2>Class#{index}</h2><p>Description #{index}.</p><a href="/4.0/o/class#{index}">Read more</a></article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Ruby API</title></head><body>#{cards}</body></html>
+    HTML
+
+    with_url_page("https://rubyapi.org/", html) do |page|
+      markdown = extract(page)["markdown"]
+      expect(markdown).to include("- [Class15](https://rubyapi.org/4.0/o/class15) - Description 15.")
+      expect(markdown.index("Class1")).to be < markdown.index("Class15")
     end
   end
 

@@ -7,32 +7,32 @@ RSpec.describe 'FetchUtil media watch page extraction' do
     html = <<~HTML
       <html>
         <head>
-          <title>Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster) - YouTube</title>
+          <title>Night Signal - Lanterns at Dawn (Studio Video) - YouTube</title>
           <meta property="og:type" content="video.other">
           <meta property="og:site_name" content="YouTube">
-          <meta property="og:title" content="Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)">
+          <meta property="og:title" content="Night Signal - Lanterns at Dawn (Studio Video)">
           <meta property="og:video:url" content="https://www.youtube.com/embed/dQw4w9WgXcQ">
           <script type="application/ld+json">
-            {"@context":"https://schema.org","@type":"VideoObject","name":"Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)","description":"The official video for Never Gonna Give You Up by Rick Astley.","uploadDate":"2009-10-25"}
+            {"@context":"https://schema.org","@type":"VideoObject","name":"Night Signal - Lanterns at Dawn (Studio Video)","description":"A studio video for Lanterns at Dawn by Night Signal.","uploadDate":"2009-10-25"}
           </script>
           <script>
             window.ytInitialPlayerResponse = {
               videoDetails: {
-                title: "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
-                author: "Rick Astley",
+                 title: "Night Signal - Lanterns at Dawn (Studio Video)",
+                 author: "Night Signal",
                 viewCount: "1789090584",
-                shortDescription: "The official video for Never Gonna Give You Up by Rick Astley. Subscribe to the official Rick Astley YouTube channel."
+                 shortDescription: "A studio video for Lanterns at Dawn by Night Signal. Follow the Night Signal channel for new sessions."
               },
-              microformat: { playerMicroformatRenderer: { ownerChannelName: "Rick Astley", publishDate: "2009-10-25" } }
+             microformat: { playerMicroformatRenderer: { ownerChannelName: "Night Signal", publishDate: "2009-10-25" } }
             };
           </script>
         </head>
         <body>
           <main>
-            <h1>Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)</h1>
-            <a href="/hashtag/nevergonnagiveyouup">#NeverGonnaGiveYouUp</a>
-            <a href="/redirect?q=https://RickAstley.lnk.to/AmazonMusicID">Amazon Music</a>
-            <a href="/redirect?q=https://RickAstley.lnk.to/SpotifyID">Spotify</a>
+            <h1>Night Signal - Lanterns at Dawn (Studio Video)</h1>
+            <a href="/hashtag/nevergonnagiveyouup">#LanternsAtDawn</a>
+            <a href="/redirect?q=https://RickAstley.lnk.to/AmazonMusicID">Audio Store</a>
+            <a href="/redirect?q=https://RickAstley.lnk.to/SpotifyID">Stream Service</a>
           </main>
         </body>
       </html>
@@ -42,10 +42,10 @@ RSpec.describe 'FetchUtil media watch page extraction' do
       payload = extract(page)
 
       expect(payload['contentType']).to eq('article')
-      expect(payload['markdown']).to include('# Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)')
-      expect(payload['markdown']).to include('- Author: Rick Astley')
+      expect(payload['markdown']).to include('# Night Signal - Lanterns at Dawn (Studio Video)')
+      expect(payload['markdown']).to include('- Author: Night Signal')
       expect(payload['markdown']).to include('- Views: 1789090584')
-      expect(payload['markdown']).to include('The official video for Never Gonna Give You Up by Rick Astley.')
+      expect(payload['markdown']).to include('A studio video for Lanterns at Dawn by Night Signal.')
       expect(payload['warnings']).not_to include('multi_topic_page')
     end
   end
@@ -54,23 +54,23 @@ RSpec.describe 'FetchUtil media watch page extraction' do
     html = <<~HTML
       <html>
         <head>
-          <title>The New Vimeo Player (You Know, For Videos) | Videos & Movies on Vimeo</title>
+          <title>The Quiet Vimeo Player (Sample Clip) | Videos & Movies on Vimeo</title>
           <meta property="og:type" content="video.other">
           <meta property="og:site_name" content="Vimeo">
-          <meta property="og:title" content="The New Vimeo Player (You Know, For Videos)">
-          <meta property="og:description" content="It may look mostly the same on the surface, but under the hood we totally rebuilt our player.">
+          <meta property="og:title" content="The Quiet Vimeo Player (Sample Clip)">
+          <meta property="og:description" content="This sample clip uses a calm layout while the player prepares the published stream.">
           <meta property="og:video:url" content="https://player.vimeo.com/video/76979871">
         </head>
         <body>
           <div>
             <span>Loading</span>
-            <h1>This video is processing...</h1>
-            <p>You'll be able to view it as soon as it's done.</p>
+            <h1>This clip is processing...</h1>
+            <p>You can view it after preparation finishes.</p>
           </div>
           <main data-testid="vd-wrapper" lang="en">
-            <h1>The New Vimeo Player (You Know, For Videos)</h1>
+            <h1>The Quiet Vimeo Player (Sample Clip)</h1>
             <p><time datetime="2013-10-15T18:08:29+00:00">12 years ago</time></p>
-            <p>It may look mostly the same on the surface, but under the hood we totally rebuilt our player.</p>
+            <p>This sample clip uses a calm layout while the player prepares the published stream.</p>
           </main>
         </body>
       </html>
@@ -80,11 +80,25 @@ RSpec.describe 'FetchUtil media watch page extraction' do
       payload = extract(page)
 
       expect(payload['contentType']).to eq('article')
-      expect(payload['markdown']).to include('# The New Vimeo Player (You Know, For Videos)')
+      expect(payload['markdown']).to include('# The Quiet Vimeo Player (Sample Clip)')
       expect(payload['markdown']).to include('- Published: 2013-10-15T18:08:29+00:00')
-      expect(payload['markdown']).to include('under the hood we totally rebuilt our player')
-      expect(payload['markdown']).not_to include('This video is processing')
+      expect(payload['markdown']).to include('player prepares the published stream')
+      expect(payload['markdown']).not_to include('This clip is processing')
       expect(payload['warnings']).not_to include('multi_topic_page')
+    end
+  end
+
+  it 'keeps all visible media headings and chapters in DOM order' do
+    headings = (1..8).map { |index| "<h1>Heading #{index}</h1>" }.join
+    chapters = (1..14).map { |index| "<ytd-macro-markers-list-item-renderer><h4>Chapter #{index}</h4></ytd-macro-markers-list-item-renderer>" }.join
+    html = <<~HTML
+      <html><head><title>Many Chapters - YouTube</title></head><body><main>#{headings}<p id="description">A sufficiently long video description for this fixture.</p>#{chapters}</main></body></html>
+    HTML
+
+    with_url_page('https://www.youtube.com/watch?v=example', html) do |page|
+      markdown = extract(page)['markdown']
+      expect(markdown).to include('Chapter 14')
+      expect(markdown.index('Chapter 1')).to be < markdown.index('Chapter 14')
     end
   end
 end

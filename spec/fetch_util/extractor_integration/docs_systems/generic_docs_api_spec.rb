@@ -169,9 +169,9 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
     html = <<~HTML
       <html>
         <head>
-          <title>Chat | OpenAI API Reference</title>
+          <title>Chat | Sample API Reference</title>
           <meta name="generator" content="Astro v6.0.4">
-          <meta property="og:site_name" content="OpenAI API Reference">
+          <meta property="og:site_name" content="Sample API Reference">
         </head>
         <body>
           <nav>
@@ -190,7 +190,7 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
                       <div class="stldocs-resource">
                         <div class="stldocs-resource-content">
                           <h2>ChatCompletions</h2>
-                          <div class="stldocs-resource-description">Given a list of messages comprising a conversation, the model will return a response.</div>
+                           <div class="stldocs-resource-description">Given a sequence of messages, the service returns a response.</div>
                           <div class="stldocs-resource-content-group">
                             <div class="stldocs-method-summary">
                               <div class="stldocs-method-header">
@@ -241,7 +241,7 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
 
       expect(payload['contentType']).to eq('article')
       expect(markdown).to include('# Chat')
-      expect(markdown).to include('Given a list of messages comprising a conversation')
+      expect(markdown).to include('Given a sequence of messages')
       expect(markdown).to include('- Create chat completion (POST/chat/completions)')
       expect(markdown).to include('- List Chat Completions (GET/chat/completions)')
       expect(markdown).to include('### ChatCompletion = object { id, choices, created }')
@@ -253,16 +253,16 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
     html = <<~HTML
             <html>
               <head>
-                <title>Redocly Museum API (1.0.0)</title>
+                <title>Sample Gallery API (1.0.0)</title>
                 <meta name="generator" content="Redocly" />
               </head>
               <body>
                 <div class="redoc-wrap">
                   <aside class="menu-content">Sidebar navigation</aside>
                   <div class="api-content" role="main">
-                    <h1>Redocly Museum API (1.0.0)</h1>
+                    <h1>Sample Gallery API (1.0.0)</h1>
                     <p>Download OpenAPI specification:</p>
-                    <p>An imaginary, but delightful Museum API for interacting with museum services and information.</p>
+                    <p>An invented Gallery API for browsing exhibits and opening hours.</p>
                     <section>
                       <h2>Get museum hours</h2>
                       <p>Get upcoming museum operating hours</p>
@@ -306,7 +306,7 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
       markdown = payload["markdown"].delete("\\")
 
       expect(payload["contentType"]).to eq("article")
-      expect(markdown).to include("# Redocly Museum API (1.0.0)")
+      expect(markdown).to include("# Sample Gallery API (1.0.0)")
       expect(markdown).to include("## Get museum hours")
       expect(markdown).to include("- `startDate` (string; Example: startDate=2023-02-23): The starting date to retrieve future operating hours from.")
       expect(markdown).to include("```json")
@@ -314,6 +314,21 @@ RSpec.describe 'FetchUtil extractor integration - generic API docs systems' do
       expect(markdown).not_to include("Download OpenAPI specification")
       expect(markdown).not_to include("Payload")
       expect(markdown).not_to include("Museum opening hoursMuseum opening hours")
+    end
+  end
+
+  it "keeps every substantive Redoc response panel in DOM order" do
+    panels = (1..4).map do |index|
+      "<div role=\"tabpanel\"><pre>{\"response\": #{index}}</pre></div>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Panel API</title><meta name="generator" content="Redocly"></head><body><main class="api-content"><h1>Panel API</h1><p>A response panel fixture.</p><section><h2>Responses</h2><div data-rttabs="true"><div role="tablist"><button role="tab">JSON</button></div>#{panels}</div></section></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/panels", html) do |page|
+      markdown = extract(page)["markdown"].delete("\\")
+      expect(markdown).to include('"response": 4')
+      expect(markdown.index('"response": 1')).to be < markdown.index('"response": 4')
     end
   end
 end

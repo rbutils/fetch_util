@@ -8,8 +8,8 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
 
   it "flags consent interstitial pages as suspect" do
     html = simple_consent_wall_html(
-      title: "reddit for rubyists",
-      heading: "reddit for rubyists",
+      title: "forum for sample builders",
+      heading: "forum for sample builders",
       paragraphs: ["Let us know your cookie preferences", "Before you continue to Reddit", "Accept all cookies"]
     )
 
@@ -23,21 +23,21 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
 
   it "summarizes Reddit cookie prompts from metadata and flags them" do
     html = simple_consent_wall_html(
-      title: "Groundbird Gear out of business? : r/BackpackingDogs",
-      heading: "Groundbird Gear out of business? : r/BackpackingDogs",
+      title: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
+      heading: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
       paragraphs: [
         "Let us know your cookie preferences",
         "Before you continue to Reddit",
-        "Reddit uses cookies and similar technologies to keep the website operational."
+        "This forum uses cookies and similar tools to keep the page operational."
       ],
-      head: %(<meta name="description" content="Discussion about whether Groundbird Gear is out of business.">)
+      head: %(<meta name="description" content="Discussion about whether Cedar Outfitters is changing plans.">)
     )
 
     with_url_page("https://www.reddit.com/r/BackpackingDogs/comments/17yd040/groundbird_gear_out_of_business", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Groundbird Gear out of business?")
-      expect(payload["markdown"]).to include("Discussion about whether Groundbird Gear is out of business.")
+      expect(payload["markdown"]).to include("# Is Cedar Outfitters changing plans?")
+      expect(payload["markdown"]).to include("Discussion about whether Cedar Outfitters is changing plans.")
       expect(payload["markdown"]).not_to include("Let us know your cookie preferences")
       expect(payload["warnings"]).to include("consent_interstitial")
     end
@@ -47,15 +47,15 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     html = <<~HTML
       <html>
         <head>
-          <title>Groundbird Gear out of business? : r/BackpackingDogs</title>
+          <title>Is Cedar Outfitters changing plans? : r/BackpackingDogs</title>
         </head>
         <body>
           <main>
-            <h1>Groundbird Gear out of business?</h1>
+             <h1>Is Cedar Outfitters changing plans?</h1>
             <p>Let us know your cookie preferences</p>
             <shreddit-post></shreddit-post>
             <faceplate-screen-reader-content>
-              I was interested in getting a groundbird gear harness and pack system for my dog.
+               I was interested in finding a cedar trail harness and pack system for my dog.
             </faceplate-screen-reader-content>
             <shreddit-comment></shreddit-comment>
           </main>
@@ -66,7 +66,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     with_url_page("https://www.reddit.com/r/BackpackingDogs/comments/17yd040/groundbird_gear_out_of_business", html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
-      expect(payload["markdown"]).to include("groundbird gear harness")
+      expect(payload["markdown"]).to include("cedar trail harness")
       expect(payload["markdown"]).not_to include("This Reddit page requires cookie acceptance or login")
     end
   end
@@ -215,7 +215,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     with_url_page("https://mastodon.social/@RubyOnRails", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["contentType"]).to eq("list")
+      expect(payload).to include("contentType" => "social", "socialKind" => "profile", "platform" => "Mastodon", "handle" => "@RubyOnRails@mastodon.social")
       expect(payload["markdown"]).to include("# Ruby on Rails")
       expect(payload["markdown"]).to include("- Handle: @RubyOnRails@mastodon.social")
       expect(payload["markdown"]).to include("Compress the complexity of modern web apps")
@@ -223,6 +223,116 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       expect(payload["markdown"]).to include("New Active Record examples")
       expect(payload["markdown"]).not_to include("Profiles directory")
       expect(payload["markdown"]).not_to include("Keyboard shortcuts")
+    end
+  end
+
+  it 'classifies a DOM-backed Mastodon explore timeline as a social feed without dropping statuses' do
+    html = fixture_contents('spec/fixtures/mastodon_explore_timeline.html')
+
+    with_url_page('https://mastodon.social/explore', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'feed', 'platform' => 'Mastodon')
+      expect(payload['markdown']).to include('Mastodon Explore', 'Explore status 01', 'Explore status 20')
+      expect(payload['markdown']).to include('quoted post', '#fediverse', 'a sunset over the city')
+      expect(payload['markdown'].index('Explore status 01')).to be < payload['markdown'].index('Explore status 20')
+    end
+  end
+
+  it 'retains visible Mastodon profile HTML while cleaning hidden, reblog, and action chrome' do
+    html = fixture_contents('spec/fixtures/mastodon_profile_cleanup.html')
+
+    with_url_page('https://mastodon.social/@Mastodon', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Mastodon')
+      expect(payload['markdown']).to include('Synthetic status body', '#mastodon', 'synthetic media description', 'Another synthetic status remains')
+      expect(payload['markdown']).not_to include('Hidden status text', 'Boosted by', 'Reply Boost Favourite')
+      expect(payload['html']).to include(
+        'Mastodon</h1>', '@Mastodon@mastodon.social', 'Synthetic profile bio for the cleanup fixture.', 'Website',
+        'joinmastodon.org', 'Location', 'Federated Web', 'Synthetic profile bio for the cleanup fixture.'
+      )
+      expect(payload['html']).to include(
+        'Synthetic status body', '#mastodon', 'synthetic media description', 'Another synthetic status remains',
+        '<time datetime="2026-07-10T12:00:00Z">1h</time>'
+      )
+      expect(payload['html']).not_to include('aria-hidden', 'status__action-bar', 'status__prepend')
+      expect(payload['html']).not_to include('Hidden status text', 'Boosted by', 'Reply Boost Favourite')
+    end
+  end
+
+  it 'gives Reddit challenge shells precedence over otherwise feed-like markup' do
+    html = fixture_contents('spec/fixtures/reddit_challenge_shell.html')
+
+    with_url_page('https://www.reddit.com/r/programming/?js_challenge=1&solution=token', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['contentType']).to eq('interstitial')
+      expect(payload['markdown']).to include('Challenge: Reddit access verification')
+      expect(payload['contentType']).not_to eq('social')
+    end
+  end
+
+  it 'preserves every visible Mastodon profile field beyond the former cap' do
+    html = fixture_contents('spec/fixtures/mastodon_profile_over_cap.html')
+
+    with_url_page('https://mastodon.example/@ada', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Mastodon')
+      expect(payload['markdown']).to match(/Followers.*101.*Account age 6 years/m)
+    end
+  end
+
+  it "extracts Mastodon single posts as articles with replies" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Mastodon (@Mastodon@mastodon.social) - Mastodon</title>
+          <meta property="og:site_name" content="Mastodon">
+          <meta property="og:title" content="Mastodon on Mastodon">
+        </head>
+        <body>
+          <main class="columns-area__panels__main">
+            <article class="status__wrapper status-public">
+              <a class="status__display-name" href="/@Mastodon">Mastodon @Mastodon@mastodon.social</a>
+              <time datetime="2026-07-08T10:00:00Z">Jul 8</time>
+              <div class="status__content status__content--with-action">
+                <div class="status__content__text">
+                  <p>We are rolling out a new stable Mastodon release with better moderation tooling and timeline controls.</p>
+                </div>
+              </div>
+            </article>
+            <article class="status__wrapper status-public">
+              <a class="status__display-name" href="/@admin@example.social">Admin @admin@example.social</a>
+              <time datetime="2026-07-08T10:05:00Z">5m</time>
+              <div class="status__content status__content--with-action">
+                <div class="status__content__text">
+                  <p>Thanks for the update. The reply controls are visible on our instance.</p>
+                </div>
+              </div>
+            </article>
+          </main>
+          <footer>
+            <a href="/directory">Profiles directory</a>
+            <a href="/keyboard-shortcuts">Keyboard shortcuts</a>
+          </footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://mastodon.social/@Mastodon/116765910384325070", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include("contentType" => "social", "socialKind" => "thread", "platform" => "Mastodon",
+                                 "handle" => "@Mastodon@mastodon.social", "replyCount" => 1)
+      expect(payload["markdown"]).to include("# Mastodon on Mastodon")
+      expect(payload["markdown"]).to include("- Author: Mastodon @Mastodon@mastodon.social")
+      expect(payload["markdown"]).to include("new stable Mastodon release")
+      expect(payload["markdown"]).to include("## Replies")
+      expect(payload["markdown"]).to include("Thanks for the update")
+      expect(payload["markdown"]).not_to include("Profiles directory")
+      expect(payload["markdown"]).not_to include("Recent Posts")
     end
   end
 
@@ -252,10 +362,49 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     with_url_page("https://mastodon.social/tags/ruby", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["contentType"]).to eq("list")
+      expect(payload).to include("contentType" => "social", "socialKind" => "feed", "platform" => "Mastodon", "community" => "#ruby")
       expect(payload["markdown"]).to include("# #ruby on Mastodon")
       expect(payload["markdown"]).to include("Ruby pattern matching")
       expect(payload["markdown"]).to include("tiny Rails service")
+    end
+  end
+
+  it "classifies Mastodon single statuses without rendered replies as social posts" do
+    html = <<~HTML
+      <html><head><title>Example (@example@mastodon.social) - Mastodon</title><meta property="og:site_name" content="Mastodon"></head><body><main class="columns-area__panels__main"><article class="status__wrapper status-public"><a class="status__display-name" href="/@example">Example @example@mastodon.social</a><div class="status__content"><p>This public status has enough visible text to be retained without any rendered replies.</p></div></article></main></body></html>
+    HTML
+
+    with_url_page("https://mastodon.social/@example/116765910384325071", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include("contentType" => "social", "socialKind" => "post", "platform" => "Mastodon", "handle" => "@example@mastodon.social", "replyCount" => nil)
+      expect(payload["markdown"]).to include("This public status has enough visible text")
+    end
+  end
+
+  it "classifies Mastodon-family detailed statuses without Mastodon metadata" do
+    html = fixture_contents(File.expand_path("../../fixtures/mastodon_detailed_status.html", __dir__))
+
+    with_url_page("https://todon.nl/@burnoutqueen/116892639909737254", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload).to include("contentType" => "social", "socialKind" => "post", "platform" => "Mastodon",
+                                 "handle" => "@burnoutqueen@todon.nl", "replyCount" => nil)
+      expect(payload["markdown"]).to include("The solution of the many body problem")
+      expect(payload["markdown"]).not_to include("Boost")
+    end
+  end
+
+  it "does not classify ActivityPub-looking pages without Mastodon evidence" do
+    html = <<~HTML
+      <html><head><title>Example social status</title><meta property="og:site_name" content="ActivityPub"></head><body><main><div class="detailed-status__wrapper"><div class="detailed-status"><a class="detailed-status__display-name" href="/@example">Example</a><div class="status__content"><p>This ActivityPub-compatible site uses status-like markup but lacks Mastodon-family evidence.</p></div></div></div></main></body></html>
+    HTML
+
+    with_url_page("https://social.example/@example/123456", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).not_to eq("social")
+      expect(payload.values_at("socialKind", "platform", "handle", "replyCount", "community", "score")).to all(be_nil)
     end
   end
 end

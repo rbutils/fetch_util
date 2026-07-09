@@ -27,7 +27,7 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
                   <article class="card sl-flex">
                     <p class="title sl-flex"><span>What will you build with Astro?</span></p>
                     <div class="body">
-                      <p>Explore <a href="https://astro.build/themes/">Astro starter themes</a> for blogs, portfolios, docs, landing pages, SaaS, marketing, ecommerce sites, and more!</p>
+                      <p>Explore <a href="https://astro.build/themes/">Astro starter themes</a> for journals, portfolios, manuals, landing pages, stores, and more!</p>
                     </div>
                   </article>
                 </div>
@@ -223,6 +223,24 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
       expect(payload["markdown"]).not_to include("Copy for LLM")
       expect(payload["markdown"]).not_to include("View as Markdown")
       expect(payload["markdown"]).not_to include("Previous Next")
+    end
+  end
+
+  it "classifies Docusaurus docs homepages as lists without leaked nav text" do
+    html = fixture_contents(File.expand_path('../../../fixtures/docusaurus_homepage.html', __dir__))
+
+    with_url_page("https://pptr.dev/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["title"]).to eq("Orbit Browser")
+      expect(payload["markdown"]).to include("# Orbit Browser")
+      expect(payload["markdown"]).to include("Orbit Browser offers a compact interface")
+      expect(payload["markdown"]).to include("## Setup")
+      expect(payload["markdown"]).not_to include("Get started | API | FAQ")
+      expect(payload["markdown"]).not_to include("Automation API")
+      expect(payload["markdown"]).not_to include("Community Forum")
+      expect(payload["markdown"]).not_to include("Skip to main content")
     end
   end
 
@@ -436,6 +454,35 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
       expect(payload["markdown"]).not_to include("On this page")
       expect(payload["markdown"]).not_to include("Previous page")
       expect(payload["markdown"]).not_to include("# Introduction\n\n# Introduction")
+    end
+  end
+
+  it "keeps all MkDocs reference links in DOM order" do
+    links = (1..55).map { |index| "<li><a href=\"/reference/item-#{index}/\">Item #{index}</a></li>" }.join
+    html = <<~HTML
+      <html><head><meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1"></head>
+      <body><nav class="md-nav"><div class="md-nav__item--nested"><a class="md-nav__link" href="https://docs.example.test/reference/">Current</a><nav class="md-nav">#{links}</nav></div></nav><main><h1>Reference</h1><p>Reference content.</p></main></body></html>
+    HTML
+
+    with_url_page("https://docs.example.test/reference/", html) do |page|
+      markdown = extract(page)["markdown"]
+      expect(markdown).to include("- [Item 55](https://docs.example.test/reference/item-55/)")
+      expect(markdown.index("Item 1")).to be < markdown.index("Item 55")
+    end
+  end
+
+  it "keeps all Dartdoc libraries in DOM order" do
+    items = (1..85).map do |index|
+      "<dt><span class=\"name\"><a href=\"/api/library_#{index}.html\">library_#{index}</a></span></dt><dd>Library #{index}.</dd>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Dart API</title><meta name="generator" content="dartdoc"></head><body><main><div id="dartdoc-main-content"><h1>Dart API</h1><div class="desc"><p>Libraries.</p></div><section class="summary"><dl>#{items}</dl></section></div></main></body></html>
+    HTML
+
+    with_url_page("https://api.example.test/", html) do |page|
+      markdown = extract(page)["markdown"]
+      expect(markdown).to include("- [library_85](https://api.example.test/api/library_85.html) - Library 85.")
+      expect(markdown.index("library_1")).to be < markdown.index("library_85")
     end
   end
 end
