@@ -5,6 +5,7 @@
 /.rspec_status
 /.ruby-lsp/
 /.serena/
+/.playwright-mcp/
 /lib/fetch_util/assets/extract.js
 /lib/fetch_util/assets/extract.js.sha256
 Gemfile.lock
