@@ -9,7 +9,11 @@ extractors/glossary.js
 extractors/list_extraction.js
 extractors/search.js
 extractors/spa_data.js
-classifiers/challenges.js
+classifiers/challenges/challenge_pages.js
+classifiers/challenges/meta_walls.js
+classifiers/challenges/consent_walls.js
+classifiers/challenges/interstitial_pages.js
+classifiers/challenges/index.js
 classifiers/warnings.js
 profiles/news_homepages.js
 profiles/docs_hosts/index.js
@@ -27,6 +31,9 @@ systems/antora.js
 systems/reference_engines.js
 profiles/social/search.js
 profiles/media_commerce/index.js
+profiles/families/academic/core.js
+profiles/families/academic/publishers.js
+profiles/families/academic/preprints.js
 profiles/families/academic/index.js
 profiles/families/scientific_records.js
 profiles/substack.js
