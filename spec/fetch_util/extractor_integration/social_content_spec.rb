@@ -101,4 +101,68 @@ RSpec.describe 'FetchUtil social result contract' do
       expect(payload['warnings']).not_to include('consent_interstitial')
     end
   end
+
+  it 'types a visible public Facebook profile' do
+    html = <<~HTML
+      <html><head><title>Example Page | Facebook</title></head><body><main role="main"><div>Page · Community</div><div>12K followers</div><div>Intro</div><p>Public updates for the local community, events, workshops, volunteer opportunities, neighborhood news, and resources for residents and visitors.</p><p>Our organizers share schedules, speaker announcements, accessibility details, and practical guides for every event.</p><p>Members can read public recaps, connect with local volunteers, and find links to upcoming workshops.</p></main></body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/example-page/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Facebook', 'handle' => '@example-page')
+    end
+  end
+
+  it 'keeps a Facebook login shell as an interstitial' do
+    html = <<~HTML
+      <html><head><title>Facebook - Log In</title><meta name="description" content="Log in to Facebook"></head><body><main><h1>Log in to Facebook</h1><p>Create new account</p></main></body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/example-page/', html) do |page|
+      payload = extract_payload(page)
+
+      expect_content_type(payload, 'interstitial')
+      expect_empty_social_fields(payload)
+      expect_warnings(payload, include: 'meta_login_wall')
+    end
+  end
+
+  it 'types a visible public Instagram post' do
+    html = <<~HTML
+      <html><head><title>Ronaldo on Instagram: &quot;Training day&quot;</title><meta property="og:description" content="10 likes - ronaldo on April 1, 2026: &quot;Training day&quot;."></head><body><main><article><img src="https://example.test/post.jpg" alt="Training"><p>Training day</p></article></main></body></html>
+    HTML
+
+    with_url_page('https://www.instagram.com/ronaldo/p/example/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'post', 'platform' => 'Instagram', 'handle' => '@ronaldo')
+    end
+  end
+
+  it 'types a visible public Threads profile' do
+    html = <<~HTML
+      <html><head><title>Ada Lovelace (@ada) • Threads</title><meta name="description" content="2K Followers • 18 Threads • Computing notes."></head><body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p><p>Computing notes.</p></main></body></html>
+    HTML
+
+    with_url_page('https://www.threads.net/@ada', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Threads', 'handle' => '@ada')
+    end
+  end
+
+  it 'keeps a Threads login shell as an interstitial' do
+    html = <<~HTML
+      <html><head><title>Threads • Log in</title><meta name="description" content="Join Threads to share ideas. Log in with your Instagram."></head><body><main><h1>Log in with your Instagram</h1></main></body></html>
+    HTML
+
+    with_url_page('https://www.threads.net/@ada', html) do |page|
+      payload = extract_payload(page)
+
+      expect_content_type(payload, 'interstitial')
+      expect_empty_social_fields(payload)
+      expect_warnings(payload, include: 'meta_login_wall')
+    end
+  end
 end

@@ -60,7 +60,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "summarizes Instagram login-required pages even without metadata descriptions" do
+  it "keeps Instagram login-required pages as interstitials without social fields" do
     html = <<~HTML
       <html>
         <head>
@@ -78,13 +78,13 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.instagram.com/accounts/login/?next=%2Fgroundbirdsings%2F", html) do |page|
       payload = extract_payload(page)
 
-      expect(payload["markdown"]).to include("# Groundbird (@groundbirdsings)")
-      expect(payload["markdown"]).to include("Original content on this Instagram page for groundbirdsings is not available without login.")
-      expect_warnings(payload, include: "consent_interstitial")
+      expect_content_type(payload, "interstitial")
+      expect(payload.values_at("socialKind", "platform", "handle")).to all(be_nil)
+      expect_warnings(payload, include: %w[meta_login_wall consent_interstitial])
     end
   end
 
-  it "summarizes Instagram post login-required pages from OG metadata and next-target paths" do
+  it "does not treat Instagram post Open Graph metadata as public content" do
     html = <<~HTML
       <html>
         <head>
@@ -104,17 +104,13 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.instagram.com/accounts/login/?next=%2Fp%2FDCwL2cKggIk%2F", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Cristiano Ronaldo on Instagram")
-      expect(payload["markdown"]).to include("- Author: @cristiano")
-      expect(payload["markdown"]).to include("- Published: November 24, 2024")
-      expect(payload["markdown"]).to include("- Post: /p/DCwL2cKggIk/")
-      expect(payload["markdown"]).to include("- 8M likes")
-      expect(payload["markdown"]).to include("- 59K comments")
-      expect(payload["markdown"]).to include("😎")
+      expect_content_type(payload, "interstitial")
+      expect(payload.values_at("socialKind", "platform", "handle")).to all(be_nil)
+      expect_warnings(payload, include: "meta_login_wall")
     end
   end
 
-  it "treats username-prefixed instagram post urls as posts instead of profile login-required summaries" do
+  it "does not treat Instagram unavailable post metadata as public content" do
     html = <<~HTML
       <html>
         <head>
@@ -134,11 +130,9 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.instagram.com/ronaldo/p/DWh3vbdkXI1/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Ronaldo on Instagram")
-      expect(payload["markdown"]).to include("- Author: @ronaldo")
-      expect(payload["markdown"]).to include("- Published: March 30, 2026")
-      expect(payload["markdown"]).to include("- Post: /p/DWh3vbdkXI1/")
-      expect(payload["markdown"]).not_to include("Original content on this Instagram page for ronaldo is not available without login.")
+      expect_content_type(payload, "interstitial")
+      expect(payload.values_at("socialKind", "platform", "handle")).to all(be_nil)
+      expect_warnings(payload, include: "meta_login_wall")
     end
   end
 
@@ -179,6 +173,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         </head>
         <body>
           <main>
+            <article>
             <div>ronaldo</div>
             <div>4d</div>
             <div>Miami open 🎾 Que semana incrível! Obrigado, @itau</div>
@@ -196,6 +191,7 @@ RSpec.describe 'FetchUtil extractor integration' do
             <div>1.3K</div>
             <div>4 days ago</div>
             <div>Log in to like or comment.</div>
+            </article>
           </main>
         </body>
       </html>
