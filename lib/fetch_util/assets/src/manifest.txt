@@ -42,6 +42,7 @@ systems/antora.js
 systems/docs/reference/reference_engines.js
 profiles/social/search.js
 systems/media/player_pages.js
+systems/news_engines/generic_portal_homepages.js
 profiles/media_commerce/index.js
 profiles/families/academic/core.js
 profiles/families/academic/publishers.js
