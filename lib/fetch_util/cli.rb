@@ -17,6 +17,8 @@ module FetchUtil
       company
       location
       description
+      ingredients
+      instructions
       markdown
       content_type
       price

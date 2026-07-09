@@ -4,7 +4,7 @@ module FetchUtil
   class Result
     attr_reader :url, :final_url, :title, :byline, :excerpt, :site_name,
                 :published_time, :canonical_url, :language, :company, :location,
-                :description, :html, :markdown,
+                :description, :ingredients, :instructions, :html, :markdown,
                 :metadata, :reader_mode, :content_type, :suspect, :warnings,
                 :content_completeness_ratio, :content_format, :paywall_state,
                 :price, :error_message
@@ -27,7 +27,9 @@ module FetchUtil
           company: payload["company"],
           location: payload["location"],
           description: payload["description"],
-          price: payload["price"]
+          price: payload["price"],
+          ingredients: payload["ingredients"],
+          instructions: payload["instructions"]
         )
 
         new(
@@ -43,6 +45,8 @@ module FetchUtil
           company: payload["company"],
           location: payload["location"],
           description: payload["description"],
+          ingredients: payload["ingredients"],
+          instructions: payload["instructions"],
           html: payload["html"],
           markdown: payload["markdown"],
           metadata: metadata,
@@ -79,6 +83,8 @@ module FetchUtil
           company: nil,
           location: nil,
           description: nil,
+          ingredients: nil,
+          instructions: nil,
           html: nil,
           markdown: "",
           metadata: metadata,
@@ -94,7 +100,7 @@ module FetchUtil
 
       def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
                            content_completeness_ratio:, content_format:, paywall_state:,
-                           company:, location:, description:, price:)
+                           company:, location:, description:, price:, ingredients:, instructions:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -106,6 +112,8 @@ module FetchUtil
           company: company,
           location: location,
           description: description,
+          ingredients: ingredients,
+          instructions: instructions,
           content_url: final_url,
           reader_mode: payload["readerMode"],
           content_type: content_type,
@@ -120,8 +128,10 @@ module FetchUtil
     end
 
     def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
-                   canonical_url:, language:, company:, location:, description:, html:, markdown:, metadata:, reader_mode:, content_type:, suspect:, warnings:,
-                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil, price: nil, error_message: nil)
+                   canonical_url:, language:, company:, location:, description:, ingredients:, instructions:, html:,
+                   markdown:, metadata:, reader_mode:, content_type:, suspect:, warnings:,
+                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil, price: nil,
+                   error_message: nil)
       @url = url
       @final_url = final_url
       @title = title
@@ -134,6 +144,8 @@ module FetchUtil
       @company = company
       @location = location
       @description = description
+      @ingredients = ingredients
+      @instructions = instructions
       @html = html
       @markdown = markdown
       @metadata = metadata.freeze
@@ -162,6 +174,8 @@ module FetchUtil
         company: company,
         location: location,
         description: description,
+        ingredients: ingredients,
+        instructions: instructions,
         html: html,
         markdown: markdown,
         metadata: metadata,
