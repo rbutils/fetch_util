@@ -64,6 +64,7 @@ systems/content_types/sports.js
 systems/content_types/press_releases.js
 systems/content_types/products.js
 systems/content_types/properties.js
+systems/social/content_type.js
 systems/docs/core/docs_detector.js
 systems/docs/stldocs/methods.js
 systems/docs/stldocs/schemas.js
