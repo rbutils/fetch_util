@@ -112,6 +112,7 @@ profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
+profiles/community/code_hosts/github_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
