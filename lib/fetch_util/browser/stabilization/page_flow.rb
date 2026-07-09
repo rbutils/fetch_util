@@ -10,6 +10,7 @@ module FetchUtil
           SiteStabilization::SocialPlatforms::SOCIAL_PLATFORM_STABILIZATION_PROFILES[:stabilize_instagram],
           SiteStabilization::SocialPlatforms::SOCIAL_PLATFORM_STABILIZATION_PROFILES[:stabilize_facebook],
           SiteStabilization::CommunityAndMarketplace::COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES[:stabilize_ebay_search],
+          SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
           { host: "gitlab.com", path_query: ->(uri) { uri.path.split("/").reject(&:empty?).length == 2 },
             strategy: :stabilize_gitlab_repo, notes: "Wait for repository README content on GitLab project roots.",
             tests: "spec/fetch_util/browser_stabilization_spec.rb" }

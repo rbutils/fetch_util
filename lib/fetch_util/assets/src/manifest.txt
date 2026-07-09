@@ -8,6 +8,7 @@ extractors/article_roots.js
 extractors/glossary.js
 extractors/lists/relabeling.js
 extractors/lists/jobs.js
+extractors/lists/lodging.js
 classifiers/list_pages.js
 extractors/lists/core.js
 extractors/lists/products.js

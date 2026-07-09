@@ -48,4 +48,19 @@ RSpec.describe FetchUtil::Browser do
     expect(browser).to have_received(:accept_cookie_consent).once
     expect(browser).to have_received(:dismiss_privacy_preference_overlay).once
   end
+
+  it 'uses a bounded lodging detail wait for Airbnb room pages' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle
+
+    allow(browser).to receive(:accept_cookie_consent).with(page).and_return(false)
+    allow(browser).to receive(:dismiss_privacy_preference_overlay).with(page).and_return(false)
+    allow(browser).to receive(:safe_evaluate).and_return(true)
+    allow(browser).to receive(:settle_after_stabilization)
+
+    browser.send(:stabilize_page, page, 'https://www.airbnb.com/rooms/123456789')
+
+    expect(browser).to have_received(:safe_evaluate).with(page, include('LodgingBusiness'), default: false)
+    expect(browser).not_to have_received(:settle_after_stabilization)
+  end
 end

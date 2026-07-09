@@ -3,12 +3,12 @@
 module FetchUtil
   class Result
     attr_reader :url, :final_url, :title, :byline, :excerpt, :site_name,
-                :published_time, :canonical_url, :language, :company, :location,
+                :published_time, :canonical_url, :language, :name, :company, :location,
                 :description, :ingredients, :instructions, :bedrooms, :bathrooms,
                 :area_sqft, :html, :markdown,
                 :metadata, :reader_mode, :content_type, :suspect, :warnings,
                 :content_completeness_ratio, :content_format, :paywall_state,
-                :price, :error_message
+                :price, :rating, :address, :error_message
 
     class << self
       def from_payload(url:, final_url:, payload:, canonical_url:, content_type:, warnings:, suspect:)
@@ -25,6 +25,7 @@ module FetchUtil
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
           paywall_state: paywall_state,
+          name: payload["name"],
           company: payload["company"],
           location: payload["location"],
           description: payload["description"],
@@ -33,7 +34,9 @@ module FetchUtil
           bedrooms: payload["bedrooms"],
           bathrooms: payload["bathrooms"],
           area_sqft: payload["areaSqft"],
-          price: payload["price"]
+          price: payload["price"],
+          rating: payload["rating"],
+          address: payload["address"]
         )
 
         new(
@@ -46,6 +49,7 @@ module FetchUtil
           published_time: payload["publishedTime"],
           canonical_url: canonical_url,
           language: payload["language"],
+          name: payload["name"],
           company: payload["company"],
           location: payload["location"],
           description: payload["description"],
@@ -64,7 +68,9 @@ module FetchUtil
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
           paywall_state: paywall_state,
-          price: payload["price"]
+          price: payload["price"],
+          rating: payload["rating"],
+          address: payload["address"]
         )
       end
 
@@ -87,6 +93,7 @@ module FetchUtil
           published_time: nil,
           canonical_url: nil,
           language: nil,
+          name: nil,
           company: nil,
           location: nil,
           description: nil,
@@ -110,8 +117,8 @@ module FetchUtil
 
       def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
                            content_completeness_ratio:, content_format:, paywall_state:,
-                           company:, location:, description:, ingredients:, instructions:,
-                           bedrooms:, bathrooms:, area_sqft:, price:)
+                           name:, company:, location:, description:, ingredients:, instructions:,
+                           bedrooms:, bathrooms:, area_sqft:, price:, rating:, address:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -120,6 +127,7 @@ module FetchUtil
           published_time: payload["publishedTime"],
           canonical_url: canonical_url,
           language: payload["language"],
+          name: name,
           company: company,
           location: location,
           description: description,
@@ -136,16 +144,19 @@ module FetchUtil
           content_completeness_ratio: content_completeness_ratio,
           content_format: content_format,
           paywall_state: paywall_state,
-          price: price
+          price: price,
+          rating: rating,
+          address: address
         }.freeze
       end
     end
 
-      def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
-                    canonical_url:, language:, company:, location:, description:, ingredients:, instructions:,
-                    bedrooms:, bathrooms:, area_sqft:, html:, markdown:, metadata:, reader_mode:,
-                    content_type:, suspect:, warnings:, content_completeness_ratio: 1.0,
-                    content_format: nil, paywall_state: nil, price: nil, error_message: nil)
+    def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
+                   canonical_url:, language:, name:, company:, location:, description:, ingredients:,
+                   instructions:, bedrooms:, bathrooms:, area_sqft:, html:, markdown:, metadata:,
+                   reader_mode:, content_type:, suspect:, warnings:,
+                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil,
+                   price: nil, rating: nil, address: nil, error_message: nil)
       @url = url
       @final_url = final_url
       @title = title
@@ -155,6 +166,7 @@ module FetchUtil
       @published_time = published_time
       @canonical_url = canonical_url
       @language = language
+      @name = name
       @company = company
       @location = location
       @description = description
@@ -174,6 +186,8 @@ module FetchUtil
       @content_format = content_format&.freeze
       @paywall_state = paywall_state&.freeze
       @price = price
+      @rating = rating
+      @address = address
       @error_message = error_message
     end
 
@@ -188,6 +202,7 @@ module FetchUtil
         published_time: published_time,
         canonical_url: canonical_url,
         language: language,
+        name: name,
         company: company,
         location: location,
         description: description,
@@ -207,6 +222,8 @@ module FetchUtil
         content_format: content_format,
         paywall_state: paywall_state,
         price: price,
+        rating: rating,
+        address: address,
         error_message: error_message
       }
     end

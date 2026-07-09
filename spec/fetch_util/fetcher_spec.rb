@@ -65,6 +65,31 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.metadata).to include(bedrooms: 3, bathrooms: 2, area_sqft: 1428)
   end
 
+  it 'passes lodging structured fields through result metadata' do
+    hotel_payload = payload_with(
+      contentType: 'hotel',
+      name: 'Seaside Garden Hotel',
+      price: '£189',
+      rating: 'Rating: 4.6/5 from 842 reviews',
+      address: '12 Harbor Road, Brighton, East Sussex, BN1 1AA, GB',
+      markdown: '# Seaside Garden Hotel'
+    )
+    stub_browser_extraction('https://example.com/input', page: page, payload: hotel_payload)
+
+    result = fetch_with_dependencies('https://example.com/input')
+
+    expect(result.content_type).to eq('hotel')
+    expect(result.name).to eq('Seaside Garden Hotel')
+    expect(result.price).to eq('£189')
+    expect(result.rating).to eq('Rating: 4.6/5 from 842 reviews')
+    expect(result.address).to eq('12 Harbor Road, Brighton, East Sussex, BN1 1AA, GB')
+    expect(result.metadata).to include(
+      name: 'Seaside Garden Hotel',
+      rating: 'Rating: 4.6/5 from 842 reviews',
+      address: '12 Harbor Road, Brighton, East Sussex, BN1 1AA, GB'
+    )
+  end
+
   it 'builds one payload snapshot for Ruby finalization' do
     snapshot_class = described_class.const_get(:PayloadSnapshot)
     allow(snapshot_class).to receive(:new).and_call_original

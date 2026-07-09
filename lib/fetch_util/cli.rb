@@ -14,6 +14,7 @@ module FetchUtil
       site_name
       published_time
       language
+      name
       company
       location
       description
@@ -25,6 +26,8 @@ module FetchUtil
       markdown
       content_type
       price
+      rating
+      address
       suspect
       warnings
       error_message
