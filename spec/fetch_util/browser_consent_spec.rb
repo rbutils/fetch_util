@@ -41,21 +41,21 @@ RSpec.describe FetchUtil::Browser do
     expect(network).not_to have_received(:wait_for_idle)
   end
 
-  it 'retries cookie acceptance after spa hydration on generic pages' do
+  it 'retries cookie acceptance after spa hydration after an initial consent action' do
     network = instance_double('FerrumNetwork')
     page = instance_double(Ferrum::Browser, network: network)
     browser = browser_with_idle
 
     allow(browser).to receive(:wait_for_idle_or_content).and_return(true)
     allow(browser).to receive(:preserve_consent_wall?).and_return(false)
-    allow(browser).to receive(:accept_cookie_consent).and_return(false, false, true)
+    allow(browser).to receive(:accept_cookie_consent).and_return(true, false)
     allow(browser).to receive(:dismiss_privacy_preference_overlay).and_return(false)
     allow(browser).to receive(:wait_for_spa_hydration)
     allow(network).to receive(:wait_for_idle)
 
     browser.send(:stabilize_page, page, 'https://example.com')
 
-    expect(browser).to have_received(:accept_cookie_consent).exactly(3).times
+    expect(browser).to have_received(:accept_cookie_consent).exactly(2).times
     expect(browser).to have_received(:wait_for_spa_hydration).once
     expect(network).to have_received(:wait_for_idle).once
   end
