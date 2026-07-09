@@ -166,5 +166,7 @@ systems/docs/generic/index.js
 profiles/social/twitter.js
 profiles/social/linkedin.js
 profiles/social/bluesky.js
+boot/pipeline_helpers.js
+boot/result_finalization.js
 boot/extract_api.js
 99_outro.js
