@@ -26,7 +26,7 @@ classifiers/warnings/stale_content.js
 classifiers/warnings/missing_content.js
 classifiers/warnings/content_format.js
 classifiers/warnings/index.js
-profiles/news/m_r/news_homepages.js
+profiles/news/news_homepages.js
 systems/docs/hosted/index.js
 systems/docs/hosted/frameworks.js
 systems/docs/hosted/stripe.js
@@ -107,7 +107,7 @@ profiles/news/asia/central/azerbaijan/trend.js
 profiles/news/asia/south/pakistan/jang.js
 profiles/news/middle_east/skynewsarabia.js
 profiles/news/middle_east/turkey/milliyet_live.js
-profiles/news/europe/northern/yle_live.js
+profiles/news/europe/yle_live.js
 profiles/news/europe/central/aktuality_sk.js
 profiles/news/middle_east/turkey/sabah.js
 profiles/news/middle_east/turkey/sozcu.js
@@ -125,7 +125,7 @@ profiles/news/europe/central/czech/root_cz.js
 profiles/news/americas/south/brazil/abril.js
 profiles/news/asia/east/netease_news.js
 profiles/ameba_blog.js
-profiles/news/europe/southeastern/dnevnik.js
+profiles/news/europe/dnevnik.js
 profiles/segmentfault.js
 profiles/social/weibo_mobile.js
 profiles/pikabu.js
