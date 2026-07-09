@@ -75,6 +75,7 @@ profiles/families/scientific_records/oeis.js
 profiles/families/scientific_records/rcsb.js
 profiles/families/scientific_records/nist.js
 profiles/families/scientific_records/index.js
+profiles/hatena_blog.js
 profiles/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
@@ -89,6 +90,13 @@ profiles/families/repo_hosts.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/financial/index.js
+profiles/families/legal_reference/shared.js
+profiles/families/legal_reference/reference_articles.js
+profiles/government/federal_register.js
+profiles/government/gov_uk.js
+profiles/legal/courtlistener.js
+profiles/legal/statutes.js
+profiles/families/legal_reference/index.js
 profiles/families/community_wikis.js
 profiles/community/mastodon.js
 profiles/community/telegram.js
@@ -166,15 +174,7 @@ profiles/news/europe/central/czech/idnes.js
 profiles/news/americas/south/brazil/folha.js
 profiles/news/europe/western/germany/zeit.js
 profiles/csdn.js
-profiles/hatena_blog.js
 profiles/naver_blog.js
-profiles/families/legal_reference/shared.js
-profiles/families/legal_reference/reference_articles.js
-profiles/government/federal_register.js
-profiles/government/gov_uk.js
-profiles/legal/courtlistener.js
-profiles/legal/statutes.js
-profiles/families/legal_reference/index.js
 markdown/code_helpers.js
 markdown/tables.js
 markdown/runtime.js
