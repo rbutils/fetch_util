@@ -39,6 +39,14 @@ RSpec.describe "extract asset bundle" do
     expect(stdout).to include("Verified")
   end
 
+  it "registers generic portal homepages once in the source graph" do
+    registrations = Dir[File.join(project_root, "lib", "fetch_util", "assets", "src", "**", "*.js")].sum do |path|
+      File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
+    end
+
+    expect(registrations).to eq(1)
+  end
+
   it "rebuilds deterministically" do
     with_asset_project(
       manifest: "00_prelude.js\n99_outro.js\n",
