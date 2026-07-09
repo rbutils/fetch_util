@@ -14,6 +14,9 @@ module FetchUtil
       site_name
       published_time
       language
+      company
+      location
+      description
       markdown
       content_type
       price
