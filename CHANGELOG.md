@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## v0.3.2 - 2026-07-09
+
+### Added
+
+- Add dedicated extraction coverage for public Chosun, Xinhua weekly indexes, O Pais, Avesta, Walla, Jang, 20minutos, NHK, Protothema, Lenta, and YNA article/list pages.
+- Add a Hurriyet homepage regression fixture to protect non-English homepage extraction.
+
+### Fixed
+
+- Normalize non-ASCII IRI input URLs before browser navigation.
+- Harden fetch resilience by retrying transient navigation and pending-connection failures.
+- Improve generic article extraction and MediaWiki/Wikipedia handling while preserving localized truncation and warning semantics.
+- Reduce false positives for homepage index mismatches, stale content, script-language mismatches, short news CTA multi-topic pages, transliterated slugs, and long non-English articles.
+- Preserve article content through video metadata, France24 DOM stabilization, and short-description-root edge cases.
+
+### Changed
+
+- Consolidate list extraction helpers and reduce duplicated extraction/profile code across generic, WordPress, simple-profile, and job-list paths.
+- Refine generic extraction and non-Latin spec style without changing the public API.
+
+### Performance
+
+- Speed up browser stabilization and Ruby fetch runtime.
+- Share browser pools, avoid unnecessary asset rebuilds in specs, optimize asset checks/readable text, and streamline extractor integration specs.
+
 ## v0.3.1 - 2026-07-06
 
 - Improve primary content-root selection across long documents, article pages, docs, Drupal and institutional pages, publisher abstracts, Substack, Discourse, Trope Wiki, PLOS, Elsevier, ACS, HighWire, and legal/statute pages so body content is preferred over chrome, teasers, and related rails.
