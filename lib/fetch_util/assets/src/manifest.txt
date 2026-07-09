@@ -65,6 +65,7 @@ profiles/community/mastodon.js
 profiles/community/telegram.js
 profiles/community/discourse.js
 profiles/community/reddit.js
+profiles/community/stackoverflow.js
 profiles/community/behance.js
 profiles/community/quora.js
 profiles/community/glassdoor.js
