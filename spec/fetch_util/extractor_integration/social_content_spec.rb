@@ -128,6 +128,38 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'keeps combined Facebook login and consent wall warnings as an interstitial' do
+    html = <<~HTML
+      <html><head><title>Meta | Facebook</title></head><body><main><h1>Allow the use of cookies from Facebook on this browser?</h1><p>We use cookies and similar technologies to help provide and improve content on Meta Products.</p><p>Log in to continue.</p></main></body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/Meta', html) do |page|
+      payload = synthetic_social_payload(page, <<~JS)
+        window.registerHostAwareProfile(/(^|\\.)facebook\\.com$/, function() {
+          return { title: 'Meta', html: '<article><p>Fallback summary.</p></article>', markdown: '# Meta\\n\\nFallback summary.', textContent: 'Fallback summary.', readerMode: false, contentType: 'article' };
+        });
+      JS
+
+      expect(payload['contentType']).to eq('interstitial')
+      expect(payload['suspect']).to be(true)
+      expect_warnings(payload, include: %w[meta_login_wall consent_interstitial])
+      expect_empty_social_fields(payload)
+    end
+  end
+
+  it 'keeps a readable public Facebook profile despite inline consent copy' do
+    html = <<~HTML
+      <html><head><title>Example Page | Facebook</title></head><body><aside><p>Allow the use of cookies from Facebook on this browser?</p><p>We use cookies and similar technologies to help provide and improve content on Meta Products.</p><button>Accept all cookies</button></aside><main role="main"><div>Page · Community</div><div>12K followers</div><div>Intro</div><p>Public updates for the local community, events, workshops, volunteer opportunities, neighborhood news, and resources for residents and visitors.</p><p>Our organizers share schedules, speaker announcements, accessibility details, and practical guides for every event.</p><p>Members can read public recaps, connect with local volunteers, and find links to upcoming workshops.</p></main></body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/example-page/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Facebook', 'handle' => '@example-page')
+      expect(payload['markdown']).not_to include('Allow the use of cookies')
+    end
+  end
+
   it 'types a visible public Instagram post' do
     html = <<~HTML
       <html><head><title>Ronaldo on Instagram: &quot;Training day&quot;</title><meta property="og:description" content="10 likes - ronaldo on April 1, 2026: &quot;Training day&quot;."></head><body><main><article><img src="https://example.test/post.jpg" alt="Training"><p>Training day</p></article></main></body></html>
