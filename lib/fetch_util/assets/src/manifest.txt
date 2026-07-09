@@ -2,68 +2,81 @@
 core/metadata/structured_data.js
 core/metadata/text_helpers.js
 core/metadata/collect.js
-systems/content_types/medical.js
 core/dom_base.js
 core/profile_article.js
 core/simple_article_profile.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/titles.js
 core/docs_cleanup/engines.js
-extractors/article_roots.js
-systems/content_types/recipes.js
-extractors/glossary/cleanup.js
-extractors/glossary/detection.js
-extractors/glossary/extraction.js
-systems/content_types/podcasts.js
-extractors/lists/relabeling.js
-  extractors/lists/jobs.js
-  systems/content_types/jobs.js
-  systems/content_types/lodging.js
-  extractors/lists/events.js
-  systems/content_types/events.js
-  systems/content_types/sports.js
-  systems/content_types/press_releases.js
-classifiers/list_pages/context.js
-classifiers/list_pages/dominance.js
-classifiers/list_pages/search_category.js
-classifiers/list_pages/list_page.js
-  extractors/lists/core.js
-  extractors/lists/products.js
-  systems/content_types/products.js
-  systems/content_types/properties.js
-extractors/lists/news_homepages.js
-extractors/search.js
-extractors/spa_data.js
+core/noise_patterns.js
+core/dom_cleanup.js
+core/markdown_cleanup.js
+markdown/code_helpers.js
+markdown/tables.js
+markdown/runtime.js
 classifiers/challenges/challenge_pages.js
 classifiers/challenges/meta_walls.js
 classifiers/challenges/consent_walls.js
 classifiers/challenges/interstitial_pages.js
 classifiers/challenges/index.js
+classifiers/list_pages/context.js
+classifiers/list_pages/dominance.js
+classifiers/list_pages/search_category.js
+classifiers/list_pages/list_page.js
 classifiers/warnings/url_mismatch.js
 classifiers/warnings/language.js
 classifiers/warnings/paywalls.js
 classifiers/warnings/stale_content.js
 classifiers/warnings/missing_content.js
 classifiers/warnings/content_format.js
-  classifiers/warnings/index.js
-  profiles/news/news_homepages.js
-  systems/docs/hosted/index.js
-systems/docs/hosted/frameworks.js
-  systems/docs/hosted/stripe.js
-systems/docs/hosted/platforms.js
-systems/docs/hosted/baselinker.js
-systems/docs/hosted/ruby_api.js
-systems/docs/hosted/rails_rdoc.js
+classifiers/warnings/index.js
+extractors/article_roots.js
+extractors/glossary/cleanup.js
+extractors/glossary/detection.js
+extractors/glossary/extraction.js
+extractors/lists/relabeling.js
+extractors/lists/core.js
+extractors/lists/products.js
+extractors/lists/jobs.js
+extractors/lists/events.js
+extractors/lists/news_homepages.js
+extractors/search.js
+extractors/spa_data.js
+systems/content_types/medical.js
+systems/content_types/recipes.js
+systems/content_types/podcasts.js
+systems/content_types/jobs.js
+systems/content_types/lodging.js
+systems/content_types/events.js
+systems/content_types/sports.js
+systems/content_types/press_releases.js
+systems/content_types/products.js
+systems/content_types/properties.js
 systems/docs/core/docs_detector.js
 systems/docs/stldocs/methods.js
 systems/docs/stldocs/schemas.js
 systems/docs/stldocs/index.js
 systems/antora.js
 systems/docs/reference/reference_engines.js
-profiles/social/search.js
+systems/docs/generic/core_frameworks.js
+systems/docs/generic/modern_frameworks.js
+systems/docs/generic/api_engines.js
+systems/docs/generic/sphinx.js
+systems/docs/generic/index.js
+systems/docs/hosted/frameworks.js
+systems/docs/hosted/stripe.js
+systems/docs/hosted/platforms.js
+systems/docs/hosted/baselinker.js
+systems/docs/hosted/ruby_api.js
+systems/docs/hosted/rails_rdoc.js
+systems/docs/hosted/index.js
 systems/media/player_pages.js
 systems/news_engines/generic_portal_homepages.js
+systems/news_engines/unidad_editorial_engine.js
+profiles/host_aware.js
+profiles/social/search.js
 profiles/media_commerce/index.js
+profiles/news/news_homepages.js
 profiles/families/academic/core.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
@@ -111,12 +124,16 @@ profiles/social/meta_social/index.js
 profiles/social/meta_social/instagram.js
 profiles/social/meta_social/facebook.js
 profiles/social/meta_social/threads.js
-profiles/host_aware.js
+profiles/social/twitter.js
+profiles/social/linkedin.js
+profiles/social/bluesky.js
+profiles/news/europe/western/germany/zeit.js
+profiles/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/global/xinhua.js
 profiles/news/asia/central/avesta.js
- profiles/news/europe/southern/opais.js
+profiles/news/europe/southern/opais.js
 profiles/news/middle_east/walla.js
 profiles/news/global/france24.js
 profiles/news/asia/east/chosun.js
@@ -132,8 +149,8 @@ systems/cms/ghost.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/asia/south/india/hindustantimes.js
- profiles/news/europe/central/derstandard.js
- profiles/news/europe/central/blick.js
+profiles/news/europe/central/derstandard.js
+profiles/news/europe/central/blick.js
 profiles/news/asia/central/azerbaijan/oxu.js
 profiles/news/europe/southern/top_channel.js
 profiles/news/europe/eastern/index_hr.js
@@ -154,7 +171,6 @@ profiles/news/europe/central/poland/interia.js
 profiles/news/americas/south/clarin.js
 profiles/news/europe/eastern/serbia/blic.js
 profiles/news/europe/central/hungary/tempo.js
-systems/news_engines/unidad_editorial_engine.js
 systems/news_engines/unidad_editorial.js
 profiles/news/europe/southern/spain/marca.js
 profiles/news/europe/western/germany/faz.js
@@ -172,23 +188,7 @@ profiles/news/europe/southern/rcs_corriere.js
 profiles/news/europe/western/le_monde.js
 profiles/news/europe/central/czech/idnes.js
 profiles/news/americas/south/brazil/folha.js
-profiles/news/europe/western/germany/zeit.js
-profiles/csdn.js
 profiles/naver_blog.js
-markdown/code_helpers.js
-markdown/tables.js
-markdown/runtime.js
-core/noise_patterns.js
-core/dom_cleanup.js
-core/markdown_cleanup.js
-systems/docs/generic/core_frameworks.js
-systems/docs/generic/modern_frameworks.js
-systems/docs/generic/api_engines.js
-systems/docs/generic/sphinx.js
-systems/docs/generic/index.js
-profiles/social/twitter.js
-profiles/social/linkedin.js
-profiles/social/bluesky.js
 boot/pipeline_helpers.js
 boot/result_finalization.js
 boot/extract_api.js
