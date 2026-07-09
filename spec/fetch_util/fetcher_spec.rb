@@ -41,6 +41,30 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.metadata[:price]).to eq('$199.99')
   end
 
+  it 'passes property listing fields through result metadata' do
+    property_payload = payload_with(
+      contentType: 'property',
+      price: '$399000',
+      location: '1255 Sixth Street, Lakeport, CA, 95453',
+      bedrooms: 3,
+      bathrooms: 2,
+      areaSqft: 1428,
+      markdown: '# 1255 Sixth Street\n\n- Price: $399000'
+    )
+    stub_browser_extraction('https://example.com/input', page: page, payload: property_payload)
+
+    result = fetch_with_dependencies('https://example.com/input')
+
+    expect(result.content_type).to eq('property')
+    expect(result.price).to eq('$399000')
+    expect(result.location).to eq('1255 Sixth Street, Lakeport, CA, 95453')
+    expect(result.bedrooms).to eq(3)
+    expect(result.bathrooms).to eq(2)
+    expect(result.area_sqft).to eq(1428)
+    expect(result.to_h).to include(bedrooms: 3, bathrooms: 2, area_sqft: 1428)
+    expect(result.metadata).to include(bedrooms: 3, bathrooms: 2, area_sqft: 1428)
+  end
+
   it 'builds one payload snapshot for Ruby finalization' do
     snapshot_class = described_class.const_get(:PayloadSnapshot)
     allow(snapshot_class).to receive(:new).and_call_original

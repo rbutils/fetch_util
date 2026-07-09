@@ -19,6 +19,9 @@ module FetchUtil
       description
       ingredients
       instructions
+      bedrooms
+      bathrooms
+      area_sqft
       markdown
       content_type
       price

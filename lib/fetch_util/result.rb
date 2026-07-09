@@ -4,7 +4,8 @@ module FetchUtil
   class Result
     attr_reader :url, :final_url, :title, :byline, :excerpt, :site_name,
                 :published_time, :canonical_url, :language, :company, :location,
-                :description, :ingredients, :instructions, :html, :markdown,
+                :description, :ingredients, :instructions, :bedrooms, :bathrooms,
+                :area_sqft, :html, :markdown,
                 :metadata, :reader_mode, :content_type, :suspect, :warnings,
                 :content_completeness_ratio, :content_format, :paywall_state,
                 :price, :error_message
@@ -27,9 +28,12 @@ module FetchUtil
           company: payload["company"],
           location: payload["location"],
           description: payload["description"],
-          price: payload["price"],
           ingredients: payload["ingredients"],
-          instructions: payload["instructions"]
+          instructions: payload["instructions"],
+          bedrooms: payload["bedrooms"],
+          bathrooms: payload["bathrooms"],
+          area_sqft: payload["areaSqft"],
+          price: payload["price"]
         )
 
         new(
@@ -47,6 +51,9 @@ module FetchUtil
           description: payload["description"],
           ingredients: payload["ingredients"],
           instructions: payload["instructions"],
+          bedrooms: payload["bedrooms"],
+          bathrooms: payload["bathrooms"],
+          area_sqft: payload["areaSqft"],
           html: payload["html"],
           markdown: payload["markdown"],
           metadata: metadata,
@@ -85,6 +92,9 @@ module FetchUtil
           description: nil,
           ingredients: nil,
           instructions: nil,
+          bedrooms: nil,
+          bathrooms: nil,
+          area_sqft: nil,
           html: nil,
           markdown: "",
           metadata: metadata,
@@ -100,7 +110,8 @@ module FetchUtil
 
       def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
                            content_completeness_ratio:, content_format:, paywall_state:,
-                           company:, location:, description:, price:, ingredients:, instructions:)
+                           company:, location:, description:, ingredients:, instructions:,
+                           bedrooms:, bathrooms:, area_sqft:, price:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -114,6 +125,9 @@ module FetchUtil
           description: description,
           ingredients: ingredients,
           instructions: instructions,
+          bedrooms: bedrooms,
+          bathrooms: bathrooms,
+          area_sqft: area_sqft,
           content_url: final_url,
           reader_mode: payload["readerMode"],
           content_type: content_type,
@@ -127,11 +141,11 @@ module FetchUtil
       end
     end
 
-    def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
-                   canonical_url:, language:, company:, location:, description:, ingredients:, instructions:, html:,
-                   markdown:, metadata:, reader_mode:, content_type:, suspect:, warnings:,
-                   content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil, price: nil,
-                   error_message: nil)
+      def initialize(url:, final_url:, title:, byline:, excerpt:, site_name:, published_time:,
+                    canonical_url:, language:, company:, location:, description:, ingredients:, instructions:,
+                    bedrooms:, bathrooms:, area_sqft:, html:, markdown:, metadata:, reader_mode:,
+                    content_type:, suspect:, warnings:, content_completeness_ratio: 1.0,
+                    content_format: nil, paywall_state: nil, price: nil, error_message: nil)
       @url = url
       @final_url = final_url
       @title = title
@@ -146,6 +160,9 @@ module FetchUtil
       @description = description
       @ingredients = ingredients
       @instructions = instructions
+      @bedrooms = bedrooms
+      @bathrooms = bathrooms
+      @area_sqft = area_sqft
       @html = html
       @markdown = markdown
       @metadata = metadata.freeze
@@ -176,6 +193,9 @@ module FetchUtil
         description: description,
         ingredients: ingredients,
         instructions: instructions,
+        bedrooms: bedrooms,
+        bathrooms: bathrooms,
+        area_sqft: area_sqft,
         html: html,
         markdown: markdown,
         metadata: metadata,

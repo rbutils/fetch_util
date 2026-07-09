@@ -11,6 +11,7 @@ extractors/lists/jobs.js
 classifiers/list_pages.js
 extractors/lists/core.js
 extractors/lists/products.js
+extractors/lists/properties.js
 extractors/lists/news_homepages.js
 extractors/search.js
 extractors/spa_data.js
