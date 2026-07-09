@@ -9,8 +9,9 @@ extractors/glossary.js
 extractors/podcasts.js
 extractors/lists/relabeling.js
 extractors/lists/jobs.js
-      extractors/lists/lodging.js
-      extractors/lists/events.js
+extractors/lists/lodging.js
+extractors/lists/events.js
+extractors/lists/sports.js
 classifiers/list_pages.js
 extractors/lists/core.js
 extractors/lists/products.js
