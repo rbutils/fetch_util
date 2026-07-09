@@ -98,9 +98,9 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("systems/social/content_type.js")).to be < manifest.index("boot/result_finalization.js")
     expect(manifest.index("boot/result_finalization.js")).to be < manifest.index("boot/extract_api.js")
     expect(manifest.index("profiles/host_aware.js")).to be < register_index
-    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/instagram.js")
-    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/facebook.js")
-    expect(manifest.index("profiles/social/meta_social/index.js")).to be < manifest.index("profiles/social/meta_social/threads.js")
+    expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/instagram.js")
+    expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/facebook.js")
+    expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/threads.js")
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
 
     calls.each do |call|
@@ -157,7 +157,7 @@ RSpec.describe "extract asset bundle" do
                                 profiles/ameba_blog.js
                                 profiles/news/europe/dnevnik.js
                                 profiles/segmentfault.js
-                                profiles/social/weibo_mobile.js
+                                profiles/social/networks/weibo_mobile.js
                                 profiles/community/pikabu.js
                                 profiles/news/europe/southern/rcs_corriere.js
                                 profiles/news/europe/western/le_monde.js
