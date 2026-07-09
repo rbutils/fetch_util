@@ -41,6 +41,7 @@ systems/docs/stldocs/index.js
 systems/antora.js
 systems/docs/reference/reference_engines.js
 profiles/social/search.js
+systems/media/player_pages.js
 profiles/media_commerce/index.js
 profiles/families/academic/core.js
 profiles/families/academic/publishers.js
