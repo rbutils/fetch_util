@@ -8,7 +8,8 @@ module FetchUtil
                 :area_sqft, :html, :markdown,
                 :metadata, :reader_mode, :content_type, :suspect, :warnings,
                 :content_completeness_ratio, :content_format, :paywall_state,
-                :price, :rating, :address, :error_message
+                :price, :rating, :address, :social_kind, :platform, :handle,
+                :reply_count, :community, :score, :error_message
 
     class << self
       def from_payload(url:, final_url:, payload:, canonical_url:, content_type:, warnings:, suspect:)
@@ -36,7 +37,13 @@ module FetchUtil
           area_sqft: payload["areaSqft"],
           price: payload["price"],
           rating: payload["rating"],
-          address: payload["address"]
+          address: payload["address"],
+          social_kind: payload["socialKind"],
+          platform: payload["platform"],
+          handle: payload["handle"],
+          reply_count: payload["replyCount"],
+          community: payload["community"],
+          score: payload["score"]
         )
 
         new(
@@ -70,7 +77,13 @@ module FetchUtil
           paywall_state: paywall_state,
           price: payload["price"],
           rating: payload["rating"],
-          address: payload["address"]
+          address: payload["address"],
+          social_kind: payload["socialKind"],
+          platform: payload["platform"],
+          handle: payload["handle"],
+          reply_count: payload["replyCount"],
+          community: payload["community"],
+          score: payload["score"]
         )
       end
 
@@ -80,7 +93,13 @@ module FetchUtil
           content_type: "error",
           suspect: true,
           warnings: [warning],
-          error_message: message
+          error_message: message,
+          social_kind: nil,
+          platform: nil,
+          handle: nil,
+          reply_count: nil,
+          community: nil,
+          score: nil
         }.freeze
 
         new(
@@ -118,7 +137,8 @@ module FetchUtil
       def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
                            content_completeness_ratio:, content_format:, paywall_state:,
                            name:, company:, location:, description:, ingredients:, instructions:,
-                           bedrooms:, bathrooms:, area_sqft:, price:, rating:, address:)
+                           bedrooms:, bathrooms:, area_sqft:, price:, rating:, address:,
+                           social_kind:, platform:, handle:, reply_count:, community:, score:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -146,7 +166,13 @@ module FetchUtil
           paywall_state: paywall_state,
           price: price,
           rating: rating,
-          address: address
+          address: address,
+          social_kind: social_kind,
+          platform: platform,
+          handle: handle,
+          reply_count: reply_count,
+          community: community,
+          score: score
         }.freeze
       end
     end
@@ -156,7 +182,8 @@ module FetchUtil
                    instructions:, bedrooms:, bathrooms:, area_sqft:, html:, markdown:, metadata:,
                    reader_mode:, content_type:, suspect:, warnings:,
                    content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil,
-                   price: nil, rating: nil, address: nil, error_message: nil)
+                   price: nil, rating: nil, address: nil, social_kind: nil, platform: nil,
+                   handle: nil, reply_count: nil, community: nil, score: nil, error_message: nil)
       @url = url
       @final_url = final_url
       @title = title
@@ -188,6 +215,12 @@ module FetchUtil
       @price = price
       @rating = rating
       @address = address
+      @social_kind = social_kind
+      @platform = platform
+      @handle = handle
+      @reply_count = reply_count
+      @community = community
+      @score = score
       @error_message = error_message
     end
 
@@ -224,6 +257,12 @@ module FetchUtil
         price: price,
         rating: rating,
         address: address,
+        social_kind: social_kind,
+        platform: platform,
+        handle: handle,
+        reply_count: reply_count,
+        community: community,
+        score: score,
         error_message: error_message
       }
     end

@@ -28,6 +28,12 @@ module FetchUtil
       price
       rating
       address
+      social_kind
+      platform
+      handle
+      reply_count
+      community
+      score
       suspect
       warnings
       error_message
