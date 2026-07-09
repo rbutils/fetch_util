@@ -307,6 +307,38 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not flag substantial public government pages that mention access errors incidentally" do
+    paragraphs = (1..8).map do |index|
+      <<~HTML
+        <p>Section #{index} explains how agencies publish official notices, public comments, effective dates, regulatory history, docket identifiers, and compliance deadlines for readers who need a complete administrative record.</p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Public notice access guidance</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Public notice access guidance</h1>
+              <p>Some users may see an access denied message when a stale cache entry is requested, but this public government page remains available.</p>
+              #{paragraphs}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.federalregister.gov/documents/2024/01/01/public-notice-access-guidance", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Section 1 explains how agencies publish official notices")
+      expect(payload["warnings"]).not_to include("access_error_interstitial")
+      expect(payload["warnings"]).not_to include("bot_or_access_interstitial")
+    end
+  end
+
   it "flags regional selector shells" do
     html = <<~HTML
       <html>
