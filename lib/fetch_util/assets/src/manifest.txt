@@ -93,7 +93,7 @@ profiles/news/news_homepages.js
 profiles/families/academic/core.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
-profiles/hatena_blog.js
+profiles/publishing/hatena_blog.js
 profiles/families/scientific_records/iucn.js
 profiles/families/scientific_records/ensembl.js
 profiles/families/scientific_records/ncbi_gene.js
@@ -101,7 +101,7 @@ profiles/families/scientific_records/oeis.js
 profiles/families/scientific_records/rcsb.js
 profiles/families/scientific_records/nist.js
 profiles/families/scientific_records/index.js
-profiles/substack.js
+profiles/publishing/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
 profiles/families/institutional/core.js
@@ -141,7 +141,7 @@ profiles/social/networks/twitter.js
 profiles/social/professional/linkedin.js
 profiles/social/networks/bluesky.js
 profiles/news/europe/western/germany/zeit.js
-profiles/csdn.js
+profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/global/xinhua.js
@@ -192,16 +192,16 @@ profiles/news/europe/central/hungary/index_hu.js
 profiles/news/europe/central/czech/root_cz.js
 profiles/news/americas/south/brazil/abril.js
 profiles/news/asia/east/netease_news.js
-profiles/ameba_blog.js
+profiles/publishing/ameba_blog.js
 profiles/news/europe/dnevnik.js
-profiles/segmentfault.js
+profiles/publishing/segmentfault.js
 profiles/social/networks/weibo_mobile.js
 profiles/community/social_news/pikabu.js
 profiles/news/europe/southern/rcs_corriere.js
 profiles/news/europe/western/le_monde.js
 profiles/news/europe/central/czech/idnes.js
 profiles/news/americas/south/brazil/folha.js
-profiles/naver_blog.js
+profiles/publishing/naver_blog.js
 boot/pipeline_helpers.js
 boot/result_finalization.js
 boot/extract_api.js
