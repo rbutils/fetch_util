@@ -6,7 +6,12 @@ core/simple_article_profile.js
 core/docs_cleanup.js
 extractors/article_roots.js
 extractors/glossary.js
-extractors/list_extraction.js
+extractors/lists/relabeling.js
+extractors/lists/jobs.js
+classifiers/list_pages.js
+extractors/lists/core.js
+extractors/lists/products.js
+extractors/lists/news_homepages.js
 extractors/search.js
 extractors/spa_data.js
 classifiers/challenges/challenge_pages.js
@@ -39,6 +44,12 @@ profiles/families/scientific_records.js
 profiles/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
+profiles/families/institutional/core.js
+profiles/families/institutional/component_hubs.js
+profiles/families/institutional/europa.js
+profiles/families/institutional/standards.js
+profiles/families/institutional/drupal.js
+profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
 profiles/families/community_wikis.js
