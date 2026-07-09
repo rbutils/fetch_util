@@ -77,7 +77,7 @@ profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/global/xinhua.js
 profiles/news/asia/central/avesta.js
-profiles/news/europe/western/opais.js
+ profiles/news/europe/southern/opais.js
 profiles/news/middle_east/walla.js
 profiles/news/global/france24.js
 profiles/news/asia/east/chosun.js
@@ -93,8 +93,8 @@ systems/cms/ghost.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/asia/south/india/hindustantimes.js
-profiles/news/europe/western/derstandard.js
-profiles/news/europe/western/blick.js
+ profiles/news/europe/central/derstandard.js
+ profiles/news/europe/central/blick.js
 profiles/news/asia/central/azerbaijan/oxu.js
 profiles/news/europe/southern/top_channel.js
 profiles/news/europe/eastern/index_hr.js
