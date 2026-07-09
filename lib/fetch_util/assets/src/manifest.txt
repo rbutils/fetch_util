@@ -122,7 +122,7 @@ profiles/legal/courtlistener.js
 profiles/legal/statutes.js
 profiles/families/legal_reference/index.js
 profiles/families/community_wikis.js
-profiles/community/mastodon.js
+systems/social/mastodon.js
 profiles/community/telegram.js
 profiles/community/discourse.js
 profiles/community/reddit.js
