@@ -85,6 +85,32 @@ RSpec.describe 'FetchUtil generic visible collections' do
     end
   end
 
+  it 'arbitrates between plausible containers using relevant links after position 80' do
+    container = lambda do |name, section_path|
+      links = Array.new(80) do |index|
+        number = index + 1
+        "<article><a href=\"/#{name}/neutral-#{number}\">#{name} neutral story #{number} with useful detail</a></article>"
+      end.join
+      decisive_title = name == 'technology' ? 'technology story after the visible boundary' : 'Privacy policy'
+      links << "<article><a href=\"/#{section_path}/decisive\">#{decisive_title}</a></article>"
+      "<section class=\"stories\" data-container=\"#{name}\">#{links}</section>"
+    end
+    html = <<~HTML
+      <html><head><title>Technology news</title></head><body>
+        <main>#{container.call("archive", "privacy")}#{container.call("technology", "technology")}</main>
+      </body></html>
+    HTML
+
+    with_url_page('https://portal.example/category/technology', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('technology story after the visible boundary')
+      expect(payload['markdown']).to include('https://portal.example/technology/decisive')
+      expect(payload['markdown']).not_to include('https://portal.example/privacy/decisive')
+    end
+  end
+
   it 'keeps all generic search results in DOM order' do
     results = Array.new(13) do |index|
       number = index + 1
