@@ -32,6 +32,24 @@ RSpec.describe "Wykop social feeds" do
     HTML
   end
 
+  def wykop_headline_fixture
+    cards = [
+      "Kamil Stoch zwycięża w kwalifikacjach",
+      "Robert Lewandowski z ważnym golem",
+      "Iga Świątek awansuje do finału",
+      "Nowe mieszkania drożeją w całym kraju",
+      "Reprezentacja Polski poznała rywali"
+    ].each_with_index.map do |title, index|
+      <<~HTML
+        <section class="link-block stream-home" id="link-headline-#{index}">
+          <h2><a href="/link/#{index + 1}/headline-#{index + 1}">#{title}</a></h2>
+        </section>
+      HTML
+    end.join
+
+    "<html lang='pl'><head><title>Wykop</title></head><body><main>#{cards}</main></body></html>"
+  end
+
   it "preserves every homepage card in DOM order" do
     with_url_page("https://wykop.pl/", wykop_home_fixture) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -72,9 +90,21 @@ RSpec.describe "Wykop social feeds" do
         "community" => "nieruchomosci"
       )
       expect(payload["title"]).to include("nieruchomosci")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
       expect(payload["markdown"].lines.grep(/^- \[/).length).to eq(3)
       expect(payload["markdown"]).to match(/Pierwszy wpis.*Raport cen mieszkań.*Trzeci wpis/m)
       expect(payload["markdown"]).to include("domownik", "283", "example.org")
+    end
+  end
+
+  it "does not mark a credible root headline feed as a URL language mismatch" do
+    with_url_page("https://wykop.pl/", wykop_headline_fixture) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("social")
+      expect(payload["socialKind"]).to eq("feed")
+      expect(payload["warnings"]).not_to include("url_content_mismatch")
+      expect(payload["suspect"]).to eq(false)
     end
   end
 
