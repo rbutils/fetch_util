@@ -106,11 +106,8 @@ Useful result fields:
 
 ## Output Shape
 
-`fetch` defaults to compact JSON intended for downstream agent/tool consumption. The default payload keeps the fields that are usually most useful in practice:
+Structured `fetch` output is compact JSON intended for downstream agent/tool consumption. The default payload keeps the fields that are usually most useful in practice:
 
-- `url`
-- `final_url`
-- `canonical_url`
 - `title`
 - `byline`
 - `site_name`
@@ -120,7 +117,7 @@ Useful result fields:
 - `suspect`
 - `warnings`
 
-Pass `--include-html` when you explicitly need extracted HTML. Multiple fetch URLs can be streamed as JSON Lines with `--format jsonl`.
+The default `fetch URL` output is Markdown prefixed with standard YAML front matter. The front matter contains the same filtered fields as JSON except `markdown`; the Markdown body follows its closing `---` delimiter. URL fields are omitted from JSON, JSONL, and front matter by default. Pass `--include-urls` to include `url`, `final_url`, and `canonical_url`, and pass `--include-html` to include extracted HTML. Use `--format json` or `--format jsonl` for structured output; multiple Markdown results are emitted as separate front-matter documents.
 
 Both CLI commands append requests to `~/.local/state/fetch_util/requests.log` by default. Override with `FETCH_UTIL_REQUEST_LOG` or `--log-path`.
 

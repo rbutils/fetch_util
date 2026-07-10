@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 require "json"
+require "yaml"
 require "thor"
 
 module FetchUtil
   class CLI < Thor
     DEFAULT_FETCH_FIELDS = %i[
-      url
-      final_url
-      canonical_url
       title
       byline
       site_name
@@ -38,6 +36,7 @@ module FetchUtil
       warnings
       error_message
     ].freeze
+    FETCH_URL_FIELDS = %i[url final_url canonical_url].freeze
 
     class_option :log_path, type: :string, desc: "Append-only request log path"
     class_option :format, type: :string, default: "markdown", enum: %w[markdown json jsonl], desc: "Output format"
@@ -47,6 +46,7 @@ module FetchUtil
     class_option :reader_mode, type: :boolean, default: true
     class_option :wait_for_idle, type: :boolean, default: true
     class_option :include_html, type: :boolean, default: false, desc: "Include raw html in fetch output"
+    class_option :include_urls, type: :boolean, default: false, desc: "Include URL fields in fetch output"
 
     desc "version", "Display fetch_util version"
     def version
@@ -64,10 +64,7 @@ module FetchUtil
                 end
 
       if options[:format] == "markdown"
-        results.each_with_index do |result, index|
-          puts "\n---\n\n" if index > 0
-          puts result.markdown
-        end
+        puts results.map { |result| front_matter_document(result) }.join("\n\n")
       else
         emit(urls.length == 1 && options[:format] == "json" ? result_payload(results.first) : results.map { |result| result_payload(result) })
       end
@@ -126,10 +123,20 @@ module FetchUtil
 
       def result_payload(result)
         payload = result.to_h
-        payload = payload.select { |key, _value| DEFAULT_FETCH_FIELDS.include?(key) }
+        fields = DEFAULT_FETCH_FIELDS
+        fields = FETCH_URL_FIELDS + fields if options[:include_urls]
+        payload = payload.select { |key, _value| fields.include?(key) }
         payload[:html] = result.html if options[:include_html]
 
         payload.reject { |key, value| key != :language && (value.nil? || value == "") }
+      end
+
+      def front_matter_document(result)
+        payload = result_payload(result)
+        markdown = result.markdown
+        payload = payload.reject { |key, _value| key == :markdown }
+        yaml = YAML.dump(payload.transform_keys(&:to_s)).sub(/\A---\n/, "")
+        "---\n#{yaml}---\n#{markdown}"
       end
 
       def emit(payload)
