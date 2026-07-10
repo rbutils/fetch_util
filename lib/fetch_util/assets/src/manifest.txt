@@ -89,6 +89,7 @@ systems/docs/hosted/rails_rdoc.js
 systems/docs/hosted/index.js
 systems/media/player_pages.js
 systems/news_engines/generic_portal_homepages.js
+systems/news_engines/polish_portal_descriptors.js
 systems/news_engines/unidad_editorial_engine.js
 profiles/host_aware.js
 profiles/search.js
@@ -147,6 +148,7 @@ profiles/social/networks/bluesky.js
 profiles/news/europe/western/germany/zeit.js
 profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
+profiles/news/europe/central/poland/wp_onet.js
 profiles/register.js
 profiles/news/global/xinhua.js
 profiles/news/asia/central/avesta.js
