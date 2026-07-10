@@ -439,7 +439,7 @@ RSpec.describe FetchUtil::Searcher do
                                         url: "https://www.example.org/articles/1",
                                         snippet: "Actual content"
                                       }
-    ])
+                                    ])
   end
 
   it "returns every result from the fetched response by default" do
@@ -473,11 +473,15 @@ RSpec.describe FetchUtil::Searcher do
     payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"], limit: 3).search("limited")
 
     expect(payload[:results].length).to eq(3)
-    expect(payload[:results].map { |item| item[:title] }).to eq(%w[Result\ 1 Result\ 2 Result\ 3])
+    expect(payload[:results].map { |item| item[:title] }).to eq(['Result 1', 'Result 2', 'Result 3'])
   end
 
   it "preserves search snippets longer than 180 characters" do
-    snippet = "This complete search snippet contains material context that remains useful to callers, including the late portion that was previously removed by the fixed presentation limit. It also preserves the final sentence and its additional details for downstream readers."
+    snippet = [
+      "This complete search snippet contains material context that remains useful to callers,",
+      "including the late portion that was previously removed by the fixed presentation limit.",
+      "It also preserves the final sentence and its additional details for downstream readers."
+    ].join(" ")
     result = instance_double(
       FetchUtil::Result,
       markdown: "- [Long result](https://example.org/long-result) - #{snippet}\n"
