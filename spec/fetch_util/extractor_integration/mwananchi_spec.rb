@@ -16,4 +16,15 @@ RSpec.describe 'FetchUtil Mwananchi extractor integration' do
       warning_excludes: %w[paywall_partial_content stale_content empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
+
+  it 'does not apply Mwananchi cleanup to another host' do
+    extract_from_url(
+      'https://example.com/news/article',
+      fixture_contents(File.expand_path('../../fixtures/mwananchi_noop.html', __dir__))
+    ) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('The public article body remains available')
+      expect(payload['markdown']).to include('Additional reporting gives readers enough detail')
+    end
+  end
 end

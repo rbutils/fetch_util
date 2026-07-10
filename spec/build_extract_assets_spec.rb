@@ -75,6 +75,8 @@ RSpec.describe "extract asset bundle" do
       end
       expect(definitions).to eq([expected_path]), function
     end
+  end
+
   it "places shared list rendering and glossary scoring before their consumers" do
     source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
@@ -108,6 +110,27 @@ RSpec.describe "extract asset bundle" do
       expect(list_index).to be < manifest.index(path.delete_prefix("#{source_root}/"))
     end
     expect(manifest.index("extractors/glossary/detection.js")).to be < manifest.index("extractors/glossary/extraction.js")
+  end
+
+  it "keeps relocated definitions before their consumers" do
+    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    sources = manifest.to_h { |path| [path, File.read(File.join(source_root, path))] }
+
+    expect(sources.values.join.scan(/function\s+mwananchiPrePageTextCleanup\s*\(/).length).to eq(1)
+    expect(sources.values.join.scan(/function\s+genericHomepageLeadRoot\s*\(/).length).to eq(1)
+    expect(sources.values.join.scan(/function\s+registerGenericPortalHomepageProfiles\s*\(/).length).to eq(1)
+    expect(manifest.index("profiles/news/mwananchi.js")).to be < manifest.index("boot/pipeline_helpers.js")
+    expect(manifest.index("systems/news_engines/generic_portal_homepages.js")).to be < manifest.index("profiles/news/news_homepages.js")
+
+    pipeline = sources.fetch("boot/pipeline_helpers.js")
+    extract_api = sources.fetch("boot/extract_api.js")
+    generic_portal = sources.fetch("systems/news_engines/generic_portal_homepages.js")
+    news_homepages = sources.fetch("profiles/news/news_homepages.js")
+    expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
+    expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
+    expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
+    expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
   end
 
   it "preserves social profile registration precedence" do
