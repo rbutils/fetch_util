@@ -97,6 +97,7 @@ RSpec.describe "extract asset bundle" do
 
     expect(manifest.index("systems/social/content_type.js")).to be < manifest.index("boot/result_finalization.js")
     expect(manifest.index("boot/result_finalization.js")).to be < manifest.index("boot/extract_api.js")
+    expect(manifest.index("extractors/lists/generic/canonical_identity.js")).to be < manifest.index("core/dom/selectors.js")
     expect(manifest.index("profiles/host_aware.js")).to be < register_index
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/instagram.js")
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/facebook.js")

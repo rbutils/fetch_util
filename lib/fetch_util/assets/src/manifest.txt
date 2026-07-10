@@ -7,6 +7,7 @@ core/metadata/content_results.js
 core/metadata/collect.js
 core/noise_patterns.js
 core/dom/text.js
+extractors/lists/generic/canonical_identity.js
 core/dom/selectors.js
 core/dom/noise_cleanup.js
 core/dom/base.js
@@ -45,7 +46,6 @@ extractors/glossary/cleanup.js
 extractors/glossary/detection.js
 extractors/glossary/extraction.js
 extractors/lists/relabeling.js
-extractors/lists/generic/canonical_identity.js
 extractors/lists/generic/card_evidence.js
 extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
