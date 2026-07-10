@@ -11,7 +11,7 @@ RSpec.describe "Wykop social feeds" do
           <h2 class="heading"><a href="/link/#{number}/story-#{number}">Wykop story #{number} with a meaningful title</a></h2>
           <p class="description">Summary for Wykop story #{number}.</p>
           <span class="author">author#{number}</span>
-          <time datetime="2026-07-10T#{format('%02d', number)}:00:00Z">#{number} hours ago</time>
+          <time datetime="2026-07-10T#{format("%02d", number)}:00:00Z">#{number} hours ago</time>
           <span class="score">#{number * 3} points</span>
           <a class="comment-counter" href="/link/#{number}/story-#{number}#comments">#{number} replies</a>
           <span class="tag">tag#{number}</span>
