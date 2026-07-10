@@ -67,7 +67,8 @@ RSpec.describe 'FetchUtil residual visible-content caps' do
   end
 
   it 'keeps long generic card context through final Markdown' do
-    context = ('This complete card summary continues past the old boundary and retains visible local context for readers. ' * 8) + 'The final local sentence remains available for readers.'
+    context = 'This complete card summary continues past the old boundary and retains visible local context for readers. ' * 8
+    context += 'The final local sentence remains available for readers.'
     html = <<~HTML
       <html><head><title>Stories</title></head><body><main>
         <article><h2><a href="/story/1">A sufficiently descriptive story title for the list</a></h2>
