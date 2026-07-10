@@ -95,6 +95,11 @@ RSpec.describe "extract asset bundle" do
     expect(register_source).to include(
       "registerHostAwareProfile(true, hatenaBlogContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
     )
+    wykop_source = File.read(File.join(source_root, "profiles/community/social_news/wykop.js"))
+    expect(wykop_source).to include("registerHostAwareProfile(/(^|\\.)wykop\\.pl$/i, wykopContent);")
+    expect(wykop_source).not_to include("docsHostSignature")
+    expect(manifest.index("profiles/news/news_homepages.js")).to be < register_index
+    expect(manifest.index("profiles/community/social_news/wykop.js")).to be < register_index
 
     expect(manifest.index("systems/social/content_type.js")).to be < manifest.index("boot/result_finalization.js")
     expect(manifest.index("boot/result_finalization.js")).to be < manifest.index("boot/extract_api.js")
