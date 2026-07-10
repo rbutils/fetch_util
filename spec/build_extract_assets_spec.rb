@@ -130,7 +130,28 @@ RSpec.describe "extract asset bundle" do
     expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
     expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
-    expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
+     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
+   end
+
+  it "keeps docs and Unidad Editorial modules in their ownership slots" do
+    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+
+    antora_index = manifest.index("systems/docs/generic/antora.js")
+    expect(antora_index).to be < manifest.index("systems/docs/generic/index.js")
+    expect(File).to exist(File.join(source_root, "systems/docs/generic/antora.js"))
+    expect(File).not_to exist(File.join(source_root, "systems/antora.js"))
+
+    unidad_path = "profiles/news/europe/southern/spain/unidad_editorial.js"
+    unidad_index = manifest.index(unidad_path)
+    marca_index = manifest.index("profiles/news/europe/southern/spain/marca.js")
+    engine_path = "systems/news_engines/unidad_editorial_engine.js"
+    expect(unidad_index).to eq(marca_index - 1)
+    expect(unidad_index).to be > manifest.index("profiles/register.js")
+    expect(File).to exist(File.join(source_root, unidad_path))
+    expect(File).to exist(File.join(source_root, engine_path))
+     expect(File).not_to exist(File.join(source_root, "systems/news_engines/unidad_editorial.js"))
+   end
   end
 
   it "preserves social profile registration precedence" do
@@ -294,7 +315,7 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/americas/south/clarin.js
                                 profiles/news/europe/eastern/serbia/blic.js
                                 profiles/news/europe/central/hungary/tempo.js
-                                systems/news_engines/unidad_editorial.js
+                                profiles/news/europe/southern/spain/unidad_editorial.js
                                 profiles/news/europe/southern/spain/marca.js
                                 profiles/news/europe/western/germany/faz.js
                                 profiles/news/europe/central/poland/agora_wyborcza.js

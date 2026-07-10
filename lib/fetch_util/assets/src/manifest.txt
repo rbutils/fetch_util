@@ -77,7 +77,7 @@ systems/docs/core/docs_detector.js
 systems/docs/stldocs/methods.js
 systems/docs/stldocs/schemas.js
 systems/docs/stldocs/index.js
-systems/antora.js
+systems/docs/generic/antora.js
 systems/docs/reference/reference_engines.js
 systems/docs/generic/core_frameworks.js
 systems/docs/generic/modern_frameworks.js
@@ -198,7 +198,7 @@ profiles/news/europe/central/poland/interia.js
 profiles/news/americas/south/clarin.js
 profiles/news/europe/eastern/serbia/blic.js
 profiles/news/europe/central/hungary/tempo.js
-systems/news_engines/unidad_editorial.js
+profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/news/europe/southern/spain/marca.js
 profiles/news/europe/western/germany/faz.js
 profiles/news/europe/central/poland/agora_wyborcza.js
