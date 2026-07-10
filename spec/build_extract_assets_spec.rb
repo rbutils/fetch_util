@@ -75,6 +75,39 @@ RSpec.describe "extract asset bundle" do
       end
       expect(definitions).to eq([expected_path]), function
     end
+  it "places shared list rendering and glossary scoring before their consumers" do
+    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    list_source = File.read(File.join(source_root, "markdown/lists.js"))
+    list_function = <<~JS
+      function listMarkdown(items) {
+        return items.map(function(item) {
+          var line = item.url ? "- [" + item.text + "](" + item.url + ")" : "- " + item.text;
+          var context = [item.category, item.summary, item.time, item.image, item.caption].filter(Boolean).join(" - ");
+          if (context) line += " - " + context;
+          else if (item.detail) line += " - " + item.detail;
+          return line;
+        }).join("\\n");
+      }
+    JS
+
+    expect(list_source).to eq(list_function)
+    expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+listMarkdown\s*\(/).length }).to eq(1)
+    expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+definitionReferenceMetadataScore\s*\(/).length }).to eq(1)
+    expect(File.read(File.join(source_root, "extractors/lists/generic/card_evidence.js"))).not_to include("function listMarkdown")
+    expect(File.read(File.join(source_root, "core/metadata/structured_data.js"))).not_to include("function definitionReferenceMetadataScore")
+    detection_source = File.read(File.join(source_root, "extractors/glossary/detection.js"))
+    expect(detection_source.index("function definitionReferenceMetadataScore")).to be < detection_source.index("function glossaryLikePage")
+
+    list_index = manifest.index("markdown/lists.js")
+    expect(list_index).to be < manifest.index("core/metadata/content_results.js")
+    Dir[File.join(source_root, "**", "*.js")].each do |path|
+      next if path.end_with?("/markdown/lists.js")
+      next unless File.read(path).include?("listMarkdown(")
+
+      expect(list_index).to be < manifest.index(path.delete_prefix("#{source_root}/"))
+    end
+    expect(manifest.index("extractors/glossary/detection.js")).to be < manifest.index("extractors/glossary/extraction.js")
   end
 
   it "preserves social profile registration precedence" do

@@ -3,6 +3,7 @@ core/metadata/text_normalization.js
 core/metadata/language.js
 core/metadata/visible_metadata.js
 core/metadata/structured_data.js
+markdown/lists.js
 core/metadata/content_results.js
 core/metadata/collect.js
 core/noise_patterns.js
