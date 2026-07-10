@@ -118,6 +118,21 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves every accepted pronunciation and definition beyond presentation caps" do
+    html = fixture_contents('spec/fixtures/glossary_over_cap.html')
+
+    with_url_page('https://example.test/dictionary/wayfinder', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['markdown']).to include(
+        'regional /ˈweɪˌfaɪndər/', 'An aid used by explorers to maintain a planned course.'
+      )
+      expect(payload['html']).to include('An aid used by explorers to maintain a planned course.')
+      expect(payload['markdown'].index('/weɪfaɪndər/')).to be < payload['markdown'].index('regional /')
+      expect(payload['markdown'].index('A person who finds')).to be < payload['markdown'].index('An aid used')
+    end
+  end
+
   it "does not claim non-glossary article pages" do
     html = <<~HTML
       <html>
