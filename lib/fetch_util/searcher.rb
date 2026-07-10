@@ -5,8 +5,6 @@ require "uri"
 
 module FetchUtil
   class Searcher
-    MAX_SNIPPET_LENGTH = 180
-
     SOURCES = {
       "duckduckgo" => "https://duckduckgo.com/?q=%<query>s&ia=web&kl=us-en",
       "google" => "https://www.google.com/search?hl=en&q=%<query>s",
@@ -21,10 +19,10 @@ module FetchUtil
     include ResultFiltering
     private_constant :ResultFiltering
 
-    def initialize(fetcher: nil, request_log: RequestLog.new, sources: nil, limit: 10, concurrency: 2, verbose: false, **fetch_options)
+    def initialize(fetcher: nil, request_log: RequestLog.new, sources: nil, limit: nil, concurrency: 2, verbose: false, **fetch_options)
       @request_log = request_log
       @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s)
-      @limit = limit.to_i
+      @limit = limit
       @verbose = verbose
       @fetcher = fetcher || ParallelFetcher.new(concurrency: concurrency, request_log: request_log, **fetch_options)
     end
@@ -45,13 +43,17 @@ module FetchUtil
 
       {
         query: encoded_query,
-        results: formatted_results(aggregate(urls.keys, fetched).first(limit))
+        results: formatted_results(apply_limit(aggregate(urls.keys, fetched)))
       }
     end
 
     private
 
     attr_reader :limit
+
+    def apply_limit(results)
+      limit.nil? ? results : results.first(limit)
+    end
 
     def search_urls(query)
       urls = {}
@@ -292,13 +294,7 @@ module FetchUtil
       return nil if metadata_only_snippet?(text)
       return nil if jammed_navigation_text?(text)
 
-      truncate(text, MAX_SNIPPET_LENGTH)
-    end
-
-    def truncate(text, max_length)
-      return text if text.length <= max_length
-
-      "#{text[0, max_length - 3].rstrip}..."
+      text
     end
 
     def domain_only?(text, host)

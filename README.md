@@ -77,7 +77,7 @@ fetch_util regulatory https://example.com/article --sources=machine,human
 
 - `FetchUtil.fetch(url, **options)` returns a `FetchUtil::Result`
 - `FetchUtil.fetch_many(urls, **options)` fetches multiple URLs in parallel and preserves input order
-- `FetchUtil.search(query, **options)` returns compact aggregated search results
+- `FetchUtil.search(query, **options)` returns aggregated search results from the fetched responses; pass `limit:` to request an explicit result cap
 - `FetchUtil.regulatory(url, **options)` returns a source-keyed hash of allow/disallow signals for crawling, indexing, and TDM-style usage
 - `FetchUtil::Fetcher.new(**options).fetch(url)` exposes the instance API directly
 
@@ -96,6 +96,7 @@ Useful result fields:
 - `timeout:` browser timeout in seconds
 - `wait:` additional settle delay after page load
 - `wait_for_idle:` wait for Ferrum network idle before extraction
+- `limit:` search-only explicit maximum result count; omitted by default, search returns every result in the fetched responses
 - `idle_duration:` idle duration passed to Ferrum when `wait_for_idle` is enabled
 - `reader_mode:` prefer Readability before heuristic fallbacks
 - `viewport:` viewport hash with `:width` and `:height`

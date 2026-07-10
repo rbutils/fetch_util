@@ -439,6 +439,58 @@ RSpec.describe FetchUtil::Searcher do
                                         url: "https://www.example.org/articles/1",
                                         snippet: "Actual content"
                                       }
-                                    ])
+    ])
+  end
+
+  it "returns every result from the fetched response by default" do
+    markdown = (1..11).map do |index|
+      "- [Result #{index}](https://example.org/results/#{index}) - Result #{index} has a complete search description."
+    end.join("\n")
+    result = instance_double(FetchUtil::Result, markdown: markdown)
+
+    expect(request_log).to receive(:append).with("search://duckduckgo?q=all+results")
+    expect(fetcher).to receive(:fetch).with([
+                                              "https://duckduckgo.com/?q=all+results&ia=web&kl=us-en"
+                                            ]).and_return([result])
+
+    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"]).search("all results")
+
+    expect(payload[:results].length).to eq(11)
+    expect(payload[:results].map { |item| item[:title] }).to eq((1..11).map { |index| "Result #{index}" })
+  end
+
+  it "applies an explicit result limit without changing aggregation" do
+    markdown = (1..11).map do |index|
+      "- [Result #{index}](https://example.org/limited/#{index}) - Result #{index} is available."
+    end.join("\n")
+    result = instance_double(FetchUtil::Result, markdown: markdown)
+
+    expect(request_log).to receive(:append).with("search://duckduckgo?q=limited")
+    expect(fetcher).to receive(:fetch).with([
+                                              "https://duckduckgo.com/?q=limited&ia=web&kl=us-en"
+                                            ]).and_return([result])
+
+    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"], limit: 3).search("limited")
+
+    expect(payload[:results].length).to eq(3)
+    expect(payload[:results].map { |item| item[:title] }).to eq(%w[Result\ 1 Result\ 2 Result\ 3])
+  end
+
+  it "preserves search snippets longer than 180 characters" do
+    snippet = "This complete search snippet contains material context that remains useful to callers, including the late portion that was previously removed by the fixed presentation limit. It also preserves the final sentence and its additional details for downstream readers."
+    result = instance_double(
+      FetchUtil::Result,
+      markdown: "- [Long result](https://example.org/long-result) - #{snippet}\n"
+    )
+
+    expect(request_log).to receive(:append).with("search://duckduckgo?q=long+snippet")
+    expect(fetcher).to receive(:fetch).with([
+                                              "https://duckduckgo.com/?q=long+snippet&ia=web&kl=us-en"
+                                            ]).and_return([result])
+
+    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"]).search("long snippet")
+
+    expect(payload[:results].first[:snippet]).to eq(snippet)
+    expect(payload[:results].first[:snippet].length).to be > 180
   end
 end
