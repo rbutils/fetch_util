@@ -191,10 +191,10 @@ bundle exec rake
 ```
 
 - The shipped browser bundle is `lib/fetch_util/assets/extract.js`.
-- Source JS lives under `lib/fetch_util/assets/src/` and is ordered by `lib/fetch_util/assets/src/manifest.txt`.
+- Source JS lives under `websieve/` and is ordered by `websieve/manifest.txt`.
 - `bundle exec rake build_extract_assets` rebuilds the bundle and runs `npx terser -cm` before writing `extract.js`.
 - `bundle exec rake verify_extract_assets` checks that the built bundle matches the current sources.
 - The default `bundle exec rake` task runs asset verification, specs, and RuboCop.
 - Direct `bundle exec rspec` runs still check bundle freshness through `spec/build_extract_assets_spec.rb` and enforce the repo-wide SimpleCov minimum.
 
-Do not hand-edit `lib/fetch_util/assets/extract.js`; edit the source files under `lib/fetch_util/assets/src/` and rebuild.
+Do not hand-edit `lib/fetch_util/assets/extract.js`; edit the source files under `websieve/` and rebuild.

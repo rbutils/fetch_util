@@ -17,8 +17,8 @@ RSpec.describe "extract asset bundle" do
   def with_asset_project(manifest:, files:)
     Dir.mktmpdir("fetch_util_assets") do |root|
       script_dir = File.join(root, "script")
-      source_root = File.join(root, "lib", "fetch_util", "assets", "src")
-      FileUtils.mkdir_p([script_dir, source_root])
+      source_root = File.join(root, "websieve")
+      FileUtils.mkdir_p([script_dir, source_root, File.join(root, "lib", "fetch_util", "assets")])
       FileUtils.cp(File.join(project_root, "script", "build_extract_assets.rb"), script_dir)
       File.write(File.join(source_root, "manifest.txt"), manifest)
 
@@ -40,7 +40,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "registers generic portal homepages once in the source graph" do
-    registrations = Dir[File.join(project_root, "lib", "fetch_util", "assets", "src", "**", "*.js")].sum do |path|
+    registrations = Dir[File.join(project_root, "websieve", "**", "*.js")].sum do |path|
       File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
     end
 
@@ -48,7 +48,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "keeps warning policy delegates ordered before the entrypoint" do
-    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     warning_paths = manifest.select { |path| path.start_with?("classifiers/warnings/") }
 
@@ -78,7 +78,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "places shared list rendering and glossary scoring before their consumers" do
-    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
     list_function = <<~JS
@@ -113,7 +113,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "keeps relocated definitions before their consumers" do
-    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     sources = manifest.to_h { |path| [path, File.read(File.join(source_root, path))] }
 
@@ -134,7 +134,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "keeps docs and Unidad Editorial modules in their ownership slots" do
-    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
 
     antora_index = manifest.index("systems/docs/generic/antora.js")
@@ -154,7 +154,7 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "preserves social profile registration precedence" do
-    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     register_path = "profiles/register.js"
     register_index = manifest.index(register_path)
@@ -370,5 +370,12 @@ RSpec.describe "extract asset bundle" do
       expect(status.success?).to be(false)
       expect(stderr).to include("Source files missing from manifest: extra.js")
     end
+  end
+
+  it "packages the generated runtime asset but not Websieve sources" do
+    specification = Gem::Specification.load(File.join(project_root, "fetch_util.gemspec"))
+
+    expect(specification.files).to include("lib/fetch_util/assets/extract.js")
+    expect(specification.files.grep(%r{\Awebsieve/})).to be_empty
   end
 end

@@ -7,7 +7,7 @@ require "digest"
 
 PROJECT_ROOT = Pathname(__dir__).join("..").expand_path
 ROOT = PROJECT_ROOT.join("lib", "fetch_util", "assets")
-SOURCE_ROOT = ROOT.join("src")
+SOURCE_ROOT = PROJECT_ROOT.join("websieve")
 MANIFEST = SOURCE_ROOT.join("manifest.txt")
 OUTPUT = ROOT.join("extract.js")
 DIGEST_OUTPUT = ROOT.join("extract.js.sha256")
