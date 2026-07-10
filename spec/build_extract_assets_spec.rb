@@ -130,8 +130,8 @@ RSpec.describe "extract asset bundle" do
     expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
     expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
-     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
-   end
+    expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
+  end
 
   it "keeps docs and Unidad Editorial modules in their ownership slots" do
     source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
@@ -150,8 +150,7 @@ RSpec.describe "extract asset bundle" do
     expect(unidad_index).to be > manifest.index("profiles/register.js")
     expect(File).to exist(File.join(source_root, unidad_path))
     expect(File).to exist(File.join(source_root, engine_path))
-     expect(File).not_to exist(File.join(source_root, "systems/news_engines/unidad_editorial.js"))
-   end
+    expect(File).not_to exist(File.join(source_root, "systems/news_engines/unidad_editorial.js"))
   end
 
   it "preserves social profile registration precedence" do
