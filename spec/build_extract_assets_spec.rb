@@ -233,6 +233,31 @@ RSpec.describe "extract asset bundle" do
       expect(definitions.length).to eq(1), "#{call}: #{definitions.inspect}"
     end
 
+    institutional_europa_path = File.join(source_root, "profiles/families/institutional/europa.js")
+    institutional_europa = File.exist?(institutional_europa_path) ? File.read(institutional_europa_path) : ""
+    institutional_core = File.read(File.join(source_root, "profiles/families/institutional/core.js"))
+    {
+      "governmentProgramMicrositeContent" => "profiles/government/europa.js",
+      "europaServiceLandingContent" => "profiles/government/europa.js",
+      "eurLexDocumentContent" => "profiles/legal/eurlex.js",
+      "legalConventionIndexContent" => "profiles/families/legal_reference/conventions.js"
+    }.each do |function_name, destination|
+      destination_source = File.read(File.join(source_root, destination))
+      expect(destination_source.scan(/function\s+#{function_name}\s*\(/).length).to eq(1)
+      expect(institutional_europa).not_to include("function #{function_name}(")
+      expect(institutional_core).not_to include("function #{function_name}(")
+      expect(manifest.index(destination)).to be < register_index
+    end
+
+    expected_dispatcher_order = [
+      "eurLexDocumentContent(metadata) ||",
+      "      governmentProgramMicrositeContent(metadata) ||",
+      "      europaServiceLandingContent(metadata) ||",
+      "      standardsRecordContent(metadata) ||",
+      "      legalConventionIndexContent(metadata) ||"
+    ].join("\n")
+    expect(File.read(File.join(source_root, "profiles/families/institutional/index.js"))).to include(expected_dispatcher_order)
+
     direct_tail = manifest.drop(register_index + 1).select do |path|
       File.read(File.join(source_root, path)).match?(/^\s*registerHostAwareProfile\(/)
     end

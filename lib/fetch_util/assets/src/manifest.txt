@@ -117,7 +117,8 @@ profiles/families/package_registries.js
 profiles/families/statuspage.js
 profiles/families/institutional/core.js
 profiles/families/institutional/component_hubs.js
-profiles/families/institutional/europa.js
+profiles/government/europa.js
+profiles/legal/eurlex.js
 profiles/families/institutional/standards.js
 profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
@@ -127,6 +128,7 @@ profiles/community/github_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
+profiles/families/legal_reference/conventions.js
 profiles/families/legal_reference/reference_articles.js
 profiles/government/federal_register.js
 profiles/government/gov_uk.js
