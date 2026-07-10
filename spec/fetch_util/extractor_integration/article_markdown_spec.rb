@@ -850,7 +850,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "compacts long glossary descriptions from repeated source blocks" do
+  it "preserves complete long glossary definitions from repeated source blocks" do
     html = <<~HTML
       <html>
         <head><title>What does Whores mean?</title></head>
@@ -877,7 +877,8 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("Prostitution is the business or practice")
-      expect(payload["markdown"]).not_to include("risk of transferring diseases")
+      expect(payload["markdown"]).to include("risk of transferring diseases")
+      expect(payload["markdown"]).to include("legal status varies from country to country")
       expect(payload["warnings"]).not_to include("truncated_content")
     end
   end
