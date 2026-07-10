@@ -45,6 +45,9 @@ extractors/glossary/cleanup.js
 extractors/glossary/detection.js
 extractors/glossary/extraction.js
 extractors/lists/relabeling.js
+extractors/lists/generic/canonical_identity.js
+extractors/lists/generic/card_evidence.js
+extractors/lists/generic/flat_extraction.js
 extractors/lists/core.js
 extractors/lists/products/cards.js
 extractors/lists/products/extraction.js
