@@ -62,6 +62,7 @@ RSpec.describe "extract asset bundle" do
                           registerGlassdoorProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
+                          registerPolishPortalProfiles
                           registerZeitProfiles
                           registerBookingProfiles
                           registerAcademicPublisherProfiles
@@ -103,6 +104,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/facebook.js")
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/threads.js")
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
+    expect(manifest.index("profiles/news/europe/central/poland/wp_onet.js")).to be < register_index
 
     calls.each do |call|
       definitions = paths_before_register.flat_map do |path|
