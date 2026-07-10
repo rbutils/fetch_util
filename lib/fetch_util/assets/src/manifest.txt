@@ -96,7 +96,9 @@ systems/news_engines/generic_portal_homepages.js
 systems/news_engines/polish_portal_descriptors.js
 systems/news_engines/unidad_editorial_engine.js
 profiles/host_aware.js
-profiles/search.js
+profiles/social/search.js
+profiles/social/networks/tiktok.js
+profiles/media_commerce/search.js
 profiles/media_commerce/index.js
 profiles/news/news_homepages.js
 profiles/families/academic/core.js

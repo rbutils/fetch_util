@@ -140,11 +140,13 @@ RSpec.describe "extract asset bundle" do
     register_index = manifest.index(register_path)
     paths_before_register = manifest.take(register_index)
     register_source = File.read(File.join(source_root, register_path))
-    calls = register_source.scan(/^\s*(register(?:[A-Z]\w*)?Profiles)\(\);$/).flatten
+    calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
     expect(calls).to eq(%w[
                           registerCommunityWikiLeadProfiles
-                          registerSocialSearchProfiles
+                          registerPinterestSearchProfile
+                          registerTikTokProfile
+                          registerEbaySearchProfile
                           registerGlassdoorProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
@@ -181,6 +183,33 @@ RSpec.describe "extract asset bundle" do
     expect(register_source).to include(
       "registerHostAwareProfile(true, hatenaBlogContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
     )
+    expected_search_manifest = %w[
+      profiles/social/search.js
+      profiles/social/networks/tiktok.js
+      profiles/media_commerce/search.js
+      profiles/media_commerce/index.js
+    ]
+    expect(manifest[(manifest.index("profiles/host_aware.js") + 1), 4]).to eq(expected_search_manifest)
+
+    registration_prefix = register_source.lines.grep(
+      /^\s*register(?:PinterestSearchProfile|TikTokProfile|EbaySearchProfile|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
+    ).map do |line|
+      line.strip.delete_suffix("();")
+    end
+    expected_registration_prefix = %w[
+      registerPinterestSearchProfile
+      registerTikTokProfile
+      registerEbaySearchProfile
+      registerMediaCommerceLeadProfiles
+      registerNewsHomepageProfiles
+    ]
+    expect(registration_prefix).to eq(expected_registration_prefix)
+    expect(File).not_to exist(File.join(source_root, "profiles/search.js"))
+    source_files = Dir[File.join(source_root, "**", "*.js")]
+    old_wrapper_count = source_files.sum do |path|
+      File.read(path).scan(/function\s+registerSocialSearchProfiles\s*\(/).length
+    end
+    expect(old_wrapper_count).to eq(0)
     wykop_source = File.read(File.join(source_root, "profiles/community/social_news/wykop.js"))
     expect(wykop_source).to include("registerHostAwareProfile(/(^|\\.)wykop\\.pl$/i, wykopContent);")
     expect(wykop_source).not_to include("docsHostSignature")
