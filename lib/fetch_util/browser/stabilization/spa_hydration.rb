@@ -19,6 +19,23 @@ module FetchUtil
         rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
         end
 
+        def wait_for_structural_readiness(page, region_selector, card_selector)
+          previous_count = nil
+          retry_until_timeout(SPA_HYDRATION_TIMEOUT, interval: SPA_HYDRATION_POLL) do
+            counts = page.evaluate(<<~JS)
+              (() => ({
+                regions: document.querySelectorAll(#{region_selector.to_json}).length,
+                cards: document.querySelectorAll(#{card_selector.to_json}).length
+              }))()
+            JS
+            current_count = [counts["regions"], counts["cards"]]
+            ready = current_count == previous_count && current_count[0].positive? && current_count[1] >= 3
+            previous_count = current_count
+            ready
+          end
+        rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
+        end
+
         def detect_spa_framework(page)
           result = page.evaluate(spa_framework_detection_script)
 

@@ -16,6 +16,12 @@ module FetchUtil
             tests: "spec/fetch_util/browser_stabilization_spec.rb" },
           { host: "gitlab.com", path_query: ->(uri) { uri.path.split("/").reject(&:empty?).length == 2 },
             strategy: :stabilize_gitlab_repo, notes: "Wait for repository README content on GitLab project roots.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb" },
+          { host: "onet.pl", path_query: ->(uri) { uri.path == "/" },
+            strategy: :wait_for_onet_homepage, notes: "Wait for Onet's hydrated feed regions and cards before extraction.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb" },
+          { host: "wp.pl", path_query: ->(uri) { uri.path == "/" },
+            strategy: :wait_for_wp_homepage, notes: "Wait for WP's materialized section grids before extraction.",
             tests: "spec/fetch_util/browser_stabilization_spec.rb" }
         ].freeze
         POST_GENERIC_STABILIZATION_PROFILES = [
@@ -155,6 +161,14 @@ module FetchUtil
           end
         rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
           false
+        end
+
+        def wait_for_onet_homepage(page)
+          wait_for_structural_readiness(page, "section[class*='Feed_']", "article[class*='Card_']")
+        end
+
+        def wait_for_wp_homepage(page)
+          wait_for_structural_readiness(page, ".wp-section-grid", ".wp-teaser-tile, .wp-teaser-regular")
         end
 
         def wait_for_telegram_message(page)
