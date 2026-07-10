@@ -24,6 +24,15 @@ RSpec.describe FetchUtil::Browser do
     browser.send(:stabilize_page, page, 'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener')
   end
 
+  it 'waits for the requested Telegram preview message before extraction' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle
+
+    expect(browser).to receive(:wait_for_telegram_message).with(page)
+
+    browser.send(:stabilize_page, page, 'https://t.me/s/examplechannel/42')
+  end
+
   it 'stabilizes a simple page fixture without the generic consent wait' do
     page = instance_double(Ferrum::Browser)
     network = instance_double('FerrumNetwork')

@@ -182,6 +182,10 @@ module FetchUtil
 
         result = @browser.with_page(url) do |page|
           payload = @extractor.extract(page)
+          if telegram_focal_preview?(url) && payload["contentType"] == "article"
+            sleep Browser::PRE_EXTRACTION_SETTLE_WAIT
+            payload = @extractor.extract(page)
+          end
           build_result(url, page.current_url, payload)
         end
         fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
@@ -212,6 +216,14 @@ module FetchUtil
     end
 
     private
+
+    def telegram_focal_preview?(url)
+      uri = URI.parse(url)
+      host = FetchUtil.strip_www_host(url)
+      host == "t.me" && uri.path.match?(%r{\A/s/[^/]+/\d+/?\z})
+    rescue URI::InvalidURIError
+      false
+    end
 
     def build_result(url, final_url, payload)
       raw_final_url = final_url

@@ -11,6 +11,9 @@ module FetchUtil
           SiteStabilization::SocialPlatforms::SOCIAL_PLATFORM_STABILIZATION_PROFILES[:stabilize_facebook],
           SiteStabilization::CommunityAndMarketplace::COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES[:stabilize_ebay_search],
           SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
+          { host: "t.me", path_query: ->(uri) { uri.path.match?(%r{\A/s/[^/]+/\d+/?\z}) },
+            strategy: :wait_for_telegram_message, notes: "Wait for the requested public Telegram preview message.",
+            tests: "spec/fetch_util/browser_stabilization_spec.rb" },
           { host: "gitlab.com", path_query: ->(uri) { uri.path.split("/").reject(&:empty?).length == 2 },
             strategy: :stabilize_gitlab_repo, notes: "Wait for repository README content on GitLab project roots.",
             tests: "spec/fetch_util/browser_stabilization_spec.rb" }
@@ -151,6 +154,24 @@ module FetchUtil
             JS
           end
         rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
+          false
+        end
+
+        def wait_for_telegram_message(page)
+          target = URI.parse(page.current_url).path.delete_prefix("/s/")
+
+          ready = retry_until_timeout(capped_timeout(5.0), interval: 0.25) do
+            page.evaluate(<<~JS)
+              (() => {
+                const card = document.querySelector('.tgme_widget_message[data-post="#{target}"]');
+                const text = card && card.querySelector('.tgme_widget_message_text, .js-message_text');
+                return !!(text && (text.innerText || '').trim());
+              })()
+            JS
+          end
+          sleep PRE_EXTRACTION_SETTLE_WAIT if ready
+          ready
+        rescue URI::InvalidURIError, Ferrum::JavaScriptError, Ferrum::TimeoutError
           false
         end
       end

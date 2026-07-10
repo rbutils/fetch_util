@@ -25,6 +25,35 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(false)
   end
 
+  it 'retries an article extraction for a public Telegram focal preview' do
+    telegram_url = 'https://t.me/s/examplechannel/42'
+    telegram_page = page_at(telegram_url)
+    first_payload = payload_with(contentType: 'article')
+    second_payload = payload_with(contentType: 'social', socialKind: 'post', platform: 'Telegram')
+    allow(browser).to receive(:with_page).with(telegram_url).and_yield(telegram_page)
+    allow(extractor).to receive(:extract).with(telegram_page).and_return(first_payload, second_payload)
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    allow(fetcher).to receive(:sleep)
+
+    result = fetcher.fetch(telegram_url)
+
+    expect(extractor).to have_received(:extract).with(telegram_page).twice
+    expect(fetcher).to have_received(:sleep).with(FetchUtil::Browser::PRE_EXTRACTION_SETTLE_WAIT)
+    expect(result.content_type).to eq('social')
+    expect(result.social_kind).to eq('post')
+  end
+
+  it 'does not retry generic article extraction for non-Telegram focal routes' do
+    focal_url = 'https://example.com/s/examplechannel/42'
+    focal_page = page_at(focal_url)
+    allow(browser).to receive(:with_page).with(focal_url).and_yield(focal_page)
+    allow(extractor).to receive(:extract).with(focal_page).and_return(payload)
+
+    fetch_with_dependencies(focal_url)
+
+    expect(extractor).to have_received(:extract).with(focal_page).once
+  end
+
   it 'passes product prices through result metadata' do
     product_payload = payload_with(
       contentType: 'product',
