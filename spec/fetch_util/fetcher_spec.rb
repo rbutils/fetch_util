@@ -184,7 +184,7 @@ RSpec.describe FetchUtil::Fetcher do
     result = fetch_with_dependencies('https://readthedocs.org/projects/')
 
     expect(result.suspect).to eq(true)
-    expect(result.warnings).to include('auth_or_login_interstitial')
+    expect(result.warnings).to eq(['auth_or_login_interstitial'])
   end
 
   it 'does not flag direct login paths as unexpected auth interstitials' do
@@ -250,7 +250,7 @@ RSpec.describe FetchUtil::Fetcher do
 
     expect(result.content_type).to eq('list')
     expect(result.suspect).to eq(true)
-    expect(result.warnings).to include('not_found_interstitial')
+    expect(result.warnings).to eq(['not_found_interstitial'])
   end
 
   it 'does not flag valid DOI content paths that resolve to matching article pages' do

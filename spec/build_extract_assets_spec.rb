@@ -47,6 +47,36 @@ RSpec.describe "extract asset bundle" do
     expect(registrations).to eq(1)
   end
 
+  it "keeps warning policy delegates ordered before the entrypoint" do
+    source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    warning_paths = manifest.select { |path| path.start_with?("classifiers/warnings/") }
+
+    expected_warning_paths = %w[
+      classifiers/warnings/homepage_docs.js
+      classifiers/warnings/access.js
+      classifiers/warnings/content_integrity.js
+      classifiers/warnings/index.js
+    ]
+    expect(warning_paths.last(4)).to eq(expected_warning_paths)
+    expect(warning_paths.uniq).to eq(warning_paths)
+    expect(File.read(File.join(source_root, "classifiers/warnings/index.js"))).to include("reasons = reasons.concat(accessWarningReasons")
+    expect(File.read(File.join(source_root, "classifiers/warnings/index.js"))).to include("reasons = reasons.concat(contentIntegrityWarningReasons")
+
+    {
+      "credibleHomepageListFeed" => "classifiers/warnings/homepage_docs.js",
+      "credibleDocsIndexReferenceList" => "classifiers/warnings/homepage_docs.js",
+      "accessWarningReasons" => "classifiers/warnings/access.js",
+      "contentIntegrityWarningReasons" => "classifiers/warnings/content_integrity.js",
+      "suspicionReasons" => "classifiers/warnings/index.js"
+    }.each do |function, expected_path|
+      definitions = warning_paths.select do |path|
+        File.read(File.join(source_root, path)).match?(/function\s+#{Regexp.escape(function)}\s*\(/)
+      end
+      expect(definitions).to eq([expected_path]), function
+    end
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "lib", "fetch_util", "assets", "src")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

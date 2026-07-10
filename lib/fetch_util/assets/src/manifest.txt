@@ -38,6 +38,9 @@ classifiers/warnings/paywalls.js
 classifiers/warnings/stale_content.js
 classifiers/warnings/missing_content.js
 classifiers/warnings/content_format.js
+classifiers/warnings/homepage_docs.js
+classifiers/warnings/access.js
+classifiers/warnings/content_integrity.js
 classifiers/warnings/index.js
 extractors/article/roots.js
 extractors/article/fallback.js
