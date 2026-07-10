@@ -288,9 +288,11 @@ module FetchUtil
                                            snapshot.raw_canonical_url)
         warnings.delete("url_content_mismatch")
       end
+      credible_homepage_list = credible_homepage_list_evidence?(content_type, homepage_like, snapshot, warnings)
+      warnings.delete("url_content_mismatch") if credible_homepage_list
       if content_type == "list" && homepage_like && !payload["statusPage"] &&
-         !substantial_homepage_landing?(snapshot) && !government_service_portal?(final_url, snapshot) &&
-         !research_database_landing?(snapshot)
+         !credible_homepage_list && !substantial_homepage_landing?(snapshot) &&
+         !government_service_portal?(final_url, snapshot) && !research_database_landing?(snapshot)
         warnings.delete("url_content_mismatch")
         warnings << "homepage_index_page"
       end
@@ -304,6 +306,19 @@ module FetchUtil
         warnings << "url_content_mismatch"
       end
       warnings.uniq
+    end
+
+    def credible_homepage_list_evidence?(content_type, homepage_like, snapshot, warnings)
+      return false unless content_type == "list" && homepage_like
+      return false unless snapshot.payload["hostAware"] && !snapshot.payload["statusPage"]
+      return false if warnings.any? { |warning| warning.match?(/(?:access|auth|bot|challenge|consent|empty|error|interstitial|not_found|paywall|short|wall)/i) }
+      return false if generic_redirect_not_found?(snapshot) || auth_redirect_interstitial?(snapshot)
+      return false if snapshot.normalized_markdown.empty?
+
+      substantive_headings = snapshot.markdown.lines.count do |line|
+        line.match?(/^\s*\#{1,3}\s+\S.{3,}/)
+      end
+      substantive_headings >= 2 && snapshot.linked_item_count >= 6
     end
 
     def homepage_like?(url)
