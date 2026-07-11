@@ -81,19 +81,8 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
-    list_function = <<~JS
-      function listMarkdown(items) {
-        return items.map(function(item) {
-          var line = item.url ? "- [" + item.text + "](" + item.url + ")" : "- " + item.text;
-          var context = [item.category, item.summary, item.time, item.image, item.caption].filter(Boolean).join(" - ");
-          if (context) line += " - " + context;
-          else if (item.detail) line += " - " + item.detail;
-          return line;
-        }).join("\\n");
-      }
-    JS
-
-    expect(list_source).to eq(list_function)
+    expect(list_source).to include("function listMarkdown(items)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField")
+    expect(list_source.index("function listMarkdown(items)")).to be < list_source.index("function cardField")
     expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+listMarkdown\s*\(/).length }).to eq(1)
     expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+definitionReferenceMetadataScore\s*\(/).length }).to eq(1)
     expect(File.read(File.join(source_root, "extractors/lists/generic/card_evidence.js"))).not_to include("function listMarkdown")

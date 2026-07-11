@@ -109,7 +109,12 @@
     var score = listCandidateScore(text, url, detail, container || link.parentElement, context);
     if (score === -Infinity) return null;
 
-    return { text: text, url: url, detail: detail, score: score };
+    return { text: text, url: url, detail: detail, score: score, card: listCardRoot(link, container) };
+  }
+
+  function listCardRoot(link, fallback) {
+    var card = link && link.closest && link.closest("article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+    return card || fallback || (link && link.parentElement);
   }
 
   function listAncestorOfType(link, nodeChecker) {

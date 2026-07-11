@@ -3,6 +3,7 @@
 
     var root = document.createElement("div");
     root.innerHTML = html;
+    preserveInlineProse(root);
     cleanupAgentRoot(root);
     normalizeCodeBlocks(root);
     unwrapWrapperDivs(root);
@@ -109,4 +110,14 @@
       return codeBlock ? codeBlock : "";
     });
     return md.replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function preserveInlineProse(root) {
+    root.querySelectorAll("font, span, a[style], b[style], i[style], u[style], em[style], strong[style], mark[style]").forEach(function(node) {
+      node.removeAttribute("style");
+    });
+
+    root.querySelectorAll("font, p > span, li > span, blockquote > span").forEach(function(node) {
+      node.replaceWith.apply(node, Array.prototype.slice.call(node.childNodes));
+    });
   }

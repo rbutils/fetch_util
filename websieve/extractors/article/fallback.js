@@ -1,5 +1,6 @@
   function scoreNode(node) {
     if (!node || cookieChromeNode(node)) return -Infinity;
+    if (!fallbackFocalArticleRoot(node) && commentOnlyRoot(node)) return -Infinity;
 
     if (node.matches("[id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [class*='privacy-center' i], [id*='privacy-center' i], [data-nosnippet='true']")) return -Infinity;
 
@@ -50,6 +51,7 @@
   }
 
   function fallbackContent() {
+    if (commentOnlyRoot(document.body) && !fallbackFocalArticleRoot(document.body)) return nonArticleContent();
     var legalProvision = legalProvisionContent();
     if (legalProvision) return legalProvision;
 
@@ -72,7 +74,12 @@
 
     var node = best && best.score > -Infinity ? best.node : document.body;
     var clone = cleanClone(node);
+    var comments = fallbackFocalArticleRoot(clone) ? fallbackCommentMarkup(document) : "";
+    prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
+    prepareFallbackInlineProse(clone);
+    cleanupFallbackArticleChrome(clone);
+    if (comments) clone.insertAdjacentHTML("beforeend", comments);
     var text = normalizeText(clone.textContent);
 
     return {
@@ -85,6 +92,65 @@
       textContent: text,
       readerMode: false,
       contentType: "article"
+    };
+  }
+
+  function fallbackFocalArticleRoot(root) {
+    var heading = root && root.querySelector && root.querySelector("h1, h2, [itemprop='headline']");
+    var title = normalizeText((heading && heading.textContent) || "");
+    var body = root && root.querySelectorAll ? Array.prototype.filter.call(root.querySelectorAll("p, [itemprop='articleBody']"), function(node) {
+      return !node.closest("#comments, .comments, .comment-list, [class*='comment' i], [id*='comment' i]");
+    }).map(function(node) { return normalizeText(node.textContent); }).join(" ") : "";
+    return !!title && body.length >= 40;
+  }
+
+  function commentOnlyRoot(root) {
+    if (!root || !root.querySelector) return false;
+    var comments = root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]");
+    if (!comments.length) return false;
+    var total = normalizeText(root.textContent || "").length;
+    var commentText = Array.prototype.reduce.call(comments, function(length, node) {
+      return Math.max(length, normalizeText(node.textContent || "").length);
+    }, 0);
+    return commentText > 0 && commentText >= total * 0.7;
+  }
+
+  function fallbackCommentMarkup(root) {
+    var containers = [];
+    root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]").forEach(function(node) {
+      if (!node.querySelector("p, li, [class*='body' i]") || normalizeText(node.textContent || "").length < 40) return;
+      if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
+    });
+    return containers.map(function(node) { return node.outerHTML; }).join("");
+  }
+
+  function prepareFallbackInlineProse(root) {
+    root.querySelectorAll("p span, li span, blockquote span, p font, li font, blockquote font").forEach(function(node) {
+      if (node.querySelector("p, li, blockquote, div, ul, ol, table, pre")) return;
+      node.replaceWith.apply(node, Array.prototype.slice.call(node.childNodes));
+    });
+  }
+
+  function cleanupFallbackArticleChrome(root) {
+    root.querySelectorAll(".comment-thread, [class*='comment-thread' i], .widget, [class*='widget' i], .views-element-container, [class~='comment'], .date-header").forEach(function(node) {
+      var text = normalizeText(node.textContent || "");
+      if (!text || text.length < 100 || !node.querySelector("p, article, section, ul, ol, table")) node.remove();
+    });
+  }
+
+  function nonArticleContent() {
+    return {
+      title: document.title,
+      byline: null,
+      excerpt: null,
+      siteName: location.hostname,
+      publishedTime: null,
+      html: "",
+      textContent: "",
+      markdown: "",
+      readerMode: false,
+      contentType: "list",
+      items: []
     };
   }
 

@@ -123,8 +123,8 @@
     candidate.domIndex = Array.prototype.indexOf.call(document.querySelectorAll("a[href]"), link);
     candidate.canonicalKey = listCanonicalKey(candidate.url);
     candidate.url = candidate.canonicalKey;
-    candidate.card = card;
-    addCardContext(candidate, card);
+    candidate.card = listCardRoot(link, card);
+    addCardContext(candidate, candidate.card);
     return candidate;
   }
 

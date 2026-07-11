@@ -131,6 +131,55 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves inline prose, entities, styled text, and punctuation" do
+    html = <<~HTML
+      <html><head><title>Inline guidance</title></head><body><main><article>
+        <h1>Inline guidance</h1>
+        <p>WHO says <span class="function-word">that</span> care <strong>must</strong> be available&nbsp;now, and CDC notes <em>why</em>.</p>
+        <p>Use &amp; compare <span style="color:red">these results</span>: first, second, and third.</p>
+        <ul><li>Keep <b>nested</b> wording.</li><li>Keep punctuation, too.</li></ul>
+      </article></main></body></html>
+    HTML
+
+    %w[who.int cdc.gov].each do |host|
+      with_url_page("https://#{host}/news/inline-guidance", html) do |page|
+        markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page)["markdown"]
+
+        expect(markdown).to include("WHO says that care **must** be available\u00a0now, and CDC notes _why_.")
+        expect(markdown).to include("Use & compare these results: first, second, and third.")
+        expect(markdown).to include("Keep **nested** wording.")
+      end
+    end
+  end
+
+  it "rejects comment-only roots but keeps a short focal article beside longer comments" do
+    comment_only = <<~HTML
+      <html><head><title>Community update</title></head><body>
+        <main><section class="comments"><h2>Comments</h2><p>Alice: This is the entire materialized page and a useful reply.</p>
+        <p>Bob: Another reply with enough text to resemble an article.</p></section></main>
+      </body></html>
+    HTML
+    with_url_page("https://dev.to/example/comment-only", comment_only) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload["contentType"]).not_to eq("article")
+    end
+
+    focal = <<~HTML
+      <html><head><title>Community update</title></head><body><main><article>
+        <h1>Community update</h1><p>The focal article body explains the release and its user impact for readers this week.</p>
+        <section class="comments"><h2>Comments</h2>
+          <p>Alice: This longer comment adds detailed context about how the release affects teams, migration plans, support requests, and the daily work of people who depend on this update.</p>
+          <p>Bob: Another longer comment records a separate perspective on rollout timing, compatibility concerns, documentation gaps, and follow-up work that will happen after launch.</p>
+        </section>
+      </article></main></body></html>
+    HTML
+    with_url_page("https://dev.to/example/community-update", focal) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("The focal article body", "Alice: This longer comment", "Bob: Another longer comment")
+    end
+  end
+
   it "prepends the page title when generic article markdown starts mid-content" do
     html = <<~HTML
       <html>
