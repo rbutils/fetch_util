@@ -1,5 +1,5 @@
   function applyProductPageContent(content, metadata) {
-    if (!content || content.contentType === "property" || content.contentType === "list" || content.contentType === "search" || content.contentType === "interstitial" || content.docsLike || content.legalProvision) return content;
+    if (!content || content.contentType === "job" || content.contentType === "property" || content.contentType === "list" || content.contentType === "search" || content.contentType === "interstitial" || content.docsLike || content.legalProvision) return content;
 
     var evidence = productPageEvidence();
     if (!evidence) return content;

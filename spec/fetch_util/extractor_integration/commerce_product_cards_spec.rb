@@ -23,6 +23,7 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
         <body>
           <main>
             <h1>Contoso Surface Dock</h1>
+            <img alt="Contoso Surface Dock">
             <p>Connect monitors, accessories, and power with one compact dock for hybrid desks.</p>
             <section>
               <h2>Product details</h2>
@@ -38,6 +39,7 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
 
       expect(payload["contentType"]).to eq("product")
       expect(payload["price"]).to eq("$199.99")
+      expect(payload["markdown"]).to include("- Availability: In Stock")
       expect(payload["markdown"]).to include("- Price: $199.99")
       expect(payload["markdown"]).to include("- SKU: SURFACE-DOCK-2")
       expect(payload["suspect"]).to be(false)
@@ -296,6 +298,29 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
       expect(payload["markdown"]).not_to include("Rating:")
       expect(payload["markdown"]).not_to include("In Stock")
       expect(payload["markdown"]).not_to match(/\$\d/)
+    end
+  end
+
+  it 'keeps a category redirect as a list without focal product evidence' do
+    html = fixture_contents(File.expand_path('../../fixtures/w1_category_redirect_product_negative.html', __dir__))
+
+    extract_from_url('https://www.ikea.com/us/en/cat/bookcases-shelving/10382/', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['sku']).to be_nil
+      expect(payload['availability']).to be_nil
+      expect(payload['markdown']).to include('[Bookcase Shelf One]')
+      expect(payload['markdown']).to include('[Bookcase Shelf Four]')
+    end
+  end
+
+  it 'keeps structured Newegg-like redirected category pages as lists' do
+    html = fixture_contents(File.expand_path('../../fixtures/w1_category_redirect_product_negative.html', __dir__))
+
+    extract_from_url('https://www.newegg.com/p/pl?d=bookcases', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['sku']).to be_nil
+      expect(payload['availability']).to be_nil
+      expect(payload['markdown']).to include('[Bookcase Shelf One]')
     end
   end
 end

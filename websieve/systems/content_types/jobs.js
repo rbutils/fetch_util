@@ -36,10 +36,21 @@
     var job = jobPostingNode();
     if (!job) return null;
 
+    function applicantLocationText(value) {
+      var locations = Array.isArray(value) ? value : [value];
+      var labels = [];
+      locations.forEach(function(location) {
+        var label = structuredPostalAddressText(location) || entityText(location) || entityName(location);
+        label = normalizeText(label || "");
+        if (label && labels.indexOf(label) === -1) labels.push(label);
+      });
+      return labels.length ? ["Remote"].concat(labels).join("; ") : "";
+    }
+
     return jobContentResult({
       title: entityText(job.title) || entityName(job) || metadata.title || document.title,
       company: entityName(job.hiringOrganization) || metadata.siteName,
-      location: jobLocationText(job.jobLocation) || entityText(job.applicantLocationRequirements),
+      location: jobLocationText(job.jobLocation) || applicantLocationText(job.applicantLocationRequirements),
       description: structuredDescriptionMarkdown(job.description),
       publishedTime: entityText(job.datePosted),
       html: typeof job.description === "string" ? job.description : ""

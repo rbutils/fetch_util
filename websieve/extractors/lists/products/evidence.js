@@ -14,7 +14,7 @@
     );
   }
 
-  function visibleProductPrice() {
+  function visibleProductPrice(entity) {
     var selectors = [
       "[itemprop='price']",
       "meta[itemprop='price'][content]",
@@ -26,7 +26,7 @@
     var currency = firstText(["[itemprop='priceCurrency']", "meta[itemprop='priceCurrency'][content]"], "content");
 
     for (var i = 0; i < selectors.length; i += 1) {
-      var nodes = document.querySelectorAll(selectors[i]);
+      var nodes = entity.querySelectorAll(selectors[i]);
       for (var n = 0; n < nodes.length; n += 1) {
         var node = nodes[n];
         if (node.closest && node.closest("nav, footer, aside, [hidden], [aria-hidden='true']")) continue;
@@ -46,21 +46,58 @@
     }) || null;
   }
 
+  function focalProductEntity(title) {
+    var heading = document.querySelector("main h1, article h1, h1");
+    if (!heading || !normalizeText(title)) return null;
+    if (normalizeText(heading.textContent).toLowerCase() !== normalizeText(title).toLowerCase()) return null;
+    return heading.closest("main, article, [itemscope], [data-testid*='product' i], [class*='product-detail' i]") || heading.parentElement;
+  }
+
+  function finalProductUrlMatches(product) {
+    var value = product && (product.url || product.mainEntityOfPage);
+    if (!value) return true;
+    try {
+      var parsed = new URL(typeof value === "object" ? value.url : value, location.href);
+      return parsed.origin === location.origin && parsed.pathname === location.pathname;
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function productRedirectPage() {
+    var path = (location.pathname || "").toLowerCase();
+    var query = (location.search || "").toLowerCase();
+    return /(?:^|[?&])(q|query|search|searchtext|keyword|k|d)=/.test(query) ||
+      /\/(search|s|browse|category|categories|collections?|catalog|keyword|wholesale|shop)\b/.test(path) ||
+      /\/p\/pl\b/.test(path);
+  }
+
   function productPageEvidence() {
     var structuredProduct = productPageStructuredData();
     var offer = productOffer(structuredProduct);
-    var price = productOfferPrice(offer) || productMetaPrice() || visibleProductPrice();
+    var structuredName = commerceEntityText(structuredProduct && structuredProduct.name);
+    var focalEntity = focalProductEntity(structuredName || firstText(["main h1", "article h1", "h1"]));
+    if (productRedirectPage() || !focalEntity || (structuredProduct && !finalProductUrlMatches(structuredProduct))) return null;
+
+    var price = productOfferPrice(offer) || productMetaPrice() || visibleProductPrice(focalEntity);
     var ogType = normalizeText(metadataValue("og:type", "property") || "").toLowerCase();
-    var productMarkup = !!document.querySelector("[itemtype*='schema.org/Product' i], [typeof*='Product' i], [itemprop='sku'], [itemprop='gtin'], [itemprop='mpn']");
-    var addToCart = !!document.querySelector("button[name*='add' i], button[id*='add-to-cart' i], button[class*='add-to-cart' i], button[data-testid*='add-to-cart' i], [aria-label*='add to cart' i], [aria-label*='add to bag' i]");
-    var sku = firstText(["[itemprop='sku']", "[class*='sku' i]", "[data-testid*='sku' i]"]);
+    var productMarkup = !!focalEntity.querySelector("[itemtype*='schema.org/Product' i], [typeof*='Product' i], [itemprop='sku'], [itemprop='gtin'], [itemprop='mpn']");
+    var addToCart = !!focalEntity.querySelector("button[name*='add' i], button[id*='add-to-cart' i], button[class*='add-to-cart' i], button[data-testid*='add-to-cart' i], [aria-label*='add to cart' i], [aria-label*='add to bag' i]");
+    var sku = firstTextFromNode(focalEntity, ["[itemprop='sku']", "[class*='sku' i]", "[data-testid*='sku' i]"]);
     var productOgType = /\bproduct\b/.test(ogType);
-    var evidenceCount = [structuredProduct, productOgType, productMarkup, addToCart, sku, price].filter(Boolean).length;
+    var focalTitle = firstText(["main h1", "article h1", "h1", "[itemprop='name']"]);
+    var focalImage = !!focalEntity.querySelector("img[alt], [itemprop='image']");
+    structuredName = structuredName.toLowerCase();
+    var structuredSku = commerceEntityText(structuredProduct && (structuredProduct.sku || structuredProduct.mpn || structuredProduct.gtin13));
+    var focalName = normalizeText(focalTitle || "").toLowerCase();
+    var structuredIdentity = !!structuredProduct && !!focalName && (structuredName === focalName || structuredName.indexOf(focalName) !== -1 || focalName.indexOf(structuredName) !== -1);
+    var visibleIdentity = !!focalTitle && (productMarkup || addToCart || sku) &&
+      !!focalEntity.querySelector("[itemtype*='schema.org/Product' i], [typeof*='Product' i], [itemprop='sku'], [itemprop='gtin'], [itemprop='mpn'], button[name*='add' i], button[id*='add-to-cart' i], button[class*='add-to-cart' i], button[data-testid*='add-to-cart' i], [aria-label*='add to cart' i], [aria-label*='add to bag' i], [class*='sku' i], [data-testid*='sku' i]");
+    var focalIdentity = structuredIdentity || visibleIdentity;
+    var detailEvidence = [offer, sku || structuredSku, addToCart, focalImage].filter(Boolean).length;
 
     if (productStructuredDataItems().length > 1 && !productOgType && !addToCart && !sku) return null;
-    if (!structuredProduct && !productOgType && !productMarkup && evidenceCount < 2) return null;
-    if (!price && !addToCart && !sku && !productMarkup && !structuredProduct) return null;
-
+    if (!focalIdentity || detailEvidence < 2) return null;
     return {
       title: commerceEntityText(structuredProduct && structuredProduct.name),
       excerpt: commerceEntityText(structuredProduct && structuredProduct.description),
