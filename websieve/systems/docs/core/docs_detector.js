@@ -57,6 +57,11 @@
     if (/^(doc\.rust-lang\.org|docs\.rs)$/.test(location.hostname) || document.querySelector(".rustdoc, .sidebar-elems, #crate-search")) {
       return docsSystemResult("rustdoc", signatureInfo);
     }
+    var javadocContent = document.querySelector("main .class-description, .contentContainer .description");
+    var javadocStructure = document.querySelector("main .summary-table, main .member-summary, main .member-details, .contentContainer .summary-table, .contentContainer .details");
+    if (javadocContent && javadocStructure) {
+      return docsSystemResult("javadoc", signatureInfo);
+    }
     if (document.querySelector("#dartdoc-main-content, .self-name") && document.querySelector("section.summary dt .name a, section.summary dt a")) {
       return docsSystemResult("dartdoc", signatureInfo);
     }

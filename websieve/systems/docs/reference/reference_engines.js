@@ -9,6 +9,20 @@
       titleFormatter: function(title) {
         return title.replace(/\s+copy item path$/i, "");
       },
+      postProcessMarkdown: function(markdown) {
+        var examples = Array.prototype.slice.call(node.querySelectorAll("pre")).map(function(pre) {
+          return cleanCodeText(pre.textContent);
+        }).filter(Boolean);
+        examples.forEach(function(example) {
+          var lines = example.split("\n").filter(Boolean);
+          var lastLine = lines[lines.length - 1];
+          if (!lastLine || markdown.indexOf(example) !== -1) return;
+          var block = new RegExp("\\n*```[^\\n]*\\n[\\s\\S]*?" + escapeRegex(lastLine) + "\\n```", "g");
+          markdown = markdown.replace(block, "");
+          markdown = [markdown.trim(), fencedCodeBlock("", example).trim()].filter(Boolean).join("\n\n");
+        });
+        return markdown;
+      },
       rewriteRoot: function(root) {
         root.querySelectorAll("nav, #sidebar, .sidebar, .sub-sidebar-menu, #settings, #help-button, #crate-search, .mobile-topbar, .sidebar-elems, .out-of-band").forEach(function(el) {
           el.remove();
@@ -23,9 +37,34 @@
         root.querySelectorAll("a.srclink, a.src, a[class*='srclink']").forEach(function(el) {
           el.remove();
         });
+        root.querySelectorAll(".example-wrap, .example, [class*='example']").forEach(function(example) {
+          example.querySelectorAll("a[href], button").forEach(function(control) {
+            var href = control.getAttribute("href") || "";
+            var text = normalizeText(control.textContent);
+            if (/play\.rust-lang\.org|rustdoc\.test/i.test(href) || /^(run|play)$/i.test(text)) control.remove();
+          });
+          removeNodesByText(example, "p, span", /^see\s*\.?$/i);
+        });
         root.querySelectorAll("h1, h2, h3, h4").forEach(function(el) {
           el.textContent = normalizeText(el.textContent).replace(/\s+copy item path$/i, "").replace(/^§\s*/, "");
         });
+      }
+    });
+  }
+
+  function javadocContent(metadata, info) {
+    info = info || docsSystemInfo(metadata);
+    if (!info || info.system !== "javadoc") return null;
+
+    return docsContentBySelectors(metadata, ["main", ".contentContainer", "body"], {
+      titleSelectors: ["main h1", ".header h1", "h1"],
+      fallbackTitle: function() { return metadata.title || document.title; },
+      rewriteRoot: function(root) {
+        root.querySelectorAll("nav, header, footer, .top-nav, .sub-nav, .skip-nav, .search-spec, .nav-list, .header, .footer").forEach(function(el) {
+          el.remove();
+        });
+        removeNodesByText(root, "a, button, span", /^(skip navigation|search|module|package|class|use|tree|deprecated|index|help)$/i);
+        cleanDocsHeadings(root);
       }
     });
   }

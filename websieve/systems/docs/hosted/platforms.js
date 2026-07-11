@@ -33,17 +33,13 @@
           var text = normalizeText(el.textContent);
           if ((/^baseline\b/i.test(text) || /this feature is well established and works across many devices/i.test(text)) && text.length < 800) el.remove();
         });
-        // Strip empty "Browser compatibility" sections (compat tables are JS-rendered widgets)
-        // Also strip other empty documentation sections (e.g., "Examples" with no content)
         root.querySelectorAll("section, div").forEach(function(el) {
           var heading = el.querySelector("h2, h3");
           if (!heading) return;
-          var headingText = normalizeText(heading.textContent);
-          if (!headingText) return;
-          // Check if the section body (minus heading text) is essentially empty
-          var text = normalizeText(el.textContent);
-          var headingLen = headingText.length;
-          if (text.length - headingLen < 30) el.remove();
+          var content = Array.prototype.slice.call(el.children).filter(function(child) {
+            return child !== heading && /^(p|pre|ul|ol|dl|table|figure|div|section)$/i.test(child.tagName) && normalizeText(child.textContent);
+          });
+          if (!content.length) el.remove();
         });
         // Strip BCD table containers that are empty
         root.querySelectorAll("table.bc-table, [class*='bc-table'], [class*='bcd-table']").forEach(function(el) {
@@ -62,7 +58,18 @@
     return docsContentForNode(metadata, root, {
       titleSelectors: ["main h1", ".markdown-body h1"],
       fallbackTitle: function(metadata) { return normalizeText((metadata.title || document.title).replace(/\s*-\s*GitHub Docs$/i, "")); },
+      preserveSelector: "button[aria-label*='copy' i]",
       rewriteRoot: function(root) {
+        root.querySelectorAll("clipboard-copy, [data-copy-feedback], [data-testid='copy-button']").forEach(function(el) {
+          el.remove();
+        });
+        root.querySelectorAll("button[aria-label*='copy' i]").forEach(function(button) {
+          var text = normalizeText(button.textContent) || normalizeText(button.getAttribute("aria-label"));
+          if (!text) return;
+          var paragraph = document.createElement("p");
+          paragraph.textContent = text;
+          button.replaceWith(paragraph);
+        });
         root.querySelectorAll("[role='tablist'], ul[class*='SegmentedControl'], .prc-SegmentedControl-SegmentedControl-lqIXp").forEach(function(el) {
           el.remove();
         });

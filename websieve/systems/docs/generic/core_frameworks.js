@@ -129,9 +129,46 @@
       removeSelectors: COMMON_DOCS_CHROME_SELECTOR + ", .theme-doc-breadcrumbs, .theme-doc-toc-desktop, .theme-doc-toc-mobile, .pagination-nav, .theme-edit-this-page, .theme-last-updated",
       removeTextPattern: /^(skip to main content|on this page|edit this page|copy for llm|view as markdown|ask ai|search)$/i,
       contentType: function(root, info) { return docsHomepageListLike(root, info) ? "list" : "article"; },
+      preserveSelector: "[role='tab']",
       rewriteRoot: function(root) {
         stripDocsTextNodePattern(root, /\b(?:Get started|Getting started|Docs|API|FAQ|Contributing|Troubleshooting|Guides?|Reference)(?:\s*\|\s*(?:Get started|Getting started|Docs|API|FAQ|Contributing|Troubleshooting|Guides?|Reference)){2,}\s*/gi);
         removeAll(root, "header, footer, nav, aside, [role='banner'], [role='navigation'], [class*='navbar' i], [class*='sidebar' i], [class*='menu' i], [class*='toc' i]");
+        var tabPanels = Array.prototype.slice.call(root.querySelectorAll("[role='tabpanel']"));
+        var selectedPanels = [];
+        root.querySelectorAll("[role='tab'][aria-controls]").forEach(function(tab) {
+          var isSelected = tab.getAttribute("aria-selected") === "true" || /(?:^|\s)(?:tabs__item--active|tabItem--active|active|is-active)(?:\s|$)/.test(tab.className || "");
+          if (!isSelected) return;
+          var panel = tabPanels.find(function(candidate) {
+            return candidate.id === tab.getAttribute("aria-controls");
+          });
+          if (!panel || selectedPanels.indexOf(panel) !== -1) return;
+          selectedPanels.push(panel);
+          var selectedLabel = normalizeText(tab.textContent);
+          if (!selectedLabel) return;
+          var selectedHeading = document.createElement("h3");
+          selectedHeading.textContent = selectedLabel;
+          panel.insertBefore(selectedHeading, panel.firstChild);
+        });
+        if (selectedPanels.length) {
+          tabPanels.forEach(function(panel) {
+            if (selectedPanels.indexOf(panel) === -1) panel.remove();
+          });
+        } else {
+          root.querySelectorAll("[role='tabpanel'][hidden], [role='tabpanel'][aria-hidden='true']").forEach(function(panel) {
+            panel.remove();
+          });
+        }
+        root.querySelectorAll("[role='tablist']").forEach(function(tablist) {
+          tablist.remove();
+        });
+        root.querySelectorAll(".admonition, [class*='admonition']").forEach(function(admonition) {
+          var title = normalizeText((admonition.querySelector(".admonition-heading, .admonition-title") || {}).textContent) || "Note";
+          var content = normalizeText(admonition.textContent).replace(new RegExp("^" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "");
+          if (!content) return admonition.remove();
+          var quote = document.createElement("blockquote");
+          quote.innerHTML = "<p><strong>" + title.toUpperCase() + ":</strong> " + content + "</p>";
+          admonition.replaceWith(quote);
+        });
       }
     });
   }

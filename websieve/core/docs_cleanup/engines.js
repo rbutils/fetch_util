@@ -10,6 +10,7 @@ function docsEngineContent(metadata, info, descriptor) {
   var headingFormatter = descriptor.headingFormatter || function(text) { return cleanDocsHeadingText(text); };
   var titleFormatter = descriptor.titleFormatter || descriptor.headingFormatter;
   var options = {
+    preserveSelector: descriptor.preserveSelector,
     rewriteRoot: function(root) {
       if (descriptor.removeSelectors) {
         root.querySelectorAll(descriptor.removeSelectors).forEach(function(el) {
@@ -65,7 +66,7 @@ function docsArticleContent(metadata, node, options) {
 
   options = options || {};
   var sourceNode = options.focusFragment === false ? node : focusedDocsNode(node);
-  var root = cleanClone(sourceNode);
+  var root = cleanClone(sourceNode, options.preserveSelector);
 
   cleanupAgentRoot(root);
 

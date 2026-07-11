@@ -20,7 +20,8 @@
   }
 
   function cleanupMarkdownNoise(markdown) {
-    var result = (markdown || "")
+    var protectedMarkdown = protectMarkdownFences(markdown);
+    var result = protectedMarkdown.markdown
       .replace(/Your browser doesn't support HTML5 audio\s*/g, "")
       .replace(/^\s*[-*]\s*$/gm, "")
       .replace(/<iframe\b[^>]*>?(?:<\/iframe>)?/gi, "")
@@ -187,8 +188,7 @@
         filtered.push(lines[k]);
       }
     }
-
-    return filtered.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return restoreMarkdownFences(filtered.join("\n").replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
   }
 
   function stripTrailingArticlePromoTail(markdown) {

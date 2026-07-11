@@ -142,6 +142,18 @@ RSpec.describe "extract asset bundle" do
     expect(File).not_to exist(File.join(source_root, "systems/news_engines/unidad_editorial.js"))
   end
 
+  it "loads Markdown fence protection before its cleanup consumer" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    fence_path = "core/markdown_cleanup/fences.js"
+    cleanup_path = "core/markdown_cleanup.js"
+
+    expect(manifest.index(fence_path)).to be < manifest.index(cleanup_path)
+    expect(File.read(File.join(source_root, fence_path))).to include("function protectMarkdownFences")
+    expect(File.read(File.join(source_root, cleanup_path))).to include("protectMarkdownFences(markdown)")
+    expect(File.read(File.join(source_root, cleanup_path))).to include("restoreMarkdownFences(")
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

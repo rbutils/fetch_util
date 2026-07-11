@@ -80,7 +80,7 @@
     return fallback;
   }
 
-  function cleanClone(node) {
+  function cleanClone(node, preserveSelector) {
     if (cookieChromeNode(node)) {
       var empty = document.createElement("div");
       return empty;
@@ -88,6 +88,11 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
+    if (preserveSelector) {
+      clone.querySelectorAll(preserveSelector).forEach(function(el) {
+        el.setAttribute("data-fetchutil-preserve", "true");
+      });
+    }
     preserveMeaningfulButtons(clone);
     // Preserve ReDoc endpoint bars before removing buttons.
     // These have: <button><span class="http-verb get">get</span><span>/path</span></button>
@@ -109,7 +114,7 @@
       }
     });
     clone.querySelectorAll("script, style, noscript, template, iframe, form, button, input, aside, nav, footer").forEach(function(el) {
-      el.remove();
+      if (!el.hasAttribute("data-fetchutil-preserve")) el.remove();
     });
     cleanupCookieChrome(clone);
     clone.querySelectorAll("a").forEach(function(el) {
@@ -132,7 +137,7 @@
 
     root.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']").forEach(function(el) {
       var text = normalizeText(el.innerText || el.textContent || el.getAttribute("value") || "");
-      if (!meaningfulButtonText(text)) return;
+      if (el.hasAttribute("data-fetchutil-preserve") || !meaningfulButtonText(text)) return;
 
       var replacement = document.createElement("p");
       replacement.textContent = text;

@@ -20,6 +20,7 @@ core/simple_article_profile.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/titles.js
 core/docs_cleanup/engines.js
+core/markdown_cleanup/fences.js
 core/markdown_cleanup.js
 markdown/code_helpers.js
 markdown/tables.js

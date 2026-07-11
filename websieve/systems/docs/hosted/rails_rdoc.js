@@ -58,9 +58,6 @@
         });
         removeNodesByText(root, "a, span, div, p", /^(skip to content|skip to search|search|menu|index)$/i);
         removeNodesByText(root, "h2, h3", /^(home|what(?:’|')?s here)$/i);
-        root.querySelectorAll("h1").forEach(function(el) {
-          el.remove();
-        });
         root.querySelectorAll("ul, ol, div, section").forEach(function(el) {
           if (tocLikeNode(el)) el.remove();
         });
