@@ -11,7 +11,7 @@
       detailedStatus.querySelector(".display-name__account") &&
       detailedStatus.querySelector(".status__content__text") &&
       detailedStatus.querySelector(".detailed-status__action-bar"));
-    var mastodonPath = /^\/(?:@[^/]+|tags\/[^/?#]+)/i.test(location.pathname || "");
+    var mastodonPath = /^\/(?:@[^/]+|tags\/[^/?#]+|explore\/?$)/i.test(location.pathname || "");
 
     return mastodonLike && mastodonPath;
   }
@@ -49,12 +49,22 @@
     var clone = cleanClone(contentNode);
     if (clone) {
       cleanupAgentRoot(clone);
-      clone.querySelectorAll(".status__action-bar, .status__prepend, .status__prepend-icon, button, time").forEach(function(el) { el.remove(); });
+      clone.querySelectorAll(".status__action-bar, .status__prepend, .status__prepend-icon, .status__reblog, .invisible, .ellipsis, [aria-hidden='true'], button, time").forEach(function(el) { el.remove(); });
       var markdown = markdownFor(clone.innerHTML);
       if (normalizeText(markdown).length >= 20) return markdown.trim();
     }
 
     return normalizeText(contentNode.textContent);
+  }
+
+  function mastodonCleanHtml(nodes) {
+    return nodes.map(function(node) {
+      var clone = cleanClone(node);
+      if (!clone) return "";
+      cleanupAgentRoot(clone);
+      clone.querySelectorAll(".status__action-bar, .status__prepend, .status__prepend-icon, .status__reblog, .invisible, .ellipsis, [aria-hidden='true']").forEach(function(el) { el.remove(); });
+      return clone.outerHTML;
+    }).filter(Boolean).join("\n");
   }
 
   function mastodonStatusEntry(node) {
@@ -66,7 +76,7 @@
       author: firstTextFromNode(node, [".detailed-status__display-name", ".status__display-name", ".display-name"]),
       time: firstTextFromNode(node, ["time"]),
       body: body,
-      html: node.outerHTML
+      node: node
     };
   }
 
@@ -131,7 +141,7 @@
       excerpt: normalizeText(mainStatus.body).slice(0, 280) || metadata.excerpt,
       siteName: metadata.siteName || "Mastodon",
       publishedTime: metadata.publishedTime,
-      html: [mainStatus].concat(replies).map(function(status) { return status.html; }).join("\n"),
+      html: mastodonCleanHtml([mainStatus].concat(replies).map(function(status) { return status.node; })),
       markdown: markdown,
       textContent: normalizeText(markdown),
       readerMode: false,
@@ -152,19 +162,20 @@
 
     var pathParts = (location.pathname || "").split("/").filter(Boolean);
     var tag = pathParts[0] === "tags" ? pathParts[1] : "";
-    var handle = tag ? "" : mastodonProfileHandle();
+    var explore = pathParts[0] === "explore";
+    var handle = tag || explore ? "" : mastodonProfileHandle();
     var displayName = firstText(["[class*='account_header__name'] h1", ".display-name strong", ".display-name b", ".display-name"]) || "";
     if (displayName && handle && displayName.toLowerCase().indexOf(handle.toLowerCase()) >= 0) displayName = normalizeText(displayName.replace(handle, ""));
     var bio = firstText(["[class*='account_bio__bio']", ".account__header__content", ".account__header__bio", ".public-account-bio", ".profile__bio", "[data-testid='profile-note']"]);
     var posts = mastodonPostEntries();
     var profileHeader = !!document.querySelector("[class*='account_header'], .public-account-header, .profile__header, [data-testid='profile-header']");
 
-    if (!tag && !handle && !displayName && !bio && posts.length === 0) return null;
+    if (!tag && !explore && !handle && !displayName && !bio && posts.length === 0) return null;
     if (tag && posts.length === 0) return null;
 
     if (/^mastodon$/i.test(displayName) && handle) displayName = "";
 
-    var title = tag ? ("#" + safeDecodeURI(tag) + " on Mastodon") : (displayName || handle || metadata.title || "Mastodon Profile");
+    var title = tag ? ("#" + safeDecodeURI(tag) + " on Mastodon") : (explore ? "Mastodon Explore" : (displayName || handle || metadata.title || "Mastodon Profile"));
     var sections = ["# " + title];
     var details = [];
     if (handle) details.push("- Handle: " + handle);
@@ -182,7 +193,7 @@
       excerpt: bio || posts[0] || metadata.excerpt,
       siteName: metadata.siteName || "Mastodon",
       publishedTime: null,
-      html: ((document.querySelector("main") || {}).innerHTML) || "",
+      html: mastodonCleanHtml([document.querySelector("main")]),
       markdown: markdown,
       textContent: normalizeText(markdown),
       readerMode: false,

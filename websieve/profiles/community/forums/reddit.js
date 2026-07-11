@@ -80,8 +80,26 @@
     return parts[0] === "r" && /^[\w-]+$/.test(parts[1] || "") ? "r/" + parts[1] : null;
   }
 
+  function redditChallengeContent(metadata, pageText) {
+    var query = (location.search || "").toLowerCase();
+    var page = normalizeText([metadata.title, document.title, pageText].join(" ")).toLowerCase();
+    var challengeParameters = /(?:[?&](?:js_challenge|solution)=)/.test(query);
+    var challengeShell = /(?:javascript challenge|complete the security check|verify you are human|checking your browser)/.test(page);
+    if (!challengeParameters || !challengeShell) return null;
+
+    return articleContentFromParts({
+      title: normalizeText(metadata.title || document.title) || "Reddit access verification required",
+      description: "Reddit is presenting an access verification challenge before the requested community can be shown.",
+      details: ["Challenge: Reddit access verification"],
+      siteName: metadata.siteName || "Reddit",
+      contentType: "interstitial"
+    });
+  }
+
   function redditContent(metadata, pageText) {
     if (!hostMatches(/(^|\.)reddit\.com$/)) return null;
+    var challenge = redditChallengeContent(metadata, pageText);
+    if (challenge) return challenge;
     var liveThread = redditThreadMarkdown(metadata);
     if (liveThread) return liveThread;
     if (!/(cookie preferences|before you continue to reddit|reddit uses cookies|log in|sign up)/i.test(pageText || "")) return null;
