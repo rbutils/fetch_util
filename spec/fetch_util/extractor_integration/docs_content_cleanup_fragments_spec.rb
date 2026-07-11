@@ -123,4 +123,15 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup fragments
       expect(markdown).to include("## Browser compatibility")
     end
   end
+
+  it "preserves nested MDN reference content while removing only try-it chrome" do
+    html = fixture_contents(File.expand_path('../../fixtures/mdn_reference_nested.html', __dir__))
+
+    with_url_page("https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map", html) do |page|
+      markdown = extract(page).fetch("markdown")
+
+      expect(markdown).to include("## Syntax", "map(callbackFn)", "## Parameters", "## Return value", "## Examples")
+      expect(markdown).not_to include("Try it")
+    end
+  end
 end

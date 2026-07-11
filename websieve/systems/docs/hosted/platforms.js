@@ -27,19 +27,23 @@
     return docsContentBySelectors(metadata, ["main article", "article.main-page-content", "main .main-page-content", "main"], {
       titleSelectors: ["main article h1", "article.main-page-content h1", "main h1"],
       fallbackTitle: function(metadata) { return normalizeText((metadata.title || document.title).replace(/\s*-\s*MDN.*$/, "")); },
-      removeTryIt: true,
+      removeTryIt: false,
       rewriteRoot: function(root) {
+        root.querySelectorAll("section").forEach(function(section) {
+          var heading = section.querySelector("h2, h3, h4");
+          if (heading && /^try it$/i.test(normalizeText(heading.textContent))) section.remove();
+        });
+        root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
+          var text = normalizeText(heading.textContent);
+          if (/^(?:try it|help improve mdn)$/i.test(text)) {
+            var container = heading.closest("section");
+            if (container) container.remove();
+            else heading.remove();
+          }
+        });
         root.querySelectorAll("section, div, aside").forEach(function(el) {
           var text = normalizeText(el.textContent);
           if ((/^baseline\b/i.test(text) || /this feature is well established and works across many devices/i.test(text)) && text.length < 800) el.remove();
-        });
-        root.querySelectorAll("section, div").forEach(function(el) {
-          var heading = el.querySelector("h2, h3");
-          if (!heading) return;
-          var content = Array.prototype.slice.call(el.children).filter(function(child) {
-            return child !== heading && /^(p|pre|ul|ol|dl|table|figure|div|section)$/i.test(child.tagName) && normalizeText(child.textContent);
-          });
-          if (!content.length) el.remove();
         });
         // Strip BCD table containers that are empty
         root.querySelectorAll("table.bc-table, [class*='bc-table'], [class*='bcd-table']").forEach(function(el) {
