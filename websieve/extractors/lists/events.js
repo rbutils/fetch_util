@@ -22,11 +22,41 @@
     if (/\/events\/[^/]*events?\/?$/i.test(path)) return true;
     if (/\b(?:our events|upcoming events|event calendar|python events)\b/.test(title)) return true;
 
-    var eventCards = document.querySelectorAll("[class*='event-card' i], [class*='event-list' i] article, [class*='event' i] article, li[class*='event' i]").length;
-    var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/']"), function(link) {
+    var eventCards = eventCardItems().length;
+    var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/'], a[href*='/e/'], a[href*='tickets-']"), function(link) {
       return normalizeText(link.textContent || "").length >= 8;
     }).length;
     return eventCards >= 3 || eventLinks >= 4;
+  }
+
+  function eventCardItems() {
+    var items = [];
+    var seen = {};
+    var selectors = "[class*='event-card' i], [class*='event-list' i] article, [class*='event' i] article, li[class*='event' i], [data-testid*='event' i]";
+
+    function addCard(card, link) {
+      if (card.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
+      link = link || card.querySelector("a[href]");
+      var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
+      var parent = card.parentElement || card;
+      var dateText = visibleEventDateTime(card) || visibleEventDateTime(parent);
+      var locationText = visibleEventLocation(card) || visibleEventLocation(parent);
+      var url = absoluteUrl((link && link.getAttribute("href")) || "");
+      var key = url || title;
+      if (!title || !dateText || !key || seen[key]) return;
+      seen[key] = true;
+      items.push({ text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - ") });
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {
+      addCard(card);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("a[href*='/e/'], a[href*='tickets-']"), function(link) {
+      var card = link.closest("article, li, [role='listitem'], [data-testid*='event' i], [class*='event' i], [class*='card' i]") || link.parentElement;
+      if (card) addCard(card, link);
+    });
+
+    return items;
   }
 
   function eventDateText(startDate, endDate) {
@@ -57,7 +87,7 @@
     if (start || end) return eventDateText(start, end);
 
     var text = normalizeText((root && root.textContent) || "");
-    var match = text.match(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?,?\s+\d{4}(?:\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)?/);
+    var match = text.match(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?(?:,?\s+\d{4})?(?:\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)?/);
     if (match) return normalizeText(match[0]);
     match = text.match(/\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{4}(?:\s*,?\s*\d{1,2}:\d{2})?/);
     return match ? normalizeText(match[0]) : null;
@@ -118,6 +148,13 @@
   }
 
   function genericEventListContent(metadata) {
+    var items = eventCardItems();
+    if (items.length >= 3) {
+      var result = listContent(metadata, { portalRoot: true });
+      result.excerpt = items[0].text;
+      return result;
+    }
+
     if (!conferenceSchedulePage()) return null;
 
     var root = document.querySelector("main, [role='main'], article, #content") || document.body;

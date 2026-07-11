@@ -107,8 +107,27 @@
     }).join(" ")).toLowerCase();
     var rowCount = table.querySelectorAll("tr").length;
     if (rowCount < 2) return false;
-    if (/\b(player|team|pts|reb|ast|min|fg|3pt|ft|plus\/minus|\+\/-|goals?|assists?|shots?|possession|fouls?|score)\b/i.test(headers)) return true;
+    if (/\b(player|pts|reb|ast|min|fg|3pt|ft|plus\/minus|\+\/-|goals?|assists?|shots?|possession|fouls?|score)\b/i.test(headers)) return true;
     return sportsScorePattern(text) && /\b(final|box score|score|result|pts|goals?)\b/i.test(text);
+  }
+
+  function sportsScoreTeams(text) {
+    text = normalizeText(text);
+    var compact = text.match(/\b([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\s*,?\s+([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\b/);
+    var dashed = text.match(/\b([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\s*[-–]\s*\d{1,3}\s+([A-Z][A-Za-z.'& -]{1,28})\b/);
+    var score = compact || dashed;
+    return score ? [normalizeText(score[1]), normalizeText(score[2])] : [];
+  }
+
+  function sportsMatchDetailEvidence(scoreLines, tables) {
+    return (scoreLines || []).some(function(line) {
+      var teams = sportsScoreTeams(line);
+      if (teams.length !== 2) return false;
+      return (tables || []).some(function(table) {
+        var tableText = normalizeText(table);
+        return tableText.indexOf(teams[0]) !== -1 && tableText.indexOf(teams[1]) !== -1;
+      });
+    });
   }
 
   function sportsTableMarkdown(root) {
@@ -131,11 +150,13 @@
     });
     var tables = sportsTableMarkdown(root);
     var structuredScore = structured && (structured.homeScore || structured.awayScore);
-    var typedSports = !!(sportsStructuredDataNodes().length || scoreLines.length > 0 || structuredScore);
+    var structuredSports = sportsStructuredDataNodes().length > 0;
+    var matchDetail = sportsMatchDetailEvidence(scoreLines, tables);
+    var typedSports = !!(structuredSports || structuredScore || matchDetail);
     var strongScore = typedSports || tables.length > 0;
     var isSports = sportsContext(metadata);
 
-    if (!isSports && !sportsStructuredDataNodes().length) return null;
+    if (!isSports && !structuredSports && !matchDetail) return null;
     if (!strongScore && !/\b(sport|sports|football|soccer|nba|game recap|box score)\b/.test(sportsContextText(metadata))) return null;
 
     return {

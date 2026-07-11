@@ -23,10 +23,42 @@
     var investorRelationsContext = /\b(?:investor relations|earnings release|quarterly results?|financial statements?|form\s*(?:10-k|10-q|8-k)|sec filing)\b/.test(context + " " + bodyLead);
     var newsroomHost = /(^|\.)(prnewswire\.com|cision\.com|globenewswire\.com|businesswire\.com|apple\.com|amazon\.com|google)$/i.test(location.hostname || "") && /\b(newsroom|news-releases?|company-news|press)\b/i.test(location.pathname || "");
     var corporateReleaseRoute = /\/(?:newsroom|news-releases?|press(?:-release)?|company-news|about\/news)\//i.test(location.pathname || "");
-    var dateline = /\b[A-Z][A-Z .'-]{2,40},\s+(?:Jan\.?|Feb\.?|Mar\.?|Apr\.?|May|Jun\.?|Jul\.?|Aug\.?|Sep\.?|Sept\.?|Oct\.?|Nov\.?|Dec\.?)\s+\d{1,2},\s+\d{4}\s*(?:\/PRNewswire\/|--|–)/.test((document.body && document.body.innerText) || "");
-    var releaseWords = /\b(press release|news release|announces?|announced|launches?|unveils?|reports? results)\b/.test(context + " " + bodyLead);
+    var dateline = /\b[A-Z][A-Za-z .'-]{2,40},\s+(?:Jan(?:uary)?\.?|Feb(?:ruary)?\.?|Mar(?:ch)?\.?|Apr(?:il)?\.?|May|Jun(?:e)?\.?|Jul(?:y)?\.?|Aug(?:ust)?\.?|Sep(?:tember)?\.?|Sept\.?|Oct(?:ober)?\.?|Nov(?:ember)?\.?|Dec(?:ember)?\.?)\s+\d{1,2},\s+\d{4}\s*(?:\/PRNewswire\/|--|–)/.test((document.body && document.body.innerText) || "");
+    var releaseWords = /\b(press release|news release|announces?|announced|launches?|unveils?|report(?:s|ed)?(?:\s+[-\w]+){0,3}\s+results?)\b/.test(context + " " + bodyLead);
 
-    return releaseWords && !investorRelationsContext && (newsroomHost || corporateReleaseRoute || dateline);
+    // An earnings release is a detail document, unlike an IR navigation index.
+    return releaseWords && (newsroomHost || corporateReleaseRoute || dateline) && (!investorRelationsContext || dateline);
+  }
+
+  function pressReleaseIndexPage() {
+    var context = normalizeText([location.pathname, document.title, firstText(["main h1", "h1"])].join(" ")).toLowerCase();
+    if (!/\b(?:press releases?|news releases?|newsroom)\b/.test(context)) return false;
+    var entries = document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]");
+    var dated = 0;
+    Array.prototype.forEach.call(entries, function(link) {
+      var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
+      if (card && /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i.test(normalizeText(card.textContent || ""))) dated += 1;
+    });
+    return dated >= 3;
+  }
+
+  function pressReleaseIndexContent(metadata) {
+    var items = [];
+    var seen = {};
+    Array.prototype.forEach.call(document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]"), function(link) {
+      var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
+      var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+      var date = normalizeText((card && card.querySelector("time, [class*='date' i]")) ? card.querySelector("time, [class*='date' i]").textContent : "");
+      var url = absoluteUrl(link.getAttribute("href") || "");
+      var key = url || title;
+      if (!title || !date || !key || seen[key]) return;
+      seen[key] = true;
+      items.push({ text: title, url: url, detail: date });
+    });
+
+    if (items.length < 3) return null;
+    var markdown = listMarkdown(items);
+    return listItemsContentResult(metadata, { title: metadata.title || document.title, excerpt: items[0].text, textContent: markdown, markdown: markdown, items: items });
   }
 
   function pressReleaseRoot() {
@@ -58,6 +90,7 @@
   }
 
   function pressReleaseContent(metadata) {
+    if (pressReleaseIndexPage()) return pressReleaseIndexContent(metadata);
     if (!strongPressReleaseSignals(metadata)) return null;
 
     var schema = pressReleaseNode();

@@ -114,7 +114,7 @@
 
   function podcastEpisodeContent(metadata) {
     var podcast = podcastEpisodeNode();
-    if (!podcast) return null;
+    if (!podcast) return podcastShowContent(metadata);
 
     var root = podcastRoot();
     var clone = podcastCleanupClone(root);
@@ -144,6 +144,42 @@
       siteName: (metadata && metadata.siteName) || entityName(podcast.partOfSeries) || location.hostname,
       publishedTime: entityText(podcast.datePublished || podcast.uploadDate) || (metadata && metadata.publishedTime),
       html: clone.innerHTML,
+      markdown: markdown,
+      textContent: normalizeText(markdown),
+      readerMode: false,
+      contentType: "podcast"
+    };
+  }
+
+  function podcastShowContent(metadata) {
+    var context = normalizeText([location.pathname, document.title, metadata && metadata.title, metadata && metadata.siteName].join(" ")).toLowerCase();
+    if (!/\b(?:podcast|podcasts|episodes?)\b/.test(context)) return null;
+
+    var items = [];
+    var seen = {};
+    var selectors = "[class*='episode' i], [data-testid*='episode' i], article";
+    Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {
+      if (card.closest("nav, header, footer, aside, [aria-hidden='true'], [hidden]")) return;
+      var link = card.querySelector("a[href]");
+      var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
+      var date = normalizeText((card.querySelector("time, [class*='date' i]") || {}).textContent || "");
+      var url = absoluteUrl((link && link.getAttribute("href")) || "");
+      var key = url || title;
+      if (!title || !key || seen[key]) return;
+      seen[key] = true;
+      items.push({ text: title, url: url, detail: date });
+    });
+
+    if (items.length < 3) return null;
+    var title = firstText(["main h1", "h1"]) || metadata.title || document.title;
+    var markdown = "# " + normalizeText(title) + "\n\n" + listMarkdown(items);
+    return {
+      title: normalizeText(title),
+      byline: null,
+      excerpt: items[0].text,
+      siteName: metadata.siteName || location.hostname,
+      publishedTime: null,
+      html: "",
       markdown: markdown,
       textContent: normalizeText(markdown),
       readerMode: false,
