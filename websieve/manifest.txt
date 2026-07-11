@@ -69,6 +69,7 @@ systems/content_types/podcasts.js
 systems/content_types/jobs.js
 systems/content_types/lodging.js
 systems/content_types/events.js
+systems/sports/evidence.js
 systems/content_types/sports.js
 systems/content_types/press_releases.js
 systems/content_types/products.js

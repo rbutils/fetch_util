@@ -48,10 +48,12 @@
     if (!text || text.length > 180) return false;
     if (/\b(?:menu|navigation|subscribe|sign in|login|tickets|shop|fantasy|standings|schedule)\b/i.test(text)) return false;
 
-    var compactScore = text.match(/\b[A-Z][A-Za-z.'& -]{1,28}\s+(\d{1,3})\s*,?\s+[A-Z][A-Za-z.'& -]{1,28}\s+(\d{1,3})\b/);
-    var dashScore = text.match(/\b[A-Z][A-Za-z.'& -]{1,28}\s+(\d{1,3})\s*[-–]\s*(\d{1,3})\s+[A-Z][A-Za-z.'& -]{1,28}\b/);
-    var score = compactScore || dashScore;
-    if (!score) return false;
+    text = text.replace(/(\d{1,3})\s*[-–]\s*([A-Z])/g, "$1, $2");
+    var compactScore = text.match(/\b[A-Z][A-Za-z.'& -]{1,28}?\s+(\d{1,3})\s*,?\s+[A-Z][A-Za-z.'& -]{1,28}?\s+(\d{1,3})\b/);
+    var dashScore = text.match(/\b[A-Z][A-Za-z.'& -]{1,28}?\s+(\d{1,3})\s*[-–]\s*(\d{1,3})\s+[A-Z][A-Za-z.'& -]{1,28}?\b/);
+    var dashScoreReversed = text.match(/\b[A-Z][A-Za-z.'& -]{1,28}?\s+(\d{1,3})\s*[-–]\s*[A-Z][A-Za-z.'& -]{1,28}?\s+(\d{1,3})\b/);
+    var score = compactScore || dashScore || dashScoreReversed;
+    if (!score) return sportsScoreTeams(text).length === 2;
 
     var first = Number(score[1]);
     var second = Number(score[2]);
@@ -82,20 +84,24 @@
     return document.querySelector("main article, article, main, [role='main']") || document.body;
   }
 
-  function sportsVisibleScoreLines(root) {
+  function sportsVisibleScoreNodes(root) {
     var lines = [];
     var seen = {};
-    var selector = "h1, h2, h3, [class*='score' i], [class*='score' i] p, [class*='scoreboard' i], [class*='result' i], [class*='result' i] p, [data-testid*='score' i], [data-testid*='game' i]";
+    var selector = "h1, h2, h3, main p, [class*='score' i], [class*='score' i] p, [class*='scoreboard' i], [class*='result' i], [class*='result' i] p, [data-testid*='score' i], [data-testid*='game' i]";
 
     Array.prototype.forEach.call((root || document).querySelectorAll(selector), function(node) {
       if (node.closest && node.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
       var text = normalizeText(node.textContent || "");
       if (!sportsScorePattern(text) || seen[text]) return;
       seen[text] = true;
-      lines.push(text);
+      lines.push({ text: text, node: node });
     });
 
     return lines;
+  }
+
+  function sportsVisibleScoreLines(root) {
+    return sportsVisibleScoreNodes(root).map(function(entry) { return entry.text; });
   }
 
   function sportsTableLooksRelevant(table) {
@@ -113,45 +119,48 @@
 
   function sportsScoreTeams(text) {
     text = normalizeText(text);
-    var compact = text.match(/\b([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\s*,?\s+([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\b/);
-    var dashed = text.match(/\b([A-Z][A-Za-z.'& -]{1,28})\s+\d{1,3}\s*[-–]\s*\d{1,3}\s+([A-Z][A-Za-z.'& -]{1,28})\b/);
-    var score = compact || dashed;
+    text = text.replace(/(\d{1,3})\s*[-–]\s*([A-Z])/g, "$1, $2");
+    var compact = text.match(/\b([A-Z][A-Za-z.'& -]{1,28}?)\s+\d{1,3}\s*,?\s+([A-Z][A-Za-z.'& -]{1,28}?)\s+\d{1,3}\b/);
+    var dashed = text.match(/\b([A-Z][A-Za-z.'& -]{1,28}?)\s+\d{1,3}\s*[-–]\s*\d{1,3}\s+([A-Z][A-Za-z.'& -]{1,28}?)\b/);
+    var dashedReversed = text.match(/\b([A-Z][A-Za-z.'& -]{1,28}?)\s+\d{1,3}\s*[-–]\s*([A-Z][A-Za-z.'& -]{1,28}?)\s+\d{1,3}\b/);
+    var score = compact || dashed || dashedReversed;
     return score ? [normalizeText(score[1]), normalizeText(score[2])] : [];
   }
 
-  function sportsMatchDetailEvidence(scoreLines, tables) {
-    return (scoreLines || []).some(function(line) {
-      var teams = sportsScoreTeams(line);
-      if (teams.length !== 2) return false;
-      return (tables || []).some(function(table) {
-        var tableText = normalizeText(table);
-        return tableText.indexOf(teams[0]) !== -1 && tableText.indexOf(teams[1]) !== -1;
-      });
-    });
+  function sportsScoreIdentity(text) {
+    text = normalizeText(text).replace(/(\d{1,3})\s*[-–]\s*([A-Z])/g, "$1, $2");
+    var score = text.match(/\b([A-Z][A-Za-z.'& -]{1,28}?)\s+(\d{1,3})\s*,?\s+([A-Z][A-Za-z.'& -]{1,28}?)\s+(\d{1,3})\b/);
+    if (score) return { teams: [normalizeText(score[1]), normalizeText(score[3])], scores: [score[2], score[4]] };
+    var teams = sportsScoreTeams(text);
+    var values = text.match(/\b\d{1,3}\b/g) || [];
+    return teams.length === 2 && values.length >= 2 ? { teams: teams, scores: values.slice(-2) } : null;
   }
 
-  function sportsTableMarkdown(root) {
-    var tables = [];
-    Array.prototype.forEach.call((root || document).querySelectorAll("table"), function(table) {
-      if (!sportsTableLooksRelevant(table)) return;
-      var markdown = cleanupMarkdownNoise(markdownFor(table.outerHTML)).trim();
-      if (normalizeText(markdown) && tables.indexOf(markdown) === -1) tables.push(markdown);
-    });
-    return tables;
+  function sportsTeamNamesMatch(first, second) {
+    var firstWords = normalizeText(first).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    var secondWords = normalizeText(second).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    if (!firstWords.length || !secondWords.length) return false;
+    if (firstWords.join(" ") === secondWords.join(" ")) return true;
+    if (firstWords.some(function(word) { return secondWords.indexOf(word) !== -1; })) return true;
+    var firstInitials = firstWords.map(function(word) { return word.charAt(0); }).join("");
+    var secondInitials = secondWords.map(function(word) { return word.charAt(0); }).join("");
+    return firstInitials === secondWords.join("") || secondInitials === firstWords.join("");
   }
 
   function sportsContentEvidence(metadata) {
     var structured = sportsStructuredEvent();
     var root = sportsRelevantRoot();
-    var scoreLines = sportsVisibleScoreLines(root);
+    var scoreNodes = sportsVisibleScoreNodes(root);
+    var scoreLines = scoreNodes.map(function(entry) { return entry.text; });
     [document.title, metadata && metadata.title].forEach(function(text) {
       text = normalizeText(text);
       if (sportsScorePattern(text) && scoreLines.indexOf(text) === -1) scoreLines.push(text);
     });
-    var tables = sportsTableMarkdown(root);
+    var tableEvidence = sportsTableEvidence(root);
+    var tables = tableEvidence.map(function(table) { return table.markdown; });
     var structuredScore = structured && (structured.homeScore || structured.awayScore);
     var structuredSports = sportsStructuredDataNodes().length > 0;
-    var matchDetail = sportsMatchDetailEvidence(scoreLines, tables);
+    var matchDetail = sportsMatchDetailEvidence(scoreLines, tableEvidence, scoreNodes);
     var typedSports = !!(structuredSports || structuredScore || matchDetail);
     var strongScore = typedSports || tables.length > 0;
     var isSports = sportsContext(metadata);
@@ -163,9 +172,29 @@
       structured: structured,
       scoreLines: scoreLines,
       tables: tables,
+      tableEvidence: tableEvidence,
       typed: typedSports,
-      event: typedSports
+      event: typedSports,
+      detail: matchDetail
     };
+  }
+
+  function sportsRequestedTeamEvidence(teams) {
+    var path = (location.pathname || "").split("/").filter(Boolean);
+    var segment = path[path.length - 1] || "";
+    var tokens = segment.toLowerCase().split(/[^a-z0-9]+/).filter(function(token) {
+      return token.length >= 3 && !/^\d+$/.test(token) && !/^(?:game|match|score|box|final|live|results?|sports?|football|soccer|basketball|baseball|hockey|nhl|nfl|nba|mlb)$/.test(token);
+    });
+    if (tokens.length < 2) return "opaque";
+    var consistent = teams.length === 2 && teams.every(function(team) {
+      return tokens.some(function(token) { return sportsTeamNamesMatch(team, token); });
+    });
+    return consistent ? "consistent" : "mismatch";
+  }
+
+  function sportsMismatchEvidenceSafe(content) {
+    var evidence = content && content.sportsDetailEvidence;
+    return !!(evidence && (evidence.urlMatch === "opaque" || evidence.urlMatch === "consistent"));
   }
 
   function sportsDetails(evidence) {
@@ -216,7 +245,11 @@
       markdown: markdown,
       textContent: normalizeText(markdown),
       readerMode: false,
-      contentType: "sports_event"
+      contentType: "sports_event",
+      sportsDetailEvidence: {
+        kind: "sports_detail",
+        urlMatch: evidence.detail ? sportsRequestedTeamEvidence(evidence.detail.identity.teams) : "opaque"
+      }
     };
   }
 
@@ -242,6 +275,12 @@
     });
 
     content.contentType = sportsContentType(content, evidence);
+    if (evidence.detail || evidence.structured) {
+      content.sportsDetailEvidence = {
+        kind: evidence.structured ? "sports_schema" : "sports_detail",
+        urlMatch: evidence.structured ? sportsRequestedTeamEvidence([evidence.structured.homeName, evidence.structured.awayName]) : sportsRequestedTeamEvidence(evidence.detail.identity.teams)
+      };
+    }
     content.markdown = cleanupMarkdownNoise(sections.filter(Boolean).join("\n\n"));
     content.textContent = normalizeText(content.markdown);
     if (details[0] && !content.excerpt) content.excerpt = details[0];

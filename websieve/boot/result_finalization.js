@@ -160,6 +160,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     legalProvision: !!content.legalProvision,
     hostAware: !!content.hostAware,
     portalRootEvidence: content.portalRootEvidence || null,
+    sportsDetailEvidence: content.sportsDetailEvidence || null,
     statusPage: !!content.statusPage,
     socialKind: socialFields.socialKind || null,
     platform: socialFields.platform || null,

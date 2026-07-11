@@ -76,7 +76,7 @@
           var titleOverlap = keywords.filter(function(token) {
             return normalizedTitle.indexOf(token) !== -1;
           }).length;
-          if ((titleOverlap / keywords.length) < overlapThreshold && !credibleListFeed && !localizedSlugArticleGuard(metadata, content, body, markdown) && !investorArchivePageGuard(metadata, content, body, markdown) && !scientificDatasetRecordUrl(metadata, content, body) && !patentPublicationIdMatchesContent(combined)) {
+          if ((titleOverlap / keywords.length) < overlapThreshold && !credibleListFeed && !localizedSlugArticleGuard(metadata, content, body, markdown) && !investorArchivePageGuard(metadata, content, body, markdown) && !scientificDatasetRecordUrl(metadata, content, body) && !patentPublicationIdMatchesContent(combined) && !sportsMismatchEvidenceSafe(content)) {
             reasons.push("url_content_mismatch");
           }
         }
