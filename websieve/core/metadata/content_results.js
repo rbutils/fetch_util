@@ -85,6 +85,7 @@ function listItemsContentResult(metadata, options) {
   };
   if (items) result.itemCount = items.length;
   if (options.hostAware) result.hostAware = true;
+  if (options.portalRootEvidence) result.portalRootEvidence = options.portalRootEvidence;
   if (options.statusPage) result.statusPage = true;
   return result;
 }

@@ -131,9 +131,12 @@
         content = eventList;
       }
 
-      content = applyMedicalContentType(content, metadata);
+       content = applyMedicalContentType(content, metadata);
 
-      var medicalArticle = medicalArticlePage(metadata, content);
+       var portalRootContent = crediblePortalRootListContent(metadata, content);
+       if (portalRootContent) content = portalRootContent;
+
+       var medicalArticle = medicalArticlePage(metadata, content);
       var strongArticle = medicalArticle || substantialArticleContent(content) || strongArticleMetadata(metadata, content);
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;

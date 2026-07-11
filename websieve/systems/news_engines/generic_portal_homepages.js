@@ -80,14 +80,9 @@
   }
 
   function genericPortalHomepageContent(metadata) {
-    var sectioned = homepageRootPath() ? sectionedListExtraction(document.body) : null;
-    if (sectioned) {
-      return listContentResult({
-        title: metadata && metadata.title,
-        excerpt: metadata && metadata.excerpt,
-        markdown: sectioned.markdown,
-        textContent: sectioned.markdown
-      });
+    if (homepageRootPath()) {
+      var sectioned = listContent(metadata, { portalRoot: true });
+      if (sectioned.portalRootEvidence) return sectioned;
     }
 
     var leadRoot = genericHomepageLeadRoot(metadata, { minItems: 4 });

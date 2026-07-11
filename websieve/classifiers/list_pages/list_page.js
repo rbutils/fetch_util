@@ -1,6 +1,7 @@
   function isProbablyListPage(content) {
     if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
+    if (/\/a-\d+(?:\/|$)/i.test(location.pathname || "")) return false;
 
     function listSignals(root) {
       var links = root.querySelectorAll("a").length;
@@ -60,7 +61,7 @@
   }
 
   function dominantIndexListPage(content) {
-    if (!document.body || articleLikePath()) return false;
+    if (!document.body || articleLikePath() || /\/a-\d+(?:\/|$)/i.test(location.pathname || "")) return false;
     if (medicalArticlePage(null, content)) return false;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
@@ -91,6 +92,17 @@
     if (institutionalCaseRecordListPage(root, text) || institutionalCaseRecordListPage(pageRoot)) return true;
     if (longParagraphs >= 5 && longParagraphText.length >= 1200 && linkDensity < 0.35) return false;
     return headlineLinks >= 6 && cards >= 6 && links >= 8 && (headings >= 4 || linkDensity >= 0.22) || articleFeedLinks >= 6 || jobResultsPage(root);
+  }
+
+  function crediblePortalRootListContent(metadata, content) {
+    if (!document.body || !content || content.contentType !== "article" || content.hostAware || content.docsLike) return null;
+    if (typeof consentWallDominates === "function" && consentWallDominates(document.body.textContent || "")) return null;
+    if (typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
+    if (document.querySelector("article h1, article [itemprop='articleBody']") &&
+        (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime() || ""))) return null;
+
+    var extracted = listContent(metadata, { portalRoot: true });
+    return extracted.portalRootEvidence ? extracted : null;
   }
 
   function institutionalCaseRecordListPage(root, text) {
@@ -209,7 +221,7 @@
       if (listChromeNode(node) || listNoiseNode(node)) return;
 
       var links = node.querySelectorAll("a[href]").length;
-      if (links < 3 || links > 250) return;
+      if (links < 3) return;
       if (textLength(node) < 140) return;
 
       candidates.push(node);

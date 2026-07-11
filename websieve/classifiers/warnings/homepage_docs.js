@@ -6,12 +6,13 @@
     var listPath = rootPage || (typeof likelyListPath === "function" && likelyListPath());
     var listLinks = (markdown.match(/\[[^\]]+\]\([^)]+\)/g) || []).length;
     var editorialSections = typeof homepageHasEditorialSections === "function" && homepageHasEditorialSections(document);
+    var portalRoot = !!content.portalRootEvidence;
     var accessWall = consentWallDominates(body) || consentWallDominates(page);
 
     if (accessWall || notFoundInterstitialEvidence(content.title || "", body, { maxTextLength: 1100 })) return false;
 
     if (content.contentType === "list") {
-      return listPath && editorialSections;
+      return (listPath && editorialSections) || portalRoot;
     }
 
     if (content.contentType !== "social" || content.socialKind !== "feed" || !content.hostAware) return false;

@@ -51,7 +51,8 @@
     };
   }
 
-  function listContent(metadata) {
+  function listContent(metadata, options) {
+    options = options || {};
     var candidates = [];
     function pushCandidate(node) {
       if (!node || candidates.indexOf(node) !== -1) return;
@@ -74,6 +75,10 @@
       html: best.root.innerHTML,
       textContent: best.markdown,
       markdown: best.markdown,
-      items: best.items
+      items: best.items,
+      portalRootEvidence: options.portalRoot && best.sectionCount >= 2 && best.items.length >= 4 ? {
+        namedSectionCount: best.sectionCount,
+        canonicalCardCount: best.items.length
+      } : null
     });
   }

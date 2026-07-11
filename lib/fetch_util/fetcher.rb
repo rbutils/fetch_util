@@ -310,15 +310,14 @@ module FetchUtil
 
     def credible_homepage_list_evidence?(content_type, homepage_like, snapshot, warnings)
       return false unless content_type == "list" && homepage_like
-      return false unless snapshot.payload["hostAware"] && !snapshot.payload["statusPage"]
+      return false if snapshot.payload["statusPage"]
       return false if warnings.any? { |warning| warning.match?(/(?:access|auth|bot|challenge|consent|empty|error|interstitial|not_found|paywall|short|wall)/i) }
       return false if generic_redirect_not_found?(snapshot) || auth_redirect_interstitial?(snapshot)
       return false if snapshot.normalized_markdown.empty?
 
-      substantive_headings = snapshot.markdown.lines.count do |line|
-        line.match?(/^\s*\#{1,3}\s+\S.{3,}/)
-      end
-      substantive_headings >= 2 && snapshot.linked_item_count >= 6
+      evidence = snapshot.payload["portalRootEvidence"]
+      evidence.is_a?(Hash) && evidence["namedSectionCount"].to_i >= 2 &&
+        evidence["canonicalCardCount"].to_i >= 4
     end
 
     def homepage_like?(url)

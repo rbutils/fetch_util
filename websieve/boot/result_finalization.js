@@ -159,6 +159,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     address: content.address || null,
     legalProvision: !!content.legalProvision,
     hostAware: !!content.hostAware,
+    portalRootEvidence: content.portalRootEvidence || null,
     statusPage: !!content.statusPage,
     socialKind: socialFields.socialKind || null,
     platform: socialFields.platform || null,
