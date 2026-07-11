@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## v0.4.0 - 2026-07-11
+
+### Added
+
+- Add dedicated result types and structured fields for social posts, threads, feeds, and profiles; products; properties; lodging; jobs; events; recipes; podcasts; sports; medical content; government notices; and press releases.
+- Add explicit language output, direct PDF results, YAML front matter for the default Markdown format, and opt-in URL fields through `--include-urls`.
+- Add public extraction support for Mastodon, Bluesky, Telegram, Hacker News, GitHub discussions, Reddit, Discourse, Stack Exchange, Stack Overflow, Wykop, and other social/community page shapes.
+- Add deterministic content-fidelity contracts covering section coverage, DOM order, card-local context, canonical deduplication, chrome leakage, and focal article structure.
+
+### Fixed
+
+- Preserve complete, DOM-ordered visible content across portal sections, feeds, search results, documentation indexes, social threads, structured content, financial links, glossary entries, large sports tables, and search snippets without silent presentation caps.
+- Improve generic homepage, article, list, documentation, warning, and content-ownership arbitration across multilingual news, reference, commerce, social, legal, medical, and JavaScript-heavy pages.
+- Improve WP and Onet homepage fidelity, Wykop home/tag feeds, Ringier article bodies, MDN reference hierarchy, Mastodon and Telegram live routes, and Polish portal warning semantics.
+- Prevent publisher-specific Ringier extraction from mutating the shared media engine; separate WP and Onet homepage ownership while retaining neutral shared list primitives.
+- Normalize IRI input, strengthen browser navigation resilience, constrain false financial appendices, and reduce mismatch, multi-topic, homepage-index, access-wall, and truncation false positives.
+
+### Changed
+
+- Move editable JavaScript and its ordered manifest to root `websieve/`; generated runtime assets remain packaged under `lib/fetch_util/assets/`.
+- Reorganize JavaScript by systems, content types, profiles, classifiers, and extraction concerns; split oversized modules and normalize manifest dependency order and registration ownership.
+- Change default fetch rendering to YAML-front-matter-prefixed Markdown. JSON, JSONL, and front matter now share one filtered field contract, with URL fields hidden unless requested.
+- Sanitize unreleased fixtures and assertions with synthetic content while preserving selectors, schemas, structure, scripts, counts, order, and regression intent.
+
+### Performance
+
+- Reduce browser stabilization and consent-handling latency while preserving retry behavior for transient navigation and pending-connection failures.
+- Remove redundant fixture resets and consolidate shared extraction, metadata, address, description, cleanup, and registration helpers.
+
 ## v0.3.2 - 2026-07-09
 
 ### Added
