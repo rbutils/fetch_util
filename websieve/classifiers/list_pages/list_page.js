@@ -95,10 +95,21 @@
   }
 
   function crediblePortalRootListContent(metadata, content) {
-    if (!document.body || !content || content.contentType !== "article" || content.hostAware || content.docsLike) return null;
+    if (!document.body) return null;
+    if (content && content.contentType !== "article" && content.contentType !== "list") return null;
+    if (content && content.contentType === "list") {
+      if (!homepageRootPath()) return null;
+      if (content.docsLike) return null;
+      var listRootContent = listContent(metadata, { portalRoot: true });
+      if (!listRootContent.portalRootEvidence) return null;
+      content.portalRootEvidence = listRootContent.portalRootEvidence;
+      return content;
+    }
+    if (!content && !homepageRootPath()) return null;
+    if (content && (content.hostAware || content.docsLike)) return null;
     if (typeof consentWallDominates === "function" && consentWallDominates(document.body.textContent || "")) return null;
-    if (typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
-    if (document.querySelector("article h1, article [itemprop='articleBody']") &&
+    if (content && typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
+    if (content && document.querySelector("article h1, article [itemprop='articleBody']") &&
         (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime() || ""))) return null;
 
     var extracted = listContent(metadata, { portalRoot: true });

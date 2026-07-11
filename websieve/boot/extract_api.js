@@ -34,6 +34,20 @@
       if (!content) {
         content = recipeStructuredDataContent(metadata);
       }
+      if (!content && homepageRootPath()) {
+        content = hostAwareContent(metadata, pageText);
+      }
+      if (!content) {
+        var podcastRootContext = normalizeText([
+          location.pathname,
+          document.title,
+          metadata && metadata.title,
+          metadata && metadata.siteName
+        ].join(" ")).toLowerCase();
+        if (/\b(?:podcast|podcasts|episodes?)\b/.test(podcastRootContext)) {
+          content = crediblePortalRootListContent(metadata, null);
+        }
+      }
       if (!content) {
         content = podcastEpisodeContent(metadata);
       }

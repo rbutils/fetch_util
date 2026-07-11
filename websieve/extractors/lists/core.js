@@ -68,6 +68,15 @@
       var result = buildListExtraction(node);
       return listExtractionIsBetter(current, result) ? result : current;
     }, null) || buildListExtraction(document.body);
+    var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
+      return !heading.closest("article, li, [class*='card' i], [class*='item' i]");
+    }).length;
+    var rootContext = normalizeText([location.pathname, document.title, metadata.title].join(" "));
+    var docsRoot = /\b(?:docs?|documentation|api|library|libraries|reference|class|module|namespace|package)\b/i.test(rootContext);
+    var substantialRoot = homepageRootPath() && !docsRoot && best.items.length >= 10 && normalizeText(best.markdown).length >= 3000;
+    var broadRootEvidence = substantialRoot ? 2 : 0;
+    var headingRootEvidence = substantialRoot ? namedHeadingCount : 0;
+    var portalSectionCount = Math.max(best.sectionCount || 0, headingRootEvidence, broadRootEvidence);
 
     return listItemsContentResult(metadata, {
       title: metadata.title || document.title,
@@ -76,8 +85,8 @@
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,
-      portalRootEvidence: options.portalRoot && best.sectionCount >= 2 && best.items.length >= 4 ? {
-        namedSectionCount: best.sectionCount,
+      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && best.items.length >= 4 ? {
+        namedSectionCount: portalSectionCount,
         canonicalCardCount: best.items.length
       } : null
     });
