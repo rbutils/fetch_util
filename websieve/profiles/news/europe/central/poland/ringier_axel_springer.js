@@ -61,6 +61,10 @@
     };
   }
 
+  function registerRingierAxelSpringerProfiles() {
+    registerHostAwareProfile(true, ringierAxelSpringerArticleContent);
+  }
+
   function ringierAxelSpringerCleanClone(node) {
     var clone = safeDeepClone(node, document);
     var removable = clone.querySelectorAll("iframe, script, style, noscript, nav, footer, [data-ad], [data-testid*='ad' i], [class~='ad'], [class*='-ad-'], [class$='-ad'], [class^='ad-'], [id~='ad'], [id*='-ad-'], [id$='-ad'], [id^='ad-'], [class*='recommend' i], [class*='related' i]");
@@ -106,9 +110,3 @@
     if (parts.some(function(part) { return normalizeText(part).toLowerCase().indexOf(normalizedText) !== -1; })) return;
     parts.push(text);
   }
-
-  var ringierAxelSpringerBaseMediaWatchContent = mediaWatchContent;
-  mediaWatchContent = function(metadata) {
-    return ringierAxelSpringerArticleContent(metadata, pageReadableText()) ||
-      ringierAxelSpringerBaseMediaWatchContent(metadata);
-  };

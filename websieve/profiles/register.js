@@ -3,6 +3,7 @@
   registerTikTokProfile();
   registerEbaySearchProfile();
   registerGlassdoorProfiles();
+  registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerNewsHomepageProfiles();
   registerPolishPortalProfiles();

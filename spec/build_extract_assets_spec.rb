@@ -169,6 +169,7 @@ RSpec.describe "extract asset bundle" do
                           registerTikTokProfile
                           registerEbaySearchProfile
                           registerGlassdoorProfiles
+                          registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
                           registerPolishPortalProfiles
@@ -213,7 +214,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest[(manifest.index("profiles/host_aware.js") + 1), 4]).to eq(expected_search_manifest)
 
     registration_prefix = register_source.lines.grep(
-      /^\s*register(?:PinterestSearchProfile|TikTokProfile|EbaySearchProfile|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
+      /^\s*register(?:PinterestSearchProfile|TikTokProfile|EbaySearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
     ).map do |line|
       line.strip.delete_suffix("();")
     end
@@ -221,6 +222,7 @@ RSpec.describe "extract asset bundle" do
       registerPinterestSearchProfile
       registerTikTokProfile
       registerEbaySearchProfile
+      registerRingierAxelSpringerProfiles
       registerMediaCommerceLeadProfiles
       registerNewsHomepageProfiles
     ]
@@ -247,12 +249,24 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
     expect(manifest.index("profiles/news/europe/central/poland/wp_onet.js")).to be < register_index
 
+    ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
+    expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
+    expect(ringier_source).to include("registerHostAwareProfile(true, ringierAxelSpringerArticleContent);")
+    expect(ringier_source).not_to include("mediaWatchContent =")
+    expect(ringier_source).not_to include("ringierAxelSpringerBaseMediaWatchContent")
+    expect(register_source.index("registerRingierAxelSpringerProfiles();")).to be < register_source.index("registerMediaCommerceLeadProfiles();")
+
     calls.each do |call|
       definitions = paths_before_register.flat_map do |path|
         File.read(File.join(source_root, path)).scan(/function\s+#{Regexp.escape(call)}\s*\(/).map { path }
       end
       expect(definitions.length).to eq(1), "#{call}: #{definitions.inspect}"
     end
+
+    media_commerce_source = File.read(File.join(source_root, "profiles/media_commerce/index.js"))
+    expect(media_commerce_source.scan(/registerHostAwareProfile\(true, (mediaWatchContent|youtubeContent)\);/).flatten).to eq(
+      %w[mediaWatchContent youtubeContent]
+    )
 
     institutional_europa_path = File.join(source_root, "profiles/families/institutional/europa.js")
     institutional_europa = File.exist?(institutional_europa_path) ? File.read(institutional_europa_path) : ""

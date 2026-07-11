@@ -113,4 +113,33 @@ RSpec.describe 'FetchUtil Ringier Axel Springer extraction' do
       published_time: '2026-07-10T12:30:00+02:00'
     )
   end
+
+  it 'does not claim Ringier-shaped content on an unrelated media host' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Unrelated Media Feature</title>
+          <meta property="og:type" content="video.other">
+          <meta property="og:site_name" content="Example Video">
+          <meta property="og:video:url" content="https://video.example.test/embed/feature">
+        </head>
+        <body>
+          <main>
+            <h1>Unrelated Media Feature</h1>
+            <p>A sufficiently long generic media description remains owned by the media profile.</p>
+            <article class="ods-article-body" data-section="article-body">
+              <p>Ringier-shaped markup on this unrelated host must not activate the Ringier article adapter.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://video.example.test/watch/feature', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['hostAware']).to eq(true)
+      expect(payload['docsLike']).not_to eq(true)
+      expect(payload['markdown']).to include('Ringier-shaped markup')
+    end
+  end
 end
