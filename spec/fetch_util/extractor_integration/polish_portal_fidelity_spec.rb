@@ -103,4 +103,42 @@ RSpec.describe 'Polish portal homepage fidelity' do
       expect(result['markdown'].index('FID:onet-business-01')).to be < result['markdown'].index('## More from Onet')
     end
   end
+
+  it 'keeps www roots with their site-specific homepage owners' do
+    [
+      ['https://www.wp.pl/', 'fidelity_wp_homepage'],
+      ['https://www.onet.pl/', 'fidelity_onet_homepage']
+    ].each do |url, fixture_name|
+      extract_from_url(url, fixture(fixture_name), reader_mode: false) do |payload|
+        expect(payload['contentType']).to eq('list')
+        expect(payload['hostAware']).to eq(true)
+      end
+    end
+  end
+
+  it 'does not let descendant roots or article paths acquire homepage ownership' do
+    [
+      ['https://news.wp.pl/', 'fidelity_wp_homepage'],
+      ['https://wp.pl/wiadomosci/example', 'fidelity_wp_homepage'],
+      ['https://news.onet.pl/', 'fidelity_onet_homepage'],
+      ['https://onet.pl/wiadomosci/example', 'fidelity_onet_homepage']
+    ].each do |url, fixture_name|
+      extract_from_url(url, fixture(fixture_name), reader_mode: false) do |payload|
+        expect(payload['hostAware']).not_to eq(true)
+      end
+    end
+  end
+
+  it 'keeps the Onet root owner ahead of article-shaped markup' do
+    html = fixture('fidelity_onet_homepage').sub(
+      '</body>',
+      '<article><h1>Article-shaped root noise</h1><p>Not a route.</p></article></body>'
+    )
+
+    extract_from_url('https://onet.pl/', html, reader_mode: false) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['hostAware']).to eq(true)
+      expect(payload['markdown']).not_to include('Article-shaped root noise')
+    end
+  end
 end

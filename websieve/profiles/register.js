@@ -6,7 +6,8 @@
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerNewsHomepageProfiles();
-  registerPolishPortalProfiles();
+  registerWpHomepageProfile();
+  registerOnetHomepageProfile();
   registerZeitProfiles();
   registerBookingProfiles();
   registerAcademicPublisherProfiles();

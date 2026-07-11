@@ -172,7 +172,8 @@ RSpec.describe "extract asset bundle" do
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
-                          registerPolishPortalProfiles
+                          registerWpHomepageProfile
+                          registerOnetHomepageProfile
                           registerZeitProfiles
                           registerBookingProfiles
                           registerAcademicPublisherProfiles
@@ -247,7 +248,32 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/facebook.js")
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/threads.js")
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
-    expect(manifest.index("profiles/news/europe/central/poland/wp_onet.js")).to be < register_index
+    wp_path = "profiles/news/europe/central/poland/wp.js"
+    onet_path = "profiles/news/europe/central/poland/onet.js"
+    expect(manifest.index(wp_path)).to be < manifest.index(onet_path)
+    expect(manifest.index(onet_path)).to be < register_index
+    expect(File).to exist(File.join(source_root, wp_path))
+    expect(File).to exist(File.join(source_root, onet_path))
+    expect(File).not_to exist(File.join(source_root, "profiles/news/europe/central/poland/wp_onet.js"))
+    expect(File).not_to exist(File.join(source_root, "systems/news_engines/polish_portal_descriptors.js"))
+    expect(manifest).not_to include("profiles/news/europe/central/poland/wp_onet.js")
+    expect(manifest).not_to include("systems/news_engines/polish_portal_descriptors.js")
+    expect(register_source).to include(
+      "registerNewsHomepageProfiles();\n  registerWpHomepageProfile();\n  registerOnetHomepageProfile();\n  registerZeitProfiles();"
+    )
+    wp_source = File.read(File.join(source_root, wp_path))
+    onet_source = File.read(File.join(source_root, onet_path))
+    expect(wp_source).to include("function wpHomepageContent", "function registerWpHomepageProfile")
+    expect(onet_source).to include("function onetHomepageContent", "function registerOnetHomepageProfile")
+    expect(onet_source).to include("function onetRegionHeading", "function onetUtilityRegion", "function onetUtilityLabel")
+    expect(onet_source).to include("function onetContinuationRegions", "function onetContinuationCard")
+    expect(wp_source).not_to include("onetHomepageContent", "polishPortal")
+    expect(onet_source).not_to include("wpHomepageContent", "polishPortal")
+    source_files = Dir[File.join(source_root, "**", "*.js")]
+    combined_symbols = source_files.sum do |path|
+      File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
+    end
+    expect(combined_symbols).to eq(0)
 
     ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
     expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
