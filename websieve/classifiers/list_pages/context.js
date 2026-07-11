@@ -40,7 +40,37 @@
   }
 
   function articleLikePath() {
-    return /\/(20\d{2}|\d{4}\/\d{2}\/\d{2}|article|articles|blog|blogs|column|columns|archive|archives|news\/[\w-]+|entry|entries|post|posts|view\/[A-Z]{3}\d{15,}|\d{5,}[\w-]*\.html?)\b/i.test(location.pathname || "");
+    var path = location.pathname || "";
+    if (/\/(?:articles?|blogs?|columns?|archives?|entries?|posts?)\/?$/i.test(path)) return false;
+    return /(?:^|\/)(?:a-[a-z0-9]+|20\d{2}|\d{4}\/\d{2}\/\d{2}|article|articles|blog|blogs|column|columns|archive|archives|news\/[\w-]+|entry|entries|post|posts|view\/[A-Z]{3}\d{15,}|\d{5,}[\w-]*\.html?)(?:\/|\b)/i.test(path);
+  }
+
+  function articleRouteFocalContent(content) {
+    if (!document.body) return false;
+    if (!articleLikePath()) return false;
+    if (content && content.contentType !== "article" && content.contentType !== "medical") return false;
+
+    var focal = document.querySelector("[itemprop='articleBody'], article[role='main'], main article");
+    var root = focal || document.createElement("div");
+    if (!focal && content && content.html) root.innerHTML = content.html;
+    var heading = document.querySelector("h1") || root.querySelector("h1");
+    var paragraphs = Array.prototype.filter.call(root.querySelectorAll("p"), function(paragraph) {
+      var owner = paragraph.closest("article");
+      return !owner || owner === root;
+    });
+    var text = normalizeText(paragraphs.map(function(paragraph) { return paragraph.textContent || ""; }).join(" "));
+    if (!focal && content && content.html) text = normalizeText(root.textContent || "");
+    var nestedArticles = root.querySelectorAll("article").length - (root.matches && root.matches("article") ? 1 : 0);
+    var bylineOrTime = document.querySelector("[rel='author'], [itemprop='author'], [itemprop='datePublished'], time, .byline, [class*='byline' i]");
+    var linkText = Array.prototype.reduce.call(root.querySelectorAll("p a[href]"), function(total, link) {
+      return total + normalizeText(link.textContent || "").length;
+    }, 0);
+    var linkDensity = text.length > 0 ? linkText / text.length : 1;
+
+    var substantialProse = paragraphs.length >= 2 && text.length >= 120;
+    var structuredLiveBody = nestedArticles >= 2 && normalizeText(root.textContent || "").length >= 280;
+    return !!heading && (substantialProse || structuredLiveBody) && linkDensity < 0.45 &&
+      (!!focal || !!content) && (!!bylineOrTime || (content && (content.byline || content.publishedTime)) || !!focal);
   }
 
   function articleEntryPath(path) {

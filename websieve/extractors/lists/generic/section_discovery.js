@@ -94,7 +94,7 @@
   }
 
   function sectionedListExtraction(root, options) {
-    if (typeof articleLikePath === "function" && articleLikePath() && document.querySelector("article h1, article [itemprop='articleBody']")) return null;
+    if (typeof articleRouteFocalContent === "function" && articleRouteFocalContent()) return null;
     var regions = sectionRegions(root, options);
     if (regions.length < 2) return null;
 

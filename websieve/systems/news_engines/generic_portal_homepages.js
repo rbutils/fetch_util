@@ -2,7 +2,7 @@
     options = options || {};
     if (!document.body || !homepageRootPath()) return null;
     if (homepageHasEditorialSections(document)) return null;
-    if (typeof articleLikePath === "function" && articleLikePath()) return null;
+    if (typeof articleRouteFocalContent === "function" && articleRouteFocalContent()) return null;
     if (document.querySelector("article h1, article [itemprop='articleBody'], [type='application/ld+json']")) {
       var bodyText = normalizeText(document.body.textContent || "");
       if (document.querySelector("article h1") && bodyText.length < 30000) return null;

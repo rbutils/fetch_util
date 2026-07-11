@@ -77,8 +77,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
-  if (content.contentType === "article" && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content);
-  if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content);
+  if (content.contentType === "article" && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
+  if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
   var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
   if (legalChromeMarkdown !== markdown && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
   markdown = legalChromeMarkdown;

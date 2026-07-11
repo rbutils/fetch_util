@@ -257,6 +257,7 @@ module FetchUtil
       final_url = snapshot.final_url
       content_type = payload["contentType"] || "article"
       return "article" if content_type == "list" && scholarly_article_markdown?(final_url, snapshot)
+      return "article" if content_type == "list" && credible_article_route?(final_url, snapshot)
 
       return content_type unless content_type == "article"
       return content_type if payload["legalProvision"]
@@ -265,6 +266,7 @@ module FetchUtil
       return content_type if legal_judgment_markdown?(snapshot) || legal_statute_markdown?(snapshot)
       return content_type if scholarly_article_markdown?(final_url, snapshot)
       return content_type if reference_table_article_markdown?(snapshot)
+      return content_type if credible_article_route?(final_url, snapshot)
       return "list" if government_service_portal?(final_url, snapshot)
       return "list" if homepage_like && homepage_index_markdown?(snapshot)
       return "list" if index_list_markdown?(final_url, snapshot)
@@ -417,6 +419,22 @@ module FetchUtil
       linked_items = snapshot.linked_item_count
 
       linked_headlines + linked_items >= 4
+    end
+
+    def credible_article_route?(url, snapshot)
+      path = URI.parse(url).path.to_s
+      a_detail = path.match?(%r{(?:^|/)a-[a-z0-9]+(?:/|$)}i)
+      bbc_detail = path.match?(%r{/(?:articles?)/[a-z0-9]+(?:/|$)}i)
+      detail_path = a_detail || bbc_detail
+      return false unless detail_path
+      return false unless snapshot.heading_count >= 1
+      return false unless snapshot.normalized_markdown.length >= 420
+      return false unless snapshot.long_prose_line_count_one_twenty >= 2
+      return false if a_detail && snapshot.payload["byline"].to_s.strip.empty? && snapshot.payload["publishedTime"].to_s.strip.empty?
+
+      true
+    rescue URI::InvalidURIError
+      false
     end
 
     def scholarly_article_markdown?(url, snapshot)

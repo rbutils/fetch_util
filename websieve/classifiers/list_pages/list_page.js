@@ -1,7 +1,7 @@
   function isProbablyListPage(content) {
     if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
-    if (/\/a-\d+(?:\/|$)/i.test(location.pathname || "")) return false;
+    if (articleRouteFocalContent(content)) return false;
 
     function listSignals(root) {
       var links = root.querySelectorAll("a").length;
@@ -61,7 +61,7 @@
   }
 
   function dominantIndexListPage(content) {
-    if (!document.body || articleLikePath() || /\/a-\d+(?:\/|$)/i.test(location.pathname || "")) return false;
+    if (!document.body || articleRouteFocalContent(content)) return false;
     if (medicalArticlePage(null, content)) return false;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
@@ -119,7 +119,7 @@
   function institutionalCaseRecordListPage(root, text) {
     root = root || document.body;
     text = normalizeText(text || (root && root.textContent) || "");
-    if (!root || articleLikePath()) return false;
+    if (!root || articleRouteFocalContent()) return false;
 
     var context = normalizeText([location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ")).toLowerCase();
     if (!/\b(?:cases?|defendants?|records?|dockets?|matters?)\b/.test(context)) return false;

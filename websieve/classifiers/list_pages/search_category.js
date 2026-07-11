@@ -1,5 +1,5 @@
   function thinSearchOrCategoryPage(content) {
-    if (!content || content.contentType !== "article" || articleLikePath()) return false;
+    if (!content || content.contentType !== "article" || articleRouteFocalContent(content)) return false;
     if (!queryOrCategoryPage()) return false;
 
     var root = document.createElement("div");
@@ -22,7 +22,7 @@
   }
 
   function markdownIndexListPage(markdown, content) {
-    if (!markdown || articleLikePath()) return false;
+    if (!markdown || articleRouteFocalContent(content)) return false;
     if (legalJudgmentArticleContent(null, markdown) || legalStatuteArticleContent(null, markdown)) return false;
     if (legalTableOfContentsMarkdown(markdown)) return true;
     if (!likelyListPath() && !queryOrCategoryPage()) return false;
@@ -46,7 +46,7 @@
   }
 
   function searchResultsListPage(content, markdown) {
-    if (!content || content.contentType !== "article" || articleLikePath()) return false;
+    if (!content || content.contentType !== "article" || articleRouteFocalContent(content)) return false;
 
     var path = (location.pathname || "").toLowerCase();
     var query = (location.search || "").toLowerCase();

@@ -21,7 +21,8 @@
     return seen.length;
   }
 
-  function relabelAsListContent(content) {
+  function relabelAsListContent(content, options) {
+    if (content && articleRouteFocalContent(content) && !(options && options.strongList)) return content;
     if (content) content.contentType = "list";
     return content;
   }

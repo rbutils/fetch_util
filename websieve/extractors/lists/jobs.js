@@ -89,7 +89,7 @@
   }
   function jobResultsPage(root) {
     root = root || document.body;
-    if (!root || articleLikePath()) return false;
+    if (!root || articleRouteFocalContent()) return false;
 
     var context = normalizeText([location.pathname, location.search, document.title].join(" ")).toLowerCase();
     if (!/(\bjobs?\b|employment|careers?|jobsearch|job-list|job results?|hiring|remote-[a-z0-9+-]+-jobs|q-[a-z0-9-]+-jobs)/i.test(context)) return false;

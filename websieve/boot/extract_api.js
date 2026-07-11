@@ -136,12 +136,12 @@
       }
 
       var jobList = genericJobListContent(metadata);
-      if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike) {
+      if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike && !articleRouteFocalContent(content)) {
         content = jobList;
       }
 
       var eventList = genericEventListContent(metadata);
-      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event") {
+      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content)) {
         content = eventList;
       }
 
@@ -155,14 +155,14 @@
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;
       }
-      if (content.contentType === "article" && !content.hostAware && !content.docsLike && !articleLikePath() && legalFooterText(content.textContent || content.markdown || "")) {
+      if (content.contentType === "article" && !content.hostAware && !content.docsLike && !articleRouteFocalContent(content) && legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
         if (normalizeText(footerListFallback.markdown || "").length >= 400) content = footerListFallback;
       }
-      if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content);
+      if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && dominantIndexListPage(content)) content = listContent(metadata);
-      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || !articleLikePath()) && !strongArticle) content = listContent(metadata);
-      if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content);
+      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || !articleRouteFocalContent(content)) && !strongArticle) content = listContent(metadata);
+      if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
         if (glossaryListFallback) content = glossaryListFallback;
