@@ -352,14 +352,10 @@ RSpec.describe FetchUtil::CLI do
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
-      sources: %w[duckduckgo google],
+      sources: %w[brave bing],
       limit: nil,
-      concurrency: 2,
       verbose: false,
-      timeout: 20,
-      wait: 0.75,
-      wait_for_idle: true,
-      reader_mode: true
+      timeout: 20
     ).and_return(searcher)
     expect(searcher).to receive(:search).with("ruby language").and_return(payload)
 
@@ -379,14 +375,10 @@ RSpec.describe FetchUtil::CLI do
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
-      sources: %w[duckduckgo google],
+      sources: %w[brave bing],
       limit: nil,
-      concurrency: 2,
       verbose: true,
-      timeout: 20,
-      wait: 0.75,
-      wait_for_idle: true,
-      reader_mode: true
+      timeout: 20
     ).and_return(searcher)
     expect(searcher).to receive(:search).with("ruby language").and_return(payload)
 

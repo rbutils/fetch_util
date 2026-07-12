@@ -82,9 +82,8 @@ module FetchUtil
         request_log: request_log,
         sources: options[:source],
         limit: options[:limit],
-        concurrency: [options[:concurrency], options[:source].length].min,
         verbose: options[:verbose_search],
-        **fetch_options
+        timeout: options[:timeout]
       ).search(query)
 
       emit(payload)

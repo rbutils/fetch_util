@@ -2,499 +2,269 @@
 
 RSpec.describe FetchUtil::Searcher do
   let(:request_log) { instance_double(FetchUtil::RequestLog, append: nil) }
-  let(:fetcher) { instance_double(FetchUtil::ParallelFetcher) }
+  let(:transport) { instance_double(FetchUtil::SearchTransport) }
 
-  it "logs a pseudo-url and aggregates compact interleaved results" do
-    duck = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Ruby Programming Language](https://www.ruby-lang.org/en/) - ruby-lang.org
-        - [Ruby (programming language) - Wikipedia](https://en.wikipedia.org/wiki/Ruby_(programming_language)) - en.wikipedia.org
-        - [Introduction to Ruby](https://ruby-doc.org/docs/Tutorial/)
-      MARKDOWN
-    )
-    brave = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Downloads](https://www.ruby-lang.org/en/downloads/) - Install Ruby on Windows, macOS, Linux, and more.
-        - [Ruby Programming Language](https://www.ruby-lang.org/en/) - Official home page for Ruby.
-        - [More on reddit.com](https://www.reddit.com/r/ruby/comments/1)
-        - [Semantics and philosophy](https://en.wikipedia.org/wiki/Ruby_(programming_language)#Semantics_and_philosophy) - HistoryFeaturesSyntaxImplementations
-        - [Libraries](https://www.ruby-lang.org/en/libraries/) - Ruby has a wide ecosystem of third-party libraries.
-      MARKDOWN
-    )
-
-    expect(request_log).to receive(:append).with("search://duckduckgo,brave?q=ruby+language")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=ruby+language&ia=web&kl=us-en",
-                                              "https://search.brave.com/search?q=ruby+language"
-                                            ]).and_return([duck, brave])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: %w[duckduckgo brave]
-    ).search("ruby language")
-
-    expect(payload[:query]).to eq("ruby language")
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Ruby Programming Language",
-                                        url: "https://www.ruby-lang.org/en",
-                                        snippet: "Official home page for Ruby."
-                                      },
-                                      {
-                                        title: "Downloads",
-                                        url: "https://www.ruby-lang.org/en/downloads",
-                                        snippet: "Install Ruby on Windows, macOS, Linux, and more."
-                                      },
-                                      {
-                                        title: "Ruby (programming language) - Wikipedia",
-                                        url: "https://en.wikipedia.org/wiki/Ruby_(programming_language)"
-                                      },
-                                      {
-                                        title: "Introduction to Ruby",
-                                        url: "https://ruby-doc.org/docs/Tutorial"
-                                      },
-                                      {
-                                        title: "Libraries",
-                                        url: "https://www.ruby-lang.org/en/libraries",
-                                        snippet: "Ruby has a wide ecosystem of third-party libraries."
-                                      }
-                                    ])
+  def candidate(source, rank, title: "Result #{rank}", url: "https://example.test/#{source}/#{rank}", snippet: nil)
+    FetchUtil::SearchTransport::Candidate.new(source: source, source_rank: rank, title: title, url: url, snippet: snippet)
   end
 
-  it "can include source and rank provenance in verbose mode" do
-    duck = instance_double(
-      FetchUtil::Result,
-      markdown: "- [Ruby](https://www.ruby-lang.org/) - Official home page\n"
+  def response(source, status: "ok", candidates: [], elapsed_ms: 12, final_url: nil, reason: nil)
+    FetchUtil::SearchTransport::SourceResponse.new(
+      source: source,
+      status: status,
+      candidates: candidates,
+      elapsed_ms: elapsed_ms,
+      final_url: final_url,
+      reason: reason
     )
-    google = instance_double(
-      FetchUtil::Result,
-      markdown: "- [Ruby](https://www.ruby-lang.org/) - Official Ruby language site\n"
-    )
+  end
 
-    expect(request_log).to receive(:append).with("search://duckduckgo,google?q=ruby")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=ruby&ia=web&kl=us-en",
-                                              "https://www.google.com/search?hl=en&q=ruby"
-                                            ]).and_return([duck, google])
+  def search_candidates(candidates)
+    allow(transport).to receive(:search).and_return([response("brave", candidates: candidates)])
+    described_class.new(transport: transport, request_log: request_log, sources: ["brave"]).search("ruby")[:results]
+  end
+
+  it "uses the reliable direct defaults" do
+    expect(described_class::DEFAULT_SOURCES).to eq(%w[brave bing])
+  end
+
+  it "deduplicates configured sources before constructing the transport, logging, aggregation, and diagnostics" do
+    expect(FetchUtil::SearchTransport).to receive(:new).with(
+      sources: ["brave"], timeout: FetchUtil::SearchTransport::DEFAULT_TIMEOUT
+    ).and_return(transport)
+    expect(request_log).to receive(:append).with("search://brave?q=ruby")
+    responses = [response("brave", candidates: [candidate("brave", 1)])]
+    expect(transport).to receive(:search).with("ruby").and_return(responses)
 
     payload = described_class.new(
-      fetcher: fetcher,
       request_log: request_log,
-      sources: %w[duckduckgo google],
+      sources: %w[brave brave],
       verbose: true
     ).search("ruby")
 
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Ruby",
-                                        url: "https://www.ruby-lang.org/",
-                                        snippet: "Official Ruby language site",
-                                        sources: %w[duckduckgo google],
-                                        ranks: { "duckduckgo" => 1, "google" => 1 }
-                                      }
-                                    ])
+    expect(payload[:results]).to eq([{ title: "Result 1", url: "https://example.test/brave/1", sources: ["brave"], ranks: { "brave" => 1 } }])
+    expect(payload[:diagnostics].map { |diagnostic| diagnostic[:source] }).to eq(["brave"])
   end
 
-  it "drops metadata-only snippets from community sites" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [What's the difference between a proc and a lambda in Ruby?](https://stackoverflow.com/questions/1740046/whats-the-difference-between-a-proc-and-a-lambda-in-ruby) - Stack Overflow7 answers - 16 years ago
-        - [The difference between procs and lambdas in Ruby](https://www.reddit.com/r/ruby/comments/wekrdu/the_difference_between_procs_and_lambdas_in_ruby) - Reddit - r/ruby80+ comments - 3 years ago
-      MARKDOWN
-    )
+  it "preserves first-occurrence source order while deduplicating" do
+    expect(FetchUtil::SearchTransport).to receive(:new).with(
+      sources: %w[bing brave], timeout: FetchUtil::SearchTransport::DEFAULT_TIMEOUT
+    ).and_return(transport)
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=ruby+proc+lambda")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=ruby+proc+lambda&ia=web&kl=us-en"
-                                            ]).and_return([result])
+    described_class.new(request_log: request_log, sources: %w[bing brave bing])
+  end
+
+  it "logs a synthetic request and normalizes typed candidates without changing the normal payload" do
+    responses = [
+      response("brave", candidates: [
+                 candidate("brave", 4, title: "example.test Ruby Guides", url: "https://EXAMPLE.test/guides/", snippet: "Ruby Guides Learn Ruby well."),
+                 candidate("brave", 5, title: "PDF", url: "https://example.test/guide.pdf", snippet: "Document")
+               ]),
+      response("bing", candidates: [candidate("bing", 2, title: "Ruby API", url: "https://rubyapi.org/", snippet: "Complete reference.")])
+    ]
+    expect(request_log).to receive(:append).with("search://brave,bing?q=ruby+guides")
+    expect(transport).to receive(:search).with("ruby guides").and_return(responses)
+
+    payload = described_class.new(transport: transport, request_log: request_log).search(" ruby guides ")
+
+    expect(payload).to eq(
+      query: "ruby guides",
+      results: [
+        { title: "Ruby Guides", url: "https://example.test/guides", snippet: "Learn Ruby well." },
+        { title: "Ruby API", url: "https://rubyapi.org/", snippet: "Complete reference." }
+      ]
+    )
+  end
+
+  it "round-robins configured sources while retaining transport ranks and deduplicating provenance" do
+    shared = "https://example.test/shared/"
+    responses = [
+      response("bing", candidates: [
+                 candidate("bing", 3, title: "Bing first", url: shared, snippet: "Preferred configured snippet."),
+                 candidate("bing", 8, title: "Bing second")
+               ]),
+      response("brave", candidates: [
+                 candidate("brave", 1, title: "Brave first"),
+                 candidate("brave", 2, title: "Brave duplicate", url: shared, snippet: "A much longer later snippet should not replace the configured source snippet."),
+                 candidate("brave", 4, title: "Brave third")
+               ])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
 
     payload = described_class.new(
-      fetcher: fetcher,
+      transport: transport,
       request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("ruby proc lambda")
+      sources: %w[bing brave],
+      verbose: true
+    ).search("ruby")
 
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "What's the difference between a proc and a lambda in Ruby?",
-                                        url: "https://stackoverflow.com/questions/1740046/whats-the-difference-between-a-proc-and-a-lambda-in-ruby"
-                                      },
-                                      {
-                                        title: "The difference between procs and lambdas in Ruby",
-                                        url: "https://www.reddit.com/r/ruby/comments/wekrdu/the_difference_between_procs_and_lambdas_in_ruby"
-                                      }
-                                    ])
+    expected_results = [
+      { title: "Bing first", url: "https://example.test/shared", snippet: "Preferred configured snippet.",
+        sources: %w[bing brave], ranks: { "bing" => 3, "brave" => 2 } },
+      { title: "Brave first", url: "https://example.test/brave/1", sources: ["brave"], ranks: { "brave" => 1 } },
+      { title: "Bing second", url: "https://example.test/bing/8", sources: ["bing"], ranks: { "bing" => 8 } },
+      { title: "Brave third", url: "https://example.test/brave/4", sources: ["brave"], ranks: { "brave" => 4 } }
+    ]
+    expect(payload[:results]).to eq(expected_results)
   end
 
-  it "filters low-value social, image, and retail search targets" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Ruby on Rails Developers](https://www.facebook.com/groups/rubyonrailsdevelopers/) - 12K members
-        - [Ruby on Rails](https://www.facebook.com/rubyonrails) - 2.9K likes
-        - [Ruby programming ideas](https://www.pinterest.com/pin/123456789/) - Ruby programming ideas - Pinterest
-        - [Ruby tutorial](https://shop.tiktok.com/view/product/1729) - All Categories
-        - [Ruby books](https://www.walmart.com/search?q=ruby+books) - Shop great deals
-        - [Ruby on Rails](https://rubyonrails.org/) - Compress the complexity of modern web apps.
-      MARKDOWN
-    )
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=ruby+on+rails")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=ruby+on+rails&ia=web&kl=us-en"
-                                            ]).and_return([result])
+  it "reports finite source diagnostics in configured order for ok, empty, and failed responses" do
+    responses = [
+      response("brave", candidates: [candidate("brave", 1)], elapsed_ms: 10,
+                        final_url: "https://search.brave.com/search?q=ruby"),
+      response("bing", status: "empty", elapsed_ms: 20, final_url: "https://www.bing.com/search?q=ruby"),
+      response("google", status: "failed", elapsed_ms: 30, final_url: "https://www.google.com/sorry",
+                         reason: "challenge")
+    ]
+    allow(transport).to receive(:search).and_return(responses)
 
     payload = described_class.new(
-      fetcher: fetcher,
+      transport: transport,
       request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("ruby on rails")
+      sources: %w[brave bing google],
+      verbose: true
+    ).search("ruby")
 
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Ruby on Rails",
-                                        url: "https://rubyonrails.org/",
-                                        snippet: "Compress the complexity of modern web apps."
-                                      }
-                                    ])
+    expected_diagnostics = [
+      { source: "brave", transport: "http", status: "ok", result_count: 1, elapsed_ms: 10,
+        final_url: "https://search.brave.com/search?q=ruby" },
+      { source: "bing", transport: "http", status: "empty", result_count: 0, elapsed_ms: 20,
+        final_url: "https://www.bing.com/search?q=ruby" },
+      { source: "google", transport: "http", status: "failed", result_count: 0, elapsed_ms: 30,
+        final_url: "https://www.google.com/sorry", reason: "challenge" }
+    ]
+    expect(payload[:diagnostics]).to eq(expected_diagnostics)
   end
 
-  it "preserves meaningful docs fragments as distinct results" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [type Client](https://pkg.go.dev/net/http#Client) - A Client is an HTTP client.
-        - [type Transport](https://pkg.go.dev/net/http#Transport) - Transport is an implementation of RoundTripper.
-      MARKDOWN
-    )
+  it "keeps successful peers on partial failure and returns an empty verbose payload when all sources fail" do
+    partial_responses = [
+      response("brave", status: "failed", reason: "timeout"),
+      response("bing", candidates: [candidate("bing", 1)])
+    ]
+    all_failure_responses = [
+      response("brave", status: "failed", reason: "challenge"),
+      response("bing", status: "failed", reason: "timeout")
+    ]
+    allow(transport).to receive(:search).with("partial").and_return(partial_responses)
+    allow(transport).to receive(:search).with("all fail").and_return(all_failure_responses)
+    searcher = described_class.new(transport: transport, request_log: request_log, verbose: true)
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=net%2Fhttp+client")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=net%2Fhttp+client&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("net/http client")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "type Client",
-                                        url: "https://pkg.go.dev/net/http#Client",
-                                        snippet: "A Client is an HTTP client."
-                                      },
-                                      {
-                                        title: "type Transport",
-                                        url: "https://pkg.go.dev/net/http#Transport",
-                                        snippet: "Transport is an implementation of RoundTripper."
-                                      }
-                                    ])
+    partial_results = [
+      { title: "Result 1", url: "https://example.test/bing/1", sources: ["bing"], ranks: { "bing" => 1 } }
+    ]
+    expect(searcher.search("partial")[:results]).to eq(partial_results)
+    expect(searcher.search("all fail")).to include(query: "all fail", results: [])
+    diagnostics = searcher.search("all fail")[:diagnostics].map { |item| item.slice(:source, :status, :reason) }
+    expected_diagnostics = [
+      { source: "brave", status: "failed", reason: "challenge" },
+      { source: "bing", status: "failed", reason: "timeout" }
+    ]
+    expect(diagnostics).to eq(expected_diagnostics)
   end
 
-  it "drops noise fragments while normalizing docs urls" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [HTTP package](https://pkg.go.dev/net/http#top) - Short package overview.
-        - [HTTP package](https://pkg.go.dev/net/http) - The net/http package provides HTTP client and server implementations.
-      MARKDOWN
-    )
+  it "drops metadata-only community snippets and jammed navigation snippets" do
+    results = search_candidates([
+                                  candidate("brave", 1, title: "Proc versus lambda", url: "https://stackoverflow.com/questions/1", 
+                                                        snippet: "Stack Overflow7 answers - 16 years ago"),
+                                  candidate("brave", 2, title: "Ruby lambdas", url: "https://reddit.com/r/ruby/1", snippet: "Reddit - r/ruby80+ comments - 3 years ago"),
+                                  candidate("brave", 3, title: "Ruby history", url: "https://example.test/history", snippet: "HistoryFeaturesSyntaxImplementations")
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=net%2Fhttp")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=net%2Fhttp&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("net/http")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "HTTP package",
-                                        url: "https://pkg.go.dev/net/http",
-                                        snippet: "The net/http package provides HTTP client and server implementations."
-                                      }
-                                    ])
+    expect(results).to eq([
+                            { title: "Proc versus lambda", url: "https://stackoverflow.com/questions/1" },
+                            { title: "Ruby lambdas", url: "https://reddit.com/r/ruby/1" },
+                            { title: "Ruby history", url: "https://example.test/history" }
+                          ])
   end
 
-  it "preserves fragments for developer-hosted docs urls through the shared docs-like helper" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [terraform_data arguments reference](https://developer.hashicorp.com/terraform/language/resources/terraform-data#arguments-reference) - Optional arguments for terraform_data.
-        - [terraform_data import](https://developer.hashicorp.com/terraform/language/resources/terraform-data#import) - Import existing terraform_data resources.
-      MARKDOWN
-    )
+  it "filters low-value destinations and search-engine shells" do
+    results = search_candidates([
+                                  candidate("brave", 1, title: "Redo search without this site", url: "https://duckduckgo.com/html/?q=ruby"),
+                                  candidate("brave", 2, title: "Ad redirect", url: "https://duckduckgo.com/y.js?ad_domain=example.test"),
+                                  candidate("brave", 3, title: "Google Search", url: "https://www.google.com/search?q=ruby"),
+                                  candidate("brave", 4, title: "Before you continue to Google", url: "https://www.google.com/webhp"),
+                                  candidate("brave", 5, title: "Translated", url: "https://translate.google.com/translate?u=https://example.test"),
+                                  candidate("brave", 6, title: "Ruby developers", url: "https://www.facebook.com/groups/ruby", snippet: "12K members"),
+                                  candidate("brave", 7, title: "Ruby ideas - Pinterest", url: "https://www.pinterest.com/pin/1"),
+                                  candidate("brave", 8, title: "Ruby shop", url: "https://shop.tiktok.com/view/product/1", snippet: "All Categories"),
+                                  candidate("brave", 9, title: "Ruby books", url: "https://www.walmart.com/search?q=ruby"),
+                                  candidate("brave", 10, title: "Ruby", url: "https://www.ruby-lang.org/", snippet: "Official site")
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=terraform_data")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=terraform_data&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("terraform_data")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "terraform_data arguments reference",
-                                        url: "https://developer.hashicorp.com/terraform/language/resources/terraform-data#arguments-reference",
-                                        snippet: "Optional arguments for terraform_data."
-                                      },
-                                      {
-                                        title: "terraform_data import",
-                                        url: "https://developer.hashicorp.com/terraform/language/resources/terraform-data#import",
-                                        snippet: "Import existing terraform_data resources."
-                                      }
-                                    ])
+    expect(results).to eq([{ title: "Ruby", url: "https://www.ruby-lang.org/", snippet: "Official site" }])
   end
 
-  it "filters non-html document results such as pdfs" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Clinical Study PDF](https://www.example.org/articles/1234/pdf) - Full article PDF
-        - [HTML article](https://www.example.org/articles/1234) - Read the article online
-      MARKDOWN
-    )
+  it "preserves meaningful documentation fragments and deduplicates noise fragments with their base URL" do
+    results = search_candidates([
+                                  candidate("brave", 1, title: "type Client", url: "https://pkg.go.dev/net/http#Client"),
+                                  candidate("brave", 2, title: "terraform_data arguments reference", url: "https://developer.hashicorp.com/terraform/data#arguments-reference"),
+                                  candidate("brave", 3, title: "terraform_data import", url: "https://developer.hashicorp.com/terraform/data#import"),
+                                  candidate("brave", 4, title: "HTTP package", url: "https://pkg.go.dev/net/http#top"),
+                                  candidate("brave", 5, title: "HTTP package", url: "https://pkg.go.dev/net/http")
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=clinical+study")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=clinical+study&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("clinical study")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "HTML article",
-                                        url: "https://www.example.org/articles/1234",
-                                        snippet: "Read the article online"
-                                      }
-                                    ])
+    expect(results.map { |result| result[:url] }).to eq([
+                                                          "https://pkg.go.dev/net/http#Client",
+                                                          "https://developer.hashicorp.com/terraform/data#arguments-reference",
+                                                          "https://developer.hashicorp.com/terraform/data#import",
+                                                          "https://pkg.go.dev/net/http"
+                                                        ])
   end
 
-  it "keeps legitimate lowercase brand prefixes in titles" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [rails Routing from the Outside In](https://guides.rubyonrails.org/routing.html) - Learn how Rails routes incoming requests.
-      MARKDOWN
-    )
+  it "keeps lowercase brand prefixes in titles" do
+    results = search_candidates([
+                                  candidate("brave", 1, title: "rails Routing from the Outside In", url: "https://guides.rubyonrails.org/routing.html")
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=rails+routing")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=rails+routing&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("rails routing")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "rails Routing from the Outside In",
-                                        url: "https://guides.rubyonrails.org/routing.html",
-                                        snippet: "Learn how Rails routes incoming requests."
-                                      }
-                                    ])
+    expect(results.first[:title]).to eq("rails Routing from the Outside In")
   end
 
-  it "normalizes non-breaking spaces in titles and snippets" do
+  it "normalizes non-breaking whitespace in titles and snippets" do
     nbsp = "\u00A0"
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: "- [Ruby#{nbsp}Guides](https://guides.rubyonrails.org/) - Learn#{nbsp}Rails the productive way.\n"
-    )
+    results = search_candidates([
+                                  candidate("brave", 1, title: "Ruby#{nbsp}Guides", url: "https://guides.rubyonrails.org/", 
+                                                        snippet: "Learn#{nbsp}Rails the productive way.")
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=ruby+guides")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=ruby+guides&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("ruby guides")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Ruby Guides",
-                                        url: "https://guides.rubyonrails.org/",
-                                        snippet: "Learn Rails the productive way."
-                                      }
-                                    ])
+    expect(results).to eq([{ title: "Ruby Guides", url: "https://guides.rubyonrails.org/", snippet: "Learn Rails the productive way." }])
   end
 
-  it "parses markdown result urls with nested parentheses without clipping the link" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Function docs](https://example.org/docs/Function_(alpha_(beta))/overview) - Full reference page.
-      MARKDOWN
-    )
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=function+docs")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=function+docs&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("function docs")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Function docs",
-                                        url: "https://example.org/docs/Function_(alpha_(beta))/overview",
-                                        snippet: "Full reference page."
-                                      }
-                                    ])
-  end
-
-  it "filters search engine self-links and result-management actions" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [DuckDuckGo](https://duckduckgo.com/) - Redo search without this site
-        - [Redo search without this site](https://duckduckgo.com/html/?q=site%3Arubyapi.org+string) - DuckDuckGo
-        - [Go to Google Home](https://www.google.com/) - Google Search
-        - [Block this site from all results](https://www.google.com/search?hl=en&q=site%3Aapi.baselinker.com+shops_api) - Google Search
-        - [String | Ruby API](https://rubyapi.org/3.4/o/string) - A String object has an arbitrary sequence of bytes.
-        - [API documentation - Baselinker](https://api.baselinker.com/) - API documentation for Baselinker methods.
-      MARKDOWN
-    )
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=site%3Arubyapi.org+string")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=site%3Arubyapi.org+string&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("site:rubyapi.org string")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "String | Ruby API",
-                                        url: "https://rubyapi.org/3.4/o/string",
-                                        snippet: "A String object has an arbitrary sequence of bytes."
-                                      },
-                                      {
-                                        title: "API documentation - Baselinker",
-                                        url: "https://api.baselinker.com/",
-                                        snippet: "API documentation for Baselinker methods."
-                                      }
-                                    ])
-  end
-
-  it "filters search-engine shell and wrapper URLs before fetch" do
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: <<~MARKDOWN
-        - [Before you continue to Google](https://www.google.com/webhp?hl=en) - Google offered in: polski
-        - [Google apps](https://www.google.pl/intl/en/about/products?tab=wh) - Explore Google products
-        - [Translated product page](https://translate.google.com/translate?u=https://shop.example.test/item/1&hl=en&sl=pl&tl=en&client=search) - Translation wrapper
-        - [Ad redirect](https://duckduckgo.com/y.js?ad_domain=example.com) - Sponsored
-        - [Useful article](https://www.example.org/articles/1) - Actual content
-      MARKDOWN
-    )
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=rare+word")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=rare+word&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(
-      fetcher: fetcher,
-      request_log: request_log,
-      sources: ["duckduckgo"]
-    ).search("rare word")
-
-    expect(payload[:results]).to eq([
-                                      {
-                                        title: "Useful article",
-                                        url: "https://www.example.org/articles/1",
-                                        snippet: "Actual content"
-                                      }
-                                    ])
-  end
-
-  it "returns every result from the fetched response by default" do
-    markdown = (1..11).map do |index|
-      "- [Result #{index}](https://example.org/results/#{index}) - Result #{index} has a complete search description."
-    end.join("\n")
-    result = instance_double(FetchUtil::Result, markdown: markdown)
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=all+results")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=all+results&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"]).search("all results")
-
-    expect(payload[:results].length).to eq(11)
-    expect(payload[:results].map { |item| item[:title] }).to eq((1..11).map { |index| "Result #{index}" })
-  end
-
-  it "applies an explicit result limit without changing aggregation" do
-    markdown = (1..11).map do |index|
-      "- [Result #{index}](https://example.org/limited/#{index}) - Result #{index} is available."
-    end.join("\n")
-    result = instance_double(FetchUtil::Result, markdown: markdown)
-
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=limited")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=limited&ia=web&kl=us-en"
-                                            ]).and_return([result])
-
-    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"], limit: 3).search("limited")
-
-    expect(payload[:results].length).to eq(3)
-    expect(payload[:results].map { |item| item[:title] }).to eq(['Result 1', 'Result 2', 'Result 3'])
-  end
-
-  it "preserves search snippets longer than 180 characters" do
+  it "retains snippets longer than 180 characters" do
     snippet = [
       "This complete search snippet contains material context that remains useful to callers,",
       "including the late portion that was previously removed by the fixed presentation limit.",
       "It also preserves the final sentence and its additional details for downstream readers."
     ].join(" ")
-    result = instance_double(
-      FetchUtil::Result,
-      markdown: "- [Long result](https://example.org/long-result) - #{snippet}\n"
-    )
+    results = search_candidates([
+                                  candidate("brave", 1, title: "Long result", url: "https://example.test/long-result", snippet: snippet)
+                                ])
 
-    expect(request_log).to receive(:append).with("search://duckduckgo?q=long+snippet")
-    expect(fetcher).to receive(:fetch).with([
-                                              "https://duckduckgo.com/?q=long+snippet&ia=web&kl=us-en"
-                                            ]).and_return([result])
+    expect(results.first[:snippet]).to eq(snippet)
+    expect(results.first[:snippet].length).to be > 180
+  end
 
-    payload = described_class.new(fetcher: fetcher, request_log: request_log, sources: ["duckduckgo"]).search("long snippet")
+  it "returns every aggregate result by default and applies an explicit limit after dedupe" do
+    candidates = (1..11).map { |rank| candidate("brave", rank) }
+    allow(transport).to receive(:search).and_return([response("brave", candidates: candidates)])
 
-    expect(payload[:results].first[:snippet]).to eq(snippet)
-    expect(payload[:results].first[:snippet].length).to be > 180
+    expect(described_class.new(transport: transport, request_log: request_log, sources: ["brave"]).search("all")[:results].length).to eq(11)
+    expect(described_class.new(transport: transport, request_log: request_log, sources: ["brave"], limit: 0).search("none")[:results]).to eq([])
+    results = described_class.new(
+      transport: transport, request_log: request_log, sources: ["brave"], limit: 3
+    ).search("three")[:results]
+    expect(results.map { |item| item[:title] }).to eq(["Result 1", "Result 2", "Result 3"])
+  end
+
+  it "rejects invalid limits before invoking the transport" do
+    [-1, 1.5, true, "2"].each do |limit|
+      expect { described_class.new(transport: transport, request_log: request_log, limit: limit) }.to raise_error(ArgumentError, "limit must be a nonnegative integer")
+    end
+    expect(transport).not_to receive(:search)
+  end
+
+  it "supports every configured source name through the transport seam" do
+    %w[brave bing duckduckgo google ecosia].each do |source|
+      expect { described_class.new(transport: transport, request_log: request_log, sources: [source]) }.not_to raise_error
+    end
   end
 end

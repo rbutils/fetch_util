@@ -5,46 +5,38 @@ require "uri"
 
 module FetchUtil
   class Searcher
-    SOURCES = {
-      "duckduckgo" => "https://duckduckgo.com/?q=%<query>s&ia=web&kl=us-en",
-      "google" => "https://www.google.com/search?hl=en&q=%<query>s",
-      "bing" => "https://www.bing.com/search?setlang=en-US&q=%<query>s",
-      "ecosia" => "https://www.ecosia.org/search?q=%<query>s",
-      "brave" => "https://search.brave.com/search?q=%<query>s"
-    }.freeze
-
-    DEFAULT_SOURCES = %w[duckduckgo google].freeze
+    DEFAULT_SOURCES = %w[brave bing].freeze
 
     autoload :ResultFiltering, "fetch_util/searcher/result_filtering"
     include ResultFiltering
     private_constant :ResultFiltering
 
-    def initialize(fetcher: nil, request_log: RequestLog.new, sources: nil, limit: nil, concurrency: 2, verbose: false, **fetch_options)
+    def initialize(transport: nil, request_log: RequestLog.new, sources: nil, limit: nil, verbose: false,
+                   timeout: SearchTransport::DEFAULT_TIMEOUT)
       @request_log = request_log
-      @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s)
+      @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s).uniq
+      unknown = @sources - SearchTransport::SOURCES.keys
+      raise ArgumentError, "unsupported search source: #{unknown.first}" if unknown.any?
+
+      validate_limit!(limit)
       @limit = limit
       @verbose = verbose
-      @fetcher = fetcher || ParallelFetcher.new(concurrency: concurrency, request_log: request_log, **fetch_options)
+      @transport = transport || SearchTransport.new(sources: @sources, timeout: timeout)
     end
 
     def search(query)
       encoded_query = query.to_s.strip
       raise ArgumentError, "query must not be empty" if encoded_query.empty?
 
-      urls = search_urls(encoded_query)
       @request_log.append(search_request_uri(encoded_query))
-      fetched = begin
-        @fetcher.fetch(urls.values)
-      rescue ParallelFetcher::ParallelFetchError => e
-        raise unless e.results&.compact&.any?
+      responses = @transport.search(encoded_query)
 
-        e.results
-      end
-
-      {
+      payload = {
         query: encoded_query,
-        results: formatted_results(apply_limit(aggregate(urls.keys, fetched)))
+        results: formatted_results(apply_limit(aggregate(responses)))
       }
+      payload[:diagnostics] = diagnostics(responses) if @verbose
+      payload
     end
 
     private
@@ -55,29 +47,24 @@ module FetchUtil
       limit.nil? ? results : results.first(limit)
     end
 
-    def search_urls(query)
-      urls = {}
+    def validate_limit!(value)
+      return if value.nil?
+      return if value.is_a?(Integer) && value >= 0
 
-      @sources.each do |source|
-        template = SOURCES.fetch(source) do
-          raise ArgumentError, "unsupported search source: #{source}"
-        end
-        urls[source] = format(template, query: CGI.escape(query))
-      end
-
-      urls
+      raise ArgumentError, "limit must be a nonnegative integer"
     end
 
     def search_request_uri(query)
       "search://#{@sources.join(",")}?q=#{CGI.escape(query)}"
     end
 
-    def aggregate(sources, fetched)
+    def aggregate(responses)
       parsed = {}
       max_size = 0
 
-      sources.zip(fetched).each do |source, result|
-        items = parse_markdown(result.markdown)
+      @sources.each do |source|
+        response = responses.find { |item| item.source == source }
+        items = response ? response.candidates.filter_map { |candidate| normalized_candidate(candidate) } : []
         parsed[source] = items
         max_size = [max_size, items.length].max
       end
@@ -86,11 +73,9 @@ module FetchUtil
       seen = {}
 
       max_size.times do |index|
-        sources.each do |source|
+        @sources.each do |source|
           item = parsed.fetch(source)[index]
           next unless item
-
-          item = item.merge(rank: index + 1)
 
           existing = seen[item[:url]]
           if existing
@@ -121,7 +106,7 @@ module FetchUtil
     def merge_result!(result, source, item)
       result[:sources] << source unless result[:sources].include?(source)
       result[:ranks][source] ||= item[:rank]
-      return if !item[:snippet] || (result[:snippet] && result[:snippet].length >= item[:snippet].length)
+      return if result[:snippet] || !item[:snippet]
 
       result[:snippet] = item[:snippet]
     end
@@ -141,65 +126,39 @@ module FetchUtil
       end
     end
 
-    def parse_markdown(markdown)
-      markdown.to_s.lines.filter_map do |line|
-        parsed = parse_markdown_line(line)
-        next unless parsed
+    def diagnostics(responses)
+      @sources.filter_map do |source|
+        response = responses.find { |item| item.source == source }
+        next unless response
 
-        normalized_item(parsed[:title], parsed[:url], parsed[:snippet])
+        diagnostic = {
+          source: response.source,
+          transport: response.transport,
+          status: response.status,
+          result_count: response.candidates.length,
+          elapsed_ms: response.elapsed_ms
+        }
+        diagnostic[:final_url] = response.final_url if response.final_url
+        diagnostic[:reason] = response.reason if response.reason
+        diagnostic
       end
     end
 
-    def parse_markdown_line(line)
-      stripped = line.to_s.strip
-      return nil unless stripped.start_with?("- [")
-
-      title_end = stripped.index("](")
-      return nil unless title_end
-
-      url_start = title_end + 2
-      url_end = markdown_url_end_index(stripped, url_start)
-      return nil unless url_end
-
-      title = stripped[3...title_end]
-      url = stripped[url_start...url_end]
-      remainder = stripped[(url_end + 1)..].to_s
-      snippet = remainder.start_with?(" - ") ? remainder[3..] : nil
-
-      { title: title, url: url, snippet: snippet }
-    end
-
-    def markdown_url_end_index(line, url_start)
-      depth = 0
-
-      url_start.upto(line.length - 1) do |index|
-        char = line[index]
-        if char == "("
-          depth += 1
-        elsif char == ")"
-          return index if depth.zero?
-
-          depth -= 1
-        end
-      end
-
-      nil
-    end
-
-    def normalized_item(title, url, snippet)
-      normalized_url = normalize_url(url)
+    def normalized_candidate(candidate)
+      normalized_url = normalize_url(candidate.url)
       return nil unless normalized_url
 
-      normalized_title = normalize_title(title, normalized_url)
+      normalized_title = normalize_title(candidate.title, normalized_url)
       return nil if normalized_title.empty? || generic_title?(normalized_title, normalized_url)
 
-      normalized_snippet = normalize_snippet(snippet, normalized_title, normalized_url)
+      normalized_snippet = normalize_snippet(candidate.snippet, normalized_title, normalized_url)
       return nil if search_engine_self_link?(normalized_title, normalized_url, normalized_snippet)
       return nil if low_value_result?(normalized_title, normalized_url, normalized_snippet)
 
       item = {
         title: normalized_title,
-        url: normalized_url
+        url: normalized_url,
+        rank: candidate.source_rank
       }
 
       item[:snippet] = normalized_snippet if normalized_snippet
