@@ -63,6 +63,80 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts current-shaped Google organic cards without ads or related controls" do
+    html = fixture_contents(File.expand_path('../../fixtures/serp_google_current.html', __dir__))
+
+    extract_from_url("https://www.google.com/search?q=ruby+language", html) do |payload|
+      expect_content_type(payload, 'search')
+      expect(payload['markdown']).to eq([
+        '- [Ruby language guide](https://ruby.example.test/guide) - A practical guide to Ruby syntax and standard tools.',
+        '- [Ruby documentation](https://docs.example.test/ruby) - Reference material and examples for Ruby developers.',
+        '- [Wrapped result](https://wrapped.example.test/guide) - A result using Google\'s known redirect wrapper.'
+      ].join("\n"))
+      expect(payload['markdown']).not_to include('Opaque commercial result', 'Wrapped duplicate', 'People also ask', 'example.test/search')
+    end
+  end
+
+  it "extracts current-shaped DuckDuckGo organic cards in DOM order" do
+    html = fixture_contents(File.expand_path('../../fixtures/serp_duckduckgo_current.html', __dir__))
+
+    extract_from_url("https://html.duckduckgo.com/html/?q=ruby+language", html) do |payload|
+      expect_content_type(payload, 'search')
+      expect(payload['markdown']).to eq([
+        '- [Ruby language guide](https://ruby.example.test/guide) - A practical guide to Ruby syntax and standard tools.',
+        '- [Ruby documentation](https://docs.example.test/ruby) - Reference material and examples for Ruby developers.',
+        '- [Ruby syntax reference](https://syntax.example.test/ruby) - Syntax reference with examples for Ruby developers.',
+        '- [Ruby developer community](https://community.example.test/ruby) - Community discussions and practical Ruby advice.',
+        '- [Ruby tools catalog](https://tools.example.test/ruby) - A catalog of useful tools for Ruby projects.',
+        '- [Learn Ruby programming](https://learn.example.test/ruby) - Lessons and exercises for learning Ruby programming.'
+      ].join("\n"))
+      expect(payload['markdown'].lines.length).to eq(6)
+      expect(payload['markdown']).not_to include('Sponsored Ruby course', 'Related searches', 'duckduckgo.com')
+    end
+  end
+
+  it "keeps source-aware Bing, Brave, and Ecosia selectors compatible" do
+    cases = {
+      'bing.com/search?q=ruby+language' => 'serp_bing_legacy.html',
+      'search.brave.com/search?q=ruby+language' => 'serp_brave_current.html',
+      'www.ecosia.org/search?q=ruby+language' => 'serp_ecosia_current.html'
+    }
+
+    cases.each do |host_and_path, fixture|
+      html = fixture_contents(File.expand_path("../../fixtures/#{fixture}", __dir__))
+      extract_from_url("https://#{host_and_path}", html) do |payload|
+        expect_content_type(payload, 'search')
+        expect(payload['markdown']).to include(
+          '- [Ruby language guide](https://ruby.example.test/guide) - A practical guide to Ruby syntax and standard tools.',
+          '- [Ruby documentation](https://docs.example.test/ruby) - Reference material and examples for Ruby developers.'
+        )
+        expect(payload['markdown']).not_to include('bing.com/ck/a') if host_and_path.start_with?('bing.com/')
+      end
+    end
+  end
+
+  it "does not fabricate links from consent, challenge, or no-result SERPs" do
+    cases = {
+      'serp_consent_only.html' => ['consent_interstitial'],
+      'serp_challenge.html' => ['bot_or_access_interstitial'],
+      'serp_no_results.html' => ['search_results_unusable']
+    }
+
+    cases.each do |fixture, warnings|
+      html = fixture_contents(File.expand_path("../../fixtures/#{fixture}", __dir__))
+      extract_from_url("https://www.google.com/search?q=not-a-real-query", html) do |payload|
+        expect(payload['markdown']).not_to include('unrelated.example.test', 'other')
+        expect_warnings(payload, include: warnings)
+        if fixture == 'serp_no_results.html'
+          expect(payload['contentType']).to eq('search')
+          expect(payload['markdown']).to eq('')
+        else
+          expect(payload['contentType']).not_to eq('search')
+        end
+      end
+    end
+  end
+
   it "classifies legal search result pages with result cards as lists" do
     html = <<~HTML
       <html>

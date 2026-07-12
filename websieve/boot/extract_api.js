@@ -22,6 +22,9 @@
       if (!content && isSearchEnginePage()) {
         content = searchResultsContent(metadata);
       }
+      if (content && content.contentType === "search") {
+        return finalizeExtractResult(content, metadata, pageText, signals, null);
+      }
       if (!content) {
         var earlyInterstitial = interstitialContent(metadata, pageText);
         var earlyInterstitialType = earlyInterstitial ? interstitialPageType(metadata, pageText) : null;

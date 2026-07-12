@@ -10,6 +10,12 @@
     }
   }
 
+  function equivalentGoogleWrapperHosts(left, right) {
+    var leftBase = left.toLowerCase().replace(/^www\./, "");
+    var rightBase = right.toLowerCase().replace(/^www\./, "");
+    return /^google\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(leftBase) && leftBase === rightBase;
+  }
+
   function normalizeSearchTarget(url) {
     try {
       var parsed = new URL(url, location.href);
@@ -17,6 +23,38 @@
         var value = parsed.searchParams.get(name);
         if (value && /^https?:/i.test(decodeURIComponent(value))) url = decodeURIComponent(value);
       });
+
+      if (equivalentGoogleWrapperHosts(location.hostname, parsed.hostname) && parsed.pathname === "/url") {
+        var wrapped = parsed.searchParams.get("q") || parsed.searchParams.get("url");
+        if (wrapped && !/^https?:\/\//i.test(wrapped)) {
+          try {
+            wrapped = decodeURIComponent(wrapped);
+          } catch (_decodeError) {
+            wrapped = null;
+          }
+        }
+        if (wrapped && /^https?:\/\//i.test(wrapped)) url = wrapped;
+      }
+
+      if (/(^|\.)bing\.com$/i.test(location.hostname) && /(^|\.)bing\.com$/i.test(parsed.hostname) && parsed.pathname === "/ck/a") {
+        var encodedBingTarget = parsed.searchParams.get("u") || "";
+        if (/^a1[A-Za-z0-9_-]+={0,2}$/.test(encodedBingTarget)) {
+          var base64 = encodedBingTarget.slice(2).replace(/-/g, "+").replace(/_/g, "/");
+          if (base64.length % 4 !== 1) {
+            base64 += "=".repeat((4 - (base64.length % 4)) % 4);
+            try {
+              var binary = atob(base64);
+              var escaped = "";
+              for (var index = 0; index < binary.length; index += 1) {
+                escaped += "%" + ("0" + binary.charCodeAt(index).toString(16)).slice(-2);
+              }
+              var bingTarget = decodeURIComponent(escaped);
+              if (/^https?:\/\//i.test(bingTarget)) url = bingTarget;
+            } catch (_bingDecodeError) {
+            }
+          }
+        }
+      }
     } catch (_error) {
     }
 
@@ -28,6 +66,84 @@
     return /\bad\b|sponsored|report ad/.test(text) || /[?&](ad_|ad=|ad_domain=)/i.test(href) || /(?:^|\/)y\.js\?/i.test(rawHref || "");
   }
 
+  function searchEngineSource() {
+    var host = location.hostname.toLowerCase();
+    if (/(^|\.)google\./.test(host)) return "google";
+    if (/(^|\.)duckduckgo\.com$/.test(host)) return "duckduckgo";
+    if (host === "bing.com" || /\.bing.com$/.test(host)) return "bing";
+    if (host === "search.brave.com") return "brave";
+    if (host === "ecosia.org" || /\.ecosia.org$/.test(host)) return "ecosia";
+    return null;
+  }
+
+  function searchResultContainers(source) {
+    var selectors = {
+      google: ".MjjYud, .g",
+      duckduckgo: "article[data-testid='result'], .result",
+      bing: "li.b_algo, .b_algo",
+      brave: "[data-testid='result'], .snippet, .fdb",
+      ecosia: "article[data-test-id='result'], .result"
+    };
+    return selectors[source] ? document.querySelectorAll(selectors[source]) : [];
+  }
+
+  function searchResultLink(container, source) {
+    var selectors = {
+      google: "h3",
+      duckduckgo: ".result__title a, a.result__a, a[data-testid='result-title-a']",
+      bing: "h2 a",
+      brave: "a[data-testid='result-title'], a.result-header, h2 a, h3 a",
+      ecosia: "a.result-title, a[data-test-id='result-title'], h2 a, h3 a"
+    };
+    var heading = container.querySelector(selectors[source] || "h2 a, h3 a");
+    if (!heading) return null;
+    return heading.tagName === "A" ? heading : heading.closest("a");
+  }
+
+  function searchResultDetail(container, title, source) {
+    var selectors = {
+      google: ".VwiC3b, .yXK7lf, [data-sncf], .IsZvec",
+      duckduckgo: ".result__snippet, [data-testid='result-snippet']",
+      bing: ".b_caption p",
+      brave: ".snippet-description, [data-testid='result-description'], .description",
+      ecosia: ".result-snippet, [data-test-id='result-snippet']"
+    };
+    var snippet = container.querySelector(selectors[source] || "");
+    return searchItemDetail(snippet || container, title);
+  }
+
+  function sponsoredSearchContainer(container, source) {
+    var marker = normalizeText([
+      container.getAttribute("aria-label") || "",
+      container.getAttribute("data-text-ad") || "",
+      container.className || ""
+    ].join(" "));
+    if (/\b(ad|advert|sponsored|promoted)\b/i.test(marker)) return true;
+    if (source === "google" && (container.matches(".uEierd") || container.closest(".uEierd"))) return true;
+    if (container.querySelector(".related-question-pair, .related-searches, [data-async-context*='related']")) return true;
+    return source === "duckduckgo" && container.matches(".result--ad, [data-testid='result-ad']");
+  }
+
+  function emptySearchResult(metadata) {
+    return {
+      title: metadata.title || document.title,
+      byline: null,
+      excerpt: searchQuery(),
+      siteName: metadata.siteName || location.hostname,
+      publishedTime: null,
+      html: "",
+      textContent: "",
+      markdown: "",
+      readerMode: false,
+      contentType: "search",
+      resultCount: 0
+    };
+  }
+
+  function blockedSearchPage(bodyText) {
+    return /captcha|verify you are human|unusual traffic|security check|before you continue|enable javascript to continue/i.test(bodyText);
+  }
+
   function pushSearchItem(items, seen, title, href, detail) {
     title = normalizeText(title);
     var rawHref = href;
@@ -35,8 +151,7 @@
     detail = normalizeText(detail);
 
     if (!href || !title) return;
-    if (title.length < 8 || title.length > 180) return;
-    if (/^(images|videos|news|maps|shopping|sign in|privacy|terms|feedback|more)$/i.test(title)) return;
+    if (/^(images|videos|news|maps|shopping|sign in|privacy|terms|feedback|more|people also ask|related searches)$/i.test(title)) return;
     if (/^(javascript:|mailto:)/i.test(href)) return;
     if (!isSearchResultHref(href)) return;
     if (sponsoredSearchResult(title, detail, href, rawHref)) return;
@@ -49,40 +164,25 @@
   }
 
   function searchResultsContent(metadata) {
+    var source = searchEngineSource();
+    if (!source) return null;
     var bodyText = normalizeText((document.body && document.body.textContent) || "");
     if (typeof consentWallPage === "function" && consentWallPage(metadata.title || document.title, bodyText || pageReadableText() || "")) {
       return null;
     }
+    if (blockedSearchPage(bodyText)) return null;
 
     var items = [];
     var seen = {};
-    var selectors = [
-      ".result__title a, [data-testid='result-title-a']",
-      "li.b_algo h2 a, .b_algo h2 a",
-      "a h3",
-      "main a[data-testid='result-title-a'], main article a[href], main .result a[href], main .snippet a[href]"
-    ];
-
-    selectors.forEach(function(selector) {
-      document.querySelectorAll(selector).forEach(function(node) {
-        var link = node.tagName === "A" ? node : node.closest("a");
-        if (!link) return;
-
-        var container = link.closest("article, li, div[data-testid], .result, .b_algo, .g, .fdb") || link.parentElement;
-        var title = searchItemTitle(link);
-        pushSearchItem(items, seen, title, link.getAttribute("href"), searchItemDetail(container, title));
-      });
+    searchResultContainers(source).forEach(function(container) {
+      if (sponsoredSearchContainer(container, source)) return;
+      var link = searchResultLink(container, source);
+      if (!link) return;
+      var title = searchItemTitle(link);
+      pushSearchItem(items, seen, title, link.getAttribute("href"), searchResultDetail(container, title, source));
     });
 
-    if (items.length < 4) {
-      document.querySelectorAll("main a[href], [role='main'] a[href]").forEach(function(link) {
-        var container = link.closest("article, li, div, section") || link.parentElement;
-        var title = searchItemTitle(link);
-        pushSearchItem(items, seen, title, link.getAttribute("href"), searchItemDetail(container, title));
-      });
-    }
-
-    if (!items.length) return null;
+    if (!items.length) return emptySearchResult(metadata);
 
     return {
       title: metadata.title || document.title,
