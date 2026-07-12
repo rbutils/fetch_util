@@ -140,6 +140,63 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(result).to have_attributes(status: "failed", reason: "failed")
   end
 
+  it "rejects degraded cards that only match a question word" do
+    client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
+    result = described_class.new(sources: ["bing"], http_client: client).search("why do octopuses have three hearts?").first
+
+    expect(result).to have_attributes(status: "failed", candidates: [], reason: "query_mismatch")
+  end
+
+  it "accepts relevant multi-term results and bypasses scoped or one meaningful-term searches" do
+    relevant_client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_relevant")) })
+    one_term_client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
+
+    relevant = described_class.new(sources: ["bing"], http_client: relevant_client).search("why do octopuses have three hearts").first
+    site_scoped = described_class.new(sources: ["bing"], http_client: one_term_client).search("site:biology.example octopuses").first
+    one_term = described_class.new(sources: ["bing"], http_client: one_term_client).search("why").first
+
+    expect(relevant).to have_attributes(status: "ok", reason: nil)
+    expect(site_scoped).to have_attributes(status: "ok", reason: nil)
+    expect(one_term).to have_attributes(status: "ok", reason: nil)
+  end
+
+  it "rejects a source when only a later candidate is relevant" do
+    client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_late_relevant")) })
+    result = described_class.new(sources: ["bing"], http_client: client).search("ruby http client documentation").first
+
+    expect(result).to have_attributes(status: "failed", candidates: [], reason: "query_mismatch")
+  end
+
+  it "bypasses quoted, identifier, acronym, and code-like queries" do
+    client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
+    transport = described_class.new(sources: ["bing"], http_client: client)
+
+    ["\"octopuses three hearts\"", "-site:biology.example octopuses three hearts", "C++ language guide", "GPT-4 API guide", "U.S. tax guide"].each do |query|
+      expect(transport.search(query).first).to have_attributes(status: "ok", reason: nil)
+    end
+  end
+
+  it "matches a relevant title when the candidate has no snippet" do
+    candidate = described_class::Candidate.new(
+      source: "bing", title: "Octopuses have three hearts", url: "https://biology.example/octopuses", snippet: nil, source_rank: 1
+    )
+
+    expect(described_class.new.send(:query_matches_candidates?, "why do octopuses have three hearts", [candidate])).to be(true)
+  end
+
+  it "matches Unicode terms through mixed punctuation" do
+    client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_unicode")) })
+    result = described_class.new(sources: ["bing"], http_client: client).search("cafe\u0301 東京 culture?").first
+
+    expect(result).to have_attributes(status: "ok", reason: nil)
+  end
+
+  it "keeps query mismatch in finite failure reason normalization" do
+    transport = described_class.new
+
+    expect(transport.send(:failure, "bing", "query_mismatch", 0, nil).reason).to eq("query_mismatch")
+  end
+
   it "decodes DuckDuckGo absolute and protocol-relative wrappers" do
     client = FixtureSearchClient.new({ "html.duckduckgo.com" => response(fixture("duckduckgo_wrappers")) })
     result = described_class.new(sources: ["duckduckgo"], http_client: client).search("ruby").first
