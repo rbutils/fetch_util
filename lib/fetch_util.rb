@@ -64,6 +64,7 @@ module FetchUtil
   autoload :RequestLog, "fetch_util/request_log"
   autoload :Result, "fetch_util/result"
   autoload :Searcher, "fetch_util/searcher"
+  autoload :SearchTransport, "fetch_util/search_transport"
 
   module_function
 
