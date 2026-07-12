@@ -60,7 +60,7 @@ Repo-local usage:
 ```sh
 bundle exec exe/fetch_util fetch https://example.com/article
 bundle exec exe/fetch_util fetch https://example.com/a https://example.com/b --format jsonl
-bundle exec exe/fetch_util search ruby language
+bundle exec exe/fetch_util search ruby language --limit 8 --verbose-search
 bundle exec exe/fetch_util regulatory https://example.com
 bundle exec exe/fetch_util regulatory https://example.com/article --sources=machine,human
 ```
@@ -69,15 +69,30 @@ Installed gem usage:
 
 ```sh
 fetch_util fetch https://example.com/article
-fetch_util search ruby language
+fetch_util search ruby language --limit 8 --verbose-search
 fetch_util regulatory https://example.com/article --sources=machine,human
+```
+
+### Search
+
+Search uses direct HTTP requests to the supported sources, in parallel, rather than the browser fetcher. The default sources are `brave` and `bing`; explicit `--source` values may be any of `brave`, `bing`, `duckduckgo`, `google`, or `ecosia`.
+
+Search always emits one JSON object. The normal payload is exactly `{ "query": ..., "results": [...] }`. Results are interleaved by source rank, deduplicated by normalized URL, and retain every eligible result unless an explicit `--limit N` is supplied. `--limit` is applied after aggregation; there is no default result cap. Known Bing, Google, and DuckDuckGo result wrappers are decoded before destination validation.
+
+Each search has one finite deadline shared by its source requests and parsing. Challenges are reported, not bypassed. A source can be `ok`, `empty`, or `failed`; failure reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`. Normal source failures do not discard healthy peer results. With `--verbose-search`, the payload additionally contains ordered finite source `diagnostics`, and each result contains ordered `sources` and per-source `ranks`.
+
+For agent discovery, use an explicit first-pass budget, inspect source health, choose only the best 1-3 direct result URLs, then fetch those destinations and inspect JSON `warnings`, `suspect`, and `content_type` when needed:
+
+```sh
+fetch_util search ruby language --limit 8 --verbose-search
+fetch_util fetch https://example.com/selected --format json
 ```
 
 ## API
 
 - `FetchUtil.fetch(url, **options)` returns a `FetchUtil::Result`
 - `FetchUtil.fetch_many(urls, **options)` fetches multiple URLs in parallel and preserves input order
-- `FetchUtil.search(query, **options)` returns aggregated search results from the fetched responses; pass `limit:` to request an explicit result cap
+- `FetchUtil.search(query, **options)` returns direct-source aggregated search results; `limit:` is an explicit post-aggregation cap and is omitted by default
 - `FetchUtil.regulatory(url, **options)` returns a source-keyed hash of allow/disallow signals for crawling, indexing, and TDM-style usage
 - `FetchUtil::Fetcher.new(**options).fetch(url)` exposes the instance API directly
 

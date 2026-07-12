@@ -46,26 +46,31 @@ fetch_util fetch https://example.com/a https://example.com/b --format jsonl
 Search first, then fetch selected results if needed:
 
 ```sh
-fetch_util search ruby language
-fetch_util search site:docs.python.org json dump --verbose-search
+fetch_util search ruby language --limit 8 --verbose-search
+fetch_util search site:docs.python.org json dump --limit 8 --verbose-search
 ```
 
 Repository-local development form:
 
 ```sh
 bundle exec exe/fetch_util fetch https://example.com
-bundle exec exe/fetch_util search ruby language
+bundle exec exe/fetch_util search ruby language --limit 8 --verbose-search
 ```
 
 ## Agent Guidance
 
 - if the user gives you URLs, use `fetch_util fetch` first
-- if the user needs discovery, use `fetch_util search` first
+- if the user needs discovery, use `fetch_util search` first; for a context-efficient first pass, consider an explicit budget such as `--limit 8`, add `--verbose-search`, and inspect the ordered source `diagnostics`
+- search defaults to direct HTTP Brave and Bing; explicit sources are `brave`, `bing`, `duckduckgo`, `google`, and `ecosia`
+- search always emits one JSON object and normally returns exactly `{query, results}`; `--verbose-search` adds source diagnostics plus per-result source provenance and ranks
+- search has one finite shared source deadline, does not bypass challenges, decodes known engine wrappers, and preserves healthy peer results when a source fails; `empty` and `query_mismatch` are finite source outcomes
+- after search, select only 1-3 direct result URLs, then run `fetch_util fetch` on those destinations; use `--format json` or `--format jsonl` and inspect `warnings`, `suspect`, and `content_type` as needed
 - if the task is a normal web roundup (for example, checking several news homepages), still use `fetch_util` first; do not skip straight to built-in web fetch just because the URLs are already known
 - if you are in a subagent without the `skill` tool, treat `fetch_util` as a normal installed CLI and call it directly
 - use `fetch_util` first because its output is usually cleaner and more compact for agents than generic page fetch output
 - treat `fetch_util` as cheap to use; it is fine to make multiple fetch/search passes when that helps answer the task well
 - prefer the compact default output; use `--format json` when you need metadata, warnings, or content_type fields, and `--format jsonl` for multi-result pipelines
+- search has no default result cap; `--limit` is an explicit post-aggregation cap, not a hidden presentation limit
 - use `--include-html` only when raw HTML is actually needed
 - treat `suspect` and `warnings` as signals that the page may be an interstitial, challenge, or mismatch
 - only fall back to other web tooling after `fetch_util` is unavailable or clearly insufficient
