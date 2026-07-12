@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Added
+
+- Add direct, concurrent HTTP search transport for Brave, Bing, DuckDuckGo, Google, and Ecosia with finite source diagnostics, wrapper decoding, and shared deadline enforcement.
+
+### Fixed
+
+- Prevent generic-list ranking scores, malformed engine wrappers, non-SERP engine pages, challenges, and query-mismatched source responses from appearing as valid search results.
+
+### Changed
+
+- Change default search sources from DuckDuckGo and Google to Brave and Bing. Search now returns typed direct-source results instead of reparsing browser Markdown.
+- Apply `limit:` only after aggregation and deduplication, with no default result cap. `verbose: true` adds ordered source diagnostics and result provenance.
+- Remove browser-only search options such as `fetcher:`, `concurrency:`, waits, and reader mode from `FetchUtil.search` and `FetchUtil::Searcher`; use `sources:`, `limit:`, `timeout:`, and `verbose:` for direct search.
+
+### Performance
+
+- Remove Chromium startup and generic browser stabilization from the normal search path.
+
 ## v0.4.0 - 2026-07-11
 
 ### Added
