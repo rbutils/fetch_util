@@ -48,7 +48,19 @@ function searchQuery() {
 }
 
 function isSearchEnginePage() {
-  return /(^|\.)(google\.|bing\.com$|duckduckgo\.com$|search\.brave\.com$|ecosia\.org$)/.test(location.hostname);
+  var host = location.hostname.toLowerCase().replace(/^www\./, "");
+  var path = location.pathname;
+  var hasQuery = queryParam("q");
+  if (!hasQuery || !hasQuery.trim()) return false;
+
+  if (/^google\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(host)) {
+    return path === "/" || path === "/search";
+  }
+  if (/^bing\.com$/.test(host)) return path === "/search";
+  if (/(^|\.)duckduckgo\.com$/.test(host)) return path === "/" || path === "/html" || path === "/html/";
+  if (host === "search.brave.com") return path === "/search";
+  if (/^ecosia\.org$/.test(host)) return path === "/search";
+  return false;
 }
 
 function listContentResult(options) {

@@ -10,6 +10,24 @@
     }
   }
 
+  function externalHttpUrl(value) {
+    try {
+      var parsed = new URL(value, location.href);
+      var sameEngine = parsed.hostname === location.hostname ||
+        (googleEngineHost(location.hostname) && googleEngineHost(parsed.hostname)) ||
+        (/(^|\.)bing\.com$/i.test(location.hostname) && /(^|\.)bing\.com$/i.test(parsed.hostname)) ||
+        (/(^|\.)duckduckgo\.com$/i.test(location.hostname) && /(^|\.)duckduckgo\.com$/i.test(parsed.hostname));
+      if (!/^https?:$/i.test(parsed.protocol) || sameEngine) return null;
+      return parsed.href;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function googleEngineHost(host) {
+    return /(^|\.)google\.[a-z]{2,3}(?:\.[a-z]{2})?$/i.test(host);
+  }
+
   function equivalentGoogleWrapperHosts(left, right) {
     var leftBase = left.toLowerCase().replace(/^www\./, "");
     var rightBase = right.toLowerCase().replace(/^www\./, "");
@@ -19,42 +37,47 @@
   function normalizeSearchTarget(url) {
     try {
       var parsed = new URL(url, location.href);
-      ["uddg", "u", "u3", "r", "rut", "ad_domain"].forEach(function(name) {
-        var value = parsed.searchParams.get(name);
-        if (value && /^https?:/i.test(decodeURIComponent(value))) url = decodeURIComponent(value);
-      });
 
       if (equivalentGoogleWrapperHosts(location.hostname, parsed.hostname) && parsed.pathname === "/url") {
-        var wrapped = parsed.searchParams.get("q") || parsed.searchParams.get("url");
-        if (wrapped && !/^https?:\/\//i.test(wrapped)) {
-          try {
-            wrapped = decodeURIComponent(wrapped);
-          } catch (_decodeError) {
-            wrapped = null;
-          }
+        var wrappedGoogle = parsed.searchParams.get("q") || parsed.searchParams.get("url");
+        if (!wrappedGoogle) return null;
+        try {
+          wrappedGoogle = decodeURIComponent(wrappedGoogle);
+        } catch (_googleDecodeError) {
+          return null;
         }
-        if (wrapped && /^https?:\/\//i.test(wrapped)) url = wrapped;
+        return externalHttpUrl(wrappedGoogle);
       }
 
       if (/(^|\.)bing\.com$/i.test(location.hostname) && /(^|\.)bing\.com$/i.test(parsed.hostname) && parsed.pathname === "/ck/a") {
         var encodedBingTarget = parsed.searchParams.get("u") || "";
-        if (/^a1[A-Za-z0-9_-]+={0,2}$/.test(encodedBingTarget)) {
-          var base64 = encodedBingTarget.slice(2).replace(/-/g, "+").replace(/_/g, "/");
-          if (base64.length % 4 !== 1) {
-            base64 += "=".repeat((4 - (base64.length % 4)) % 4);
-            try {
-              var binary = atob(base64);
-              var escaped = "";
-              for (var index = 0; index < binary.length; index += 1) {
-                escaped += "%" + ("0" + binary.charCodeAt(index).toString(16)).slice(-2);
-              }
-              var bingTarget = decodeURIComponent(escaped);
-              if (/^https?:\/\//i.test(bingTarget)) url = bingTarget;
-            } catch (_bingDecodeError) {
-            }
+        if (!/^a1[A-Za-z0-9_-]+={0,2}$/.test(encodedBingTarget)) return null;
+        var base64 = encodedBingTarget.slice(2).replace(/-/g, "+").replace(/_/g, "/");
+        if (base64.length % 4 === 1) return null;
+        base64 += "=".repeat((4 - (base64.length % 4)) % 4);
+        try {
+          var binary = atob(base64);
+          var escaped = "";
+          for (var index = 0; index < binary.length; index += 1) {
+            escaped += "%" + ("0" + binary.charCodeAt(index).toString(16)).slice(-2);
           }
+          return externalHttpUrl(decodeURIComponent(escaped));
+        } catch (_bingDecodeError) {
+          return null;
         }
       }
+
+      if (/(^|\.)duckduckgo\.com$/i.test(location.hostname) && /(^|\.)duckduckgo\.com$/i.test(parsed.hostname) && /^\/l\//.test(parsed.pathname)) {
+        var wrappedDuckDuckGo = parsed.searchParams.get("uddg");
+        if (!wrappedDuckDuckGo) return null;
+        try {
+          wrappedDuckDuckGo = decodeURIComponent(wrappedDuckDuckGo);
+        } catch (_duckDuckGoDecodeError) {
+          return null;
+        }
+        return externalHttpUrl(wrappedDuckDuckGo);
+      }
+
     } catch (_error) {
     }
 

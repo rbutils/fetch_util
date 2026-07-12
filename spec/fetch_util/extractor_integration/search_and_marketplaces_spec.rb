@@ -71,9 +71,14 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload['markdown']).to eq([
         '- [Ruby language guide](https://ruby.example.test/guide) - A practical guide to Ruby syntax and standard tools.',
         '- [Ruby documentation](https://docs.example.test/ruby) - Reference material and examples for Ruby developers.',
-        '- [Wrapped result](https://wrapped.example.test/guide) - A result using Google\'s known redirect wrapper.'
+        '- [Wrapped result](https://wrapped.example.test/guide) - A result using Google\'s known redirect wrapper.',
+        '- [Foreign wrapper-shaped result](https://foreign.example.test/url?q=https%3A%2F%2Fdestination.example.test%2Fpage) - ' \
+          'A foreign site whose path resembles a Google wrapper.'
       ].join("\n"))
-      expect(payload['markdown']).not_to include('Opaque commercial result', 'Wrapped duplicate', 'People also ask', 'example.test/search')
+      expect(payload['markdown']).not_to include(
+        'Opaque commercial result', 'Malformed Google wrapper', 'Missing Google wrapper target',
+        'Non-HTTP Google wrapper', 'People also ask', 'example.test/search'
+      )
     end
   end
 
@@ -88,10 +93,35 @@ RSpec.describe 'FetchUtil extractor integration' do
         '- [Ruby syntax reference](https://syntax.example.test/ruby) - Syntax reference with examples for Ruby developers.',
         '- [Ruby developer community](https://community.example.test/ruby) - Community discussions and practical Ruby advice.',
         '- [Ruby tools catalog](https://tools.example.test/ruby) - A catalog of useful tools for Ruby projects.',
-        '- [Learn Ruby programming](https://learn.example.test/ruby) - Lessons and exercises for learning Ruby programming.'
+        '- [Learn Ruby programming](https://learn.example.test/ruby) - Lessons and exercises for learning Ruby programming.',
+        '- [Wrapped DuckDuckGo result](https://wrapped.example.test/guide) - A result using DuckDuckGo\'s known redirect wrapper.'
       ].join("\n"))
-      expect(payload['markdown'].lines.length).to eq(6)
-      expect(payload['markdown']).not_to include('Sponsored Ruby course', 'Related searches', 'duckduckgo.com')
+      expect(payload['markdown'].lines.length).to eq(7)
+      expect(payload['markdown']).not_to include(
+        'Sponsored Ruby course', 'Malformed DuckDuckGo wrapper', 'Missing DuckDuckGo wrapper target',
+        'Non-HTTP DuckDuckGo wrapper', 'Related searches', 'duckduckgo.com'
+      )
+    end
+  end
+
+  it "fails closed when engine wrappers cannot produce external HTTP destinations" do
+    cases = {
+      'https://www.google.com/search?q=ruby' => <<~HTML,
+        <div class="g"><a href="/url?q=https%3A%2F%2Fwww.google.co.uk%2Fsearch%3Fq%3Druby"><h3>Google engine target</h3></a></div>
+      HTML
+      'https://www.bing.com/search?q=ruby' => <<~HTML,
+        <li class="b_algo"><h2><a href="/ck/a?u=a1__8=">Malformed Bing wrapper</a></h2></li>
+      HTML
+      'https://html.duckduckgo.com/html/?q=ruby' => <<~HTML
+        <div class="result"><div class="result__title"><a href="/l/x?uddg=%25ZZ">Malformed DuckDuckGo wrapper</a></div></div>
+      HTML
+    }
+
+    cases.each do |url, html|
+      extract_from_url(url, html) do |payload|
+        expect_content_type(payload, 'search')
+        expect(payload['markdown']).to eq('')
+      end
     end
   end
 
@@ -110,7 +140,25 @@ RSpec.describe 'FetchUtil extractor integration' do
           '- [Ruby language guide](https://ruby.example.test/guide) - A practical guide to Ruby syntax and standard tools.',
           '- [Ruby documentation](https://docs.example.test/ruby) - Reference material and examples for Ruby developers.'
         )
-        expect(payload['markdown']).not_to include('bing.com/ck/a') if host_and_path.start_with?('bing.com/')
+        if host_and_path.start_with?('bing.com/')
+          expect(payload['markdown']).not_to include(
+            'bing.com/ck/a', 'Malformed Bing wrapper', 'Missing Bing wrapper target', 'Non-HTTP Bing wrapper'
+          )
+        end
+      end
+    end
+  end
+
+  it "does not terminalize non-SERP routes on supported search-engine hosts" do
+    html = fixture_contents(File.expand_path('../../fixtures/serp_engine_non_search.html', __dir__))
+    [
+      'https://www.google.com/maps',
+      'https://www.bing.com/account',
+      'https://html.duckduckgo.com/about'
+    ].each do |url|
+      extract_from_url(url, html) do |payload|
+        expect(payload['contentType']).not_to eq('search')
+        expect(payload['markdown']).to include('# Account overview', 'Your account settings and saved preferences are shown here.')
       end
     end
   end
