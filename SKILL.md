@@ -46,21 +46,22 @@ fetch_util fetch https://example.com/a https://example.com/b --format jsonl
 Search first, then fetch selected results if needed:
 
 ```sh
-fetch_util search ruby language --limit 8 --verbose-search
-fetch_util search site:docs.python.org json dump --limit 8 --verbose-search
+fetch_util search ruby language --limit 8
+fetch_util search site:docs.python.org json dump --limit 8
 ```
 
 Repository-local development form:
 
 ```sh
 bundle exec exe/fetch_util fetch https://example.com
-bundle exec exe/fetch_util search ruby language --limit 8 --verbose-search
+bundle exec exe/fetch_util search ruby language --limit 8
 ```
 
 ## Agent Guidance
 
 - if the user gives you URLs, use `fetch_util fetch` first
-- if the user needs discovery, use `fetch_util search` first; for a context-efficient first pass, consider an explicit budget such as `--limit 8`, add `--verbose-search`, and inspect the ordered source `diagnostics`
+- if the user needs discovery, use `fetch_util search` first; for a context-efficient first pass, consider an explicit budget such as `--limit 8`
+- add `--verbose-search` and inspect ordered source `diagnostics` when results are empty or suspicious, or when source health matters
 - search defaults to direct HTTP Brave and Bing; explicit sources are `brave`, `bing`, `duckduckgo`, `google`, and `ecosia`
 - search always emits one JSON object and normally returns exactly `{query, results}`; `--verbose-search` adds source diagnostics plus per-result source provenance and ranks
 - search has one finite shared source deadline, does not bypass challenges, decodes known engine wrappers, and preserves healthy peer results when a source fails; `empty` and `query_mismatch` are finite source outcomes

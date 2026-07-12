@@ -60,7 +60,7 @@ Repo-local usage:
 ```sh
 bundle exec exe/fetch_util fetch https://example.com/article
 bundle exec exe/fetch_util fetch https://example.com/a https://example.com/b --format jsonl
-bundle exec exe/fetch_util search ruby language --limit 8 --verbose-search
+bundle exec exe/fetch_util search ruby language --limit 8
 bundle exec exe/fetch_util regulatory https://example.com
 bundle exec exe/fetch_util regulatory https://example.com/article --sources=machine,human
 ```
@@ -69,7 +69,7 @@ Installed gem usage:
 
 ```sh
 fetch_util fetch https://example.com/article
-fetch_util search ruby language --limit 8 --verbose-search
+fetch_util search ruby language --limit 8
 fetch_util regulatory https://example.com/article --sources=machine,human
 ```
 
@@ -81,9 +81,10 @@ Search always emits one JSON object. The normal payload is exactly `{ "query": .
 
 Each search has one finite deadline shared by its source requests and parsing. Challenges are reported, not bypassed. A source can be `ok`, `empty`, or `failed`; failure reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`. Normal source failures do not discard healthy peer results. With `--verbose-search`, the payload additionally contains ordered finite source `diagnostics`, and each result contains ordered `sources` and per-source `ranks`.
 
-For agent discovery, use an explicit first-pass budget, inspect source health, choose only the best 1-3 direct result URLs, then fetch those destinations and inspect JSON `warnings`, `suspect`, and `content_type` when needed:
+For agent discovery, use an explicit first-pass budget, choose only the best 1-3 direct result URLs, then fetch those destinations and inspect JSON `warnings`, `suspect`, and `content_type` when needed. Add `--verbose-search` when results are empty or suspicious, or when source health matters:
 
 ```sh
+fetch_util search ruby language --limit 8
 fetch_util search ruby language --limit 8 --verbose-search
 fetch_util fetch https://example.com/selected --format json
 ```
