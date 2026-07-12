@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.5.0 - 2026-07-13
+
 ### Added
 
 - Add direct, concurrent HTTP search transport for Brave, Bing, DuckDuckGo, Google, and Ecosia with finite source diagnostics, wrapper decoding, and shared deadline enforcement.
