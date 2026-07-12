@@ -94,7 +94,7 @@
 
   function listItemsQualityScore(items) {
     return (items || []).reduce(function(total, item, index) {
-      var value = Math.max(0, item && item.score ? item.score : textLength(item && item.text));
+      var value = Math.max(0, item && item.rankScore ? item.rankScore : textLength(item && item.text));
       value = Math.min(value, 1200);
       if (index >= 8) value = Math.round(value / 2);
       return total + value;

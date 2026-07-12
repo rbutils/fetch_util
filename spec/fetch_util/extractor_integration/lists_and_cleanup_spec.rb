@@ -42,6 +42,21 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not render generic ranking scores as list detail" do
+    first_title = "Ruby #{"a" * 104}"
+    second_title = "Ruby #{"b" * 118}"
+    cards = [first_title, second_title, "Ruby candidate gamma", "Ruby candidate delta", "Ruby candidate epsilon"].map.with_index do |title, index|
+      "<article><h2><a href=\"/ruby/#{index}\">#{title}</a></h2></article>"
+    end.join
+    html = "<html><head><title>Ruby</title></head><body><main>#{cards}</main></body></html>"
+
+    with_url_page("https://example.test/ruby", html) do |page|
+      markdown = extract_payload(page, reader_mode: false)["markdown"]
+
+      expect(markdown).not_to include("699", "713")
+    end
+  end
+
   it "renders evidence-bound card-local community metadata without chrome" do
     %w[reply replies comment comments].each do |reply_class|
       html = <<~HTML

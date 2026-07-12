@@ -82,7 +82,7 @@
       var directLink = card.matches && card.matches("a[href]") ? card : card.querySelector("a[href]");
       var directText = normalizeText((card.querySelector("h1, h2, h3, h4") || directLink || {}).textContent || "");
       if (directLink && directText.length >= 6) {
-        var directCandidate = { text: directText, url: absoluteUrl(directLink.getAttribute("href")), detail: "", score: directText.length };
+        var directCandidate = { text: directText, url: absoluteUrl(directLink.getAttribute("href")), detail: "", rankScore: directText.length };
         directCandidate.canonicalKey = listCanonicalKey(directCandidate.url);
         directCandidate.url = directCandidate.canonicalKey;
         directCandidate.card = card;
@@ -107,7 +107,7 @@
     if (!link) {
       link = links.reduce(function(best, anchor) {
         var candidate = listLinkCandidate(anchor, card, listPageContext());
-        return candidate && (!best || candidate.score > best.score) ? anchor : best;
+        return candidate && (!best || candidate.rankScore > best.rankScore) ? anchor : best;
       }, null);
     }
     if (!link && options && options.ancestorLink) link = card.closest("a[href]");
@@ -116,7 +116,7 @@
       var href = link.getAttribute("href");
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       var url = absoluteUrl(href);
-      if (href && url && text.length >= 6 && text.length <= 220) candidate = { text: text, url: url, detail: "", score: text.length };
+      if (href && url && text.length >= 6 && text.length <= 220) candidate = { text: text, url: url, detail: "", rankScore: text.length };
     }
     if (!candidate) return null;
 

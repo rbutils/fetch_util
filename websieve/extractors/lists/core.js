@@ -1,9 +1,9 @@
   function listCandidateRank(a, b) {
-    return b.score - a.score || b.text.length - a.text.length;
+    return b.rankScore - a.rankScore || b.text.length - a.text.length;
   }
 
   function listCandidateScoreRank(a, b) {
-    return b.score - a.score;
+    return b.rankScore - a.rankScore;
   }
 
   function buildListExtraction(node) {

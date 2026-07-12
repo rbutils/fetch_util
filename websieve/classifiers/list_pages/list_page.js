@@ -242,7 +242,7 @@
       var container = link.closest("article, section, div, li, ul, ol, main") || link.parentElement;
       var candidate = listLinkCandidate(link, container, context);
       if (!candidate) return;
-      if (candidate.score < 260) return;
+      if (candidate.rankScore < 260) return;
 
       var node = container;
       var depth = 0;

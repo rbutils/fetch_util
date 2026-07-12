@@ -109,7 +109,7 @@
     var score = listCandidateScore(text, url, detail, container || link.parentElement, context);
     if (score === -Infinity) return null;
 
-    return { text: text, url: url, detail: detail, score: score, card: listCardRoot(link, container) };
+    return { text: text, url: url, detail: detail, rankScore: score, card: listCardRoot(link, container) };
   }
 
   function listCardRoot(link, fallback) {
