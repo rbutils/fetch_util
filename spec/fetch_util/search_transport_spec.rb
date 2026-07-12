@@ -339,13 +339,14 @@ RSpec.describe FetchUtil::SearchTransport do
       expect(elapsed).to be < 0.15
     end
 
-    it "sends an English-US Accept-Language header" do
+    it "sends stable search request headers" do
       response = http_response(Net::HTTPOK, 200, chunks: ["<html></html>"])
       http = FakeSearchHttp.new(response)
       client = described_class.new(net_http: ->(_uri) { http })
 
       client.get("https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"])
       expect(http.last_request["Accept-Language"]).to eq("en-US,en;q=0.9")
+      expect(http.last_request["User-Agent"]).to eq("fetch_util")
     end
 
     it "follows allowed relative redirects and rejects redirected hosts outside the allowlist" do

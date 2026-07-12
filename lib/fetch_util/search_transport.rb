@@ -366,7 +366,7 @@ module FetchUtil
           uri.request_uri.empty? ? "/" : uri.request_uri,
           "Accept-Encoding" => "gzip, deflate",
           "Accept-Language" => "en-US,en;q=0.9",
-          "User-Agent" => "fetch_util search transport"
+          "User-Agent" => "fetch_util"
         )
         body = +""
         response = within_wall_clock_timeout(seconds) do
