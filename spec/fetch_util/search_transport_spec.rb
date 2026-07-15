@@ -13,6 +13,24 @@ class FixtureSearchClient
   end
 end
 
+class SequentialSearchClient
+  attr_reader :deadlines, :urls
+
+  def initialize(responses, on_get: nil)
+    @responses = responses.dup
+    @deadlines = []
+    @urls = []
+    @on_get = on_get
+  end
+
+  def get(url, deadline:, **_options)
+    deadlines << deadline
+    urls << url
+    @on_get&.call(urls.length)
+    @responses.shift || raise("unexpected search request")
+  end
+end
+
 class BarrierSearchClient
   attr_reader :deadlines, :started
 
@@ -174,6 +192,70 @@ RSpec.describe FetchUtil::SearchTransport do
     ["\"octopuses three hearts\"", "-site:biology.example octopuses three hearts", "C++ language guide", "GPT-4 API guide", "U.S. tax guide"].each do |query|
       expect(transport.search(query).first).to have_attributes(status: "ok", reason: nil)
     end
+  end
+
+  it "retries two Yahoo availability responses before succeeding with the exact URL and deadline" do
+    client = SequentialSearchClient.new(
+      [
+        response("", status: 503),
+        response("", status: 429),
+        response(fixture("yahoo"), url: "https://search.yahoo.com/search?p=ruby+%22http+client%22")
+      ]
+    )
+    query = 'ruby "http client"'
+
+    result = described_class.new(sources: ["yahoo"], timeout: 5, http_client: client).search(query).first
+
+    expect(result).to have_attributes(status: "ok", source: "yahoo")
+    expect(client.urls).to eq(["https://search.yahoo.com/search?p=ruby+%22http+client%22"] * 3)
+    expect(client.deadlines.uniq.length).to eq(1)
+  end
+
+  it "retries a transient Yahoo failed transport before succeeding" do
+    client = SequentialSearchClient.new(
+      [
+        FetchUtil::SearchTransport::HttpFailure.new(reason: "failed", final_url: "https://search.yahoo.com/search"),
+        response(fixture("yahoo"))
+      ]
+    )
+
+    result = described_class.new(sources: ["yahoo"], http_client: client).search("ruby").first
+
+    expect(result).to have_attributes(status: "ok", source: "yahoo")
+    expect(client.urls.length).to eq(2)
+  end
+
+  it "does not retry a Yahoo 403 challenge-like response" do
+    client = SequentialSearchClient.new([response(fixture("challenge"), status: 403)])
+
+    result = described_class.new(sources: ["yahoo"], http_client: client).search("ruby").first
+
+    expect(result).to have_attributes(status: "failed", reason: "challenge")
+    expect(client.urls.length).to eq(1)
+  end
+
+  it "bounds Yahoo availability recovery at two attempts after the initial request" do
+    client = SequentialSearchClient.new([response("", status: 503)] * 3)
+
+    result = described_class.new(sources: ["yahoo"], http_client: client).search("ruby").first
+
+    expect(result).to have_attributes(status: "failed", reason: "http_status")
+    expect(client.urls.length).to eq(3)
+  end
+
+  it "does not retry Yahoo after the shared deadline expires" do
+    now = 0.0
+    client = SequentialSearchClient.new(
+      [response("", status: 503), response(fixture("yahoo"))],
+      on_get: ->(_count) { now = 2.0 }
+    )
+
+    result = described_class.new(
+      sources: ["yahoo"], timeout: 1, clock: -> { now }, http_client: client
+    ).search("ruby").first
+
+    expect(result).to have_attributes(status: "failed", reason: "timeout")
+    expect(client.urls.length).to eq(1)
   end
 
   it "matches a relevant title when the candidate has no snippet" do

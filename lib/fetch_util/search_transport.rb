@@ -38,6 +38,7 @@ module FetchUtil
       "yahoo" => { url: "https://search.yahoo.com/search?p=%{query}", hosts: %w[search.yahoo.com] }
     }.freeze
     DEFAULT_TIMEOUT = 10.0
+    YAHOO_RECOVERY_ATTEMPTS = 2
     FAILURE_REASONS = %w[challenge failed host http_status parse query_mismatch redirect size timeout].freeze
     RELEVANCE_HEALTH_CANDIDATE_COUNT = 3
     QUERY_FUNCTION_WORDS = %w[
@@ -64,11 +65,14 @@ module FetchUtil
       @html_parser = html_parser || ->(body) { Nokogiri::HTML(body) }
     end
 
-    def search(query)
+    def search(query, timeout: @timeout)
       query = query.to_s.strip
       raise ArgumentError, "query must not be empty" if query.empty?
 
-      deadline = clock.call + timeout
+      request_timeout = Float(timeout)
+      raise ArgumentError, "timeout must be positive" unless request_timeout.positive?
+
+      deadline = clock.call + request_timeout
       responses = Array.new(sources.length)
       threads = sources.each_with_index.map do |source, index|
         Thread.new { responses[index] = search_source(source, query, deadline) }
@@ -84,8 +88,10 @@ module FetchUtil
     def search_source(source, query, deadline)
       started_at = clock.call
       url = build_url(source, query)
-      result = http_client.get(url, deadline: deadline, allowed_hosts: SOURCES.fetch(source).fetch(:hosts))
-      return failure(source, result.reason, elapsed_since(started_at), result.final_url) if result.is_a?(HttpFailure)
+      result = yahoo_response(source, url, deadline)
+      if result.is_a?(HttpFailure)
+        return failure(source, result.reason, elapsed_since(started_at), result.final_url)
+      end
       outcome = within_deadline(deadline) do
         document = html_parser.call(result.body)
         next [:failed, "challenge"] if challenge?(source, result, document)
@@ -113,6 +119,24 @@ module FetchUtil
     rescue StandardError
       # The public boundary intentionally maps implementation failures to a finite diagnostic code.
       failure(source, "failed", elapsed_since(started_at), url)
+    end
+
+    def yahoo_response(source, url, deadline)
+      return http_client.get(url, deadline: deadline, allowed_hosts: SOURCES.fetch(source).fetch(:hosts)) unless source == "yahoo"
+
+      result = http_client.get(url, deadline: deadline, allowed_hosts: SOURCES.fetch(source).fetch(:hosts))
+      YAHOO_RECOVERY_ATTEMPTS.times do
+        break unless yahoo_retryable?(result) && deadline > clock.call
+
+        result = http_client.get(url, deadline: deadline, allowed_hosts: SOURCES.fetch(source).fetch(:hosts))
+      end
+      result
+    end
+
+    def yahoo_retryable?(result)
+      return result.reason == "failed" if result.is_a?(HttpFailure)
+
+      result.is_a?(HttpResponse) && (result.status == 429 || result.status.between?(500, 599))
     end
 
     def build_url(source, query)

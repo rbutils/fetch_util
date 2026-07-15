@@ -70,7 +70,7 @@ bundle exec exe/fetch_util search ruby language --limit 8
 - add `--verbose-search` and inspect ordered source `diagnostics` when results are empty or suspicious, or when source health matters
 - search defaults to direct HTTP Brave, Bing, and Yahoo; explicit sources are `brave`, `bing`, `duckduckgo`, `google`, `ecosia`, and `yahoo`
 - search always emits one JSON object and normally returns exactly `{query, results}`; `--verbose-search` adds source diagnostics plus per-result source provenance and ranks
-- search has one finite shared source deadline, does not bypass challenges, decodes known engine wrappers, and preserves healthy peer results when a source fails; `empty` and `query_mismatch` are finite source outcomes
+- search has one finite shared source deadline, diagnoses direct HTTP challenges rather than executing or bypassing them, decodes known engine wrappers, and preserves healthy peer results when a source fails; after the initial request, Yahoo retries generic `failed`, HTTP 429, and HTTP 5xx outcomes up to two times within the same deadline
 - after search, select only 1-3 direct result URLs, then run `fetch_util fetch` on those destinations; use `--format json` or `--format jsonl` and inspect `warnings`, `suspect`, and `content_type` as needed
 - if the task is a normal web roundup (for example, checking several news homepages), still use `fetch_util` first; do not skip straight to built-in web fetch just because the URLs are already known
 - if you are in a subagent without the `skill` tool, treat `fetch_util` as a normal installed CLI and call it directly

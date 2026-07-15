@@ -7,6 +7,9 @@
 - Allow browser fetches to wait within the configured timeout for site-delivered Anubis JavaScript/WebAssembly proof-of-work to resolve, while retaining explicit interstitial results when it does not.
 - Add Yahoo as a direct search source with source-specific organic-card parsing and safe result-wrapper decoding.
 
+### Fixed
+
+- Retry eligible Yahoo transport, HTTP 429, and HTTP 5xx failures up to two times after the initial request under the existing search deadline.
 ### Changed
 
 - Change the default direct search sources to Brave, Bing, and Yahoo.

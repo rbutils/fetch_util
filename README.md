@@ -79,8 +79,8 @@ Search uses direct HTTP requests to the supported sources in parallel. The defau
 
 Search always emits one JSON object. The normal payload is exactly `{ "query": ..., "results": [...] }`. Results are interleaved by source rank, deduplicated by normalized URL, and retain every eligible result unless an explicit `--limit N` is supplied. `--limit` is applied after aggregation; there is no default result cap. Known Bing, Google, DuckDuckGo, and Yahoo result wrappers are decoded before destination validation.
 
+Each search has one finite deadline shared by its source requests and parsing. After the initial Yahoo request, Yahoo may retry generic transport failures reported as `failed`, HTTP 429, or HTTP 5xx responses up to two times within that same deadline. Direct HTTP search challenges are diagnosed, not executed or bypassed. A source can be `ok`, `empty`, or `failed`; finite reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`.
 
-Each search has one finite deadline shared by its source requests and parsing. Challenges are reported, not bypassed. A source can be `ok`, `empty`, or `failed`; failure reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`. Normal source failures do not discard healthy peer results. With `--verbose-search`, the payload additionally contains ordered finite source `diagnostics`, and each result contains ordered `sources` and per-source `ranks`.
 
 For agent discovery, use an explicit first-pass budget, choose only the best 1-3 direct result URLs, then fetch those destinations and inspect JSON `warnings`, `suspect`, and `content_type` when needed. Add `--verbose-search` when results are empty or suspicious, or when source health matters:
 
