@@ -34,7 +34,8 @@ module FetchUtil
       "bing" => { url: "https://www.bing.com/search?q=%{query}&setlang=en-US&cc=US", hosts: %w[www.bing.com cn.bing.com] },
       "duckduckgo" => { url: "https://html.duckduckgo.com/html/?q=%{query}", hosts: %w[html.duckduckgo.com] },
       "google" => { url: "https://www.google.com/search?q=%{query}", hosts: %w[www.google.com] },
-      "ecosia" => { url: "https://www.ecosia.org/search?q=%{query}", hosts: %w[www.ecosia.org] }
+      "ecosia" => { url: "https://www.ecosia.org/search?q=%{query}", hosts: %w[www.ecosia.org] },
+      "yahoo" => { url: "https://search.yahoo.com/search?p=%{query}", hosts: %w[search.yahoo.com] }
     }.freeze
     DEFAULT_TIMEOUT = 10.0
     FAILURE_REASONS = %w[challenge failed host http_status parse query_mismatch redirect size timeout].freeze
@@ -46,7 +47,8 @@ module FetchUtil
     WRAPPER_HOSTS = {
       "bing" => %w[bing.com www.bing.com cn.bing.com],
       "duckduckgo" => %w[duckduckgo.com www.duckduckgo.com html.duckduckgo.com],
-      "google" => %w[google.com www.google.com]
+      "google" => %w[google.com www.google.com],
+      "yahoo" => %w[r.search.yahoo.com]
     }.freeze
 
     def initialize(sources: SOURCES.keys, timeout: DEFAULT_TIMEOUT, clock: nil, http_client: nil, html_parser: nil)
@@ -119,7 +121,7 @@ module FetchUtil
 
     def parse_candidates(source, document)
       result_nodes(source, document).filter_map do |node|
-        next if excluded_node?(node)
+        next if excluded_node?(source, node)
 
         anchor = result_anchor(source, node)
         next unless anchor
@@ -166,6 +168,7 @@ module FetchUtil
 
     def result_nodes(source, document)
       return brave_result_nodes(document) if source == "brave"
+      return yahoo_result_nodes(document) if source == "yahoo"
 
       selector = {
         "bing" => "#b_results li.b_algo",
@@ -183,6 +186,11 @@ module FetchUtil
       (current.to_a + legacy).uniq
     end
 
+    def yahoo_result_nodes(document)
+      nodes = document.css("#web .algo, #web .algo-sr, #web .dd.algo").uniq
+      nodes.reject { |node| nodes.any? { |other| other != node && other.ancestors.include?(node) } }
+    end
+
     def legacy_brave_result?(node)
       node.at_css("h2, h3, .title.search-snippet-title") && result_anchor("brave", node)
     end
@@ -197,6 +205,7 @@ module FetchUtil
       when "bing" then node.at_css("h2 a[href]")
       when "duckduckgo" then node.at_css("a.result__a[href], h2 a[href]")
       when "google" then node.at_css("a[href]:has(h3)") || node.at_css("h3")&.ancestors("a[href]")&.first
+      when "yahoo" then node.at_css("h3 a[href], .compTitle a[href]")
       else node.at_css("h2 a[href], h3 a[href], a[href]:has(h3)")
       end
     end
@@ -213,21 +222,31 @@ module FetchUtil
         "bing" => ".b_caption p, .b_paractl",
         "duckduckgo" => ".result__snippet",
         "google" => ".VwiC3b, .aCOpRe, [data-sncf]",
-        "ecosia" => ".result-snippet, .result__description"
+        "ecosia" => ".result-snippet, .result__description",
+        "yahoo" => ".compText, .compText p"
       }.fetch(source)
     end
 
-    def excluded_node?(node)
+    def excluded_node?(source, node)
+      return yahoo_excluded_node?(node) if source == "yahoo"
+
       node.xpath("ancestor-or-self::*").any? do |ancestor|
         value = [ancestor["class"], ancestor["id"], ancestor["data-testid"]].compact.join(" ").downcase
         value.match?(/\b(ad|ads|advert|enrichment|knowledge|llm|nav|pagination|related|answer)\b/)
       end
     end
 
+    def yahoo_excluded_node?(node)
+      node.xpath("ancestor-or-self::*").any? do |ancestor|
+        value = [ancestor["class"], ancestor["id"], ancestor["data-testid"]].compact.join(" ").downcase
+        value.match?(/\b(ad|ads|advert|control|controls|enrichment|knowledge|llm|lookalike|nav|navigation|pagination|related|right[-_ ]?rail|assist)\b/)
+      end
+    end
+
     def destination(source, href)
       value = href.to_s.strip
       value = decode_bing(value) if source == "bing"
-      value = decode_wrapper(source, value) if %w[google duckduckgo].include?(source)
+      value = decode_wrapper(source, value) if %w[google duckduckgo yahoo].include?(source)
       uri = URI.parse(value)
       return unless uri.is_a?(URI::HTTP) && uri.host
 
@@ -252,6 +271,8 @@ module FetchUtil
 
     def decode_wrapper(source, value)
       uri = URI.parse(value)
+      return decode_yahoo_wrapper(uri, value) if source == "yahoo"
+
       key = source == "google" ? %w[q url] : %w[uddg]
       path = wrapper_path(source)
       return value unless uri.path == path && (uri.host.nil? || wrapper_host?(source, uri.host))
@@ -259,6 +280,21 @@ module FetchUtil
       URI.decode_www_form(uri.query.to_s).to_h.values_at(*key).compact.first || value
     rescue URI::InvalidURIError
       value
+    end
+
+    def decode_yahoo_wrapper(uri, value)
+      return value unless wrapper_host?("yahoo", uri.host)
+
+      segment = uri.path.split("/").find { |part| part.start_with?("RU=") }
+      return value unless segment
+
+      decoded = URI::DEFAULT_PARSER.unescape(segment.delete_prefix("RU="))
+      destination = URI.parse(decoded)
+      return nil unless destination.is_a?(URI::HTTP) && destination.host
+
+      destination.to_s
+    rescue URI::InvalidURIError
+      nil
     end
 
     def engine_url?(source, value)
@@ -302,7 +338,8 @@ module FetchUtil
         "bing" => /there are no results|no results found/,
         "duckduckgo" => /no results|no more results/,
         "google" => /did not match any documents|no results found/,
-        "ecosia" => /no results found|we couldn't find/
+        "ecosia" => /no results found|we couldn't find/,
+        "yahoo" => /no results found|we couldn't find|did not match any results/
       }
       text.match?(patterns.fetch(source))
     end

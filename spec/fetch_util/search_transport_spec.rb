@@ -288,6 +288,24 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(url).to eq("https://www.bing.com/search?q=full+query&setlang=en-US&cc=US")
   end
 
+  it "builds Yahoo URLs with exact query encoding" do
+    url = described_class.new.send(:build_url, "yahoo", 'ruby "http client"')
+
+    expect(url).to eq("https://search.yahoo.com/search?p=ruby+%22http+client%22")
+  end
+
+  it "decodes only valid Yahoo RU wrappers" do
+    transport = described_class.new
+    wrapper = "https://r.search.yahoo.com/_ylt=abc/RU=https%3A%2F%2Fone.example%2Fpath%3Fa%3Db/RK=2/RS=x"
+
+    expect(transport.send(:destination, "yahoo", wrapper)).to eq("https://one.example/path?a=b")
+    expect(transport.send(:destination, "yahoo", "https://evil.example/RU=https%3A%2F%2Fone.example%2F")).to eq(
+      "https://evil.example/RU=https%3A%2F%2Fone.example%2F"
+    )
+    expect(transport.send(:destination, "yahoo", "https://r.search.yahoo.com/RU=javascript%3Aalert(1)")).to be_nil
+    expect(transport.send(:destination, "yahoo", "https://r.search.yahoo.com/RU=%ZZ")).to be_nil
+  end
+
   it "maps parsing deadline exhaustion to timeout" do
     now = 0.0
     client = FixtureSearchClient.new({ "search.brave.com" => response(fixture("brave")) })

@@ -5,8 +5,7 @@ require "uri"
 
 module FetchUtil
   class Searcher
-    DEFAULT_SOURCES = %w[brave bing].freeze
-
+    DEFAULT_SOURCES = %w[brave bing yahoo].freeze
     autoload :ResultFiltering, "fetch_util/searcher/result_filtering"
     include ResultFiltering
     private_constant :ResultFiltering

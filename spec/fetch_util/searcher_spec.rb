@@ -25,7 +25,7 @@ RSpec.describe FetchUtil::Searcher do
   end
 
   it "uses the reliable direct defaults" do
-    expect(described_class::DEFAULT_SOURCES).to eq(%w[brave bing])
+    expect(described_class::DEFAULT_SOURCES).to eq(%w[brave bing yahoo])
   end
 
   it "deduplicates configured sources before constructing the transport, logging, aggregation, and diagnostics" do
@@ -62,7 +62,7 @@ RSpec.describe FetchUtil::Searcher do
                ]),
       response("bing", candidates: [candidate("bing", 2, title: "Ruby API", url: "https://rubyapi.org/", snippet: "Complete reference.")])
     ]
-    expect(request_log).to receive(:append).with("search://brave,bing?q=ruby+guides")
+    expect(request_log).to receive(:append).with("search://brave,bing,yahoo?q=ruby+guides")
     expect(transport).to receive(:search).with("ruby guides").and_return(responses)
 
     payload = described_class.new(transport: transport, request_log: request_log).search(" ruby guides ")
@@ -263,7 +263,7 @@ RSpec.describe FetchUtil::Searcher do
   end
 
   it "supports every configured source name through the transport seam" do
-    %w[brave bing duckduckgo google ecosia].each do |source|
+    %w[brave bing duckduckgo google ecosia yahoo].each do |source|
       expect { described_class.new(transport: transport, request_log: request_log, sources: [source]) }.not_to raise_error
     end
   end

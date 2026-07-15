@@ -75,9 +75,10 @@ fetch_util regulatory https://example.com/article --sources=machine,human
 
 ### Search
 
-Search uses direct HTTP requests to the supported sources, in parallel, rather than the browser fetcher. The default sources are `brave` and `bing`; explicit `--source` values may be any of `brave`, `bing`, `duckduckgo`, `google`, or `ecosia`.
+Search uses direct HTTP requests to the supported sources in parallel. The default sources are `brave`, `bing`, and `yahoo`; explicit `--source` values may be any of `brave`, `bing`, `duckduckgo`, `google`, `ecosia`, or `yahoo`.
 
-Search always emits one JSON object. The normal payload is exactly `{ "query": ..., "results": [...] }`. Results are interleaved by source rank, deduplicated by normalized URL, and retain every eligible result unless an explicit `--limit N` is supplied. `--limit` is applied after aggregation; there is no default result cap. Known Bing, Google, and DuckDuckGo result wrappers are decoded before destination validation.
+Search always emits one JSON object. The normal payload is exactly `{ "query": ..., "results": [...] }`. Results are interleaved by source rank, deduplicated by normalized URL, and retain every eligible result unless an explicit `--limit N` is supplied. `--limit` is applied after aggregation; there is no default result cap. Known Bing, Google, DuckDuckGo, and Yahoo result wrappers are decoded before destination validation.
+
 
 Each search has one finite deadline shared by its source requests and parsing. Challenges are reported, not bypassed. A source can be `ok`, `empty`, or `failed`; failure reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`. Normal source failures do not discard healthy peer results. With `--verbose-search`, the payload additionally contains ordered finite source `diagnostics`, and each result contains ordered `sources` and per-source `ranks`.
 

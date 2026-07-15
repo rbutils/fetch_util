@@ -68,7 +68,7 @@ bundle exec exe/fetch_util search ruby language --limit 8
 - if the user gives you URLs, use `fetch_util fetch` first
 - if the user needs discovery, use `fetch_util search` first; for a context-efficient first pass, consider an explicit budget such as `--limit 8`
 - add `--verbose-search` and inspect ordered source `diagnostics` when results are empty or suspicious, or when source health matters
-- search defaults to direct HTTP Brave and Bing; explicit sources are `brave`, `bing`, `duckduckgo`, `google`, and `ecosia`
+- search defaults to direct HTTP Brave, Bing, and Yahoo; explicit sources are `brave`, `bing`, `duckduckgo`, `google`, `ecosia`, and `yahoo`
 - search always emits one JSON object and normally returns exactly `{query, results}`; `--verbose-search` adds source diagnostics plus per-result source provenance and ranks
 - search has one finite shared source deadline, does not bypass challenges, decodes known engine wrappers, and preserves healthy peer results when a source fails; `empty` and `query_mismatch` are finite source outcomes
 - after search, select only 1-3 direct result URLs, then run `fetch_util fetch` on those destinations; use `--format json` or `--format jsonl` and inspect `warnings`, `suspect`, and `content_type` as needed
