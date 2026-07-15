@@ -1,8 +1,10 @@
 # fetch_util
 
-Reliable browser-backed fetching for Ruby.
+Reliable browser-backed fetching for agents and Ruby applications.
 
 `fetch_util` renders modern pages, inspects the live DOM, classifies page shape, and returns compact markdown plus structured metadata.
+
+Its primary product contract is agent retrieval: use it to discover and fetch public web information, then inspect structured warnings when access is incomplete or ambiguous.
 
 It also provides a plain-Ruby regulatory inspector for machine-readable crawl, index, and text-and-data-mining signals such as `robots.txt`, `X-Robots-Tag`, robots meta tags, and TDM reservation metadata.
 
@@ -191,7 +193,9 @@ pp FetchUtil.regulatory(
 
 ## Compliance Boundaries
 
-`fetch_util` is for rendering and summarizing publicly delivered page output. It may identify consent prompts, login-required pages, and challenge/interstitial states and return warning metadata for them. It is not intended to bypass account requirements, paywalls, verification systems, or other access controls.
+`fetch_util` is primarily an agent retrieval tool for rendering and summarizing publicly delivered page output. Browser fetch may allow a site's delivered JavaScript/WebAssembly proof-of-work, such as Anubis, to complete within the configured browser timeout and normal cookie session. This is bounded native browser execution, not a custom solver.
+
+Unresolved challenges remain explicit interstitials. CAPTCHA solving, account or paywall circumvention, identity deception, and high-throughput scraping optimization are out of scope. Direct HTTP search challenges are diagnosed rather than executed.
 
 Browser-profile normalization is intentionally limited to reducing obvious runtime inconsistencies that would otherwise change page behavior during extraction.
 

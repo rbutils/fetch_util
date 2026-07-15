@@ -15,6 +15,8 @@
 
 ### Changed
 
+- Define agent retrieval as the primary product contract while keeping custom solvers, CAPTCHA handling, access circumvention, and high-throughput scraping behavior out of scope.
+- Clarify that direct HTTP search challenges are diagnosed rather than executed.
 - Change the default direct search sources to Brave, Bing, and Yahoo.
 
 ## v0.5.0 - 2026-07-13

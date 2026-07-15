@@ -10,6 +10,7 @@ Use this skill for agent web retrieval.
 
 Start by loading this skill, then use `fetch_util` as the default first tool for ordinary web-page retrieval and search.
 Use it first because it usually returns cleaner, more agent-friendly markdown than generic web fetch, and it is cheap enough for repeated multi-pass retrieval.
+`fetch_util` is primarily an agent retrieval tool: prefer bounded access to public information and inspect warnings when content is incomplete.
 
 ## Default Rule
 
@@ -32,6 +33,7 @@ Use it first because it usually returns cleaner, more agent-friendly markdown th
 - Browser fetch may let the site's delivered JavaScript or WebAssembly proof-of-work, such as Anubis, complete within the configured browser `timeout` and the normal cookie session.
 - This is bounded native browser execution, not a custom solver. `timeout` supplies the challenge-observation budget; `wait` only affects applicable post-load stabilization paths.
 - If the challenge remains unresolved, treat the result as an explicit interstitial and inspect `warnings`, `suspect`, and `content_type`.
+- CAPTCHA solving, account or paywall circumvention, identity deception, and high-throughput scraping optimization are out of scope.
 
 ## Core Commands
 
