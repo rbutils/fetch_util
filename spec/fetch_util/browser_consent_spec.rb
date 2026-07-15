@@ -51,6 +51,7 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:accept_cookie_consent).and_return(true, false)
     allow(browser).to receive(:dismiss_privacy_preference_overlay).and_return(false)
     allow(browser).to receive(:wait_for_spa_hydration)
+    allow(browser).to receive(:safe_evaluate).and_return({})
     allow(network).to receive(:wait_for_idle)
 
     browser.send(:stabilize_page, page, 'https://example.com')
@@ -187,6 +188,15 @@ RSpec.describe FetchUtil::Browser do
     end
 
     browser = browser_with_idle
+    allow(browser).to receive(:safe_evaluate).with(page, include('#anubis_challenge'), default: {}).and_return(
+      {
+        'challenge' => false,
+        'document_ready' => true,
+        'body_present' => true,
+        'body_text_present' => true,
+        'url' => 'https://www.google.com/webhp?hl=en'
+      }
+    )
     browser.with_page('https://www.google.com/webhp?hl=en') {}
 
     expect(network).not_to have_received(:wait_for_idle)

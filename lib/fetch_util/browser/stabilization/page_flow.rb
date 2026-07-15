@@ -38,6 +38,8 @@ module FetchUtil
         private
 
         def stabilize_page(page, url)
+          wait_for_anubis_challenge(page)
+
           if (profile = matching_stabilization_profile(url, PAGE_FLOW_STABILIZATION_PROFILES))
             return send(profile.fetch(:strategy), page)
           end

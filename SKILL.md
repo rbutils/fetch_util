@@ -27,6 +27,12 @@ Use it first because it usually returns cleaner, more agent-friendly markdown th
 - searching the web and returning compact agent-friendly results
 - getting cleaner markdown from noisy pages, docs, search pages, or light interstitials
 
+## Browser Challenges
+
+- Browser fetch may let the site's delivered JavaScript or WebAssembly proof-of-work, such as Anubis, complete within the configured browser `timeout` and the normal cookie session.
+- This is bounded native browser execution, not a custom solver. `timeout` supplies the challenge-observation budget; `wait` only affects applicable post-load stabilization paths.
+- If the challenge remains unresolved, treat the result as an explicit interstitial and inspect `warnings`, `suspect`, and `content_type`.
+
 ## Core Commands
 
 Fetch known URLs (returns pure markdown by default):

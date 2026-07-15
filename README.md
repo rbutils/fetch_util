@@ -12,11 +12,11 @@ It helps applications distinguish between content pages and access/interstitial 
 
 The easiest way to explain `fetch_util` is in three steps:
 
-- `Render` - load the page in Chromium, inspect the rendered DOM, and read page metadata.
+- `Render` - load the page in Chromium, inspect the rendered DOM, and read page metadata. If a site delivers a JavaScript or WebAssembly proof-of-work challenge, the normal browser session may execute it and preserve its resulting cookies while waiting within the configured browser timeout.
 - `Classify` - identify whether the page is an article, list/index, docs page, search result, or an interstitial/access-limited state.
 - `Shape` - return compact markdown, normalized URLs, and warning metadata so the result is usable by agents, LLM workflows, and ordinary Ruby applications.
 
-In short: `fetch_util` makes the web easier to build on.
+This is bounded native browser execution, not a custom challenge solver. If the challenge does not resolve within the bound, the result remains an explicit interstitial with warnings.
 
 ## Installation
 
@@ -109,8 +109,8 @@ Useful result fields:
 
 ## Common Options
 
-- `timeout:` browser timeout in seconds
-- `wait:` additional settle delay after page load
+- `timeout:` browser timeout in seconds; it is also the bounded observation budget for a delivered Anubis challenge
+- `wait:` settle interval used by applicable post-load stabilization paths; it does not control the challenge-completion budget
 - `wait_for_idle:` wait for Ferrum network idle before extraction
 - `limit:` search-only explicit maximum result count; omitted by default, search returns every result in the fetched responses
 - `idle_duration:` idle duration passed to Ferrum when `wait_for_idle` is enabled
@@ -180,7 +180,7 @@ pp FetchUtil.regulatory(
 
 - Extracts articles, list/index pages, and search pages into compact markdown.
 - Uses page classification to select extraction logic appropriate to the rendered page type.
-- Detects consent prompts, login-required pages, and challenge/interstitial screens and reports them with concise summaries and warning tags.
+- Detects consent prompts, login-required pages, and challenge/interstitial screens and reports them with concise summaries and warning tags. A delivered JavaScript/WebAssembly proof-of-work may complete in the normal browser session within `timeout`; unresolved challenges remain explicit interstitials.
 - Cleans up docs/reference pages aggressively enough for agent consumption.
 - Preserves `final_url`, `canonical_url`, and warning metadata so callers can reason about redirects, mismatches, and interstitials.
 - Extracts regulatory allow/disallow signals from `robots.txt`, page headers/meta tags, and TDM reservation metadata without caching raw page bodies.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+
+- Allow browser fetches to wait within the configured timeout for site-delivered Anubis JavaScript/WebAssembly proof-of-work to resolve, while retaining explicit interstitial results when it does not.
 ## v0.5.0 - 2026-07-13
 
 ### Added
