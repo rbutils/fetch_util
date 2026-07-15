@@ -352,7 +352,7 @@ RSpec.describe FetchUtil::CLI do
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
-      sources: %w[brave bing],
+      sources: nil,
       limit: nil,
       verbose: false,
       timeout: 20
@@ -375,7 +375,7 @@ RSpec.describe FetchUtil::CLI do
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
     expect(FetchUtil::Searcher).to receive(:new).with(
       request_log: request_log,
-      sources: %w[brave bing],
+      sources: nil,
       limit: nil,
       verbose: true,
       timeout: 20
@@ -383,6 +383,26 @@ RSpec.describe FetchUtil::CLI do
     expect(searcher).to receive(:search).with("ruby language").and_return(payload)
 
     output = run_cli("search", "ruby language", "--verbose-search")
+
+    expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
+  end
+
+  it "passes an explicit search source through to the searcher" do
+    request_log = instance_double(FetchUtil::RequestLog)
+    searcher = instance_double(FetchUtil::Searcher)
+    payload = { query: "ruby language", results: [] }
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    expect(FetchUtil::Searcher).to receive(:new).with(
+      request_log: request_log,
+      sources: ["google"],
+      limit: nil,
+      verbose: false,
+      timeout: 20
+    ).and_return(searcher)
+    expect(searcher).to receive(:search).with("ruby language").and_return(payload)
+
+    output = run_cli("search", "ruby language", "--source", "google")
 
     expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
   end

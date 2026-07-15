@@ -71,7 +71,7 @@ module FetchUtil
     end
 
     desc "search QUERY", "Search across configured engines and aggregate results"
-    option :source, type: :array, default: FetchUtil::Searcher::DEFAULT_SOURCES, desc: "Search sources"
+    option :source, type: :array, default: nil, desc: "Search sources"
     option :limit, type: :numeric, default: nil, desc: "Maximum results; omit to return every result in the fetched response"
     option :verbose_search, type: :boolean, default: false, desc: "Include per-result search provenance"
     def search(*terms)

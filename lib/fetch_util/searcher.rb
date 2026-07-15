@@ -6,6 +6,8 @@ require "uri"
 module FetchUtil
   class Searcher
     DEFAULT_SOURCES = %w[brave bing yahoo].freeze
+    STRUCTURED_QUERY_AUTHORITY = "yahoo"
+    STRUCTURED_QUERY = /"[^"]+"|'[^']+'|\(|\)|\[|\]|\{|\}|(?:\A|\s)[+-]?[[:alpha:]][[:alnum:]_-]*:/
     autoload :ResultFiltering, "fetch_util/searcher/result_filtering"
     include ResultFiltering
     private_constant :ResultFiltering
@@ -13,6 +15,7 @@ module FetchUtil
     def initialize(transport: nil, request_log: RequestLog.new, sources: nil, limit: nil, verbose: false,
                    timeout: SearchTransport::DEFAULT_TIMEOUT)
       @request_log = request_log
+      @sources_explicit = !sources.nil?
       @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s).uniq
       unknown = @sources - SearchTransport::SOURCES.keys
       raise ArgumentError, "unsupported search source: #{unknown.first}" if unknown.any?
@@ -32,7 +35,7 @@ module FetchUtil
 
       payload = {
         query: encoded_query,
-        results: formatted_results(apply_limit(aggregate(responses)))
+        results: formatted_results(apply_limit(aggregate(responses, encoded_query)))
       }
       payload[:diagnostics] = diagnostics(responses) if @verbose
       payload
@@ -57,16 +60,17 @@ module FetchUtil
       "search://#{@sources.join(",")}?q=#{CGI.escape(query)}"
     end
 
-    def aggregate(responses)
+    def aggregate(responses, query)
       parsed = {}
-      max_size = 0
+      structured_query = query.match?(STRUCTURED_QUERY)
 
       @sources.each do |source|
         response = responses.find { |item| item.source == source }
-        items = response ? response.candidates.filter_map { |candidate| normalized_candidate(candidate) } : []
-        parsed[source] = items
-        max_size = [max_size, items.length].max
+        parsed[source] = response ? response.candidates.filter_map { |candidate| normalized_candidate(candidate) } : []
       end
+
+      apply_structured_query_authority!(parsed, responses) if structured_query
+      max_size = parsed.values.map(&:length).max || 0
 
       items = []
       seen = {}
@@ -89,6 +93,23 @@ module FetchUtil
       end
 
       items
+    end
+
+    def apply_structured_query_authority!(parsed, responses)
+      return if @sources_explicit
+      return unless @sources.include?(STRUCTURED_QUERY_AUTHORITY)
+
+      authority = responses.find { |response| response.source == STRUCTURED_QUERY_AUTHORITY }
+      return unless authority&.status == "ok" && authority.reason.nil?
+
+      authority_urls = parsed.fetch(STRUCTURED_QUERY_AUTHORITY).map { |item| item[:url] }
+      return if authority_urls.empty?
+
+      @sources.each do |source|
+        next if source == STRUCTURED_QUERY_AUTHORITY
+
+        parsed[source].select! { |item| authority_urls.include?(item[:url]) }
+      end
     end
 
     def build_result(source, item)

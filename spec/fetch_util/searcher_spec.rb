@@ -108,6 +108,79 @@ RSpec.describe FetchUtil::Searcher do
     expect(payload[:results]).to eq(expected_results)
   end
 
+  it "uses a healthy Yahoo result set as the structured-query authority while retaining peer provenance" do
+    responses = [
+      response("bing", candidates: [
+                 candidate("bing", 1, title: "Shared", url: "https://example.test/shared"),
+                 candidate("bing", 2, title: "Bing-only", url: "https://example.test/bing/only")
+               ]),
+      response("yahoo", candidates: [
+                 candidate("yahoo", 1, title: "Shared", url: "https://example.test/shared"),
+                 candidate("yahoo", 2, title: "Yahoo-only", url: "https://example.test/yahoo/only")
+               ])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    payload = described_class.new(
+      transport: transport,
+      request_log: request_log,
+      verbose: true
+    ).search('"bundled(npm" Fedora')
+
+    expect(payload[:results].map { |item| item[:url] }).to eq(["https://example.test/shared", "https://example.test/yahoo/only"])
+    expect(payload[:results].first).to include(sources: %w[bing yahoo], ranks: { "bing" => 1, "yahoo" => 1 })
+  end
+
+  it "applies the default structured-query authority to a mismatched peer without deleting its transport evidence" do
+    responses = [
+      response("bing", reason: "query_mismatch", candidates: [
+                 candidate("bing", 1, title: "Shared", url: "https://example.test/shared"),
+                 candidate("bing", 2, title: "Bing-only", url: "https://example.test/bing/only")
+               ]),
+      response("yahoo", candidates: [candidate("yahoo", 1, title: "Shared", url: "https://example.test/shared")])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    payload = described_class.new(
+      transport: transport, request_log: request_log, verbose: true
+    ).search('"bundled(npm" Fedora')
+
+    expect(payload[:results]).to contain_exactly(
+      include(url: "https://example.test/shared", sources: %w[bing yahoo])
+    )
+    expect(payload[:diagnostics]).to include(include(source: "bing", reason: "query_mismatch", result_count: 2))
+  end
+
+  it "keeps the normal structured-query union when Yahoo is unavailable" do
+    responses = [
+      response("bing", candidates: [
+                 candidate("bing", 1, title: "Bing result", url: "https://example.test/bing")
+               ]),
+      response("yahoo", status: "failed", reason: "http_status")
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    results = described_class.new(
+      transport: transport, request_log: request_log
+    ).search('"bundled(npm" Fedora')[:results]
+
+    expect(results.map { |item| item[:url] }).to eq(["https://example.test/bing"])
+  end
+
+  it "preserves the requested union when structured-query sources are explicit" do
+    responses = [
+      response("bing", candidates: [candidate("bing", 1, url: "https://example.test/bing")]),
+      response("yahoo", candidates: [candidate("yahoo", 1, url: "https://example.test/yahoo")])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    results = described_class.new(
+      transport: transport, request_log: request_log, sources: %w[bing yahoo]
+    ).search('"bundled(npm" Fedora')[:results]
+
+    expect(results.map { |item| item[:url] }).to eq(["https://example.test/bing", "https://example.test/yahoo"])
+  end
+
   it "retains a mismatched peer when another source is healthy" do
     responses = [
       response(
@@ -139,6 +212,24 @@ RSpec.describe FetchUtil::Searcher do
     ).search("ruby language guide")[:results]
 
     expect(results.map { |item| item[:title] }).to eq(["Possible result"])
+  end
+
+  it "does not apply structured-query authority to plain queries" do
+    shared = "https://example.test/shared"
+    responses = [
+      response("bing", candidates: [
+                 candidate("bing", 1, url: shared),
+                 candidate("bing", 2, title: "Uncorroborated tail")
+               ]),
+      response("yahoo", candidates: [candidate("yahoo", 1, url: shared)])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    results = described_class.new(
+      transport: transport, request_log: request_log, sources: %w[bing yahoo]
+    ).search("HTTP API DOM extraction")[:results]
+
+    expect(results.map { |item| item[:url] }).to eq([shared, "https://example.test/bing/2"])
   end
 
   it "reports finite source diagnostics in configured order for ok, empty, and failed responses" do
