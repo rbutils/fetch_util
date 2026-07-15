@@ -108,6 +108,39 @@ RSpec.describe FetchUtil::Searcher do
     expect(payload[:results]).to eq(expected_results)
   end
 
+  it "retains a mismatched peer when another source is healthy" do
+    responses = [
+      response(
+        "bing", reason: "query_mismatch", candidates: [candidate("bing", 1, title: "Possible result")]
+      ),
+      response("yahoo", candidates: [candidate("yahoo", 1, title: "Relevant")])
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    payload = described_class.new(
+      transport: transport, request_log: request_log, sources: %w[bing yahoo], verbose: true
+    ).search("ruby language guide")
+
+    expect(payload[:results].map { |item| item[:title] }).to eq(["Possible result", "Relevant"])
+    expect(payload[:diagnostics]).to include(include(source: "bing", reason: "query_mismatch", result_count: 1))
+  end
+
+  it "retains mismatched candidates when no healthy source succeeds" do
+    responses = [
+      response(
+        "bing", reason: "query_mismatch", candidates: [candidate("bing", 1, title: "Possible result")]
+      ),
+      response("yahoo", status: "failed", reason: "http_status")
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    results = described_class.new(
+      transport: transport, request_log: request_log, sources: %w[bing yahoo]
+    ).search("ruby language guide")[:results]
+
+    expect(results.map { |item| item[:title] }).to eq(["Possible result"])
+  end
+
   it "reports finite source diagnostics in configured order for ok, empty, and failed responses" do
     responses = [
       response("brave", candidates: [candidate("brave", 1)], elapsed_ms: 10,

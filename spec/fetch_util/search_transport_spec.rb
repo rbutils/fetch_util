@@ -158,39 +158,44 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(result).to have_attributes(status: "failed", reason: "failed")
   end
 
-  it "rejects degraded cards that only match a question word" do
+  it "marks degraded cards suspect when they only match a question word" do
     client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
     result = described_class.new(sources: ["bing"], http_client: client).search("why do octopuses have three hearts?").first
 
-    expect(result).to have_attributes(status: "failed", candidates: [], reason: "query_mismatch")
+    expect(result).to have_attributes(status: "ok", reason: "query_mismatch")
+    expect(result.candidates.map(&:title)).to eq(["Why definition", "Why questions"])
   end
 
-  it "accepts relevant multi-term results and bypasses scoped or one meaningful-term searches" do
+  it "accepts relevant multi-term results and leaves one meaningful-term searches unclassified" do
     relevant_client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_relevant")) })
     one_term_client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
 
     relevant = described_class.new(sources: ["bing"], http_client: relevant_client).search("why do octopuses have three hearts").first
-    site_scoped = described_class.new(sources: ["bing"], http_client: one_term_client).search("site:biology.example octopuses").first
     one_term = described_class.new(sources: ["bing"], http_client: one_term_client).search("why").first
 
     expect(relevant).to have_attributes(status: "ok", reason: nil)
-    expect(site_scoped).to have_attributes(status: "ok", reason: nil)
     expect(one_term).to have_attributes(status: "ok", reason: nil)
   end
 
-  it "rejects a source when only a later candidate is relevant" do
+  it "marks a source suspect when only a later candidate is relevant" do
     client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_late_relevant")) })
     result = described_class.new(sources: ["bing"], http_client: client).search("ruby http client documentation").first
 
-    expect(result).to have_attributes(status: "failed", candidates: [], reason: "query_mismatch")
+    expect(result).to have_attributes(status: "ok", reason: "query_mismatch")
+    expect(result.candidates.map(&:title)).to eq(
+      ["Ruby syntax", "Ruby arrays", "Ruby methods", "Ruby HTTP client documentation"]
+    )
   end
 
-  it "bypasses quoted, identifier, acronym, and code-like queries" do
+  it "marks rich-syntax mismatches suspect without dropping their candidates" do
     client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_degraded_why")) })
     transport = described_class.new(sources: ["bing"], http_client: client)
 
     ["\"octopuses three hearts\"", "-site:biology.example octopuses three hearts", "C++ language guide", "GPT-4 API guide", "U.S. tax guide"].each do |query|
-      expect(transport.search(query).first).to have_attributes(status: "ok", reason: nil)
+      result = transport.search(query).first
+
+      expect(result).to have_attributes(status: "ok", reason: "query_mismatch")
+      expect(result.candidates.map(&:title)).to eq(["Why definition", "Why questions"])
     end
   end
 
@@ -258,12 +263,33 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(client.urls.length).to eq(1)
   end
 
+  it "accepts relevant quoted queries" do
+    client = FixtureSearchClient.new({ "www.bing.com" => response(fixture("bing_relevant")) })
+
+    result = described_class.new(sources: ["bing"], http_client: client).search('"octopuses three hearts"').first
+
+    expect(result).to have_attributes(status: "ok", reason: nil)
+  end
+
   it "matches a relevant title when the candidate has no snippet" do
     candidate = described_class::Candidate.new(
       source: "bing", title: "Octopuses have three hearts", url: "https://biology.example/octopuses", snippet: nil, source_rank: 1
     )
 
-    expect(described_class.new.send(:query_matches_candidates?, "why do octopuses have three hearts", [candidate])).to be(true)
+    expect(described_class.candidates_match_query?("why do octopuses have three hearts", [candidate])).to be(true)
+  end
+
+  it "does not require scoped or negated operators to appear in candidate text" do
+    candidate = described_class::Candidate.new(
+      source: "bing",
+      title: "FetchUtil browser architecture",
+      url: "https://github.com/example/fetch_util",
+      source_rank: 1
+    )
+
+    expect(described_class.candidate_matches_query?(
+             "site:github.com -archived fetch_util browser", candidate
+           )).to be(true)
   end
 
   it "matches Unicode terms through mixed punctuation" do

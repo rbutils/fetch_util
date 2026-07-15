@@ -81,6 +81,8 @@ Search always emits one JSON object. The normal payload is exactly `{ "query": .
 
 Each search has one finite deadline shared by its source requests and parsing. After the initial Yahoo request, Yahoo may retry generic transport failures reported as `failed`, HTTP 429, or HTTP 5xx responses up to two times within that same deadline. Direct HTTP search challenges are diagnosed, not executed or bypassed. A source can be `ok`, `empty`, or `failed`; finite reasons include `challenge`, `failed`, `host`, `http_status`, `parse`, `query_mismatch`, `redirect`, `size`, and `timeout`.
 
+`query_mismatch` is a candidate-bearing relevance warning, not a terminal query failure. The transport retains parsed candidates even when another source succeeds, so an uncertain lexical check cannot erase valid later-ranked evidence or force an empty query. Explicit source unions expose those retained candidates. Scoped operators and negated terms are excluded from lexical evidence, and snake_case/camelCase identifiers share token boundaries.
+
 
 For agent discovery, use an explicit first-pass budget, choose only the best 1-3 direct result URLs, then fetch those destinations and inspect JSON `warnings`, `suspect`, and `content_type` when needed. Add `--verbose-search` when results are empty or suspicious, or when source health matters:
 

@@ -10,6 +10,7 @@
 ### Fixed
 
 - Retry eligible Yahoo transport, HTTP 429, and HTTP 5xx failures up to two times after the initial request under the existing search deadline.
+- Preserve candidates when source relevance is uncertain, including valid later-ranked evidence, and normalize scoped, negated, snake_case, and camelCase query evidence without turning uncertainty into an empty query.
 ### Changed
 
 - Change the default direct search sources to Brave, Bing, and Yahoo.

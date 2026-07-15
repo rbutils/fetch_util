@@ -45,6 +45,8 @@ module FetchUtil
       a an and are at be been being but by can could did do does for from had has have how i if in is it me my no not of on or our shall
       should that the their them then there these they this to was we were what when where which who why will with would you your
     ].freeze
+    SCOPED_QUERY_TERM = /(?:\A|\s)[+-]?[[:alpha:]][[:alnum:]_-]*:(?:"[^"]*"|'[^']*'|\S+)/
+    NEGATED_QUERY_TERM = /(?:\A|\s)-\S+/
     WRAPPER_HOSTS = {
       "bing" => %w[bing.com www.bing.com cn.bing.com],
       "duckduckgo" => %w[duckduckgo.com www.duckduckgo.com html.duckduckgo.com],
@@ -63,6 +65,20 @@ module FetchUtil
       @clock = clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
       @http_client = http_client || HttpClient.new(clock: @clock)
       @html_parser = html_parser || ->(body) { Nokogiri::HTML(body) }
+    end
+
+    def self.candidates_match_query?(query, candidates)
+      candidates.first(RELEVANCE_HEALTH_CANDIDATE_COUNT).any? do |candidate|
+        candidate_matches_query?(query, candidate)
+      end
+    end
+
+    def self.candidate_matches_query?(query, candidate)
+      query_terms = meaningful_query_terms(normalized_query_text(query))
+      return true if query_terms.length < 3
+
+      candidate_terms = normalized_terms("#{candidate.title} #{candidate.snippet}")
+      (query_terms & candidate_terms).length >= 2
     end
 
     def search(query, timeout: @timeout)
@@ -100,13 +116,23 @@ module FetchUtil
 
         candidates = parse_candidates(source, document)
         next [:ok, candidates] if candidates.empty?
-        next [:failed, "query_mismatch"] unless query_matches_candidates?(query, candidates)
+        next [:suspect, candidates] unless self.class.candidates_match_query?(query, candidates)
 
         [:ok, candidates]
       end
       elapsed_ms = elapsed_since(started_at)
-      return failure(source, outcome.last, elapsed_ms, result.final_url) if outcome.first == :failed
+      return failure(source, outcome[1], elapsed_ms, result.final_url, candidates: outcome[2] || []) if outcome.first == :failed
       return empty(source, elapsed_ms, result.final_url) if outcome.first == :empty
+      if outcome.first == :suspect
+        return SourceResponse.new(
+          source: source,
+          status: "ok",
+          candidates: outcome.last,
+          elapsed_ms: elapsed_ms,
+          final_url: result.final_url,
+          reason: "query_mismatch"
+        )
+      end
 
       candidates = outcome.last
       return failure(source, "parse", elapsed_ms, result.final_url) if candidates.empty?
@@ -161,34 +187,23 @@ module FetchUtil
       end
     end
 
-    def query_matches_candidates?(query, candidates)
-      normalized_query = normalized_query_text(query)
-      query_terms = meaningful_query_terms(normalized_query)
-      return true unless relevance_gate_applies?(normalized_query, query_terms)
-
-      candidates.first(RELEVANCE_HEALTH_CANDIDATE_COUNT).any? do |candidate|
-        candidate_terms = normalized_terms("#{candidate.title} #{candidate.snippet}")
-        (query_terms & candidate_terms).length >= 2
-      end
+    def self.meaningful_query_terms(query)
+      semantic_query = query.gsub(SCOPED_QUERY_TERM, " ").gsub(NEGATED_QUERY_TERM, " ")
+      normalized_terms(semantic_query).reject { |term| QUERY_FUNCTION_WORDS.include?(term) }
     end
 
-    def relevance_gate_applies?(query, query_terms)
-      return false if query_terms.length < 3
-
-      !query.match?(%r{["']|(?:\A|\s)[+-]?[[:alpha:]][[:alnum:]_-]*:|[+#/]|(?:\b[[:alpha:]]\.){2,}|\d|\b[[:upper:]]{2,}\b})
+    def self.normalized_terms(text)
+      normalized = normalized_query_text(text)
+      normalized = normalized.gsub(/([[:upper:]]+)([[:upper:]][[:lower:]])/, '\1 \2')
+      normalized = normalized.gsub(/([[:lower:]\d])([[:upper:]])/, '\1 \2')
+      normalized.downcase.scan(/[[:alnum:]]+/).uniq
     end
 
-    def meaningful_query_terms(query)
-      normalized_terms(query).reject { |term| QUERY_FUNCTION_WORDS.include?(term) }
-    end
-
-    def normalized_terms(text)
-      normalized_query_text(text).downcase.scan(/[[:alnum:]]+/).uniq
-    end
-
-    def normalized_query_text(text)
+    def self.normalized_query_text(text)
       text.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: " ").unicode_normalize(:nfc)
     end
+
+    private_class_method :meaningful_query_terms, :normalized_terms, :normalized_query_text
 
     def result_nodes(source, document)
       return brave_result_nodes(document) if source == "brave"
@@ -374,10 +389,17 @@ module FetchUtil
       normalized_text(visible).downcase
     end
 
-    def failure(source, reason, elapsed_ms, final_url)
+    def failure(source, reason, elapsed_ms, final_url, candidates: [])
       reason = reason.to_s
       reason = "failed" unless FAILURE_REASONS.include?(reason)
-      SourceResponse.new(source: source, status: "failed", elapsed_ms: elapsed_ms, final_url: final_url, reason: reason)
+      SourceResponse.new(
+        source: source,
+        status: "failed",
+        candidates: candidates,
+        elapsed_ms: elapsed_ms,
+        final_url: final_url,
+        reason: reason
+      )
     end
 
     def empty(source, elapsed_ms, final_url)
