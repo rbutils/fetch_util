@@ -150,33 +150,35 @@
     });
   }
 
-  function tableHeaderCells(row, cellCount) {
-    var table = row.closest && row.closest("table");
-    if (!table) return [];
-    var headerRows = Array.prototype.filter.call(table.querySelectorAll("thead tr"), function(candidate) {
-      return directTableCells(candidate).length === cellCount;
+  function listTableCellText(cell) {
+    var text = normalizeText(cell.innerText || cell.textContent || "");
+    if (text) return text;
+
+    var labels = [];
+    var nodes = [cell].concat(Array.prototype.slice.call(cell.querySelectorAll("[aria-label], [title], img[alt]")));
+    nodes.forEach(function(node) {
+      var label = normalizeText(node.getAttribute("aria-label") || node.getAttribute("title") || node.getAttribute("alt") || "");
+      if (label && labels.indexOf(label) === -1) labels.push(label);
     });
-    if (!headerRows.length) {
-      headerRows = Array.prototype.filter.call(table.querySelectorAll("tr"), function(candidate) {
-        return candidate !== row && candidate.querySelector("th") && directTableCells(candidate).length === cellCount;
-      });
-    }
-    return headerRows.length ? directTableCells(headerRows[headerRows.length - 1]) : [];
+    return labels.join(" ");
   }
 
   function listTableRowDetail(row, title) {
     var cells = directTableCells(row);
-    var headers = tableHeaderCells(row, cells.length);
+    var table = row.closest && row.closest("table");
+    var headers = table ? tableIndexHeaders(table) : [];
     var titleCellIndex = cells.findIndex(function(cell) {
-      return normalizeText(cell.innerText || cell.textContent || "").indexOf(title) !== -1;
+      return listTableCellText(cell).indexOf(title) !== -1;
     });
+    var headerIndex = 0;
     return cells.map(function(cell, index) {
-      var value = normalizeText(cell.innerText || cell.textContent || "");
+      var label = headers[headerIndex] || "";
+      headerIndex += tableIndexSpan(cell, "colSpan", "colspan");
+      var value = listTableCellText(cell);
       var titleIndex = value.indexOf(title);
       if (titleIndex !== -1) value = normalizeText(value.slice(0, titleIndex) + " " + value.slice(titleIndex + title.length));
       if (!value) return "";
 
-      var label = normalizeText((headers[index] && (headers[index].innerText || headers[index].textContent)) || "");
       return index !== titleCellIndex && label && label.toLowerCase() !== value.toLowerCase() ? label + ": " + value : value;
     }).filter(Boolean).join(" | ");
   }

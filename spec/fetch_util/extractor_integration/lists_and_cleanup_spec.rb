@@ -154,6 +154,185 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps every compact target row in linked build tables" do
+    targets = %w[
+      fedora-43-aarch64
+      fedora-43-x86_64
+      fedora-44-aarch64
+      fedora-44-x86_64
+      fedora-rawhide-aarch64
+      fedora-rawhide-x86_64
+    ]
+    rows = targets.map.with_index do |target, index|
+      state = index.even? ? "failed" : "running"
+      <<~ROW
+        <tr>
+          <td><a href="/results/#{target}/">#{target}</a></td>
+          <td>revision-#{index + 1}</td>
+          <td>#{index + 2} minutes</td>
+          <td><a href="/logs/#{index}/builder">builder.log</a>, <a href="/logs/#{index}/backend">backend.log</a></td>
+          <td>#{state}</td>
+        </tr>
+      ROW
+    end.join
+    html = <<~HTML
+      <html><head><title>Build 4512 in example project</title></head><body>
+        <nav><a href="/projects">All projects and build systems</a></nav>
+        <main><h1>Build 4512</h1><table>
+          <thead><tr><th>Chroot Name</th><th>Source Revision</th><th>Build Time</th><th>Logs</th><th>State</th></tr></thead>
+          <tbody>#{rows}</tbody>
+        </table></main>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.test/projects/sample/build/4512", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(/^- \[/).length).to eq(6)
+      expect(markdown).to include(
+        "fedora-43-aarch64",
+        "fedora-44-x86_64",
+        "fedora-rawhide-x86_64",
+        "Source Revision: revision-1",
+        "State: failed",
+        "State: running"
+      )
+      expect(markdown).not_to include("All projects and build systems")
+    end
+  end
+
+  it "preserves numeric record links and row-local fields in build indexes" do
+    rows = 7.times.map do |index|
+      build_id = 45_000 + index
+      <<~ROW
+        <tr>
+          <td><a href="/controls/#{index}">view logs</a></td>
+          <td><a href="/build/#{build_id}/">#{build_id}</a></td>
+          <td>package-#{index + 1}</td>
+          <td>2.#{index}.0-1</td>
+          <td>#{index + 1} hours ago</td>
+          <td>#{index + 2} minutes</td>
+          <td>succeeded</td>
+        </tr>
+      ROW
+    end.join
+    html = <<~HTML
+      <html><head><title>Builds for example project</title></head><body><main>
+        <h1>Builds</h1><table>
+          <thead><tr><th>Control</th><th>Build ID</th><th>Package Name</th><th>Package Version</th><th>Submitted</th><th>Build Time</th><th>Status</th></tr></thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/projects/sample/builds", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(/^- \[/).length).to eq(7)
+      expect(markdown).to include(
+        "[45000]",
+        "[45006]",
+        "Package Name: package-1",
+        "Package Version: 2.6.0-1",
+        "Status: succeeded"
+      )
+      expect(markdown).not_to include("- [view logs]")
+    end
+  end
+
+  it "resolves hierarchical monitor headers for every linked package row" do
+    packages = %w[gsettings-desktop-schemas kde-settings nobara-login gcc zlib] + 7.times.map { |index| "library-#{index}" }
+    rows = packages.map.with_index do |package, index|
+      <<~ROW
+        <tr>
+          <td><a href="/packages/#{package}">#{package}</a></td>
+          <td><a href="/builds/#{index}-43-a">succeeded</a></td>
+          <td><a href="/builds/#{index}-43-x"><span title="running"></span></a></td>
+          <td><a href="/builds/#{index}-44-a">failed</a></td>
+          <td><a href="/builds/#{index}-44-x">succeeded</a></td>
+          <td><a href="/builds/#{index}-raw-a">waiting</a></td>
+          <td><a href="/builds/#{index}-raw-x">succeeded</a></td>
+        </tr>
+      ROW
+    end.join
+    html = <<~HTML
+      <html><head><title>Project build monitor</title></head><body>
+        <main><h1>Build monitor</h1>
+          <details><summary>Possible states</summary><div>Legend-only state descriptions</div></details>
+          <table>
+            <thead>
+              <tr><td colspan="7">Filters for current targets</td></tr>
+              <tr><th rowspan="2">Package</th><th colspan="2">Fedora 43</th><th colspan="2">Fedora 44</th><th colspan="2">Rawhide</th></tr>
+              <tr><th>aarch64</th><th>x86_64</th><th>aarch64</th><th>x86_64</th><th>aarch64</th><th>x86_64</th></tr>
+            </thead>
+            <tbody><tr class="data-table-spacer"></tr>#{rows}</tbody>
+          </table>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.test/projects/sample/monitor", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(markdown.scan(/^- \[/).length).to eq(12)
+      expect(markdown).to include(
+        "gsettings-desktop-schemas",
+        "kde-settings",
+        "nobara-login",
+        "gcc",
+        "zlib",
+        "library-6",
+        "Fedora 43 / aarch64: succeeded",
+        "Fedora 43 / x86_64: running",
+        "Fedora 44 / aarch64: failed",
+        "Rawhide / aarch64: waiting"
+      )
+      expect(markdown).not_to include("Legend-only state descriptions", "Filters for current targets")
+      expect(markdown.index("gsettings-desktop-schemas")).to be < markdown.index("library-6")
+    end
+  end
+
+  it "keeps operational reference tables inside prose articles" do
+    rows = 7.times.map do |index|
+      <<~ROW
+        <tr>
+          <td><a href="/reference/version-#{index}">Version #{index + 1}</a></td>
+          <td>Architecture #{index + 1}</td>
+          <td>Supported</td>
+        </tr>
+      ROW
+    end.join
+    paragraph = "This article explains how maintainers interpret build status, architecture support, release readiness, " \
+                "and compatibility evidence before changing a published package reference. The linked matrix is " \
+                "supporting material, not a record index, and the surrounding prose supplies operational context."
+    html = <<~HTML
+      <html><head><title>Understanding build status references</title></head><body><main>
+        <h1>Understanding build status references</h1>
+        <p class="byline">Release documentation team</p><time datetime="2026-07-21">21 July 2026</time>
+        <p>#{paragraph}</p><p>#{paragraph}</p>
+        <table>
+          <thead><tr><th>Version</th><th>Architecture</th><th>Status</th></tr></thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/articles/build-status-reference", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Understanding build status references", "Version 1", "Architecture 7")
+      expect(payload["markdown"]).not_to include("- [Version 1]")
+    end
+  end
+
   it "keeps explanatory polling articles with reference tables as articles" do
     rows = 8.times.map do |index|
       <<~ROW

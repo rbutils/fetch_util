@@ -36,7 +36,8 @@
     var seen = {};
     var candidates = [];
     var context = listPageContext();
-    context.tableIndexPage = !!linkedTableIndexRoot();
+    var tableIndexSource = linkedTableIndexRoot();
+    context.tableIndexPage = !!tableIndexSource;
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
     var caseRecordContext = /\b(?:cases?|defendants?|records?|dockets?|matters?)\b/i.test(pageIdentity);
 
@@ -75,6 +76,29 @@
         return bText.length - aText.length;
       });
       return links[0] || null;
+    }
+
+    if (context.tableIndexPage && root.matches && root.matches("table")) {
+      var primaryColumn = tableIndexPrimaryColumn(tableIndexSource);
+      Array.prototype.forEach.call(root.querySelectorAll("tr"), function(row) {
+        if (row.closest("table") !== root || row.closest("thead, tfoot")) return;
+        var primary = tableIndexPrimaryLink(row, directTableCells(row), 2, primaryColumn);
+        if (!primary) return;
+
+        var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
+        var detail = listTableRowDetail(row, text);
+        var candidate = {
+          text: text,
+          url: primary.url,
+          detail: detail,
+          rankScore: text.length + detail.length,
+          card: row,
+          canonicalKey: primary.url,
+          dedupeKey: primary.url + "|row:" + normalizeText(detail).toLowerCase()
+        };
+        pushUniqueListCandidate(candidates, seen, candidate);
+      });
+      return candidates;
     }
 
     itemNodes.forEach(function(node) {
