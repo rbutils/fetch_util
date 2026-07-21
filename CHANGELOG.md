@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.5.2 - 2026-07-21
+
+### Fixed
+
+- Preserve every visible row and row-local field in compact linked build and monitor tables, including hierarchical headers, short record identifiers, and accessible icon-only statuses, while protecting prose-dominant article tables.
+
 ## v0.5.1 - 2026-07-15
 
 ### Added
