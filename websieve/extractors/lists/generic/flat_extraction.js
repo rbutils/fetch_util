@@ -1,3 +1,28 @@
+  function listElementHidden(node) {
+    return elementVisuallyHidden(node);
+  }
+
+  function pruneHiddenListClone(source, clone) {
+    if (!source || !clone) return;
+    if (source.nodeType === 1 && listElementHidden(source)) {
+      clone.remove();
+      return;
+    }
+
+    var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
+    var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
+    sourceChildren.forEach(function(child, index) {
+      pruneHiddenListClone(child, cloneChildren[index]);
+    });
+  }
+
+  function visibleListClone(node) {
+    if (!node || listElementHidden(node)) return document.createElement("div");
+    var clone = safeDeepClone(node, document);
+    pruneHiddenListClone(node, clone);
+    return cleanClone(clone);
+  }
+
   function extractListItems(root) {
     var itemSelector = [
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
@@ -11,11 +36,13 @@
     var seen = {};
     var candidates = [];
     var context = listPageContext();
+    context.tableIndexPage = !!linkedTableIndexRoot();
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
     var caseRecordContext = /\b(?:cases?|defendants?|records?|dockets?|matters?)\b/i.test(pageIdentity);
 
-    function looksLikeMetaLink(text, href) {
-      return text.length < (caseRecordContext ? 3 : 18) ||
+    function looksLikeMetaLink(text, href, container) {
+      var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
+      return text.length < (tableRow ? 2 : (caseRecordContext ? 3 : 18)) ||
         /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
         /(?:^|[?&])(user|from|site|goto)=/i.test(href) ||
@@ -25,7 +52,7 @@
 
     function pushLink(link, container) {
       var candidate = listLinkCandidate(link, container, context);
-      if (!candidate || looksLikeMetaLink(candidate.text, candidate.url)) return;
+      if (!candidate || looksLikeMetaLink(candidate.text, candidate.url, container)) return;
       pushUniqueListCandidate(candidates, seen, candidate);
     }
 
@@ -51,6 +78,7 @@
     }
 
     itemNodes.forEach(function(node) {
+      if (!node.matches("tr") && node.querySelectorAll("tr a[href]").length >= 2) return;
       pushLink(bestLink(node), node);
     });
 
@@ -59,8 +87,10 @@
         var text = normalizeText(link.textContent);
         var href = link.getAttribute("href");
         if (!href || href[0] === "#" || /^(javascript:|mailto:)/i.test(href)) return false;
-        if (looksLikeMetaLink(text, href)) return false;
-        return text.length >= minimumListTitleLength(text) && text.length <= 220;
+        var tableRow = context.tableIndexPage && link.closest("tr");
+        if (text.length < (tableRow ? 2 : minimumListTitleLength(text))) return false;
+        if (looksLikeMetaLink(text, href, tableRow)) return false;
+        return (tableRow || text.length >= minimumListTitleLength(text)) && text.length <= 220;
       });
       anchors.forEach(function(link) {
         var container = link.closest("tr, li, article, section, div") || link.parentElement;
@@ -76,6 +106,7 @@
     var seen = {};
     var ranked = [];
     var context = listPageContext();
+    context.tableIndexPage = !!linkedTableIndexRoot();
     var selectors = [
       "h1 a[href]", "h2 a[href]", "h3 a[href]", "h4 a[href]", "article a[href]",
       "section a[href]", "[class*='headline'] a[href]", "[class*='story'] a[href]",
@@ -84,7 +115,7 @@
     ].join(", ");
 
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
-      var container = link.closest("article, section, li, div") || link.parentElement;
+      var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
       var candidate = listLinkCandidate(link, container, context);
       if (candidate) pushUniqueListCandidate(ranked, seen, candidate);

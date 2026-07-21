@@ -1,11 +1,12 @@
   function pushUniqueListCandidate(candidates, seen, candidate) {
     if (!candidate) return false;
 
-    var key = candidate.text + "|" + candidate.url;
     var canonicalKey = candidate.canonicalKey || listCanonicalKey(candidate.url);
-    if (seen[key] || seen["url:" + canonicalKey]) return false;
+    var dedupeKey = candidate.dedupeKey || canonicalKey;
+    var key = candidate.text + "|" + dedupeKey;
+    if (seen[key] || seen["url:" + dedupeKey]) return false;
     seen[key] = true;
-    seen["url:" + canonicalKey] = true;
+    seen["url:" + dedupeKey] = true;
     candidate.canonicalKey = canonicalKey;
     candidates.push(candidate);
     return true;
@@ -68,7 +69,7 @@
   }
 
   function cardOwnedNodes(card, selector) {
-    var cardSelector = "article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']";
+    var cardSelector = "tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']";
     var cardIsRoot = card.matches && card.matches(cardSelector);
     return Array.prototype.filter.call(card.querySelectorAll(selector), function(node) {
       var nearest = node.parentElement;
@@ -90,7 +91,7 @@
         return directCandidate;
       }
     }
-    var nestedCards = card.querySelectorAll("article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+    var nestedCards = card.querySelectorAll("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
     if (Array.prototype.some.call(nestedCards, function(nested) {
       return nested.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]");
     })) return null;
@@ -141,6 +142,43 @@
     var text = normalizeText(media.getAttribute ? media.getAttribute("alt") : media.textContent);
     if (text.length <= 2 || /^(image|photo|thumbnail|logo|icon|avatar)$/i.test(text)) return "";
     return text;
+  }
+
+  function directTableCells(row) {
+    return Array.prototype.filter.call(row.children || [], function(cell) {
+      return cell.matches && cell.matches("th, td");
+    });
+  }
+
+  function tableHeaderCells(row, cellCount) {
+    var table = row.closest && row.closest("table");
+    if (!table) return [];
+    var headerRows = Array.prototype.filter.call(table.querySelectorAll("thead tr"), function(candidate) {
+      return directTableCells(candidate).length === cellCount;
+    });
+    if (!headerRows.length) {
+      headerRows = Array.prototype.filter.call(table.querySelectorAll("tr"), function(candidate) {
+        return candidate !== row && candidate.querySelector("th") && directTableCells(candidate).length === cellCount;
+      });
+    }
+    return headerRows.length ? directTableCells(headerRows[headerRows.length - 1]) : [];
+  }
+
+  function listTableRowDetail(row, title) {
+    var cells = directTableCells(row);
+    var headers = tableHeaderCells(row, cells.length);
+    var titleCellIndex = cells.findIndex(function(cell) {
+      return normalizeText(cell.innerText || cell.textContent || "").indexOf(title) !== -1;
+    });
+    return cells.map(function(cell, index) {
+      var value = normalizeText(cell.innerText || cell.textContent || "");
+      var titleIndex = value.indexOf(title);
+      if (titleIndex !== -1) value = normalizeText(value.slice(0, titleIndex) + " " + value.slice(titleIndex + title.length));
+      if (!value) return "";
+
+      var label = normalizeText((headers[index] && (headers[index].innerText || headers[index].textContent)) || "");
+      return index !== titleCellIndex && label && label.toLowerCase() !== value.toLowerCase() ? label + ": " + value : value;
+    }).filter(Boolean).join(" | ");
   }
 
   function addCardContext(candidate, card) {

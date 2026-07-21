@@ -138,7 +138,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     byline: byline,
     excerpt: content.excerpt || metadata.excerpt,
     siteName: content.siteName || metadata.siteName,
-    publishedTime: content.publishedTime || metadata.publishedTime,
+    publishedTime: content.contentType === "list" ? (content.publishedTime || null) : (content.publishedTime || metadata.publishedTime),
     canonicalUrl: metadata.canonicalUrl,
     language: metadata.language,
     name: content.name || null,

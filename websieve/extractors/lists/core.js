@@ -7,7 +7,7 @@
   }
 
   function buildListExtraction(node) {
-    var root = cleanClone(node);
+    var root = visibleListClone(node);
     cleanupListRoot(root);
     var sectioned = sectionedListExtraction(root);
     if (sectioned) {
@@ -25,7 +25,7 @@
     var items = extractListItems(root);
     var itemQuality = listItemsQualityScore(items);
     var descText = listDescriptionMarkdown(root);
-    var fallbackItems = extractFallbackHeadlineItems(node);
+    var fallbackItems = extractFallbackHeadlineItems(root);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
 
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
@@ -64,7 +64,8 @@
     pushCandidate(document.querySelector("main, [role='main']"));
     pushCandidate(document.body);
 
-    var best = candidates.reduce(function(current, node) {
+    var tableIndexRoot = linkedTableIndexRoot();
+    var best = tableIndexRoot ? buildListExtraction(tableIndexRoot) : candidates.reduce(function(current, node) {
       var result = buildListExtraction(node);
       return listExtractionIsBetter(current, result) ? result : current;
     }, null) || buildListExtraction(document.body);

@@ -86,7 +86,8 @@
     var resolvedPath = "";
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
     if (!href || href[0] === "#" || /^(javascript:|mailto:)/i.test(href)) return null;
-    if (text.length < minimumListTitleLength(text) || text.length > 220) return null;
+    var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
+    if (text.length < (tableIndexRow ? 2 : minimumListTitleLength(text)) || text.length > 220) return null;
 
     var url = absoluteUrl(href);
     if (!url) return null;
@@ -102,18 +103,24 @@
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
 
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : container;
-    var detail = normalizeText(((detailSource && detailSource.textContent) || "")).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
+    var detail = container && container.matches && container.matches("tr") ?
+      listTableRowDetail(container, text) :
+      normalizeText(((detailSource && detailSource.textContent) || "")).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
     detail = detail.replace(/\b(last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)\b/gi, "").replace(/\s{2,}/g, " ").trim();
     if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url) && weatherModuleText(text + " " + detail)) return null;
     if (/\/(tv|spored)\//i.test(url) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
     var score = listCandidateScore(text, url, detail, container || link.parentElement, context);
     if (score === -Infinity) return null;
 
-    return { text: text, url: url, detail: detail, rankScore: score, card: listCardRoot(link, container) };
+    var candidate = { text: text, url: url, detail: detail, rankScore: score, card: listCardRoot(link, container) };
+    if (container && container.matches && container.matches("tr") && detail) {
+      candidate.dedupeKey = listCanonicalKey(url) + "|row:" + normalizeText(detail).toLowerCase();
+    }
+    return candidate;
   }
 
   function listCardRoot(link, fallback) {
-    var card = link && link.closest && link.closest("article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+    var card = link && link.closest && link.closest("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
     return card || fallback || (link && link.parentElement);
   }
 

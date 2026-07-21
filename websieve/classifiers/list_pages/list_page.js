@@ -63,6 +63,7 @@
   function dominantIndexListPage(content) {
     if (!document.body || articleRouteFocalContent(content)) return false;
     if (medicalArticlePage(null, content)) return false;
+    if (linkedTableIndexPage()) return true;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
     var root = document.createElement("div");

@@ -88,7 +88,7 @@ function listItemsContentResult(metadata, options) {
     byline: null,
     excerpt: options.excerpt != null ? options.excerpt : (items[0] ? items[0].text : metadata && metadata.excerpt),
     siteName: options.siteName || (metadata && metadata.siteName) || location.hostname,
-    publishedTime: options.publishedTime || (metadata && metadata.publishedTime),
+    publishedTime: options.publishedTime === undefined ? null : options.publishedTime,
     html: options.html || "",
     textContent: options.textContent != null ? options.textContent : markdown,
     markdown: markdown,

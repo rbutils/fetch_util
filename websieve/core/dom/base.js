@@ -56,6 +56,17 @@
     }
   }
 
+  function elementVisuallyHidden(node) {
+    var current = node;
+    while (current && current.nodeType === 1) {
+      var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
+      if (current.hidden) return true;
+      if (style && (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse")) return true;
+      current = current.parentElement;
+    }
+    return false;
+  }
+
   function safeReadableDocumentClone() {
     try {
       return document.cloneNode(true);

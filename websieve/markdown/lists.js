@@ -2,7 +2,8 @@ function listMarkdown(items) {
   return items.map(function(item) {
     var line = item.url ? "- [" + item.text + "](" + item.url + ")" : "- " + item.text;
     var card = item.card;
-    var context = [
+    var rowDetail = card && card.matches && card.matches("tr") ? item.detail : "";
+    var context = (rowDetail ? [rowDetail] : [
       item.category,
       item.summary,
       cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || item.author,
@@ -12,7 +13,7 @@ function listMarkdown(items) {
       cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || item.community,
       item.image,
       item.caption
-    ].filter(Boolean).filter(function(value, index, values) {
+    ]).filter(Boolean).filter(function(value, index, values) {
       return values.indexOf(value) === index;
     }).join(" - ");
     if (context) line += " - " + context;

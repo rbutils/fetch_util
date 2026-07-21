@@ -14,7 +14,7 @@
 
   function sectionCardNodes(region, options) {
     var selector = (options && options.cardSelector) || [
-      "article", "li", "[class*='card']", "[class*='story']", "[class*='teaser']",
+      "tr", "article", "li", "[class*='card']", "[class*='story']", "[class*='teaser']",
       "[class*='item']", "[class*='result']", "[class*='news']", "[class*='headline']"
     ].join(", ");
     var allCards = Array.prototype.slice.call(region.querySelectorAll(selector));

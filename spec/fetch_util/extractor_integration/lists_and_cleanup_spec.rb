@@ -42,6 +42,152 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps polling dashboard rows visible, local, and complete" do
+    visible_rows = 8.times.map do |index|
+      research_name = { 6 => "CBOS", 7 => "OGB" }.fetch(index, "Current Research #{index + 1}")
+      <<~ROW
+        <tr>
+          <td>
+            <a href="/poll/current-#{index}">#{research_name}</a>
+            <span>Sample: #{1_000 + index}</span>
+            <span>Fieldwork: #{index + 1}-#{index + 2} July</span>
+          </td>
+          <td class="poll-result">#{30 + index}.1</td>
+          <td class="poll-result">#{12 + index}.4</td>
+        </tr>
+      ROW
+    end.join
+    historical_rows = 4.times.map do |index|
+      <<~ROW
+        <tr>
+          <td><a href="/poll/historical-#{index}">Historical Research #{index + 1}</a></td>
+          <td class="poll-result">20.0</td>
+          <td class="poll-result">10.0</td>
+        </tr>
+      ROW
+    end.join
+    html = <<~HTML
+      <html>
+        <head>
+          <title>National polling dashboard</title>
+          <style>.year-panel { display: none; } .year-panel.current { display: block; }</style>
+        </head>
+        <body>
+          <nav>
+            <a href="/methodology">Polling methodology and fieldwork guide</a>
+            <a href="/seat-model">Parliamentary seat projection model</a>
+          </nav>
+          <main>
+            <h1>National polling dashboard</h1>
+            <p>Current survey results with sample sizes, fieldwork dates, party support, averages, and projections.</p>
+            <div class="polls-date">July 2026</div>
+            <section class="year-panel current" id="current-year">
+              <table>
+                <thead><tr><th>Pollster</th><th>Civic</th><th>Green</th></tr></thead>
+                <tbody>#{visible_rows}</tbody>
+              </table>
+            </section>
+            <section class="year-panel" id="historical-year">
+              <table>
+                <thead><tr><th>Pollster</th><th>Civic</th><th>Green</th></tr></thead>
+                <tbody>#{historical_rows}</tbody>
+              </table>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/polls/archive", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["publishedTime"]).to be_nil
+      expect(markdown.scan(/^- \[/).length).to eq(8)
+      expect(markdown).to include(
+        "Current Research 1",
+        "Sample: 1000",
+        "Fieldwork: 1-2 July",
+        "Civic: 30.1",
+        "Green: 12.4",
+        "CBOS",
+        "OGB"
+      )
+      expect(markdown).not_to include(
+        "Historical Research",
+        "Polling methodology and fieldwork guide",
+        "Parliamentary seat projection model"
+      )
+      expect(markdown.index("Current Research 1")).to be < markdown.index("OGB")
+    end
+  end
+
+  it "preserves distinct table observations that share a record URL" do
+    rows = 8.times.map do |index|
+      <<~ROW
+        <tr>
+          <td><a href="/pollster/shared">Shared Research Group</a></td>
+          <td>#{index + 1}-#{index + 2} August</td>
+          <td class="poll-result">#{24 + index}.0</td>
+        </tr>
+      ROW
+    end.join
+    html = <<~HTML
+      <html><head><title>Polling archive</title></head><body><main>
+        <h1>Polling archive</h1>
+        <table>
+          <thead><tr><th>Pollster</th><th>Fieldwork</th><th>Result</th></tr></thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/polls", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(/^- \[/).length).to eq(8)
+      expect(markdown.scan("Shared Research Group").length).to eq(8)
+      expect(markdown).to include("Fieldwork: 1-2 August", "Fieldwork: 8-9 August")
+    end
+  end
+
+  it "keeps explanatory polling articles with reference tables as articles" do
+    rows = 8.times.map do |index|
+      <<~ROW
+        <tr>
+          <td><a href="/reference/#{index}">Reference source #{index + 1}</a></td>
+          <td>Method #{index + 1}</td>
+          <td>Comparison note #{index + 1}</td>
+        </tr>
+      ROW
+    end.join
+    paragraph = "This explanatory section describes how survey design, weighting, fieldwork, uncertainty, and publication choices affect interpretation. " \
+                "It provides narrative context for readers and uses the comparison table only as supporting reference material rather than as the primary page index."
+    html = <<~HTML
+      <html><head><title>Understanding polling methods</title></head><body><main><article>
+        <h1>Understanding polling methods</h1>
+        <p class="byline">Research desk</p>
+        <time datetime="2026-07-20">20 July 2026</time>
+        <p>#{paragraph}</p><p>#{paragraph}</p><p>#{paragraph}</p>
+        <table>
+          <thead><tr><th>Reference</th><th>Method</th><th>Comment</th></tr></thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/polling", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Understanding polling methods", "Reference source 1", "Comparison note 8")
+      expect(payload["markdown"]).not_to include("- [Reference source 1]")
+    end
+  end
+
   it "does not render generic ranking scores as list detail" do
     first_title = "Ruby #{"a" * 104}"
     second_title = "Ruby #{"b" * 118}"
