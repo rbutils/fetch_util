@@ -3,29 +3,21 @@
     if (!/(^|\b)ft\.com\b|financial times/i.test(signature)) return null;
     if (location.pathname && location.pathname !== "/") return null;
 
-    var seen = {};
-    var items = [];
-
-    document.querySelectorAll("main a[href*='/content/'], main a[href*='/stream/']").forEach(function(link) {
-      var title = normalizeText(link.textContent).replace(/^opinion content\.?\s*/i, "");
-      var url = absoluteUrl(link.getAttribute("href"));
-      var container = link.closest("article, section, .story-group__article, .story-group-slice, .o-teaser") || link.parentElement;
-      var detail = searchItemDetail(container, title);
-
-      if (!title || !url || title.length < 18 || title.length > 180 || seen[url]) return;
-      if (/^(top stories|news|opinion|companies|markets news|video|life & arts|spotlight|most read|must-reads you missed|more opinion|more companies|more europe news|more markets news|more technology)$/i.test(title)) return;
-
-      seen[url] = true;
-      items.push({ text: title, url: url, detail: detail });
-    });
-
-    if (items.length < 4) return null;
-
-    return listContentResult({
-      title: metadata.title || document.title,
-      excerpt: metadata.excerpt,
-      siteName: metadata.siteName || location.hostname,
-      items: items
+    return newsHomepageListContent(metadata, {
+      linkSelector: "main a[href*='/content/'], main a[href*='/stream/']",
+      cardSelector: "article, section, .story-group__article, .story-group-slice, .o-teaser",
+      minItems: 4,
+      minTitleLength: 18,
+      maxTitleLength: 180,
+      titleBuilder: function(link) {
+        return normalizeText(link.textContent);
+      },
+      transformTitle: function(title) {
+        return title.replace(/^opinion content\.?\s*/i, "");
+      },
+      rejectTitle: /^(top stories|news|opinion|companies|markets news|video|life & arts|spotlight|most read|must-reads you missed|more opinion|more companies|more europe news|more markets news|more technology)$/i,
+      siteName: location.hostname,
+      defaultTitle: ""
     });
   }
 
@@ -34,32 +26,18 @@
     if (!hostMatches(/(^|\.)economist\.com$/) && !/economist/i.test(signature)) return null;
     if (location.pathname && location.pathname !== "/") return null;
 
-    var seen = {};
-    var items = [];
-
-    document.querySelectorAll("main a[href]").forEach(function(link) {
-      var href = link.getAttribute("href") || "";
-      if (!/(\/\d{4}\/\d{2}\/\d{2}\/|\/interactive\/)/.test(href)) return;
-
-      var title = searchItemTitle(link);
-      var url = absoluteUrl(href);
-      var container = link.closest("article, section, li, div") || link.parentElement;
-      var detail = searchItemDetail(container, title);
-
-      if (!title || !url || title.length < 18 || title.length > 180 || seen[url]) return;
-      if (/^(subscribe|log in|the economist pro|weekly edition|current topics|world|business & economics|opinion|in depth|culture, history & society|our a-to-zs|featured story)$/i.test(title)) return;
-
-      seen[url] = true;
-      items.push({ text: title, url: url, detail: detail });
-    });
-
-    if (items.length < 4) return null;
-
-    return listContentResult({
-      title: metadata.title || document.title,
-      excerpt: metadata.excerpt,
-      siteName: metadata.siteName || "The Economist",
-      items: items
+    return newsHomepageListContent(metadata, {
+      linkSelector: "main a[href]",
+      cardSelector: "article, section, li, div",
+      minItems: 4,
+      minTitleLength: 18,
+      maxTitleLength: 180,
+      acceptLink: function(href) {
+        return /(\/\d{4}\/\d{2}\/\d{2}\/|\/interactive\/)/.test(href);
+      },
+      rejectTitle: /^(subscribe|log in|the economist pro|weekly edition|current topics|world|business & economics|opinion|in depth|culture, history & society|our a-to-zs|featured story)$/i,
+      siteName: "The Economist",
+      defaultTitle: ""
     });
   }
 
@@ -68,29 +46,18 @@
     if (!hostMatches(/(^|\.)bloomberg\.com$/) && !/bloomberg/i.test(signature)) return null;
     if (/(\/news\/|\/opinion\/|\/features\/|\/graphics\/)/.test(location.pathname)) return null;
 
-    var seen = {};
-    var items = [];
-
-    document.querySelectorAll("a[href*='/news/articles/'], a[href*='/news/features/'], a[href*='/opinion/articles/'], a[href*='/features/'], a[href*='/graphics/'], a[href*='/news/newsletters/']").forEach(function(link) {
-      var title = searchItemTitle(link).replace(/^AP Photo\s*/i, "").replace(/^Opinion\s*/i, "");
-      var url = absoluteUrl(link.getAttribute("href"));
-      var container = link.closest("article, section, div") || link.parentElement;
-      var detail = searchItemDetail(container, title);
-
-      if (!title || !url || title.length < 18 || title.length > 220 || seen[url]) return;
-      if (/^(bloomberg opinion|bloomberg businessweek|newsletter:|watch)$/i.test(title)) return;
-
-      seen[url] = true;
-      items.push({ text: title, url: url, detail: detail });
-    });
-
-    if (items.length < 4) return null;
-
-    return listContentResult({
-      title: metadata.title || document.title,
-      excerpt: metadata.excerpt,
-      siteName: metadata.siteName || "Bloomberg",
-      items: items
+    return newsHomepageListContent(metadata, {
+      linkSelector: "a[href*='/news/articles/'], a[href*='/news/features/'], a[href*='/opinion/articles/'], a[href*='/features/'], a[href*='/graphics/'], a[href*='/news/newsletters/']",
+      cardSelector: "article, section, div",
+      minItems: 4,
+      minTitleLength: 18,
+      maxTitleLength: 220,
+      transformTitle: function(title) {
+        return title.replace(/^AP Photo\s*/i, "").replace(/^Opinion\s*/i, "");
+      },
+      rejectTitle: /^(bloomberg opinion|bloomberg businessweek|newsletter:|watch)$/i,
+      siteName: "Bloomberg",
+      defaultTitle: ""
     });
   }
 

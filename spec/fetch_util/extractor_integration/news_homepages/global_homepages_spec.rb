@@ -4,6 +4,8 @@ RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
   it "extracts financial times homepages into compact lead-story lists" do
+    longest_title = 'F' * 180
+    overlong_title = 'G' * 181
     html = <<~HTML
       <html>
         <head>
@@ -14,7 +16,10 @@ RSpec.describe 'FetchUtil extractor integration' do
         <body>
           <main>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a1">Harbor repairs continue after a late coastal alert</a>
+              <a href="https://www.ft.com/content/a1">
+                <h2>Opinion Content. Harbor repairs continue after a late coastal alert</h2>
+                <span>Subscriber analysis</span>
+              </a>
               <p>Officials say the response now focuses on restoring local services.</p>
             </section>
             <section class="story-group-slice">
@@ -22,13 +27,16 @@ RSpec.describe 'FetchUtil extractor integration' do
               <p>Logistics teams report a narrow window for new arrivals.</p>
             </section>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a3">Why a crowded timetable could slow the data boom</a>
-              <p>Commentary section.</p>
+              <a href="https://www.ft.com/content/a3">A separate freight outlook keeps its distinct destination</a>
+              <p>A separate report keeps its distinct destination.</p>
             </section>
             <section class="story-group-slice">
-              <a href="https://www.ft.com/content/a4">Vehicle makers revise their plans for quieter roads</a>
-              <p>Customers continue to compare several power options.</p>
+              <a href="https://www.ft.com/content/a4">#{longest_title}</a>
+              <p>The accepted title is exactly 180 characters long.</p>
             </section>
+            <a href="https://www.ft.com/content/a1">Duplicate headline must not replace the first</a>
+            <a href="https://www.ft.com/content/a5">#{overlong_title}</a>
+            <a href="https://www.ft.com/content/a6">More Technology</a>
           </main>
         </body>
       </html>
@@ -36,10 +44,18 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     with_url_page("https://www.ft.com/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Harbor repairs continue after a late coastal alert](https://www.ft.com/content/a1)")
-      expect(payload["markdown"]).to include("- [Vehicle makers revise their plans for quieter roads](https://www.ft.com/content/a4)")
+      expect(payload).to include("title" => "Home - Financial Times", "siteName" => "Financial Times")
+      expect(markdown).to include("- [Harbor repairs continue after a late coastal alert Subscriber analysis](https://www.ft.com/content/a1)")
+      expect(markdown).to include("- [Regional freight schedules tighten as vessels reach port](https://www.ft.com/content/a2)")
+      expect(markdown).to include("- [A separate freight outlook keeps its distinct destination](https://www.ft.com/content/a3)")
+      expect(markdown).to include("- [#{longest_title}](https://www.ft.com/content/a4)")
+      expect(markdown).not_to include("Duplicate headline", "https://www.ft.com/content/a5", "https://www.ft.com/content/a6")
+      expect(markdown.index("/content/a1")).to be < markdown.index("/content/a2")
+      expect(markdown.index("/content/a2")).to be < markdown.index("/content/a3")
+      expect(markdown.index("/content/a3")).to be < markdown.index("/content/a4")
     end
   end
 
@@ -128,6 +144,8 @@ RSpec.describe 'FetchUtil extractor integration' do
   end
 
   it "extracts bloomberg regional homepages into compact story bullets" do
+    longest_title = 'B' * 220
+    overlong_title = 'C' * 221
     html = <<~HTML
       <html>
         <head>
@@ -137,17 +155,20 @@ RSpec.describe 'FetchUtil extractor integration' do
         <body>
           <main>
             <section>
-              <a href="https://www.bloomberg.com/news/articles/2026-03-22/iran-warns-trump-after-he-gives-two-day-ultimatum-to-open-hormuz">Trump And Iran Trade War Threats With Hormuz Crisis Building</a>
+              <a href="https://www.bloomberg.com/news/articles/2026-03-22/market-outlook">AP Photo Market Outlook Improves as Regional Trade Routes Reopen</a>
             </section>
             <section>
-              <a href="https://www.bloomberg.com/opinion/articles/2026-03-22/iran-war-trump-seizing-kharg-island-is-a-bad-idea-for-oil-reasons-too-mn1pgo70">Opinion A Kharg Island Invasion Won’t Solve Trump’s Oil Problem</a>
+              <a href="https://www.bloomberg.com/opinion/articles/2026-03-22/shared-outlook-one">Opinion A Measured Bloomberg Outlook for Regional Markets</a>
             </section>
             <section>
-              <a href="https://www.bloomberg.com/features/2026-prediction-markets-polymarket-kalshi/">How Prediction Markets Are Gamifying Truth</a>
+              <a href="https://www.bloomberg.com/features/2026-shared-outlook-two/">A Separate Bloomberg Feature Tracks Changing Trade Routes</a>
             </section>
             <section>
-              <a href="https://www.bloomberg.com/graphics/2026-paris-transformed-hidalgo/">Welcome to Paris, the City That Said No to Cars</a>
+              <a href="https://www.bloomberg.com/graphics/2026-boundary-title/">#{longest_title}</a>
             </section>
+            <a href="https://www.bloomberg.com/news/articles/2026-03-22/market-outlook">Duplicate Bloomberg headline must not replace the first</a>
+            <a href="https://www.bloomberg.com/news/articles/2026-03-22/overlong-title">#{overlong_title}</a>
+            <a href="https://www.bloomberg.com/news/articles/2026-03-22/businessweek-label">Bloomberg Businessweek</a>
           </main>
         </body>
       </html>
@@ -155,14 +176,24 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     with_url_page("https://www.bloomberg.com/europe", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Trump And Iran Trade War Threats With Hormuz Crisis Building](https://www.bloomberg.com/news/articles/2026-03-22/iran-warns-trump-after-he-gives-two-day-ultimatum-to-open-hormuz)")
-      expect(payload["markdown"]).to include("- [A Kharg Island Invasion Won’t Solve Trump’s Oil Problem](https://www.bloomberg.com/opinion/articles/2026-03-22/iran-war-trump-seizing-kharg-island-is-a-bad-idea-for-oil-reasons-too-mn1pgo70)")
+      expect(payload).to include("title" => "Bloomberg Europe", "siteName" => "www.bloomberg.com")
+      expect(markdown).to include("- [Market Outlook Improves as Regional Trade Routes Reopen](https://www.bloomberg.com/news/articles/2026-03-22/market-outlook)")
+      expect(markdown).to include("- [A Measured Bloomberg Outlook for Regional Markets](https://www.bloomberg.com/opinion/articles/2026-03-22/shared-outlook-one)")
+      expect(markdown).to include("- [A Separate Bloomberg Feature Tracks Changing Trade Routes](https://www.bloomberg.com/features/2026-shared-outlook-two/)")
+      expect(markdown).to include("- [#{longest_title}](https://www.bloomberg.com/graphics/2026-boundary-title/)")
+      expect(markdown).not_to include("Duplicate Bloomberg", "overlong-title", "businessweek-label")
+      expect(markdown.index("market-outlook")).to be < markdown.index("shared-outlook-one")
+      expect(markdown.index("shared-outlook-one")).to be < markdown.index("shared-outlook-two")
+      expect(markdown.index("shared-outlook-two")).to be < markdown.index("boundary-title")
     end
   end
 
   it "extracts economist homepages into compact story bullets" do
+    longest_title = 'E' * 180
+    overlong_title = 'H' * 181
     html = <<~HTML
       <html>
         <head>
@@ -171,10 +202,24 @@ RSpec.describe 'FetchUtil extractor integration' do
         </head>
         <body>
           <main>
-            <a href="https://www.economist.com/the-americas/2026/03/19/cubas-broken-economy-leaves-it-at-donald-trumps-mercy">Cuba’s broken economy leaves it at Donald Trump’s mercy</a>
-            <a href="https://www.economist.com/leaders/2026/03/19/lebanons-leaders-must-take-on-hizbullah">Lebanon’s leaders must take on Hizbullah</a>
-            <a href="https://www.economist.com/interactive/1843/2026/03/19/the-battle-for-the-soul-of-the-church-of-england">The battle for the soul of the Church of England</a>
-            <a href="https://www.economist.com/science-and-technology/2026/03/18/china-is-a-serious-contender-in-the-race-for-fusion-energy">China is a serious contender in the race for fusion energy</a>
+            <article>
+              <a href="https://www.economist.com/the-americas/2026/03/19/first-outlook">
+                <h2>A measured outlook for regional economic recovery</h2>
+                <span>Subscriber label</span>
+              </a>
+            </article>
+            <article>
+              <a href="https://www.economist.com/leaders/2026/03/19/shared-outlook-one">A durable Economist outlook for international trade</a>
+            </article>
+            <article>
+              <a href="https://www.economist.com/interactive/1843/2026/03/19/shared-outlook-two">An interactive Economist report on changing demographics</a>
+            </article>
+            <article>
+              <a href="https://www.economist.com/science-and-technology/2026/03/18/boundary-title">#{longest_title}</a>
+            </article>
+            <a href="https://www.economist.com/the-americas/2026/03/19/first-outlook">Duplicate Economist headline must not replace the first</a>
+            <a href="https://www.economist.com/leaders/2026/03/19/overlong-title">#{overlong_title}</a>
+            <a href="https://www.economist.com/leaders/2026/03/19/navigation-label">Business &amp; Economics</a>
           </main>
         </body>
       </html>
@@ -182,10 +227,18 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     with_url_page("https://www.economist.com/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Cuba’s broken economy leaves it at Donald Trump’s mercy](https://www.economist.com/the-americas/2026/03/19/cubas-broken-economy-leaves-it-at-donald-trumps-mercy)")
-      expect(payload["markdown"]).to include("- [China is a serious contender in the race for fusion energy](https://www.economist.com/science-and-technology/2026/03/18/china-is-a-serious-contender-in-the-race-for-fusion-energy)")
+      expect(payload).to include("title" => "The Economist | Go beyond breaking news", "siteName" => "www.economist.com")
+      expect(markdown).to include("- [A measured outlook for regional economic recovery](https://www.economist.com/the-americas/2026/03/19/first-outlook)")
+      expect(markdown).to include("- [A durable Economist outlook for international trade](https://www.economist.com/leaders/2026/03/19/shared-outlook-one)")
+      expect(markdown).to include("- [An interactive Economist report on changing demographics](https://www.economist.com/interactive/1843/2026/03/19/shared-outlook-two)")
+      expect(markdown).to include("- [#{longest_title}](https://www.economist.com/science-and-technology/2026/03/18/boundary-title)")
+      expect(markdown).not_to include("Duplicate Economist", "overlong-title", "navigation-label")
+      expect(markdown.index("first-outlook")).to be < markdown.index("shared-outlook-one")
+      expect(markdown.index("shared-outlook-one")).to be < markdown.index("shared-outlook-two")
+      expect(markdown.index("shared-outlook-two")).to be < markdown.index("boundary-title")
     end
   end
 
