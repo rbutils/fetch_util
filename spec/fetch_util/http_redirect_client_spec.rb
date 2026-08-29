@@ -1,10 +1,25 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "fetch_util/regulatory"
-require "fetch_util/regulatory/http_client"
+require "open3"
+require "rbconfig"
+require "fetch_util/http_redirect_client"
 
 RSpec.describe FetchUtil::HttpRedirectClient do
+  it "loads without materializing the regulatory subsystem" do
+    root = File.expand_path("../..", __dir__)
+    script = <<~RUBY
+      require "fetch_util"
+      require "fetch_util/http_redirect_client"
+      abort "regulatory subsystem loaded" unless FetchUtil.autoload?(:Regulatory)
+    RUBY
+
+    _stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I#{File.join(root, "lib")}", "-e", script, chdir: root)
+
+    expect(stderr).to be_empty
+    expect(status).to be_success
+  end
+
   def response(*chunks)
     double("response", code: "200", to_hash: { "content-type" => ["text/plain"] }).tap do |response|
       allow(response).to receive(:read_body) do |&block|

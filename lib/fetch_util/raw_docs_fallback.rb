@@ -4,7 +4,7 @@ require "cgi"
 require "nokogiri"
 require "uri"
 
-require_relative "regulatory/http_client"
+require_relative "http_redirect_client"
 
 module FetchUtil
   class RawDocsFallback
