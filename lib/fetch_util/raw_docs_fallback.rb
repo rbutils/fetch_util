@@ -241,7 +241,10 @@ module FetchUtil
         when "p"
           sections << text
         when "pre"
-          sections << ["```", node.text.rstrip, "```"].join("\n")
+          code = node.text.rstrip
+          fence_length = [3, code.scan(/`+/).map(&:length).max.to_i + 1].max
+          fence = "`" * fence_length
+          sections << [fence, code, fence].join("\n")
         when "li"
           sections << "- #{text}"
         when "tr"

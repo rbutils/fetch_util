@@ -104,6 +104,29 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).to include("metadata: Standard object metadata.")
   end
 
+  it "uses code fences longer than embedded backtick runs" do
+    html = <<~HTML
+      <html>
+        <head><title>Fence reference</title></head>
+        <body>
+          <main>
+            <h1>Fence reference</h1>
+            <p>This reference explains how to preserve literal Markdown fence examples.</p>
+            <pre>before
+      ```ruby
+      puts "literal fence"
+      ```
+      after</pre>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://example.test/fences")
+
+    expect(payload["markdown"]).to include("````\nbefore\n```ruby\nputs \"literal fence\"\n```\nafter\n````")
+  end
+
   it "falls back to the final http url for unsafe canonical metadata" do
     html = <<~HTML
       <html>
