@@ -86,7 +86,7 @@ function consentLikeInterstitial(interstitialType, combined, body, page) {
   if (!bodySignals && !pageSignals && interstitialType !== "meta_login") return false;
 
   var bodyCookieLed = cookieLeadPattern.test(normalizedBody) || (normalizedBody.indexOf("cookie") >= 0 && normalizedBody.indexOf("cookie") < 140 && normalizedBody.length < 500);
-  var pageCookieLed = cookieLeadPattern.test(normalizedPage) || (normalizedPage.indexOf("cookie") >= 0 && normalizedPage.indexOf("cookie") < 140 && normalizedBody.length < 260);
+  var pageCookieLed = cookieLeadPattern.test(normalizedPage) || (normalizedPage.indexOf("cookie") >= 0 && normalizedPage.indexOf("cookie") < 140 && normalizedPage.length < 260);
 
   return interstitialType === "meta_login" || bodyCookieLed || pageCookieLed;
 }

@@ -98,6 +98,35 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not treat long article pages as cookie-led consent walls" do
+    html = <<~HTML
+      <html>
+        <head><title>Seedling schedule for community gardens</title></head>
+        <body>
+          <nav>Garden weekly digest includes a cookie notice for visitors.</nav>
+          <aside>
+            This weekly index links cultivation notes, volunteer timetables, tool inventories,
+            greenhouse logs, watering rosters, seed exchanges, compost reports, and workshop
+            announcements for neighborhood growers throughout the spring planting season.
+          </aside>
+          <main>
+            <article>
+              <h1>Seedling schedule for community gardens</h1>
+              <p>Tomato seedlings move outdoors after the final frost review.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://gardens.example.test/guides/seedling-schedule", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["markdown"]).to include("Tomato seedlings move outdoors")
+      expect(payload["warnings"]).not_to include("consent_interstitial")
+    end
+  end
+
   it "prefers the real article when hidden OneTrust markup remains in the DOM" do
     html = <<~HTML
       <html>
