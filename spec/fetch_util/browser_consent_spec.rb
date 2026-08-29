@@ -136,6 +136,27 @@ RSpec.describe FetchUtil::Browser do
     end
   end
 
+  it 'keeps common cmp selectors in the same order across consent checks' do
+    browser = browser_without_idle
+    config = browser.send(:consent_config)
+    common_selectors = [
+      "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
+      "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
+      "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
+      "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice"
+    ]
+    selector_sets = [
+      config.known_cmp_selectors,
+      config.quick_indicator_selectors,
+      config.container_selectors,
+      config.overlay_selectors
+    ]
+
+    expect(selector_sets.map { |selectors| selectors.first(common_selectors.length) }).to all(eq(common_selectors))
+    expect(selector_sets).to all(be_frozen)
+    expect(selector_sets.map(&:object_id).uniq.length).to eq(selector_sets.length)
+  end
+
   it 'includes Portuguese consent cues and a body-led fallback in the generic consent helper' do
     page = instance_double(Ferrum::Browser)
     allow(page).to receive(:evaluate).and_return(false)

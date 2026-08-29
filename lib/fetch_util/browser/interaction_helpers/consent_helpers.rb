@@ -21,6 +21,13 @@ module FetchUtil
           keyword_init: true
         )
 
+        COMMON_CMP_SELECTORS = [
+          "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
+          "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
+          "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
+          "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice"
+        ].freeze
+
         # rubocop:disable Layout/LineLength, Style/RedundantPercentQ
         DEFAULT_CONSENT_CONFIG = ConsentConfig.new(
           accept_labels: [
@@ -71,19 +78,13 @@ module FetchUtil
           context_pattern: %q{(cookie|cookies|privacy|consent|gdpr|ccpa|cmp|onetrust|cookiebot|didomi|quantcast|before you continue|we use cookies and data|device identifiers|personalized ads|personalized content|trusted third party partners?|privacy preference center|your privacy settings|your privacy choices|manage privacy preferences|manage consent preferences|cookie information|cookie list|cookies details|list of partners(?: \(vendors\))?|configurações avançadas de cookies|declaração de cookies|gerenciar cookies|utilizamos cookies|dados pessoais|pliki cookie|datenschutz|données personnelles|datos personales|dati personali|wish to store|access information on your devices|preferenze cookie|クッキー|Cookieプリファレンス|Cookie設定|同意設定|쿠키|동의|개인정보|接受|隐私设置|cookie 偏好设置|файлы cookie|настройки cookie|souhlas|personalizac|soukromí|nastavení souhlasu|kakor|sekretess|samtycke|cookies og data|privatlivs|samtykke|privatliv|personvern|informasjonskapsler|informasjonskapslar|aller media|dine data|galetes|protecció de dades|política de privadesa|ግላዊነት|ኩኪ|ኩኪዎች|pro pokračování vyberte|technické cookies|jakou formou vám máme zobrazovat obsah|evästeet|evästeasetukset|tietosuoja|yksityisyys|hyväksy evästeet|slapukai|privatumas|slapukų nustatymai|kolačinji|приватност|поставки за колачиња|cookie-uri|confidențialitate|setări cookie|protecția datelor|sīkdatnes|sīkfailus|privātums|privātuma iestatījumi|sīkdatņu iestatījumi|sütiket|adatvédelem|adatvédelmi beállítások|süti beállítások|kabul|çerez|gizlilik|лични данни|поверителност|terima|setuju|privasi|ยินยอม|คุกกี้|ความเป็นส่วนตัว)},
           container_pattern: %q{(cookie|consent|privacy|onetrust|cookiebot|usercentrics|trustarc|didomi|quantcast|sourcepoint|sp_message|uniconsent|osano|gdpr|ccpa)},
           known_cmp_selectors: [
-            "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
-            "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
-            "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
-            "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
+            *COMMON_CMP_SELECTORS,
             "[id*='sourcepoint']", "[class*='sourcepoint']", "[id*='sp_message']", "[class*='sp_message']",
             "[id*='uniconsent']", "[class*='uniconsent']", "[id*='uni-consent']", "[class*='uni-consent']",
             "[id*='osano']", "[class*='osano']"
           ].freeze,
           quick_indicator_selectors: [
-            "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
-            "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
-            "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
-            "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
+            *COMMON_CMP_SELECTORS,
             '[id*="onetrust" i]', '[class*="onetrust" i]', '[id*="cookiebot" i]', '[class*="cookiebot" i]',
             '[id*="usercentrics" i]', '[class*="usercentrics" i]', '[id*="trustarc" i]', '[class*="trustarc" i]',
             '[id*="didomi" i]', '[class*="didomi" i]', '[id*="quantcast" i]', '[class*="quantcast" i]',
@@ -98,10 +99,7 @@ module FetchUtil
             '[id*="privacy-preference" i]', '[class*="privacy-preference" i]'
           ].freeze,
           container_selectors: [
-            "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
-            "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
-            "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
-            "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
+            *COMMON_CMP_SELECTORS,
             '[id*="cookie" i]', '[class*="cookie" i]', '[id*="consent" i]', '[class*="consent" i]',
             '[class*="cookie-banner" i]', '[data-testid*="cookie" i]', '[id*="privacy" i]', '[class*="privacy" i]',
             '[id*="gdpr" i]', '[class*="gdpr" i]', '[id*="ccpa" i]', '[class*="ccpa" i]',
@@ -110,10 +108,7 @@ module FetchUtil
             '[id*="osano" i]', '[class*="osano" i]'
           ].freeze,
           overlay_selectors: [
-            "#onetrust-banner-sdk", "#onetrust-pc-sdk", ".qc-cmp2-container", ".qc-cmp2-summary",
-            "#CybotCookiebotDialog", ".cc-window", ".cc_banner", "#cookie-banner", ".cookie-banner",
-            "#consent-banner", ".consent-banner", ".fc-consent-root", ".cmp-modal", ".gdpr-banner",
-            "#gdpr-consent", ".js-cookies", ".cookie-notice", "#cookieNotice",
+            *COMMON_CMP_SELECTORS,
             '[id*="cookie" i]', '[class*="cookie" i]', '[id*="consent" i]', '[class*="consent" i]',
             '[class*="cookie-banner" i]', '[data-testid*="cookie" i]', '[id*="privacy" i]', '[class*="privacy" i]',
             '[id*="gdpr" i]', '[class*="gdpr" i]', '[id*="ccpa" i]', '[class*="ccpa" i]',
@@ -127,7 +122,7 @@ module FetchUtil
           button_selectors: 'button, [role="button"], a, input[type="button"], input[type="submit"]'
         ).freeze
         # rubocop:enable Layout/LineLength, Style/RedundantPercentQ
-        private_constant :ConsentConfig, :DEFAULT_CONSENT_CONFIG
+        private_constant :ConsentConfig, :COMMON_CMP_SELECTORS, :DEFAULT_CONSENT_CONFIG
 
         private
 
