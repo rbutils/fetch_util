@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
     end
   end
   built_asset = 'lib/fetch_util/assets/extract.js'
-  tracked_files |= [built_asset] if File.file?(File.join(__dir__, built_asset))
+  tracked_files |= [built_asset]
 
   spec.files = tracked_files.reject do |file|
     (file == gemspec) || file.end_with?(".gem") || file.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile coverage/ pkg/ tmp/ .bundle/ .ruby-lsp/ 

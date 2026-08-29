@@ -2,6 +2,7 @@
 
 require "open3"
 require "fileutils"
+require "rubygems/package"
 require "tmpdir"
 
 RSpec.describe "extract asset bundle" do
@@ -430,5 +431,28 @@ RSpec.describe "extract asset bundle" do
 
     expect(specification.files).to include("lib/fetch_util/assets/extract.js")
     expect(specification.files.grep(%r{\Awebsieve/})).to be_empty
+  end
+
+  it "requires the generated runtime asset when the gemspec is loaded without it" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      FileUtils.mkdir_p(version_dir)
+      FileUtils.cp(File.join(project_root, "fetch_util.gemspec"), root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+      package = File.join(root, specification.file_name)
+
+      expect(specification.files).to include("lib/fetch_util/assets/extract.js")
+      expect do
+        Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+          Dir.chdir(root) { Gem::Package.build(specification, false, false, package) }
+        end
+      end.to raise_error(Gem::InvalidSpecificationException, %r{lib/fetch_util/assets/extract\.js})
+      expect(File.exist?(package)).to be(false)
+    end
   end
 end
