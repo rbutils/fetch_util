@@ -44,6 +44,40 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.metadata[:content_url]).to eq(tracked_url)
   end
 
+  it 'discards non-http canonical metadata from browser results' do
+    article_url = 'https://example.test/articles/canonical-boundary'
+    article_page = page_at(article_url)
+    article_payload = payload_with(
+      canonicalUrl: 'javascript:alert(1)?utm_source=metadata',
+      title: 'Canonical boundary',
+      markdown: "# Canonical boundary\n\nReadable article text.",
+      warnings: ['url_content_mismatch']
+    )
+    stub_browser_extraction(article_url, page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.canonical_url).to be_nil
+    expect(result.metadata[:content_url]).to eq(article_url)
+    expect(result.warnings).to include('url_content_mismatch')
+  end
+
+  it 'does not classify non-http canonical metadata as a PDF' do
+    article_url = 'https://example.test/articles/canonical-pdf'
+    article_page = page_at(article_url)
+    article_payload = payload_with(
+      canonicalUrl: 'ftp://files.example.test/report.pdf',
+      title: 'Canonical PDF boundary',
+      markdown: "# Canonical PDF boundary\n\nReadable HTML article text."
+    )
+    stub_browser_extraction(article_url, page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'strips list-position query params before comparing article urls' do
     article_url = 'https://zpravy.aktualne.cz/zahranici/ve-srilanske-veznici-vypukly-nepokoje-vyzadaly-si-nejmene-19-obeti/r~aaa296307f095c25cbd8c2a75b9afce8/'
     tracked_page = page_at("#{article_url}?lp=1")

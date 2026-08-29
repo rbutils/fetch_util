@@ -240,7 +240,11 @@ module FetchUtil
       raw_final_url = final_url
       raw_canonical_url = payload["canonicalUrl"]
       final_url = normalized_result_url(final_url)
-      canonical_url = normalized_result_url(raw_canonical_url)
+      canonical_url = normalized_canonical_url(raw_canonical_url)
+      if raw_canonical_url && canonical_url.nil?
+        payload = payload.merge("canonicalUrl" => nil)
+        raw_canonical_url = nil
+      end
       snapshot = PayloadSnapshot.new(
         payload: payload, requested_url: url, final_url: final_url, canonical_url: canonical_url,
         raw_final_url: raw_final_url, raw_canonical_url: raw_canonical_url
@@ -1000,6 +1004,12 @@ module FetchUtil
 
     def normalized_result_url(url)
       strip_tracking_params(url)
+    end
+
+    def normalized_canonical_url(url)
+      parse_http_uri(normalized_result_url(url)).to_s
+    rescue URI::InvalidURIError
+      nil
     end
 
     def strip_tracking_params(url)

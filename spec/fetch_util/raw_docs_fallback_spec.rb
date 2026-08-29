@@ -88,6 +88,30 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).to include("metadata: Standard object metadata.")
   end
 
+  it "falls back to the final http url for unsafe canonical metadata" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Canonical boundary</title>
+          <link rel="canonical" href="javascript:alert(1)" />
+        </head>
+        <body>
+          <main>
+            <h1>Canonical boundary</h1>
+            <p>This documentation page has enough substantive text for raw fallback extraction.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(
+      html,
+      requested_url: "https://docs.example.test/guide#section"
+    )
+
+    expect(payload["canonicalUrl"]).to eq("https://docs.example.test/guide")
+  end
+
   it "extracts named-anchor directive sections from raw html" do
     html = <<~HTML
       <html>

@@ -99,12 +99,20 @@ module FetchUtil
     end
 
     def canonical_url(document, final_url)
+      fallback_url = http_url(strip_fragment(final_url))
       href = document.at_css('link[rel="canonical"]')&.[]("href")
-      return strip_fragment(final_url) unless href && !href.empty?
+      return fallback_url unless href && !href.empty?
 
-      URI.join(final_url, href).to_s
+      http_url(URI.join(final_url, href).to_s) || fallback_url
     rescue URI::InvalidURIError
-      strip_fragment(final_url)
+      fallback_url
+    end
+
+    def http_url(value)
+      uri = URI.parse(value.to_s)
+      uri.to_s if uri.is_a?(URI::HTTP) && !uri.host.to_s.empty?
+    rescue URI::InvalidURIError
+      nil
     end
 
     def fragment_id(url)
