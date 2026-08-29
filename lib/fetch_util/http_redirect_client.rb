@@ -13,7 +13,13 @@ module FetchUtil
 
     def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES)
       @timeout = positive_timeout(timeout)
-      @headers = headers.reject { |_key, value| value.to_s.empty? }
+      owned_headers = {}
+      headers.each do |key, value|
+        next if value.to_s.empty?
+
+        owned_headers[key.dup.freeze] = value.dup.freeze
+      end
+      @headers = owned_headers.freeze
       @max_response_bytes = positive_max_response_bytes(max_response_bytes)
     end
 

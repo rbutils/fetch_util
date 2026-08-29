@@ -61,6 +61,31 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     expect(client.send(:timeout)).to eq(0.25)
   end
 
+  it "owns immutable request headers" do
+    key = +"X-Client-Name"
+    value = +"initial"
+    client = described_class.new(timeout: 1, headers: { key => value })
+    incoming = response("ok")
+    http = streaming_http(incoming)
+    request = nil
+    allow(http).to receive(:request) do |sent_request, &block|
+      request = sent_request
+      block.call(incoming)
+      incoming
+    end
+    allow(http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(http)
+
+    key.replace("X-Changed")
+    value.replace("changed")
+    client.get("https://example.com/resource")
+
+    expect(request["X-Client-Name"]).to eq("initial")
+    expect(request["X-Changed"]).to be_nil
+    expect(client.send(:headers)).to be_frozen
+    expect(client.send(:headers).keys + client.send(:headers).values).to all(be_frozen)
+  end
+
   it "preserves a successful response when connection cleanup fails" do
     http = streaming_http(response("ok"))
     allow(http).to receive(:finish).and_raise(SocketError, "close failed")
