@@ -5,6 +5,15 @@ RSpec.describe FetchUtil::RawDocsFallback do
     FetchUtil::HttpRedirectClient::Response.new(url: url, status: status, headers: {}, body: body, redirects: [])
   end
 
+  it "preserves fractional timeout budgets for the shared redirect client" do
+    expect(FetchUtil::HttpRedirectClient).to receive(:new).with(
+      timeout: 0.25,
+      headers: described_class::DEFAULT_HEADERS
+    )
+
+    described_class.new(timeout: 0.25)
+  end
+
   it "uses the shared redirect client final response" do
     html = <<~HTML
       <html>

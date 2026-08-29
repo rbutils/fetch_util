@@ -49,7 +49,7 @@ module FetchUtil
     PRUNED_TEXT_PATTERN = /\A(?:on this page|table of contents|edit this page|copy page|copy item path|search|settings|help|expand description)\z/i
 
     def initialize(timeout: 20, http_client: nil)
-      @timeout = timeout.to_i
+      @timeout = timeout.to_f
       @http_client = http_client || FetchUtil::HttpRedirectClient.new(timeout: @timeout, headers: DEFAULT_HEADERS)
     end
 
