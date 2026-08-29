@@ -56,7 +56,7 @@ module FetchUtil
     end
 
     def fetch(urls)
-      work = Array(urls).map(&:to_s)
+      work = Array(urls).map { |url| url.to_s.dup.freeze }
       return [] if work.empty?
 
       results = Array.new(work.length)

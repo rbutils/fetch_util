@@ -24,6 +24,42 @@ RSpec.describe FetchUtil::ParallelFetcher do
     expect(results).to eq(%w[done:a done:b done:c])
   end
 
+  it "owns queued urls before workers consume them" do
+    first_started = Queue.new
+    release_first = Queue.new
+    fetched_urls = []
+    second_url = +"https://second.example.test"
+    fake_fetcher = Class.new do
+      define_method(:fetch) do |url|
+        if url == "https://first.example.test"
+          first_started << true
+          release_first.pop
+        end
+        fetched_urls << url
+        "done:#{url}"
+      end
+
+      def quit; end
+    end
+    fetch_thread = Thread.new do
+      described_class.new(fetcher_factory: -> { fake_fetcher.new }, concurrency: 1)
+                     .fetch(["https://first.example.test", second_url])
+    end
+
+    first_started.pop
+    second_url.replace("https://mutated.example.test")
+    release_first << true
+
+    expect(fetch_thread.value).to eq(
+      ["done:https://first.example.test", "done:https://second.example.test"]
+    )
+    expect(fetched_urls).to eq(["https://first.example.test", "https://second.example.test"])
+    expect(second_url).to eq("https://mutated.example.test")
+  ensure
+    release_first << true if release_first
+    fetch_thread&.join
+  end
+
   it "preserves blank input positions as failures" do
     fetched_urls = []
     fake_fetcher = Class.new do
