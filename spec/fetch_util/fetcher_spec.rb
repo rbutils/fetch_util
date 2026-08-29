@@ -142,8 +142,44 @@ RSpec.describe FetchUtil::Fetcher do
 
     allow(described_class).to receive(:new).with(timeout: 10).and_return(fetcher)
     allow(fetcher).to receive(:fetch).with('https://example.com').and_return(result)
+    allow(fetcher).to receive(:quit)
 
     expect(FetchUtil.fetch('https://example.com', timeout: 10)).to eq(result)
+    expect(fetcher).to have_received(:quit).once
+  end
+
+  it 'quits the top-level fetcher when fetching fails' do
+    fetcher = instance_double(described_class)
+    error = FetchUtil::ExtractionError.new('primary failure')
+
+    allow(described_class).to receive(:new).and_return(fetcher)
+    allow(fetcher).to receive(:fetch).and_raise(error)
+    allow(fetcher).to receive(:quit)
+
+    expect { FetchUtil.fetch('https://example.com') }.to(raise_error { |raised| expect(raised).to equal(error) })
+    expect(fetcher).to have_received(:quit).once
+  end
+
+  it 'preserves a top-level fetch result when browser cleanup fails' do
+    fetcher = instance_double(described_class)
+    result = instance_double(FetchUtil::Result)
+
+    allow(described_class).to receive(:new).and_return(fetcher)
+    allow(fetcher).to receive(:fetch).and_return(result)
+    allow(fetcher).to receive(:quit).and_raise(Ferrum::Error, 'cleanup failure')
+
+    expect(FetchUtil.fetch('https://example.com')).to eq(result)
+  end
+
+  it 'preserves a top-level fetch error when browser cleanup also fails' do
+    fetcher = instance_double(described_class)
+    error = FetchUtil::ExtractionError.new('primary failure')
+
+    allow(described_class).to receive(:new).and_return(fetcher)
+    allow(fetcher).to receive(:fetch).and_raise(error)
+    allow(fetcher).to receive(:quit).and_raise(Ferrum::Error, 'cleanup failure')
+
+    expect { FetchUtil.fetch('https://example.com') }.to(raise_error { |raised| expect(raised).to equal(error) })
   end
 
   it 'surfaces extractor mismatch warnings as suspect' do

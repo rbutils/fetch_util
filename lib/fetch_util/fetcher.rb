@@ -80,6 +80,17 @@ module FetchUtil
     PENDING_CONNECTIONS_FETCH_RETRIES = 1
     PENDING_CONNECTIONS_FETCH_RETRY_WAIT = 1.0
 
+    def self.fetch_once(url, **options)
+      fetcher = new(**options)
+      fetcher.fetch(url)
+    ensure
+      begin
+        fetcher&.quit
+      rescue Ferrum::Error
+        nil
+      end
+    end
+
     class PayloadSnapshot
       attr_reader :payload, :requested_url, :final_url, :canonical_url, :raw_final_url, :raw_canonical_url,
                   :markdown, :normalized_markdown, :content_downcase, :context, :context_downcase,

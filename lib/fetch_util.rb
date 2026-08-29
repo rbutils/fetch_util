@@ -69,7 +69,7 @@ module FetchUtil
   module_function
 
   def fetch(url, **options)
-    Fetcher.new(**options).fetch(url)
+    Fetcher.fetch_once(url, **options)
   end
 
   def fetch_many(urls, **options)
