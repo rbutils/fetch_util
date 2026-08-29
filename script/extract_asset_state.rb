@@ -29,6 +29,11 @@ module FetchUtil
       return true unless manifest.file?
 
       entries = manifest_entries(manifest)
+      source_entries = source_root.glob("**/*.js").select(&:file?).map do |path|
+        path.relative_path_from(source_root).to_s
+      end
+      return false unless entries.uniq.length == entries.length && entries.sort == source_entries.sort
+
       source = entries.map { |entry| source_root.join(entry).read }.join("\n")
       digest = source_digest(entries, source)
       cached_build_current?(

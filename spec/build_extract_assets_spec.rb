@@ -4,6 +4,7 @@ require "open3"
 require "fileutils"
 require "rubygems/package"
 require "tmpdir"
+require_relative "../script/extract_asset_state"
 
 RSpec.describe "extract asset bundle" do
   def project_root
@@ -617,6 +618,44 @@ RSpec.describe "extract asset bundle" do
       File.write(File.join(source_dir, "present.js"), "const present = true;\n")
       File.write(File.join(asset_dir, "extract.js"), "window.fetchUtil = {};\n")
       File.write(File.join(asset_dir, "extract.js.sha256"), "stale stale\n")
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+      package = File.join(root, specification.file_name)
+
+      expect do
+        Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+          Dir.chdir(root) { Gem::Package.build(specification, false, false, package) }
+        end
+      end.to raise_error(
+        Gem::InvalidSpecificationException,
+        'Stale built asset: run `bundle exec rake build_extract_assets`'
+      )
+      expect(File.exist?(package)).to be(false)
+    end
+  end
+
+  it "rejects direct package builds when a source file is missing from the manifest" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      asset_dir = File.join(version_dir, "assets")
+      source_dir = File.join(root, "websieve")
+      FileUtils.mkdir_p([asset_dir, source_dir])
+      copy_gemspec_support(root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+      source = "const present = true;\n"
+      output = "window.fetchUtil = {};\n"
+      entries = ["present.js"]
+      File.write(File.join(source_dir, "manifest.txt"), "#{entries.join("\n")}\n")
+      File.write(File.join(source_dir, "present.js"), source)
+      File.write(File.join(source_dir, "extra.js"), "const extra = true;\n")
+      File.write(File.join(asset_dir, "extract.js"), output)
+      File.write(
+        File.join(asset_dir, "extract.js.sha256"),
+        "#{FetchUtil::ExtractAssetState.source_digest(entries, source)} #{Digest::SHA256.hexdigest(output)}\n"
+      )
 
       specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
       package = File.join(root, specification.file_name)
