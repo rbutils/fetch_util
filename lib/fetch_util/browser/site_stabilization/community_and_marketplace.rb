@@ -70,11 +70,9 @@ module FetchUtil
         end
 
         def reddit_content_ready?(page)
-          page.evaluate(<<~JS)
+          safe_evaluate(page, <<~JS, default: false)
             !!document.querySelector('shreddit-post, faceplate-screen-reader-content, shreddit-comment, [data-testid="comment"]')
           JS
-        rescue Ferrum::JavaScriptError
-          false
         end
 
         def dismiss_reddit_cookie_dialog(page)

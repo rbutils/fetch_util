@@ -76,6 +76,27 @@ RSpec.describe FetchUtil::Browser do
     expect(browser).not_to have_received(:settle_after_stabilization)
   end
 
+  it 'continues Reddit readiness polling after an evaluation timeout' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    attempts = 0
+
+    allow(page).to receive(:evaluate) do
+      attempts += 1
+      raise Ferrum::TimeoutError, 'timed out' if attempts == 1
+
+      true
+    end
+    allow(browser).to receive(:dismiss_reddit_cookie_dialog).with(page).and_return(false)
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    browser.send(:stabilize_reddit, page)
+
+    expect(attempts).to eq(2)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+  end
+
   it 'resolves a short same-URL page after a rendered Anubis shell' do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle(timeout: 1.0)
