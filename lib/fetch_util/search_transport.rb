@@ -59,8 +59,7 @@ module FetchUtil
       unknown = @sources - SOURCES.keys
       raise ArgumentError, "unknown search sources: #{unknown.join(", ")}" if unknown.any?
 
-      @timeout = Float(timeout)
-      raise ArgumentError, "timeout must be positive" unless @timeout.positive?
+      @timeout = validated_timeout(timeout)
 
       @clock = clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
       @http_client = http_client || HttpClient.new(clock: @clock)
@@ -85,8 +84,7 @@ module FetchUtil
       query = query.to_s.strip
       raise ArgumentError, "query must not be empty" if query.empty?
 
-      request_timeout = Float(timeout)
-      raise ArgumentError, "timeout must be positive" unless request_timeout.positive?
+      request_timeout = validated_timeout(timeout)
 
       deadline = clock.call + request_timeout
       responses = Array.new(sources.length)
@@ -100,6 +98,13 @@ module FetchUtil
     private
 
     attr_reader :clock, :html_parser, :http_client, :sources, :timeout
+
+    def validated_timeout(value)
+      timeout = Float(value)
+      raise ArgumentError, "timeout must be positive" unless timeout.finite? && timeout.positive?
+
+      timeout
+    end
 
     def search_source(source, query, deadline)
       started_at = clock.call

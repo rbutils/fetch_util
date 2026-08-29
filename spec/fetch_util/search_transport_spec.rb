@@ -141,6 +141,23 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(responses.map(&:source)).to eq(%w[google bing])
   end
 
+  it "requires finite timeout budgets for construction and search overrides" do
+    expect { described_class.new(timeout: Float::INFINITY) }
+      .to raise_error(ArgumentError, "timeout must be positive")
+
+    transport = described_class.new(sources: ["bing"], http_client: FixtureSearchClient.new({}))
+    expect { transport.search("ruby", timeout: Float::INFINITY) }
+      .to raise_error(ArgumentError, "timeout must be positive")
+  end
+
+  it "preserves fractional search timeout budgets" do
+    client = SequentialSearchClient.new([response(fixture("bing"))])
+    transport = described_class.new(sources: ["bing"], timeout: 0.5, clock: -> { 10.0 }, http_client: client)
+
+    expect(transport.search("ruby", timeout: 0.25).first.status).to eq("ok")
+    expect(client.deadlines).to eq([10.25])
+  end
+
   it "classifies challenge fixtures as failures for every source" do
     described_class::SOURCES.each_key do |source|
       client = FixtureSearchClient.new({ described_class::SOURCES.fetch(source).fetch(:hosts).first => response(fixture("challenge")) })
