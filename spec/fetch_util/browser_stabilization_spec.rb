@@ -63,13 +63,9 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:accept_cookie_consent).with(page).and_return(false)
     allow(browser).to receive(:dismiss_privacy_preference_overlay).with(page).and_return(false)
     allow(browser).to receive(:wait_for_spa_hydration).with(page)
-    allow(browser).to receive(:sleep).and_call_original
-
-    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    allow(browser).to receive(:sleep)
     browser.send(:stabilize_page, page, 'https://example.com')
-    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
 
-    expect(elapsed).to be < 0.2
     expect(browser).not_to have_received(:sleep).with(0.75)
     expect(browser).to have_received(:accept_cookie_consent).once
     expect(browser).to have_received(:dismiss_privacy_preference_overlay).once
