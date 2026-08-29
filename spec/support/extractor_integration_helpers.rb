@@ -74,9 +74,11 @@ RSpec.shared_context 'extractor integration helpers' do
 
   def with_url_page(url, html)
     request_url = url.sub(/#.*/u, '')
+    interception_enabled = false
 
     with_extractor_page do |page|
       page.network.intercept(pattern: '*')
+      interception_enabled = true
       handler_id = page.on(:request) do |request|
         if request.url == request_url
           request.respond(
@@ -91,7 +93,20 @@ RSpec.shared_context 'extractor integration helpers' do
       page.go_to(url)
       yield page
     ensure
-      page&.off(:request, handler_id) if handler_id
+      reset_url_interception(page, handler_id, interception_enabled)
+    end
+  end
+
+  def reset_url_interception(page, handler_id, interception_enabled)
+    page&.command('Fetch.disable') if interception_enabled
+    page&.off(:request, handler_id) if handler_id
+  rescue Ferrum::Error
+    cached_page = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_page)
+    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_page) if cached_page.equal?(page)
+    begin
+      page&.close
+    rescue Ferrum::Error
+      nil
     end
   end
 
