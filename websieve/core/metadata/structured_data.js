@@ -113,16 +113,12 @@ function structuredDataNodes() {
     if (!normalizeText(text)) return;
 
     try {
-      var scriptNodes = [];
-      flattenStructuredData(JSON.parse(text), scriptNodes);
-      pageOwnedStructuredDataNodes(scriptNodes).forEach(function(node) {
-        nodes.push(node);
-      });
+      flattenStructuredData(JSON.parse(text), nodes);
     } catch (_error) {
     }
   });
 
-  return nodes;
+  return pageOwnedStructuredDataNodes(nodes);
 }
 
 function nodeTypes(node) {

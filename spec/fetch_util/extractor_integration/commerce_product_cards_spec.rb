@@ -108,13 +108,16 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
           <script type="application/ld+json">
             {
               "@context": "https://schema.org",
+              "@id": "#recommended-product",
+              "@type": "Product",
+              "name": "Recommended Storage Pouch",
+              "offers": {"@type": "Offer", "price": "12.00", "priceCurrency": "USD"}
+            }
+          </script>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
               "@graph": [
-                {
-                  "@id": "#recommended-product",
-                  "@type": "Product",
-                  "name": "Recommended Storage Pouch",
-                  "offers": {"@type": "Offer", "price": "12.00", "priceCurrency": "USD"}
-                },
                 {
                   "@id": "#primary-product",
                   "@type": "Product",
