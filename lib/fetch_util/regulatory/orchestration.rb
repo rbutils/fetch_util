@@ -5,7 +5,7 @@ module FetchUtil
     module Orchestration
       def initialize(client: nil, cache_path: DEFAULT_CACHE_PATH, sources: nil, timeout: 20, user_agent: nil)
         @client = client || HttpClient.new(timeout: timeout, user_agent: user_agent || default_user_agent)
-        @cache_path = cache_path || DEFAULT_CACHE_PATH
+        @cache_path = (cache_path || DEFAULT_CACHE_PATH).dup.freeze
         @source_tokens = normalized_source_selection(sources)
       end
 

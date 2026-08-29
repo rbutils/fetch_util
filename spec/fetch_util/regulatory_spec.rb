@@ -330,6 +330,29 @@ RSpec.describe FetchUtil::Regulatory do
     dirs&.each { |dir| FileUtils.remove_entry(dir) if File.exist?(dir) }
   end
 
+  it "owns the cache path at initialization" do
+    tdmrep_url = "https://example.test/.well-known/tdmrep.json"
+    payload = JSON.generate([{ "location" => "/", "tdm-reservation" => "0" }])
+    client = fake_client(tdmrep_url => response(tdmrep_url, body: payload))
+    root = Dir.mktmpdir
+    original_path = File.join(root, "original")
+    changed_path = File.join(root, "changed")
+    cache_path = original_path.dup
+    regulatory = described_class.new(client: client, cache_path: cache_path, sources: "tdmrep")
+
+    cache_path.replace(changed_path)
+
+    expect(regulatory.call("https://example.test/article")).to eq(
+      "tdmrep" => [{ "allow" => "text-and-data-mining" }]
+    )
+    expect(regulatory.instance_variable_get(:@cache_path)).to eq(original_path).and be_frozen
+    expect(File).to be_directory(original_path)
+    expect(File).not_to be_directory(changed_path)
+    expect(cache_path).not_to be_frozen
+  ensure
+    FileUtils.remove_entry(root) if root && File.exist?(root)
+  end
+
   it "supports source class expansion with exclusions" do
     client = fake_client(
       "https://example.com/.well-known/tdmrep.json" => response("https://example.com/.well-known/tdmrep.json", status: 404),
