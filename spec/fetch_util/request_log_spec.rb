@@ -52,4 +52,22 @@ RSpec.describe FetchUtil::RequestLog do
   ensure
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
+
+  it "owns the output path supplied by the caller" do
+    dir = Dir.mktmpdir
+    path = File.join(dir, "requests.log")
+    original_path = path.dup
+    request_log = described_class.new(path: path)
+
+    path.replace(File.join(dir, "mutated.log"))
+    request_log.append("https://example.com")
+
+    expect(request_log.path).to eq(original_path)
+    expect(request_log.path).to be_frozen
+    expect(path).not_to be_frozen
+    expect(File.read(original_path)).to include("https://example.com")
+    expect(File).not_to exist(path)
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
 end

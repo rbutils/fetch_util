@@ -9,7 +9,7 @@ module FetchUtil
     DELIMITER_ESCAPES = { "\t" => "\\t", "\r" => "\\r", "\n" => "\\n" }.freeze
 
     def initialize(path: ENV.fetch("FETCH_UTIL_REQUEST_LOG", DEFAULT_PATH))
-      @path = path
+      @path = path.dup.freeze
     end
 
     attr_reader :path
