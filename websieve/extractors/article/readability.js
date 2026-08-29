@@ -17,10 +17,10 @@
       article.content += comments;
 
       return {
-        title: article.title || document.title,
+        title: article.title || null,
         byline: article.byline || null,
         excerpt: article.excerpt || null,
-        siteName: article.siteName || location.hostname,
+        siteName: article.siteName || null,
         publishedTime: article.publishedTime || null,
         html: article.content,
         textContent: article.textContent || "",

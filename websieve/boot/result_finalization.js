@@ -67,6 +67,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       });
       var bodyLines = (keepBefore ? beforeLines : []).concat(lines.slice(titleIndex + 1));
       markdown = "# " + primaryTitle + "\n\n" + bodyLines.join("\n").trim();
+    } else if (titleIndex === 0 && /^#{2,}\s+/.test(lines[0])) {
+      lines[0] = "# " + primaryTitle;
+      markdown = lines.join("\n");
     } else if (!markdownStartsWithTitle(markdown, primaryTitle)) {
       markdown = "# " + primaryTitle + "\n\n" + markdown;
     }
