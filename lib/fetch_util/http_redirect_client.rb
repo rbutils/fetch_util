@@ -18,10 +18,10 @@ module FetchUtil
     end
 
     def get(url, limit: REDIRECT_LIMIT)
-      @connections = {}
-      fetch(parse_http_uri(url), limit, [])
+      connections = {}
+      fetch(parse_http_uri(url), limit, [], connections)
     ensure
-      close_connections
+      close_connections(connections) if connections
     end
 
     private
@@ -46,8 +46,8 @@ module FetchUtil
       raise ArgumentError, "max_response_bytes must be positive"
     end
 
-    def fetch(uri, limit, redirects)
-      response, body = request(uri)
+    def fetch(uri, limit, redirects, connections)
+      response, body = request(uri, connections)
       return build_response(uri, response, body: body, redirects: redirects) unless response.is_a?(Net::HTTPRedirection)
 
       raise FetchUtil::Error, "too many redirects for #{uri}" if limit <= 0
@@ -57,13 +57,13 @@ module FetchUtil
 
       redirect_response = build_response(uri, response, body: body)
       redirect_uri = parse_http_uri(uri.merge(location))
-      fetch(redirect_uri, limit - 1, redirects + [redirect_response])
+      fetch(redirect_uri, limit - 1, redirects + [redirect_response], connections)
     end
 
-    def request(uri)
+    def request(uri, connections)
       attempts = 0
       begin
-        http = connection_for(uri)
+        http = connection_for(uri, connections)
         request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
         headers.each { |key, value| request[key] = value }
         body = +""
@@ -77,16 +77,16 @@ module FetchUtil
         end
         [response, body]
       rescue *TRANSIENT_ERRORS
-        close_connection(uri)
+        close_connection(uri, connections)
         attempts += 1
         retry if attempts <= 1
         raise
       end
     end
 
-    def connection_for(uri)
+    def connection_for(uri, connections)
       key = [uri.scheme, uri.host, uri.port]
-      @connections[key] ||= Net::HTTP.start(
+      connections[key] ||= Net::HTTP.start(
         uri.host,
         uri.port,
         use_ssl: uri.scheme == "https",
@@ -95,21 +95,21 @@ module FetchUtil
       )
     end
 
-    def close_connection(uri)
+    def close_connection(uri, connections)
       key = [uri.scheme, uri.host, uri.port]
-      @connections.delete(key)&.finish
+      connections.delete(key)&.finish
     rescue *TRANSIENT_ERRORS
       nil
     end
 
-    def close_connections
-      @connections&.each_value do |http|
+    def close_connections(connections)
+      connections.each_value do |http|
         http.finish if http.started?
       rescue *TRANSIENT_ERRORS
         nil
       end
     ensure
-      @connections = nil
+      connections.clear
     end
 
     def build_response(uri, response, body:, redirects: [])

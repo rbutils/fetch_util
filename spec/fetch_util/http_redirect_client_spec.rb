@@ -70,7 +70,6 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     result = client.get("https://example.com/resource")
 
     expect(result).to have_attributes(status: 200, body: "ok")
-    expect(client.instance_variable_get(:@connections)).to be_nil
   end
 
   it "retries a request when closing its failed connection also fails" do
@@ -98,7 +97,41 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     expect do
       client.get("https://example.com/resource")
     end.to raise_error(FetchUtil::Error, "request failed")
-    expect(client.instance_variable_get(:@connections)).to be_nil
+    expect(http).to have_received(:finish)
+  end
+
+  it "keeps overlapping request connections independent" do
+    first_started = Queue.new
+    release_first = Queue.new
+    first_response = response("first")
+    first_http = instance_double(Net::HTTP, started?: true)
+    allow(first_http).to receive(:request) do |_request, &block|
+      first_started << true
+      release_first.pop
+      block.call(first_response)
+      first_response
+    end
+    allow(first_http).to receive(:finish)
+
+    second_http = streaming_http(response("second"))
+    allow(second_http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(first_http, second_http)
+    client = described_class.new(timeout: 1)
+
+    first_thread = Thread.new { client.get("https://example.com/first") }
+    first_started.pop
+    begin
+      second_result = client.get("https://example.com/second")
+    ensure
+      release_first << true
+      first_thread.join
+    end
+    first_result = first_thread.value
+
+    expect(first_result).to have_attributes(status: 200, body: "first")
+    expect(second_result).to have_attributes(status: 200, body: "second")
+    expect(first_http).to have_received(:finish).once
+    expect(second_http).to have_received(:finish).once
   end
 
   it "follows relative and cross-host HTTP redirects" do
@@ -113,9 +146,9 @@ RSpec.describe FetchUtil::HttpRedirectClient do
 
     expect(result).to have_attributes(url: "https://cdn.example.test/final", status: 200, body: "ok")
     expect(result.redirects.map(&:url)).to eq(["https://example.com/start", "https://example.com/next"])
-    expect(client).to have_received(:request).with(URI("https://example.com/start")).ordered
-    expect(client).to have_received(:request).with(URI("https://example.com/next")).ordered
-    expect(client).to have_received(:request).with(URI("https://cdn.example.test/final")).ordered
+    expect(client).to have_received(:request).with(URI("https://example.com/start"), kind_of(Hash)).ordered
+    expect(client).to have_received(:request).with(URI("https://example.com/next"), kind_of(Hash)).ordered
+    expect(client).to have_received(:request).with(URI("https://cdn.example.test/final"), kind_of(Hash)).ordered
   end
 
   it "rejects redirects to unsupported or hostless URLs" do
