@@ -45,7 +45,7 @@ module FetchUtil
                    viewport: DEFAULT_VIEWPORT, user_agent: DEFAULT_USER_AGENT,
                    accept_language: DEFAULT_ACCEPT_LANGUAGE, browser_path: nil,
                    browser_options: nil)
-      @timeout = timeout.to_f
+      @timeout = positive_timeout(timeout)
       @wait = wait.to_f
       @wait_for_idle = wait_for_idle
       @idle_duration = idle_duration.to_f
@@ -102,6 +102,15 @@ module FetchUtil
     end
 
     private
+
+    def positive_timeout(value)
+      timeout = Float(value)
+      return timeout if timeout.positive? && timeout.finite?
+
+      raise ArgumentError
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "timeout must be positive"
+    end
 
     # Lazily start the shared Chromium process on first use. The
     # +evaluate_on_new_document+ call registers the navigator patch once;

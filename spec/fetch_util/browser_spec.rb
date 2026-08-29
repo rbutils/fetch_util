@@ -12,6 +12,20 @@ RSpec.describe FetchUtil::Browser do
     expect { browser.with_page('https://example.com') {} }.to raise_error(FetchUtil::BrowserError)
   end
 
+  it 'requires a finite positive timeout' do
+    [nil, '', 'invalid', 0, -1, Float::INFINITY, Float::NAN].each do |timeout|
+      expect do
+        described_class.new(timeout: timeout)
+      end.to raise_error(ArgumentError, 'timeout must be positive')
+    end
+  end
+
+  it 'preserves fractional timeout budgets' do
+    browser = described_class.new(timeout: 0.25)
+
+    expect(browser.instance_variable_get(:@timeout)).to eq(0.25)
+  end
+
   it 'patches empty userAgentData values to a consistent browser profile' do
     browser = browser_without_idle
     script = browser.send(:navigator_patch)
