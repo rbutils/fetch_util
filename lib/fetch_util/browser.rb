@@ -132,8 +132,7 @@ module FetchUtil
     end
 
     def retryable_navigation_error?(error)
-      error.is_a?(Ferrum::PendingConnectionsError) || error.is_a?(Ferrum::TimeoutError) ||
-        error.message.to_s.match?(/pending connections/i)
+      error.is_a?(Ferrum::TimeoutError) || retryable_pending_connections_error?(error)
     end
 
     def heavy_script_page?(page, url)

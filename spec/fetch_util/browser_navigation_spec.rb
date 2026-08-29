@@ -139,6 +139,20 @@ RSpec.describe FetchUtil::Browser do
     expect(page).to have_received(:go_to).once
   end
 
+  it 'shares pending-connection classification with navigation retries' do
+    browser = browser_with_idle
+    pending = Ferrum::Error.new('There are still pending connections')
+    timeout = Ferrum::TimeoutError.new
+    dns = Ferrum::Error.new('net::ERR_NAME_NOT_RESOLVED')
+
+    expect(browser.send(:retryable_pending_connections_error?, pending)).to eq(true)
+    expect(browser.send(:retryable_navigation_error?, pending)).to eq(true)
+    expect(browser.send(:retryable_pending_connections_error?, timeout)).to eq(false)
+    expect(browser.send(:retryable_navigation_error?, timeout)).to eq(true)
+    expect(browser.send(:retryable_pending_connections_error?, dns)).to eq(false)
+    expect(browser.send(:retryable_navigation_error?, dns)).to eq(false)
+  end
+
   it 'treats stable page content as ready before network idle' do
     network = instance_double('FerrumNetwork', idle?: false)
     page = instance_double(Ferrum::Browser, network: network)
