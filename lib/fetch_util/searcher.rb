@@ -32,12 +32,14 @@ module FetchUtil
 
       @request_log.append(search_request_uri(encoded_query))
       responses = @transport.search(encoded_query)
+      response_index = {}
+      responses.each { |response| response_index[response.source] ||= response }
 
       payload = {
         query: encoded_query,
-        results: formatted_results(apply_limit(aggregate(responses, encoded_query)))
+        results: formatted_results(apply_limit(aggregate(response_index, encoded_query)))
       }
-      payload[:diagnostics] = diagnostics(responses) if @verbose
+      payload[:diagnostics] = diagnostics(response_index) if @verbose
       payload
     end
 
@@ -60,16 +62,16 @@ module FetchUtil
       "search://#{@sources.join(",")}?q=#{CGI.escape(query)}"
     end
 
-    def aggregate(responses, query)
+    def aggregate(response_index, query)
       parsed = {}
       structured_query = query.match?(STRUCTURED_QUERY)
 
       @sources.each do |source|
-        response = responses.find { |item| item.source == source }
+        response = response_index[source]
         parsed[source] = response ? response.candidates.filter_map { |candidate| normalized_candidate(candidate) } : []
       end
 
-      apply_structured_query_authority!(parsed, responses) if structured_query
+      apply_structured_query_authority!(parsed, response_index) if structured_query
       max_size = parsed.values.map(&:length).max || 0
 
       items = []
@@ -95,11 +97,11 @@ module FetchUtil
       items
     end
 
-    def apply_structured_query_authority!(parsed, responses)
+    def apply_structured_query_authority!(parsed, response_index)
       return if @sources_explicit
       return unless @sources.include?(STRUCTURED_QUERY_AUTHORITY)
 
-      authority = responses.find { |response| response.source == STRUCTURED_QUERY_AUTHORITY }
+      authority = response_index[STRUCTURED_QUERY_AUTHORITY]
       return unless authority&.status == "ok" && authority.reason.nil?
 
       authority_urls = parsed.fetch(STRUCTURED_QUERY_AUTHORITY).map { |item| item[:url] }
@@ -146,9 +148,9 @@ module FetchUtil
       end
     end
 
-    def diagnostics(responses)
+    def diagnostics(response_index)
       @sources.filter_map do |source|
-        response = responses.find { |item| item.source == source }
+        response = response_index[source]
         next unless response
 
         diagnostic = {

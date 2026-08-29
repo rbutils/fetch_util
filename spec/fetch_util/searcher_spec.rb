@@ -54,6 +54,25 @@ RSpec.describe FetchUtil::Searcher do
     described_class.new(request_log: request_log, sources: %w[bing brave bing])
   end
 
+  it "uses the first response when a transport returns a source more than once" do
+    responses = [
+      response("brave", candidates: [candidate("brave", 1)], elapsed_ms: 10),
+      response("brave", status: "failed", reason: "timeout", elapsed_ms: 20)
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    payload = described_class.new(
+      transport: transport, request_log: request_log, sources: ["brave"], verbose: true
+    ).search("ruby")
+
+    expect(payload[:results]).to contain_exactly(
+      title: "Result 1", url: "https://example.test/brave/1", sources: ["brave"], ranks: { "brave" => 1 }
+    )
+    expect(payload[:diagnostics]).to contain_exactly(
+      source: "brave", transport: "http", status: "ok", result_count: 1, elapsed_ms: 10
+    )
+  end
+
   it "logs a synthetic request and normalizes typed candidates without changing the normal payload" do
     responses = [
       response("brave", candidates: [
