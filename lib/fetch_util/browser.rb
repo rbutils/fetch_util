@@ -95,8 +95,9 @@ module FetchUtil
     # +with_page+ call will transparently launch a new process.
     def quit
       @mutex.synchronize do
-        @ferrum&.quit
+        browser = @ferrum
         @ferrum = nil
+        browser&.quit
       end
     end
 

@@ -111,6 +111,33 @@ RSpec.describe FetchUtil::Browser do
     expect(ferrum).to have_received(:quit).once
   end
 
+  it 'launches a fresh browser after shutdown fails' do
+    stale_ferrum = instance_double(Ferrum::Browser)
+    fresh_ferrum = instance_double(Ferrum::Browser)
+    stale_page = instance_double('StaleFerrumPage')
+    fresh_page = instance_double('FreshFerrumPage')
+
+    allow(Ferrum::Browser).to receive(:new).and_return(stale_ferrum, fresh_ferrum)
+    allow(stale_ferrum).to receive(:evaluate_on_new_document)
+    allow(fresh_ferrum).to receive(:evaluate_on_new_document)
+    allow(stale_ferrum).to receive(:create_page).and_return(stale_page)
+    allow(fresh_ferrum).to receive(:create_page).and_return(fresh_page)
+    allow(stale_ferrum).to receive(:quit).and_raise(Ferrum::Error, 'shutdown failed')
+
+    [stale_page, fresh_page].each do |page|
+      stub_page_navigation(page)
+      stub_page_network(page, instance_double('FerrumNetwork', idle?: true))
+      stub_page_evaluate_and_close(page, false)
+    end
+
+    browser = browser_with_idle
+    browser.with_page('https://example.com') {}
+
+    expect { browser.quit }.to raise_error(Ferrum::Error, 'shutdown failed')
+    expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
+    expect(Ferrum::Browser).to have_received(:new).twice
+  end
+
   it 'is safe to call quit without any prior with_page calls' do
     browser = browser_without_idle
     expect { browser.quit }.not_to raise_error
