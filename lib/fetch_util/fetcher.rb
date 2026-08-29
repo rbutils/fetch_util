@@ -713,8 +713,11 @@ module FetchUtil
       return false unless cross_domain_redirect?(requested_url, final_url)
       return false unless scholarly_article_markdown?(final_url, snapshot)
 
+      requested_doi = doi_from_url(requested_url)
+      return false if requested_doi.nil?
+
       dois = snapshot.resource_urls.filter_map { |url| doi_from_url(url) }.uniq
-      dois.length == 1
+      dois == [requested_doi]
     end
 
     def doi_from_url(url)

@@ -280,6 +280,45 @@ RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnin
     expect(result.suspect).to eq(false)
   end
 
+  it 'keeps cross-domain redirect warnings when only the destination supplies a DOI' do
+    prose = Array.new(48) do |index|
+      "Mammalian gene function paragraph #{index} describes functional genomics, article methods, " \
+        "experimental results, and references with enough scholarly prose to identify a full article body " \
+        "rather than a publisher index."
+    end.join("\n\n")
+    payload = {
+      'contentType' => 'article',
+      'title' => 'How much do we know about the function of mammalian genes?',
+      'siteName' => 'Publisher',
+      'byline' => 'Pavlovic, Guillaume',
+      'canonicalUrl' => 'https://publisher.example/article/10.1186/s12915-023-01794-w',
+      'markdown' => <<~MARKDOWN
+        # How much do we know about the function of mammalian genes?
+
+        ## Introduction
+
+        #{prose}
+
+        ## Methods
+
+        #{prose}
+
+        ## References
+
+        #{prose}
+      MARKDOWN
+    }
+
+    result = fetcher_for_payload(
+      'https://journal.example/articles/mammalian-gene-function',
+      'https://publisher.example/article/10.1186/s12915-023-01794-w',
+      payload
+    ).fetch('https://journal.example/articles/mammalian-gene-function')
+
+    expect(result.warnings).to include('cross_domain_redirect')
+    expect(result.suspect).to eq(true)
+  end
+
   it 'keeps cross-domain redirect warnings when publisher DOI redirects do not match' do
     payload = {
       'contentType' => 'article',
