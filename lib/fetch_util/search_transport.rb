@@ -13,16 +13,17 @@ module FetchUtil
   class SearchTransport
     Candidate = Data.define(:source, :title, :url, :snippet, :source_rank) do
       def initialize(source:, title:, url:, source_rank:, snippet: nil)
-        super(source: source.to_s.freeze, title: title.to_s.freeze, url: url.to_s.freeze,
-              snippet: snippet&.to_s&.freeze, source_rank: Integer(source_rank))
+        super(source: source.to_s.dup.freeze, title: title.to_s.dup.freeze, url: url.to_s.dup.freeze,
+              snippet: snippet.nil? ? nil : snippet.to_s.dup.freeze, source_rank: Integer(source_rank))
       end
     end
 
     SourceResponse = Data.define(:source, :transport, :status, :candidates, :elapsed_ms, :final_url, :reason) do
       def initialize(source:, status:, elapsed_ms:, transport: "http", candidates: [], final_url: nil, reason: nil)
-        super(source: source.to_s.freeze, transport: transport.to_s.freeze, status: status.to_s.freeze,
-              candidates: candidates.freeze, elapsed_ms: Integer(elapsed_ms), final_url: final_url&.to_s&.freeze,
-              reason: reason&.to_s&.freeze)
+        super(source: source.to_s.dup.freeze, transport: transport.to_s.dup.freeze, status: status.to_s.dup.freeze,
+              candidates: candidates.dup.freeze, elapsed_ms: Integer(elapsed_ms),
+              final_url: final_url.nil? ? nil : final_url.to_s.dup.freeze,
+              reason: reason.nil? ? nil : reason.to_s.dup.freeze)
       end
     end
 
@@ -55,7 +56,7 @@ module FetchUtil
     }.freeze
 
     def initialize(sources: SOURCES.keys, timeout: DEFAULT_TIMEOUT, clock: nil, http_client: nil, html_parser: nil)
-      @sources = sources.map(&:to_s).freeze
+      @sources = sources.map { |source| source.to_s.dup.freeze }.freeze
       unknown = @sources - SOURCES.keys
       raise ArgumentError, "unknown search sources: #{unknown.join(", ")}" if unknown.any?
 

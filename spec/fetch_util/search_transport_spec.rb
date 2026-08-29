@@ -85,6 +85,33 @@ RSpec.describe FetchUtil::SearchTransport do
     FetchUtil::SearchTransport::HttpResponse.new(status: status, headers: {}, body: body, final_url: url)
   end
 
+  it "owns constructor strings and candidate collections" do
+    source = +"bing"
+    title = +"Ruby guide"
+    url = +"https://example.test/ruby"
+    snippet = +"A practical guide"
+    candidate = described_class::Candidate.new(source:, title:, url:, snippet:, source_rank: 1)
+    candidates = [candidate]
+    status = +"ok"
+    final_url = +"https://www.bing.com/search?q=ruby"
+    response = described_class::SourceResponse.new(source:, status:, candidates:, elapsed_ms: 10, final_url:)
+    configured_sources = [source]
+    transport = described_class.new(sources: configured_sources, http_client: FixtureSearchClient.new({}))
+
+    [source, title, url, snippet, status, final_url].each { |value| value.replace("changed") }
+    candidates.clear
+    configured_sources.clear
+
+    expect(candidate.to_h).to include(source: "bing", title: "Ruby guide", url: "https://example.test/ruby",
+                                      snippet: "A practical guide")
+    expect(candidate.to_h.values_at(:source, :title, :url, :snippet)).to all(be_frozen)
+    expect(response).to have_attributes(source: "bing", status: "ok", candidates: [candidate],
+                                        final_url: "https://www.bing.com/search?q=ruby")
+    expect(response.candidates).to be_frozen
+    expect(transport.instance_variable_get(:@sources)).to eq(["bing"])
+    expect(transport.instance_variable_get(:@sources).first).to be_frozen
+  end
+
   it "preserves every eligible card in source DOM order for each adapter" do
     described_class::SOURCES.each_key do |source|
       responses = described_class::SOURCES.each_with_object({}) do |(_name, config), values|

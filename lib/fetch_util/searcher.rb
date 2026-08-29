@@ -16,7 +16,7 @@ module FetchUtil
                    timeout: SearchTransport::DEFAULT_TIMEOUT)
       @request_log = request_log
       @sources_explicit = !sources.nil?
-      @sources = Array(sources || DEFAULT_SOURCES).map(&:to_s).uniq
+      @sources = Array(sources || DEFAULT_SOURCES).map { |source| source.to_s.dup.freeze }.uniq.freeze
       unknown = @sources - SearchTransport::SOURCES.keys
       raise ArgumentError, "unsupported search source: #{unknown.first}" if unknown.any?
 

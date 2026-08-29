@@ -28,6 +28,19 @@ RSpec.describe FetchUtil::Searcher do
     expect(described_class::DEFAULT_SOURCES).to eq(%w[brave bing yahoo])
   end
 
+  it "owns configured source names" do
+    source = +"brave"
+    sources = [source]
+    searcher = described_class.new(transport:, request_log:, sources:)
+
+    source.replace("bing")
+    sources.clear
+
+    expect(searcher.instance_variable_get(:@sources)).to eq(["brave"])
+    expect(searcher.instance_variable_get(:@sources)).to be_frozen
+    expect(searcher.instance_variable_get(:@sources).first).to be_frozen
+  end
+
   it "deduplicates configured sources before constructing the transport, logging, aggregation, and diagnostics" do
     expect(FetchUtil::SearchTransport).to receive(:new).with(
       sources: ["brave"], timeout: FetchUtil::SearchTransport::DEFAULT_TIMEOUT
