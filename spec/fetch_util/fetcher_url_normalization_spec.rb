@@ -261,6 +261,25 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('pdf_document')
   end
 
+  it 'uses browser extraction after SSL errors during PDF header probes' do
+    url = 'https://example.com/articles/pdf-certificate-error'
+    article_page = page_at(url)
+    article_payload = payload_with(
+      title: 'PDF certificate error',
+      markdown: '# PDF certificate error\n\nReadable HTML article text.',
+      warnings: []
+    )
+    stub_browser_extraction(url, page: article_page, payload: article_payload)
+
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    allow(fetcher).to receive(:request_head).and_raise(OpenSSL::SSL::SSLError, 'certificate verify failed')
+
+    result = fetcher.fetch(url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'does not flag non-PDF article URLs as PDF documents' do
     article_page = page_at('https://example.com/articles/1706-03762')
     article_payload = payload_with(

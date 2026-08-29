@@ -849,7 +849,8 @@ module FetchUtil
       return nil unless info && pdf_content_type?(info[:headers])
 
       info
-    rescue URI::InvalidURIError, ArgumentError, FetchUtil::Error, IOError, SocketError, SystemCallError, Timeout::Error
+    rescue URI::InvalidURIError, ArgumentError, FetchUtil::Error, IOError, SocketError, SystemCallError, Timeout::Error,
+           OpenSSL::SSL::SSLError
       nil
     end
 
