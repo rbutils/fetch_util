@@ -434,7 +434,7 @@ module FetchUtil
       def initialize(clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }, max_response_bytes: MAX_RESPONSE_BYTES,
                      net_http: nil)
         @clock = clock
-        @max_response_bytes = Integer(max_response_bytes)
+        @max_response_bytes = positive_max_response_bytes(max_response_bytes)
         @net_http = net_http || ->(uri) { Net::HTTP.new(uri.host, uri.port) }
       end
 
@@ -447,6 +447,15 @@ module FetchUtil
       private
 
       attr_reader :clock, :max_response_bytes, :net_http
+
+      def positive_max_response_bytes(value)
+        bytes = Integer(value)
+        return bytes if bytes.positive?
+
+        raise ArgumentError
+      rescue ArgumentError, TypeError, FloatDomainError
+        raise ArgumentError, "max_response_bytes must be positive"
+      end
 
       def fetch(uri, deadline, allowed_hosts, redirects_left)
         return HttpFailure.new(reason: "host", final_url: uri.to_s) unless allowed_uri?(uri, allowed_hosts)

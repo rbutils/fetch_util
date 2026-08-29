@@ -520,6 +520,14 @@ RSpec.describe FetchUtil::SearchTransport do
       response
     end
 
+    it "requires a positive response byte limit" do
+      [nil, "", "invalid", 0, -1, Float::INFINITY, Float::NAN].each do |limit|
+        expect do
+          described_class.new(max_response_bytes: limit)
+        end.to raise_error(ArgumentError, "max_response_bytes must be positive")
+      end
+    end
+
     it "decodes compressed bytes and replaces invalid charset bytes" do
       client = described_class.new
       compressed = StringIO.new
