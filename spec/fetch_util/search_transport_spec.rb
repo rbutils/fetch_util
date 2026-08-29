@@ -522,6 +522,16 @@ RSpec.describe FetchUtil::SearchTransport do
       expect(elapsed).to be < 0.15
     end
 
+    it "reports DNS failures through the finite transport contract" do
+      client = described_class.new(net_http: ->(_uri) { raise SocketError, "name resolution failed" })
+
+      result = client.get("https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"])
+
+      expect(result).to eq(
+        FetchUtil::SearchTransport::HttpFailure.new(reason: "failed", final_url: "https://www.google.com/search")
+      )
+    end
+
     it "sends stable search request headers" do
       response = http_response(Net::HTTPOK, 200, chunks: ["<html></html>"])
       http = FakeSearchHttp.new(response)

@@ -470,7 +470,7 @@ module FetchUtil
         HttpFailure.new(reason: "size", final_url: uri.to_s)
       rescue Zlib::Error
         HttpFailure.new(reason: "parse", final_url: uri.to_s)
-      rescue SystemCallError, IOError
+      rescue IOError, SocketError, SystemCallError
         HttpFailure.new(reason: "failed", final_url: uri.to_s)
       end
 
