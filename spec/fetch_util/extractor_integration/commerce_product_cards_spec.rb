@@ -375,6 +375,45 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "ignores hidden product prices while preserving restored and metadata prices" do
+    cases = [
+      ["visible", "", '<span itemprop="price" style="display: none">$10.00</span><span class="price">$35.00</span>', "$35.00"],
+      [
+        "restored",
+        "",
+        '<span class="price" style="visibility: hidden">$10.00</span>' \
+          '<div style="visibility: hidden"><span class="price" style="visibility: visible">$45.00</span></div>',
+        "$45.00"
+      ],
+      ["metadata", '<meta property="product:price:amount" content="55.00"><meta property="product:price:currency" content="USD">', "", "$55.00"]
+    ]
+
+    cases.each do |slug, metadata, prices, expected_price|
+      html = <<~HTML
+        <html>
+          <head><title>Archive Price Case | Example Store</title>#{metadata}</head>
+          <body>
+            <main itemscope itemtype="https://schema.org/Product">
+              <h1 itemprop="name">Archive Price Case</h1>
+              <img alt="Archive Price Case">
+              <p itemprop="description">A durable archive case for preserving public records.</p>
+              #{prices}
+              <button type="button" data-testid="add-to-cart">Add to cart</button>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_url_page("https://store.example.test/product/archive-price-#{slug}", html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
+
+        expect(payload["contentType"]).to eq("product")
+        expect(payload["price"]).to eq(expected_price)
+        expect(payload["markdown"]).not_to include("$10.00")
+      end
+    end
+  end
+
   it "extracts compact marketplace cards from image and aria-label product links" do
     html = <<~HTML
       <html>
