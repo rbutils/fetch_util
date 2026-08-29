@@ -818,6 +818,178 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "extracts page-owned recipe structured data" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Garden herb flatbread</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "name": "Garden herb flatbread",
+              "mainEntity": {
+                "@type": "Recipe",
+                "name": "Garden herb flatbread",
+                "description": "A simple flatbread made with fresh garden herbs.",
+                "recipeIngredient": ["2 cups flour", "1 cup water", "2 tablespoons herbs"],
+                "recipeInstructions": ["Mix the dough and herbs.", "Bake until golden."]
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Garden herb flatbread</h1>
+            <p>See the complete recipe details for this seasonal flatbread.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/recipes/garden-herb-flatbread", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("recipe")
+      expect(payload["ingredients"]).to eq(["2 cups flour", "1 cup water", "2 tablespoons herbs"])
+      expect(payload["instructions"]).to eq(["Mix the dough and herbs.", "Bake until golden."])
+    end
+  end
+
+  it "prefers complete graph entities over page-owned references" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Roasted orchard fruit</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "name": "Roasted orchard fruit",
+                  "mainEntity": {"@id": "#recipe", "@type": "Recipe"}
+                },
+                {
+                  "@id": "#recipe",
+                  "@type": "Recipe",
+                  "name": "Roasted orchard fruit",
+                  "recipeIngredient": ["2 apples", "2 pears", "1 tablespoon honey"],
+                  "recipeInstructions": ["Slice the fruit.", "Roast with honey until tender."]
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Roasted orchard fruit</h1>
+            <p>See the complete recipe for this seasonal dessert.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/recipes/roasted-orchard-fruit", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("recipe")
+      expect(payload["ingredients"]).to eq(["2 apples", "2 pears", "1 tablespoon honey"])
+      expect(payload["instructions"]).to eq(["Slice the fruit.", "Roast with honey until tender."])
+    end
+  end
+
+  it "merges page-owned entities with graph descriptions" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Summer tomato tart</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@id": "#recipe",
+                  "@type": "Recipe",
+                  "name": "Summer tomato tart",
+                  "description": "A savory tart for the summer table.",
+                  "image": "https://example.com/images/summer-tomato-tart.jpg"
+                },
+                {
+                  "@type": "WebPage",
+                  "name": "Summer tomato tart",
+                  "mainEntity": {
+                    "@id": "#recipe",
+                    "@type": "Recipe",
+                    "name": "Summer tomato tart",
+                    "recipeIngredient": ["1 pastry sheet", "3 tomatoes", "1 tablespoon herbs"],
+                    "recipeInstructions": ["Layer the tomatoes on the pastry.", "Bake until crisp."]
+                  }
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Summer tomato tart</h1>
+            <p>See the complete recipe for this savory tart.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/recipes/summer-tomato-tart", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("recipe")
+      expect(payload["ingredients"]).to eq(["1 pastry sheet", "3 tomatoes", "1 tablespoon herbs"])
+      expect(payload["instructions"]).to eq(["Layer the tomatoes on the pastry.", "Bake until crisp."])
+    end
+  end
+
+  it "does not promote non-page nested product structured data" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>How catalog systems represent inventory</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": "How catalog systems represent inventory",
+              "mainEntity": {
+                "@type": "Product",
+                "name": "Example archive box",
+                "description": "An illustrative nested catalog record.",
+                "offers": {"@type": "Offer", "price": "24.00", "priceCurrency": "USD"}
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>How catalog systems represent inventory</h1>
+              <p>Catalog systems often embed sample entities when explaining how records are connected and described.</p>
+              <p>This article examines ownership boundaries so that nested examples are not mistaken for the page's primary subject.</p>
+              <p>Editors use these examples to document field relationships, validation rules, and the limits of each catalog entry.</p>
+              <p>A page can therefore discuss an inventory record without becoming the authoritative product page for that record.</p>
+              <p>Keeping that distinction intact prevents explanatory prose from being replaced by unrelated commerce details.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/guides/catalog-inventory", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["price"]).to be_nil
+    end
+  end
+
   it "keeps long-form article pages in article mode even when related cards are present" do
     html = <<~HTML
       <html>

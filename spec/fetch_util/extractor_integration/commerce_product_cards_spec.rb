@@ -46,6 +46,108 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "preserves complete graph offers behind page-owned product references" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Archival Storage Box | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@id": "#product",
+                  "@type": ["Product", "Thing"],
+                  "name": "Archival Storage Box",
+                  "description": "An acid-free storage box for preserving paper records.",
+                  "offers": {
+                    "@id": "#offer",
+                    "@type": "Offer",
+                    "price": "35.00",
+                    "priceCurrency": "USD",
+                    "availability": "https://schema.org/InStock"
+                  }
+                },
+                {
+                  "@type": "WebPage",
+                  "mainEntity": {
+                    "@id": "#product",
+                    "@type": "Product",
+                    "offers": {"@id": "#offer"}
+                  }
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Archival Storage Box</h1>
+            <img alt="Archival Storage Box">
+            <p>An acid-free storage box for preserving paper records.</p>
+            <button type="button" data-testid="add-to-cart">Add to cart</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/archival-storage-box", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$35.00")
+      expect(payload["markdown"]).to include("- Availability: In Stock")
+    end
+  end
+
+  it "does not merge nested entities with different identities" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Current Archive Folder | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@id": "#product",
+                  "@type": "Product",
+                  "name": "Current Archive Folder",
+                  "description": "A folder for organizing current archive records.",
+                  "offers": {"@id": "#old-offer", "@type": "Offer", "price": "35.00", "priceCurrency": "USD"}
+                },
+                {
+                  "@type": "WebPage",
+                  "mainEntity": {
+                    "@id": "#product",
+                    "@type": "Product",
+                    "offers": {"@id": "#current-offer", "@type": "Offer"}
+                  }
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Current Archive Folder</h1>
+            <img alt="Current Archive Folder">
+            <p>A folder for organizing current archive records.</p>
+            <button type="button" data-testid="add-to-cart">Add to cart</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/current-archive-folder", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to be_nil
+      expect(payload["markdown"]).not_to include("$35.00")
+    end
+  end
+
   it "classifies DOM product detail pages and extracts visible price" do
     html = <<~HTML
       <html>
