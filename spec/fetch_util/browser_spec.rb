@@ -26,6 +26,23 @@ RSpec.describe FetchUtil::Browser do
     expect(browser.instance_variable_get(:@timeout)).to eq(0.25)
   end
 
+  it 'requires finite nonnegative wait durations' do
+    %i[wait idle_duration].each do |name|
+      [nil, '', 'invalid', -1, Float::INFINITY, Float::NAN].each do |duration|
+        expect do
+          described_class.new(name => duration)
+        end.to raise_error(ArgumentError, "#{name} must be nonnegative")
+      end
+    end
+  end
+
+  it 'preserves zero and fractional wait durations' do
+    browser = described_class.new(wait: 0, idle_duration: 0.125)
+
+    expect(browser.instance_variable_get(:@wait)).to eq(0.0)
+    expect(browser.instance_variable_get(:@idle_duration)).to eq(0.125)
+  end
+
   it 'patches empty userAgentData values to a consistent browser profile' do
     browser = browser_without_idle
     script = browser.send(:navigator_patch)

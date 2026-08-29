@@ -46,9 +46,9 @@ module FetchUtil
                    accept_language: DEFAULT_ACCEPT_LANGUAGE, browser_path: nil,
                    browser_options: nil)
       @timeout = positive_timeout(timeout)
-      @wait = wait.to_f
+      @wait = nonnegative_duration(wait, "wait")
       @wait_for_idle = wait_for_idle
-      @idle_duration = idle_duration.to_f
+      @idle_duration = nonnegative_duration(idle_duration, "idle_duration")
       @viewport = DEFAULT_VIEWPORT.merge(symbolize_hash(viewport || {}))
       @user_agent = user_agent.to_s.dup.freeze
       @accept_language = accept_language.to_s.dup.freeze
@@ -110,6 +110,15 @@ module FetchUtil
       raise ArgumentError
     rescue ArgumentError, TypeError
       raise ArgumentError, "timeout must be positive"
+    end
+
+    def nonnegative_duration(value, name)
+      duration = Float(value)
+      return duration if duration >= 0 && duration.finite?
+
+      raise ArgumentError
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "#{name} must be nonnegative"
     end
 
     # Lazily start the shared Chromium process on first use. The
