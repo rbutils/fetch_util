@@ -67,16 +67,17 @@ module FetchUtil
     def close_connection(uri)
       key = [uri.scheme, uri.host, uri.port]
       @connections.delete(key)&.finish
-    rescue IOError
+    rescue *TRANSIENT_ERRORS
       nil
     end
 
     def close_connections
       @connections&.each_value do |http|
         http.finish if http.started?
-      rescue IOError
+      rescue *TRANSIENT_ERRORS
         nil
       end
+    ensure
       @connections = nil
     end
 
