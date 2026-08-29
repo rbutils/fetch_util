@@ -70,6 +70,13 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(described_class.new(http_client: http_client).fetch("https://example.com/docs")).to be_nil
   end
 
+  it "returns nil when the shared redirect client raises a TLS error" do
+    http_client = instance_double(FetchUtil::HttpRedirectClient)
+    allow(http_client).to receive(:get).and_raise(OpenSSL::SSL::SSLError, "certificate verify failed")
+
+    expect(described_class.new(http_client: http_client).fetch("https://example.com/docs")).to be_nil
+  end
+
   it "extracts fragment-scoped docs content from raw html" do
     html = <<~HTML
             <html lang="en">

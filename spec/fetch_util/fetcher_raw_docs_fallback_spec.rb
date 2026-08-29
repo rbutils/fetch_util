@@ -89,4 +89,16 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.final_url).to eq('https://developer.hashicorp.com/terraform/language/resources/terraform-data')
     expect(result.site_name).to eq('HashiCorp Developer')
   end
+
+  it 'preserves the browser error when raw docs TLS fallback fails' do
+    url = 'https://developer.hashicorp.com/terraform/language/resources/terraform-data'
+    http_client = instance_double(FetchUtil::HttpRedirectClient)
+    allow(http_client).to receive(:get).and_raise(OpenSSL::SSL::SSLError, 'certificate verify failed')
+    fallback = FetchUtil::RawDocsFallback.new(http_client: http_client)
+    stub_browser_failure(url, FetchUtil::BrowserError, 'browser failed')
+
+    expect do
+      described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: fallback).fetch(url)
+    end.to raise_error(FetchUtil::BrowserError, 'browser failed')
+  end
 end

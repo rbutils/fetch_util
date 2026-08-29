@@ -2,6 +2,7 @@
 
 require "cgi"
 require "nokogiri"
+require "openssl"
 require "uri"
 
 require_relative "http_redirect_client"
@@ -59,7 +60,7 @@ module FetchUtil
       return nil unless payload
 
       [final_url, payload]
-    rescue Error, IOError, SocketError, SystemCallError, Timeout::Error, URI::InvalidURIError
+    rescue Error, IOError, SocketError, SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError, URI::InvalidURIError
       nil
     end
 
