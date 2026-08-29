@@ -257,6 +257,12 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
                 <span class="price">$9.95</span>
                 <span>Free shipping</span>
               </article>
+              <article class="product-card">
+                <a href="/product/ruby-workbench-bundle">Ruby Workbench Bundle</a>
+                <span class="price">$120.00</span>
+                <span>$99.00</span>
+                <span>$79.00</span>
+              </article>
             </div>
           </main>
         </body>
@@ -276,6 +282,10 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
         "$59.00 - Rating: 4.9/5 from 211 reviews - In Stock"
       )
       expect(payload["markdown"]).to include("- [Ruby Workbench Field Guide](https://store.example.test/product/ruby-workbench-field-guide) - $24.50 - Sold out")
+      expect(payload["markdown"]).to include(
+        "- [Ruby Workbench Bundle](https://store.example.test/product/ruby-workbench-bundle) - " \
+        "$120.00 - $99.00 - $79.00"
+      )
     end
   end
 

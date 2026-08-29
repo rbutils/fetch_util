@@ -107,7 +107,7 @@
     if (domPrice) pushDetail(domPrice);
 
     var matches = text.match(/([$€£]\s?\d[\d,.]*(?:\.\d{2})?)/g) || [];
-    matches.slice(0, 2).forEach(function(price) {
+    matches.forEach(function(price) {
       if (details.indexOf(price) === -1) details.push(price);
     });
 
