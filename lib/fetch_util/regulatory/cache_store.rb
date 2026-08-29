@@ -11,7 +11,11 @@ module FetchUtil
         return cached if cached
 
         payload, cacheable = yield
-        write_cache(path, payload) if cacheable
+        begin
+          write_cache(path, payload) if cacheable
+        rescue SystemCallError, IOError
+          nil
+        end
         payload
       end
 
@@ -51,7 +55,7 @@ module FetchUtil
         return nil if Time.now.utc - cached_at > CACHE_TTL
 
         parsed["payload"]
-      rescue Errno::ENOENT, JSON::ParserError, KeyError, TypeError, ArgumentError
+      rescue SystemCallError, IOError, JSON::ParserError, KeyError, TypeError, ArgumentError
         nil
       end
 

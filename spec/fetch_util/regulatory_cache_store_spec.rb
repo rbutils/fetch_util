@@ -57,4 +57,29 @@ RSpec.describe FetchUtil::Regulatory::CacheStore do
       expect(store.send(:read_cache, path)).to be_nil
     end
   end
+
+  it "treats unreadable cache entries as misses" do
+    File.write(path, "cached")
+    allow(File).to receive(:read).with(path).and_raise(Errno::EACCES, path)
+    allow(store).to receive(:cache_file_path).and_return(path)
+    yielded = false
+
+    result = store.send(:cache_fetch, "key") do
+      yielded = true
+      [{ "fresh" => true }, false]
+    end
+
+    expect(result).to eq("fresh" => true)
+    expect(yielded).to be(true)
+  end
+
+  it "preserves fresh results when cache publication fails" do
+    allow(store).to receive(:cache_file_path).and_return(path)
+    allow(store).to receive(:read_cache).with(path).and_return(nil)
+    allow(store).to receive(:write_cache).with(path, { "fresh" => true }).and_raise(Errno::EACCES, path)
+
+    result = store.send(:cache_fetch, "key") { [{ "fresh" => true }, true] }
+
+    expect(result).to eq("fresh" => true)
+  end
 end
