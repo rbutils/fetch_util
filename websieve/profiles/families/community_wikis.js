@@ -1,7 +1,3 @@
-  function mediaWikiContentPage() {
-    return !!document.querySelector("#mw-content-text .mw-parser-output, #mw-content-text .mw-body-content, #bodyContent .mw-parser-output");
-  }
-
   function tropeWikiContent(metadata) {
     var node = document.querySelector("#main-article .article-content, #main-content .article-content, .article-content.retro-folders");
     if (!node) return null;
@@ -22,43 +18,6 @@
       rewriteRoot: function(root) {
         ["#modal_overlay", ".modal_overlay", "script", "style", "iframe", ".ad-unit", "[id*='ad-']", "[class*='ad-']", "[class*='advert']", "[class*='watch']"].forEach(function(selector) {
           root.querySelectorAll(selector).forEach(function(el) { el.remove(); });
-        });
-      }
-    });
-  }
-
-  function mediaWikiContent(metadata) {
-    if (!mediaWikiContentPage()) return null;
-
-    var isWikipedia = hostMatches(/(^|\.)wikipedia\.org$/);
-    var isWiktionary = hostMatches(/(^|\.)wiktionary\.org$/);
-    if (isWikipedia || isWiktionary) return null;
-
-    var node = document.querySelector("#mw-content-text .mw-parser-output") ||
-      document.querySelector("#mw-content-text .mw-body-content") ||
-      document.querySelector("#bodyContent .mw-parser-output") ||
-      document.querySelector("#mw-content-text");
-    if (!node) return null;
-
-    var title = firstText(["#firstHeading", ".mw-first-heading", "h1.firstHeading", "h1"]) ||
-      normalizeText((metadata.title || document.title).replace(/\s*[-|–]\s*(Wiktionary|Wikipedia|Wiki).*$/i, ""));
-
-    return profileArticleContent(metadata, node, {
-      title: title,
-      byline: metadata.byline,
-      minTextLength: 30,
-      rewriteRoot: function(root) {
-        root.querySelectorAll(".mw-editsection, .mw-jump-link, .toc, #toc, .catlinks, #catlinks, .navbox, .navbox-styles, .printfooter, .noprint, .mw-indicators, .mw-hidden-catlinks, .mw-empty-elt, .sistersitebox, .mw-authority-control, .mw-headline-anchor").forEach(function(el) {
-          el.remove();
-        });
-
-        root.querySelectorAll("table.navbox, table.collapsible, .navbox, .footer-nav, .portal-bar, .portal, .succession-box").forEach(function(el) {
-          el.remove();
-        });
-
-        root.querySelectorAll("#External_links, #References, #Notes, #See_also, #Further_reading").forEach(function(el) {
-          var section = el.closest("section, div");
-          if (section) section.remove();
         });
       }
     });
@@ -235,6 +194,5 @@
 
   function registerCommunityWikiProfiles() {
     registerHostAwareProfile(true, fandomContent);
-    registerHostAwareProfile(true, mediaWikiContent);
     registerHostAwareProfile(true, stackExchangeContent);
   }

@@ -123,6 +123,22 @@ RSpec.describe "extract asset bundle" do
     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
   end
 
+  it "keeps MediaWiki extraction in its canonical CMS owner" do
+    source_root = File.join(project_root, "websieve")
+    sources = Dir[File.join(source_root, "**", "*.js")].to_h do |path|
+      [path.delete_prefix("#{source_root}/"), File.read(path)]
+    end
+    combined_source = sources.values.join
+
+    expect(combined_source.scan(/function\s+mediaWikiContent\s*\(/).length).to eq(1)
+    expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(1)
+    expect(sources.fetch("profiles/families/community_wikis.js")).not_to include("mediaWikiContent")
+    expect(sources.fetch("systems/cms/mediawiki.js")).to include(
+      "function mediaWikiContent(metadata)",
+      "registerHostAwareProfile(true, mediaWikiContent);"
+    )
+  end
+
   it "keeps docs and Unidad Editorial modules in their ownership slots" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
