@@ -53,7 +53,6 @@
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
         var detail = searchItemDetail(container, title);
-        if (detail.length > 180) detail = "";
 
         seen[canonicalUrl] = true;
         items.push({ text: title, url: url, detail: detail });

@@ -176,6 +176,33 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
     end
   end
 
+  it 'preserves complete generic portal card details' do
+    long_detail = 'The city desk traces the proposal from its first public hearing through the revised funding plan, ' \
+                  'records every affected neighborhood, and explains the remaining review steps before council members ' \
+                  'take a final vote at the scheduled open meeting next month.'
+    html = <<~HTML
+      <html>
+        <head><title>Daily Portal latest headlines</title></head>
+        <body>
+          <main>
+            <h1>Latest headlines</h1>
+            <section class="card"><a href="/news/first">First public headline with a complete city desk report</a><p>#{long_detail}</p></section>
+            <section class="card"><a href="/news/second">Second public headline with a complete market report</a><p>Second detail.</p></section>
+            <section class="card"><a href="/news/third">Third public headline with a complete weather report</a><p>Third detail.</p></section>
+            <section class="card"><a href="/news/fourth">Fourth public headline with a complete sports report</a><p>Fourth detail.</p></section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://portal.example/', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include(long_detail)
+    end
+  end
+
   it 'keeps existing financial times homepage compaction working' do
     html = <<~HTML
       <html>
