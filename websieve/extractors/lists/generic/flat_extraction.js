@@ -42,6 +42,7 @@
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       if (!candidate || looksLikeMetaLink(candidate.text, href, container)) return;
+      addCardContext(candidate, candidate.card);
       pushUniqueListCandidate(candidates, seen, candidate);
     }
 
@@ -173,7 +174,7 @@
   }
 
   function listDescriptionCardNode(node) {
-    return node.closest("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+    return closestGenericListCard(node);
   }
 
   function listDescriptionMarkdown(root) {

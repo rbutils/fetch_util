@@ -104,17 +104,22 @@
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url || href) && text.length < 80) return null;
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
 
-    var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : container;
-    var detail = container && container.matches && container.matches("tr") ?
-      listTableRowDetail(container, text) :
-      normalizeText(((detailSource && detailSource.textContent) || "")).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
+    var card = listCardRoot(link, container);
+    var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
+    var detail = card && card.matches && card.matches("tr") ?
+      listTableRowDetail(card, text) :
+      genericListCardText(detailSource).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
     detail = detail.replace(/\b(last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)\b/gi, "").replace(/\s{2,}/g, " ").trim();
     if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url || href) && weatherModuleText(text + " " + detail)) return null;
     if (/\/(tv|spored)\//i.test(url || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
     var score = url ? listCandidateScore(text, url, detail, container || link.parentElement, context) : text.length + detail.length;
     if (score === -Infinity) return null;
 
-    var candidate = { text: text, url: url, detail: detail, rankScore: score, card: listCardRoot(link, container) };
+    var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    var contentCard = closestGenericListCard(link);
+    if (contentCard && contentCard !== card && !(card && card.matches && card.matches("tr"))) {
+      candidate.contentCard = contentCard;
+    }
     if (!url) {
       candidate.canonicalKey = "unlinked:" + text.toLowerCase() + "|href:" + href;
       candidate.dedupeKey = candidate.canonicalKey + "|detail:" + detail.toLowerCase();
@@ -123,11 +128,6 @@
       candidate.dedupeKey = (candidate.canonicalKey || listCanonicalKey(url)) + "|row:" + normalizeText(detail).toLowerCase();
     }
     return candidate;
-  }
-
-  function listCardRoot(link, fallback) {
-    var card = link && link.closest && link.closest("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
-    return card || fallback || (link && link.parentElement);
   }
 
   function listAncestorOfType(link, nodeChecker) {

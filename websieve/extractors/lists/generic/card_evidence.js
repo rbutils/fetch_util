@@ -69,12 +69,11 @@
   }
 
   function cardOwnedNodes(card, selector) {
-    var cardSelector = "tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']";
-    var cardIsRoot = card.matches && card.matches(cardSelector);
-    return Array.prototype.filter.call(card.querySelectorAll(selector), function(node) {
-      var nearest = node.parentElement;
-      while (nearest && nearest !== card && !(nearest.matches && nearest.matches(cardSelector))) nearest = nearest.parentElement;
-      return !cardIsRoot || nearest === card;
+    var nodes = Array.prototype.slice.call(card.querySelectorAll(selector));
+    if (card.matches && card.matches("tr")) return nodes;
+    if (!genericListFieldBoundary(card)) return nodes;
+    return nodes.filter(function(node) {
+      return closestGenericListFieldCard(node) === card;
     });
   }
 
@@ -93,14 +92,21 @@
         return directCandidate;
       }
     }
-    var nestedCards = card.querySelectorAll("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+    var nestedCards = card.querySelectorAll(genericListCardSelector());
     if (Array.prototype.some.call(nestedCards, function(nested) {
-      return nested.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]");
+      return genericListNestedCard(nested) && genericListNestedCardReplaces(card, nested);
     })) return null;
-    var links = cardOwnedNodes(card, "a[href]");
-    var headingLink = cardOwnedNodes(card, "h1 a[href], h2 a[href], h3 a[href], h4 a[href]")[0];
+    var links = cardOwnedNodes(card, "a[href]").filter(function(anchor) {
+      return !anchor.matches("[rel='author'], [itemprop='author']") &&
+        !anchor.closest("[class*='author' i], [class*='byline' i]");
+    });
+    var headingLink = links.filter(function(anchor) {
+      return !!anchor.closest("h1, h2, h3, h4");
+    })[0];
     if (card.matches && card.matches("a[href]")) links = [card];
-    if (!headingLink && !cardOwnedNodes(card, "p, [class*='summary'], [class*='description'], [class*='excerpt'], time, img[alt]:not([alt=''])").length) return null;
+    var namedCard = card.matches && (card.matches("tr") ||
+      (card.matches(".post, .entry") && genericListCardBoundary(card)));
+    if (!headingLink && !namedCard && !cardOwnedNodes(card, "p, [class*='summary'], [class*='description'], [class*='excerpt'], time, img[alt]:not([alt=''])").length) return null;
     var link = headingLink;
     if (!link) {
       link = links.filter(function(anchor) {

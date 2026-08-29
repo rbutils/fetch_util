@@ -13,14 +13,17 @@
   }
 
   function sectionCardNodes(region, options) {
-    var selector = (options && options.cardSelector) || [
-      "tr", "article", "li", "[class*='card']", "[class*='story']", "[class*='teaser']",
-      "[class*='item']", "[class*='result']", "[class*='news']", "[class*='headline']"
-    ].join(", ");
+    var customSelector = options && options.cardSelector;
+    var selector = customSelector || genericListCardSelector();
     var allCards = Array.prototype.slice.call(region.querySelectorAll(selector));
+    if (!customSelector) allCards = allCards.filter(genericListCardBoundary);
     var cards = allCards.filter(function(card) {
+      if (allCards.some(function(ancestor) {
+        return ancestor !== card && ancestor.matches && ancestor.matches("tr") && ancestor.contains(card);
+      })) return false;
       return !allCards.some(function(nested) {
-        return nested !== card && card.contains(nested);
+        return nested !== card && card.contains(nested) && genericListNestedCard(nested) &&
+          genericListNestedCardReplaces(card, nested);
       });
     });
     if (!cards.length) cards = [region];
@@ -39,7 +42,8 @@
 
     candidates.filter(function(candidate) {
       return !candidates.some(function(nested) {
-        return nested !== candidate && candidate.card.contains(nested.card);
+        return nested !== candidate && candidate.card.contains(nested.card) &&
+          genericListNestedCardReplaces(candidate.card, nested.card);
       });
     }).forEach(function(candidate) {
       cards.push(candidate);

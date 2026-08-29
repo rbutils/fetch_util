@@ -11,28 +11,68 @@ function listItemMaterialIdentity(item, rawHref) {
   ]);
 }
 
-function listMarkdown(items) {
-  return items.map(function(item) {
-    var line = "- " + markdownLink(item.text, item.url);
-    var card = item.card;
-    var rowDetail = card && card.matches && card.matches("tr") ? item.detail : "";
-    var context = (rowDetail ? [rowDetail] : [
-      item.category,
-      item.summary,
-      cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || item.author,
-      cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]") || item.time,
-      cardField(card, "[class*='score' i], [data-score], [data-karma]") || item.score,
-      cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]") || item.replyCount,
-      cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || item.community,
-      item.image,
-      item.caption
-    ]).filter(Boolean).filter(function(value, index, values) {
-      return values.indexOf(value) === index;
-    }).join(" - ");
-    if (context) line += " - " + context;
-    else if (item.detail) line += " - " + item.detail;
-    return line;
-  }).join("\n");
+function listDetailWithoutContext(detail, contextValues) {
+  var remaining = normalizeText(detail || "");
+  if (!remaining) return "";
+  var represented = contextValues.map(normalizeText).filter(Boolean);
+  return remaining.split(/\s+(?:[-|·])\s+/).filter(function(segment) {
+    return represented.indexOf(normalizeText(segment)) === -1;
+  }).join(" - ");
+}
+
+function listClonedCardNode(card, clone, node) {
+  var path = [];
+  while (node && node !== card) {
+    var parent = node.parentNode;
+    if (!parent) return null;
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, node));
+    node = parent;
+  }
+  if (node !== card) return null;
+  return path.reduce(function(current, index) {
+    return current && current.childNodes[index];
+  }, clone);
+}
+
+function listRemoveCardField(card, clone, selector) {
+  var fields = cardOwnedNodes(card, selector);
+  var selectedValue = fields[0] && normalizeText(
+    fields[0].getAttribute("datetime") || fields[0].getAttribute("content") || fields[0].textContent || ""
+  );
+  var clonedFields = fields.filter(function(field) {
+    var value = normalizeText(field.getAttribute("datetime") || field.getAttribute("content") || field.textContent || "");
+    return value === selectedValue;
+  }).map(function(field) {
+    return listClonedCardNode(card, clone, field);
+  });
+  clonedFields.forEach(function(clonedField) {
+    if (clonedField && clonedField.remove) clonedField.remove();
+  });
+}
+
+function listSupplementalDetail(item, contextValues, card) {
+  if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
+  var clone = card.cloneNode(true);
+  [
+    "[class*='category'], [class*='eyebrow'], [class*='kicker']",
+    "[class*='summary'], [class*='description'], [class*='excerpt'], p",
+    "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]",
+    "time, [datetime], [class*='timestamp' i], [class*='date' i]",
+    "[class*='score' i], [data-score], [data-karma]",
+    ".reply, .replies, .comment, .comments, [class*='reply'], [class*='replie'], [class*='comment']",
+    "[class*='community' i], [class*='subreddit' i], [data-community]",
+    "figcaption"
+  ].forEach(function(selector) {
+    listRemoveCardField(card, clone, selector);
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4"), function(node) {
+    if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
+  });
+  var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
+  clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
+    if (nested !== contentCard && genericListFieldBoundary(nested)) nested.remove();
+  });
+  return normalizeText(clone.textContent || "");
 }
 
 function cardField(card, selector) {
@@ -44,3 +84,29 @@ function cardField(card, selector) {
   if (/^(comment|comments|reply|replies|score|points|likes?)$/i.test(value)) return "";
   return value;
 }
+
+var listMarkdown = function(items) {
+  return items.map(function(item) {
+    var line = "- " + markdownLink(item.text, item.url);
+    var card = item.card;
+    var rowDetail = card && card.matches && card.matches("tr") ? item.detail : "";
+    var contextValues = [
+      item.category,
+      item.summary,
+      cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || item.author,
+      cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]") || item.time,
+      cardField(card, "[class*='score' i], [data-score], [data-karma]") || item.score,
+      cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]") || item.replyCount,
+      cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || item.community,
+      item.image,
+      item.caption
+    ];
+    var supplementalDetail = listSupplementalDetail(item, contextValues, card);
+    if (supplementalDetail) contextValues.push(supplementalDetail);
+    var context = (rowDetail ? [rowDetail] : contextValues).filter(Boolean).filter(function(value, index, values) {
+      return values.indexOf(value) === index;
+    }).join(" - ");
+    if (context) line += " - " + context;
+    return line;
+  }).join("\n");
+};

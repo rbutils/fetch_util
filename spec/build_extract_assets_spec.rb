@@ -101,9 +101,12 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
-    expect(list_source).to include("function listMarkdown(items)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField")
-    expect(list_source.index("function listMarkdown(items)")).to be < list_source.index("function cardField")
-    expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+listMarkdown\s*\(/).length }).to eq(1)
+    expect(list_source).to include("var listMarkdown = function(items)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField")
+    expect(list_source.index("function cardField")).to be < list_source.index("var listMarkdown = function(items)")
+    list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
+      File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length
+    end
+    expect(list_definitions).to eq(1)
     expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+definitionReferenceMetadataScore\s*\(/).length }).to eq(1)
     expect(File.read(File.join(source_root, "extractors/lists/generic/card_evidence.js"))).not_to include("function listMarkdown")
     expect(File.read(File.join(source_root, "core/metadata/structured_data.js"))).not_to include("function definitionReferenceMetadataScore")
@@ -119,6 +122,14 @@ RSpec.describe "extract asset bundle" do
       expect(list_index).to be < manifest.index(path.delete_prefix("#{source_root}/"))
     end
     expect(manifest.index("extractors/glossary/detection.js")).to be < manifest.index("extractors/glossary/extraction.js")
+  end
+
+  it "defines list helpers before the parser-sensitive renderer snapshot" do
+    list_source = File.read(File.join(project_root, "websieve", "markdown", "lists.js"))
+    renderer_index = list_source.index("var listMarkdown = function(items)")
+
+    expect(list_source.index("function listSupplementalDetail")).to be < renderer_index
+    expect(list_source.index("function cardField")).to be < renderer_index
   end
 
   it "keeps relocated definitions before their consumers" do
@@ -154,6 +165,50 @@ RSpec.describe "extract asset bundle" do
     expect(base_source).to include("function pruneHiddenClone", "function visibilityPrunedClone")
     expect(list_source).to include("pruneHiddenClone(node, clone)")
     expect(list_source).not_to include("function pruneHiddenListClone")
+  end
+
+  it "loads the shared generic list card boundary before its consumers" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    ownership_path = "classifiers/list_pages/card_ownership.js"
+    renderer_path = "markdown/lists.js"
+    dominance_path = "classifiers/list_pages/dominance.js"
+    card_evidence_path = "extractors/lists/generic/card_evidence.js"
+    flat_extraction_path = "extractors/lists/generic/flat_extraction.js"
+    section_discovery_path = "extractors/lists/generic/section_discovery.js"
+    sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].to_h do |path|
+      [path, File.read(File.join(source_root, path))]
+    end
+
+    expect(sources.values.join.scan(/function\s+genericListCardSelector\s*\(/).length).to eq(1)
+    [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].each do |consumer_path|
+      expect(manifest.index(ownership_path)).to be < manifest.index(consumer_path)
+    end
+    expect(sources.fetch(ownership_path)).to include(
+      "function genericListCardBoundary",
+      "function genericListPresentationCardNode",
+      "function closestGenericListCard",
+      "function genericListFieldBoundary",
+      "function closestGenericListFieldCard",
+      "function genericListContextCard",
+      "function genericListNestedCardReplaces",
+      'fallback.matches("tr")'
+    )
+    expect(sources.fetch(dominance_path)).to include(
+      "genericListCardText(detailSource)",
+      "listCandidateScore(text, url, detail, container || link.parentElement, context)"
+    )
+    expect(sources.fetch(card_evidence_path)).to include(
+      "closestGenericListFieldCard(node)",
+      'card.matches("tr")',
+      "genericListNestedCardReplaces(card, nested)"
+    )
+    expect(sources.fetch(flat_extraction_path)).to include("closestGenericListCard(node)")
+    expect(sources.fetch(section_discovery_path)).to include(
+      "customSelector || genericListCardSelector()",
+      "allCards.filter(genericListCardBoundary)",
+      "genericListNestedCardReplaces(card, nested)"
+    )
   end
 
   it "keeps MediaWiki extraction in its canonical CMS owner" do

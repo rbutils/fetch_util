@@ -395,7 +395,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         <<~ROW,
           <tr>
             <td rowspan="2">Batch #{number}</td>
-            <td><a href="/packages/package-#{number}-a">package-#{number}-a</a></td>
+            <td><div class="entry"><a href="/packages/package-#{number}-a">package-#{number}-a</a></div></td>
             <td><span aria-label="passed"></span></td>
             <td>failed</td>
             <td><a href="/logs/#{number}-a">view logs</a></td>
@@ -403,7 +403,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         ROW
         <<~ROW
           <tr>
-            <td><a href="/packages/package-#{number}-b">package-#{number}-b</a></td>
+            <td><div class="entry"><a href="/packages/package-#{number}-b">package-#{number}-b</a></div></td>
             <td><span aria-label="running"></span></td>
             <td>queued</td>
             <td><a href="/logs/#{number}-b">view logs</a></td>

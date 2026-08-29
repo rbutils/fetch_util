@@ -161,6 +161,43 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'preserves named sections made from post and entry cards' do
+    html = <<~HTML
+      <main><h1>FID:post-entry-sections</h1>
+        <section><h2>FID:post-section</h2>
+            <div class="post"><a href="/post-one">FID:post-one-title with sufficient text</a><p>FID:post-one-summary</p>
+            <span class="item-meta"><h4><a rel="author" href="/authors/post-one">FID:post-one-author</a></h4></span>
+            <div class="entry"><a href="/post-nested">FID:post-nested-title with sufficient text</a></div>
+          </div>
+          <div class="post"><a href="/post-two">FID:post-two-title with sufficient text</a></div>
+        </section>
+        <section><h2>FID:entry-section</h2>
+          <div class="entry"><h3><a href="/entry-one">FID:entry-one-title</a></h3><p>FID:entry-one-summary</p></div>
+          <div class="entry"><a href="/entry-two">FID:entry-two-title with sufficient text</a></div>
+        </section>
+        <section><h2>FID:row-section</h2><table><tbody><tr>
+          <td><div class="entry"><a href="/row-one">FID:row-one-title with sufficient text</a></div></td>
+          <td>FID:row-one-context</td>
+        </tr></tbody></table></section>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/post-entry-sections', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      markdown = result['markdown']
+
+      expect(result['contentType']).to eq('list')
+      expect(markdown).to include(
+        '## FID:post-section', 'FID:post-one-summary', 'FID:post-nested-title', 'FID:post-two-title',
+        '## FID:entry-section', 'FID:entry-one-summary', 'FID:entry-two-title',
+        '## FID:row-section', 'FID:row-one-title', 'FID:row-one-context'
+      )
+      expect(markdown.scan(/^- \[/).length).to eq(6)
+      expect(markdown.index('FID:post-one-title')).to be < markdown.index('FID:post-nested-title')
+      expect(markdown.index('## FID:post-section')).to be < markdown.index('## FID:entry-section')
+    end
+  end
+
   it 'deduplicates responsive cards across named sections in production extraction' do
     with_url_page('https://fidelity.test/', fixture('fidelity_generic_cross_section_duplicate')) do |page|
       result = extract_payload(page, reader_mode: false)
@@ -287,6 +324,90 @@ RSpec.describe 'content fidelity contracts' do
       expect(result['contentType']).to eq('list')
       expect(result['markdown'].scan('FID:flat-introduction').length).to eq(1)
       expect(result['markdown'].scan('FID:flat-card-1-summary').length).to eq(1)
+    end
+  end
+
+  it 'uses one post and entry boundary for flat list context' do
+    remaining_cards = (2..8).map do |number|
+      card_class = number.even? ? 'entry' : 'post'
+      <<~HTML
+        <li>
+          <div class="#{card_class}">
+            <h2><a href="/record-#{number}">FID:record-#{number} with sufficient title</a></h2>
+            <span class="summary">FID:record-#{number}-summary with enough local context.</span>
+          </div>
+        </li>
+      HTML
+    end.join
+    html = <<~HTML
+      <main class="entry">
+        <h1>FID:post-entry-portal</h1>
+        <a href="/about">About</a>
+        <p>FID:post-entry-introduction explains the complete visible collection.</p>
+        <ul class="records itemlist">
+          <li>
+            <div class="post">
+              <div class="card-body">
+                <h2><a href="/record-outer">FID:outer-post with sufficient title</a></h2>
+                <p>FID:outer-post-summary with enough local context.</p>
+                <span class="status">FID:outer-post-status-open</span>
+              </div>
+              <span class="item-meta">
+                <h4><a rel="author" href="/authors/outer">FID:outer-post-author</a></h4>
+                <time datetime="2026-08-29">FID:outer-post-time</time>
+              </span>
+              <div class="entry">
+                <h3><a href="/record-nested">FID:nested-entry with sufficient title</a></h3>
+                <p>FID:nested-entry-summary with enough local context.</p>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="post">
+              <div class="entry">
+                <h2><a href="/record-wrapped">FID:wrapped-entry with sufficient title</a></h2>
+                <ul class="attributes">
+                  <li>Annual results remain visible.</li>
+                  <li>FID:wrapped-entry-location-oslo</li>
+                </ul>
+              </div>
+              <span class="author"><h4><a rel="author" href="/authors/ann">Ann</a></h4></span>
+              <span class="author duplicate"><a rel="author" href="/authors/ann">Ann</a></span>
+              <time datetime="2026-09-01">FID:wrapped-entry-time</time>
+              <time class="duplicate" datetime="2026-09-01">FID:wrapped-entry-time</time>
+            </div>
+          </li>
+          <li><div class="item-content"><h2><a href="/record-item-content">FID:item-content with sufficient title</a></h2><p>FID:item-content-summary with enough local context.</p><figure><img src="javascript:unsafeImage()" alt="FID:unsafe-image-alt"><figcaption>FID:unsafe-image-caption</figcaption></figure></div></li>
+          <li><div class="post-content"><h2><a href="/record-post-content">FID:post-content with sufficient title</a></h2><p>FID:post-content-summary with enough local context.</p></div></li>
+          <li><div class="entry-content"><h2><a href="/record-entry-content">FID:entry-content with sufficient title</a></h2><p>FID:entry-content-summary with enough local context.</p></div></li>
+          #{remaining_cards}
+        </ul>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/archive', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+
+      expect(result['contentType']).to eq('list')
+      expect(result['markdown']).to include('- [FID:outer-post with sufficient title]')
+      expect(result['markdown'].scan('FID:post-entry-introduction').length).to eq(1)
+      expect(result['markdown'].scan('FID:outer-post-summary').length).to eq(1)
+      expect(result['markdown'].scan('FID:outer-post-author').length).to eq(1)
+      expect(result['markdown'].scan('2026-08-29').length).to eq(1)
+      expect(result['markdown'].scan('FID:outer-post-status-open').length).to eq(1)
+      expect(result['markdown'].scan('FID:nested-entry-summary').length).to eq(1)
+      expect(result['markdown']).to include('FID:wrapped-entry with sufficient title', 'Ann', '2026-09-01')
+      expect(result['markdown'].scan(/\bAnn\b/).length).to eq(1)
+      expect(result['markdown'].scan('2026-09-01').length).to eq(1)
+      expect(result['markdown'].scan('Annual results remain visible.').length).to eq(1)
+      expect(result['markdown'].scan('FID:wrapped-entry-location-oslo').length).to eq(1)
+      expect(result['markdown']).to include('FID:item-content-summary', 'FID:post-content-summary', 'FID:entry-content-summary')
+      expect(result['markdown'].scan('FID:unsafe-image-caption').length).to eq(1)
+      expect(result['markdown']).not_to include('javascript:unsafeImage')
+      expect(result['markdown'].scan(/^- \[/).length).to eq(13)
+      expect(result['markdown'].index('FID:outer-post with sufficient title')).to be < result['markdown'].index('FID:outer-post-summary')
+      expect(result['markdown'].index('FID:outer-post-summary')).to be < result['markdown'].index('FID:nested-entry with sufficient title')
+      expect(result['markdown'].index('FID:nested-entry with sufficient title')).to be < result['markdown'].index('FID:nested-entry-summary')
     end
   end
 
