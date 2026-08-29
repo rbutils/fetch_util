@@ -35,6 +35,20 @@ RSpec.describe FetchUtil::Browser do
     browser.send(:stabilize_page, page, 'https://t.me/s/examplechannel/42')
   end
 
+  it 'routes GitLab project roots through repository stabilization' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://gitlab.com/group/project')).to eq(:stabilize_gitlab_repo)
+    expect(strategy_for.call('https://about.gitlab.com/group/project')).to eq(:stabilize_gitlab_repo)
+    expect(strategy_for.call('https://gitlab.com/group/project/issues')).to be_nil
+    expect(strategy_for.call('https://example.com/group/project')).to be_nil
+    expect(strategy_for.call('not a URL')).to be_nil
+  end
+
   it 'stabilizes a simple page fixture without the generic consent wait' do
     page = instance_double(Ferrum::Browser)
     network = instance_double('FerrumNetwork')

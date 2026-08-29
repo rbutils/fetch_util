@@ -6,14 +6,6 @@ module FetchUtil
       module GitlabRepo
         private
 
-        def gitlab_repo_url?(url)
-          uri = URI.parse(url)
-          host = uri.host.to_s.downcase
-          (host == "gitlab.com" || host.end_with?(".gitlab.com")) && uri.path.split("/").reject(&:empty?).length == 2
-        rescue URI::InvalidURIError
-          false
-        end
-
         def stabilize_gitlab_repo(page)
           retry_until_timeout(capped_timeout(8.0), interval: 0.2) do
             safe_evaluate(page, <<~JS, default: 0).to_i >= 300
