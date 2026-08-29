@@ -35,7 +35,8 @@ module FetchUtil
       return build_response(uri, response, redirects: redirects) if location.empty?
 
       redirect_response = build_response(uri, response)
-      fetch(uri.merge(location), limit - 1, redirects + [redirect_response])
+      redirect_uri = parse_http_uri(uri.merge(location))
+      fetch(redirect_uri, limit - 1, redirects + [redirect_response])
     end
 
     def request(uri)
@@ -93,7 +94,7 @@ module FetchUtil
 
     def parse_http_uri(url)
       uri = URI.parse(url.to_s)
-      raise URI::InvalidURIError, "unsupported url: #{url}" unless uri.is_a?(URI::HTTP) && uri.host
+      raise URI::InvalidURIError, "unsupported url: #{url}" unless uri.is_a?(URI::HTTP) && !uri.host.to_s.empty?
 
       uri
     end
