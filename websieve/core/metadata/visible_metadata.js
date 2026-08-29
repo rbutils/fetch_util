@@ -50,12 +50,15 @@ function visibleMetadataRoots() {
 function firstScopedText(roots, selectors, attr) {
   for (var r = 0; r < roots.length; r += 1) {
     for (var i = 0; i < selectors.length; i += 1) {
-      var node = roots[r].querySelector(selectors[i]);
-      if (!node || node.closest("nav, footer, aside")) continue;
+      var nodes = roots[r].querySelectorAll(selectors[i]);
+      for (var n = 0; n < nodes.length; n += 1) {
+        var node = nodes[n];
+        if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) continue;
 
-      var value = attr ? node.getAttribute(attr) : node.textContent;
-      value = normalizeText(value);
-      if (value) return value;
+        var value = attr ? node.getAttribute(attr) : node.textContent;
+        value = normalizeText(value);
+        if (value) return value;
+      }
     }
   }
 

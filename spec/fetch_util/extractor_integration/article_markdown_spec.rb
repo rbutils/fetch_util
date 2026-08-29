@@ -354,6 +354,37 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "ignores hidden dates and bylines while preserving restored metadata" do
+    html = <<~HTML
+      <html>
+        <head><title>Community archive update</title></head>
+        <body>
+          <main><article>
+            <h1>Community archive update</h1>
+            <time datetime="2010-01-01" style="display: none">January 1, 2010</time>
+            <time datetime="2026-08-29">August 29, 2026</time>
+            <span class="author" style="display: none">Hidden Author</span>
+            <section style="visibility: hidden">
+              <span class="author" style="visibility: visible">Visible Author</span>
+            </section>
+            <p>This current report explains how local archivists preserve records and publish dependable descriptions.</p>
+            <p>Contributors review each collection, document its provenance, and retain useful context for future readers.</p>
+            <p>The updated catalogue keeps every public record available while clearly separating historical notes from current guidance.</p>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/archive/current-update", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["byline"]).to eq("Visible Author")
+      expect(payload["publishedTime"]).to eq("2026-08-29")
+      expect(payload["warnings"]).not_to include("stale_content")
+    end
+  end
+
   it "does not report schema modification time as publication time" do
     html = <<~HTML
       <html>
