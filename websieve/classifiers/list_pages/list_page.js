@@ -1,17 +1,30 @@
+  function materializedListLinks(root) {
+    return Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
+      return !!materializedHttpUrl(link.getAttribute("href"));
+    });
+  }
+
+  function materializedListItemCount(items) {
+    return (items || []).filter(function(item) {
+      return !!materializedHttpUrl(item && item.url);
+    }).length;
+  }
+
   function isProbablyListPage(content) {
     if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
     if (articleRouteFocalContent(content)) return false;
 
     function listSignals(root) {
-      var links = root.querySelectorAll("a").length;
+      var materializedLinks = materializedListLinks(root);
+      var links = materializedLinks.length;
       var paragraphs = root.querySelectorAll("p").length;
       var rows = root.querySelectorAll("tr, li, article, section").length;
       var listItems = root.querySelectorAll("li").length;
       var listish = root.querySelectorAll("table, ul, ol, .itemlist, .items, .stories, .posts, .news, .headlines, .feed, .threads, .topic-list, .forumlist, .discussionList").length;
       var headings = root.querySelectorAll("h1, h2, h3, h4").length;
       var cards = root.querySelectorAll("article, section, [class*='card'], [class*='item'], [class*='story'], [class*='post'], [class*='news'], [class*='headline'], [class*='feed'], [class*='thread'], [class*='topic-list'], .structItem, .discussionListItem").length;
-      var headlineLinks = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
+      var headlineLinks = materializedLinks.filter(function(link) {
         var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
         return text.length >= minimumListTitleLength(text) && text.length <= 220 && !looksLikeFooterLink(text, link.getAttribute("href") || "");
       }).length;
@@ -68,10 +81,11 @@
 
     var root = document.createElement("div");
     root.innerHTML = (content && content.html) || document.body.innerHTML;
-    var links = root.querySelectorAll("a[href]").length;
+    var materializedLinks = materializedListLinks(root);
+    var links = materializedLinks.length;
     var cards = root.querySelectorAll("article, li, section, [class*='card'], [class*='item'], [class*='story'], [class*='product'], [class*='tile'], [class*='job'], [data-testid*='card'], [data-testid*='product'], [data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-url*='/remote-jobs/']").length;
     var headings = root.querySelectorAll("h2, h3, h4").length;
-    var headlineLinks = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
+    var headlineLinks = materializedLinks.filter(function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       return text.length >= minimumListTitleLength(text) && text.length <= 220 && !looksLikeFooterLink(text, link.getAttribute("href") || "");
     }).length;
@@ -81,7 +95,7 @@
     var longParagraphs = paragraphTexts.filter(function(text) { return text.length >= 180; }).length;
     var longParagraphText = paragraphTexts.filter(function(text) { return text.length >= 120; }).join(" ");
     var text = normalizeText(root.textContent || (content && (content.textContent || content.markdown)) || "");
-    var linkText = Array.prototype.reduce.call(root.querySelectorAll("a[href]"), function(total, link) {
+    var linkText = materializedLinks.reduce(function(total, link) {
       return total + normalizeText(link.textContent || link.getAttribute("aria-label") || "").length;
     }, 0);
     var linkDensity = text.length > 0 ? linkText / text.length : 0;
@@ -136,14 +150,20 @@
       },
       candidateBuilder: function(card, titleNode) {
         var cardText = normalizeText(card.textContent || "");
+        var link = titleNode && titleNode.matches && titleNode.matches("a[href]") ? titleNode :
+          titleNode && titleNode.querySelector && titleNode.querySelector("a[href]");
+        if (!link) link = card.querySelector("a[href]");
+        var href = link ? link.getAttribute("href") : "";
+        var url = materializedHttpUrl(href);
         if (!/\b(?:case|defendant|prosecutor|trial|charges?|warrant|summons|custody|convicted|acquitted|closed|at large|court|record|docket|matter)\b/i.test(cardText)) return null;
-        return { text: normalizeText((titleNode || {}).textContent || "") };
+        return { text: normalizeText((titleNode || {}).textContent || ""), url: url, admission: !href || !!url };
       }
     });
     var filterBlocks = root.querySelectorAll("form, [class*='filter' i], [class*='facet' i], [class*='exposed' i], [class*='search' i]").length;
     var countLabel = /\b\d{1,4}\s+(?:cases?|defendants?|records?|matters?|results?)\b/i.test(text);
 
-    return caseCards.length >= 4 && (filterBlocks >= 1 || countLabel);
+    var admittedCards = caseCards.filter(function(card) { return card.admission; }).length;
+    return caseCards.length >= 4 && admittedCards >= 4 && (filterBlocks >= 1 || countLabel);
   }
 
   function sectionFeedArticleLinks(root) {
@@ -152,7 +172,7 @@
 
     Array.prototype.forEach.call(root.querySelectorAll("a[href]"), function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
-      var url = absoluteUrl(link.getAttribute("href"));
+      var url = materializedHttpUrl(link.getAttribute("href"));
       var parsed;
 
       if (text.length < minimumListTitleLength(text) || text.length > 220 || looksLikeFooterLink(text, url || "")) return;
@@ -184,7 +204,7 @@
     var paragraphs = root.querySelectorAll("p").length;
     var headings = root.querySelectorAll("h1, h2, h3").length;
     var listLinks = (content.markdown || "").match(/^\s*- \[/gm) || [];
-    var linkText = Array.prototype.reduce.call(root.querySelectorAll("a[href]"), function(total, link) {
+    var linkText = materializedListLinks(root).reduce(function(total, link) {
       return total + normalizeText(link.textContent || link.getAttribute("aria-label") || "").length;
     }, 0);
     var linkDensity = text.length > 0 ? linkText / text.length : 0;

@@ -22,7 +22,7 @@
     var source = wykopField(card, ".source, .domain, [data-source]");
     var media = card.querySelector("img[src]");
     var mediaText = media ? normalizeText(media.getAttribute("alt") || "") : "";
-    var mediaUrl = media ? absoluteUrl(media.getAttribute("src")) : "";
+    var mediaUrl = media ? materializedHttpUrl(media.getAttribute("src")) : "";
     var promoted = card.querySelector(".promoted, .recommendation, [data-promoted]");
     var pinned = card.closest && card.closest(".pinned, [data-pinned]");
 
@@ -61,7 +61,7 @@
     var heading = tagMatch ? wykopField(document, ".tag-page h1, .tag-page h2, main h1") : "";
     var title = heading || metadata.title || document.title;
     var markdown = "# " + title + "\n\n" + items.map(function(item) {
-      return "- [" + item.text + "](" + item.url + ")" + (item.detail ? " - " + item.detail : "");
+      return "- " + markdownLink(item.text, item.url) + (item.detail ? " - " + item.detail : "");
     }).join("\n");
     return {
       title: title,

@@ -78,6 +78,9 @@
     var broadRootEvidence = substantialRoot ? 2 : 0;
     var headingRootEvidence = substantialRoot ? namedHeadingCount : 0;
     var portalSectionCount = Math.max(best.sectionCount || 0, headingRootEvidence, broadRootEvidence);
+    var materializedItemCount = best.items.filter(function(item) {
+      return !!materializedHttpUrl(item && item.url);
+    }).length;
 
     return listItemsContentResult(metadata, {
       title: metadata.title || document.title,
@@ -86,7 +89,7 @@
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,
-      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && best.items.length >= 4 ? {
+      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && best.items.length >= 4 && materializedItemCount >= 2 ? {
         namedSectionCount: portalSectionCount,
         canonicalCardCount: best.items.length
       } : null

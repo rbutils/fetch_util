@@ -36,6 +36,7 @@ RSpec.describe 'FetchUtil extractor integration - Hacker News' do
                                  'community' => 'Ask HN')
       expect(payload['markdown']).to include('[Ask HN: How do you document small systems?](https://example.test/docs)')
       expect(payload['markdown']).to include('18 points - by erin')
+      expect(payload['html']).to include('<tr class="athing"', '<td>')
     end
   end
 
@@ -43,6 +44,7 @@ RSpec.describe 'FetchUtil extractor integration - Hacker News' do
     extract_from_url('https://news.ycombinator.com/', hacker_news_fixture('hacker_news_homepage.html')) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'feed', 'platform' => 'Hacker News')
       expect(payload['markdown']).to include('[A homepage story](https://example.test/homepage)')
+      expect(payload['html']).to include('<tr class="athing"', '<td>')
     end
   end
 

@@ -37,7 +37,7 @@
         var items = links.map(function(link) {
           var text = normalizeText(link.textContent || "");
           var href = link.getAttribute("href") || "";
-          return text && /^#/.test(href) ? "- [" + text + "](" + href + ")" : null;
+          return text && /^#/.test(href) ? "- " + markdownLink(text, href) : null;
         }).filter(Boolean);
 
         return items.length ? "## Contents\n\n" + items.join("\n") + "\n\n" + markdown : markdown;
@@ -53,7 +53,7 @@
     var items = links.map(function(link) {
       var text = normalizeText(link.textContent || "");
       var href = link.getAttribute("href") || "";
-      return text && /^#/.test(href) ? "- [" + text + "](" + href + ")" : null;
+      return text && /^#/.test(href) ? "- " + markdownLink(text, href) : null;
     }).filter(Boolean);
 
     return items.length ? "## Contents\n\n" + items.join("\n") : null;

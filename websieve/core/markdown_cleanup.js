@@ -145,50 +145,8 @@
       return line.replace(/(.{50,300}?[.!?])(?:\s*\1)+/g, "$1");
     }).join("\n");
 
-    // Deduplicate consecutive identical lines (collapse runs of 3+ identical lines to one)
-    var lines = result.split("\n");
-    var deduped = [];
-    var prevLine = null;
-    var runCount = 0;
-    for (var i = 0; i < lines.length; i++) {
-      var trimmed = lines[i].trim();
-      if (trimmed === prevLine && trimmed.length > 0) {
-        runCount++;
-        if (runCount < 2) deduped.push(lines[i]);
-        // Skip lines beyond the 2nd consecutive duplicate
-      } else {
-        prevLine = trimmed;
-        runCount = 1;
-        deduped.push(lines[i]);
-      }
-    }
-    result = deduped.join("\n");
-
-    // Collapse non-consecutive duplicate lines: if the same non-empty, non-heading line
-    // appears 4+ times total in the document, keep only the first occurrence
-    lines = result.split("\n");
-    var lineCounts = {};
-    for (var j = 0; j < lines.length; j++) {
-      var key = lines[j].trim();
-      if (key.length > 0 && !/^#{1,6}\s/.test(key)) {
-        lineCounts[key] = (lineCounts[key] || 0) + 1;
-      }
-    }
-    var lineSeen = {};
-    var filtered = [];
-    for (var k = 0; k < lines.length; k++) {
-      var lineKey = lines[k].trim();
-      if (lineKey.length > 0 && !/^#{1,6}\s/.test(lineKey) && (lineCounts[lineKey] || 0) >= 4) {
-        if (!lineSeen[lineKey]) {
-          lineSeen[lineKey] = true;
-          filtered.push(lines[k]);
-        }
-        // Skip subsequent duplicates
-      } else {
-        filtered.push(lines[k]);
-      }
-    }
-    return restoreMarkdownFences(filtered.join("\n").replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
+    result = collapseMarkdownDuplicateLines(result);
+    return restoreMarkdownFences(result.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
   }
 
   function stripTrailingArticlePromoTail(markdown) {

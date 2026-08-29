@@ -4,8 +4,22 @@ function metadataValue(name, attr) {
   return node ? node.getAttribute("content") : null;
 }
 
+function materializedMetadataValue(name, attr) {
+  var selector = 'meta[' + attr + "=\"" + name + "\"]";
+  var nodes = document.querySelectorAll(selector);
+  for (var index = 0; index < nodes.length; index += 1) {
+    var url = materializedHttpUrl(nodes[index].getAttribute("content"));
+    if (url) return url;
+  }
+  return null;
+}
+
 function collectMetadata() {
-  var canonical = document.querySelector('link[rel="canonical"]');
+  var canonicalUrl = null;
+  var canonicals = document.querySelectorAll('link[rel="canonical"]');
+  for (var canonicalIndex = 0; canonicalIndex < canonicals.length && !canonicalUrl; canonicalIndex += 1) {
+    canonicalUrl = materializedHttpUrl(canonicals[canonicalIndex].getAttribute("href"));
+  }
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;
   var schemaAuthor = entityName(schemaArticle && schemaArticle.author);
@@ -18,9 +32,9 @@ function collectMetadata() {
     excerpt: metadataValue("description", "name") || metadataValue("og:description", "property"),
     siteName: metadataValue("og:site_name", "property") || location.hostname,
     publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || visiblePublishedTime(),
-    canonicalUrl: absoluteUrl(canonical && canonical.getAttribute("href")) || location.href,
+    canonicalUrl: canonicalUrl || materializedHttpUrl(location.href),
     language: documentLanguage(),
-    image: metadataValue("og:image", "property") || null,
-    video: metadataValue("og:video", "property") || metadataValue("og:video:url", "property") || null
+    image: materializedMetadataValue("og:image", "property"),
+    video: materializedMetadataValue("og:video", "property") || materializedMetadataValue("og:video:url", "property")
   };
 }

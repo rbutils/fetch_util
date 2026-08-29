@@ -40,10 +40,10 @@ RSpec.describe 'FetchUtil extractor integration' do
       markdown = payload["markdown"]
 
       expect(payload["contentType"]).to eq("list")
-      expect(markdown).to include("- [Fedora Linux](../fedora/latest/) - The Northwind documentation hub.")
-      expect(markdown).to include("- [Quick Docs](../quick-docs/) - Brief task notes and question-based documentation.")
-      expect(markdown).to include("- [EPEL](../epel/) - Additional packages for enterprise deployments.")
-      expect(markdown).not_to include("Fedora Linux](../fedora/latest/) - Northwind reference hub. Setup notes and release guides. Quick Docs")
+      expect(markdown).to include("- [Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - The Northwind documentation hub.")
+      expect(markdown).to include("- [Quick Docs](https://docs.fedoraproject.org/en-US/quick-docs/) - Brief task notes and question-based documentation.")
+      expect(markdown).to include("- [EPEL](https://docs.fedoraproject.org/en-US/epel/) - Additional packages for enterprise deployments.")
+      expect(markdown).not_to include("Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - Northwind reference hub. Setup notes and release guides. Quick Docs")
     end
   end
 
@@ -59,7 +59,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://docs.example.test/", html) do |page|
       markdown = extract(page)["markdown"]
       expect(markdown).to include("- Section 9")
-      expect(markdown).to include("- [Item 14](./item-14/) - Details 14.")
+      expect(markdown).to include("- [Item 14](https://docs.example.test/item-14/) - Details 14.")
       expect(markdown.index("Item 1")).to be < markdown.index("Item 14")
     end
   end
@@ -90,7 +90,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("# Project Docs")
-      expect(payload["markdown"]).to include("- [User Guide](./guide/) - Open the primary user guide.")
+      expect(payload["markdown"]).to include("- [User Guide](https://docs.example.test/guide/) - Open the primary user guide.")
     end
   end
 

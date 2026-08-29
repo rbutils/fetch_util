@@ -26,6 +26,11 @@ RSpec.describe 'FetchUtil extractor integration' do
               <tr><td>11 points | discuss</td></tr>
               <tr class="athing"><td><a href="https://example.com/h">Eighth story about content types</a></td></tr>
               <tr><td>8 points | discuss</td></tr>
+              <tr class="athing"><td><a href="javascript:openStory()">Script action story</a></td></tr>
+              <tr class="athing"><td><a href="javascript:firstRepeatedAction()">Repeated action story</a><span>First action context</span></td></tr>
+              <tr class="athing"><td><a href="javascript:secondRepeatedAction()">Repeated action story</a><span>Second action context</span></td></tr>
+              <tr class="athing"><td><a href="mailto:news@example.test">Email action story</a></td></tr>
+              <tr class="athing"><td><a href="ftp://files.example.test/story">FTP download action story</a></td></tr>
             </table>
           </main>
         </body>
@@ -38,7 +43,35 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload["readerMode"]).to eq(false)
       expect(payload["markdown"]).to include("- [First story about Ruby agents](https://example.com/a)")
+      expect(payload["markdown"]).to include("- Script action story", "- Email action story", "- FTP download action story")
+      expect(payload["markdown"].scan(/Repeated action story/).length).to eq(2)
+      expect(payload["markdown"]).to include("First action context", "Second action context")
+      expect(payload["markdown"]).not_to include("javascript:", "mailto:", "ftp:")
+      expect(payload["html"]).to include("Script action story", "Email action story", "FTP download action story")
+      expect(payload["html"]).not_to include("javascript:", "mailto:", "ftp:")
       expect(payload["markdown"]).not_to include("<table")
+    end
+  end
+
+  it "does not let action links turn substantive prose into a list" do
+    html = <<~HTML
+      <html><head><title>Automation safety report</title></head><body><main><article>
+        <h1>Automation safety report</h1>
+        <p>This substantive report explains why user-visible actions require careful handling while preserving the surrounding article and its complete explanatory context.</p>
+        <p>It documents classification evidence, output boundaries, and the behavior expected when browser-only controls appear beside ordinary prose.</p>
+        <a href="javascript:firstAction()">Open interactive comparison</a>
+        <a href="mailto:review@example.test">Email the review team</a>
+        <a href="ftp://files.example.test/archive">Download the legacy archive</a>
+        <a href="data:text/plain,report">Open embedded report data</a>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/reports/automation-safety", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Open interactive comparison", "Email the review team", "Download the legacy archive", "Open embedded report data")
+      expect(payload["markdown"]).not_to include("javascript:", "mailto:", "ftp:", "data:text")
     end
   end
 
@@ -264,7 +297,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       <<~ROW
         <tr>
           <td><a href="/controls/#{index}">view logs</a></td>
-          <td><a href="/build/#{build_id}/">#{build_id}</a></td>
+          <td><a href="/build/#{build_id}/">#{build_id}</a><a href="javascript:openDiagnostic(#{build_id})">launch diagnostic console</a></td>
           <td>package-#{index + 1}</td>
           <td>2.#{index}.0-1</td>
           <td>#{index + 1} hours ago</td>
@@ -296,6 +329,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         "Status: succeeded"
       )
       expect(markdown).not_to include("- [view logs]")
+      expect(markdown).not_to include("javascript:", "- [launch diagnostic console]")
     end
   end
 
@@ -696,7 +730,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    with_page(html) do |page|
+    with_url_page("https://cjk-list.example/", html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload["contentType"]).to eq("list")

@@ -59,7 +59,7 @@
     var titleText = normalizeText(title || "").toLowerCase();
     var offer = productOffer(product);
     var productUrl = commerceEntityText((product && product.url) || (offer && offer.url));
-    var absoluteProductUrl = productUrl ? absoluteUrl(productUrl) : "";
+    var absoluteProductUrl = materializedHttpUrl(productUrl);
 
     if (url && absoluteProductUrl && absoluteProductUrl.replace(/[#?].*$/, "") === url.replace(/[#?].*$/, "")) return true;
     if (name && titleText && (name === titleText || name.indexOf(titleText) !== -1 || titleText.indexOf(name) !== -1)) return true;

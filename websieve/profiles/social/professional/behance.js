@@ -8,8 +8,8 @@
       var href = link.getAttribute("href");
       if (!href) return;
 
-      var url = absoluteUrl(href);
-      try {
+      var url = materializedHttpUrl(href);
+      if (url) try {
         var parsed = new URL(url, location.href);
         parsed.searchParams.delete("tracking_source");
         parsed.searchParams.delete("l");
@@ -20,7 +20,7 @@
       var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       if (!title) return;
 
-      var key = title + "|" + url;
+      var key = title + "|" + (url || "unlinked:" + href);
       if (seen[key]) return;
       seen[key] = true;
 
@@ -28,7 +28,7 @@
       items.push({ text: title, url: url, detail: searchItemDetail(container, title) });
     });
 
-    if (items.length >= 4) {
+    if (items.length >= 4 && materializedListItemCount(items) >= 4) {
       var query = safeDecodeURI((location.pathname || "").split("/").filter(Boolean).slice(-1)[0] || "").replace(/[-_+]+/g, " ");
       query = normalizeText(query);
 

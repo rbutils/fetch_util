@@ -9,7 +9,7 @@
 
       root.querySelectorAll("a[href]").forEach(function(link) {
         var href = link.getAttribute("href") || "";
-        var url = absoluteUrl(href);
+        var url = materializedHttpUrl(href);
         var title = normalizeText(link.getAttribute("aria-label") || ((link.querySelector("h2, h3, h4") || {}).textContent) || "");
         var paragraphs = Array.prototype.slice.call(link.querySelectorAll("p"));
         var detail = "";
@@ -18,15 +18,16 @@
         if (paragraphs.length > 1) detail = normalizeText(paragraphs[0].textContent || "");
         if (!detail && title) detail = searchItemDetail(link, title);
 
-        if (!title || !url || title.length < 3 || title.length > 180 || seen[url]) return;
-        if (!topicishRoot && !/\btopics?\b/i.test(url + " " + title + " " + detail)) return;
+        var key = url || "unlinked:" + title.toLowerCase() + "|href:" + href;
+        if (!title || title.length < 3 || title.length > 180 || seen[key]) return;
+        if (!topicishRoot && !/\btopics?\b/i.test((url || href) + " " + title + " " + detail)) return;
         if (/^(home|health topics|topics|news|headlines|menu|search|more)$/i.test(title)) return;
 
-        seen[url] = true;
+        seen[key] = true;
         items.push({ text: title, url: url, detail: detail });
       });
 
-      if (items.length < 8) return;
+      if (items.length < 8 || materializedListItemCount(items) < 8) return;
       var score = items.length * 100 + (topicishRoot ? 1000 : 0);
       if (!best || score > best.score) best = { root: root, items: items, score: score };
     });

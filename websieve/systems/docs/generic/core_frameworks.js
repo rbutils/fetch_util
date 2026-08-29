@@ -7,7 +7,8 @@
 
     var current = location.href.replace(/#.*$/, "").replace(/\/$/, "") + "/";
     var active = Array.prototype.slice.call(document.querySelectorAll(".md-nav__link[href]")).find(function(link) {
-      return absoluteUrl(link.getAttribute("href")).replace(/#.*$/, "").replace(/\/$/, "") + "/" === current;
+      var href = materializedHttpUrl(link.getAttribute("href"));
+      return href && href.replace(/#.*$/, "").replace(/\/$/, "") + "/" === current;
     });
     var section = active && active.closest(".md-nav__item--nested, .md-nav__item--section, .md-nav__item");
     var nav = section && section.querySelector("nav.md-nav");
@@ -16,7 +17,8 @@
     var seen = {};
     var links = [];
     nav.querySelectorAll("a[href]").forEach(function(link) {
-      var href = absoluteUrl(link.getAttribute("href"));
+      var href = materializedHttpUrl(link.getAttribute("href"));
+      if (!href) return;
       var cleanHref = href.replace(/#.*$/, "").replace(/\/$/, "") + "/";
       var text = normalizeText(link.textContent);
       if (!text || cleanHref === current || seen[cleanHref]) return;
@@ -46,7 +48,7 @@
     if (!section) return "";
 
     var items = Array.prototype.slice.call(section.querySelectorAll("a[href]")).map(function(link) {
-      return "- [" + normalizeText(link.textContent) + "](" + link.href + ")";
+      return "- " + markdownLink(normalizeText(link.textContent), link.href);
     }).filter(Boolean);
     return items.length ? "## Reference Pages\n\n" + items.join("\n") : "";
   }

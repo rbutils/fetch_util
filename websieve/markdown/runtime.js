@@ -7,6 +7,7 @@
     cleanupAgentRoot(root);
     normalizeCodeBlocks(root);
     unwrapWrapperDivs(root);
+    materializeHttpAttributes(root);
 
     var service = new TurndownService({
       headingStyle: "atx",
@@ -44,8 +45,9 @@
       replacement: function(_content, node) {
         var src = node.getAttribute("src") || node.getAttribute("data-src") || node.getAttribute("data-lazy-src") || "";
         var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
-        if (!src || !alt) return "";
-        return "![" + alt + "](" + absoluteUrl(src) + ")";
+        var url = materializedHttpUrl(src);
+        if (!alt) return "";
+        return url ? "![" + alt + "](" + url + ")" : alt;
       }
     });
 
@@ -68,7 +70,7 @@
         var href = node.getAttribute("href") || "";
         var text = normalizeText(node.textContent || "").replace(/\s+([,;:.])/g, "$1").replace(/\s+-\s+/g, "-");
         if (!href || !text) return text;
-        return "[" + text.replace(/[\\[\]]/g, "") + "](" + absoluteUrl(href) + ")";
+        return markdownLink(text.replace(/[\\[\]]/g, ""), href);
       }
     });
 

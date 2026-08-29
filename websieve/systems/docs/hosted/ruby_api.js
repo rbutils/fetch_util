@@ -3,16 +3,18 @@
     var items = [];
 
     document.querySelectorAll("a[href*='/o/']").forEach(function(link) {
-      var href = absoluteUrl(link.getAttribute("href"));
+      var rawHref = link.getAttribute("href") || "";
+      var href = materializedHttpUrl(rawHref);
       var label = normalizeText(link.textContent);
-      if (!href || !/\/\d+(?:\.\d+)?\/o\//.test(href) || !/^read more$/i.test(label) || seen[href]) return;
+      var key = href || "unlinked:" + rawHref;
+      if (!/\/\d+(?:\.\d+)?\/o\//.test(href || rawHref) || !/^read more$/i.test(label) || seen[key]) return;
 
       var card = link.parentElement;
       while (card && card !== document.body) {
         var heading = normalizeText((card.querySelector("h2, h3") || {}).textContent || "");
         var description = firstRootText(card, ["p"]);
         if (heading && description) {
-          seen[href] = true;
+          seen[key] = true;
           items.push({ text: heading, url: href, detail: description });
           return;
         }
@@ -20,7 +22,7 @@
       }
     });
 
-    if (items.length < 3) return null;
+    if (items.length < 3 || materializedListItemCount(items) < 3) return null;
 
     var markdown = ["# " + title, metadata.excerpt, listMarkdown(items)].filter(Boolean).join("\n\n");
     var result = listContentResult({

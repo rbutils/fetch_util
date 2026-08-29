@@ -34,8 +34,8 @@
       var cardSelector = ".homepage-card, .home-card, .card, [class*='homepage-card'], [class*='home-card'], [class*='doc-card'], li, section";
 
       article.querySelectorAll("a.homepage-link[href], a.homepage-link-primary[href], a.homepage-link-secondary[href]").forEach(function(link) {
-        var rawHref = link.getAttribute("href");
-        var url = rawHref ? rawHref : absoluteUrl(link.href);
+        var rawHref = link.getAttribute("href") || "";
+        var url = materializedHttpUrl(rawHref || link.href);
         var text = normalizeText(link.textContent);
         var detail = "";
         var card = link.closest(cardSelector);
@@ -47,12 +47,13 @@
           if (detail === text) detail = "";
         }
 
-        if (!url || !text || text.length < 4 || seen[url]) return;
-        seen[url] = true;
+        var key = url || "unlinked:" + text.toLowerCase() + "|href:" + rawHref;
+        if (!text || text.length < 4 || seen[key]) return;
+        seen[key] = true;
         items.push({ text: text, url: url, detail: detail });
       });
 
-      if (!items.length) return null;
+      if (!items.length || !materializedListItemCount(items)) return null;
 
       var parts = [];
       if (title) parts.push("# " + title);

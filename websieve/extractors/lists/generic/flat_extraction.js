@@ -67,8 +67,9 @@
     }
 
     function pushLink(link, container) {
-      var candidate = listLinkCandidate(link, container, context);
-      if (!candidate || looksLikeMetaLink(candidate.text, candidate.url, container)) return;
+      var candidate = listLinkCandidate(link, container, context, true);
+      var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
+      if (!candidate || looksLikeMetaLink(candidate.text, href, container)) return;
       pushUniqueListCandidate(candidates, seen, candidate);
     }
 
@@ -86,6 +87,9 @@
           !listChromeAncestor(link);
       });
       links.sort(function(a, b) {
+        var aSafe = !!materializedHttpUrl(a.getAttribute("href"));
+        var bSafe = !!materializedHttpUrl(b.getAttribute("href"));
+        if (aSafe !== bSafe) return bSafe - aSafe;
         var aText = normalizeText(a.textContent || a.getAttribute("aria-label") || "");
         var bText = normalizeText(b.textContent || b.getAttribute("aria-label") || "");
         return bText.length - aText.length;
@@ -99,7 +103,7 @@
       tableIndexClearCloneAnnotations(root);
       dataRows.forEach(function(dataRow) {
         var row = dataRow.row;
-        var primary = tableIndexPrimaryLink(row, dataRow.cells, 2, primaryColumn);
+        var primary = tableIndexPrimaryLink(row, dataRow.cells, 2, primaryColumn, true);
         if (!primary) return;
 
         var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
@@ -110,8 +114,8 @@
           detail: detail,
           rankScore: text.length + detail.length,
           card: row,
-          canonicalKey: primary.url,
-          dedupeKey: primary.url + "|row:" + normalizeText(detail).toLowerCase()
+          canonicalKey: primary.url || "unlinked:" + text.toLowerCase() + "|href:" + primary.href,
+          dedupeKey: (primary.url || "unlinked:" + text.toLowerCase() + "|href:" + primary.href) + "|row:" + normalizeText(detail).toLowerCase()
         };
         pushUniqueListCandidate(candidates, seen, candidate);
       });
@@ -127,7 +131,7 @@
       var anchors = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
         var text = normalizeText(link.textContent);
         var href = link.getAttribute("href");
-        if (!href || href[0] === "#" || /^(javascript:|mailto:)/i.test(href)) return false;
+        if (!href || href[0] === "#") return false;
         var tableRow = context.tableIndexPage && link.closest("tr");
         if (text.length < (tableRow ? 2 : minimumListTitleLength(text))) return false;
         if (looksLikeMetaLink(text, href, tableRow)) return false;
@@ -158,7 +162,7 @@
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
       var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
-      var candidate = listLinkCandidate(link, container, context);
+      var candidate = listLinkCandidate(link, container, context, true);
       if (candidate) pushUniqueListCandidate(ranked, seen, candidate);
     });
     return ranked;

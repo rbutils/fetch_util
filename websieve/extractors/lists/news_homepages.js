@@ -37,23 +37,24 @@
       if (config.excludeClosest && link.closest(config.excludeClosest)) return;
 
       var href = link.getAttribute("href") || "";
-      var url = absoluteUrl(href);
-      if (!url || seen[url]) return;
+      var url = materializedHttpUrl(href);
       if (config.acceptLink && !config.acceptLink(href, url, link)) return;
 
       var title = config.titleBuilder ? config.titleBuilder(link) : searchItemTitle(link);
       if (config.transformTitle) title = config.transformTitle(title, link);
       title = normalizeText(title || "");
       if (rejectedTitle(title)) return;
+      var key = url || "unlinked:" + title.toLowerCase() + "|href:" + href;
+      if (seen[key]) return;
 
       var container = link.closest(cardSelector) || link.parentElement;
       var detail = searchItemDetail(container, title);
 
-      seen[url] = true;
+      seen[key] = true;
       items.push({ text: title, url: url, detail: detail });
     });
 
-    if (items.length < minItems) return null;
+    if (items.length < minItems || materializedListItemCount(items) < minItems) return null;
 
     var result = listContentResult({
       title: config.title || ((metadata && metadata.title) || document.title || config.defaultTitle),

@@ -36,9 +36,9 @@
     if (eventDetailPage()) return false;
     if (explicitEventListingPage()) return true;
 
-    var eventCards = eventCardItems().length;
+    var eventCards = eventCardItems().filter(function(item) { return item.admission; }).length;
     var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/'], a[href*='/e/'], a[href*='tickets-']"), function(link) {
-      return normalizeText(link.textContent || "").length >= 8;
+      return normalizeText(link.textContent || "").length >= 8 && !!materializedHttpUrl(link.getAttribute("href"));
     }).length;
     return eventCards >= 3 || eventLinks >= 4;
   }
@@ -55,12 +55,12 @@
       var parent = card.parentElement || card;
       var dateText = visibleEventDateTime(card) || visibleEventDateTime(parent);
       var locationText = visibleEventLocation(card) || visibleEventLocation(parent);
-      var url = absoluteUrl((link && link.getAttribute("href")) || "");
-      if (url && !/^https?:\/\//i.test(url)) url = "";
-      var key = url || title;
+      var href = (link && link.getAttribute("href")) || "";
+      var url = materializedHttpUrl(href);
+      var key = url || "unlinked:" + title + "|href:" + href;
       if (!title || !dateText || !key || seen[key]) return;
       seen[key] = true;
-      items.push({ text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - ") });
+      items.push({ text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - "), admission: !href || !!url });
     }
 
     Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {
@@ -197,7 +197,8 @@
 
   function genericEventListContent(metadata) {
     var items = eventCardItems();
-    if (items.length >= 3) {
+    var admissionCount = items.filter(function(item) { return item.admission; }).length;
+    if (items.length >= 3 && admissionCount >= 3) {
       var genericEvidence = listContent(metadata, { portalRoot: true });
       return listItemsContentResult(metadata, {
         excerpt: items[0].text,

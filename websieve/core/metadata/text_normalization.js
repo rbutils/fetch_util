@@ -20,6 +20,19 @@ function absoluteUrl(value) {
   }
 }
 
+function materializedHttpUrl(value) {
+  var url = absoluteUrl(value);
+  if (!url) return null;
+
+  try {
+    var parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.href.replace(/\(/g, "%28").replace(/\)/g, "%29");
+  } catch (_error) {
+    return null;
+  }
+}
+
 function bodyInnerText(pageText) {
   return (document.body && document.body.innerText) || pageText || "";
 }

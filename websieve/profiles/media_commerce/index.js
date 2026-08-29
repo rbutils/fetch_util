@@ -9,7 +9,8 @@
       var link = node.querySelector("h2 a[href], a.a-link-normal.s-no-outline[href]");
       var titleNode = node.querySelector("h2 span, h2 a span");
       var title = normalizeText(titleNode ? titleNode.textContent : (link && link.textContent));
-      var url = absoluteUrl(link && link.getAttribute("href"));
+      var href = (link && link.getAttribute("href")) || "";
+      var url = materializedHttpUrl(href);
       var priceNode = node.querySelector(".a-price .a-offscreen");
       var price = normalizeText(priceNode && priceNode.textContent);
       var ratingNode = node.querySelector("[aria-label*='out of 5 stars'], .a-icon-alt");
@@ -18,12 +19,13 @@
       var reviews = normalizeText(reviewsNode && reviewsNode.textContent);
       var detail = [price, rating, reviews].filter(Boolean).join(" - ");
 
-      if (!title || !url || title.length < 8 || seen[url]) return;
-      seen[url] = true;
+      var key = url || "unlinked:" + title.toLowerCase() + "|href:" + href;
+      if (!title || title.length < 8 || seen[key]) return;
+      seen[key] = true;
       items.push({ text: title, url: url, detail: detail });
     });
 
-    if (items.length < 3) return null;
+    if (items.length < 3 || materializedListItemCount(items) < 3) return null;
 
     return listItemsContentResult(metadata, {
       title: metadata.title || document.title,
@@ -91,21 +93,24 @@
 
     document.querySelectorAll("main a[href*='/searchresults.html'], main a[href*='/hotel/'], main a[href*='/apartments/'], main a[href*='/resorts/'], main a[href*='/villas/'], main a[href*='/homes/']").forEach(function(link) {
       var itemTitle = normalizeText(link.textContent);
-      var url = absoluteUrl(link.getAttribute("href"));
-      if (!itemTitle || !url || itemTitle.length < 3 || itemTitle.length > 80 || seen[url]) return;
+      var href = link.getAttribute("href") || "";
+      var url = materializedHttpUrl(href);
+      var key = url || "unlinked:" + itemTitle.toLowerCase() + "|href:" + href;
+      if (!itemTitle || itemTitle.length < 3 || itemTitle.length > 80 || seen[key]) return;
       if (/^(learn more|search|sign in|register|list your property)$/i.test(itemTitle)) return;
 
-      seen[url] = true;
+      seen[key] = true;
       items.push({ text: itemTitle, url: url });
     });
 
-    if (!title && !sections.length && items.length < 3) return null;
+    var listQualified = items.length >= 3 && materializedListItemCount(items) >= 3;
+    if (!title && !sections.length && !listQualified) return null;
 
     var markdownParts = [];
     if (title) markdownParts.push("# " + title);
     if (description) markdownParts.push(description);
     if (sections.length) markdownParts.push(sections.map(function(text) { return "- " + text; }).join("\n"));
-    if (items.length >= 3) markdownParts.push(listMarkdown(items));
+    if (listQualified) markdownParts.push(listMarkdown(items));
 
     var markdown = markdownParts.filter(Boolean).join("\n\n").trim();
 
@@ -115,8 +120,8 @@
       siteName: metadata.siteName || "Booking.com",
       markdown: markdown,
       textContent: normalizeText(markdown),
-      items: items.length >= 3 ? items : null,
-      contentType: items.length >= 3 ? "list" : "article"
+      items: listQualified ? items : null,
+      contentType: listQualified ? "list" : "article"
     });
   }
 

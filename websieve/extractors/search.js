@@ -81,7 +81,7 @@
     } catch (_error) {
     }
 
-    return absoluteUrl(url);
+    return materializedHttpUrl(url);
   }
 
   function sponsoredSearchResult(title, detail, href, rawHref) {

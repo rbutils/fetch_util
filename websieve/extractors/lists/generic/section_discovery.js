@@ -33,7 +33,7 @@
 
     sectionCardNodes(region, options).forEach(function(card) {
       var candidate = sectionCardCandidate(card, options);
-      if (!candidate || !candidate.url) return;
+      if (!candidate || (!candidate.url && !candidate.canonicalKey)) return;
       candidates.push(candidate);
     });
 
@@ -80,7 +80,7 @@
 
       var cards = sectionCards(region, options).filter(function(card) {
         if (options.cardFilter && !options.cardFilter(card)) return false;
-        var key = sectionCanonicalKey(card.url);
+        var key = card.canonicalKey || sectionCanonicalKey(card.url);
         if (canonical[key]) return false;
         canonical[key] = true;
         return true;
@@ -99,10 +99,12 @@
     if (regions.length < 2) return null;
 
     var items = [];
+    regions.forEach(function(region) {
+      region.cards.forEach(function(card) { items.push(card); });
+    });
+    if (materializedListItemCount(items) < 2) return null;
     var markdown = regions.map(function(region) {
-      var cards = region.cards;
-      cards.forEach(function(card) { items.push(card); });
-      return "## " + region.label + "\n\n" + listMarkdown(cards);
+      return "## " + region.label + "\n\n" + listMarkdown(region.cards);
     }).join("\n\n");
 
     return {

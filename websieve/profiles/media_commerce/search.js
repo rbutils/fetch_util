@@ -7,17 +7,19 @@
     var items = [];
 
     document.querySelectorAll("a.s-item__link[href*='/itm/'], li.s-item a[href*='/itm/']").forEach(function(link) {
-      var url = absoluteUrl(link.getAttribute("href"));
+      var href = link.getAttribute("href") || "";
+      var url = materializedHttpUrl(href);
       var title = normalizeText(link.textContent || (link.querySelector("img[alt]") && link.querySelector("img[alt]").getAttribute("alt")));
       var container = link.closest("li.s-item, .srp-results li") || link.parentElement;
       var detail = searchItemDetail(container, title);
+      var key = url || "unlinked:" + title.toLowerCase() + "|href:" + href;
 
-      if (!url || !title || title.length < 8 || seen[url]) return;
-      seen[url] = true;
+      if (!title || title.length < 8 || seen[key]) return;
+      seen[key] = true;
       items.push({ text: title, url: url, detail: detail });
     });
 
-    if (items.length >= 4) {
+    if (items.length >= 4 && materializedListItemCount(items) >= 4) {
       return listContentResult({
         title: metadata.title || document.title,
         excerpt: metadata.excerpt,

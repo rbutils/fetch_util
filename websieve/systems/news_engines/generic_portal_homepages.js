@@ -42,10 +42,10 @@
         if (link.closest("header, nav, footer, aside, form, [role='navigation'], [role='banner'], [role='contentinfo']")) return;
 
         var href = link.getAttribute("href") || "";
-        var url = absoluteUrl(href);
+        var url = materializedHttpUrl(href);
         var title = normalizeText(((link.querySelector("h1, h2, h3, h4") || {}).textContent) || link.textContent || link.getAttribute("aria-label") || "");
-        var canonicalUrl = url && homepageCanonicalUrl(url);
-        if (!url || seen[canonicalUrl] || rejectedHomepageLeadText(title, href)) return;
+        var canonicalUrl = url ? homepageCanonicalUrl(url) : "unlinked:" + title.toLowerCase() + "|href:" + href;
+        if (seen[canonicalUrl] || rejectedHomepageLeadText(title, href)) return;
         if (title.length < 12 && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(title)) return;
 
         var container = link.closest("article, section, li, [class*='card'], [class*='tile'], [class*='item'], [class*='listing'], [class*='result'], [class*='destination'], [class*='route'], [class*='story']") || link.parentElement;
@@ -65,17 +65,18 @@
       var heroScore = hero && hero.length >= 8 && hero.length <= 120 ? 180 : 0;
       var sectionScore = Math.min(headings.length, 6) * 60;
       var score = items.length * 180 + heroScore + sectionScore + Math.min(cards, 18) * 12 + Math.min(links, 80);
+      var materializedItems = materializedListItemCount(items);
 
-      if (items.length < minItems && !(items.length >= 3 && heroScore && headings.length >= 2)) return;
-      if (!portalIntent && !(items.length >= 6 && cards >= 6 && headings.length >= 3)) return;
+      if (materializedItems < minItems && !(materializedItems >= 3 && heroScore && headings.length >= 2)) return;
+      if (!portalIntent && !(materializedItems >= 6 && cards >= 6 && headings.length >= 3)) return;
       if (links < items.length || text.length < 120) return;
       if (!best || score > best.score) {
-        best = { root: root, items: items, hero: hero, headings: headings, score: score };
+        best = { root: root, items: items, hero: hero, headings: headings, materializedItems: materializedItems, score: score };
       }
     });
 
     if (!best) return null;
-    if (best.items.length < minItems && (!best.hero || best.headings.length < 2)) return null;
+    if (best.materializedItems < minItems && (!best.hero || best.headings.length < 2)) return null;
     return best;
   }
 

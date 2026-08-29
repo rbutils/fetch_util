@@ -77,11 +77,12 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
+  var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
+  var legalChromeRemoved = legalChromeMarkdown !== markdown;
+  markdown = materializedMarkdown(legalChromeMarkdown);
   if (content.contentType === "article" && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
   if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
-  var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
-  if (legalChromeMarkdown !== markdown && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
-  markdown = legalChromeMarkdown;
+  if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
   if (legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";
   }
@@ -146,7 +147,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     bedrooms: content.bedrooms === undefined ? null : content.bedrooms,
     bathrooms: content.bathrooms === undefined ? null : content.bathrooms,
     areaSqft: content.areaSqft === undefined ? null : content.areaSqft,
-    html: content.html,
+    html: materializedHtml(content.html),
     markdown: markdown,
     readerMode: content.readerMode,
     contentType: content.contentType || "article",

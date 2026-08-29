@@ -31,7 +31,7 @@ RSpec.describe 'FetchUtil extractor integration - content quality noise' do
       markdown = payload["markdown"]
       # Consecutive duplicates (3+) should be collapsed to 1 occurrence
       occurrences = markdown.scan(/Share this article/).length
-      expect(occurrences).to be <= 2
+      expect(occurrences).to eq(1)
       expect(markdown).to include("Introduction paragraph with real content")
       expect(markdown).to include("The article continues with more meaningful text")
     end

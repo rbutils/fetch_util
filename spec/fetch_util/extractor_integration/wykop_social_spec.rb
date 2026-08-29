@@ -5,7 +5,7 @@ RSpec.describe "Wykop social feeds" do
 
   def wykop_home_fixture
     cards = (1..16).map do |number|
-      extras = number == 16 ? '<img src="/media/story-16.jpg" alt="Story 16 image"><span class="promoted">Wykop Poleca</span>' : ""
+      extras = number == 16 ? '<img src="javascript:unsafeMedia()" alt="Story 16 image"><span class="promoted">Wykop Poleca</span>' : ""
       <<~HTML
         <section class="link-block stream-home" id="link-#{number}">
           <h2 class="heading"><a href="/link/#{number}/story-#{number}">Wykop story #{number} with a meaningful title</a></h2>
@@ -65,6 +65,7 @@ RSpec.describe "Wykop social feeds" do
       expect(positions).to all(be >= 0)
       expect(positions).to eq(positions.sort)
       expect(markdown).to include("Summary for Wykop story 16", "author16", "16 replies", "Media: Story 16 image", "Promoted")
+      expect(markdown).not_to include("javascript:")
       expect(markdown).not_to include("Zaloguj się", "Załóż konto")
     end
   end

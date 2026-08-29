@@ -1,4 +1,4 @@
-  function tableIndexPrimaryLink(row, cells, minimumLength, onlyColumn) {
+  function tableIndexPrimaryLink(row, cells, minimumLength, onlyColumn, retainUnsafeLink) {
     var firstColumn = onlyColumn === undefined || onlyColumn === null ? 0 : onlyColumn;
     var lastColumn = onlyColumn === undefined || onlyColumn === null ? cells.length : onlyColumn + 1;
     for (var index = firstColumn; index < lastColumn; index += 1) {
@@ -7,15 +7,19 @@
         var href = link.getAttribute("href") || "";
         var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
         var requiredLength = minimumLength || minimumListTitleLength(text);
-        return href && href[0] !== "#" && !/^(javascript:|mailto:)/i.test(href) && text.length >= requiredLength && text.length <= 220;
+        return href && href[0] !== "#" && text.length >= requiredLength && text.length <= 220;
       });
       if (!links.length) continue;
       links.sort(function(a, b) {
-        return normalizeText(b.textContent || "").length - normalizeText(a.textContent || "").length;
+        var safeDifference = Number(!!materializedHttpUrl(b.getAttribute("href"))) - Number(!!materializedHttpUrl(a.getAttribute("href")));
+        return safeDifference || normalizeText(b.textContent || "").length - normalizeText(a.textContent || "").length;
       });
-      var url = absoluteUrl(links[0].getAttribute("href"));
-      if (!url || listCanonicalKey(url) === currentListPageUrl()) continue;
-      return { cellIndex: index, url: listCanonicalKey(url), link: links[0] };
+      for (var linkIndex = 0; linkIndex < links.length; linkIndex += 1) {
+        var url = materializedHttpUrl(links[linkIndex].getAttribute("href"));
+        if (!url && !retainUnsafeLink) continue;
+        if (url && listCanonicalKey(url) === currentListPageUrl()) continue;
+        return { cellIndex: index, url: url ? listCanonicalKey(url) : null, href: links[linkIndex].getAttribute("href") || "", link: links[linkIndex] };
+      }
     }
     return null;
   }

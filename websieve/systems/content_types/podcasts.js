@@ -104,9 +104,7 @@
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       var href = link.getAttribute("href") || "";
       if (!/\b(transcript|transcription)\b/i.test(text + " " + href)) return;
-      var url = absoluteUrl(href);
-      if (!url) return;
-      addMarkdown("Transcript", "[" + (text || "Transcript") + "](" + url + ")");
+      addMarkdown("Transcript", markdownLink(text || "Transcript", href));
     });
 
     return parts.join("\n\n");
@@ -163,14 +161,16 @@
       var link = card.querySelector("a[href]");
       var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
       var date = normalizeText((card.querySelector("time, [class*='date' i]") || {}).textContent || "");
-      var url = absoluteUrl((link && link.getAttribute("href")) || "");
-      var key = url || title;
+      var href = (link && link.getAttribute("href")) || "";
+      var url = materializedHttpUrl(href);
+      var key = url || "unlinked:" + title + "|href:" + href;
       if (!title || !key || seen[key]) return;
       seen[key] = true;
-      items.push({ text: title, url: url, detail: date });
+      items.push({ text: title, url: url, detail: date, admission: !href || !!url });
     });
 
-    if (items.length < 3) return null;
+    var admissionCount = items.filter(function(item) { return item.admission; }).length;
+    if (items.length < 3 || admissionCount < 3) return null;
     var title = firstText(["main h1", "h1"]) || metadata.title || document.title;
     var markdown = "# " + normalizeText(title) + "\n\n" + listMarkdown(items);
     return {

@@ -135,19 +135,7 @@
       if (!el.hasAttribute("data-fetchutil-preserve")) el.remove();
     });
     cleanupCookieChrome(clone);
-    clone.querySelectorAll("a").forEach(function(el) {
-      var href = el.getAttribute("href");
-      if (href) el.setAttribute("href", absoluteUrl(href));
-    });
-    clone.querySelectorAll("img").forEach(function(el) {
-      var src = el.getAttribute("src");
-      var lazySrc = el.getAttribute("data-lazy-src") || el.getAttribute("data-src") || el.getAttribute("data-original") || el.getAttribute("data-lazy");
-      // Prefer lazy-load attribute when src is a placeholder (data URI or empty)
-      if (lazySrc && (!src || /^data:image\//i.test(src))) src = lazySrc;
-      if (!src) src = lazySrc;
-      if (src) el.setAttribute("src", absoluteUrl(src));
-    });
-    return clone;
+    return materializeHttpAttributes(clone, true);
   }
 
   function preserveMeaningfulButtons(root) {

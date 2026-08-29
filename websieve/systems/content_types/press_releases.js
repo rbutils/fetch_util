@@ -50,8 +50,7 @@
       var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       var date = normalizeText((card && card.querySelector("time, [class*='date' i]")) ? card.querySelector("time, [class*='date' i]").textContent : "");
       var href = (link.getAttribute("href") || "").trim();
-      var url = href.charAt(0) === "#" ? "" : absoluteUrl(href);
-      if (url && !/^https?:\/\//i.test(url)) url = "";
+      var url = href.charAt(0) === "#" ? "" : materializedHttpUrl(href);
       if (!title || !date || !url || seen[url]) return;
       seen[url] = true;
       items.push({ text: title, url: url, detail: date });

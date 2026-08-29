@@ -57,7 +57,7 @@
     if (/^## Financial Statement Links$/m.test(markdown)) return existingMarkdown;
 
     var lines = links.map(function(link) {
-      return "- [" + (link.label || "Financial statement") + "](" + link.url + ")";
+      return "- " + markdownLink(link.label || "Financial statement", link.url);
     });
 
     return markdown.replace(/\s+$/g, "") + "\n\n## Financial Statement Links\n\n" + lines.join("\n");

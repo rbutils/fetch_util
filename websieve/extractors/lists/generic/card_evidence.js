@@ -83,9 +83,11 @@
       var directLink = card.matches && card.matches("a[href]") ? card : card.querySelector("a[href]");
       var directText = normalizeText((card.querySelector("h1, h2, h3, h4") || directLink || {}).textContent || "");
       if (directLink && directText.length >= 6) {
-        var directCandidate = { text: directText, url: absoluteUrl(directLink.getAttribute("href")), detail: "", rankScore: directText.length };
-        directCandidate.canonicalKey = listCanonicalKey(directCandidate.url);
-        directCandidate.url = directCandidate.canonicalKey;
+        var directHref = directLink.getAttribute("href") || "";
+        var directUrl = materializedHttpUrl(directHref);
+        var directCandidate = { text: directText, url: directUrl, detail: "", rankScore: directText.length };
+        directCandidate.canonicalKey = directUrl ? listCanonicalKey(directUrl) : "unlinked:" + directText.toLowerCase() + "|href:" + directHref;
+        directCandidate.url = directUrl ? directCandidate.canonicalKey : null;
         directCandidate.card = card;
         addCardContext(directCandidate, card);
         return directCandidate;
@@ -107,23 +109,25 @@
     }
     if (!link) {
       link = links.reduce(function(best, anchor) {
-        var candidate = listLinkCandidate(anchor, card, listPageContext());
+        var candidate = listLinkCandidate(anchor, card, listPageContext(), true);
         return candidate && (!best || candidate.rankScore > best.rankScore) ? anchor : best;
       }, null);
     }
     if (!link && options && options.ancestorLink) link = card.closest("a[href]");
-    var candidate = listLinkCandidate(link, card, listPageContext());
+    var candidate = listLinkCandidate(link, card, listPageContext(), true);
     if (!candidate && link) {
       var href = link.getAttribute("href");
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
-      var url = absoluteUrl(href);
+      var url = materializedHttpUrl(href);
       if (href && url && text.length >= 6 && text.length <= 220) candidate = { text: text, url: url, detail: "", rankScore: text.length };
     }
     if (!candidate) return null;
 
     candidate.domIndex = Array.prototype.indexOf.call(document.querySelectorAll("a[href]"), link);
-    candidate.canonicalKey = listCanonicalKey(candidate.url);
-    candidate.url = candidate.canonicalKey;
+    if (candidate.url) {
+      candidate.canonicalKey = listCanonicalKey(candidate.url);
+      candidate.url = candidate.canonicalKey;
+    }
     candidate.card = listCardRoot(link, card);
     addCardContext(candidate, candidate.card);
     return candidate;

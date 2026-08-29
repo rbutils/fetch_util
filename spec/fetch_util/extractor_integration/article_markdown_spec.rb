@@ -63,6 +63,62 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "restricts materialized links, images, and canonical URLs to HTTP" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Safe output links</title>
+          <link rel="canonical" href="javascript:canonicalTarget()">
+        </head>
+        <body>
+          <main><article>
+            <h1>Safe output links</h1>
+            <p>This article explains how public references remain useful while unsafe browser actions become plain visible text.</p>
+            <p><a href="/safe-reference_(final)">Safe reference</a> and <a href="//cdn.example.test/reference" ping="javascript:trackClick()">CDN reference</a>.</p>
+            <p><a href="javascript:openDialog()">Script action</a>, <a href="mailto:editor@example.test">Email action</a>, and <a href="ftp://files.example.test/report">FTP download</a>.</p>
+            <p><img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E" alt="Unsafe diagram"></p>
+            <p><img src="javascript:unsafeImage()" data-src="/safe-image_(final).png" srcset="data:image/png;base64,AAAA 1x, /safe-image@2x.png 2x" alt="Safe diagram"></p>
+            <p style="background-image: url(javascript:unsafeStyle())">Styled text remains visible.</p>
+            <object data="javascript:unsafeObject()">Object fallback remains visible.</object>
+            <svg><a xlink:href="javascript:unsafeVector()"><text>Vector text remains visible.</text></a></svg>
+            <video src="javascript:unsafeVideo()" poster="/safe-poster.png">
+              <source src="ftp://files.example.test/video.mp4">
+              <source src="/safe-video.mp4" srcset="data:image/png;base64,AAAA 1x, /images/sprite,a.png 480w, /images/zero-width.png 0w, /images/zero-density.png 0x, javascript:unsafeSource() 2x">
+            </video>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/articles/safe-output", html) do |page|
+      payload = extract(page)
+      markdown = payload["markdown"]
+      materialized_html = payload["html"]
+
+      expect(payload["canonicalUrl"]).to eq("https://example.test/articles/safe-output")
+      expect(markdown).to include(
+        "[Safe reference](https://example.test/safe-reference_%28final%29)",
+        "[CDN reference](https://cdn.example.test/reference)",
+        "Script action",
+        "Email action",
+        "FTP download",
+        "Unsafe diagram",
+        "![Safe diagram](https://example.test/safe-image_%28final%29.png)",
+        "Styled text remains visible"
+      )
+      expect(markdown).not_to include("javascript:", "mailto:", "ftp:", "data:image")
+      expect(materialized_html).to include("Script action", "Email action", "FTP download", "Unsafe diagram")
+      expect(materialized_html).to include(
+        'href="https://example.test/safe-reference_%28final%29"',
+        'src="https://example.test/safe-image_%28final%29.png"',
+        'src="https://example.test/safe-video.mp4"',
+        'srcset="https://example.test/images/sprite,a.png 480w"',
+        'poster="https://example.test/safe-poster.png"'
+      )
+      expect(materialized_html).not_to include("javascript:", "mailto:", "ftp:", "data:image", "zero-width", "zero-density", "data-lazy-src", "ping=", "xlink:href", "/articles/AAAA")
+    end
+  end
+
   it "repairs a dropped leading character when card detail starts with a title word" do
     html = <<~HTML
       <html>

@@ -81,10 +81,10 @@
       var link = term.querySelector(".name a[href], a[href]");
       if (!link) return;
       var name = normalizeText(link.textContent);
-      var href = absoluteUrl(link.getAttribute("href"));
+      var href = materializedHttpUrl(link.getAttribute("href"));
       var descriptionNode = term.nextElementSibling && term.nextElementSibling.tagName && term.nextElementSibling.tagName.toLowerCase() === "dd" ? term.nextElementSibling : null;
       var description = normalizeText(descriptionNode && descriptionNode.textContent);
-      if (!name || !href) return;
+      if (!name) return;
       items.push({ title: name, href: href, description: description });
     });
 
@@ -93,7 +93,7 @@
     var sections = ["# " + (title || "API Reference")];
     if (intro) sections.push(intro);
     sections.push("## Libraries\n\n" + items.map(function(item) {
-      return "- [" + item.title + "](" + item.href + ")" + (item.description ? " - " + item.description : "");
+      return "- " + markdownLink(item.title, item.href) + (item.description ? " - " + item.description : "");
     }).join("\n"));
 
     var markdown = cleanupMarkdownNoise(sections.join("\n\n"));

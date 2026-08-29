@@ -1,7 +1,16 @@
-  function componentHubCardLinkUrl(card, options) {
-    var link = card.querySelector("a[href]");
-    var href = (link && link.getAttribute("href")) || (options.dataUrl && options.dataUrl(card)) || "";
-    return href ? absoluteUrl(href) : "";
+  function componentHubCardLinkData(card, options) {
+    var links = Array.prototype.slice.call(card.querySelectorAll("h2 a[href], h3 a[href], h4 a[href], a[href]"));
+    var hrefs = links.map(function(link) { return link.getAttribute("href") || ""; }).filter(Boolean);
+    var dataHref = options.dataUrl && options.dataUrl(card);
+    if (dataHref) hrefs.push(dataHref);
+    var href = hrefs.filter(function(candidate) { return !!materializedHttpUrl(candidate); })[0] || hrefs[0] || "";
+    var url = materializedHttpUrl(href);
+    var fallbackUrl = materializedHttpUrl(options.fallbackUrl || location.href);
+    return {
+      href: href,
+      url: href ? url : fallbackUrl,
+      admission: !href || !!url
+    };
   }
 
   function componentHubCardItem(card, options) {
@@ -23,18 +32,18 @@
       card.getAttribute("content-text") ||
       ""
     );
-    var url = componentHubCardLinkUrl(card, options) || (options.fallbackUrl || location.href);
+    var linkData = componentHubCardLinkData(card, options);
     var childLinks = Array.prototype.slice.call(card.querySelectorAll(options.childLinkSelector || "ul a[href]")).map(function(sourceLink) {
       var text = normalizeText(sourceLink.textContent || "");
       if (text.length < 3) return null;
-      return { text: text, url: absoluteUrl(sourceLink.getAttribute("href")) };
+      return { text: text, url: materializedHttpUrl(sourceLink.getAttribute("href")) };
     }).filter(Boolean);
 
     if (!title || title.length < 3 || title.length > (options.maxTitleLength || 180)) return null;
     if (options.requireDetail && !detail) return null;
     if (options.minCardText && !detail && textLength(card) < options.minCardText) return null;
 
-    return { text: title, url: url, detail: detail, childLinks: childLinks };
+    return { text: title, url: linkData.url, sourceHref: linkData.href, admission: linkData.admission, detail: detail, childLinks: childLinks };
   }
 
   function componentHubItems(root, options) {
@@ -48,7 +57,7 @@
       var item = componentHubCardItem(card, options);
       var key;
       if (!item) return;
-      key = item.text + "|" + (item.url || "");
+      key = item.text + "|" + (item.url || "unlinked:" + item.sourceHref);
       if (seen[key]) return;
       seen[key] = true;
       items.push(item);
@@ -97,10 +106,14 @@
         list = document.createElement("ul");
         item.childLinks.forEach(function(child) {
           var listItem = document.createElement("li");
-          var link = document.createElement("a");
-          link.setAttribute("href", child.url);
-          link.textContent = child.text;
-          listItem.appendChild(link);
+          if (child.url) {
+            var link = document.createElement("a");
+            link.setAttribute("href", child.url);
+            link.textContent = child.text;
+            listItem.appendChild(link);
+          } else {
+            listItem.textContent = child.text;
+          }
           list.appendChild(listItem);
         });
         article.appendChild(list);
@@ -117,7 +130,9 @@
     if (options.contentType === "list") {
       var items = componentHubItems(root, options);
       var title;
-      if (items.length < (options.minItems || 3)) return null;
+      var minItems = options.minItems || 3;
+      var admissionCount = items.filter(function(item) { return item.admission; }).length;
+      if (items.length < minItems || admissionCount < minItems) return null;
       title = componentHubTitle(metadata, root, options);
       return listItemsContentResult(metadata, {
         title: title,
@@ -153,6 +168,7 @@
       if (!contentRoot) return null;
       if (config.candidateFilter && !config.candidateFilter(root, contentRoot, cards, items, length)) return null;
       if (items.length < (config.minItems || 3)) return null;
+      if (config.contentType === "list" && items.filter(function(item) { return item.admission; }).length < (config.minItems || 3)) return null;
       if (config.minText && length < config.minText) return null;
       if (config.score) score = config.score(root, contentRoot, cards, items, length);
       return { root: contentRoot, config: config, score: score };

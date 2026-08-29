@@ -13,9 +13,13 @@
     var publishedTime = normalizeText(content.publishedTime || "");
     var heading = document.querySelector("main h1, [role='main'] h1, h1");
     var context = normalizeText([document.title, heading && heading.textContent].join(" ")).toLowerCase();
+    var candidateLinks = document.querySelectorAll("main article a[href], [role='main'] article a[href], main [class*='product' i] a[href], [role='main'] [class*='product' i] a[href], main [class*='card' i] a[href], [role='main'] [class*='card' i] a[href]");
 
     if (publishedTime || byline) return false;
     if (typeof consentWallDominates === "function" && consentWallDominates(text.toLowerCase())) return false;
+    if (candidateLinks.length && !Array.prototype.some.call(candidateLinks, function(link) {
+      return !!materializedHttpUrl(link.getAttribute("href"));
+    })) return false;
     if (!/(search|results?|shop|browse|categor|catalog|keyword|wholesale|products?|collections?|marketplace)/.test(context)) return false;
     if (longParagraphs >= 4 && text.length >= 1200) return false;
     return text.length < 2400 || paragraphs <= 4;
@@ -62,6 +66,7 @@
       var href = link.getAttribute("href") || "";
       var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       if (label.length < minimumListTitleLength(label) || label.length > 280 || looksLikeFooterLink(label, href)) return false;
+      if (!materializedHttpUrl(href)) return false;
       return /\/(?:legal-content|eli|LexUriServ|resource|document|doc|case-law|summary)\b|[?&](?:uri|celex|qid|docid)=/i.test(href);
     }).length;
     var resultContainers = root.querySelectorAll("[class*='result' i], [id*='result' i], article, li, tr").length;

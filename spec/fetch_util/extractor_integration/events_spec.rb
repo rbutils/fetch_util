@@ -37,6 +37,20 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'materializes links in source-authored structured descriptions' do
+    html = <<~HTML
+      <html><head>
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Safe event links","startDate":"2026-10-11","description":"A detailed event description with [registration guidance](javascript:openRegistration()) and a [safe attendee guide](/guides/attendee_(final)) for everyone planning a complete visit."}</script>
+      </head><body><main><h1>Safe event links</h1></main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/safe-event-links', html) do |payload|
+      expect_content_type(payload, 'event')
+      expect(payload['markdown']).to include('registration guidance', '[safe attendee guide](https://events.example.test/guides/attendee_%28final%29)')
+      expect(payload['markdown']).not_to include('javascript:', 'openRegistration')
+    end
+  end
+
   it 'keeps Eventbrite title, date/time, location, and description without ticket chrome' do
     html = fixture_contents(File.join(__dir__, '../../fixtures/eventbrite_event.html'))
 

@@ -197,14 +197,14 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    with_page(html) do |page|
+    with_url_page("https://docs.fedoraproject.org/en-US/docs/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("# Fedora Documentation")
       expect(payload["markdown"]).to include("- User Documentation")
-      expect(payload["markdown"]).to include("- [Fedora Linux](../fedora/latest/) - The Fedora Linux documentation hub.")
-      expect(payload["markdown"]).to include("- [Quick Docs](../quick-docs/) - Short how-to and FAQ-style documentation.")
+      expect(payload["markdown"]).to include("- [Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - The Fedora Linux documentation hub.")
+      expect(payload["markdown"]).to include("- [Quick Docs](https://docs.fedoraproject.org/en-US/quick-docs/) - Short how-to and FAQ-style documentation.")
     end
   end
 end

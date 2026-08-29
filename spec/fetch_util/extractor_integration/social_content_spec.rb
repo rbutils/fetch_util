@@ -162,13 +162,188 @@ RSpec.describe 'FetchUtil social result contract' do
 
   it 'types a visible public Instagram post' do
     html = <<~HTML
-      <html><head><title>Ronaldo on Instagram: &quot;Training day&quot;</title><meta property="og:description" content="10 likes - ronaldo on April 1, 2026: &quot;Training day&quot;."></head><body><main><article><img src="https://example.test/post.jpg" alt="Training"><p>Training day</p></article></main></body></html>
+      <html><head><title>Ronaldo on Instagram: &quot;Training day&quot;</title><meta property="og:description" content="10 likes - ronaldo on April 1, 2026: &quot;Training day&quot;."><meta property="og:image" content="javascript:unsafeImage()"><meta property="og:video" content="ftp://files.example.test/video.mp4"></head><body><main><article><img src="https://example.test/post.jpg" alt="Training"><p>Training day</p></article></main></body></html>
     HTML
 
     with_url_page('https://www.instagram.com/ronaldo/p/example/', html) do |page|
       payload = extract_payload(page)
 
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'post', 'platform' => 'Instagram', 'handle' => '@ronaldo')
+      expect(payload['markdown']).not_to include('javascript:', 'ftp:')
+    end
+  end
+
+  it 'falls back to a safe Open Graph video after unsafe media values' do
+    html = '<html><head><title>Metadata media</title><meta property="og:image" content="javascript:unsafeImage()"><meta property="og:image" content="/safe-image.png"><meta property="og:video" content="ftp://files.example.test/video.mp4"><meta property="og:video" content="/safe-video.mp4"><meta property="og:video:url" content="/alias-video.mp4"></head><body><main>Visible profile content</main></body></html>'
+
+    with_url_page('https://social-contract.test/metadata-media', html) do |page|
+      payload = synthetic_social_payload(page, <<~JS)
+        window.registerHostAwareProfile(/social-contract\\.test$/, function(metadata) {
+          var media = [metadata.image && 'Image: ' + metadata.image, metadata.video && 'Video: ' + metadata.video].filter(Boolean);
+          return {
+            title: 'Metadata media',
+            html: '<article><p>Visible profile content.</p></article>',
+            markdown: '# Metadata media\\n\\n' + media.join('\\n'),
+            textContent: media.join(' '),
+            readerMode: false,
+            contentType: 'social',
+            socialKind: 'profile',
+            platform: 'Example Network'
+          };
+        });
+      JS
+
+      expect(payload['markdown']).to include(
+        'Image: https://social-contract.test/safe-image.png',
+        'Video: https://social-contract.test/safe-video.mp4'
+      )
+      expect(payload['markdown']).not_to include('alias-video', 'javascript:', 'ftp:')
+    end
+  end
+
+  it 'sanitizes nested URL-bearing HTML contexts from profile output' do
+    html = '<html><head><title>Nested output</title></head><body><main>Visible profile content</main></body></html>'
+
+    with_url_page('https://social-contract.test/nested-output', html) do |page|
+      payload = synthetic_social_payload(page, <<~JS)
+        window.registerHostAwareProfile(/social-contract\\.test$/, function() {
+          return {
+            title: 'Nested output',
+            html: '<style>.unsafe { background: url(javascript:unsafeStyle()) }</style><meta property="og:image" content="javascript:unsafeBodyMetadata()"><meta http-equiv="refresh" content="0;url=javascript:unsafeRefresh()"><iframe srcdoc="<a href=&quot;javascript:unsafeNested()&quot;>Nested action</a><img src=&quot;/safe-nested.png&quot;>"></iframe><template><a href="javascript:unsafeTemplate()">Template action</a><img src="/safe-template.png"><template><a href="mailto:deep@example.test">Deep template action</a><img src="/safe-deep-template.png"><style>.deep { background: url(javascript:deepStyle()) }</style><meta http-equiv="refresh" content="0;url=javascript:deepRefresh()"></template></template><img srcset="/nested-zoom.png 1e2x, /nested-zero.png 0x"><form action="/submit"><button formaction="javascript:unsafeForm()">Submit</button></form><blockquote cite="/source">Source</blockquote><table background="javascript:unsafeBackground()"><tr><td>Cell</td></tr></table><img longdesc="/long-description" usemap="#map"><div profile="/profile" manifest="/manifest" codebase="/codebase" classid="javascript:unsafeClass()" itemid="/item">Rare attributes</div>',
+            markdown: '# Nested output\\n\\nVisible profile content.',
+            textContent: 'Visible profile content.',
+            readerMode: false,
+            contentType: 'social',
+            socialKind: 'profile',
+            platform: 'Example Network'
+          };
+        });
+      JS
+
+      expect(payload['html']).to include(
+        'Nested action',
+        'Template action',
+        'Deep template action',
+        'https://social-contract.test/safe-nested.png',
+        'https://social-contract.test/safe-template.png',
+        'https://social-contract.test/safe-deep-template.png',
+        'srcset="https://social-contract.test/nested-zoom.png 1e2x"',
+        'action="https://social-contract.test/submit"',
+        'cite="https://social-contract.test/source"',
+        'longdesc="https://social-contract.test/long-description"',
+        'usemap="https://social-contract.test/nested-output#map"',
+        'profile="https://social-contract.test/profile"',
+        'manifest="https://social-contract.test/manifest"',
+        'codebase="https://social-contract.test/codebase"',
+        'itemid="https://social-contract.test/item"'
+      )
+      expect(payload['html']).not_to include(
+        'javascript:', 'mailto:', 'nested-zero', '<style', '<meta', 'formaction=', 'background=', 'classid='
+      )
+    end
+  end
+
+  it 'materializes active Markdown destinations while preserving literal code syntax' do
+    markdown = <<~'MARKDOWN'.chomp
+      # Markdown boundary
+
+      [Safe guide](/guides/final_(copy) "Guide title")
+      [Safe titled guide](/guides/titled "Title ) survives")
+      [Unsafe action](javascript:inline())
+      [Unsafe titled action](javascript:titled() "Title ) still unsafe")
+      [Multiline unsafe
+      action](javascript:multiline())
+      <https://docs.example.test/path_(copy)>
+      <javascript:auto()>
+      <a href="/raw_(copy)">Raw safe</a>
+      <a href="javascript:raw()">Raw action</a>
+      <a
+       href="javascript:rawMultiline()">Raw multiline action</a>
+
+      [unsafe-reference]:
+        javascript:reference()
+      [Unsafe reference][unsafe-reference]
+
+      [unsafe\]]: javascript:escapedReference()
+      [Escaped reference][unsafe\]]
+      > [quoted-reference]: javascript:quotedReference()
+      > [Quoted reference][quoted-reference]
+
+      \[Escaped literal](javascript:escaped())
+
+          [Indented literal](javascript:indented())
+
+      `[Inline literal](javascript:inlineCode())`
+
+      `multiline
+      [Multiline literal](javascript:multiCode())
+      span`
+
+      ```text
+      [Fenced literal](javascript:fenced())
+      ```
+
+      > ```text
+      > [Quoted fenced literal](javascript:quotedFenced())
+      > ```
+
+      ``` invalid`
+      [Unsafe after invalid fence](javascript:invalidFence())
+
+      Trailing `unclosed
+      [Unsafe after unmatched span](javascript:unmatchedSpan())
+    MARKDOWN
+    markdown = markdown.gsub("\n", "\r\n")
+    html = '<html><head><title>Markdown boundary</title></head><body><main>Visible profile content</main></body></html>'
+
+    with_url_page('https://social-contract.test/markdown-boundary', html) do |page|
+      payload = synthetic_social_payload(page, <<~JS)
+        window.registerHostAwareProfile(/social-contract\\.test$/, function() {
+          return {
+            title: 'Markdown boundary',
+            html: '<article><p>Visible profile content.</p></article>',
+            markdown: #{JSON.generate(markdown)},
+            textContent: 'Visible profile content.',
+            readerMode: false,
+            contentType: 'social',
+            socialKind: 'profile',
+            platform: 'Example Network'
+          };
+        });
+      JS
+
+      materialized = payload['markdown']
+      expect(materialized).to include(
+        '[Safe guide](https://social-contract.test/guides/final_%28copy%29 "Guide title")',
+        '[Safe titled guide](https://social-contract.test/guides/titled "Title ) survives")',
+        '<https://docs.example.test/path_%28copy%29>',
+        '<a href="https://social-contract.test/raw_%28copy%29">Raw safe</a>',
+        '<a>Raw action</a>',
+        '<a>Raw multiline action</a>',
+        'javascript&#58;auto()',
+        '[Unsafe reference][unsafe-reference]',
+        '[Escaped reference][unsafe\\]]',
+        '> [Quoted reference][quoted-reference]'
+      )
+      expect(materialized).not_to include(
+        '[Unsafe action](',
+        '[Unsafe titled action](',
+        '[Multiline unsafe',
+        '[Unsafe after invalid fence](',
+        '[Unsafe after unmatched span](',
+        '[unsafe-reference]:',
+        '[unsafe\\]]:',
+        '[quoted-reference]:',
+        'href="javascript:'
+      )
+      expect(materialized).to include(
+        '\\[Escaped literal](javascript:escaped())',
+        '    [Indented literal](javascript:indented())',
+        '`[Inline literal](javascript:inlineCode())`',
+        "`multiline\n[Multiline literal](javascript:multiCode())\nspan`",
+        "```text\n[Fenced literal](javascript:fenced())\n```",
+        "> ```text\n> [Quoted fenced literal](javascript:quotedFenced())\n> ```"
+      )
     end
   end
 

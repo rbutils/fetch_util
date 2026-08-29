@@ -8,21 +8,23 @@
     var items = [];
 
     document.querySelectorAll("a[href*='/pin/']").forEach(function(link) {
-      var url = absoluteUrl(link.getAttribute("href"));
+      var href = link.getAttribute("href") || "";
+      var url = materializedHttpUrl(href);
       var text = normalizeText(link.getAttribute("aria-label") || link.textContent);
       if (!text) {
         var img = link.querySelector("img[alt]");
         text = normalizeText(img && img.getAttribute("alt"));
       }
 
-      if (!url || !text || text.length < 12 || seen[url]) return;
+      var key = url || "unlinked:" + text.toLowerCase() + "|href:" + href;
+      if (!text || text.length < 12 || seen[key]) return;
       if (/^(log in|sign up|explore|search|filters|you are signed out)$/i.test(text)) return;
 
-      seen[url] = true;
+      seen[key] = true;
       items.push({ text: text, url: url });
     });
 
-    if (items.length >= 4) {
+    if (items.length >= 4 && materializedListItemCount(items) >= 4) {
       return listContentResult({
         title: query ? "Pinterest results for " + query : (metadata.title || document.title),
         excerpt: metadata.excerpt,

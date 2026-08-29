@@ -50,7 +50,8 @@
 
     function candidateInfo(link) {
       var image = link.querySelector("img[alt], img[title]");
-      var url = absoluteUrl(link.getAttribute("href"));
+      var href = link.getAttribute("href") || "";
+      var url = materializedHttpUrl(href);
       var card = link.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
       if (card === link && link.parentElement) card = link.parentElement.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
       var titleLinkOptions = [];
@@ -62,7 +63,7 @@
 
       if (card && url) {
         Array.prototype.forEach.call(card.querySelectorAll("a[href][class*='title' i], [class*='title' i] a[href]"), function(titleLink) {
-          var titleUrl = absoluteUrl(titleLink.getAttribute("href"));
+          var titleUrl = materializedHttpUrl(titleLink.getAttribute("href"));
           if (productUrlKey(titleUrl) === productUrlKey(url)) titleLinkOptions.push(normalizeText(titleLink.textContent || titleLink.getAttribute("aria-label") || ""));
         });
       }
@@ -70,16 +71,18 @@
       if (titleLinkOptions.length) titleOptions = titleLinkOptions;
       titleOptions.sort(function(a, b) { return b.length - a.length; });
       var title = titleOptions[0] || "";
-      if (!url || !title || title.length < 6 || title.length > 140) return null;
+      if (!title || title.length < 6 || title.length > 140) return null;
       if (rejectedProductTitle(title)) return null;
-      if (/(sort|filter|review|rating|privacy|cookie|onetrust)/i.test(url) && title.length < 32) return null;
-      if (url === location.href || /^(javascript:|mailto:)/i.test(url)) return null;
+      if (url && /(sort|filter|review|rating|privacy|cookie|onetrust)/i.test(url) && title.length < 32) return null;
+      if (url === location.href) return null;
 
       var productPath = "";
-      try {
-        productPath = new URL(url, location.href).pathname;
-      } catch (_error) {
-        return null;
+      if (url) {
+        try {
+          productPath = new URL(url, location.href).pathname;
+        } catch (_error) {
+          return null;
+        }
       }
 
       var productUrl = /(\/product|\/perfume|\/cologne|\/dp\/|\/itm\/|\/pdp\/|\/shop\/products\/|\/p\/(?!pl(?:\/|$)))/i.test(productPath);
@@ -98,16 +101,17 @@
       var detail = productCardDetail(card, title, url);
       if (!titleMatchesPageTerms(title) && !productUrl && !productCard) return null;
 
-      return { text: title, url: url, detail: detail };
+      return { text: title, url: url, sourceHref: href, detail: detail };
     }
 
     function productCandidates(root, dedupe) {
       return collectCardLinkCandidates(root, {
         cardSelectors: "a[href]",
-        allowMissingUrl: false,
+        allowMissingUrl: true,
         dedupe: dedupe,
         keyBuilder: function(candidate) {
-          return [candidate.text + "|" + candidate.url, "url:" + candidate.url, "product:" + productUrlKey(candidate.url)];
+          var identity = candidate.url || "unlinked:" + candidate.sourceHref;
+          return [candidate.text + "|" + identity, "url:" + identity, "product:" + productUrlKey(identity)];
         },
         candidateBuilder: function(link) {
           return candidateInfo(link);
@@ -116,7 +120,7 @@
     }
 
     function scoreRoot(root) {
-      return productCandidates(root, false).length;
+      return materializedListItemCount(productCandidates(root, false));
     }
 
     var bestRoot = roots.reduce(function(current, node) {
@@ -129,7 +133,7 @@
 
     items = productCandidates(bestRoot.node, true);
 
-    if (items.length < 4) return null;
+    if (items.length < 4 || materializedListItemCount(items) < 4) return null;
 
     return listItemsContentResult(metadata, {
       excerpt: items[0].text,

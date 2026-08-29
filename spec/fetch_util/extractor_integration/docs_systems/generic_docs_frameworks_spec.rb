@@ -164,6 +164,8 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
               <dd>Built-in types, collections, and other core functionality.</dd>
               <dt id="dart:io"><span class="name"><a href="dart-io/">dart:io</a></span></dt>
               <dd>File, socket, HTTP, and other I/O support.</dd>
+              <dt id="dart:tools"><span class="name"><a href="mailto:tools@example.test">dart:tools</a></span></dt>
+              <dd>Visible tool support without a fetchable documentation destination.</dd>
             </dl></section>
           </div></main>
         </body>
@@ -179,6 +181,10 @@ RSpec.describe 'FetchUtil extractor integration - generic framework docs systems
       expect(markdown).to include("[dart:async](https://api.example.test/stable/dart-async/)")
       expect(markdown).to include("[dart:core](https://api.example.test/stable/dart-core/)")
       expect(markdown).to include("[dart:io](https://api.example.test/stable/dart-io/)")
+      expect(markdown).to include("- dart:tools - Visible tool support without a fetchable documentation destination.")
+      expect(markdown).not_to include("mailto:")
+      expect(payload["html"]).to include("dart:tools")
+      expect(payload["html"]).not_to include("mailto:")
     end
   end
 

@@ -48,6 +48,9 @@ RSpec.describe 'FetchUtil government notice extraction' do
       expect(payload['markdown']).to include('PAYE tax and Class 1 National Insurance contributions')
       expect(payload['markdown']).to include('Tax thresholds, rates and codes')
       expect(payload['markdown']).to include('National Minimum Wage rates apply from 1 April 2026')
+      expect(payload['markdown']).to include(
+        '[PAYE tax and Class 1 National Insurance contributions](https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#paye-tax-and-class-1-national-insurance-contributions)'
+      )
     end
   end
 end

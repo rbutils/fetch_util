@@ -34,15 +34,16 @@
       if (!/\/(?:\d{4}\/\d{2}\/\d{2}\/|[a-f0-9]{24}\.html|\d{2}_\d{4}_\d{8}_)/i.test(href)) return;
 
       var title = normalizeText(((link.querySelector(".ue-c-cover-content__headline, h1, h2, h3") || {}).textContent) || link.textContent || "");
-      var url = absoluteUrl(href);
-      if (!title || title.length < 18 || title.length > 220 || !url || seen[url]) return;
+      var url = materializedHttpUrl(href);
+      var key = url || "unlinked:" + title.toLowerCase() + "|href:" + href;
+      if (!title || title.length < 18 || title.length > 220 || seen[key]) return;
       if (/^(comentarios?|ver comentarios?|opinar|participa)$/i.test(title)) return;
 
-      seen[url] = true;
+      seen[key] = true;
       items.push({ text: title, url: url, detail: searchItemDetail(card, title) });
     });
 
-    if (items.length < 4) return null;
+    if (items.length < 4 || materializedListItemCount(items) < 4) return null;
 
     return listContentResult({
       title: metadata.title || document.title,

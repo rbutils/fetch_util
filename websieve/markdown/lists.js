@@ -1,6 +1,11 @@
+function markdownLink(text, url) {
+  var href = materializedHttpUrl(url);
+  return href ? "[" + text + "](" + href + ")" : text;
+}
+
 function listMarkdown(items) {
   return items.map(function(item) {
-    var line = item.url ? "- [" + item.text + "](" + item.url + ")" : "- " + item.text;
+    var line = "- " + markdownLink(item.text, item.url);
     var card = item.card;
     var rowDetail = card && card.matches && card.matches("tr") ? item.detail : "";
     var context = (rowDetail ? [rowDetail] : [

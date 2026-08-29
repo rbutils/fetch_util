@@ -15,10 +15,10 @@
 
     var jobCardSelectors = "[data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-testid*='job' i], [class*='job-card' i], [class*='jobCard'], tr[data-id][data-url*='/remote-jobs/'], [data-url*='/remote-jobs/']";
 
-    function cardUrl(card, link) {
+    function cardUrlData(card, link) {
       var href = link && link.getAttribute("href");
       href = href || card.getAttribute("data-href") || card.getAttribute("data-url") || "";
-      return href ? absoluteUrl(href) : "";
+      return { href: href, url: materializedHttpUrl(href) };
     }
 
     function titleLink(card) {
@@ -66,17 +66,17 @@
       minTitleLength: minimumListTitleLength,
       maxTitleLength: 220,
       keyBuilder: function(candidate) {
-        return candidate.text + "|" + candidate.url;
+        return candidate.text + "|" + (candidate.url || "unlinked:" + candidate.sourceHref);
       },
       candidateBuilder: function(card, link) {
         var title = cardTitle(card, link);
-        var url = cardUrl(card, link);
+        var urlData = cardUrlData(card, link);
 
-        return { text: title, url: url, detail: cardDetail(card, title) };
+        return { text: title, url: urlData.url, sourceHref: urlData.href, detail: cardDetail(card, title) };
       }
     });
 
-    if (items.length < 4) return null;
+    if (items.length < 4 || materializedListItemCount(items) < 4) return null;
 
     var markdown = listMarkdown(items);
 
@@ -94,12 +94,16 @@
     var context = normalizeText([location.pathname, location.search, document.title].join(" ")).toLowerCase();
     if (!/(\bjobs?\b|employment|careers?|jobsearch|job-list|job results?|hiring|remote-[a-z0-9+-]+-jobs|q-[a-z0-9-]+-jobs)/i.test(context)) return false;
 
-    var jobCards = root.querySelectorAll("[data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-testid*='job' i], [class*='job-card' i], [class*='jobCard'], tr[data-id][data-url*='/remote-jobs/'], [data-url*='/remote-jobs/']").length;
+    var jobCards = Array.prototype.filter.call(root.querySelectorAll("[data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-testid*='job' i], [class*='job-card' i], [class*='jobCard'], tr[data-id][data-url*='/remote-jobs/'], [data-url*='/remote-jobs/']"), function(card) {
+      var link = card.querySelector("a[href]");
+      var href = (link && link.getAttribute("href")) || card.getAttribute("data-href") || card.getAttribute("data-url") || "";
+      return !href || !!materializedHttpUrl(href);
+    }).length;
     var jobLinks = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
       var href = link.getAttribute("href") || "";
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       if (text.length < minimumListTitleLength(text) || text.length > 220) return false;
-      return /(\/job-listing\/|\/remote-jobs\/|\/viewjob\b|\/rc\/clk\b|[?&](?:jk|jl)=)/i.test(href);
+      return !!materializedHttpUrl(href) && /(\/job-listing\/|\/remote-jobs\/|\/viewjob\b|\/rc\/clk\b|[?&](?:jk|jl)=)/i.test(href);
     }).length;
 
     return jobCards >= 4 || jobLinks >= 4;

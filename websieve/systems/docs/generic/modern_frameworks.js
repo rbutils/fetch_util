@@ -130,9 +130,9 @@
         var lines = [];
         root.querySelectorAll(".nextra-cards a[href]").forEach(function(link) {
           var text = normalizeText(link.textContent || link.getAttribute("title"));
-          var href = absoluteUrl(link.getAttribute("href"));
+          var href = materializedHttpUrl(link.getAttribute("href"));
           if (!text || !href || markdown.indexOf(href) !== -1) return;
-          lines.push("- [" + text + "](" + href + ")");
+          lines.push("- " + markdownLink(text, href));
         });
         if (!lines.length) return markdown;
 

@@ -77,7 +77,7 @@
     return score;
   }
 
-  function listLinkCandidate(link, container, context) {
+  function listLinkCandidate(link, container, context, retainUnsafeLink) {
     if (!link) return null;
 
     var href = link.getAttribute("href");
@@ -85,21 +85,23 @@
     var text = normalizeText((heading && heading.textContent) || link.textContent || link.getAttribute("aria-label") || "");
     var resolvedPath = "";
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
-    if (!href || href[0] === "#" || /^(javascript:|mailto:)/i.test(href)) return null;
+    if (!href || href[0] === "#") return null;
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
     if (text.length < (tableIndexRow ? 2 : minimumListTitleLength(text)) || text.length > 220) return null;
 
-    var url = absoluteUrl(href);
-    if (!url) return null;
-    try {
-      resolvedPath = new URL(url, location.href).pathname;
-    } catch (_error) {
-      return null;
+    var url = materializedHttpUrl(href);
+    if (!url && !retainUnsafeLink) return null;
+    if (url) {
+      try {
+        resolvedPath = new URL(url, location.href).pathname;
+      } catch (_error) {
+        return null;
+      }
+      if ((location.origin + resolvedPath) === context.currentUrl) return null;
     }
-    if ((location.origin + resolvedPath) === context.currentUrl) return null;
     if (/^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(text)) return null;
-    if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(url)) return null;
-    if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url) && text.length < 80) return null;
+    if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(url || href)) return null;
+    if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url || href) && text.length < 80) return null;
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
 
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : container;
@@ -107,14 +109,18 @@
       listTableRowDetail(container, text) :
       normalizeText(((detailSource && detailSource.textContent) || "")).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
     detail = detail.replace(/\b(last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)\b/gi, "").replace(/\s{2,}/g, " ").trim();
-    if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url) && weatherModuleText(text + " " + detail)) return null;
-    if (/\/(tv|spored)\//i.test(url) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
-    var score = listCandidateScore(text, url, detail, container || link.parentElement, context);
+    if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url || href) && weatherModuleText(text + " " + detail)) return null;
+    if (/\/(tv|spored)\//i.test(url || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
+    var score = url ? listCandidateScore(text, url, detail, container || link.parentElement, context) : text.length + detail.length;
     if (score === -Infinity) return null;
 
     var candidate = { text: text, url: url, detail: detail, rankScore: score, card: listCardRoot(link, container) };
+    if (!url) {
+      candidate.canonicalKey = "unlinked:" + text.toLowerCase() + "|href:" + href;
+      candidate.dedupeKey = candidate.canonicalKey + "|detail:" + detail.toLowerCase();
+    }
     if (container && container.matches && container.matches("tr") && detail) {
-      candidate.dedupeKey = listCanonicalKey(url) + "|row:" + normalizeText(detail).toLowerCase();
+      candidate.dedupeKey = (candidate.canonicalKey || listCanonicalKey(url)) + "|row:" + normalizeText(detail).toLowerCase();
     }
     return candidate;
   }
@@ -183,7 +189,8 @@
     var headings = node.querySelectorAll("h2, h3, h4").length;
     var headlineLinks = Array.prototype.filter.call(node.querySelectorAll("a[href]"), function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
-      return text.length >= minimumListTitleLength(text) && !looksLikeFooterLink(text, link.getAttribute("href") || "") && !listChromeNode(link.parentElement) && !listChromeNode(link.closest("div, section, article, li"));
+      var href = link.getAttribute("href") || "";
+      return href[0] !== "#" && materializedHttpUrl(href) && text.length >= minimumListTitleLength(text) && !looksLikeFooterLink(text, href) && !listChromeNode(link.parentElement) && !listChromeNode(link.closest("div, section, article, li"));
     }).length;
     var text = textLength(node);
     if (headlineLinks < 4 || text < 120) return -Infinity;
@@ -195,7 +202,7 @@
         var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
         if (title.length < minimumListTitleLength(title)) return;
 
-        var url = absoluteUrl(link.getAttribute("href"));
+        var url = materializedHttpUrl(link.getAttribute("href"));
         if (!url) return;
 
         var matchInfo = listContextMatchInfo(title, url, "", context);

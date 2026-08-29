@@ -73,11 +73,11 @@
       if (!link) return;
 
       var href = link.getAttribute("href") || "";
-      var url = absoluteUrl(href);
+      var url = materializedHttpUrl(href);
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
-      if (!url || !text) return;
+      if (!text) return;
 
-      var key = url + "|" + text;
+      var key = (url || "unlinked:" + href) + "|" + text;
       if (seen[key]) return;
       seen[key] = true;
 
@@ -85,7 +85,7 @@
       items.push({ text: text, url: url, detail: detail });
     });
 
-    if (items.length < 3) return null;
+    if (items.length < 3 || materializedListItemCount(items) < 3) return null;
 
     var result = listContentResult({
       title: normalizeText(firstText([".fancy-title", "#topic-title h1", ".topic-title h1", ".category-heading h1", ".category-title-box h1", "main h1", "h1"]) || metadata.title || document.title),

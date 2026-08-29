@@ -29,10 +29,12 @@
     var author = normalizeText((subtext && subtext.querySelector(".hnuser") || {}).textContent || "");
     var age = normalizeText((subtext && subtext.querySelector(".age") || {}).textContent || "");
     var dead = !!node.querySelector(".deadmark") || /\[dead\]/i.test(subtextText);
+    var href = (titleLink && titleLink.getAttribute("href")) || "";
 
     return {
       title: dead ? "[dead] " + title : title,
-      url: absoluteUrl((titleLink && titleLink.getAttribute("href")) || ""),
+      url: materializedHttpUrl(href),
+      sourceHref: href,
       author: author,
       age: age,
       score: scoreMatch ? Number(scoreMatch[1]) : null,
@@ -85,7 +87,7 @@
     var sections = ["# " + title];
     var details = [];
     var storyText = document.querySelector(".toptext");
-    if (story && story.url) details.push("- Story: [" + story.title + "](" + story.url + ")");
+    if (story && story.url) details.push("- Story: " + markdownLink(story.title, story.url));
     if (story && story.author) details.push("- Author: " + story.author);
     if (story && story.age) details.push("- Published: " + story.age);
     if (story && story.score !== null) details.push("- Score: " + story.score);
@@ -120,14 +122,14 @@
     var storyNodes = document.querySelectorAll("table.itemlist tr.athing");
     if (storyNodes.length < 3) storyNodes = document.querySelectorAll("table#hnmain tr.athing");
     var stories = Array.prototype.slice.call(storyNodes).map(hackerNewsStory).filter(Boolean);
-    if (stories.length < 3) return null;
+    if (stories.length < 3 || materializedListItemCount(stories) < 3) return null;
     var section = normalizeText((document.querySelector(".pagetop b, .pagetop a.topsel") || {}).textContent || "");
     var markdown = "# " + (section || metadata.title || "Hacker News") + "\n\n" + stories.map(function(story) {
       var details = [];
       if (story.score !== null) details.push(story.score + " points");
       if (story.author) details.push("by " + story.author);
       if (story.age) details.push(story.age);
-      return "- [" + story.title + "](" + story.url + ")" + (details.length ? " - " + details.join(" - ") : "");
+      return "- " + markdownLink(story.title, story.url) + (details.length ? " - " + details.join(" - ") : "");
     }).join("\n");
 
     return {
