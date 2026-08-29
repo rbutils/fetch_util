@@ -75,6 +75,28 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "preserves booking homepage summaries without enough links for a list" do
+    html = <<~HTML
+      <html>
+        <head><title>Booking.com</title></head>
+        <body>
+          <main>
+            <h1>Find your next stay</h1>
+            <h2>Seasonal city breaks</h2>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://www.booking.com/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["title"]).to eq("Find your next stay")
+      expect(payload["markdown"]).to include("- Seasonal city breaks")
+    end
+  end
+
   it "extracts glassdoor homepages into compact summaries" do
     html = <<~HTML
       <html>
