@@ -26,8 +26,8 @@
         return finalizeExtractResult(content, metadata, pageText, signals, null);
       }
       if (!content) {
-        var earlyInterstitial = interstitialContent(metadata, pageText);
-        var earlyInterstitialType = earlyInterstitial ? interstitialPageType(metadata, pageText) : null;
+        var earlyInterstitialType = interstitialPageType(metadata, pageText);
+        var earlyInterstitial = interstitialContent(metadata, pageText, earlyInterstitialType);
         var earlyInterstitialText = normalizeText((document.body && document.body.textContent) || "").toLowerCase();
         var nonEnglishNotFound = /ご利用のページが見つかりません|ページまたはファイルが存在しません|移動または削除されている|urlに誤りがある|urlには.*存在しません/i.test(earlyInterstitialText);
         if (earlyInterstitial && earlyInterstitialType === "not_found" && nonEnglishNotFound) {
@@ -65,8 +65,8 @@
         // content when real extraction is consent-dominated or empty. The Ruby-side
         // consent dismissal already attempts to click "accept" buttons, so by the time
         // JS runs, the actual article may be accessible behind the wall remnants.
-        var interstitial = interstitialContent(metadata, pageText);
-        var interstitialType = interstitial ? interstitialPageType(metadata, pageText) : null;
+        var interstitialType = interstitialPageType(metadata, pageText);
+        var interstitial = interstitialContent(metadata, pageText, interstitialType);
         if (interstitial && interstitialType !== "consent_wall") {
           content = interstitial;
         } else if (interstitial && interstitialType === "consent_wall") {

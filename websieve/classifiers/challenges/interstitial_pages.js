@@ -151,8 +151,8 @@ function interstitialPageType(metadata, pageText) {
   return null;
 }
 
-function interstitialContent(metadata, pageText) {
-  var type = interstitialPageType(metadata, pageText);
+function interstitialContent(metadata, pageText, type) {
+  if (type === undefined) type = interstitialPageType(metadata, pageText);
   if (!type) return null;
   if (type === "meta_login") return metaWallContent(metadata, pageText);
 
