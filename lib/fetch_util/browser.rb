@@ -68,7 +68,7 @@ module FetchUtil
         default_opts["headless"] = "new"
         default_opts["enable-automation"] = false # override Ferrum default
       end
-      @browser_options = default_opts.merge(browser_options || {})
+      @browser_options = immutable_browser_option(default_opts.merge(browser_options || {}))
       @navigator_patch = build_navigator_patch
       @ferrum = nil
       @mutex = Mutex.new
@@ -120,6 +120,21 @@ module FetchUtil
       raise ArgumentError
     rescue ArgumentError, TypeError
       raise ArgumentError, "#{name} must be nonnegative"
+    end
+
+    def immutable_browser_option(value)
+      case value
+      when String
+        value.dup.freeze
+      when Array
+        value.map { |item| immutable_browser_option(item) }.freeze
+      when Hash
+        value.each_with_object({}) do |(key, item), owned|
+          owned[immutable_browser_option(key)] = immutable_browser_option(item)
+        end.freeze
+      else
+        value
+      end
     end
 
     # Lazily start the shared Chromium process on first use. The

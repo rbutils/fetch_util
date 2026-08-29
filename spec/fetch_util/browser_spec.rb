@@ -93,6 +93,40 @@ RSpec.describe FetchUtil::Browser do
     browser&.quit
   end
 
+  it 'owns immutable browser options used for lazy startup' do
+    key = +'proxy-server'
+    value = +'http://proxy.example:8080'
+    options = { key => value, 'nested' => [+'one', { +'two' => +'three' }] }
+    browser = described_class.new(browser_path: '/usr/bin/chromium', browser_options: options)
+    ferrum = instance_double(Ferrum::Browser, evaluate_on_new_document: nil, quit: nil)
+
+    key.replace('changed-key')
+    value.replace('changed-value')
+    options.clear
+
+    expect(Ferrum::Browser).to receive(:new).with(
+      hash_including(
+        browser_options: hash_including(
+          'proxy-server' => 'http://proxy.example:8080',
+          'nested' => ['one', { 'two' => 'three' }]
+        )
+      )
+    ).and_return(ferrum)
+
+    browser.send(:ensure_browser)
+
+    owned_options = browser.instance_variable_get(:@browser_options)
+    expect(owned_options).to be_frozen
+    expect(owned_options['proxy-server']).to be_frozen
+    expect(owned_options['nested']).to be_frozen
+    expect(owned_options['nested'].first).to be_frozen
+    expect(owned_options['nested'].last).to be_frozen
+    expect(owned_options['nested'].last.keys + owned_options['nested'].last.values).to all(be_frozen)
+    expect(options).not_to be_frozen
+  ensure
+    browser&.quit
+  end
+
   it 'normalizes non-ascii urls before navigation' do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
