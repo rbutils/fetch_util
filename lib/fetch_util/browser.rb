@@ -56,7 +56,8 @@ module FetchUtil
         "User-Agent" => @user_agent,
         "Accept-Language" => @accept_language
       }.freeze
-      @browser_path = browser_path || ENV["BROWSER_PATH"] || BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+      selected_browser_path = browser_path || ENV["BROWSER_PATH"] || BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+      @browser_path = selected_browser_path&.dup&.freeze
       @full_browser = @browser_path && !@browser_path.include?("headless_shell")
       default_opts = { "no-sandbox": nil }
       # Use newer headless mode with the full browser binary for closer runtime

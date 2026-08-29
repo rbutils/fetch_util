@@ -70,6 +70,29 @@ RSpec.describe FetchUtil::Browser do
     expect(browser.send(:navigator_patch)).to include('123.4.5.6', '["en-US","en"]')
   end
 
+  it 'owns the browser path used for lazy startup' do
+    browser_path = +'/usr/bin/chromium'
+    browser = described_class.new(browser_path: browser_path)
+    ferrum = instance_double(Ferrum::Browser, evaluate_on_new_document: nil, quit: nil)
+
+    browser_path.replace('/mutated/headless_shell')
+
+    expect(Ferrum::Browser).to receive(:new).with(
+      hash_including(
+        browser_path: '/usr/bin/chromium',
+        browser_options: hash_including('headless' => 'new', 'enable-automation' => false)
+      )
+    ).and_return(ferrum)
+
+    browser.send(:ensure_browser)
+
+    expect(browser.instance_variable_get(:@browser_path)).to eq('/usr/bin/chromium')
+    expect(browser.instance_variable_get(:@browser_path)).to be_frozen
+    expect(browser_path).not_to be_frozen
+  ensure
+    browser&.quit
+  end
+
   it 'normalizes non-ascii urls before navigation' do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
