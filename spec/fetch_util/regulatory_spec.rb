@@ -114,9 +114,10 @@ RSpec.describe FetchUtil::Regulatory do
     )
     dir = Dir.mktmpdir
     regulatory = described_class.new(client: client, cache_path: dir)
+    target_origin = URI.parse("https://example.com")
 
-    expect(regulatory.send(:tdm_policy_record, policy_url)).to eq("signals" => [])
-    expect(regulatory.send(:tdm_policy_record, policy_url)).to eq(
+    expect(regulatory.send(:tdm_policy_record, policy_url, target_origin: target_origin)).to eq("signals" => [])
+    expect(regulatory.send(:tdm_policy_record, policy_url, target_origin: target_origin)).to eq(
       "signals" => [{ "allow" => "text-and-data-mining" }]
     )
     expect(client.requests).to eq([policy_url] * 2)
@@ -424,6 +425,61 @@ RSpec.describe FetchUtil::Regulatory do
         }
       ]
     )
+  end
+
+  it "ignores absolute ODRL targets from another origin" do
+    policy_url = "https://policies.example.test/tdm.json"
+    permission = lambda do |target, purpose|
+      {
+        "action" => "https://www.w3.org/ns/odrl/2/mine",
+        "target" => target,
+        "constraint" => {
+          "leftOperand" => "purpose",
+          "operator" => "eq",
+          "rightOperand" => purpose
+        }
+      }
+    end
+    policy = {
+      "permission" => [
+        permission.call("https://foreign.example.test/article", "research"),
+        permission.call("https://current.example.test/article", "research"),
+        permission.call("/article", "non-research")
+      ]
+    }
+    client = fake_client(
+      "https://current.example.test/.well-known/tdmrep.json" => response(
+        "https://current.example.test/.well-known/tdmrep.json",
+        status: 404
+      ),
+      "https://current.example.test/article" => response(
+        "https://current.example.test/article",
+        headers: {
+          "content-type" => ["text/html"],
+          "tdm-reservation" => ["1"],
+          "tdm-policy" => [policy_url]
+        },
+        body: "<html><body>Article body.</body></html>"
+      ),
+      policy_url => response(policy_url, headers: { "content-type" => ["application/json"] }, body: JSON.generate(policy))
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "tdmheaders,tdmpolicy")
+
+    expect(regulatory.call("https://current.example.test/article")["tdmpolicy"]).to eq(
+      [
+        {
+          "allow" => "text-and-data-mining",
+          "conditions" => { "purpose" => "research", "policy" => policy_url }
+        },
+        {
+          "allow" => "text-and-data-mining",
+          "conditions" => { "purpose" => "non-research", "policy" => policy_url }
+        }
+      ]
+    )
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
   it "recognizes bounded crawler meta names" do

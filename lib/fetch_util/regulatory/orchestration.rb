@@ -63,7 +63,11 @@ module FetchUtil
           add_source_payload(
             result,
             "tdmpolicy",
-            scoped_signals(expanded_tdm_policy_signals(policy_refs), origin_query: origin_query, query_target: effective_query_target)
+            scoped_signals(
+              expanded_tdm_policy_signals(policy_refs, target_origin: requested_uri),
+              origin_query: origin_query,
+              query_target: effective_query_target
+            )
           )
         end
 

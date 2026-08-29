@@ -38,12 +38,16 @@ module FetchUtil
         nil
       end
 
-      def policy_target_path(value)
+      def policy_target_path(value, target_origin:)
         target = value.to_s.strip
         return nil if target.empty?
 
         uri = URI.parse(target)
-        return normalize_output_path(request_target(uri)) if uri.is_a?(URI::HTTP)
+        if uri.is_a?(URI::HTTP)
+          return nil unless target_origin && origin_key(uri) == origin_key(target_origin)
+
+          return normalize_output_path(request_target(uri))
+        end
         return normalize_output_path(target) if target.start_with?("/")
 
         nil
