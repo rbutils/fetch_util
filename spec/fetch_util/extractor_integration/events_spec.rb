@@ -56,7 +56,7 @@ RSpec.describe 'FetchUtil event extraction' do
   it 'keeps conference schedule pages as rich list markdown' do
     html = fixture_contents(File.join(__dir__, '../../fixtures/rubyconf_schedule.html'))
 
-    with_url_page('https://rubyconf.org/schedule/', html) do |page|
+    with_url_page('https://rubyconf.org/conferences/rubyconf-2026', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload['contentType']).to eq('list')
@@ -66,6 +66,28 @@ RSpec.describe 'FetchUtil event extraction' do
       expect(payload['markdown']).to include('Opening Address: Tools for the Coming Decade')
       expect(payload['markdown']).to include('Quick Checks for Broad Codebases')
       expect(payload['warnings']).to be_empty
+    end
+  end
+
+  it 'keeps classless semantic conference schedules as lists' do
+    html = <<~HTML
+      <html><head>
+        <title>Community conference program</title>
+        <meta name="author" content="Program committee">
+      </head><body><main>
+        <h1>Community conference program</h1>
+        <p>This program introduces a full day of practical sessions, with enough explanatory context to help visitors choose a useful route through the material and plan useful conversations between sessions.</p>
+        <article><h2><a href="/sessions/opening">Opening patterns</a></h2><time datetime="2026-09-10T09:00:00Z">09:00 AM</time><p>A practical opening session about choosing simple designs and communicating their constraints clearly.</p></article>
+        <article><h2><a href="/sessions/testing">Reliable checks</a></h2><time datetime="2026-09-10T10:30:00Z">10:30 AM</time><p>Focused techniques for dependable changes, useful failures, and maintainable regression coverage.</p></article>
+        <article><h2><a href="/sessions/closing">Closing discussion</a></h2><time datetime="2026-09-10T14:00:00Z">02:00 PM</time><p>A final discussion that connects the day's lessons and gives participants time for detailed questions.</p></article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/conferences/program-overview', html) do |payload|
+      expect_content_type(payload, 'list')
+      expect(payload['markdown']).to include('Opening patterns')
+      expect(payload['markdown']).to include('Reliable checks')
+      expect(payload['markdown']).to include('Closing discussion')
     end
   end
 
@@ -89,6 +111,129 @@ RSpec.describe 'FetchUtil event extraction' do
       expect(payload['markdown']).to include('Online')
       expect(payload['markdown'].index('Ruby for teams')).to be < payload['markdown'].index('Testing clinic')
       expect(payload['markdown'].index('Testing clinic')).to be < payload['markdown'].index('Security workshop')
+    end
+  end
+
+  it 'does not replace a substantive article with related event cards' do
+    html = <<~HTML
+      <html><head>
+        <title>Planning an accessible event schedule</title>
+        <meta name="author" content="Morgan Lee">
+        <meta property="article:published_time" content="2026-08-20">
+      </head><body><main>
+        <article>
+          <h1>Planning an accessible event schedule</h1>
+          <p>Successful community events begin with a clear purpose, an accessible venue, and enough lead time for participants to plan their travel.</p>
+          <p>Organizers should publish practical arrival details, describe available accommodations, and give attendees a direct way to request additional support.</p>
+          <p>A useful schedule balances structured sessions with breaks, preserves transition time, and makes changes easy to find before the event begins.</p>
+          <p>Afterward, the team should collect specific feedback, document what worked, and carry those lessons into the next planning cycle.</p>
+        </article>
+        <section><h2>Related events</h2>
+          <article class="event-card"><h3><a href="/events/one">Venue workshop</a></h3><time datetime="2026-09-01T09:00:00Z">Sep 1, 2026 at 09:00 AM</time></article>
+          <article class="event-card"><h3><a href="/events/two">Schedule clinic</a></h3><time datetime="2026-09-02T10:00:00Z">Sep 2, 2026 at 10:00 AM</time></article>
+          <article class="event-card"><h3><a href="/events/three">Access forum</a></h3><time datetime="2026-09-03T11:00:00Z">Sep 3, 2026 at 11:00 AM</time></article>
+          <article class="event-card"><h3><a href="/events/four">Feedback roundtable</a></h3><time datetime="2026-09-04T12:00:00Z">Sep 4, 2026 at 12:00 PM</time></article>
+        </section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/guides/event-schedule', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('Successful community events begin with a clear purpose')
+      expect(payload['markdown']).to include('carry those lessons into the next planning cycle')
+    end
+  end
+
+  it 'does not treat a scheduled event detail page as an explicit event index' do
+    html = <<~HTML
+      <html><head>
+        <title>Annual gathering schedule and access guide</title>
+        <meta name="author" content="Morgan Lee">
+        <meta property="article:published_time" content="2026-08-21">
+      </head><body><main>
+        <article>
+          <h1>Annual gathering schedule and access guide</h1>
+          <p>The annual gathering brings community organizers together for a full day of practical sessions, facilitated discussions, and shared planning.</p>
+          <p>This guide explains the event schedule, venue access, quiet spaces, meal arrangements, and the support available throughout the day.</p>
+          <p>Attendees should review arrival instructions before traveling and contact the team early when they need a specific accommodation.</p>
+          <p>Session updates will be published here so every participant has one reliable source for the current event plan.</p>
+        </article>
+      </main>
+        <section><h2>Related events</h2>
+          <article class="event-card"><h3><a href="/events/one">Venue workshop</a></h3><time datetime="2026-09-01">Sep 1, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/two">Schedule clinic</a></h3><time datetime="2026-09-02">Sep 2, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/three">Access forum</a></h3><time datetime="2026-09-03">Sep 3, 2026</time></article>
+        </section>
+      </body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/events/annual-gathering/1234/', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('The annual gathering brings community organizers together')
+      expect(payload['markdown']).to include('one reliable source for the current event plan')
+    end
+  end
+
+  it 'does not treat speaker profiles as a conference schedule' do
+    html = <<~HTML
+      <html><head>
+        <title>Conference speaker interviews</title>
+        <meta name="author" content="Morgan Lee">
+        <meta property="article:published_time" content="2026-08-22">
+      </head><body><main>
+        <article>
+          <h1>Conference speaker interviews</h1>
+          <p>Four experienced conference speakers explain how they prepare examples, refine explanations, and adapt technical material for a mixed audience.</p>
+          <p>Each interview focuses on the decisions behind a talk rather than presenting an agenda, timetable, or session directory.</p>
+          <div class="speaker-profile">Alex shares a method for choosing one useful example.</div>
+          <div class="speaker-profile">Blair describes testing explanations with peers.</div>
+          <div class="speaker-profile">Casey discusses making diagrams more accessible.</div>
+          <div class="speaker-profile">Devon explains how audience questions shape revisions.</div>
+          <p>Together, their advice offers a practical guide for anyone developing a clear and maintainable technical presentation.</p>
+        </article>
+      </main>
+        <section><h2>Related events</h2>
+          <article class="event-card"><h3><a href="/events/one">Venue workshop</a></h3><time datetime="2026-09-01">Sep 1, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/two">Schedule clinic</a></h3><time datetime="2026-09-02">Sep 2, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/three">Access forum</a></h3><time datetime="2026-09-03">Sep 3, 2026</time></article>
+        </section>
+      </body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/conferences/speaker-interviews', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('Four experienced conference speakers explain')
+      expect(payload['markdown']).to include('clear and maintainable technical presentation')
+    end
+  end
+
+  it 'does not treat conference logistics times as a session schedule' do
+    html = <<~HTML
+      <html><head>
+        <title>Conference visitor logistics</title>
+        <meta name="author" content="Morgan Lee">
+        <meta property="article:published_time" content="2026-08-22">
+      </head><body><main>
+        <article>
+          <h1>Conference visitor logistics</h1>
+          <p>Visitors can enter the venue from 08:30 AM, when the registration desk opens and staff begin answering accessibility questions.</p>
+          <p>Lunch service starts at 12:30 PM in the atrium, with clearly labelled alternatives available from the same counters.</p>
+          <p>The building closes at 06:00 PM, so attendees should collect stored belongings before making their way to evening activities.</p>
+          <p>This practical article explains transport, meals, venue access, and support contacts rather than listing individual conference sessions.</p>
+        </article>
+      </main>
+        <section><h2>Related events</h2>
+          <article class="event-card"><h3><a href="/events/one">Venue workshop</a></h3><time datetime="2026-09-01">Sep 1, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/two">Schedule clinic</a></h3><time datetime="2026-09-02">Sep 2, 2026</time></article>
+          <article class="event-card"><h3><a href="/events/three">Access forum</a></h3><time datetime="2026-09-03">Sep 3, 2026</time></article>
+        </section>
+      </body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/conferences/visitor-logistics', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('Visitors can enter the venue from 08:30 AM')
+      expect(payload['markdown']).to include('rather than listing individual conference sessions')
     end
   end
 end

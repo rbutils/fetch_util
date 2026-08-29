@@ -12,15 +12,29 @@
     return nodes[0] || null;
   }
 
-  function eventListingPage() {
+  function eventDetailPage() {
     var path = safeDecodeURI(location.pathname || "").toLowerCase();
-    var title = normalizeText([document.title || "", (document.querySelector("h1") || {}).textContent || ""].join(" ")).toLowerCase();
-    if (hostMatches(/(^|\.)eventbrite\.com$/) && /^\/e\//i.test(location.pathname || "")) return false;
-    if (/\/events?\/[^/?#]+\/\d+\/?$/i.test(path)) return false;
-    if (/\b(?:schedule|agenda|program(?:me)?)\b/.test(path + " " + title)) return true;
+    return (hostMatches(/(^|\.)eventbrite\.com$/) && /^\/e\//i.test(location.pathname || "")) ||
+      /\/events?\/[^/?#]+\/\d+\/?$/i.test(path);
+  }
+
+  function eventIndexPage() {
+    var path = safeDecodeURI(location.pathname || "").toLowerCase();
+    if (eventDetailPage()) return false;
+    if (/(?:^|\/)(?:schedule|agenda|program(?:me)?)(?:\/|$)/.test(path)) return true;
     if (/\/(?:events?|conferences?|calendar)\/?$/i.test(path)) return true;
-    if (/\/events\/[^/]*events?\/?$/i.test(path)) return true;
-    if (/\b(?:our events|upcoming events|event calendar|python events)\b/.test(title)) return true;
+    return /\/events\/[^/]*events?\/?$/i.test(path);
+  }
+
+  function explicitEventListingPage() {
+    if (eventIndexPage()) return true;
+    var context = normalizeText([location.pathname || "", document.title || "", (document.querySelector("h1") || {}).textContent || ""].join(" ")).toLowerCase();
+    return /\b(?:schedule|agenda|program(?:me)?|our events|upcoming events|event calendar|python events)\b/.test(context);
+  }
+
+  function eventListingPage() {
+    if (eventDetailPage()) return false;
+    if (explicitEventListingPage()) return true;
 
     var eventCards = eventCardItems().length;
     var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/'], a[href*='/e/'], a[href*='tickets-']"), function(link) {
@@ -141,10 +155,43 @@
     if (!/\b(schedule|agenda|program(?:me)?|world-congress|rubyconf|conference|summit)\b/.test(context)) return false;
     if (!/\b(schedule|agenda|program(?:me)?|conference|congress|summit|rubyconf)\b/.test(context)) return false;
 
-    var text = normalizeText(document.body && document.body.textContent);
-    var timeMatches = (text.match(/\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b/g) || []).length;
+    var timeMatches = Math.max(conferenceScheduleTimeCount(), conferenceScheduleTimedNodeCount());
     var sessionNodes = document.querySelectorAll("[class*='session' i], [class*='schedule' i], [class*='agenda' i], [class*='talk' i], [class*='speaker' i]").length;
     return timeMatches >= 3 || sessionNodes >= 4;
+  }
+
+  function conferenceScheduleTimeCount() {
+    var text = normalizeText(document.body && document.body.textContent);
+    return (text.match(/\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b/g) || []).length;
+  }
+
+  function eventScheduleEvidenceNode(node) {
+    if (node.closest(RELATED_CONTAINER_SELECTOR)) return false;
+
+    var section = node.closest("section, aside");
+    var heading = section && section.querySelector("h1, h2, h3, h4");
+    return !heading || !/^(?:related|recommended|similar|more|other)\s+(?:events?|sessions?)\b/i.test(normalizeText(heading.textContent));
+  }
+
+  function conferenceScheduleTimedNodeCount() {
+    var root = document.querySelector("main") || document.body;
+    var semanticTimes = root ? root.querySelectorAll("time") : [];
+    var semanticCount = Array.prototype.filter.call(semanticTimes, function(node) {
+      return eventScheduleEvidenceNode(node) &&
+        /\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b/.test(normalizeText(node.textContent));
+    }).length;
+    if (semanticCount >= 3) return semanticCount;
+
+    var nodes = root ? root.querySelectorAll("[class*='session' i], [class*='schedule' i], [class*='agenda' i], [class*='talk' i]") : [];
+    return Array.prototype.filter.call(nodes, function(node) {
+      return eventScheduleEvidenceNode(node) &&
+        /\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b/.test(normalizeText(node.textContent));
+    }).length;
+  }
+
+  function strongEventListingPage() {
+    return eventIndexPage() ||
+      (!eventDetailPage() && conferenceSchedulePage() && conferenceScheduleTimedNodeCount() >= 3);
   }
 
   function genericEventListContent(metadata) {

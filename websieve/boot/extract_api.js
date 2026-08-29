@@ -143,8 +143,10 @@
         content = jobList;
       }
 
+      var eventArticle = content && content.contentType === "article" &&
+        (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
-      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content)) {
+      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content) && (!eventArticle || strongEventListingPage())) {
         content = eventList;
       }
 
