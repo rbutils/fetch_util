@@ -342,6 +342,44 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "ignores TDM policy documents with non-object JSON roots" do
+    policy_url = "https://example.com/policies/tdm.json"
+    client = fake_client(
+      "https://example.com/.well-known/tdmrep.json" => response(
+        "https://example.com/.well-known/tdmrep.json",
+        status: 404
+      ),
+      "https://example.com/article" => response(
+        "https://example.com/article",
+        headers: {
+          "content-type" => ["text/html"],
+          "tdm-reservation" => ["1"],
+          "tdm-policy" => [policy_url]
+        },
+        body: "<html><body>Article body.</body></html>"
+      ),
+      policy_url => response(
+        policy_url,
+        headers: { "content-type" => ["application/json"] },
+        body: "[]"
+      )
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "tdmheaders,tdmpolicy")
+
+    expect(regulatory.call("https://example.com/article")).to eq(
+      "tdmheaders" => [
+        {
+          "disallow" => "text-and-data-mining",
+          "conditions" => { "policy" => policy_url }
+        }
+      ]
+    )
+    expect(["null", '"text"', "1"].map { |body| regulatory.send(:extract_tdm_policy_signals, body) }).to eq([[], [], []])
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
   it "preserves regulatory headers from redirect hops" do
     redirect = response(
       "https://www.theguardian.com/",

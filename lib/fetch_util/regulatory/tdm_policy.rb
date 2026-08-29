@@ -30,6 +30,8 @@ module FetchUtil
 
       def extract_tdm_policy_signals(body)
         payload = JSON.parse(body.to_s)
+        return [] unless payload.is_a?(Hash)
+
         permissions = array_value(payload, "permission")
 
         permissions.filter_map do |permission|
