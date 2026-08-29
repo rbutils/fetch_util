@@ -75,6 +75,9 @@ module FetchUtil
       markdown = markdown_from_root(root, title)
       return nil if clean_text(markdown).length < 40
 
+      language = document.at_css("html")&.[]("lang").to_s.strip
+      language = nil if language.empty?
+
       {
         "title" => title,
         "byline" => meta_value(document, "author"),
@@ -82,7 +85,7 @@ module FetchUtil
         "siteName" => meta_value(document, "og:site_name", attr: "property") || safe_host(final_url),
         "publishedTime" => meta_value(document, "article:published_time", attr: "property") || meta_value(document, "publish-date"),
         "canonicalUrl" => canonical_url(document, final_url),
-        "language" => document.at_css("html")&.[]("lang") || "en",
+        "language" => language,
         "html" => root.to_html,
         "markdown" => markdown,
         "readerMode" => false,

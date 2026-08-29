@@ -14,6 +14,22 @@ RSpec.describe FetchUtil::RawDocsFallback do
     described_class.new(timeout: 0.25)
   end
 
+  it "reports only declared document languages" do
+    [[nil, nil], ["", nil], ["de", "de"]].each do |declared, expected|
+      language_attribute = %( lang="#{declared}") if declared
+      html = <<~HTML
+        <html#{language_attribute}>
+          <head><title>Sprachreferenz</title></head>
+          <body><main><p>Diese Dokumentation enthaelt ausreichend Inhalt fuer eine verlaessliche Extraktion.</p></main></body>
+        </html>
+      HTML
+
+      payload = described_class.new.payload_from_html(html, requested_url: "https://example.test/docs")
+
+      expect(payload["language"]).to eq(expected)
+    end
+  end
+
   it "uses the shared redirect client final response" do
     html = <<~HTML
       <html>
