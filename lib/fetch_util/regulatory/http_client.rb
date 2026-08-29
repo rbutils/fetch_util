@@ -6,12 +6,14 @@ require "uri"
 module FetchUtil
   class HttpRedirectClient
     REDIRECT_LIMIT = 5
+    MAX_RESPONSE_BYTES = 10 * 1024 * 1024
     TRANSIENT_ERRORS = [EOFError, IOError, SocketError, SystemCallError, Timeout::Error].freeze
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
 
-    def initialize(timeout:, headers: {})
+    def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES)
       @timeout = timeout.to_f
       @headers = headers.reject { |_key, value| value.to_s.empty? }
+      @max_response_bytes = positive_max_response_bytes(max_response_bytes)
     end
 
     def get(url, limit: REDIRECT_LIMIT)
@@ -23,18 +25,27 @@ module FetchUtil
 
     private
 
-    attr_reader :timeout, :headers
+    attr_reader :timeout, :headers, :max_response_bytes
+
+    def positive_max_response_bytes(value)
+      bytes = Integer(value)
+      return bytes if bytes.positive?
+
+      raise ArgumentError
+    rescue ArgumentError, TypeError, FloatDomainError
+      raise ArgumentError, "max_response_bytes must be positive"
+    end
 
     def fetch(uri, limit, redirects)
-      response = request(uri)
-      return build_response(uri, response, redirects: redirects) unless response.is_a?(Net::HTTPRedirection)
+      response, body = request(uri)
+      return build_response(uri, response, body: body, redirects: redirects) unless response.is_a?(Net::HTTPRedirection)
 
       raise FetchUtil::Error, "too many redirects for #{uri}" if limit <= 0
 
       location = response["location"].to_s.strip
-      return build_response(uri, response, redirects: redirects) if location.empty?
+      return build_response(uri, response, body: body, redirects: redirects) if location.empty?
 
-      redirect_response = build_response(uri, response)
+      redirect_response = build_response(uri, response, body: body)
       redirect_uri = parse_http_uri(uri.merge(location))
       fetch(redirect_uri, limit - 1, redirects + [redirect_response])
     end
@@ -45,7 +56,16 @@ module FetchUtil
         http = connection_for(uri)
         request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
         headers.each { |key, value| request[key] = value }
-        http.request(request)
+        body = +""
+        response = http.request(request) do |incoming|
+          incoming.read_body do |chunk|
+            body << chunk
+            if body.bytesize > max_response_bytes
+              raise FetchUtil::Error, "response body exceeds #{max_response_bytes} bytes for #{uri}"
+            end
+          end
+        end
+        [response, body]
       rescue *TRANSIENT_ERRORS
         close_connection(uri)
         attempts += 1
@@ -82,12 +102,12 @@ module FetchUtil
       @connections = nil
     end
 
-    def build_response(uri, response, redirects: [])
+    def build_response(uri, response, body:, redirects: [])
       Response.new(
         url: uri.to_s,
         status: response.code.to_i,
         headers: response.to_hash.transform_keys(&:downcase),
-        body: response.body.to_s,
+        body: body,
         redirects: redirects
       )
     end

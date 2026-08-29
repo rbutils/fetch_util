@@ -5,25 +5,35 @@ require "fetch_util/regulatory"
 require "fetch_util/regulatory/http_client"
 
 RSpec.describe FetchUtil::HttpRedirectClient do
-  def response
-    double("response", code: "200", to_hash: { "content-type" => ["text/plain"] }, body: "ok")
+  def response(*chunks)
+    double("response", code: "200", to_hash: { "content-type" => ["text/plain"] }).tap do |response|
+      allow(response).to receive(:read_body) do |&block|
+        chunks.each(&block)
+      end
+    end
+  end
+
+  def streaming_http(incoming)
+    instance_double(Net::HTTP, started?: true).tap do |http|
+      allow(http).to receive(:request) do |_request, &block|
+        block.call(incoming)
+        incoming
+      end
+    end
   end
 
   def redirect_response(location)
     Net::HTTPFound.new("1.1", "302", "Found").tap do |response|
       response["location"] = location
-      allow(response).to receive(:body).and_return("")
     end
   end
 
   def success_response
-    Net::HTTPOK.new("1.1", "200", "OK").tap do |response|
-      allow(response).to receive(:body).and_return("ok")
-    end
+    Net::HTTPOK.new("1.1", "200", "OK")
   end
 
   it "preserves a successful response when connection cleanup fails" do
-    http = instance_double(Net::HTTP, request: response, started?: true)
+    http = streaming_http(response("ok"))
     allow(http).to receive(:finish).and_raise(SocketError, "close failed")
     allow(Net::HTTP).to receive(:start).and_return(http)
     client = described_class.new(timeout: 1)
@@ -36,7 +46,7 @@ RSpec.describe FetchUtil::HttpRedirectClient do
 
   it "retries a request when closing its failed connection also fails" do
     failed_http = instance_double(Net::HTTP, started?: true)
-    successful_http = instance_double(Net::HTTP, request: response, started?: true)
+    successful_http = streaming_http(response("ok"))
     allow(failed_http).to receive(:request).and_raise(SocketError, "request failed")
     allow(failed_http).to receive(:finish).and_raise(Timeout::Error, "close failed")
     allow(successful_http).to receive(:finish)
@@ -65,9 +75,9 @@ RSpec.describe FetchUtil::HttpRedirectClient do
   it "follows relative and cross-host HTTP redirects" do
     client = described_class.new(timeout: 1)
     allow(client).to receive(:request).and_return(
-      redirect_response("/next"),
-      redirect_response("https://cdn.example.test/final"),
-      success_response
+      [redirect_response("/next"), ""],
+      [redirect_response("https://cdn.example.test/final"), ""],
+      [success_response, "ok"]
     )
 
     result = client.get("https://example.com/start")
@@ -82,12 +92,41 @@ RSpec.describe FetchUtil::HttpRedirectClient do
   it "rejects redirects to unsupported or hostless URLs" do
     ["ftp://example.test/file", "file:///etc/passwd", "https:///missing-host"].each do |location|
       client = described_class.new(timeout: 1)
-      allow(client).to receive(:request).and_return(redirect_response(location))
+      allow(client).to receive(:request).and_return([redirect_response(location), ""])
 
       expect do
         client.get("https://example.com/start")
       end.to raise_error(URI::InvalidURIError, "unsupported url: #{location}")
       expect(client).to have_received(:request).once
+    end
+  end
+
+  it "accepts response bodies at the configured byte limit" do
+    http = streaming_http(response("ab", "cd"))
+    allow(http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(http)
+
+    result = described_class.new(timeout: 1, max_response_bytes: 4).get("https://example.com/resource")
+
+    expect(result.body).to eq("abcd")
+  end
+
+  it "rejects response bodies above the configured byte limit" do
+    http = streaming_http(response("abcd", "e"))
+    allow(http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(http)
+    client = described_class.new(timeout: 1, max_response_bytes: 4)
+
+    expect do
+      client.get("https://example.com/resource")
+    end.to raise_error(FetchUtil::Error, "response body exceeds 4 bytes for https://example.com/resource")
+  end
+
+  it "requires a positive response byte limit" do
+    [nil, 0, -1, Float::INFINITY, Float::NAN].each do |limit|
+      expect do
+        described_class.new(timeout: 1, max_response_bytes: limit)
+      end.to raise_error(ArgumentError, "max_response_bytes must be positive")
     end
   end
 end
