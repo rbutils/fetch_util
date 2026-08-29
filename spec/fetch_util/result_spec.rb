@@ -135,4 +135,15 @@ RSpec.describe FetchUtil::Result do
       score: nil
     )
   end
+
+  it "owns one immutable warning collection for error results" do
+    warning = +"network_error"
+    result = described_class.error(url: "https://example.test", warning: warning, message: "unavailable")
+    warning.replace("changed")
+
+    expect(result.warnings).to eq(["network_error"])
+    expect(result.metadata.fetch(:warnings)).to equal(result.warnings)
+    expect(result.warnings).to be_frozen
+    expect { result.metadata.fetch(:warnings) << "changed" }.to raise_error(FrozenError)
+  end
 end

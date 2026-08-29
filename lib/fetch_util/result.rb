@@ -33,11 +33,12 @@ module FetchUtil
       end
 
       def error(url:, warning:, message:)
+        warnings = [warning.to_s.dup.freeze].freeze
         metadata = {
           content_url: url,
           content_type: "error",
           suspect: true,
-          warnings: [warning],
+          warnings: warnings,
           error_message: message,
           social_kind: nil,
           platform: nil,
@@ -72,7 +73,7 @@ module FetchUtil
           reader_mode: nil,
           content_type: "error",
           suspect: true,
-          warnings: [warning],
+          warnings: warnings,
           error_message: message
         )
       end
