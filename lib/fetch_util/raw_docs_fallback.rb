@@ -59,7 +59,7 @@ module FetchUtil
       return nil unless payload
 
       [final_url, payload]
-    rescue Error, SocketError, SystemCallError, Timeout::Error, URI::InvalidURIError
+    rescue Error, IOError, SocketError, SystemCallError, Timeout::Error, URI::InvalidURIError
       nil
     end
 

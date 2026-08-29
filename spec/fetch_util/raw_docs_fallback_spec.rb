@@ -38,6 +38,13 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(described_class.new(http_client: http_client).fetch("https://example.com/missing")).to be_nil
   end
 
+  it "returns nil when the shared redirect client raises an IO error" do
+    http_client = instance_double(FetchUtil::HttpRedirectClient)
+    allow(http_client).to receive(:get).and_raise(IOError, "stream closed")
+
+    expect(described_class.new(http_client: http_client).fetch("https://example.com/docs")).to be_nil
+  end
+
   it "extracts fragment-scoped docs content from raw html" do
     html = <<~HTML
             <html lang="en">
