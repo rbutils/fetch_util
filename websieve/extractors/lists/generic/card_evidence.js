@@ -144,12 +144,6 @@
     return text;
   }
 
-  function directTableCells(row) {
-    return Array.prototype.filter.call(row.children || [], function(cell) {
-      return cell.matches && cell.matches("th, td");
-    });
-  }
-
   function listTableCellText(cell) {
     var text = normalizeText(cell.innerText || cell.textContent || "");
     if (text) return text;
@@ -164,7 +158,7 @@
   }
 
   function listTableRowDetail(row, title) {
-    var cells = directTableCells(row);
+    var cells = tableIndexCells(row);
     var table = row.closest && row.closest("table");
     var headers = table ? tableIndexHeaders(table) : [];
     var titleCellIndex = cells.findIndex(function(cell) {

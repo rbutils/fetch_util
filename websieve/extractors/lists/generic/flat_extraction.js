@@ -82,7 +82,7 @@
       var primaryColumn = tableIndexPrimaryColumn(tableIndexSource);
       Array.prototype.forEach.call(root.querySelectorAll("tr"), function(row) {
         if (row.closest("table") !== root || row.closest("thead, tfoot")) return;
-        var primary = tableIndexPrimaryLink(row, directTableCells(row), 2, primaryColumn);
+        var primary = tableIndexPrimaryLink(row, tableIndexCells(row), 2, primaryColumn);
         if (!primary) return;
 
         var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
