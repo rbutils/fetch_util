@@ -484,6 +484,34 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "validates the installed Terser before accepting a cached check" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      invocation_count = File.join(root, "npx-invocations")
+      FileUtils.mkdir_p(bin_dir)
+      install_fake_terser(root)
+      File.write(
+        File.join(bin_dir, "npx"),
+        "#!/bin/sh\nprintf x >> \"$NPX_INVOCATIONS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
+      )
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      env = {
+        "NPX_INVOCATIONS" => invocation_count,
+        "PATH" => [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+      }
+
+      _stdout, stderr, status = run_build_script(root: root, env: env)
+      expect(status.success?).to be(true), stderr
+      install_fake_terser(root, version: "0.0.0")
+
+      _stdout, stderr, status = run_build_script("--check", root: root, env: env)
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Missing local Terser 5.51.2: run `npm ci`")
+      expect(File.read(invocation_count)).to eq("x")
+    end
+  end
+
   it "fails check mode when the manifest lists a source file that does not exist" do
     with_asset_project(manifest: "present.js\nmissing.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
       _stdout, stderr, status = run_build_script("--check", root: root)

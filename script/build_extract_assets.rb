@@ -59,6 +59,7 @@ if check_mode
   abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
 
   if cached_build_current?(source_digest)
+    verify_terser_installation
     puts "Verified #{OUTPUT} is up to date"
     exit 0
   end
@@ -73,10 +74,14 @@ rescue Errno::ENOENT, JSON::ParserError, KeyError
   nil
 end
 
-def terser_build(source)
+def verify_terser_installation
   unless LOCAL_TERSER.file? && installed_terser_version == TERSER_VERSION
     abort("Missing local Terser #{TERSER_VERSION}: run `npm ci`")
   end
+end
+
+def terser_build(source)
+  verify_terser_installation
 
   Tempfile.create(["fetch_util_extract", ".js"]) do |file|
     file.write(source)
