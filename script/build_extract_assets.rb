@@ -54,17 +54,6 @@ def cached_build_current?(source_digest)
   cached_source_digest == source_digest && cached_output_digest == Digest::SHA256.file(OUTPUT).hexdigest
 end
 
-check_mode = ARGV.include?("--check")
-if check_mode
-  abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
-
-  if cached_build_current?(source_digest)
-    verify_terser_installation
-    puts "Verified #{OUTPUT} is up to date"
-    exit 0
-  end
-end
-
 def installed_terser_version
   package = PROJECT_ROOT.join("node_modules", "terser", "package.json")
   return unless package.file?
@@ -75,8 +64,19 @@ rescue Errno::ENOENT, JSON::ParserError, KeyError
 end
 
 def verify_terser_installation
-  unless LOCAL_TERSER.file? && installed_terser_version == TERSER_VERSION
-    abort("Missing local Terser #{TERSER_VERSION}: run `npm ci`")
+  return if LOCAL_TERSER.file? && installed_terser_version == TERSER_VERSION
+
+  abort("Missing local Terser #{TERSER_VERSION}: run `npm ci`")
+end
+
+check_mode = ARGV.include?("--check")
+if check_mode
+  abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
+
+  if cached_build_current?(source_digest)
+    verify_terser_installation
+    puts "Verified #{OUTPUT} is up to date"
+    exit 0
   end
 end
 
