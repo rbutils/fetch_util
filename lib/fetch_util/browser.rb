@@ -50,8 +50,8 @@ module FetchUtil
       @wait_for_idle = wait_for_idle
       @idle_duration = idle_duration.to_f
       @viewport = DEFAULT_VIEWPORT.merge(symbolize_hash(viewport || {}))
-      @user_agent = user_agent
-      @accept_language = accept_language
+      @user_agent = user_agent.to_s.dup.freeze
+      @accept_language = accept_language.to_s.dup.freeze
       @default_headers = {
         "User-Agent" => @user_agent,
         "Accept-Language" => @accept_language

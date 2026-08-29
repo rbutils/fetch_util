@@ -36,6 +36,23 @@ RSpec.describe FetchUtil::Browser do
     expect(script).to include('Google Chrome')
   end
 
+  it 'owns one immutable browser identity for headers and navigator data' do
+    user_agent = +'Mozilla/5.0 Chrome/123.4.5.6'
+    accept_language = +'en-US,en;q=0.9'
+    browser = described_class.new(user_agent: user_agent, accept_language: accept_language)
+
+    user_agent.replace('changed')
+    accept_language.replace('changed')
+
+    headers = browser.instance_variable_get(:@default_headers)
+    expect(headers).to include(
+      'User-Agent' => 'Mozilla/5.0 Chrome/123.4.5.6',
+      'Accept-Language' => 'en-US,en;q=0.9'
+    )
+    expect(headers.values_at('User-Agent', 'Accept-Language')).to all(be_frozen)
+    expect(browser.send(:navigator_patch)).to include('123.4.5.6', '["en-US","en"]')
+  end
+
   it 'normalizes non-ascii urls before navigation' do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
