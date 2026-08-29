@@ -38,7 +38,7 @@
 
     var eventCards = eventCardItems().filter(function(item) { return item.admission; }).length;
     var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/'], a[href*='/e/'], a[href*='tickets-']"), function(link) {
-      return normalizeText(link.textContent || "").length >= 8 && !!materializedHttpUrl(link.getAttribute("href"));
+      return !elementVisuallyHidden(link) && normalizeText(link.textContent || "").length >= 8 && !!materializedHttpUrl(link.getAttribute("href"));
     }).length;
     return eventCards >= 3 || eventLinks >= 4;
   }
@@ -49,8 +49,12 @@
     var selectors = "[class*='event-card' i], [class*='event-list' i] article, [class*='event' i] article, li[class*='event' i], [data-testid*='event' i]";
 
     function addCard(card, link) {
-      if (card.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
-      link = link || card.querySelector("a[href]");
+      if (elementVisuallyHidden(card) || card.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
+      if (!link || elementVisuallyHidden(link)) {
+        link = Array.prototype.find.call(card.querySelectorAll("a[href]"), function(candidate) {
+          return !elementVisuallyHidden(candidate);
+        });
+      }
       var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
       var parent = card.parentElement || card;
       var dateText = visibleEventDateTime(card) || visibleEventDateTime(parent);
@@ -68,6 +72,7 @@
       addCard(card);
     });
     Array.prototype.forEach.call(document.querySelectorAll("a[href*='/e/'], a[href*='tickets-']"), function(link) {
+      if (elementVisuallyHidden(link)) return;
       var card = link.closest("article, li, [role='listitem'], [data-testid*='event' i], [class*='event' i], [class*='card' i]") || link.parentElement;
       if (card) addCard(card, link);
     });

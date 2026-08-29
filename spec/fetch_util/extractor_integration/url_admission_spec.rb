@@ -124,6 +124,54 @@ RSpec.describe 'FetchUtil URL admission boundaries' do
     expect(payload['markdown']).not_to include('javascript:action')
   end
 
+  it 'excludes hidden cards from specialized lists' do
+    cases = [
+      {
+        url: 'https://producer.example/directory',
+        html: <<~HTML,
+          <html><head><title>Community directory</title></head><body><main>
+            <article class="event-card"><h2><a href="/e/one">Visible event one</a></h2><time datetime="2026-09-01">Sep 1, 2026</time></article>
+            <article class="event-card"><h2><a href="/e/two">Visible event two</a></h2><time datetime="2026-09-02">Sep 2, 2026</time></article>
+            <article class="event-card"><h2><a href="/e/three">Visible event three</a></h2><time datetime="2026-09-03">Sep 3, 2026</time></article>
+            <article class="event-card" style="display:none"><h2><a href="/e/hidden">Hidden event record</a></h2><time datetime="2026-09-04">Sep 4, 2026</time></article>
+          </main></body></html>
+        HTML
+        visible: ['Visible event one', 'Visible event three'],
+        hidden: 'Hidden event record'
+      },
+      {
+        url: 'https://producer.example/jobs',
+        html: <<~HTML,
+          <html><head><title>Remote jobs</title></head><body><main>
+            #{4.times.map { |index| %(<article class="job-card" data-jobid="#{index}"><h2><a data-test="job-title" href="/viewjob?jk=#{index}">Visible engineering role #{index + 1}</a></h2></article>) }.join}
+            <article class="job-card" data-jobid="hidden" style="display:none"><h2><a data-test="job-title" href="/viewjob?jk=hidden">Hidden engineering role</a></h2></article>
+          </main></body></html>
+        HTML
+        visible: ['Visible engineering role 1', 'Visible engineering role 4'],
+        hidden: 'Hidden engineering role'
+      },
+      {
+        url: 'https://producer.example/category/workbench',
+        html: <<~HTML,
+          <html><head><title>Workbench products</title></head><body><main class="product-grid">
+            #{4.times.map { |index| %(<article class="product-card"><a href="/product/workbench-#{index}">Visible Workbench Tool #{index + 1}</a></article>) }.join}
+            <article class="product-card" style="display:none"><a href="/product/workbench-hidden">Hidden Workbench Tool</a></article>
+          </main></body></html>
+        HTML
+        visible: ['Visible Workbench Tool 1', 'Visible Workbench Tool 4'],
+        hidden: 'Hidden Workbench Tool'
+      }
+    ]
+
+    cases.each do |test_case|
+      payload = page_payload(**test_case.slice(:url, :html))
+
+      expect(payload['contentType']).to eq('list'), payload.inspect
+      expect(payload['markdown']).to include(*test_case[:visible])
+      expect(payload['markdown']).not_to include(test_case[:hidden])
+    end
+  end
+
   it 'closes quoted and listed fences with up to three content spaces' do
     markdown = <<~'MARKDOWN'
       >   ```

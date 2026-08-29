@@ -28,7 +28,7 @@
     if (typeof selectors === "string") selectors = [selectors];
 
     function pushCard(node) {
-      if (!node || seenCards.indexOf(node) !== -1) return;
+      if (!node || elementVisuallyHidden(node) || seenCards.indexOf(node) !== -1) return;
       seenCards.push(node);
       cards.push(node);
     }
