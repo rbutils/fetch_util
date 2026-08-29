@@ -63,6 +63,7 @@
       for (var n = 0; n < nodes.length; n += 1) {
         var node = nodes[n];
         if (node.closest && node.closest("nav, footer, aside, [hidden], [aria-hidden='true']")) continue;
+        if (node.tagName !== "META" && elementVisuallyHidden(node)) continue;
         var price = normalizedCommercePrice(node.getAttribute("content") || node.getAttribute("aria-label") || node.textContent, "");
         if (price) return price;
       }

@@ -45,6 +45,23 @@ RSpec.describe 'FetchUtil lodging page extraction' do
     end
   end
 
+  it 'prefers rendered prices over hidden responsive prices' do
+    html = <<~HTML
+      <html><head><title>Harbor Hotel</title>
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"Hotel","name":"Harbor Hotel","description":"A quiet waterfront hotel with spacious rooms and a public garden."}</script>
+      </head><body><main><h1>Harbor Hotel</h1>
+        <div class="price-old" style="display: none">$99</div>
+        <div style="visibility: hidden"><span class="price-current" style="visibility: visible">$249</span></div>
+        <p>A quiet waterfront hotel with spacious rooms and a public garden.</p>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://travel.example.test/hotel/harbor', html) do |payload|
+      expect_content_type(payload, 'hotel')
+      expect(payload['price']).to eq('$249')
+    end
+  end
+
   it 'flags client-rendered lodging shells instead of treating them as usable lists' do
     html = fixture_contents(File.expand_path('../../fixtures/lodging_airbnb_shell.html', __dir__))
 

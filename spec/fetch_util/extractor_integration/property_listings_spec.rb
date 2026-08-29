@@ -53,6 +53,22 @@ RSpec.describe 'FetchUtil property listing extraction' do
     end
   end
 
+  it 'prefers rendered prices over hidden responsive prices' do
+    html = fixture_contents(File.expand_path('../../fixtures/property_listing_json_ld.html', __dir__))
+    offer = '"offers": {"@type": "Offer", "price": "399000", "priceCurrency": "USD"}'
+    html = html.sub(offer, '"offers": {"@type": "Offer"}')
+    html = html.sub('<main>', <<~HTML.chomp)
+      <main>
+        <div class="price-old" style="display: none">$325,000</div>
+        <div style="visibility: hidden"><span class="price-current" style="visibility: visible">$425,000</span></div>
+    HTML
+
+    extract_from_url('https://www.redfin.com/CA/Lakeport/1255-Sixth-St-95453/home/12345678', html) do |payload|
+      expect_content_type(payload, 'property')
+      expect(payload['price']).to eq('$425,000')
+    end
+  end
+
   it 'does not promote an article with incidental property language and price' do
     html = fixture_contents(File.expand_path('../../fixtures/w1_npr_article_property_negative.html', __dir__))
 
