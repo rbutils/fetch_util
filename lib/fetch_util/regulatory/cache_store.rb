@@ -51,8 +51,25 @@ module FetchUtil
       end
 
       def write_cache(path, payload)
-        FileUtils.mkdir_p(File.dirname(path))
-        File.write(path, JSON.generate({ "cached_at" => Time.now.utc.iso8601, "payload" => json_safe(payload) }))
+        directory = File.dirname(path)
+        serialized = JSON.generate({ "cached_at" => Time.now.utc.iso8601, "payload" => json_safe(payload) })
+        FileUtils.mkdir_p(directory)
+        existing_mode = cache_file_mode(path)
+        temp_path = File.join(directory, ".#{File.basename(path)}.#{Process.pid}.#{SecureRandom.hex(6)}.tmp")
+
+        File.open(temp_path, File::WRONLY | File::CREAT | File::EXCL, 0o666) do |file|
+          file.write(serialized)
+        end
+        File.chmod(existing_mode, temp_path) if existing_mode
+        File.rename(temp_path, path)
+      ensure
+        FileUtils.rm_f(temp_path) if temp_path
+      end
+
+      def cache_file_mode(path)
+        File.stat(path).mode & 0o777
+      rescue Errno::ENOENT
+        nil
       end
 
       def safe_get(url)
