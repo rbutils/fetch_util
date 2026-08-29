@@ -108,7 +108,7 @@ module FetchUtil
 
     no_commands do
       def request_log
-        @request_log ||= RequestLog.new(path: options[:log_path] || ENV.fetch("FETCH_UTIL_REQUEST_LOG", RequestLog::DEFAULT_PATH))
+        @request_log ||= options[:log_path] ? RequestLog.new(path: options[:log_path]) : RequestLog.new
       end
 
       def fetch_options

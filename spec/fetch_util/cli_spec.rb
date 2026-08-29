@@ -7,6 +7,22 @@ require "yaml"
 RSpec.describe FetchUtil::CLI do
   include_context 'cli spec helpers'
 
+  it "delegates default request log resolution" do
+    request_log = instance_double(FetchUtil::RequestLog)
+    expect(FetchUtil::RequestLog).to receive(:new).with(no_args).and_return(request_log)
+
+    expect(described_class.new([], {}, {}).send(:request_log)).to be(request_log)
+  end
+
+  it "passes explicit request log paths" do
+    request_log = instance_double(FetchUtil::RequestLog)
+    expect(FetchUtil::RequestLog).to receive(:new).with(path: "/custom/requests.log").and_return(request_log)
+
+    cli = described_class.new([], { log_path: "/custom/requests.log" }, {})
+
+    expect(cli.send(:request_log)).to be(request_log)
+  end
+
   it "fetches multiple urls in parallel and prints jsonl without urls by default" do
     first = result_double
     second = result_double(
