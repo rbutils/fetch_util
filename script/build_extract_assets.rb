@@ -17,6 +17,9 @@ abort("Missing manifest: #{MANIFEST}") unless MANIFEST.file?
 entries = MANIFEST.readlines(chomp: true).map(&:strip).reject { |line| line.empty? || line.start_with?("#") }
 
 def validate_manifest_completeness(entries)
+  duplicate_files = entries.tally.select { |_path, count| count > 1 }.keys.sort
+  abort("Duplicate manifest entries: #{duplicate_files.join(", ")}") unless duplicate_files.empty?
+
   listed_files = entries.sort
   source_files = Dir.glob("**/*.js", base: SOURCE_ROOT).sort
 

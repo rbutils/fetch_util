@@ -445,6 +445,18 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "fails build mode when the manifest lists a source file twice" do
+    with_asset_project(
+      manifest: "present.js\npresent.js\n",
+      files: { "present.js" => "const present = true;\n" }
+    ) do |root|
+      _stdout, stderr, status = run_build_script(root: root)
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Duplicate manifest entries: present.js")
+    end
+  end
+
   it "reports a missing built asset before invoking terser in check mode" do
     with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
       bin_dir = File.join(root, "bin")
