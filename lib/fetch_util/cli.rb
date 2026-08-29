@@ -16,6 +16,8 @@ module FetchUtil
         super
       end
 
+      def exit_on_failure? = true
+
       private
 
       def command_for_local_help(command, arguments)
