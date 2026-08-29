@@ -125,6 +125,59 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "does not cache transient page responses but caches stable misses" do
+    transient_url = "https://example.com/transient"
+    missing_url = "https://example.com/missing"
+    attempts = 0
+    client = fake_client(
+      transient_url => lambda do
+        attempts += 1
+        next response(transient_url, status: 503) if attempts == 1
+
+        response(transient_url, headers: { "x-robots-tag" => ["noindex"] })
+      end,
+      missing_url => response(missing_url, status: 404)
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "xrobotstag")
+
+    expect(regulatory.call(transient_url)).to eq({})
+    expect(regulatory.call(transient_url)).to eq("xrobotstag" => [{ "disallow" => "index" }])
+    expect(regulatory.call(missing_url)).to eq({})
+    expect(regulatory.call(missing_url)).to eq({})
+    expect(client.requests.tally).to eq(transient_url => 2, missing_url => 1)
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
+  it "does not cache rate-limited TDM policy responses" do
+    policy_url = "https://example.com/policies/tdm.json"
+    attempts = 0
+    client = fake_client(
+      policy_url => lambda do
+        attempts += 1
+        next response(policy_url, status: 429) if attempts == 1
+
+        response(
+          policy_url,
+          headers: { "content-type" => ["application/json"] },
+          body: JSON.generate("permission" => [{ "action" => "tdm:mine" }])
+        )
+      end
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir)
+    target_origin = URI.parse("https://example.com")
+
+    expect(regulatory.send(:tdm_policy_record, policy_url, target_origin: target_origin)).to eq("signals" => [])
+    expect(regulatory.send(:tdm_policy_record, policy_url, target_origin: target_origin)).to eq(
+      "signals" => [{ "allow" => "text-and-data-mining" }]
+    )
+    expect(client.requests).to eq([policy_url] * 2)
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
   it "extracts content signals and content usage rules from robots.txt" do
     client = fake_client(
       "https://example.com/robots.txt" => response(

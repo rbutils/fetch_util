@@ -76,11 +76,17 @@ module FetchUtil
       end
 
       def safe_get(url)
-        [client.get(url), true]
+        response = client.get(url)
+        [response, cacheable_response?(response)]
       rescue ArgumentError, IOError, SocketError, Timeout::Error
         [nil, false]
       rescue FetchUtil::Error, SystemCallError, OpenSSL::SSL::SSLError
         [nil, false]
+      end
+
+      def cacheable_response?(response)
+        status = response.status
+        status != 429 && !status&.between?(500, 599)
       end
 
       def deep_copy(value)
