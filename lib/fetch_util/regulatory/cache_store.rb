@@ -10,27 +10,30 @@ module FetchUtil
         cached = read_cache(path)
         return cached if cached
 
-        payload = yield
-        write_cache(path, payload)
+        payload, cacheable = yield
+        write_cache(path, payload) if cacheable
         payload
       end
 
       def fetch_record(key, uri, fallback: nil, require_success: true)
         cache_fetch(key) do
-          response = record_response(uri, require_success: require_success)
-          response ? yield(response.body, response) : fallback
+          response, cacheable = record_response(uri, require_success: require_success)
+          payload = response ? yield(response.body, response) : fallback
+          [payload, cacheable]
         end
       end
 
       def record_response(uri, require_success:)
+        cacheable = true
         Array(uri).each do |candidate|
-          response = safe_get(candidate)
+          response, completed = safe_get(candidate)
+          cacheable &&= completed
           next unless response
 
-          return response if !require_success || response.status&.between?(200, 299)
+          return [response, cacheable] if !require_success || response.status&.between?(200, 299)
         end
 
-        nil
+        [nil, cacheable]
       end
 
       def cache_file_path(key)
@@ -73,11 +76,11 @@ module FetchUtil
       end
 
       def safe_get(url)
-        client.get(url)
+        [client.get(url), true]
       rescue ArgumentError, IOError, SocketError, Timeout::Error
-        nil
+        [nil, false]
       rescue FetchUtil::Error, SystemCallError, OpenSSL::SSL::SSLError
-        nil
+        [nil, false]
       end
 
       def deep_copy(value)

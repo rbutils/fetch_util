@@ -19,12 +19,12 @@ module FetchUtil
 
       def tdm_policy_record(url)
         cache_fetch("tdmpolicy:#{url}") do
-          response = safe_get(url)
+          response, cacheable = safe_get(url)
           signals = []
           if response&.status&.between?(200, 299) && json_like_response?(response.headers, response.body)
             signals = extract_tdm_policy_signals(response.body)
           end
-          { "signals" => sort_specificity_signals(signals) }
+          [{ "signals" => sort_specificity_signals(signals) }, cacheable]
         end
       end
 

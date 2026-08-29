@@ -72,6 +72,58 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "does not cache transport-failure fallbacks" do
+    attempts = 0
+    client = fake_client(
+      "https://example.com/robots.txt" => lambda do
+        attempts += 1
+        raise SocketError, "temporary failure" if attempts == 1
+
+        response(
+          "https://example.com/robots.txt",
+          body: "User-agent: *\nDisallow: /\n"
+        )
+      end
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "robotstxt")
+
+    expect(regulatory.call("https://example.com")).to eq({})
+    expect(regulatory.call("https://example.com")).to eq(
+      "robotstxt" => [{ "disallow" => "*", "path" => "/*" }]
+    )
+    expect(client.requests).to eq(["https://example.com/robots.txt"] * 2)
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
+  it "does not cache transport failures for TDM policies" do
+    attempts = 0
+    policy_url = "https://example.com/policies/tdm.json"
+    client = fake_client(
+      policy_url => lambda do
+        attempts += 1
+        raise Timeout::Error, "temporary failure" if attempts == 1
+
+        response(
+          policy_url,
+          headers: { "content-type" => ["application/json"] },
+          body: JSON.generate("permission" => [{ "action" => "tdm:mine" }])
+        )
+      end
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir)
+
+    expect(regulatory.send(:tdm_policy_record, policy_url)).to eq("signals" => [])
+    expect(regulatory.send(:tdm_policy_record, policy_url)).to eq(
+      "signals" => [{ "allow" => "text-and-data-mining" }]
+    )
+    expect(client.requests).to eq([policy_url] * 2)
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
   it "extracts content signals and content usage rules from robots.txt" do
     client = fake_client(
       "https://example.com/robots.txt" => response(
