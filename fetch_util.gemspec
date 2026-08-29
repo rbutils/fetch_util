@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'lib/fetch_util/version'
+require_relative 'script/extract_asset_state'
 
 Gem::Specification.new do |spec|
   spec.name = 'fetch_util'
@@ -33,6 +34,17 @@ Gem::Specification.new do |spec|
   end
   built_asset = 'lib/fetch_util/assets/extract.js'
   tracked_files |= [built_asset]
+
+  unless FetchUtil::ExtractAssetState.project_current?(__dir__)
+    spec.define_singleton_method(:validate) do |packaging = true, strict = false|
+      if packaging
+        raise Gem::InvalidSpecificationException,
+              'Stale built asset: run `bundle exec rake build_extract_assets`'
+      end
+
+      super(packaging, strict)
+    end
+  end
 
   spec.files = tracked_files.reject do |file|
     (file == gemspec) || file.split('/').include?('node_modules') ||

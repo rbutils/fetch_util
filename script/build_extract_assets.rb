@@ -5,6 +5,7 @@ require "pathname"
 require "tempfile"
 require "digest"
 require "json"
+require_relative "extract_asset_state"
 
 PROJECT_ROOT = Pathname(__dir__).join("..").expand_path
 ROOT = PROJECT_ROOT.join("lib", "fetch_util", "assets")
@@ -17,7 +18,7 @@ TERSER_VERSION = JSON.parse(PROJECT_ROOT.join("package.json").read).fetch("devDe
 
 abort("Missing manifest: #{MANIFEST}") unless MANIFEST.file?
 
-entries = MANIFEST.readlines(chomp: true).map(&:strip).reject { |line| line.empty? || line.start_with?("#") }
+entries = FetchUtil::ExtractAssetState.manifest_entries(MANIFEST)
 
 def validate_manifest_completeness(entries)
   duplicate_files = entries.tally.select { |_path, count| count > 1 }.keys.sort
@@ -45,14 +46,7 @@ contents = entries.map do |entry|
   path.read
 end
 source = contents.join("\n")
-source_digest = Digest::SHA256.hexdigest("#{entries.join("\n")}\n#{source}")
-
-def cached_build_current?(source_digest)
-  return false unless OUTPUT.file? && DIGEST_OUTPUT.file?
-
-  cached_source_digest, cached_output_digest = DIGEST_OUTPUT.read.split(/\s+/, 3)
-  cached_source_digest == source_digest && cached_output_digest == Digest::SHA256.file(OUTPUT).hexdigest
-end
+source_digest = FetchUtil::ExtractAssetState.source_digest(entries, source)
 
 def installed_terser_version
   package = PROJECT_ROOT.join("node_modules", "terser", "package.json")
@@ -73,7 +67,11 @@ check_mode = ARGV.include?("--check")
 if check_mode
   abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
 
-  if cached_build_current?(source_digest)
+  if FetchUtil::ExtractAssetState.cached_build_current?(
+    source_digest,
+    output: OUTPUT,
+    digest_output: DIGEST_OUTPUT
+  )
     verify_terser_installation
     puts "Verified #{OUTPUT} is up to date"
     exit 0

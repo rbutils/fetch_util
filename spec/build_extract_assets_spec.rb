@@ -21,6 +21,7 @@ RSpec.describe "extract asset bundle" do
       source_root = File.join(root, "websieve")
       FileUtils.mkdir_p([script_dir, source_root, File.join(root, "lib", "fetch_util", "assets")])
       FileUtils.cp(File.join(project_root, "script", "build_extract_assets.rb"), script_dir)
+      FileUtils.cp(File.join(project_root, "script", "extract_asset_state.rb"), script_dir)
       FileUtils.cp(File.join(project_root, "package.json"), root)
       File.write(File.join(source_root, "manifest.txt"), manifest)
 
@@ -41,6 +42,13 @@ RSpec.describe "extract asset bundle" do
     File.write(binary, "")
     File.write(package, JSON.generate("version" => version))
     binary
+  end
+
+  def copy_gemspec_support(root)
+    script_dir = File.join(root, "script")
+    FileUtils.mkdir_p(script_dir)
+    FileUtils.cp(File.join(project_root, "fetch_util.gemspec"), root)
+    FileUtils.cp(File.join(project_root, "script", "extract_asset_state.rb"), script_dir)
   end
 
   it "verifies the checked-in extract.js is current" do
@@ -580,11 +588,42 @@ RSpec.describe "extract asset bundle" do
     expect(specification.files.grep(%r{\Awebsieve/})).to be_empty
   end
 
+  it "rejects direct package builds when the generated runtime asset is stale" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      asset_dir = File.join(version_dir, "assets")
+      source_dir = File.join(root, "websieve")
+      FileUtils.mkdir_p([asset_dir, source_dir])
+      copy_gemspec_support(root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+      File.write(File.join(source_dir, "manifest.txt"), "present.js\n")
+      File.write(File.join(source_dir, "present.js"), "const present = true;\n")
+      File.write(File.join(asset_dir, "extract.js"), "window.fetchUtil = {};\n")
+      File.write(File.join(asset_dir, "extract.js.sha256"), "stale stale\n")
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+      package = File.join(root, specification.file_name)
+
+      expect do
+        Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+          Dir.chdir(root) { Gem::Package.build(specification, false, false, package) }
+        end
+      end.to raise_error(
+        Gem::InvalidSpecificationException,
+        'Stale built asset: run `bundle exec rake build_extract_assets`'
+      )
+      expect(File.exist?(package)).to be(false)
+    end
+  end
+
   it "requires the generated runtime asset when the gemspec is loaded without it" do
     Dir.mktmpdir("fetch_util_gemspec") do |root|
       version_dir = File.join(root, "lib", "fetch_util")
       FileUtils.mkdir_p(version_dir)
-      FileUtils.cp(File.join(project_root, "fetch_util.gemspec"), root)
+      copy_gemspec_support(root)
       File.write(
         File.join(version_dir, "version.rb"),
         "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
@@ -611,7 +650,7 @@ RSpec.describe "extract asset bundle" do
       version_dir = File.join(root, "lib", "fetch_util")
       asset = File.join(version_dir, "assets", "extract.js")
       FileUtils.mkdir_p(File.dirname(asset))
-      FileUtils.cp(File.join(project_root, "fetch_util.gemspec"), root)
+      copy_gemspec_support(root)
       File.write(
         File.join(version_dir, "version.rb"),
         "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
