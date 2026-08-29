@@ -186,6 +186,8 @@ module FetchUtil
       pending_connection_retries = 0
 
       begin
+        parse_http_uri(url)
+
         if (pdf_result = direct_pdf_result(url))
           return pdf_result
         end
@@ -867,7 +869,7 @@ module FetchUtil
 
     def parse_http_uri(url)
       uri = URI.parse(url.to_s)
-      raise URI::InvalidURIError, "unsupported url: #{url}" unless uri.is_a?(URI::HTTP) && uri.host
+      raise URI::InvalidURIError, "unsupported url: #{url}" unless uri.is_a?(URI::HTTP) && !uri.host.to_s.empty?
 
       uri
     end

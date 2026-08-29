@@ -160,6 +160,17 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.title).to eq('1706.03762.pdf')
   end
 
+  it 'rejects unsupported PDF-shaped URLs before probing or browser navigation' do
+    header_probe = ->(_url) { raise 'unexpected PDF header probe' }
+    expect(browser).not_to receive(:with_page)
+
+    ['report.pdf', 'ftp://example.test/report.pdf', 'file:///etc/passwd.pdf', 'https:///report.pdf'].each do |url|
+      expect do
+        fetch_with_dependencies(url, pdf_header_probe: header_probe)
+      end.to raise_error(URI::InvalidURIError, "unsupported url: #{url}")
+    end
+  end
+
   it 'returns Content-Type PDF responses before browser navigation' do
     probe = lambda do |_url|
       {
