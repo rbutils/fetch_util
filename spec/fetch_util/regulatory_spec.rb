@@ -342,6 +342,38 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "extracts expanded slash-form ODRL terms" do
+    policy = {
+      "permission" => [
+        {
+          "action" => "https://www.w3.org/ns/odrl/2/mine",
+          "duty" => [{ "action" => "https://www.w3.org/ns/odrl/2/obtainConsent" }],
+          "constraint" => [
+            {
+              "leftOperand" => "https://www.w3.org/ns/odrl/2/purpose",
+              "operator" => "https://www.w3.org/ns/odrl/2/eq",
+              "rightOperand" => "https://example.com/vocabulary/research"
+            }
+          ]
+        },
+        { "action" => "https://www.w3.org/ns/odrl/2/distribute" }
+      ]
+    }
+    regulatory = described_class.new(client: Object.new)
+
+    expect(regulatory.send(:extract_tdm_policy_signals, JSON.generate(policy))).to eq(
+      [
+        {
+          "allow" => "text-and-data-mining",
+          "conditions" => {
+            "duty" => ["obtain-consent"],
+            "purpose" => "research"
+          }
+        }
+      ]
+    )
+  end
+
   it "extracts directives only from active DOM meta elements" do
     policy_url = "https://example.com/policy?a=1&b=2"
     client = fake_client(

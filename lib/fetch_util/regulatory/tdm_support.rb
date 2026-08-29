@@ -87,7 +87,7 @@ module FetchUtil
       end
 
       def odrl_token(value)
-        value.to_s.strip.downcase.split(/[#:]/).last.to_s
+        value.to_s.strip.downcase.split(%r{[/#:]}).reject(&:empty?).last.to_s
       end
     end
   end
