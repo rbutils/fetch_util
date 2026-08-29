@@ -138,8 +138,33 @@ RSpec.describe FetchUtil::CLI do
     )
   end
 
-  it "keeps JSON and front matter fields in parity" do
-    result = result_double(warnings: ["warning"], suspect: false)
+  it "keeps the default JSON and front matter field contracts" do
+    result = result_double(
+      byline: "By Author",
+      site_name: "A Site",
+      published_time: "2026-08-29T12:00:00Z",
+      language: "en",
+      name: "Item",
+      company: "Example Co",
+      location: "Remote",
+      description: "Description",
+      ingredients: ["one"],
+      instructions: ["Step one"],
+      bedrooms: 2,
+      bathrooms: 1,
+      area_sqft: 900,
+      price: "$10",
+      rating: 4.5,
+      address: "1 Main St",
+      social_kind: "post",
+      platform: "mastodon",
+      handle: "@a",
+      reply_count: 3,
+      community: "Ruby",
+      score: 9,
+      warnings: ["warning"],
+      error_message: "warning message"
+    )
     request_log = instance_double(FetchUtil::RequestLog, append: nil)
     allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
     allow(FetchUtil).to receive(:fetch).and_return(result)
@@ -148,7 +173,22 @@ RSpec.describe FetchUtil::CLI do
     front_matter = run_cli("fetch", "https://a.test").split("---\n", 3)[1]
     yaml = YAML.safe_load(front_matter)
 
-    expect(yaml.keys).to contain_exactly(*(json.keys - ["markdown"]))
+    expect(json.keys).to contain_exactly(
+      "title", "byline", "site_name", "published_time", "language", "name", "company", "location",
+      "description", "ingredients", "instructions", "bedrooms", "bathrooms", "area_sqft", "markdown",
+      "content_type", "price", "rating", "address", "social_kind", "platform", "handle", "reply_count",
+      "community", "score", "suspect", "warnings", "error_message"
+    )
+    expect(yaml.keys).to contain_exactly(
+      "title", "byline", "site_name", "published_time", "language", "name", "company", "location",
+      "description", "ingredients", "instructions", "bedrooms", "bathrooms", "area_sqft", "content_type",
+      "price", "rating", "address", "social_kind", "platform", "handle", "reply_count", "community", "score",
+      "suspect", "warnings", "error_message"
+    )
+    expect(json.keys | yaml.keys).not_to include(
+      "url", "final_url", "canonical_url", "excerpt", "html", "metadata", "reader_mode",
+      "content_completeness_ratio", "content_format", "paywall_state"
+    )
   end
 
   it "emits html in front matter when requested" do
