@@ -172,9 +172,14 @@
     return root;
   }
 
+  function listDescriptionCardNode(node) {
+    return node.closest("tr, article, li, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']");
+  }
+
   function listDescriptionMarkdown(root) {
     var descParts = [];
     root.querySelectorAll("h1, h2, h3, p").forEach(function(el) {
+      if (listDescriptionCardNode(el)) return;
       var text = normalizeText(el.textContent);
       if (text.length < 30 || text.length > 2000) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;

@@ -263,6 +263,33 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'keeps flat list introductions without repeating card-local descriptions' do
+    cards = Array.new(5) do |index|
+      number = index + 1
+      <<~HTML
+        <article>
+          <h2><a href="/flat-#{number}">FID:flat-card-#{number} with sufficient title</a></h2>
+          <p>FID:flat-card-#{number}-summary with enough local context.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <main>
+        <h1>FID:flat-portal</h1>
+        <p>FID:flat-introduction explains the complete visible collection.</p>
+        <div class="records">#{cards}</div>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+
+      expect(result['contentType']).to eq('list')
+      expect(result['markdown'].scan('FID:flat-introduction').length).to eq(1)
+      expect(result['markdown'].scan('FID:flat-card-1-summary').length).to eq(1)
+    end
+  end
+
   it 'does not section-extract a long article with many paragraphs' do
     paragraphs = Array.new(8) { |index| "<p>FID:article-paragraph-#{index} #{"substantive article text " * 12}</p>" }.join
     html = <<~HTML
