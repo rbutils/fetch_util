@@ -161,9 +161,10 @@ RSpec.describe FetchUtil::ParallelFetcher do
 
   it "calls quit on fetchers that support it" do
     quit_count = 0
+    quit_mutex = Mutex.new
     fake_fetcher = Class.new do
       define_method(:initialize) do
-        @quit_tracker = -> { quit_count += 1 }
+        @quit_tracker = -> { quit_mutex.synchronize { quit_count += 1 } }
       end
 
       def fetch(url)
