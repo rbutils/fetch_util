@@ -31,6 +31,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "excludes hidden article descendants while preserving restored visibility" do
+    visible_prose = ("Visible reporting explains the complete public record. " * 10).strip
+    restored_prose = ("Restored evidence remains available to readers. " * 4).strip
+    html = <<~HTML
+      <html>
+        <head><title>Visibility report</title></head>
+        <body>
+          <main><article>
+            <h1>Visibility report</h1>
+            <p>#{visible_prose}</p>
+            <p style="display: none">Display-hidden private draft</p>
+            <section style="visibility: hidden" aria-label="Hidden summary" title="Hidden title">
+              Visibility-hidden parent draft
+              <p style="visibility: visible">#{restored_prose}</p>
+            </section>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url("https://example.test/reports/visibility", html) do |payload|
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include(
+        "Visible reporting explains the complete public record.",
+        "Restored evidence remains available to readers."
+      )
+      expect(payload["html"]).to include("Visible reporting", "Restored evidence")
+      expect([payload["markdown"], payload["html"], payload["description"]].join(" ")).not_to include(
+        "Display-hidden private draft",
+        "Visibility-hidden parent draft",
+        "Hidden summary",
+        "Hidden title"
+      )
+    end
+  end
+
   it "removes undefined image placeholder text from markdown links" do
     html = <<~HTML
       <html>

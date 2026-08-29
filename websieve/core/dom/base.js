@@ -74,6 +74,43 @@
     return !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
   }
 
+  function pruneHiddenClone(source, clone) {
+    if (!source || !clone) return;
+    if (source.nodeType === 1 && elementSubtreeHidden(source)) {
+      clone.remove();
+      return;
+    }
+
+    var visibilityHidden = source.nodeType === 1 && elementVisuallyHidden(source);
+    var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
+    var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
+    sourceChildren.forEach(function(child, index) {
+      var childClone = cloneChildren[index];
+      if (!childClone) return;
+      if (visibilityHidden && child.nodeType !== 1) {
+        childClone.remove();
+        return;
+      }
+      pruneHiddenClone(child, childClone);
+    });
+
+    if (visibilityHidden) {
+      clone.style.setProperty("visibility", "visible", "important");
+      ["aria-label", "title", "alt", "value"].forEach(function(attribute) {
+        clone.removeAttribute(attribute);
+      });
+      if (!clone.children.length) clone.remove();
+    }
+  }
+
+  function visibilityPrunedClone(node, ownerDoc) {
+    if (!node || elementSubtreeHidden(node)) return (ownerDoc || document).createElement("div");
+    var clone = safeDeepClone(node, ownerDoc || document);
+    if (!clone) return (ownerDoc || document).createElement("div");
+    pruneHiddenClone(node, clone);
+    return clone;
+  }
+
   function safeReadableDocumentClone() {
     try {
       return document.cloneNode(true);

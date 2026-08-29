@@ -2,39 +2,11 @@
     return elementSubtreeHidden(node);
   }
 
-  function pruneHiddenListClone(source, clone) {
-    if (!source || !clone) return;
-    if (source.nodeType === 1 && listElementHidden(source)) {
-      clone.remove();
-      return;
-    }
-
-    var visibilityHidden = source.nodeType === 1 && elementVisuallyHidden(source);
-    var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
-    var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
-    sourceChildren.forEach(function(child, index) {
-      var childClone = cloneChildren[index];
-      if (!childClone) return;
-      if (visibilityHidden && child.nodeType !== 1) {
-        childClone.remove();
-        return;
-      }
-      pruneHiddenListClone(child, childClone);
-    });
-
-    if (visibilityHidden) {
-      ["aria-label", "title", "alt", "value"].forEach(function(attribute) {
-        clone.removeAttribute(attribute);
-      });
-      if (!clone.children.length) clone.remove();
-    }
-  }
-
   function visibleListClone(node) {
     if (!node || listElementHidden(node)) return document.createElement("div");
     var clone = safeDeepClone(node, document);
     if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
-    pruneHiddenListClone(node, clone);
+    pruneHiddenClone(node, clone);
     return cleanClone(clone);
   }
 

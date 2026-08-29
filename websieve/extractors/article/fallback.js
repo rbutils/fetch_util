@@ -65,7 +65,7 @@
     });
 
     var best = candidates.reduce(function(current, node) {
-      var scoringNode = cleanClone(node);
+      var scoringNode = cleanClone(visibilityPrunedClone(node, document));
       cleanupGenericArticleRoot(scoringNode);
       var score = scoreNode(scoringNode);
       if (!current || score > current.score) return { node: node, score: score };
@@ -73,7 +73,7 @@
     }, null);
 
     var node = best && best.score > -Infinity ? best.node : document.body;
-    var clone = cleanClone(node);
+    var clone = cleanClone(visibilityPrunedClone(node, document));
     var comments = fallbackFocalArticleRoot(clone) ? fallbackCommentMarkup(document) : "";
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);

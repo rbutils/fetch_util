@@ -4,6 +4,7 @@
     try {
       var comments = commentMarkup(document);
       var clone = safeReadableDocumentClone();
+      pruneHiddenClone(document.documentElement, clone.documentElement);
       if (commentOnlyRoot(clone)) return null;
       prepareInlineArticleProse(clone);
       cleanupCookieChrome(clone);

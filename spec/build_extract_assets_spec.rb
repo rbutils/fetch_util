@@ -141,6 +141,20 @@ RSpec.describe "extract asset bundle" do
     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
   end
 
+  it "keeps visibility-pruned cloning in the shared DOM owner" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    base_path = "core/dom/base.js"
+    list_path = "extractors/lists/generic/flat_extraction.js"
+    base_source = File.read(File.join(source_root, base_path))
+    list_source = File.read(File.join(source_root, list_path))
+
+    expect(manifest.index(base_path)).to be < manifest.index(list_path)
+    expect(base_source).to include("function pruneHiddenClone", "function visibilityPrunedClone")
+    expect(list_source).to include("pruneHiddenClone(node, clone)")
+    expect(list_source).not_to include("function pruneHiddenListClone")
+  end
+
   it "keeps MediaWiki extraction in its canonical CMS owner" do
     source_root = File.join(project_root, "websieve")
     sources = Dir[File.join(source_root, "**", "*.js")].to_h do |path|
