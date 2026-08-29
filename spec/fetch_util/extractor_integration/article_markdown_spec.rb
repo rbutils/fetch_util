@@ -115,7 +115,9 @@ RSpec.describe 'FetchUtil extractor integration' do
         'srcset="https://example.test/images/sprite,a.png 480w"',
         'poster="https://example.test/safe-poster.png"'
       )
-      expect(materialized_html).not_to include("javascript:", "mailto:", "ftp:", "data:image", "zero-width", "zero-density", "data-lazy-src", "ping=", "xlink:href", "/articles/AAAA")
+      expect(materialized_html).not_to include(
+        "javascript:", "mailto:", "ftp:", "data:image", "zero-width", "zero-density", "data-lazy-src", "ping=", "xlink:href", "/articles/AAAA"
+      )
     end
   end
 

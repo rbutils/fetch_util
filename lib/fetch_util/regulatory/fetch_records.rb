@@ -91,7 +91,7 @@ module FetchUtil
       def parse_meta_tags(body)
         document = Nokogiri::HTML(body.to_s)
         document.css("meta").filter_map do |tag|
-          next if tag.ancestors.any? { |ancestor| ancestor.name == "template" || ancestor.name == "script" }
+          next if tag.ancestors.any? { |ancestor| %w[template script].include?(ancestor.name) }
 
           tag.attribute_nodes.each_with_object({}) do |attribute, attributes|
             attributes[attribute.name.downcase] = attribute.value

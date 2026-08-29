@@ -174,7 +174,12 @@ RSpec.describe 'FetchUtil social result contract' do
   end
 
   it 'falls back to a safe Open Graph video after unsafe media values' do
-    html = '<html><head><title>Metadata media</title><meta property="og:image" content="javascript:unsafeImage()"><meta property="og:image" content="/safe-image.png"><meta property="og:video" content="ftp://files.example.test/video.mp4"><meta property="og:video" content="/safe-video.mp4"><meta property="og:video:url" content="/alias-video.mp4"></head><body><main>Visible profile content</main></body></html>'
+    html = <<~HTML
+      <html><head><title>Metadata media</title>
+      <meta property="og:image" content="javascript:unsafeImage()"><meta property="og:image" content="/safe-image.png">
+      <meta property="og:video" content="ftp://files.example.test/video.mp4"><meta property="og:video" content="/safe-video.mp4">
+      <meta property="og:video:url" content="/alias-video.mp4"></head><body><main>Visible profile content</main></body></html>
+    HTML
 
     with_url_page('https://social-contract.test/metadata-media', html) do |page|
       payload = synthetic_social_payload(page, <<~JS)

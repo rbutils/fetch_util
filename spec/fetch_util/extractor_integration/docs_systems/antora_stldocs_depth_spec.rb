@@ -43,7 +43,11 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(markdown).to include("- [Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - The Northwind documentation hub.")
       expect(markdown).to include("- [Quick Docs](https://docs.fedoraproject.org/en-US/quick-docs/) - Brief task notes and question-based documentation.")
       expect(markdown).to include("- [EPEL](https://docs.fedoraproject.org/en-US/epel/) - Additional packages for enterprise deployments.")
-      expect(markdown).not_to include("Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - Northwind reference hub. Setup notes and release guides. Quick Docs")
+      concatenated_cards = [
+        "Fedora Linux](https://docs.fedoraproject.org/en-US/fedora/latest/) - Northwind reference hub.",
+        "Setup notes and release guides. Quick Docs"
+      ].join(" ")
+      expect(markdown).not_to include(concatenated_cards)
     end
   end
 

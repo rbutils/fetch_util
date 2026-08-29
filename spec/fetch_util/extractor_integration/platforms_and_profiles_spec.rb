@@ -957,10 +957,13 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.pinterest.com/search/pins/?q=ruby+programming", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect_payload(payload, content_type: "list",
-                               includes: ["- [ruby programming logo with the words ruby programming written in red on a white background](https://www.pinterest.com/pin/1)",
-                                          "- [the six reasons why you should learn ruby today](https://www.pinterest.com/pin/3)"],
-                              warnings_exclude: ["url_content_mismatch"])
+      expect_payload(
+        payload,
+        content_type: "list",
+        includes: ["- [ruby programming logo with the words ruby programming written in red on a white background](https://www.pinterest.com/pin/1)",
+                   "- [the six reasons why you should learn ruby today](https://www.pinterest.com/pin/3)"],
+        warnings_exclude: ["url_content_mismatch"]
+      )
     end
   end
 
