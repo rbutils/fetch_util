@@ -590,7 +590,7 @@ module FetchUtil
     def pdf_document?(requested_url, final_url, payload)
       return true if payload["contentType"].to_s == "pdf"
 
-      [requested_url, final_url, payload["canonicalUrl"]].compact.any? do |url|
+      [requested_url, final_url].compact.any? do |url|
         parsed = URI.parse(url)
         [parsed.path, parsed.query].compact.join("?").match?(PDF_PATH_PATTERN)
       end

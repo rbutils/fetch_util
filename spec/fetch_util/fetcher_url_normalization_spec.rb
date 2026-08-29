@@ -92,6 +92,23 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).not_to include('pdf_document')
   end
 
+  it 'does not classify HTML as a PDF from an off-origin canonical' do
+    article_url = 'https://example.test/articles/canonical-pdf'
+    article_page = page_at(article_url)
+    article_payload = payload_with(
+      canonicalUrl: 'https://publisher.example.test/report.pdf',
+      title: 'Canonical PDF boundary',
+      markdown: "# Canonical PDF boundary\n\nReadable HTML article text."
+    )
+    stub_browser_extraction(article_url, page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies(article_url)
+
+    expect(result.canonical_url).to eq('https://publisher.example.test/report.pdf')
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'strips list-position query params before comparing article urls' do
     article_url = 'https://zpravy.aktualne.cz/zahranici/ve-srilanske-veznici-vypukly-nepokoje-vyzadaly-si-nejmene-19-obeti/r~aaa296307f095c25cbd8c2a75b9afce8/'
     tracked_page = page_at("#{article_url}?lp=1")
