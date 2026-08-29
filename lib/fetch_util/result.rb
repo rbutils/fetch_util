@@ -13,77 +13,22 @@ module FetchUtil
 
     class << self
       def from_payload(url:, final_url:, payload:, canonical_url:, content_type:, warnings:, suspect:)
-        content_completeness_ratio = payload["contentCompletenessRatio"]&.to_f || 1.0
-        content_format = payload["contentFormat"]
-        paywall_state = payload["paywallState"]
         metadata = payload_metadata(
           payload,
           canonical_url: canonical_url,
           final_url: final_url,
           content_type: content_type,
           suspect: suspect,
-          warnings: warnings,
-          content_completeness_ratio: content_completeness_ratio,
-          content_format: content_format,
-          paywall_state: paywall_state,
-          name: payload["name"],
-          company: payload["company"],
-          location: payload["location"],
-          description: payload["description"],
-          ingredients: payload["ingredients"],
-          instructions: payload["instructions"],
-          bedrooms: payload["bedrooms"],
-          bathrooms: payload["bathrooms"],
-          area_sqft: payload["areaSqft"],
-          price: payload["price"],
-          rating: payload["rating"],
-          address: payload["address"],
-          social_kind: payload["socialKind"],
-          platform: payload["platform"],
-          handle: payload["handle"],
-          reply_count: payload["replyCount"],
-          community: payload["community"],
-          score: payload["score"]
+          warnings: warnings
         )
 
         new(
           url: url,
           final_url: final_url,
-          title: payload["title"],
-          byline: payload["byline"],
-          excerpt: payload["excerpt"],
-          site_name: payload["siteName"],
-          published_time: payload["publishedTime"],
-          canonical_url: canonical_url,
-          language: payload["language"],
-          name: payload["name"],
-          company: payload["company"],
-          location: payload["location"],
-          description: payload["description"],
-          ingredients: payload["ingredients"],
-          instructions: payload["instructions"],
-          bedrooms: payload["bedrooms"],
-          bathrooms: payload["bathrooms"],
-          area_sqft: payload["areaSqft"],
           html: payload["html"],
           markdown: payload["markdown"],
           metadata: metadata,
-          reader_mode: payload["readerMode"],
-          content_type: content_type,
-          suspect: suspect,
-          warnings: warnings,
-          content_completeness_ratio: content_completeness_ratio,
-          content_format: content_format,
-          paywall_state: paywall_state,
-          price: payload["price"],
-          rating: payload["rating"],
-          address: payload["address"],
-          social_kind: payload["socialKind"],
-          platform: payload["platform"],
-          handle: payload["handle"],
-          reply_count: payload["replyCount"],
-          community: payload["community"],
-          score: payload["score"]
+          **metadata.except(:content_url)
         )
       end
 
@@ -134,11 +79,7 @@ module FetchUtil
 
       private
 
-      def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:,
-                           content_completeness_ratio:, content_format:, paywall_state:,
-                           name:, company:, location:, description:, ingredients:, instructions:,
-                           bedrooms:, bathrooms:, area_sqft:, price:, rating:, address:,
-                           social_kind:, platform:, handle:, reply_count:, community:, score:)
+      def payload_metadata(payload, canonical_url:, final_url:, content_type:, suspect:, warnings:)
         {
           title: payload["title"],
           byline: payload["byline"],
@@ -147,32 +88,32 @@ module FetchUtil
           published_time: payload["publishedTime"],
           canonical_url: canonical_url,
           language: payload["language"],
-          name: name,
-          company: company,
-          location: location,
-          description: description,
-          ingredients: ingredients,
-          instructions: instructions,
-          bedrooms: bedrooms,
-          bathrooms: bathrooms,
-          area_sqft: area_sqft,
+          name: payload["name"],
+          company: payload["company"],
+          location: payload["location"],
+          description: payload["description"],
+          ingredients: payload["ingredients"],
+          instructions: payload["instructions"],
+          bedrooms: payload["bedrooms"],
+          bathrooms: payload["bathrooms"],
+          area_sqft: payload["areaSqft"],
           content_url: final_url,
           reader_mode: payload["readerMode"],
           content_type: content_type,
           suspect: suspect,
           warnings: warnings,
-          content_completeness_ratio: content_completeness_ratio,
-          content_format: content_format,
-          paywall_state: paywall_state,
-          price: price,
-          rating: rating,
-          address: address,
-          social_kind: social_kind,
-          platform: platform,
-          handle: handle,
-          reply_count: reply_count,
-          community: community,
-          score: score
+          content_completeness_ratio: payload["contentCompletenessRatio"]&.to_f || 1.0,
+          content_format: payload["contentFormat"],
+          paywall_state: payload["paywallState"],
+          price: payload["price"],
+          rating: payload["rating"],
+          address: payload["address"],
+          social_kind: payload["socialKind"],
+          platform: payload["platform"],
+          handle: payload["handle"],
+          reply_count: payload["replyCount"],
+          community: payload["community"],
+          score: payload["score"]
         }.freeze
       end
     end

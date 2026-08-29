@@ -13,6 +13,64 @@ RSpec.describe FetchUtil::Result do
     )
   end
 
+  it "maps every payload metadata field through the result contract" do
+    payload = {
+      "title" => "A complete result",
+      "byline" => "Example Author",
+      "excerpt" => "Result summary",
+      "siteName" => "Example",
+      "publishedTime" => "2026-08-29T12:00:00Z",
+      "language" => "en",
+      "name" => "Example name",
+      "company" => "Example Company",
+      "location" => "Example City",
+      "description" => "Structured description",
+      "ingredients" => %w[one two],
+      "instructions" => %w[first second],
+      "bedrooms" => 3,
+      "bathrooms" => 2,
+      "areaSqft" => 1428,
+      "html" => "<article>Complete</article>",
+      "markdown" => "# Complete",
+      "readerMode" => true,
+      "contentCompletenessRatio" => "0.75",
+      "contentFormat" => "article",
+      "paywallState" => "none",
+      "price" => "$199.99",
+      "rating" => 4.8,
+      "address" => "1 Example Street",
+      "socialKind" => "post",
+      "platform" => "mastodon",
+      "handle" => "@example@test.social",
+      "replyCount" => 7,
+      "community" => "Ruby",
+      "score" => 42
+    }
+
+    result = result_from(payload)
+    expected_metadata = {
+      title: "A complete result", byline: "Example Author", excerpt: "Result summary", site_name: "Example",
+      published_time: "2026-08-29T12:00:00Z", canonical_url: "https://social.example.test/post/1", language: "en",
+      name: "Example name", company: "Example Company", location: "Example City", description: "Structured description",
+      ingredients: %w[one two], instructions: %w[first second], bedrooms: 3, bathrooms: 2, area_sqft: 1428,
+      content_url: "https://social.example.test/post/1", reader_mode: true, content_type: "article", suspect: false,
+      warnings: [], content_completeness_ratio: 0.75, content_format: "article", paywall_state: "none", price: "$199.99",
+      rating: 4.8, address: "1 Example Street", social_kind: "post", platform: "mastodon",
+      handle: "@example@test.social", reply_count: 7, community: "Ruby", score: 42
+    }
+
+    expect(result.metadata).to eq(expected_metadata)
+    expect(result.metadata.keys).to eq(expected_metadata.keys)
+    expected_metadata.except(:content_url).each do |field, value|
+      expect(result.public_send(field)).to eq(value)
+      expect(result.to_h.fetch(field)).to eq(value)
+    end
+    expect(result).to have_attributes(
+      url: "https://example.test/post/1", final_url: "https://social.example.test/post/1",
+      html: "<article>Complete</article>", markdown: "# Complete"
+    )
+  end
+
   it "maps social payload fields to readers, metadata, and serialization" do
     result = result_from(
       "socialKind" => "post",
