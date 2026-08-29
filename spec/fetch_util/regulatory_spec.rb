@@ -342,6 +342,50 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "extracts directives only from active DOM meta elements" do
+    policy_url = "https://example.com/policy?a=1&b=2"
+    client = fake_client(
+      "https://example.com/article" => response(
+        "https://example.com/article",
+        headers: { "content-type" => ["text/html"] },
+        body: <<~HTML
+          <html>
+            <head>
+              <!-- <meta name="robots" content="noindex"> -->
+              <script>const fake = '<meta name="robots" content="noarchive">';</script>
+              <template>
+                <meta name="robots" content="nofollow">
+                <meta name="tdm-reservation" content="0">
+              </template>
+              <meta NAME="ROBOTS" CONTENT="noindex">
+              <meta name=robots content=nofollow>
+              <meta name="tdm-reservation" content="1">
+              <meta name="tdm-policy" content="https://example.com/policy?a=1&amp;b=2">
+            </head>
+            <body>Article body.</body>
+          </html>
+        HTML
+      )
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "metarobots,tdmmeta")
+
+    expect(regulatory.call("https://example.com/article")).to eq(
+      "metarobots" => [
+        { "disallow" => "follow" },
+        { "disallow" => "index" }
+      ],
+      "tdmmeta" => [
+        {
+          "disallow" => "text-and-data-mining",
+          "conditions" => { "policy" => policy_url }
+        }
+      ]
+    )
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
   it "ignores TDM policy documents with non-object JSON roots" do
     policy_url = "https://example.com/policies/tdm.json"
     client = fake_client(

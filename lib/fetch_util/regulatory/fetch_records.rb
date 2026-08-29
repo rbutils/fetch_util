@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "nokogiri"
+
 module FetchUtil
   class Regulatory
     module FetchRecords
@@ -87,12 +89,13 @@ module FetchUtil
       end
 
       def parse_meta_tags(body)
-        body.to_s.scan(/<meta\b[^>]*>/im).map do |tag|
-          attributes = {}
-          tag.scan(/([A-Za-z_:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/).each do |name, quoted, single, bare|
-            attributes[name.downcase] = CGI.unescapeHTML(quoted || single || bare || "")
+        document = Nokogiri::HTML(body.to_s)
+        document.css("meta").filter_map do |tag|
+          next if tag.ancestors.any? { |ancestor| ancestor.name == "template" || ancestor.name == "script" }
+
+          tag.attribute_nodes.each_with_object({}) do |attribute, attributes|
+            attributes[attribute.name.downcase] = attribute.value
           end
-          attributes
         end
       end
 
