@@ -118,6 +118,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (normalizeText(markdown).length < 500 && /(?:^|:\s*)error$/i.test(primaryTitle || metadata.title || "") && warnings.indexOf("access_error_interstitial") === -1) {
     warnings.push("access_error_interstitial");
   }
+  promoteWarningToInterstitial(content, warnings, "access_error_interstitial", 1200, markdown);
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;

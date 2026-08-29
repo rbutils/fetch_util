@@ -772,6 +772,41 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["markdown"]).to include("This service is no longer available")
       expect(payload["warnings"]).to include("access_error_interstitial")
+      expect_content_type(payload, "interstitial")
+    end
+  end
+
+  it "keeps substantial articles about retired services as articles" do
+    sections = (1..8).map do |index|
+      <<~HTML
+        <section>
+          <h2>Migration phase #{index}</h2>
+          <p>Phase #{index} documents the replacement architecture, compatibility boundaries, migration checkpoints, operational metrics, validation evidence, rollout controls, and recovery procedures for engineering teams moving their production workloads.</p>
+          <p><a href="/migration/#{index}">Review migration phase #{index}</a></p>
+        </section>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html>
+        <head><title>Planning a service retirement</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Planning a service retirement</h1>
+              <p>The legacy service is no longer available after a carefully managed migration.</p>
+              #{sections}
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/guides/service-retirement", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect_content_type(payload, "article")
+      expect(payload["warnings"]).not_to include("access_error_interstitial")
     end
   end
 
@@ -847,6 +882,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["warnings"]).to include("access_error_interstitial")
+      expect_content_type(payload, "interstitial")
     end
   end
 
