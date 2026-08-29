@@ -4,6 +4,7 @@ require "open3"
 require "pathname"
 require "tempfile"
 require "digest"
+require "json"
 
 PROJECT_ROOT = Pathname(__dir__).join("..").expand_path
 ROOT = PROJECT_ROOT.join("lib", "fetch_util", "assets")
@@ -12,6 +13,7 @@ MANIFEST = SOURCE_ROOT.join("manifest.txt")
 OUTPUT = ROOT.join("extract.js")
 DIGEST_OUTPUT = ROOT.join("extract.js.sha256")
 LOCAL_TERSER = PROJECT_ROOT.join("node_modules", ".bin", "terser")
+TERSER_VERSION = JSON.parse(PROJECT_ROOT.join("package.json").read).fetch("devDependencies").fetch("terser")
 
 abort("Missing manifest: #{MANIFEST}") unless MANIFEST.file?
 
@@ -62,8 +64,19 @@ if check_mode
   end
 end
 
+def installed_terser_version
+  package = PROJECT_ROOT.join("node_modules", "terser", "package.json")
+  return unless package.file?
+
+  JSON.parse(package.read).fetch("version")
+rescue Errno::ENOENT, JSON::ParserError, KeyError
+  nil
+end
+
 def terser_build(source)
-  abort("Missing local Terser: run `npm ci`") unless LOCAL_TERSER.file?
+  unless LOCAL_TERSER.file? && installed_terser_version == TERSER_VERSION
+    abort("Missing local Terser #{TERSER_VERSION}: run `npm ci`")
+  end
 
   Tempfile.create(["fetch_util_extract", ".js"]) do |file|
     file.write(source)

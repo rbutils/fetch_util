@@ -21,6 +21,7 @@ RSpec.describe "extract asset bundle" do
       source_root = File.join(root, "websieve")
       FileUtils.mkdir_p([script_dir, source_root, File.join(root, "lib", "fetch_util", "assets")])
       FileUtils.cp(File.join(project_root, "script", "build_extract_assets.rb"), script_dir)
+      FileUtils.cp(File.join(project_root, "package.json"), root)
       File.write(File.join(source_root, "manifest.txt"), manifest)
 
       files.each do |path, contents|
@@ -31,6 +32,15 @@ RSpec.describe "extract asset bundle" do
 
       yield root
     end
+  end
+
+  def install_fake_terser(root, version: "5.51.2")
+    binary = File.join(root, "node_modules", ".bin", "terser")
+    package = File.join(root, "node_modules", "terser", "package.json")
+    FileUtils.mkdir_p([File.dirname(binary), File.dirname(package)])
+    File.write(binary, "")
+    File.write(package, JSON.generate("version" => version))
+    binary
   end
 
   it "verifies the checked-in extract.js is current" do
@@ -419,9 +429,8 @@ RSpec.describe "extract asset bundle" do
     ) do |root|
       bin_dir = File.join(root, "bin")
       args_path = File.join(root, "npx-args")
-      local_terser = File.join(root, "node_modules", ".bin", "terser")
-      FileUtils.mkdir_p([bin_dir, File.dirname(local_terser)])
-      File.write(local_terser, "")
+      FileUtils.mkdir_p(bin_dir)
+      install_fake_terser(root)
       File.write(
         File.join(bin_dir, "npx"),
         "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$NPX_ARGS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
@@ -452,7 +461,25 @@ RSpec.describe "extract asset bundle" do
       _stdout, stderr, status = run_build_script(root: root, env: { "NPX_MARKER" => marker, "PATH" => path })
 
       expect(status.success?).to be(false)
-      expect(stderr).to include("Missing local Terser: run `npm ci`")
+      expect(stderr).to include("Missing local Terser 5.51.2: run `npm ci`")
+      expect(File).not_to exist(marker)
+    end
+  end
+
+  it "rejects an installed Terser version that does not match the project pin" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      marker = File.join(root, "npx-invoked")
+      FileUtils.mkdir_p(bin_dir)
+      install_fake_terser(root, version: "0.0.0")
+      File.write(File.join(bin_dir, "npx"), "#!/bin/sh\ntouch \"$NPX_MARKER\"\nexit 97\n")
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      path = [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+
+      _stdout, stderr, status = run_build_script(root: root, env: { "NPX_MARKER" => marker, "PATH" => path })
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Missing local Terser 5.51.2: run `npm ci`")
       expect(File).not_to exist(marker)
     end
   end
