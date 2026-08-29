@@ -24,6 +24,33 @@ RSpec.describe FetchUtil::ParallelFetcher do
     expect(results).to eq(%w[done:a done:b done:c])
   end
 
+  it "preserves blank input positions as failures" do
+    fetched_urls = []
+    fake_fetcher = Class.new do
+      define_method(:initialize) do
+        @fetched_urls = fetched_urls
+      end
+
+      def fetch(url)
+        @fetched_urls << url
+        "done:#{url}"
+      end
+
+      def quit; end
+    end
+
+    expect do
+      described_class.new(fetcher_factory: -> { fake_fetcher.new }, concurrency: 1).fetch(["a", nil, "", "b"])
+    end.to raise_error(FetchUtil::ParallelFetcher::ParallelFetchError) { |error|
+      expect(error.failures.map { |failure| [failure.index, failure.url] }).to eq([[1, ""], [2, ""]])
+      expect(error.errors).to all(be_a(URI::InvalidURIError))
+      expect(error.errors.map(&:message)).to eq(["unsupported url: ", "unsupported url: "])
+      expect(error.results).to eq(["done:a", nil, nil, "done:b"])
+      expect(error.message).to include("<blank> (URI::InvalidURIError: unsupported url: )")
+    }
+    expect(fetched_urls).to eq(%w[a b])
+  end
+
   it "re-raises worker errors wrapped in ParallelFetchError" do
     fake_fetcher = Class.new do
       def fetch(_url)

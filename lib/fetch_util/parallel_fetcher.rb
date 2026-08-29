@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 module FetchUtil
   class ParallelFetcher
     Failure = Struct.new(:index, :url, :error, keyword_init: true)
@@ -19,7 +21,13 @@ module FetchUtil
 
       def self.build_message(failures)
         preview = failures.first(3).map do |failure|
-          label = failure.url || "<initialization>"
+          label = if failure.index.nil?
+                    "<initialization>"
+                  elsif failure.url.empty?
+                    "<blank>"
+                  else
+                    failure.url
+                  end
           "#{label} (#{failure.error.class}: #{failure.error.message})"
         end.join(", ")
         suffix = failures.length > 3 ? ", +#{failures.length - 3} more" : ""
@@ -48,12 +56,22 @@ module FetchUtil
     end
 
     def fetch(urls)
-      work = Array(urls).compact.map(&:to_s).reject(&:empty?)
+      work = Array(urls).map(&:to_s)
       return [] if work.empty?
 
       results = Array.new(work.length)
-      worker_count = [@concurrency, work.length].min
       failures = []
+      pending_indices = []
+      work.each_with_index do |url, index|
+        if url.empty?
+          error = URI::InvalidURIError.new("unsupported url: #{url}")
+          failures << Failure.new(index: index, url: url, error: error)
+        else
+          pending_indices << index
+        end
+      end
+
+      worker_count = [@concurrency, pending_indices.length].min
       next_index = 0
       mutex = Mutex.new
 
@@ -64,8 +82,8 @@ module FetchUtil
           begin
             loop do
               index = mutex.synchronize do
-                if next_index < work.length
-                  current = next_index
+                if next_index < pending_indices.length
+                  current = pending_indices[next_index]
                   next_index += 1
                   current
                 end
