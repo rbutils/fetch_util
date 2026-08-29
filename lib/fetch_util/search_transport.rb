@@ -456,6 +456,9 @@ module FetchUtil
           rescue URI::InvalidURIError
             return HttpFailure.new(reason: "redirect", final_url: uri.to_s)
           end
+          if uri.scheme == "https" && target.scheme != "https"
+            return HttpFailure.new(reason: "redirect", final_url: target.to_s)
+          end
           return HttpFailure.new(reason: "host", final_url: target.to_s) unless allowed_uri?(target, allowed_hosts)
 
           return fetch(target, deadline, allowed_hosts, redirects_left - 1)

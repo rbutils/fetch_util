@@ -557,6 +557,22 @@ RSpec.describe FetchUtil::SearchTransport do
       expect(result.reason).to eq("host")
     end
 
+    it "rejects redirects that downgrade an HTTPS search request" do
+      redirect = http_response(Net::HTTPFound, 302, headers: { "location" => "http://www.google.com/next" })
+      requested_uris = []
+      client = described_class.new(net_http: lambda { |uri|
+        requested_uris << uri
+        FakeSearchHttp.new(redirect)
+      })
+
+      result = client.get("https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"])
+
+      expect(result).to eq(
+        FetchUtil::SearchTransport::HttpFailure.new(reason: "redirect", final_url: "http://www.google.com/next")
+      )
+      expect(requested_uris.map(&:to_s)).to eq(["https://www.google.com/search"])
+    end
+
     it "reports malformed redirect locations as redirect failures" do
       redirect = http_response(Net::HTTPFound, 302, headers: { "location" => "http://[invalid" })
       client = described_class.new(net_http: ->(_uri) { FakeSearchHttp.new(redirect) })
