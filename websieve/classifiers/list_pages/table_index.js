@@ -1,64 +1,3 @@
-  function tableIndexCells(row) {
-    return Array.prototype.filter.call(row.children || [], function(cell) {
-      return cell.matches && cell.matches("th, td");
-    });
-  }
-
-  function tableIndexSpan(cell, propertyName, attributeName) {
-    var value = parseInt(cell[propertyName] || cell.getAttribute(attributeName) || "1", 10);
-    return value > 0 ? value : 1;
-  }
-
-  function tableIndexCellWidth(cells) {
-    return cells.reduce(function(total, cell) {
-      return total + tableIndexSpan(cell, "colSpan", "colspan");
-    }, 0);
-  }
-
-  function tableIndexHeaders(table) {
-    var rows = Array.prototype.filter.call(table.querySelectorAll("thead tr"), function(row) {
-      var cells = tableIndexCells(row);
-      return !elementVisuallyHidden(row) && cells.some(function(cell) { return cell.tagName === "TH"; });
-    });
-    if (!rows.length) {
-      rows = Array.prototype.filter.call(table.querySelectorAll("tr"), function(row) {
-        var cells = tableIndexCells(row);
-        return !elementVisuallyHidden(row) && cells.length && cells.every(function(cell) { return cell.tagName === "TH"; });
-      });
-    }
-    if (!rows.length) return [];
-
-    var grid = [];
-    rows.forEach(function(row, rowIndex) {
-      if (!grid[rowIndex]) grid[rowIndex] = [];
-      var columnIndex = 0;
-      tableIndexCells(row).forEach(function(cell) {
-        while (grid[rowIndex][columnIndex]) columnIndex += 1;
-        var colSpan = tableIndexSpan(cell, "colSpan", "colspan");
-        var rowSpan = tableIndexSpan(cell, "rowSpan", "rowspan");
-        for (var gridRow = rowIndex; gridRow < rowIndex + rowSpan; gridRow += 1) {
-          if (!grid[gridRow]) grid[gridRow] = [];
-          for (var gridColumn = columnIndex; gridColumn < columnIndex + colSpan; gridColumn += 1) {
-            grid[gridRow][gridColumn] = cell;
-          }
-        }
-        columnIndex += colSpan;
-      });
-    });
-
-    var width = grid.reduce(function(maximum, row) { return Math.max(maximum, row.length); }, 0);
-    var labels = [];
-    for (var column = 0; column < width; column += 1) {
-      var parts = [];
-      rows.forEach(function(_row, rowIndex) {
-        var label = normalizeText(((grid[rowIndex] || [])[column] || {}).textContent || "");
-        if (label && parts[parts.length - 1] !== label) parts.push(label);
-      });
-      labels.push(parts.join(" / "));
-    }
-    return labels.filter(Boolean).length >= 2 ? labels : [];
-  }
-
   function tableIndexPrimaryLink(row, cells, minimumLength, onlyColumn) {
     var firstColumn = onlyColumn === undefined || onlyColumn === null ? 0 : onlyColumn;
     var lastColumn = onlyColumn === undefined || onlyColumn === null ? cells.length : onlyColumn + 1;
@@ -89,19 +28,21 @@
   }
 
   function tableIndexEvidence(table, headers) {
-    var rows = Array.prototype.filter.call(table.querySelectorAll("tr"), function(row) {
+    var rows = tableIndexDataRows(table).filter(function(dataRow) {
+      var row = dataRow.row;
       if (row.closest("table") !== table || row.closest("thead, tfoot") || elementVisuallyHidden(row)) return false;
-      var cells = tableIndexCells(row);
       var text = normalizeText(row.textContent || "");
-      return tableIndexCellWidth(cells) === headers.length && !row.querySelector("table") && text.length >= 8 && text.length <= 600;
+      return dataRow.cells.length === headers.length &&
+        dataRow.cells.filter(function(cell) { return !!cell; }).length === headers.length &&
+        !row.querySelector("table") && text.length >= 8 && text.length <= 600;
     });
     if (rows.length < 6) return null;
 
     var linkColumns = {};
-    rows.forEach(function(row) {
-      var cells = tableIndexCells(row);
-      cells.forEach(function(_cell, column) {
-        var link = tableIndexPrimaryLink(row, cells, 2, column);
+    rows.forEach(function(dataRow) {
+      dataRow.cells.forEach(function(cell, column) {
+        if (column > 0 && dataRow.cells[column - 1] === cell) return;
+        var link = tableIndexPrimaryLink(dataRow.row, dataRow.cells, 2, column);
         if (!link) return;
         if (!linkColumns[column]) linkColumns[column] = [];
         linkColumns[column].push(link);

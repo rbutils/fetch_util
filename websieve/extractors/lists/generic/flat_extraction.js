@@ -19,6 +19,7 @@
   function visibleListClone(node) {
     if (!node || listElementHidden(node)) return document.createElement("div");
     var clone = safeDeepClone(node, document);
+    if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
     pruneHiddenListClone(node, clone);
     return cleanClone(clone);
   }
@@ -80,13 +81,15 @@
 
     if (context.tableIndexPage && root.matches && root.matches("table")) {
       var primaryColumn = tableIndexPrimaryColumn(tableIndexSource);
-      Array.prototype.forEach.call(root.querySelectorAll("tr"), function(row) {
-        if (row.closest("table") !== root || row.closest("thead, tfoot")) return;
-        var primary = tableIndexPrimaryLink(row, tableIndexCells(row), 2, primaryColumn);
+      var dataRows = tableIndexMappedDataRows(tableIndexSource, root) || tableIndexDataRows(root);
+      tableIndexClearCloneAnnotations(root);
+      dataRows.forEach(function(dataRow) {
+        var row = dataRow.row;
+        var primary = tableIndexPrimaryLink(row, dataRow.cells, 2, primaryColumn);
         if (!primary) return;
 
         var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
-        var detail = listTableRowDetail(row, text);
+        var detail = listTableRowDetail(row, text, dataRow.cells);
         var candidate = {
           text: text,
           url: primary.url,

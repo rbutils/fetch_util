@@ -33,6 +33,7 @@ classifiers/challenges/index.js
 classifiers/list_pages/context.js
 classifiers/list_pages/dominance.js
 classifiers/list_pages/search_category.js
+classifiers/list_pages/table_grid.js
 classifiers/list_pages/table_index.js
 classifiers/list_pages/list_page.js
 classifiers/warnings/url_mismatch.js

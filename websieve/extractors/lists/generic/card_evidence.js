@@ -157,17 +157,20 @@
     return labels.join(" ");
   }
 
-  function listTableRowDetail(row, title) {
-    var cells = tableIndexCells(row);
+  function listTableRowDetail(row, title, logicalCells) {
+    var cells = logicalCells || tableIndexCells(row);
+    var cellsAreLogical = !!logicalCells;
     var table = row.closest && row.closest("table");
     var headers = table ? tableIndexHeaders(table) : [];
     var titleCellIndex = cells.findIndex(function(cell) {
-      return listTableCellText(cell).indexOf(title) !== -1;
+      return cell && listTableCellText(cell).indexOf(title) !== -1;
     });
     var headerIndex = 0;
     return cells.map(function(cell, index) {
-      var label = headers[headerIndex] || "";
-      headerIndex += tableIndexSpan(cell, "colSpan", "colspan");
+      if (!cell) return "";
+      if (cellsAreLogical && index > 0 && cells[index - 1] === cell) return "";
+      var label = headers[cellsAreLogical ? index : headerIndex] || "";
+      if (!cellsAreLogical) headerIndex += tableIndexSpan(cell, "colSpan", "colspan");
       var value = listTableCellText(cell);
       var titleIndex = value.indexOf(title);
       if (titleIndex !== -1) value = normalizeText(value.slice(0, titleIndex) + " " + value.slice(titleIndex + title.length));

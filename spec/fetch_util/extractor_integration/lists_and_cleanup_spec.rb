@@ -299,6 +299,124 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "aligns body rowspans with hierarchical table labels" do
+    rows = 6.times.flat_map do |batch|
+      number = batch + 1
+      [
+        <<~ROW,
+          <tr>
+            <td rowspan="2">Batch #{number}</td>
+            <td><a href="/packages/package-#{number}-a">package-#{number}-a</a></td>
+            <td><span aria-label="passed"></span></td>
+            <td>failed</td>
+            <td><a href="/logs/#{number}-a">view logs</a></td>
+          </tr>
+        ROW
+        <<~ROW
+          <tr>
+            <td><a href="/packages/package-#{number}-b">package-#{number}-b</a></td>
+            <td><span aria-label="running"></span></td>
+            <td>queued</td>
+            <td><a href="/logs/#{number}-b">view logs</a></td>
+          </tr>
+        ROW
+      ]
+    end.join
+    expected = 6.times.flat_map do |batch|
+      number = batch + 1
+      [
+        "- [package-#{number}-a](https://example.test/packages/package-#{number}-a) - " \
+          "Batch: Batch #{number} | Build Status / aarch64: passed | " \
+          "Build Status / x86_64: failed | Action: view logs",
+        "- [package-#{number}-b](https://example.test/packages/package-#{number}-b) - " \
+          "Batch: Batch #{number} | Build Status / aarch64: running | " \
+          "Build Status / x86_64: queued | Action: view logs"
+      ]
+    end
+    html = <<~HTML
+      <html><head><title>Project build monitor</title></head><body><main>
+        <h1>Build monitor</h1>
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2">Batch</th>
+              <th rowspan="2">Package</th>
+              <th colspan="2">Build Status</th>
+              <th rowspan="2">Action</th>
+            </tr>
+            <tr><th>aarch64</th><th>x86_64</th></tr>
+          </thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/projects/sample/monitor", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(markdown.scan(/^- \[/).length).to eq(12)
+      expect(markdown).to eq(expected.join("\n"))
+      expect(markdown).not_to include("- [view logs]")
+    end
+  end
+
+  it "keeps logical columns after hidden rowspan rows are pruned" do
+    rows = 6.times.map do |index|
+      number = index + 1
+      <<~ROWS
+        <tr style="display: none">
+          <td rowspan="2">Hidden batch #{number}</td>
+          <td>helper package #{number}</td>
+          <td>helper state</td>
+          <td>helper state</td>
+          <td>helper action</td>
+        </tr>
+        <tr>
+          <td><a href="/packages/package-#{number}">package-#{number}</a></td>
+          <td><span aria-label="passed"></span></td>
+          <td>queued</td>
+          <td><a href="/logs/#{number}">view logs</a></td>
+        </tr>
+      ROWS
+    end.join
+    expected = 6.times.map do |index|
+      number = index + 1
+      "- [package-#{number}](https://example.test/packages/package-#{number}) - " \
+        "Build Status / aarch64: passed | Build Status / x86_64: queued | Action: view logs"
+    end
+    html = <<~HTML
+      <html><head><title>Project build monitor</title></head><body><main>
+        <h1>Build monitor</h1>
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2">Batch</th>
+              <th rowspan="2">Package</th>
+              <th colspan="2">Build Status</th>
+              <th rowspan="2">Action</th>
+            </tr>
+            <tr><th>aarch64</th><th>x86_64</th></tr>
+          </thead>
+          <tbody>#{rows}</tbody>
+        </table>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/projects/sample/monitor", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(markdown.scan(/^- \[/).length).to eq(6)
+      expect(markdown).to eq(expected.join("\n"))
+      expect(markdown).not_to include("Hidden batch", "- [view logs]")
+    end
+  end
+
   it "keeps operational reference tables inside prose articles" do
     rows = 7.times.map do |index|
       <<~ROW
