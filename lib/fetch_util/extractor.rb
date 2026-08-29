@@ -62,7 +62,7 @@ module FetchUtil
       inject_assets_inline(page)
       page.evaluate(extraction_call)
     ensure
-      page.timeout = original_timeout if timeout_supported && original_timeout
+      page.timeout = original_timeout if timeout_supported
     end
 
     def extraction_call

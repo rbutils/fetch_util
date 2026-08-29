@@ -34,9 +34,23 @@ RSpec.describe FetchUtil::Extractor do
     expect { described_class.new.extract(page) }.to raise_error(FetchUtil::ExtractionError)
   end
 
+  it 'restores a nil page timeout after extraction' do
+    allow(page).to receive(:timeout).and_return(nil)
+    allow(page).to receive(:timeout=)
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Hello' })
+
+    described_class.new.extract(page)
+
+    expect(page).to have_received(:timeout=).with(60).once
+    expect(page).to have_received(:timeout=).with(nil).once
+  end
+
   it 'retries extraction after stopping a busy page when asset injection times out' do
     add_script_attempts = 0
 
+    allow(page).to receive(:timeout).and_return(15)
+    allow(page).to receive(:timeout=)
     allow(page).to receive(:add_script_tag) do
       add_script_attempts += 1
       raise Ferrum::TimeoutError if add_script_attempts == 1
@@ -59,6 +73,8 @@ RSpec.describe FetchUtil::Extractor do
 
       expect(payload).to include('markdown' => 'Hello')
       expect(page).to have_received(:evaluate).with('window.stop && window.stop()')
+      expect(page).to have_received(:timeout=).with(60).once
+      expect(page).to have_received(:timeout=).with(15).once
     end
   end
 
