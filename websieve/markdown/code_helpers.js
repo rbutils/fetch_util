@@ -11,7 +11,12 @@
   }
 
   function fencedCodeBlock(language, text) {
-    return "\n\n```" + language + "\n" + text + "\n```\n\n";
+    var backtickRuns = String(text).match(/`+/g) || [];
+    var fenceLength = backtickRuns.reduce(function(length, run) {
+      return Math.max(length, run.length + 1);
+    }, 3);
+    var fence = "`".repeat(fenceLength);
+    return "\n\n" + fence + language + "\n" + text + "\n" + fence + "\n\n";
   }
 
   function guessCodeLanguage(node) {

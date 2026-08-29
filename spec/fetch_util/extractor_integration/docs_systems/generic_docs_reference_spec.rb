@@ -39,6 +39,31 @@ RSpec.describe 'FetchUtil extractor integration - generic reference docs systems
     end
   end
 
+  it "uses a longer fence than backtick runs inside code" do
+    html = <<~HTML
+      <html>
+        <head><title>Markdown fence syntax reference</title></head>
+        <body>
+          <main>
+            <h1>Markdown fence syntax</h1>
+            <p>This reference explains how literal fenced blocks are nested.</p>
+            <pre><code data-language="markdown">before
+      ```
+      inside
+      ```
+      after</code></pre>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_page(html) do |page|
+      markdown = extract(page)["markdown"]
+
+      expect(markdown).to include("````markdown\nbefore\n```\ninside\n```\nafter\n````")
+    end
+  end
+
   it "extracts read the docs pages through generic docs-system detection" do
     html = <<~HTML
       <html>
