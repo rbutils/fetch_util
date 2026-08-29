@@ -54,6 +54,32 @@ RSpec.describe FetchUtil::ParallelFetcher do
     }
   end
 
+  it "orders initialization and URL failures deterministically" do
+    failures = [
+      described_class::Failure.new(index: 2, url: "c", error: FetchUtil::BrowserError.new("boom for c")),
+      described_class::Failure.new(index: nil, url: nil, error: FetchUtil::ExtractionError.new("factory z")),
+      described_class::Failure.new(index: 0, url: "a", error: FetchUtil::BrowserError.new("boom for a")),
+      described_class::Failure.new(index: nil, url: nil, error: FetchUtil::ExtractionError.new("factory a"))
+    ]
+
+    error = described_class::ParallelFetchError.new(failures)
+
+    expect(error.failures.map { |failure| [failure.index, failure.url, failure.error.message] }).to eq(
+      [
+        [nil, nil, "factory a"],
+        [nil, nil, "factory z"],
+        [0, "a", "boom for a"],
+        [2, "c", "boom for c"]
+      ]
+    )
+    expect(error.errors.map(&:message)).to eq(["factory a", "factory z", "boom for a", "boom for c"])
+    expect(error.message).to end_with(
+      "<initialization> (FetchUtil::ExtractionError: factory a), " \
+      "<initialization> (FetchUtil::ExtractionError: factory z), " \
+      "a (FetchUtil::BrowserError: boom for a), +1 more"
+    )
+  end
+
   it "surfaces fetcher factory initialization failures" do
     factory_calls = 0
 

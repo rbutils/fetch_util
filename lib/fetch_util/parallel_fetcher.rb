@@ -8,7 +8,7 @@ module FetchUtil
       attr_reader :failures, :results
 
       def initialize(failures, results = nil)
-        @failures = failures.freeze
+        @failures = ordered_failures(failures).freeze
         @results = results&.freeze
         super(self.class.build_message(@failures))
       end
@@ -24,6 +24,15 @@ module FetchUtil
         end.join(", ")
         suffix = failures.length > 3 ? ", +#{failures.length - 3} more" : ""
         "parallel fetch failed for #{failures.length} URLs: #{preview}#{suffix}"
+      end
+
+      private
+
+      def ordered_failures(failures)
+        initialization_failures, url_failures = failures.partition { |failure| failure.index.nil? }
+        initialization_failures.sort_by! { |failure| [failure.error.class.name.to_s, failure.error.message] }
+        url_failures.sort_by!(&:index)
+        initialization_failures + url_failures
       end
     end
 
