@@ -181,6 +181,41 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.title).to eq('paper.pdf')
   end
 
+  it 'returns successful Content-Type PDF HEAD responses before browser navigation' do
+    response = Net::HTTPOK.new('1.1', '200', 'OK')
+    response['content-type'] = 'application/pdf'
+    expect(browser).not_to receive(:with_page)
+
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    allow(fetcher).to receive(:request_head).and_return(response)
+
+    result = fetcher.fetch('https://example.com/download?id=paper')
+
+    expect(result.content_type).to eq('pdf_document')
+    expect(result.warnings).to eq(['pdf_document'])
+  end
+
+  it 'uses browser extraction after unsuccessful Content-Type PDF HEAD responses' do
+    url = 'https://example.com/articles/pdf-metadata-error'
+    response = Net::HTTPNotFound.new('1.1', '404', 'Not Found')
+    response['content-type'] = 'application/pdf'
+    article_page = page_at(url)
+    article_payload = payload_with(
+      title: 'PDF metadata error',
+      markdown: '# PDF metadata error\n\nReadable HTML article text.',
+      warnings: []
+    )
+    stub_browser_extraction(url, page: article_page, payload: article_payload)
+
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    allow(fetcher).to receive(:request_head).and_return(response)
+
+    result = fetcher.fetch(url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'does not flag non-PDF article URLs as PDF documents' do
     article_page = page_at('https://example.com/articles/1706-03762')
     article_payload = payload_with(

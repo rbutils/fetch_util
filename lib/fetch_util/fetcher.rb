@@ -842,7 +842,7 @@ module FetchUtil
 
     def pdf_header_info(url)
       info = @pdf_header_probe ? @pdf_header_probe.call(url) : probe_pdf_headers(url)
-      return nil unless pdf_content_type?(info[:headers])
+      return nil unless info && pdf_content_type?(info[:headers])
 
       info
     rescue URI::InvalidURIError, ArgumentError, FetchUtil::Error, IOError, SocketError, SystemCallError, Timeout::Error
@@ -855,6 +855,7 @@ module FetchUtil
       if response.is_a?(Net::HTTPRedirection) && limit.positive? && response["location"].to_s.strip != ""
         return probe_pdf_headers(uri.merge(response["location"]).to_s, limit - 1)
       end
+      return nil unless response.is_a?(Net::HTTPSuccess)
 
       { final_url: uri.to_s, headers: response.to_hash.transform_keys(&:downcase) }
     end
