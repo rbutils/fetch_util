@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 RSpec.describe FetchUtil::ParallelFetcher do
+  it "requires a positive integer concurrency" do
+    [0, -1, 2.5, "2", nil].each do |concurrency|
+      expect { described_class.new(concurrency: concurrency) }
+        .to raise_error(ArgumentError, "concurrency must be a positive Integer")
+    end
+
+    expect { described_class.new(concurrency: 1) }.not_to raise_error
+  end
+
   it "returns results in input order" do
     fake_fetcher = Class.new do
       def fetch(url)

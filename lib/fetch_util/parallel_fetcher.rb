@@ -39,8 +39,12 @@ module FetchUtil
     DEFAULT_CONCURRENCY = 4
 
     def initialize(fetcher_factory: nil, concurrency: DEFAULT_CONCURRENCY, **fetch_options)
+      unless concurrency.is_a?(Integer) && concurrency.positive?
+        raise ArgumentError, "concurrency must be a positive Integer"
+      end
+
       @fetcher_factory = fetcher_factory || -> { Fetcher.new(**fetch_options) }
-      @concurrency = [concurrency.to_i, 1].max
+      @concurrency = concurrency
     end
 
     def fetch(urls)
