@@ -10,9 +10,9 @@ RSpec.describe "extract asset bundle" do
     File.expand_path("..", __dir__)
   end
 
-  def run_build_script(*args, root: project_root)
+  def run_build_script(*args, root: project_root, env: {})
     script = File.join(root, "script", "build_extract_assets.rb")
-    Open3.capture3(RbConfig.ruby, script, *args, chdir: root)
+    Open3.capture3(env, RbConfig.ruby, script, *args, chdir: root)
   end
 
   def with_asset_project(manifest:, files:)
@@ -411,6 +411,22 @@ RSpec.describe "extract asset bundle" do
 
       expect(status.success?).to be(false)
       expect(stderr).to include("Source files missing from manifest: extra.js")
+    end
+  end
+
+  it "reports a missing built asset before invoking terser in check mode" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      FileUtils.mkdir_p(bin_dir)
+      File.write(File.join(bin_dir, "npx"), "#!/bin/sh\necho unexpected terser invocation >&2\nexit 97\n")
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+
+      path = [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+      _stdout, stderr, status = run_build_script("--check", root: root, env: { "PATH" => path })
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Missing built asset:")
+      expect(stderr).not_to include("unexpected terser invocation")
     end
   end
 

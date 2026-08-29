@@ -48,9 +48,14 @@ def cached_build_current?(source_digest)
   cached_source_digest == source_digest && cached_output_digest == Digest::SHA256.file(OUTPUT).hexdigest
 end
 
-if ARGV.include?("--check") && cached_build_current?(source_digest)
-  puts "Verified #{OUTPUT} is up to date"
-  exit 0
+check_mode = ARGV.include?("--check")
+if check_mode
+  abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
+
+  if cached_build_current?(source_digest)
+    puts "Verified #{OUTPUT} is up to date"
+    exit 0
+  end
 end
 
 def terser_build(source)
@@ -67,9 +72,7 @@ end
 
 built = terser_build(source)
 
-if ARGV.include?("--check")
-  abort("Missing built asset: #{OUTPUT}") unless OUTPUT.file?
-
+if check_mode
   if OUTPUT.read == built
     puts "Verified #{OUTPUT} is up to date"
     exit 0
