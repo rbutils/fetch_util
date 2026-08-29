@@ -68,6 +68,32 @@ RSpec.describe FetchUtil::Browser do
     expect(page2).to have_received(:close).once
   end
 
+  it 'preserves a successful result when page cleanup fails' do
+    browser = browser_without_idle
+    page = instance_double('FerrumPage')
+
+    allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
+    allow(browser).to receive(:load_page_with_retry).and_return(page)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+    allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
+
+    expect(browser.with_page('https://example.com') { :result }).to eq(:result)
+  end
+
+  it 'preserves a block error when page cleanup also fails' do
+    browser = browser_without_idle
+    page = instance_double('FerrumPage')
+
+    allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
+    allow(browser).to receive(:load_page_with_retry).and_return(page)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+    allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
+
+    expect do
+      browser.with_page('https://example.com') { raise 'block failed' }
+    end.to raise_error(RuntimeError, 'block failed')
+  end
+
   it 'shuts down the browser process on quit' do
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')

@@ -19,7 +19,7 @@ RSpec.describe FetchUtil::Browser do
     stub_page_network(page2, network2, idle: true, wait_for_idle: true)
     allow(page1).to receive(:evaluate).and_return(false)
     allow(page2).to receive(:evaluate).and_return(false)
-    allow(page1).to receive(:close)
+    allow(page1).to receive(:close).and_raise(Ferrum::Error, 'close failed')
     allow(page2).to receive(:close)
     browser = browser_with_idle
     allow(browser).to receive(:sleep)

@@ -87,7 +87,7 @@ module FetchUtil
     rescue Ferrum::Error => e
       raise BrowserError, e.message
     ensure
-      page&.close
+      close_page(page)
     end
 
     # Shut down the underlying Chromium process. Safe to call multiple times or
@@ -146,6 +146,12 @@ module FetchUtil
       false
     end
 
+    def close_page(page)
+      page&.close
+    rescue Ferrum::Error
+      nil
+    end
+
     def load_page_with_retry(ferrum, url)
       retries = 0
 
@@ -161,7 +167,7 @@ module FetchUtil
         stabilize_page(page, url)
         page
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
-        page&.close
+        close_page(page)
         raise unless retryable_navigation_error?(e)
         raise if retries >= NAVIGATION_MAX_RETRIES
 
