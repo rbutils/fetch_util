@@ -153,4 +153,20 @@ RSpec.describe FetchUtil::ParallelFetcher do
 
     expect(quit_count).to eq(2) # 2 workers, each calls quit
   end
+
+  it "preserves successful results when worker cleanup fails" do
+    fake_fetcher = Class.new do
+      def fetch(url)
+        "done:#{url}"
+      end
+
+      def quit
+        raise Ferrum::Error, "shutdown failed"
+      end
+    end
+
+    results = described_class.new(fetcher_factory: -> { fake_fetcher.new }, concurrency: 2).fetch(%w[a b c])
+
+    expect(results).to eq(%w[done:a done:b done:c])
+  end
 end

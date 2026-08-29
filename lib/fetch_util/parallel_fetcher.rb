@@ -68,7 +68,11 @@ module FetchUtil
               end
             end
           ensure
-            fetcher.quit if fetcher.respond_to?(:quit)
+            begin
+              fetcher.quit if fetcher.respond_to?(:quit)
+            rescue Ferrum::Error
+              nil
+            end
           end
         rescue StandardError => e
           mutex.synchronize { failures << Failure.new(index: nil, url: nil, error: e) }
