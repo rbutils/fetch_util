@@ -111,15 +111,22 @@ module FetchUtil
       @mutex.synchronize do
         return @ferrum if @ferrum
 
-        @ferrum = Ferrum::Browser.new(
+        browser = Ferrum::Browser.new(
           headless: true,
           browser_path: @browser_path,
           timeout: @timeout,
           window_size: [@viewport.fetch(:width), @viewport.fetch(:height)],
           browser_options: @browser_options
         )
-        @ferrum.evaluate_on_new_document(navigator_patch)
-        @ferrum
+        browser.evaluate_on_new_document(navigator_patch)
+        @ferrum = browser
+      rescue Ferrum::Error
+        begin
+          browser&.quit
+        rescue Ferrum::Error
+          nil
+        end
+        raise
       end
     end
 

@@ -68,6 +68,32 @@ RSpec.describe FetchUtil::Browser do
     expect(page2).to have_received(:close).once
   end
 
+  it 'discards a browser whose navigator setup fails' do
+    failed_ferrum = instance_double(Ferrum::Browser)
+    fresh_ferrum = instance_double(Ferrum::Browser)
+    fresh_page = instance_double('FreshFerrumPage')
+
+    allow(Ferrum::Browser).to receive(:new).and_return(failed_ferrum, fresh_ferrum)
+    allow(failed_ferrum).to receive(:evaluate_on_new_document)
+      .and_raise(Ferrum::Error, 'navigator setup failed')
+    allow(failed_ferrum).to receive(:quit)
+    allow(fresh_ferrum).to receive(:evaluate_on_new_document)
+    allow(fresh_ferrum).to receive(:create_page).and_return(fresh_page)
+    stub_page_navigation(fresh_page)
+    stub_page_network(fresh_page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(fresh_page, false)
+
+    browser = browser_with_idle
+
+    expect do
+      browser.with_page('https://example.com') {}
+    end.to raise_error(FetchUtil::BrowserError, 'navigator setup failed')
+
+    expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
+    expect(failed_ferrum).to have_received(:quit).once
+    expect(Ferrum::Browser).to have_received(:new).twice
+  end
+
   it 'preserves a successful result when page cleanup fails' do
     browser = browser_without_idle
     page = instance_double('FerrumPage')
