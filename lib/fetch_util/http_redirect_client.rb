@@ -12,7 +12,7 @@ module FetchUtil
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
 
     def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES)
-      @timeout = timeout.to_f
+      @timeout = positive_timeout(timeout)
       @headers = headers.reject { |_key, value| value.to_s.empty? }
       @max_response_bytes = positive_max_response_bytes(max_response_bytes)
     end
@@ -27,6 +27,15 @@ module FetchUtil
     private
 
     attr_reader :timeout, :headers, :max_response_bytes
+
+    def positive_timeout(value)
+      timeout = Float(value)
+      return timeout if timeout.positive? && timeout.finite?
+
+      raise ArgumentError
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "timeout must be positive"
+    end
 
     def positive_max_response_bytes(value)
       bytes = Integer(value)

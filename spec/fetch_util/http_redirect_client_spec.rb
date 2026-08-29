@@ -47,6 +47,20 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     Net::HTTPOK.new("1.1", "200", "OK")
   end
 
+  it "requires a finite positive timeout" do
+    [nil, "", "invalid", 0, -1, Float::INFINITY, Float::NAN].each do |timeout|
+      expect do
+        described_class.new(timeout: timeout)
+      end.to raise_error(ArgumentError, "timeout must be positive")
+    end
+  end
+
+  it "preserves fractional timeout budgets" do
+    client = described_class.new(timeout: 0.25)
+
+    expect(client.send(:timeout)).to eq(0.25)
+  end
+
   it "preserves a successful response when connection cleanup fails" do
     http = streaming_http(response("ok"))
     allow(http).to receive(:finish).and_raise(SocketError, "close failed")
