@@ -5,6 +5,20 @@ require 'spec_helper'
 RSpec.describe FetchUtil::Fetcher do
   include_context 'fetcher spec helpers'
 
+  it 'normalizes IRIs for transport while retaining the requested url' do
+    requested_url = 'https://example.test/über uns?q=café'
+    transport_url = 'https://example.test/%C3%BCber%20uns?q=caf%C3%A9'
+    article_page = page_at(transport_url)
+    article_payload = payload_with(canonicalUrl: transport_url)
+    stub_browser_extraction(transport_url, page: article_page, payload: article_payload)
+
+    result = fetch_with_dependencies(requested_url, pdf_header_probe: ->(_url) {})
+
+    expect(result.url).to eq(requested_url)
+    expect(result.final_url).to eq(transport_url)
+    expect(result.canonical_url).to eq(transport_url)
+  end
+
   it 'normalizes challenge and tracking query params from result urls' do
     challenge_url = 'https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html'
     challenge_current_url = "#{challenge_url}?__goaway_challenge=meta-refresh&__goaway_id=abc123&utm_source=test"

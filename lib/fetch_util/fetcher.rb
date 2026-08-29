@@ -186,22 +186,23 @@ module FetchUtil
       pending_connection_retries = 0
 
       begin
-        parse_http_uri(url)
+        transport_url = FetchUtil.normalize_url(url)
+        parse_http_uri(transport_url)
 
-        if (pdf_result = direct_pdf_result(url))
+        if (pdf_result = direct_pdf_result(transport_url, requested_url: url))
           return pdf_result
         end
 
-        result = @browser.with_page(url) do |page|
+        result = @browser.with_page(transport_url) do |page|
           payload = @extractor.extract(page)
-          if telegram_focal_preview?(url) && payload["contentType"] == "article"
+          if telegram_focal_preview?(transport_url) && payload["contentType"] == "article"
             sleep Browser::PRE_EXTRACTION_SETTLE_WAIT
             payload = @extractor.extract(page)
           end
           build_result(url, page.current_url, payload)
         end
-        fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
-        fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
+        fallback = seznam_cmp_redirect_fallback_candidate?(transport_url, result) ? @raw_docs_fallback.fetch(transport_url) : nil
+        fallback ||= docs_fallback_candidate?(transport_url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(transport_url) : nil
         fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
         result = fallback_result(url, fallback) if fallback
         result
@@ -212,7 +213,7 @@ module FetchUtil
           retry
         end
 
-        fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
+        fallback = docs_fallback_candidate?(transport_url) ? @raw_docs_fallback.fetch(transport_url) : nil
         if fallback
           result = fallback_result(url, fallback)
           return result
@@ -818,7 +819,7 @@ module FetchUtil
       Result.error(url: url, warning: warning, message: message)
     end
 
-    def direct_pdf_result(url)
+    def direct_pdf_result(url, requested_url: url)
       pdf_info = if pdf_url?(url)
                    { final_url: url, headers: {} }
                  else
@@ -829,7 +830,7 @@ module FetchUtil
       final_url = normalized_result_url(pdf_info.fetch(:final_url, url))
       headers = pdf_info.fetch(:headers, {})
       Result.from_payload(
-        url: url,
+        url: requested_url,
         final_url: final_url,
         canonical_url: nil,
         payload: {
