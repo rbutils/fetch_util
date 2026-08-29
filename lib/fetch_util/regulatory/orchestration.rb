@@ -6,7 +6,7 @@ module FetchUtil
       def initialize(client: nil, cache_path: DEFAULT_CACHE_PATH, sources: nil, timeout: 20, user_agent: nil)
         @client = client || HttpClient.new(timeout: timeout, user_agent: user_agent || default_user_agent)
         @cache_path = cache_path || DEFAULT_CACHE_PATH
-        @source_tokens = sources
+        @source_tokens = normalized_source_selection(sources)
       end
 
       def call(url)
@@ -14,7 +14,7 @@ module FetchUtil
         origin_query = origin_query?(requested_uri)
         query_target = request_target(requested_uri)
         effective_query_target = query_target
-        selected_sources = resolve_sources(@source_tokens)
+        selected_sources = source_selection
         result = {}
         policy_refs = []
 

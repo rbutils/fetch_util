@@ -32,6 +32,16 @@ module FetchUtil
         selected
       end
 
+      def source_selection
+        @source_tokens ? @source_tokens.dup : resolve_sources(nil)
+      end
+
+      def normalized_source_selection(sources)
+        return if sources.nil?
+
+        resolve_sources(sources).map { |source| source.dup.freeze }.freeze
+      end
+
       def validate_source!(source)
         return if all_sources.include?(source)
 

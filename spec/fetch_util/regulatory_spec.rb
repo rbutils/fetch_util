@@ -246,6 +246,37 @@ RSpec.describe FetchUtil::Regulatory do
     expect(first_selection).not_to equal(second_selection)
   end
 
+  it "owns source selections at initialization" do
+    tdmrep_url = "https://example.test/.well-known/tdmrep.json"
+    payload = JSON.generate([{ "location" => "/", "tdm-reservation" => "0" }])
+    clients = Array.new(2) do
+      fake_client(tdmrep_url => response(tdmrep_url, body: payload))
+    end
+    dirs = Array.new(2) { Dir.mktmpdir }
+    source = +"tdmrep"
+    sources = [source]
+    regulatory = clients.zip(dirs).map do |client, dir|
+      described_class.new(client: client, cache_path: dir, sources: sources)
+    end
+
+    source.replace("trusttxt")
+    sources << "robotstxt"
+
+    expected = { "tdmrep" => [{ "allow" => "text-and-data-mining" }] }
+    regulatory.each { |instance| expect(instance.call("https://example.test/article")).to eq(expected) }
+    clients.each { |client| expect(client.requests).to eq([tdmrep_url]) }
+    regulatory.each do |instance|
+      owned_sources = instance.instance_variable_get(:@source_tokens)
+      expect(owned_sources).to eq(["tdmrep"])
+      expect(owned_sources).to be_frozen
+      expect(owned_sources.first).to be_frozen
+    end
+    expect(sources).not_to be_frozen
+    expect(source).not_to be_frozen
+  ensure
+    dirs&.each { |dir| FileUtils.remove_entry(dir) if File.exist?(dir) }
+  end
+
   it "supports source class expansion with exclusions" do
     client = fake_client(
       "https://example.com/.well-known/tdmrep.json" => response("https://example.com/.well-known/tdmrep.json", status: 404),
