@@ -33,7 +33,7 @@ module FetchUtil
       end
 
       def error(url:, warning:, message:)
-        warnings = [warning.to_s.dup.freeze].freeze
+        warnings = [warning]
         metadata = {
           content_url: url,
           content_type: "error",
@@ -126,6 +126,7 @@ module FetchUtil
                    content_completeness_ratio: 1.0, content_format: nil, paywall_state: nil,
                    price: nil, rating: nil, address: nil, social_kind: nil, platform: nil,
                    handle: nil, reply_count: nil, community: nil, score: nil, error_message: nil)
+      owned_warnings = warnings.map { |warning| warning.to_s.dup.freeze }.freeze
       @url = url
       @final_url = final_url
       @title = title
@@ -146,11 +147,11 @@ module FetchUtil
       @area_sqft = area_sqft
       @html = html
       @markdown = markdown
-      @metadata = metadata.freeze
+      @metadata = metadata.merge(warnings: owned_warnings).freeze
       @reader_mode = reader_mode
       @content_type = content_type
       @suspect = suspect
-      @warnings = warnings.freeze
+      @warnings = owned_warnings
       @content_completeness_ratio = content_completeness_ratio
       @content_format = content_format&.freeze
       @paywall_state = paywall_state&.freeze

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.describe FetchUtil::Result do
-  def result_from(payload)
+  def result_from(payload, warnings: [])
     described_class.from_payload(
       url: "https://example.test/post/1",
       final_url: "https://social.example.test/post/1",
       payload: payload,
       canonical_url: "https://social.example.test/post/1",
       content_type: "article",
-      warnings: [],
+      warnings: warnings,
       suspect: false
     )
   end
@@ -72,14 +72,15 @@ RSpec.describe FetchUtil::Result do
   end
 
   it "maps social payload fields to readers, metadata, and serialization" do
-    result = result_from(
+    payload = {
       "socialKind" => "post",
       "platform" => "mastodon",
       "handle" => "@fetcher@ruby.social",
       "replyCount" => 7,
       "community" => "Ruby",
       "score" => 42
-    )
+    }
+    result = result_from(payload)
 
     expect(result).to have_attributes(
       social_kind: "post",
@@ -145,5 +146,20 @@ RSpec.describe FetchUtil::Result do
     expect(result.metadata.fetch(:warnings)).to equal(result.warnings)
     expect(result.warnings).to be_frozen
     expect { result.metadata.fetch(:warnings) << "changed" }.to raise_error(FrozenError)
+  end
+
+  it "owns warning strings for successful results" do
+    warning = +"truncated_content"
+    warnings = [warning]
+    result = result_from({}, warnings: warnings)
+
+    warning.replace("changed")
+    warnings << "another_warning"
+
+    expect(result.warnings).to eq(["truncated_content"])
+    expect(result.metadata.fetch(:warnings)).to equal(result.warnings)
+    expect(result.warnings.first).to be_frozen
+    expect(result.warnings).to be_frozen
+    expect(warnings).not_to be_frozen
   end
 end
