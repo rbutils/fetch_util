@@ -605,4 +605,27 @@ RSpec.describe "extract asset bundle" do
       expect(File.exist?(package)).to be(false)
     end
   end
+
+  it "excludes dependency trees when the gemspec is loaded without git" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      asset = File.join(version_dir, "assets", "extract.js")
+      FileUtils.mkdir_p(File.dirname(asset))
+      FileUtils.cp(File.join(project_root, "fetch_util.gemspec"), root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+      File.write(asset, "window.fetchUtil = {};\n")
+      FileUtils.mkdir_p(File.join(root, "node_modules", "terser"))
+      File.write(File.join(root, "node_modules", "terser", "sentinel.js"), "dependency\n")
+      FileUtils.mkdir_p(File.join(root, "vendor", "node_modules", "helper"))
+      File.write(File.join(root, "vendor", "node_modules", "helper", "sentinel.js"), "dependency\n")
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+
+      expect(specification.files).to include("lib/fetch_util/assets/extract.js")
+      expect(specification.files.grep(%r{(?:\A|/)node_modules/})).to be_empty
+    end
+  end
 end

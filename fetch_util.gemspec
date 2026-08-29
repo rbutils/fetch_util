@@ -35,7 +35,8 @@ Gem::Specification.new do |spec|
   tracked_files |= [built_asset]
 
   spec.files = tracked_files.reject do |file|
-    (file == gemspec) || %w[package.json package-lock.json].include?(file) || file.end_with?(".gem") ||
+    (file == gemspec) || file.split('/').include?('node_modules') ||
+      %w[package.json package-lock.json].include?(file) || file.end_with?(".gem") ||
       file.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile coverage/ pkg/ tmp/ .bundle/ .ruby-lsp/
                            script/ websieve/])
   end
