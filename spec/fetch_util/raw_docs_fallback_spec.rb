@@ -244,6 +244,29 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).to include("should still be matched safely")
   end
 
+  it "preserves literal plus signs in fragment ids" do
+    html = <<~HTML
+      <html>
+        <head><title>Operator reference</title></head>
+        <body>
+          <main>
+            <section id="operator+">
+              <h2>Operator plus</h2>
+              <p>This fragment documents the literal plus operator and its complete reference behavior.</p>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    ["operator+", "operator%2B"].each do |fragment|
+      payload = described_class.new.payload_from_html(html, requested_url: "https://example.com/docs##{fragment}")
+
+      expect(payload["title"]).to eq("Operator plus")
+      expect(payload["markdown"]).to include("literal plus operator")
+    end
+  end
+
   it "does not swallow unexpected extraction bugs in payload_from_html" do
     fallback = described_class.new
     html = <<~HTML

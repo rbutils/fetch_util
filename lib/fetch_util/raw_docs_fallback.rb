@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "cgi"
 require "nokogiri"
 require "openssl"
 require "uri"
@@ -121,7 +120,7 @@ module FetchUtil
 
     def fragment_id(url)
       fragment = URI.parse(url).fragment.to_s
-      CGI.unescape(fragment)
+      URI::DEFAULT_PARSER.unescape(fragment)
     rescue URI::InvalidURIError
       ""
     end
