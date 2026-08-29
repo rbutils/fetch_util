@@ -4,13 +4,13 @@ require 'ferrum'
 
 RSpec.configure do |config|
   config.after(:suite) do
-    browser = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser)
-    browser&.quit
-    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
-
     page = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_page)
     page&.close
     RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_page) if page
+
+    browser = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser)
+    browser&.quit
+    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
   end
 end
 
