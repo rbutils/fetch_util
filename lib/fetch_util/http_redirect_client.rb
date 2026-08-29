@@ -69,10 +69,10 @@ module FetchUtil
         body = +""
         response = http.request(request) do |incoming|
           incoming.read_body do |chunk|
-            body << chunk
-            if body.bytesize > max_response_bytes
+            if body.bytesize + chunk.bytesize > max_response_bytes
               raise FetchUtil::Error, "response body exceeds #{max_response_bytes} bytes for #{uri}"
             end
+            body << chunk
           end
         end
         [response, body]

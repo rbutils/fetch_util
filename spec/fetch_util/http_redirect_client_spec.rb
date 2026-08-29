@@ -184,6 +184,30 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     end.to raise_error(FetchUtil::Error, "response body exceeds 4 bytes for https://example.com/resource")
   end
 
+  it "rejects an overflowing chunk before buffering it" do
+    overflowing_chunk = Class.new do
+      attr_reader :buffered
+
+      def bytesize
+        1
+      end
+
+      def to_str
+        @buffered = true
+        "e"
+      end
+    end.new
+    http = streaming_http(response("abcd", overflowing_chunk))
+    allow(http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(http)
+    client = described_class.new(timeout: 1, max_response_bytes: 4)
+
+    expect do
+      client.get("https://example.com/resource")
+    end.to raise_error(FetchUtil::Error, "response body exceeds 4 bytes for https://example.com/resource")
+    expect(overflowing_chunk.buffered).to be_nil
+  end
+
   it "requires a positive response byte limit" do
     [nil, 0, -1, Float::INFINITY, Float::NAN].each do |limit|
       expect do
