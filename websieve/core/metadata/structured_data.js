@@ -17,10 +17,29 @@ function flattenStructuredData(value, nodes) {
   nodes.push(value);
 }
 
-function pageStructuredDataOwner(node) {
-  return nodeTypes(node).some(function(type) {
+function structuredDataDocumentKey(value) {
+  if (typeof value !== "string" || !normalizeText(value)) return null;
+
+  try {
+    var resolved = new URL(value, document.baseURI);
+    return resolved.origin + resolved.pathname + resolved.search;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function pageStructuredDataDocumentKeys() {
+  return [location.href, materializedCanonicalUrl()].map(structuredDataDocumentKey).filter(Boolean);
+}
+
+function pageStructuredDataOwner(node, documentKeys) {
+  var pageType = nodeTypes(node).some(function(type) {
     return type === "WebPage" || type === "ProfilePage";
   });
+  if (!pageType) return false;
+
+  var identity = structuredDataNodeId(node) || node.url;
+  return !identity || documentKeys.indexOf(structuredDataDocumentKey(identity)) !== -1;
 }
 
 function mergeStructuredDataTypes(current, incoming) {
@@ -75,9 +94,10 @@ function structuredDataNodeId(node) {
 function pageOwnedStructuredDataNodes(nodes) {
   var ownedIds = Object.create(null);
   var ownedEntities = [];
+  var documentKeys = pageStructuredDataDocumentKeys();
 
   nodes.forEach(function(node) {
-    if (!pageStructuredDataOwner(node)) return;
+    if (!pageStructuredDataOwner(node, documentKeys)) return;
 
     asArray(node.mainEntity).forEach(function(entity) {
       var id = typeof entity === "string" ? entity : entity && entity["@id"];
@@ -109,7 +129,7 @@ function pageOwnedStructuredDataNodes(nodes) {
   }
 
   nodes.forEach(function(node) {
-    if (pageStructuredDataOwner(node)) {
+    if (pageStructuredDataOwner(node, documentKeys)) {
       asArray(node.mainEntity).forEach(function(entity) {
         var id = typeof entity === "string" ? entity : entity && entity["@id"];
         appendNode(id ? mergedById[structuredDataIdentityKey(id)] : entity);

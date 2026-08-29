@@ -15,11 +15,7 @@ function materializedMetadataValue(name, attr) {
 }
 
 function collectMetadata() {
-  var canonicalUrl = null;
-  var canonicals = document.querySelectorAll('link[rel="canonical"]');
-  for (var canonicalIndex = 0; canonicalIndex < canonicals.length && !canonicalUrl; canonicalIndex += 1) {
-    canonicalUrl = materializedHttpUrl(canonicals[canonicalIndex].getAttribute("href"));
-  }
+  var canonicalUrl = materializedCanonicalUrl();
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;
   var schemaAuthor = entityName(schemaArticle && schemaArticle.author);

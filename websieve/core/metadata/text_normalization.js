@@ -33,6 +33,15 @@ function materializedHttpUrl(value) {
   }
 }
 
+function materializedCanonicalUrl() {
+  var nodes = document.querySelectorAll('link[rel="canonical"]');
+  for (var index = 0; index < nodes.length; index += 1) {
+    var url = materializedHttpUrl(nodes[index].getAttribute("href"));
+    if (url) return url;
+  }
+  return null;
+}
+
 function bodyInnerText(pageText) {
   return (document.body && document.body.innerText) || pageText || "";
 }

@@ -952,6 +952,7 @@ RSpec.describe 'FetchUtil extractor integration' do
             {
               "@context": "https://schema.org",
               "@type": "WebPage",
+              "@id": "https://example.com/recipes/garden-herb-flatbread#page",
               "name": "Garden herb flatbread",
               "mainEntity": {
                 "@type": "Recipe",
@@ -975,6 +976,87 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://example.com/recipes/garden-herb-flatbread", html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
+      expect(payload["contentType"]).to eq("recipe")
+      expect(payload["ingredients"]).to eq(["2 cups flour", "1 cup water", "2 tablespoons herbs"])
+      expect(payload["instructions"]).to eq(["Mix the dough and herbs.", "Bake until golden."])
+    end
+  end
+
+  it "does not promote structured data owned by a foreign page" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>How recipe indexes organize seasonal dishes</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "@id": "https://foreign.example/recipes/garden-herb-flatbread",
+              "mainEntity": {
+                "@type": "Recipe",
+                "name": "Garden herb flatbread",
+                "recipeIngredient": ["2 cups flour", "1 cup water"],
+                "recipeInstructions": ["Mix the dough.", "Bake until golden."]
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>How recipe indexes organize seasonal dishes</h1>
+              <p>Recipe indexes organize seasonal dishes by ingredient, preparation style, and serving occasion.</p>
+              <p>This article explains how editors connect category pages without adopting a referenced recipe as the page subject.</p>
+              <p>Each example remains illustrative while the surrounding prose describes general catalog structure and navigation.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/articles/seasonal-recipe-indexes", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["ingredients"]).to be_nil
+      expect(payload["instructions"]).to be_nil
+    end
+  end
+
+  it "accepts a page owner that matches the declared canonical" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Canonical garden herb flatbread</title>
+          <base href="https://publisher.example/recipes/">
+          <link rel="canonical" href="garden-herb-flatbread">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "@id": "garden-herb-flatbread#page",
+              "mainEntity": {
+                "@type": "Recipe",
+                "name": "Canonical garden herb flatbread",
+                "recipeIngredient": ["2 cups flour", "1 cup water", "2 tablespoons herbs"],
+                "recipeInstructions": ["Mix the dough and herbs.", "Bake until golden."]
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Canonical garden herb flatbread</h1>
+            <p>See the complete recipe details for this seasonal flatbread.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://redirector.example/outbound/flatbread", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["canonicalUrl"]).to eq("https://publisher.example/recipes/garden-herb-flatbread")
       expect(payload["contentType"]).to eq("recipe")
       expect(payload["ingredients"]).to eq(["2 cups flour", "1 cup water", "2 tablespoons herbs"])
       expect(payload["instructions"]).to eq(["Mix the dough and herbs.", "Bake until golden."])
