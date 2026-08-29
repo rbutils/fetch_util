@@ -123,6 +123,61 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps list records that restore inherited visibility" do
+    visible_records = 8.times.map do |index|
+      <<~HTML
+        <article style="visibility: visible">
+          <h2><a href="/records/#{index + 1}">Visible archive record #{index + 1}</a></h2>
+          <p>Record #{index + 1} retains its rendered summary and local context.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html>
+        <head><title>Record archive</title></head>
+        <body>
+          <main class="items">
+            <h1>Record archive</h1>
+            <section style="visibility: hidden" aria-label="Hidden archive label" title="Hidden archive title">
+              <p>Inherited hidden introduction</p>
+              #{visible_records}
+              <article>
+                <h2><a href="/records/inherited-hidden">Inherited hidden record</a></h2>
+              </article>
+            </section>
+            <section style="display: none">
+              <article style="visibility: visible">
+                <h2><a href="/records/display-hidden">Display hidden record</a></h2>
+              </article>
+            </section>
+            <section hidden>
+              <article style="visibility: visible">
+                <h2><a href="/records/attribute-hidden">Attribute hidden record</a></h2>
+              </article>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/records/archive", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(/^- \[/).length).to eq(8)
+      expect(markdown).to include("Visible archive record 1", "Visible archive record 8")
+      expect(markdown.index("Visible archive record 1")).to be < markdown.index("Visible archive record 8")
+      expect(markdown).not_to include(
+        "Inherited hidden introduction",
+        "Inherited hidden record",
+        "Display hidden record",
+        "Attribute hidden record"
+      )
+      expect(payload["html"]).not_to include("Hidden archive label", "Hidden archive title")
+    end
+  end
+
   it "preserves distinct table observations that share a record URL" do
     rows = 8.times.map do |index|
       <<~ROW

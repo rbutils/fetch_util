@@ -1,5 +1,5 @@
   function listElementHidden(node) {
-    return elementVisuallyHidden(node);
+    return elementSubtreeHidden(node);
   }
 
   function pruneHiddenListClone(source, clone) {
@@ -9,11 +9,25 @@
       return;
     }
 
+    var visibilityHidden = source.nodeType === 1 && elementVisuallyHidden(source);
     var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
-      pruneHiddenListClone(child, cloneChildren[index]);
+      var childClone = cloneChildren[index];
+      if (!childClone) return;
+      if (visibilityHidden && child.nodeType !== 1) {
+        childClone.remove();
+        return;
+      }
+      pruneHiddenListClone(child, childClone);
     });
+
+    if (visibilityHidden) {
+      ["aria-label", "title", "alt", "value"].forEach(function(attribute) {
+        clone.removeAttribute(attribute);
+      });
+      if (!clone.children.length) clone.remove();
+    }
   }
 
   function visibleListClone(node) {

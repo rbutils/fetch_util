@@ -56,15 +56,22 @@
     }
   }
 
-  function elementVisuallyHidden(node) {
+  function elementSubtreeHidden(node) {
     var current = node;
     while (current && current.nodeType === 1) {
       var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
       if (current.hidden) return true;
-      if (style && (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse")) return true;
+      if (style && style.display === "none") return true;
       current = current.parentElement;
     }
     return false;
+  }
+
+  function elementVisuallyHidden(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (elementSubtreeHidden(node)) return true;
+    var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
+    return !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
   }
 
   function safeReadableDocumentClone() {
