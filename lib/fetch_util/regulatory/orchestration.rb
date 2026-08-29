@@ -33,7 +33,7 @@ module FetchUtil
 
         if needs_robots_fetch?(selected_sources)
           record = robots_record(requested_uri)
-          %w[robotstxt contentsignal contentusagerobots].each do |source|
+          ROBOTS_RECORD_SOURCES.each do |source|
             next unless selected_sources.include?(source)
 
             add_source_payload(
@@ -47,7 +47,7 @@ module FetchUtil
         if needs_page_fetch?(selected_sources)
           record = page_record(requested_uri)
           effective_query_target = page_query_target(record, fallback: query_target)
-          %w[xrobotstag metarobots tdmheaders tdmmeta contentusageheader human].each do |source|
+          PAGE_RECORD_SOURCES.each do |source|
             next unless selected_sources.include?(source)
 
             add_source_payload(

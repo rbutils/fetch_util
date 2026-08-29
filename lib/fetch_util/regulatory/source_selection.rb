@@ -39,7 +39,7 @@ module FetchUtil
       end
 
       def needs_page_fetch?(selected_sources)
-        (selected_sources & (HUMAN_SOURCES + %w[xrobotstag metarobots tdmheaders tdmmeta contentusageheader tdmpolicy])).any?
+        (selected_sources & PAGE_RECORD_SOURCES).any? || selected_sources.include?("tdmpolicy")
       end
 
       def needs_tdmrep_fetch?(selected_sources)
@@ -47,7 +47,7 @@ module FetchUtil
       end
 
       def needs_robots_fetch?(selected_sources)
-        (selected_sources & %w[robotstxt contentsignal contentusagerobots]).any?
+        (selected_sources & ROBOTS_RECORD_SOURCES).any?
       end
 
       def add_source_payload(result, source, signals)

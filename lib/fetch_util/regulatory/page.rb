@@ -54,14 +54,7 @@ module FetchUtil
       def empty_page_record
         {
           "final_url" => nil,
-          "signals" => {
-            "xrobotstag" => [],
-            "metarobots" => [],
-            "tdmheaders" => [],
-            "tdmmeta" => [],
-            "contentusageheader" => [],
-            "human" => []
-          },
+          "signals" => PAGE_RECORD_SOURCES.to_h { |source| [source, []] },
           "policies" => []
         }
       end

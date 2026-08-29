@@ -37,11 +37,7 @@ module FetchUtil
       end
 
       def extract_robots_source_signals(body)
-        signals = {
-          "robotstxt" => [],
-          "contentsignal" => [],
-          "contentusagerobots" => []
-        }
+        signals = ROBOTS_RECORD_SOURCES.to_h { |source| [source, []] }
         user_agents = []
         in_rules = false
 
@@ -91,11 +87,7 @@ module FetchUtil
 
       def empty_robots_record
         {
-          "signals" => {
-            "robotstxt" => [],
-            "contentsignal" => [],
-            "contentusagerobots" => []
-          }
+          "signals" => ROBOTS_RECORD_SOURCES.to_h { |source| [source, []] }
         }
       end
 

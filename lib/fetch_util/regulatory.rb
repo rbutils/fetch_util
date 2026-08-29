@@ -15,6 +15,8 @@ module FetchUtil
     CACHE_TTL = 86_400
     CACHE_VERSION = 2
     DEFAULT_CACHE_PATH = File.expand_path("~/.local/state/fetch_util/regulatory-cache")
+    ROBOTS_RECORD_SOURCES = %w[robotstxt contentsignal contentusagerobots].freeze
+    PAGE_RECORD_SOURCES = %w[xrobotstag metarobots tdmheaders tdmmeta contentusageheader human].freeze
     MACHINE_SOURCES = %w[
       robotstxt
       contentsignal
@@ -33,6 +35,7 @@ module FetchUtil
       "machine" => MACHINE_SOURCES,
       "human" => HUMAN_SOURCES
     }.freeze
+    private_constant :ROBOTS_RECORD_SOURCES, :PAGE_RECORD_SOURCES
 
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
     autoload :HttpClient, "fetch_util/regulatory/http_client"

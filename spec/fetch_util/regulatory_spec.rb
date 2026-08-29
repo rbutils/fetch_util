@@ -178,6 +178,21 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "returns independent source selections in declared order" do
+    regulatory = described_class.new(client: Object.new)
+    expected_sources = %w[
+      robotstxt contentsignal contentusagerobots contentusageheader trusttxt
+      xrobotstag metarobots tdmrep tdmheaders tdmmeta tdmpolicy human
+    ]
+
+    first_selection = regulatory.send(:resolve_sources, "machine,human")
+    second_selection = regulatory.send(:resolve_sources, "machine,human")
+
+    expect(first_selection).to eq(expected_sources)
+    expect(second_selection).to eq(expected_sources)
+    expect(first_selection).not_to equal(second_selection)
+  end
+
   it "supports source class expansion with exclusions" do
     client = fake_client(
       "https://example.com/.well-known/tdmrep.json" => response("https://example.com/.well-known/tdmrep.json", status: 404),
