@@ -163,10 +163,11 @@
       var date = normalizeText((card.querySelector("time, [class*='date' i]") || {}).textContent || "");
       var href = (link && link.getAttribute("href")) || "";
       var url = materializedHttpUrl(href);
-      var key = url || "unlinked:" + title + "|href:" + href;
-      if (!title || !key || seen[key]) return;
+      var item = { text: title, url: url, detail: date, admission: !href || !!url };
+      var key = listItemMaterialIdentity(item, href);
+      if (!title || seen[key]) return;
       seen[key] = true;
-      items.push({ text: title, url: url, detail: date, admission: !href || !!url });
+      items.push(item);
     });
 
     var admissionCount = items.filter(function(item) { return item.admission; }).length;

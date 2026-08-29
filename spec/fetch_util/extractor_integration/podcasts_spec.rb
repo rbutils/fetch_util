@@ -68,6 +68,22 @@ RSpec.describe 'FetchUtil podcast extraction' do
     end
   end
 
+  it 'preserves recurring episodes that share one destination' do
+    html = <<~HTML
+      <html><head><title>Daily briefing podcast</title></head><body><main><h1>Daily briefing</h1>
+        <article class="episode"><h2><a href="/episodes/latest">Morning briefing</a></h2><time datetime="2026-10-01">Oct 1, 2026</time></article>
+        <article class="episode"><h2><a href="/episodes/latest">Midday briefing</a></h2><time datetime="2026-10-02">Oct 2, 2026</time></article>
+        <article class="episode"><h2><a href="/episodes/latest">Evening briefing</a></h2><time datetime="2026-10-03">Oct 3, 2026</time></article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://podcasts.example.test/podcasts/daily-briefing', html) do |payload|
+      expect_content_type(payload, 'podcast')
+      expect(payload['markdown']).to include('Morning briefing', 'Midday briefing', 'Evening briefing')
+      expect(payload['markdown'].scan('/episodes/latest').length).to eq(3)
+    end
+  end
+
   it 'keeps podcast words from taking ownership of a credible editorial root' do
     html = fixture_contents(File.expand_path('../../fixtures/credible_editorial_root_podcast_words.html', __dir__))
 

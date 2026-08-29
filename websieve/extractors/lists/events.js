@@ -57,10 +57,11 @@
       var locationText = visibleEventLocation(card) || visibleEventLocation(parent);
       var href = (link && link.getAttribute("href")) || "";
       var url = materializedHttpUrl(href);
-      var key = url || "unlinked:" + title + "|href:" + href;
-      if (!title || !dateText || !key || seen[key]) return;
+      var item = { text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - "), admission: !href || !!url };
+      var key = listItemMaterialIdentity(item, href);
+      if (!title || !dateText || seen[key]) return;
       seen[key] = true;
-      items.push({ text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - "), admission: !href || !!url });
+      items.push(item);
     }
 
     Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {

@@ -129,6 +129,23 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'preserves recurring events that share one destination' do
+    html = <<~HTML
+      <html><head><title>Weekly community sessions</title></head><body><main><h1>Weekly community sessions</h1>
+        <article class="event-card"><h2><a href="/events/community">Community workshop</a></h2><time datetime="2026-10-01">Oct 1, 2026</time></article>
+        <article class="event-card"><h2><a href="/events/community">Community workshop</a></h2><time datetime="2026-10-08">Oct 8, 2026</time></article>
+        <article class="event-card"><h2><a href="/events/community">Community workshop</a></h2><time datetime="2026-10-15">Oct 15, 2026</time></article>
+        <article class="event-card responsive-copy"><h2><a href="/events/community">Community workshop</a></h2><time datetime="2026-10-01">Oct 1, 2026</time></article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/events', html) do |payload|
+      expect_content_type(payload, 'list')
+      expect(payload['markdown']).to include('2026-10-01', '2026-10-08', '2026-10-15')
+      expect(payload['markdown'].scan('Community workshop').length).to eq(3)
+    end
+  end
+
   it 'does not replace a substantive article with related event cards' do
     html = <<~HTML
       <html><head>

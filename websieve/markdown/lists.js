@@ -3,6 +3,14 @@ function markdownLink(text, url) {
   return href ? "[" + text + "](" + href + ")" : text;
 }
 
+function listItemMaterialIdentity(item, rawHref) {
+  return JSON.stringify([
+    item.url || "unlinked:" + (rawHref || ""),
+    normalizeText(item.text || ""),
+    normalizeText(item.detail || "")
+  ]);
+}
+
 function listMarkdown(items) {
   return items.map(function(item) {
     var line = "- " + markdownLink(item.text, item.url);
