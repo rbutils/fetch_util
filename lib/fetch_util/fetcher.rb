@@ -187,7 +187,6 @@ module FetchUtil
 
       begin
         if (pdf_result = direct_pdf_result(url))
-          log_request(url, t0)
           return pdf_result
         end
 
@@ -203,7 +202,6 @@ module FetchUtil
         fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
         fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
         result = fallback_result(url, fallback) if fallback
-        log_request(url, t0)
         result
       rescue BrowserError, ExtractionError => e
         if e.is_a?(BrowserError) && pending_connections_error?(e) && pending_connection_retries < PENDING_CONNECTIONS_FETCH_RETRIES
@@ -215,14 +213,14 @@ module FetchUtil
         fallback = docs_fallback_candidate?(url) ? @raw_docs_fallback.fetch(url) : nil
         if fallback
           result = fallback_result(url, fallback)
-          log_request(url, t0)
           return result
         end
 
-        log_request(url, t0)
         return network_error_result(url, e) if e.is_a?(BrowserError) && network_error?(e)
 
         raise e
+      ensure
+        log_request(url, t0)
       end
     end
 

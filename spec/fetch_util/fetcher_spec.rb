@@ -504,6 +504,16 @@ RSpec.describe FetchUtil::Fetcher do
     expect(log).to have_received(:append).with('https://example.com/input', duration: a_value >= 0)
   end
 
+  it 'surfaces request-log failures after a successful fetch' do
+    log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(log).to receive(:append).and_raise(IOError, 'log failed')
+    stub_browser_extraction('https://example.com/input', page: page, payload: payload)
+
+    expect do
+      fetch_with_dependencies('https://example.com/input', request_log: log)
+    end.to raise_error(IOError, 'log failed')
+  end
+
   it 'returns a structured suspect result for browser DNS failures' do
     log = instance_double(FetchUtil::RequestLog)
     allow(log).to receive(:append)
@@ -522,6 +532,20 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to eq(['dns_resolution_failed'])
     expect(result.error_message).to include('net::ERR_NAME_NOT_RESOLVED')
     expect(log).to have_received(:append).with('https://missing.example.test/', duration: a_value >= 0)
+  end
+
+  it 'surfaces request-log failures instead of handled network results' do
+    log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(log).to receive(:append).and_raise(IOError, 'log failed')
+    stub_browser_failure(
+      'https://missing.example.test/',
+      FetchUtil::BrowserError,
+      'Request https://missing.example.test/ failed (net::ERR_NAME_NOT_RESOLVED)'
+    )
+
+    expect do
+      fetch_with_dependencies('https://missing.example.test/', request_log: log)
+    end.to raise_error(IOError, 'log failed')
   end
 
   it 'returns a structured suspect result for pending connection failures' do
@@ -563,7 +587,7 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result).to be_a(FetchUtil::Result)
     expect(result.content_type).to eq('article')
     expect(attempts).to eq(2)
-    expect(log).to have_received(:append).with('https://slow.example.test/', duration: a_value >= 0)
+    expect(log).to have_received(:append).with('https://slow.example.test/', duration: a_value >= 0).once
   end
 
   it 'logs duration even when fetch raises' do
@@ -576,5 +600,18 @@ RSpec.describe FetchUtil::Fetcher do
     end.to raise_error(FetchUtil::BrowserError)
 
     expect(log).to have_received(:append).with('https://nonexistent.example', duration: a_value >= 0)
+  end
+
+  it 'logs duration when an unexpected collaborator error escapes' do
+    log = instance_double(FetchUtil::RequestLog, append: nil)
+    url = 'https://example.com/unexpected'
+    allow(browser).to receive(:with_page).with(url).and_yield(page)
+    allow(extractor).to receive(:extract).and_raise(RuntimeError, 'unexpected failure')
+
+    expect do
+      fetch_with_dependencies(url, request_log: log)
+    end.to raise_error(RuntimeError, 'unexpected failure')
+
+    expect(log).to have_received(:append).with(url, duration: a_value >= 0).once
   end
 end
