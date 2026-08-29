@@ -512,8 +512,7 @@ module FetchUtil
           http.request(request) do |incoming|
             incoming.read_body do |chunk|
               ensure_remaining!(deadline)
-              body << chunk
-              raise ResponseTooLarge if body.bytesize > max_response_bytes
+              append_bounded(body, chunk)
             end
           end
         end
@@ -554,8 +553,13 @@ module FetchUtil
       end
 
       def append_decoded(decoded, chunk)
-        decoded << chunk
-        raise ResponseTooLarge if decoded.bytesize > max_response_bytes
+        append_bounded(decoded, chunk)
+      end
+
+      def append_bounded(buffer, chunk)
+        raise ResponseTooLarge if buffer.bytesize + chunk.bytesize > max_response_bytes
+
+        buffer << chunk
       end
 
       def charset_from(content_type, body)

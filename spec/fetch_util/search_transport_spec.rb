@@ -645,6 +645,33 @@ RSpec.describe FetchUtil::SearchTransport do
       expect(result.reason).to eq("size")
     end
 
+    it "rejects overflowing chunks before buffering them" do
+      tracked_chunk_class = Class.new do
+        attr_reader :buffered
+
+        def bytesize
+          1
+        end
+
+        def to_str
+          @buffered = true
+          "e"
+        end
+      end
+      compressed_chunk = tracked_chunk_class.new
+      decoded_chunk = tracked_chunk_class.new
+      response = http_response(Net::HTTPOK, 200, chunks: ["abcd", compressed_chunk])
+      client = described_class.new(max_response_bytes: 4, net_http: ->(_uri) { FakeSearchHttp.new(response) })
+
+      result = client.get("https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"])
+      expect(result.reason).to eq("size")
+      expect(compressed_chunk.buffered).to be_nil
+      expect do
+        client.send(:append_decoded, +"abcd", decoded_chunk)
+      end.to raise_error(described_class::ResponseTooLarge)
+      expect(decoded_chunk.buffered).to be_nil
+    end
+
     it "bounds gzip and deflate expansion while decoding" do
       payload = "x" * 512
       gzip = StringIO.new
