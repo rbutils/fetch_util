@@ -51,7 +51,7 @@ module FetchUtil
         raise ArgumentError, "concurrency must be a positive Integer"
       end
 
-      @fetcher_factory = fetcher_factory || -> { Fetcher.new(**fetch_options) }
+      @fetcher_factory = fetcher_factory || default_fetcher_factory(fetch_options)
       @concurrency = concurrency
     end
 
@@ -117,6 +117,30 @@ module FetchUtil
     end
 
     private
+
+    def default_fetcher_factory(fetch_options)
+      owned_options = fetch_options.dup
+      if owned_options.key?(:browser_options)
+        owned_options[:browser_options] = immutable_browser_option(owned_options[:browser_options])
+      end
+      owned_options.freeze
+      -> { Fetcher.new(**owned_options) }
+    end
+
+    def immutable_browser_option(value)
+      case value
+      when String
+        value.dup.freeze
+      when Array
+        value.map { |item| immutable_browser_option(item) }.freeze
+      when Hash
+        value.each_with_object({}) do |(key, item), owned|
+          owned[immutable_browser_option(key)] = immutable_browser_option(item)
+        end.freeze
+      else
+        value
+      end
+    end
 
     def raise_for_failures(failures, results)
       return if failures.empty?

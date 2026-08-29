@@ -60,6 +60,26 @@ RSpec.describe FetchUtil::ParallelFetcher do
     fetch_thread&.join
   end
 
+  it "owns nested browser options before default workers start" do
+    option_key = +"browser_path"
+    browser_path = +"/original/chromium"
+    extension = +"/original/extension"
+    browser_options = { option_key => browser_path, extensions: [extension] }
+    fetcher = instance_double(FetchUtil::Fetcher, fetch: "done", quit: nil)
+    parallel_fetcher = described_class.new(concurrency: 1, browser_options: browser_options)
+
+    option_key.replace("changed")
+    browser_path.replace("/changed/chromium")
+    extension.replace("/changed/extension")
+    browser_options.clear
+
+    expect(FetchUtil::Fetcher).to receive(:new).with(
+      browser_options: { "browser_path" => "/original/chromium", extensions: ["/original/extension"] }
+    ).and_return(fetcher)
+    expect(parallel_fetcher.fetch(["https://example.test"])).to eq(["done"])
+    expect(browser_options).to be_empty
+  end
+
   it "preserves blank input positions as failures" do
     fetched_urls = []
     fake_fetcher = Class.new do
