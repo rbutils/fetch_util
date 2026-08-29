@@ -260,6 +260,40 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not report schema modification time as publication time" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Community archive preservation guide</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": "Community archive preservation guide",
+              "dateModified": "2026-08-28T09:30:00Z"
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Community archive preservation guide</h1>
+              <p>This guide explains how volunteers can organize, describe, and preserve local archive materials.</p>
+              <p>Each record should retain its original context while receiving a stable identifier and careful description.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/guides/archive-preservation", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["publishedTime"]).to be_nil
+    end
+  end
+
   it "normalizes language from the html lang attribute" do
     html = <<~HTML
       <html lang="es-MX">
