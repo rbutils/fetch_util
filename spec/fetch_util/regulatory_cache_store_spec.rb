@@ -49,4 +49,12 @@ RSpec.describe FetchUtil::Regulatory::CacheStore do
 
     expect(File.stat(path).mode & 0o777).to eq(0o640)
   end
+
+  it "ignores JSON cache roots that are not objects" do
+    [[], "cache", 1, false, nil].each do |value|
+      File.write(path, JSON.generate(value))
+
+      expect(store.send(:read_cache, path)).to be_nil
+    end
+  end
 end

@@ -45,6 +45,8 @@ module FetchUtil
         return nil unless File.exist?(path)
 
         parsed = JSON.parse(File.read(path))
+        return nil unless parsed.is_a?(Hash)
+
         cached_at = Time.parse(parsed.fetch("cached_at"))
         return nil if Time.now.utc - cached_at > CACHE_TTL
 
