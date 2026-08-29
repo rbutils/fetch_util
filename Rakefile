@@ -17,6 +17,5 @@ end
 
 task spec: :build_extract_assets
 task build: :build_extract_assets
-task release: :build_extract_assets
 
 task default: %i[verify_extract_assets spec rubocop]

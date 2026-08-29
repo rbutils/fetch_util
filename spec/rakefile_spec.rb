@@ -14,9 +14,10 @@ RSpec.describe "Rake tasks" do
 
   it "checks asset freshness before tasks that rebuild the bundle" do
     expect(Rake::Task["verify_extract_assets"].prerequisites).to be_empty
-    expect(Rake::Task["spec"].prerequisites).to include("build_extract_assets")
-    expect(Rake::Task["build"].prerequisites).to include("build_extract_assets")
-    expect(Rake::Task["release"].prerequisites).to include("build_extract_assets")
+    expect(Rake::Task["spec"].prerequisites.first).to eq("build_extract_assets")
+    expect(Rake::Task["build"].prerequisites.first).to eq("build_extract_assets")
+    expect(Rake::Task["release"].prerequisites.first).to eq("build")
+    expect(Rake::Task["release"].prerequisites).not_to include("build_extract_assets")
     expect(Rake::Task["default"].prerequisites).to eq(%w[verify_extract_assets spec rubocop])
   end
 end
