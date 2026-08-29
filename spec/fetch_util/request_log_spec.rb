@@ -40,4 +40,16 @@ RSpec.describe FetchUtil::RequestLog do
   ensure
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
+
+  it "escapes entry delimiters before writing one record" do
+    dir = Dir.mktmpdir
+    path = File.join(dir, "requests.log")
+    allow(Time).to receive(:now).and_return(Time.utc(2026, 8, 29, 12, 34, 56))
+
+    described_class.new(path: path).append("https://example.com/a\tb\r\nforged", duration: 1.2)
+
+    expect(File.read(path)).to eq("2026-08-29T12:34:56Z\thttps://example.com/a\\tb\\r\\nforged\t1.20s\n")
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
 end
