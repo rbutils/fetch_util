@@ -440,6 +440,32 @@ RSpec.describe 'FetchUtil public URL materialization' do
     end
   end
 
+  it 'preserves distinct cross-section records that share a destination' do
+    html = <<~HTML
+      <html><head><title>Release archive</title></head><body><main><h1>Release archive</h1>
+        <section><h2>Spring releases</h2>
+          <article><h3><a href="/record">Spring release</a></h3><time>2026-03-01</time><p>Spring context</p></article>
+        </section>
+        <section><h2>Autumn releases</h2>
+          <article><h3><a href="/record">Autumn release</a></h3><time>2026-09-01</time><p>Autumn context</p></article>
+          <article><h3><a href="/record">Winter release</a></h3><time>2026-12-01</time><p>Winter context</p></article>
+          <article><h3><a href="/record">Spring release</a></h3><time>2026-03-01</time><p>Spring context</p></article>
+        </section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://archive.example/releases', html) do |page|
+      payload = extract_payload(page)
+      markdown = payload['markdown']
+
+      expect(payload['contentType']).to eq('list')
+      expect(markdown).to include('## Spring releases', '## Autumn releases')
+      expect(markdown.scan('](https://archive.example/record)').length).to eq(3)
+      expect(markdown.index('Spring release')).to be < markdown.index('Autumn release')
+      expect(markdown.index('Autumn release')).to be < markdown.index('Winter release')
+    end
+  end
+
   it 'keeps unsafe-only headline records selected by fallback extraction' do
     safe_cards = 8.times.map do |index|
       %(<article><a href="/safe-fallback/#{index}">Safe item #{index + 1}</a></article>)

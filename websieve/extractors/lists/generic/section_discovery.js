@@ -63,7 +63,7 @@
     var selector = options.regionSelector || "section, [role='region'], main > div, main > article";
     var regions = [];
     var seen = [];
-    var canonical = {};
+    var material = {};
     var candidates = Array.prototype.slice.call(root.querySelectorAll(selector));
 
     if (options.additionalRegions) candidates = candidates.concat(options.additionalRegions(root));
@@ -80,9 +80,13 @@
 
       var cards = sectionCards(region, options).filter(function(card) {
         if (options.cardFilter && !options.cardFilter(card)) return false;
-        var key = card.canonicalKey || sectionCanonicalKey(card.url);
-        if (canonical[key]) return false;
-        canonical[key] = true;
+        var key = JSON.stringify([
+          card.canonicalKey || sectionCanonicalKey(card.url),
+          normalizeText(card.text || ""),
+          normalizeText(card.detail || "")
+        ]);
+        if (material[key]) return false;
+        material[key] = true;
         return true;
       });
       if (!cards.length && !options.allowEmptyRegions) return;
