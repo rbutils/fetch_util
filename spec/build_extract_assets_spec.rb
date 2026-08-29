@@ -413,6 +413,18 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "fails build mode when a source file is not listed in the manifest" do
+    with_asset_project(
+      manifest: "present.js\n",
+      files: { "present.js" => "const present = true;\n", "extra.js" => "const extra = true;\n" }
+    ) do |root|
+      _stdout, stderr, status = run_build_script(root: root)
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Source files missing from manifest: extra.js")
+    end
+  end
+
   it "packages the generated runtime asset but not Websieve sources" do
     specification = Gem::Specification.load(File.join(project_root, "fetch_util.gemspec"))
 

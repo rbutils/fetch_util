@@ -30,7 +30,7 @@ def validate_manifest_completeness(entries)
   abort(messages.join("\n"))
 end
 
-validate_manifest_completeness(entries) if ARGV.include?("--check")
+validate_manifest_completeness(entries)
 
 contents = entries.map do |entry|
   path = SOURCE_ROOT.join(entry)
