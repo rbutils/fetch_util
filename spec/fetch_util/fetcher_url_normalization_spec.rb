@@ -257,6 +257,25 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.title).to eq('paper.pdf')
   end
 
+  it 'preserves literal plus signs in direct PDF titles' do
+    probe = lambda do |_url|
+      {
+        final_url: 'https://example.com/download?id=paper',
+        headers: {
+          'content-type' => ['application/pdf'],
+          'content-disposition' => ['attachment; filename="C++.pdf"']
+        }
+      }
+    end
+    expect(browser).not_to receive(:with_page)
+
+    url_result = fetch_with_dependencies('https://example.com/docs/C++.pdf')
+    header_result = fetch_with_dependencies('https://example.com/download?id=paper', pdf_header_probe: probe)
+
+    expect(url_result.title).to eq('C++.pdf')
+    expect(header_result.title).to eq('C++.pdf')
+  end
+
   it 'returns successful Content-Type PDF HEAD responses before browser navigation' do
     response = Net::HTTPOK.new('1.1', '200', 'OK')
     response['content-type'] = 'application/pdf'

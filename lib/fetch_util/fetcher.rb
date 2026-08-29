@@ -904,7 +904,7 @@ module FetchUtil
       filename = value[/filename\*=UTF-8''([^;]+)/i, 1] || value[/filename="?([^";]+)"?/i, 1]
       return nil if filename.to_s.strip.empty?
 
-      URI.decode_www_form_component(filename).strip
+      URI::DEFAULT_PARSER.unescape(filename).strip
     rescue ArgumentError
       filename.to_s.strip
     end
@@ -913,7 +913,7 @@ module FetchUtil
       path = URI.parse(url.to_s).path.to_s
       basename = File.basename(path)
       title = basename.empty? || basename == "/" ? URI.parse(url.to_s).host.to_s : basename
-      URI.decode_www_form_component(title.tr("+", " ")).strip
+      URI::DEFAULT_PARSER.unescape(title).strip
     rescue URI::InvalidURIError, ArgumentError
       url.to_s
     end
