@@ -11,6 +11,7 @@ SOURCE_ROOT = PROJECT_ROOT.join("websieve")
 MANIFEST = SOURCE_ROOT.join("manifest.txt")
 OUTPUT = ROOT.join("extract.js")
 DIGEST_OUTPUT = ROOT.join("extract.js.sha256")
+LOCAL_TERSER = PROJECT_ROOT.join("node_modules", ".bin", "terser")
 
 abort("Missing manifest: #{MANIFEST}") unless MANIFEST.file?
 
@@ -62,11 +63,13 @@ if check_mode
 end
 
 def terser_build(source)
+  abort("Missing local Terser: run `npm ci`") unless LOCAL_TERSER.file?
+
   Tempfile.create(["fetch_util_extract", ".js"]) do |file|
     file.write(source)
     file.flush
 
-    stdout, stderr, status = Open3.capture3("npx", "terser", file.path, "-cm", chdir: PROJECT_ROOT.to_s)
+    stdout, stderr, status = Open3.capture3("npx", "--no-install", "terser", file.path, "-cm", chdir: PROJECT_ROOT.to_s)
     abort("terser failed: #{stderr.strip}") unless status.success?
 
     stdout

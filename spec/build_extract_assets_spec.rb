@@ -417,11 +417,43 @@ RSpec.describe "extract asset bundle" do
         "99_outro.js" => "window.fetchUtilAssetSmoke = true;\n}());\n"
       }
     ) do |root|
-      stdout, stderr, status = run_build_script(root: root)
+      bin_dir = File.join(root, "bin")
+      args_path = File.join(root, "npx-args")
+      local_terser = File.join(root, "node_modules", ".bin", "terser")
+      FileUtils.mkdir_p([bin_dir, File.dirname(local_terser)])
+      File.write(local_terser, "")
+      File.write(
+        File.join(bin_dir, "npx"),
+        "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$NPX_ARGS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
+      )
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      path = [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+
+      stdout, stderr, status = run_build_script(root: root, env: { "NPX_ARGS" => args_path, "PATH" => path })
       expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
 
       output = File.join(root, "lib", "fetch_util", "assets", "extract.js")
       expect(File.read(output)).to eq("window.fetchUtilAssetSmoke=!0;\n")
+      expect(File.readlines(args_path, chomp: true)).to match(
+        ["--no-install", "terser", match(%r{/fetch_util_extract[^/]*\.js\z}), "-cm"]
+      )
+    end
+  end
+
+  it "requires the local pinned Terser before invoking npx" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      marker = File.join(root, "npx-invoked")
+      FileUtils.mkdir_p(bin_dir)
+      File.write(File.join(bin_dir, "npx"), "#!/bin/sh\ntouch \"$NPX_MARKER\"\nexit 97\n")
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      path = [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+
+      _stdout, stderr, status = run_build_script(root: root, env: { "NPX_MARKER" => marker, "PATH" => path })
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Missing local Terser: run `npm ci`")
+      expect(File).not_to exist(marker)
     end
   end
 
@@ -502,11 +534,14 @@ RSpec.describe "extract asset bundle" do
         File.join(version_dir, "version.rb"),
         "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
       )
+      File.write(File.join(root, "package.json"), "{}\n")
+      File.write(File.join(root, "package-lock.json"), "{}\n")
 
       specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
       package = File.join(root, specification.file_name)
 
       expect(specification.files).to include("lib/fetch_util/assets/extract.js")
+      expect(specification.files).not_to include("package.json", "package-lock.json")
       expect do
         Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
           Dir.chdir(root) { Gem::Package.build(specification, false, false, package) }
