@@ -557,6 +557,39 @@ RSpec.describe FetchUtil::SearchTransport do
       expect { client.send(:decode, "", "", "text/html", 1.0) }.to raise_error(described_class::DeadlineExceeded)
     end
 
+    it "does not increase a shared budget when the clock moves backward" do
+      now = 10.0
+      client = described_class.new(clock: -> { now })
+
+      expect(client.send(:remaining, 11.0)).to eq(1.0)
+      now = 5.0
+      expect(client.send(:remaining, 11.0)).to eq(1.0)
+      now = 10.5
+      expect(client.send(:remaining, 11.0)).to eq(0.5)
+    end
+
+    it "shares a monotonic clock with an injected built-in client" do
+      samples = [10.0, 5.0]
+      clock = -> { samples.shift }
+      client = described_class.new(clock: clock)
+      transport = FetchUtil::SearchTransport.new(sources: [], timeout: 1, clock: clock, http_client: client)
+      deadline = transport.send(:clock).call + 1
+      shared_client = transport.send(:http_client)
+
+      expect(shared_client).not_to equal(client)
+      expect(shared_client.send(:remaining, deadline)).to eq(1.0)
+    end
+
+    it "rejects non-finite clock samples without retaining them" do
+      samples = [Float::NAN, 10.0, Float::INFINITY, 10.0]
+      client = described_class.new(clock: -> { samples.shift })
+
+      expect { client.send(:remaining, 11.0) }.to raise_error(ArgumentError, "clock must return a finite number")
+      expect(client.send(:remaining, 11.0)).to eq(1.0)
+      expect { client.send(:remaining, 11.0) }.to raise_error(ArgumentError, "clock must return a finite number")
+      expect(client.send(:remaining, 11.0)).to eq(1.0)
+    end
+
     it "rejects expired deadlines before issuing a request" do
       client = described_class.new(clock: -> { 10.0 })
       result = client.get("https://www.google.com/search", deadline: 9.0, allowed_hosts: ["www.google.com"])

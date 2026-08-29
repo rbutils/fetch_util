@@ -30,6 +30,30 @@ module FetchUtil
     HttpResponse = Data.define(:status, :headers, :body, :final_url)
     HttpFailure = Data.define(:reason, :final_url)
 
+    class MonotonicClock
+      def initialize(source)
+        @source = source
+        @mutex = Mutex.new
+        @latest = nil
+      end
+
+      def call
+        @mutex.synchronize do
+          current = @source.call
+          begin
+            current = Float(current)
+          rescue ArgumentError, TypeError
+            raise ArgumentError, "clock must return a finite number"
+          end
+          raise ArgumentError, "clock must return a finite number" unless current.finite?
+
+          @latest = current if @latest.nil? || current > @latest
+          @latest
+        end
+      end
+    end
+    private_constant :MonotonicClock
+
     SOURCES = {
       "brave" => { url: "https://search.brave.com/search?q=%{query}", hosts: %w[search.brave.com] },
       "bing" => { url: "https://www.bing.com/search?q=%{query}&setlang=en-US&cc=US", hosts: %w[www.bing.com cn.bing.com] },
@@ -62,8 +86,12 @@ module FetchUtil
 
       @timeout = validated_timeout(timeout)
 
-      @clock = clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
-      @http_client = http_client || HttpClient.new(clock: @clock)
+      @clock = MonotonicClock.new(clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) })
+      @http_client = if http_client.is_a?(HttpClient)
+                       http_client.send(:with_clock, @clock)
+                     else
+                       http_client || HttpClient.new(clock: @clock)
+                     end
       @html_parser = html_parser || ->(body) { Nokogiri::HTML(body) }
     end
 
@@ -433,7 +461,7 @@ module FetchUtil
 
       def initialize(clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }, max_response_bytes: MAX_RESPONSE_BYTES,
                      net_http: nil)
-        @clock = clock
+        @clock = clock.is_a?(MonotonicClock) ? clock : MonotonicClock.new(clock)
         @max_response_bytes = positive_max_response_bytes(max_response_bytes)
         @net_http = net_http || ->(uri) { Net::HTTP.new(uri.host, uri.port) }
       end
@@ -447,6 +475,12 @@ module FetchUtil
       private
 
       attr_reader :clock, :max_response_bytes, :net_http
+
+      def with_clock(shared_clock)
+        copy = dup
+        copy.instance_variable_set(:@clock, shared_clock)
+        copy
+      end
 
       def positive_max_response_bytes(value)
         bytes = Integer(value)
