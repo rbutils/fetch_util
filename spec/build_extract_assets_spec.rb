@@ -352,7 +352,7 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, "profiles/families/institutional/index.js"))).to include(expected_dispatcher_order)
 
     direct_tail = manifest.drop(register_index + 1).select do |path|
-      File.read(File.join(source_root, path)).match?(/^\s*registerHostAwareProfile\(/)
+      File.read(File.join(source_root, path)).match?(/(?:^[ \t]*|;[ \t]*)registerHostAwareProfile\(/)
     end
     expect(direct_tail).to eq(%w[
                                 profiles/news/global/xinhua.js
@@ -370,6 +370,7 @@ RSpec.describe "extract asset bundle" do
                                 systems/cms/mediawiki.js
                                 systems/cms/wordpress.js
                                 profiles/news/asia/south/india/hindustantimes.js
+                                profiles/news/europe/central/derstandard.js
                                 profiles/news/asia/central/azerbaijan/oxu.js
                                 profiles/news/europe/eastern/index_hr.js
                                 profiles/news/europe/eastern/serbia/danas.js
