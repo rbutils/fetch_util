@@ -53,6 +53,25 @@ function structuredDataEntityHasProperties(node) {
   });
 }
 
+function structuredDataIdentityKey(id) {
+  if (typeof id !== "string" || !normalizeText(id)) return id;
+
+  try {
+    var current = new URL(location.href);
+    var resolved = new URL(id, current);
+    if (resolved.origin === current.origin && resolved.pathname === current.pathname && resolved.search === current.search) {
+      return resolved.href;
+    }
+  } catch (_error) {
+  }
+
+  return id;
+}
+
+function structuredDataNodeId(node) {
+  return node && node["@id"];
+}
+
 function pageOwnedStructuredDataNodes(nodes) {
   var ownedIds = Object.create(null);
   var ownedEntities = [];
@@ -62,14 +81,14 @@ function pageOwnedStructuredDataNodes(nodes) {
 
     asArray(node.mainEntity).forEach(function(entity) {
       var id = typeof entity === "string" ? entity : entity && entity["@id"];
-      if (id) ownedIds[id] = true;
+      if (id) ownedIds[structuredDataIdentityKey(id)] = true;
       if (entity && typeof entity === "object") ownedEntities.push(entity);
     });
   });
 
   var mergedById = Object.create(null);
   nodes.concat(ownedEntities).forEach(function(node) {
-    var id = node && node["@id"];
+    var id = structuredDataIdentityKey(structuredDataNodeId(node));
     if (!id || !ownedIds[id]) return;
     mergedById[id] = mergeStructuredDataEntity(mergedById[id] || Object.create(null), node);
   });
@@ -80,7 +99,7 @@ function pageOwnedStructuredDataNodes(nodes) {
   function appendNode(node) {
     if (!node || typeof node !== "object") return;
 
-    var id = node["@id"];
+    var id = structuredDataIdentityKey(structuredDataNodeId(node));
     if (id && ownedIds[id]) {
       node = mergedById[id];
       if (emittedIds[id] || !structuredDataEntityHasProperties(node)) return;
@@ -93,7 +112,7 @@ function pageOwnedStructuredDataNodes(nodes) {
     if (pageStructuredDataOwner(node)) {
       asArray(node.mainEntity).forEach(function(entity) {
         var id = typeof entity === "string" ? entity : entity && entity["@id"];
-        appendNode(id ? mergedById[id] : entity);
+        appendNode(id ? mergedById[structuredDataIdentityKey(id)] : entity);
       });
     }
   });

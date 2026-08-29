@@ -119,7 +119,7 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
               "@context": "https://schema.org",
               "@graph": [
                 {
-                  "@id": "#primary-product",
+                  "@id": "https://store.example.test/products/primary-archive-cabinet#primary-product",
                   "@type": "Product",
                   "name": "Primary Archive Cabinet",
                   "description": "A durable cabinet for preserving primary archive records.",
@@ -143,6 +143,47 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
       expect(payload["contentType"]).to eq("product")
       expect(payload["price"]).to eq("$299.00")
       expect(payload["markdown"]).not_to include("$12.00", "Recommended Storage Pouch")
+    end
+  end
+
+  it "keeps foreign-document structured identities separate" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Local Archive Case | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@id": "https://store.example.test/products/local-archive-case#primary-product",
+                  "@type": "Product",
+                  "name": "Local Archive Case",
+                  "offers": {"@type": "Offer", "price": "12.00", "priceCurrency": "USD"}
+                },
+                {
+                  "@id": "https://catalog.example.net/references/foreign#primary-product",
+                  "@type": "Article",
+                  "headline": "Foreign Archive Reference"
+                },
+                {"@type": "WebPage", "mainEntity": {"@id": "#primary-product"}}
+              ]
+            }
+          </script>
+        </head>
+        <body><main><h1>Local Archive Case</h1><img alt="Local Archive Case">
+          <p>A durable case for preserving local archive records.</p>
+          <button data-testid="add-to-cart">Add to cart</button>
+        </main></body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/local-archive-case", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$12.00")
+      expect(payload["markdown"]).not_to include("Foreign Archive Reference")
     end
   end
 
