@@ -127,6 +127,11 @@ module FetchUtil
                    price: nil, rating: nil, address: nil, social_kind: nil, platform: nil,
                    handle: nil, reply_count: nil, community: nil, score: nil, error_message: nil)
       owned_warnings = warnings.map { |warning| warning.to_s.dup.freeze }.freeze
+      owned_content_format = content_format&.dup&.freeze
+      owned_paywall_state = paywall_state&.dup&.freeze
+      owned_metadata = metadata.merge(warnings: owned_warnings)
+      owned_metadata[:content_format] = owned_content_format if owned_metadata.key?(:content_format)
+      owned_metadata[:paywall_state] = owned_paywall_state if owned_metadata.key?(:paywall_state)
       @url = url
       @final_url = final_url
       @title = title
@@ -147,14 +152,14 @@ module FetchUtil
       @area_sqft = area_sqft
       @html = html
       @markdown = markdown
-      @metadata = metadata.merge(warnings: owned_warnings).freeze
+      @metadata = owned_metadata.freeze
       @reader_mode = reader_mode
       @content_type = content_type
       @suspect = suspect
       @warnings = owned_warnings
       @content_completeness_ratio = content_completeness_ratio
-      @content_format = content_format&.freeze
-      @paywall_state = paywall_state&.freeze
+      @content_format = owned_content_format
+      @paywall_state = owned_paywall_state
       @price = price
       @rating = rating
       @address = address

@@ -162,4 +162,20 @@ RSpec.describe FetchUtil::Result do
     expect(result.warnings).to be_frozen
     expect(warnings).not_to be_frozen
   end
+
+  it "owns immutable content format and paywall state strings" do
+    content_format = +"article"
+    paywall_state = +"none"
+    result = result_from({ "contentFormat" => content_format, "paywallState" => paywall_state })
+
+    content_format.replace("changed")
+    paywall_state.replace("changed")
+
+    expect(result.content_format).to eq("article")
+    expect(result.paywall_state).to eq("none")
+    expect(result.metadata.fetch(:content_format)).to equal(result.content_format)
+    expect(result.metadata.fetch(:paywall_state)).to equal(result.paywall_state)
+    expect(result.content_format).to be_frozen
+    expect(result.paywall_state).to be_frozen
+  end
 end
