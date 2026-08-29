@@ -100,6 +100,89 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "prioritizes page-owned products over earlier unrelated entities" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Primary Archive Cabinet | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@id": "#recommended-product",
+                  "@type": "Product",
+                  "name": "Recommended Storage Pouch",
+                  "offers": {"@type": "Offer", "price": "12.00", "priceCurrency": "USD"}
+                },
+                {
+                  "@id": "#primary-product",
+                  "@type": "Product",
+                  "name": "Primary Archive Cabinet",
+                  "description": "A durable cabinet for preserving primary archive records.",
+                  "offers": {"@type": "Offer", "price": "299.00", "priceCurrency": "USD"}
+                },
+                {"@type": "WebPage", "mainEntity": {"@id": "#primary-product"}}
+              ]
+            }
+          </script>
+        </head>
+        <body><main><h1>Primary Archive Cabinet</h1><img alt="Primary Archive Cabinet">
+          <p>A durable cabinet for preserving primary archive records.</p>
+          <button data-testid="add-to-cart">Add to cart</button>
+        </main></body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/primary-archive-cabinet", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$299.00")
+      expect(payload["markdown"]).not_to include("$12.00", "Recommended Storage Pouch")
+    end
+  end
+
+  it "keeps first-entity precedence without a page owner" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>First Archive Tray | Example Store</title>
+          <meta property="og:type" content="product">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Product",
+                  "name": "First Archive Tray",
+                  "offers": {"@type": "Offer", "price": "45.00", "priceCurrency": "USD"}
+                },
+                {
+                  "@type": "Product",
+                  "name": "Second Archive Tray",
+                  "offers": {"@type": "Offer", "price": "55.00", "priceCurrency": "USD"}
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body><main><h1>First Archive Tray</h1><img alt="First Archive Tray">
+          <p>A practical tray for organizing current archive records.</p>
+          <button data-testid="add-to-cart">Add to cart</button>
+        </main></body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/first-archive-tray", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$45.00")
+      expect(payload["markdown"]).not_to include("$55.00", "Second Archive Tray")
+    end
+  end
+
   it "does not merge nested entities with different identities" do
     html = <<~HTML
       <html>

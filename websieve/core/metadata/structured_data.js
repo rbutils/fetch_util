@@ -96,6 +96,9 @@ function pageOwnedStructuredDataNodes(nodes) {
         appendNode(id ? mergedById[id] : entity);
       });
     }
+  });
+
+  nodes.forEach(function(node) {
     appendNode(node);
   });
 
