@@ -27,12 +27,19 @@ module FetchUtil
           name = attributes["name"].to_s.strip
           next if name.empty?
           next if name.casecmp?("tdm-reservation") || name.casecmp?("tdm-policy")
-          next unless name.casecmp?("robots") || name.match?(/bot/i)
+          next unless robot_meta_name?(name)
 
           signals.concat(extract_robot_directive_signals(attributes["content"], path: path, meta_name: name))
         end
 
         signals
+      end
+
+      def robot_meta_name?(name)
+        return true if name.casecmp?("robots")
+        return false if name.casecmp?("robot")
+
+        name.match?(/\A[a-z0-9][a-z0-9_.-]*bot(?:[-_.][a-z0-9]+)*\z/i)
       end
     end
   end

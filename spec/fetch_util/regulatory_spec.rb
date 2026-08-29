@@ -374,6 +374,25 @@ RSpec.describe FetchUtil::Regulatory do
     )
   end
 
+  it "recognizes bounded crawler meta names" do
+    meta_tags = %w[
+      robots googlebot bingbot GPTBot archive-bot googlebot-news
+      robotics robot bottom mybotrules
+    ].map { |name| { "name" => name, "content" => "noindex" } }
+    regulatory = described_class.new(client: Object.new)
+
+    expect(regulatory.send(:extract_meta_robot_signals, meta_tags, path: "/article")).to eq(
+      [
+        { "disallow" => "index", "path" => "/article" },
+        { "disallow" => "index", "path" => "/article", "conditions" => { "user-agent" => "googlebot*" } },
+        { "disallow" => "index", "path" => "/article", "conditions" => { "user-agent" => "bingbot*" } },
+        { "disallow" => "index", "path" => "/article", "conditions" => { "user-agent" => "GPTBot*" } },
+        { "disallow" => "index", "path" => "/article", "conditions" => { "user-agent" => "archive-bot*" } },
+        { "disallow" => "index", "path" => "/article", "conditions" => { "user-agent" => "googlebot-news*" } }
+      ]
+    )
+  end
+
   it "extracts directives only from active DOM meta elements" do
     policy_url = "https://example.com/policy?a=1&b=2"
     client = fake_client(
