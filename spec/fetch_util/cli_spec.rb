@@ -23,6 +23,41 @@ RSpec.describe FetchUtil::CLI do
     expect(cli.send(:request_log)).to be(request_log)
   end
 
+  it "shows command-local help without executing commands" do
+    expect(FetchUtil).not_to receive(:fetch)
+    expect(FetchUtil).not_to receive(:fetch_many)
+    expect(FetchUtil::Searcher).not_to receive(:new)
+    expect(FetchUtil).not_to receive(:regulatory)
+    expect(FetchUtil::RequestLog).not_to receive(:new)
+
+    {
+      ["fetch", "https://example.test", "--format", "invalid", "--help"] => "fetch URL [URL...]",
+      ["search", "ruby", "--limit", "invalid", "--help"] => "search QUERY",
+      ["regulatory", "https://example.test", "--sources", "machine", "--help"] => "regulatory URL",
+      ["f", "https://example.test", "--help"] => "fetch URL [URL...]",
+      ["se", "ruby", "--help"] => "search QUERY",
+      ["r", "https://example.test", "--help"] => "regulatory URL"
+    }.each do |arguments, usage|
+      output = run_cli(*arguments)
+
+      expect(output).to include("Usage:", usage)
+    end
+  end
+
+  it "passes escaped help text through as a search query" do
+    request_log = instance_double(FetchUtil::RequestLog)
+    searcher = instance_double(FetchUtil::Searcher)
+    payload = { query: "--help", results: [] }
+
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    expect(FetchUtil::Searcher).to receive(:new).and_return(searcher)
+    expect(searcher).to receive(:search).with("--help").and_return(payload)
+
+    output = run_cli("search", "--", "--help")
+
+    expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
+  end
+
   it "fetches multiple urls in parallel and prints jsonl without urls by default" do
     first = result_double
     second = result_double(

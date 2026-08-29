@@ -6,6 +6,29 @@ require "thor"
 
 module FetchUtil
   class CLI < Thor
+    class << self
+      def start(given_args = ARGV, config = {})
+        command = given_args.first
+        arguments = given_args.drop(1)
+        help_command = command_for_local_help(command, arguments)
+        return super(["help", help_command], config) if help_command
+
+        super
+      end
+
+      private
+
+      def command_for_local_help(command, arguments)
+        normalized_command = normalize_command_name(command)
+        return unless all_commands.key?(normalized_command)
+
+        help_requested = arguments.take_while { |argument| argument != "--" }.any? do |argument|
+          Thor::HELP_MAPPINGS.include?(argument)
+        end
+        normalized_command if help_requested
+      end
+    end
+
     DEFAULT_FETCH_FIELDS = %i[
       title
       byline
