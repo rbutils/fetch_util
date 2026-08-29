@@ -80,13 +80,12 @@
 
       var cards = sectionCards(region, options).filter(function(card) {
         if (options.cardFilter && !options.cardFilter(card)) return false;
-        var key = JSON.stringify([
-          card.canonicalKey || sectionCanonicalKey(card.url),
-          normalizeText(card.text || ""),
-          normalizeText(card.detail || "")
-        ]);
-        if (material[key]) return false;
-        material[key] = true;
+        var key = card.canonicalKey || sectionCanonicalKey(card.url);
+        var time = normalizeText(card.time || "");
+        var times = material[key];
+        if (times && (!time || !times.length || times.indexOf(time) >= 0)) return false;
+        if (!times) times = material[key] = [];
+        if (time) times.push(time);
         return true;
       });
       if (!cards.length && !options.allowEmptyRegions) return;
