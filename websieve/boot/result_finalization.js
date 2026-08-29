@@ -95,9 +95,6 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdownForWarnings, { maxTextLength: 1800, checkStructured: true })) {
     if (warnings.indexOf("not_found_interstitial") === -1) warnings.push("not_found_interstitial");
   }
-  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdownForWarnings, { maxTextLength: 900 }) && warnings.indexOf("not_found_interstitial") === -1) {
-    warnings.push("not_found_interstitial");
-  }
   var errorContext = normalizeText([primaryTitle, metadata.title, metadata.siteName, location.hostname, location.pathname, markdown].join(" "));
   if (notFoundInterstitialEvidence(primaryTitle || metadata.title, errorContext, { maxTextLength: 2000 }) && /\b(court|courts|case law|caselaw|legal|law|opinion|citation)\b/i.test(errorContext) && warnings.indexOf("not_found_interstitial") === -1) {
     warnings.push("not_found_interstitial");
