@@ -108,6 +108,51 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).to include("protocol and address of a proxied server")
   end
 
+  it "extracts empty id-anchor sections without including the next section" do
+    html = <<~HTML
+      <html>
+        <head><title>Module ngx_http_proxy_module</title></head>
+        <body>
+          <a id="proxy_pass"></a>
+          <h2>proxy_pass</h2>
+          <p>Sets the protocol and address of a proxied server for this location.</p>
+          <a id="proxy_pass_source" href="/source">Source details</a>
+          <p>Content after the source link remains part of this directive.</p>
+          <pre>proxy_pass http://localhost:8000/uri/;</pre>
+          <a id="proxy_redirect"></a>
+          <h2>proxy_redirect</h2>
+          <p>This belongs to the following directive and must not be included.</p>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass")
+
+    expect(payload["title"]).to eq("proxy_pass")
+    expect(payload["markdown"]).to include("protocol and address of a proxied server")
+    expect(payload["markdown"]).to include("Content after the source link")
+    expect(payload["markdown"]).not_to include("following directive")
+  end
+
+  it "retains content wrapped by a matching nonempty id anchor" do
+    html = <<~HTML
+      <html>
+        <head><title>Wrapped section</title></head>
+        <body>
+          <a id="wrapped_section">
+            <h2>Wrapped section</h2>
+            <p>This substantive fragment content is wrapped by its matching anchor rather than following an empty marker.</p>
+          </a>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://example.test/docs#wrapped_section")
+
+    expect(payload["title"]).to eq("Wrapped section")
+    expect(payload["markdown"]).to include("substantive fragment content")
+  end
+
   it "extracts fragment ids that contain selector metacharacters" do
     html = <<~HTML
       <html>

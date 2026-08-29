@@ -121,11 +121,11 @@ module FetchUtil
       node = fragment_node(document, id)
       return nil unless node
 
-      if node.name == "a" && node["name"] == id
+      if fragment_anchor?(node, id)
         container = Nokogiri::XML::Node.new("div", document)
         sibling = node.next_sibling
         while sibling
-          break if sibling.element? && sibling.name == "a" && sibling["name"]
+          break if sibling.element? && fragment_anchor?(sibling)
 
           container.add_child(sibling.dup)
           sibling = sibling.next_sibling
@@ -152,7 +152,7 @@ module FetchUtil
 
       heading = if node.name.match?(/h[1-6]/)
                   node
-                elsif node.name == "a" && node["name"] == id
+                elsif fragment_anchor?(node, id)
                   node.at_xpath("following-sibling::*[1][self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]") ||
                     node.at_xpath("following-sibling::*[1]//strong[1]")
                 else
@@ -264,6 +264,14 @@ module FetchUtil
 
     def fragment_node(document, id)
       document.at_xpath(%(//*[@id=#{xpath_literal(id)}])) || document.at_xpath(%(//a[@name=#{xpath_literal(id)}]))
+    end
+
+    def fragment_anchor?(node, id = nil)
+      return false unless node.name == "a"
+
+      anchor_id = node["name"]
+      anchor_id ||= node["id"] if node.element_children.empty? && clean_text(node.text).empty?
+      id ? anchor_id == id : !anchor_id.to_s.empty?
     end
 
     def xpath_literal(value)
