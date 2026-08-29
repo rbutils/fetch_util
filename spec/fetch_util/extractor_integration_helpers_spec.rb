@@ -5,6 +5,20 @@ require 'spec_helper'
 RSpec.describe 'extractor integration helpers' do
   include_context 'extractor integration helpers'
 
+  it 'quits the browser when closing the cached page fails' do
+    configuration = Object.new
+    page = instance_double(Ferrum::Page)
+    browser = instance_double(Ferrum::Browser)
+    configuration.instance_variable_set(:@fetch_util_extractor_page, page)
+    configuration.instance_variable_set(:@fetch_util_extractor_browser, browser)
+    allow(page).to receive(:close).and_raise(Ferrum::Error, 'page close failed')
+    expect(browser).to receive(:quit)
+
+    expect { FetchUtil::ExtractorIntegrationResources.close(configuration) }.not_to raise_error
+    expect(configuration.instance_variable_defined?(:@fetch_util_extractor_page)).to be(false)
+    expect(configuration.instance_variable_defined?(:@fetch_util_extractor_browser)).to be(false)
+  end
+
   it 'disables request interception after serving a URL fixture' do
     network = instance_double(Ferrum::Network)
     page = instance_double(Ferrum::Page, network: network)

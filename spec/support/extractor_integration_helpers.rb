@@ -2,15 +2,33 @@
 
 require 'ferrum'
 
+module FetchUtil
+  module ExtractorIntegrationResources
+    module_function
+
+    def close(configuration)
+      page = configuration.instance_variable_get(:@fetch_util_extractor_page)
+      begin
+        page&.close
+      rescue Ferrum::Error
+        nil
+      ensure
+        configuration.remove_instance_variable(:@fetch_util_extractor_page) if page
+      end
+
+      browser = configuration.instance_variable_get(:@fetch_util_extractor_browser)
+      begin
+        browser&.quit
+      ensure
+        configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
+      end
+    end
+  end
+end
+
 RSpec.configure do |config|
   config.after(:suite) do
-    page = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_page)
-    page&.close
-    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_page) if page
-
-    browser = RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser)
-    browser&.quit
-    RSpec.configuration.remove_instance_variable(:@fetch_util_extractor_browser) if browser
+    FetchUtil::ExtractorIntegrationResources.close(RSpec.configuration)
   end
 end
 
