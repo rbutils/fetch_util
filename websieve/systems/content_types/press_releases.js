@@ -49,10 +49,11 @@
       var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
       var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       var date = normalizeText((card && card.querySelector("time, [class*='date' i]")) ? card.querySelector("time, [class*='date' i]").textContent : "");
-      var url = absoluteUrl(link.getAttribute("href") || "");
-      var key = url || title;
-      if (!title || !date || !key || seen[key]) return;
-      seen[key] = true;
+      var href = (link.getAttribute("href") || "").trim();
+      var url = href.charAt(0) === "#" ? "" : absoluteUrl(href);
+      if (url && !/^https?:\/\//i.test(url)) url = "";
+      if (!title || !date || !url || seen[url]) return;
+      seen[url] = true;
       items.push({ text: title, url: url, detail: date });
     });
 

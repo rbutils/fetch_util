@@ -67,6 +67,9 @@ RSpec.describe 'FetchUtil press release extraction' do
   it 'leaves a dated press release index to generic list extraction' do
     html = <<~HTML
       <html><head><title>Press releases</title></head><body><main><h1>Press releases</h1>
+        <article class="release"><a href="#archive">Jump to archive</a><time>June 28, 2026</time></article>
+        <article class="release"><a href="javascript:openRelease()">Open release dialog</a><time>June 29, 2026</time></article>
+        <article class="release"><a href="mailto:news@example.test">Email the newsroom</a><time>June 30, 2026</time></article>
         <article class="release"><a href="/news/one">Launches new service</a><time>July 1, 2026</time></article>
         <article class="release"><a href="/news/two">Reports results</a><time>July 2, 2026</time></article>
         <article class="release"><a href="/news/three">Announces expansion</a><time>July 3, 2026</time></article>
@@ -77,6 +80,8 @@ RSpec.describe 'FetchUtil press release extraction' do
     extract_from_url('https://news.example.test/press-releases', html) do |payload|
       expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Launches new service')
+      expect(payload['markdown']).not_to include('Jump to archive', 'Open release dialog', 'Email the newsroom')
+      expect(payload['markdown']).not_to include('javascript:', 'mailto:', '#archive')
       expect(payload['markdown']).not_to include('Price:')
     end
   end
