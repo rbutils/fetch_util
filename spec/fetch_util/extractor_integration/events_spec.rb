@@ -94,6 +94,8 @@ RSpec.describe 'FetchUtil event extraction' do
   it 'extracts repeated dated event cards without treating incidental event links as an index' do
     html = <<~HTML
       <html><head><title>Online events</title></head><body><main><h1>Online events</h1>
+        <article><h2><a href="/guides/venues">Venue planning guide</a></h2><p>Advice for selecting an accessible venue.</p></article>
+        <article class="event-card"><h2><a href="javascript:openEvent()">Popup session</a></h2><time datetime="2026-09-11">Sep 11, 2026</time><p class="location">Online</p></article>
         <article class="event-card"><h2><a href="/e/ruby">Ruby for teams</a></h2><time datetime="2026-09-12">Sep 12, 2026</time><p class="location">Online</p></article>
         <article class="event-card"><h2><a href="/e/testing">Testing clinic</a></h2><time datetime="2026-09-13">Sep 13, 2026</time><p class="location">Online</p></article>
         <article class="event-card"><h2><a href="/e/security">Security workshop</a></h2><time datetime="2026-09-14">Sep 14, 2026</time><p class="location">Online</p></article>
@@ -102,15 +104,14 @@ RSpec.describe 'FetchUtil event extraction' do
 
     extract_from_url('https://events.example.test/d/online/events', html) do |payload|
       expect_content_type(payload, 'list')
-      expect(payload['markdown']).to include('[Ruby for teams](https://events.example.test/e/ruby)')
-      expect(payload['markdown']).to include('[Testing clinic](https://events.example.test/e/testing)')
-      expect(payload['markdown']).to include('[Security workshop](https://events.example.test/e/security)')
-      expect(payload['markdown']).to include('2026-09-12')
-      expect(payload['markdown']).to include('2026-09-13')
-      expect(payload['markdown']).to include('2026-09-14')
-      expect(payload['markdown']).to include('Online')
-      expect(payload['markdown'].index('Ruby for teams')).to be < payload['markdown'].index('Testing clinic')
-      expect(payload['markdown'].index('Testing clinic')).to be < payload['markdown'].index('Security workshop')
+      expect(payload['markdown']).to eq(<<~MARKDOWN.chomp)
+        - Popup session - 2026-09-11 - Online
+        - [Ruby for teams](https://events.example.test/e/ruby) - 2026-09-12 - Online
+        - [Testing clinic](https://events.example.test/e/testing) - 2026-09-13 - Online
+        - [Security workshop](https://events.example.test/e/security) - 2026-09-14 - Online
+      MARKDOWN
+      expect(payload['html']).to include('Ruby for teams')
+      expect(payload['markdown']).not_to include('javascript:')
     end
   end
 

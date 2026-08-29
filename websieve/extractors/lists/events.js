@@ -56,6 +56,7 @@
       var dateText = visibleEventDateTime(card) || visibleEventDateTime(parent);
       var locationText = visibleEventLocation(card) || visibleEventLocation(parent);
       var url = absoluteUrl((link && link.getAttribute("href")) || "");
+      if (url && !/^https?:\/\//i.test(url)) url = "";
       var key = url || title;
       if (!title || !dateText || !key || seen[key]) return;
       seen[key] = true;
@@ -197,9 +198,13 @@
   function genericEventListContent(metadata) {
     var items = eventCardItems();
     if (items.length >= 3) {
-      var result = listContent(metadata, { portalRoot: true });
-      result.excerpt = items[0].text;
-      return result;
+      var genericEvidence = listContent(metadata, { portalRoot: true });
+      return listItemsContentResult(metadata, {
+        excerpt: items[0].text,
+        html: genericEvidence.html,
+        portalRootEvidence: genericEvidence.portalRootEvidence,
+        items: items
+      });
     }
 
     if (!conferenceSchedulePage()) return null;
