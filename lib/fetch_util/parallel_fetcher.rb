@@ -76,40 +76,48 @@ module FetchUtil
       worker_count = [@concurrency, pending_indices.length].min
       next_index = 0
       mutex = Mutex.new
+      stopping = false
+      threads = []
 
-      threads = Array.new(worker_count) do
-        Thread.new do
-          fetcher = @fetcher_factory.call
+      begin
+        worker_count.times do
+          threads << Thread.new do
+            fetcher = @fetcher_factory.call
 
-          begin
-            loop do
-              index = mutex.synchronize do
-                if next_index < pending_indices.length
-                  current = pending_indices[next_index]
-                  next_index += 1
-                  current
+            begin
+              loop do
+                index = mutex.synchronize do
+                  if !stopping && next_index < pending_indices.length
+                    current = pending_indices[next_index]
+                    next_index += 1
+                    current
+                  end
+                end
+                break if index.nil?
+
+                url = work[index]
+
+                begin
+                  results[index] = fetcher.fetch(url)
+                rescue StandardError => e
+                  mutex.synchronize { failures << Failure.new(index: index, url: url, error: e) }
                 end
               end
-              break if index.nil?
-
-              url = work[index]
-
+            ensure
               begin
-                results[index] = fetcher.fetch(url)
-              rescue StandardError => e
-                mutex.synchronize { failures << Failure.new(index: index, url: url, error: e) }
+                fetcher.quit if fetcher.respond_to?(:quit)
+              rescue Ferrum::Error
+                nil
               end
             end
-          ensure
-            begin
-              fetcher.quit if fetcher.respond_to?(:quit)
-            rescue Ferrum::Error
-              nil
-            end
+          rescue StandardError => e
+            mutex.synchronize { failures << Failure.new(index: nil, url: nil, error: e) }
           end
-        rescue StandardError => e
-          mutex.synchronize { failures << Failure.new(index: nil, url: nil, error: e) }
         end
+      rescue ThreadError
+        mutex.synchronize { stopping = true }
+        threads.each(&:join)
+        raise
       end
 
       threads.each(&:join)

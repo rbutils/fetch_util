@@ -60,6 +60,54 @@ RSpec.describe FetchUtil::ParallelFetcher do
     fetch_thread&.join
   end
 
+  it "joins started workers when a later worker cannot start" do
+    original_thread_new = Thread.method(:new)
+    first_started = Queue.new
+    second_attempted = Queue.new
+    release_first = Queue.new
+    fetched_urls = []
+    fake_fetcher = Class.new do
+      define_method(:fetch) do |url|
+        fetched_urls << url
+        first_started << true
+        release_first.pop
+        "done:#{url}"
+      end
+
+      def quit; end
+    end
+    spawn_count = 0
+    allow(Thread).to receive(:new) do |&block|
+      spawn_count += 1
+      if spawn_count == 2
+        first_started.pop
+        second_attempted << true
+        raise ThreadError, "worker unavailable"
+      end
+
+      original_thread_new.call(&block)
+    end
+    fetch_thread = original_thread_new.call do
+      Thread.current.abort_on_exception = false
+      Thread.current.report_on_exception = false
+      described_class.new(fetcher_factory: -> { fake_fetcher.new }, concurrency: 2).fetch(%w[first second])
+    end
+
+    second_attempted.pop
+    expect(fetch_thread).to be_alive
+    release_first << true
+
+    expect { fetch_thread.value }.to raise_error(ThreadError, "worker unavailable")
+    expect(fetched_urls).to eq(["first"])
+  ensure
+    release_first << true if release_first
+    begin
+      fetch_thread&.join
+    rescue ThreadError
+      nil
+    end
+  end
+
   it "owns mutable fetch options before default workers start" do
     option_key = +"browser_path"
     browser_path = +"/original/chromium"
