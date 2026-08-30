@@ -89,7 +89,7 @@
       "[class*='office' i]"
     ]);
     var descriptionRoot = root.querySelector("[data-testid*='description' i], [class*='description' i], [class*='content' i], [class*='body' i], .job-post, .job-posting, .opening") || root;
-    var clone = cleanClone(descriptionRoot);
+    var clone = cleanClone(visibilityPrunedClone(descriptionRoot, document));
     cleanupAgentRoot(clone);
     removeAll(clone, "nav, header, footer, aside, form, script, style, noscript, [class*='apply' i], [id*='apply' i]");
     var description = cleanupMarkdownNoise(markdownFor(clone.innerHTML));

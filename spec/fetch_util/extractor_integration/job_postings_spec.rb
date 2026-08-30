@@ -33,6 +33,35 @@ RSpec.describe 'FetchUtil job posting extraction' do
     end
   end
 
+  it 'excludes hidden job descriptions while preserving restored visibility' do
+    html = <<~HTML
+      <html><head><title>Platform engineer job</title></head><body>
+        <main class="job-posting">
+          <h1>Platform Engineer</h1>
+          <div class="company">Example Systems</div>
+          <div class="job-location">Remote</div>
+          <div class="team">Infrastructure</div>
+          <button class="apply">Apply now</button>
+          <section class="description">
+            <p>JOB:Visible description explains the role, responsibilities, qualifications, and operating practices in detail.</p>
+            <p style="display:none">JOB:Display-none description must not appear.</p>
+            <div style="visibility:hidden">
+              JOB:Inherited-hidden description must not appear.
+              <p style="visibility:visible">JOB:Restored description remains part of the published role.</p>
+            </div>
+          </section>
+        </main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://jobs.example.com/careers/platform-engineer', html) do |payload|
+      expect_content_type(payload, 'job')
+      expect(payload['description']).to include('JOB:Visible description', 'JOB:Restored description')
+      expect(payload['description']).not_to include('JOB:Display-none description', 'JOB:Inherited-hidden description')
+      expect(payload['html']).not_to include('JOB:Display-none description', 'JOB:Inherited-hidden description')
+    end
+  end
+
   it 'serializes array and top-level structured job addresses' do
     html = <<~HTML
       <html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"JobPosting","title":"Platform Engineer","description":"Build reliable platform systems with careful operational ownership and documented engineering practices.","jobLocation":[{"streetAddress":"1 Rails Way","addressLocality":"Austin","addressRegion":"TX","postalCode":"78701","addressCountry":{"name":"United States"}},{"address":"Remote"}]}</script></head><body><h1>Platform Engineer</h1></body></html>
