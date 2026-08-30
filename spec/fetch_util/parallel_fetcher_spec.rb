@@ -60,24 +60,104 @@ RSpec.describe FetchUtil::ParallelFetcher do
     fetch_thread&.join
   end
 
-  it "owns nested browser options before default workers start" do
+  it "owns mutable fetch options before default workers start" do
     option_key = +"browser_path"
     browser_path = +"/original/chromium"
     extension = +"/original/extension"
     browser_options = { option_key => browser_path, extensions: [extension] }
+    user_agent = +"Original Agent"
+    shared_viewport_value = ["original"]
+    default_viewport_value = ["default"]
+    viewport = Class.new(Hash).new(default_viewport_value)
+    viewport.update(
+      width: 1280,
+      height: 720,
+      first: shared_viewport_value,
+      second: shared_viewport_value,
+      default_alias: default_viewport_value
+    )
+    viewport[:self] = viewport
+    auto_config = Hash.new { |hash, key| hash[key] = [] }
+    auto_config[:existing] = ["original"]
+    identity_key = +"identity"
+    identity_config = {}.compare_by_identity
+    identity_config[identity_key] = +"original"
+    viewport[:auto_config] = auto_config
+    viewport[:identity_config] = identity_config
+    raw_docs_fallback = Class.new(Hash).new
+    pdf_header_probe = ->(_url) { nil }
     fetcher = instance_double(FetchUtil::Fetcher, fetch: "done", quit: nil)
-    parallel_fetcher = described_class.new(concurrency: 1, browser_options: browser_options)
+    parallel_fetcher = described_class.new(
+      concurrency: 1,
+      browser_options: browser_options,
+      user_agent: user_agent,
+      viewport: viewport,
+      raw_docs_fallback: raw_docs_fallback,
+      pdf_header_probe: pdf_header_probe
+    )
 
     option_key.replace("changed")
     browser_path.replace("/changed/chromium")
     extension.replace("/changed/extension")
     browser_options.clear
+    user_agent.replace("Changed Agent")
+    viewport[:width] = 640
+    shared_viewport_value[0] = "changed"
+    default_viewport_value[0] = "changed default"
+    auto_config[:existing][0] = "changed"
+    identity_config[identity_key].replace("changed")
 
-    expect(FetchUtil::Fetcher).to receive(:new).with(
-      browser_options: { "browser_path" => "/original/chromium", extensions: ["/original/extension"] }
-    ).and_return(fetcher)
+    expect(FetchUtil::Fetcher).to receive(:new) do |**options|
+      expect(options[:browser_options]).to eq(
+        "browser_path" => "/original/chromium",
+        extensions: ["/original/extension"]
+      )
+      expect(options[:user_agent]).to eq("Original Agent")
+      expect(options[:viewport]).to be_instance_of(viewport.class)
+      expect(options[:viewport][:width]).to eq(1280)
+      expect(options[:viewport].default).to eq(["default"])
+      expect(options[:viewport].default).to equal(options[:viewport][:default_alias])
+      expect(options[:viewport][:self]).to equal(options[:viewport])
+      expect(options[:viewport][:first]).to equal(options[:viewport][:second])
+      expect(options[:viewport][:first]).to eq(["original"])
+      expect(options[:viewport][:auto_config][:existing]).to eq(["original"])
+      expect(options[:viewport][:auto_config][:created]).to eq([])
+      expect(auto_config).not_to have_key(:created)
+      expect(options[:viewport][:identity_config]).to be_compare_by_identity
+      expect(options[:viewport][:identity_config]).to have_key(identity_key)
+      expect(options[:viewport][:identity_config][identity_key]).to eq("original")
+      expect(options[:raw_docs_fallback]).to equal(raw_docs_fallback)
+      expect(options[:pdf_header_probe]).to equal(pdf_header_probe)
+      fetcher
+    end
     expect(parallel_fetcher.fetch(["https://example.test"])).to eq(["done"])
     expect(browser_options).to be_empty
+    expect(user_agent).to eq("Changed Agent")
+    expect(viewport[:width]).to eq(640)
+    expect(shared_viewport_value).to eq(["changed"])
+  end
+
+  it "isolates mutable default-proc options between default workers" do
+    auto_config = Hash.new { |hash, key| hash[key] = [] }
+    captured_configs = Queue.new
+    fetcher = instance_double(FetchUtil::Fetcher, fetch: "done", quit: nil)
+    parallel_fetcher = described_class.new(
+      concurrency: 2,
+      viewport: { auto_config: auto_config }
+    )
+
+    allow(FetchUtil::Fetcher).to receive(:new) do |**options|
+      config = options[:viewport][:auto_config]
+      config[:created] << "worker"
+      captured_configs << config
+      fetcher
+    end
+
+    expect(parallel_fetcher.fetch(%w[first second])).to eq(%w[done done])
+    configs = 2.times.map { captured_configs.pop }
+    expect(configs.map(&:object_id).uniq.length).to eq(2)
+    expect(configs.map { |config| config[:created] }).to eq([%w[worker], %w[worker]])
+    expect(auto_config).not_to have_key(:created)
   end
 
   it "preserves blank input positions as failures" do

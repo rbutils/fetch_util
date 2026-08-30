@@ -45,6 +45,8 @@ module FetchUtil
     end
 
     DEFAULT_CONCURRENCY = 4
+    FETCHER_COLLABORATOR_OPTIONS = %i[browser extractor raw_docs_fallback request_log pdf_header_probe].freeze
+    private_constant :FETCHER_COLLABORATOR_OPTIONS
 
     def initialize(fetcher_factory: nil, concurrency: DEFAULT_CONCURRENCY, **fetch_options)
       unless concurrency.is_a?(Integer) && concurrency.positive?
@@ -119,24 +121,48 @@ module FetchUtil
     private
 
     def default_fetcher_factory(fetch_options)
-      owned_options = fetch_options.dup
-      if owned_options.key?(:browser_options)
-        owned_options[:browser_options] = immutable_browser_option(owned_options[:browser_options])
-      end
-      owned_options.freeze
-      -> { Fetcher.new(**owned_options) }
+      owned_options = immutable_fetch_options(fetch_options)
+      -> { Fetcher.new(**immutable_fetch_options(owned_options)) }
     end
 
-    def immutable_browser_option(value)
+    def immutable_fetch_options(fetch_options)
+      memo = {}.compare_by_identity
+      owned = {}
+      memo[fetch_options] = owned
+
+      fetch_options.each do |key, value|
+        owned_key = immutable_fetch_option(key, memo)
+        owned[owned_key] = if FETCHER_COLLABORATOR_OPTIONS.include?(key)
+                             value
+                           else
+                             immutable_fetch_option(value, memo)
+                           end
+      end
+      owned.freeze
+    end
+
+    def immutable_fetch_option(value, memo)
+      return memo[value] if memo.key?(value)
+
       case value
       when String
-        value.dup.freeze
+        memo[value] = value.dup.freeze
       when Array
-        value.map { |item| immutable_browser_option(item) }.freeze
+        owned = value.dup
+        memo[value] = owned
+        owned.map! { |item| immutable_fetch_option(item, memo) }
+        owned.freeze
       when Hash
-        value.each_with_object({}) do |(key, item), owned|
-          owned[immutable_browser_option(key)] = immutable_browser_option(item)
-        end.freeze
+        owned = value.dup
+        memo[value] = owned
+        owned.clear
+        owned.default = immutable_fetch_option(value.default, memo) unless value.default_proc
+        value.each do |key, item|
+          owned_key = value.compare_by_identity? ? key : immutable_fetch_option(key, memo)
+          owned[owned_key] = immutable_fetch_option(item, memo)
+        end
+        owned.freeze unless owned.default_proc
+        owned
       else
         value
       end
