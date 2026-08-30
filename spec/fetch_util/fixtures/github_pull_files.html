@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head><title>Improve fidelity · Pull Request #42 · octo/example</title></head>
+<body>
+  <main>
+    <h1 data-testid="issue-title">Improve fidelity</h1>
+    <nav><a href="/octo/example/pull/42/files">Files changed 305</a></nav>
+    <div class="js-diff-progressive-container">
+      <div class="file js-file">
+        <div class="file-header" data-path="lib/first.rb" data-anchor="diff-first">
+          <span>lib/first.rb</span><span>+3 −1</span><span class="file-actions">Show comments View file Delete file</span>
+        </div>
+        <table><tr><td>1</td><td>+ first visible diff line</td></tr></table>
+        <div class="js-diff-load-container">
+          <include-fragment src="/octo/example/pull/42/files?file=first"></include-fragment>
+        </div>
+      </div>
+      <div class="file js-file">
+        <div class="file-header" data-path="lib/second.rb" data-anchor="diff-second">lib/second.rb +4 −2</div>
+        <table>
+          <tr><td>2</td><td>+ selected visible diff line</td></tr>
+          <tr style="display: none"><td>3</td><td>hidden diff line</td></tr>
+        </table>
+        <div class="review-thread">
+          <a href="#discussion_r202">reviewer</a>
+          <div class="markdown-body"><p>Inline review detail remains visible.</p></div>
+        </div>
+        <div class="js-diff-load-container">
+          <include-fragment src="/octo/example/pull/42/files?file=second"></include-fragment>
+        </div>
+      </div>
+      <div style="visibility: hidden">
+        <div class="file js-file" style="visibility: visible">
+          <div class="file-header" data-path="lib/restored.rb" data-anchor="diff-restored">lib/restored.rb +1 −0</div>
+          <table><tr><td>1</td><td>+ restored visible diff line</td></tr></table>
+        </div>
+      </div>
+      <div class="file js-file" style="display: none">
+        <div class="file-header" data-path="lib/hidden.rb" data-anchor="diff-hidden">lib/hidden.rb +1 −0</div>
+      </div>
+      <div class="file js-file" style="visibility: hidden">
+        <div class="file-header" data-path="lib/visibility-hidden.rb" data-anchor="diff-visibility-hidden">lib/visibility-hidden.rb +1 −0</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

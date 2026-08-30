@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head><title>Improve fidelity · Pull Request #42 · octo/example</title></head>
+<body>
+  <main>
+    <h1 data-testid="issue-title">Improve fidelity</h1>
+    <div class="actions-grid-container">
+      <aside aria-label="Check suites">
+        <details class="checks-list-item" open>
+          <summary>Build suite</summary>
+          <div class="checks-list-item">
+            <svg aria-label="This check passed"></svg>
+            <a href="/octo/example/pull/42/checks?check_run_id=101">Build Linux</a>
+          </div>
+          <div class="checks-list-item">
+            <svg aria-label="This check failed"></svg>
+            <a href="/octo/example/pull/42/checks?check_run_id=102">Build Windows</a>
+          </div>
+        </details>
+        <details class="checks-list-item" style="visibility: hidden" open>
+          <summary style="visibility: visible">Restored suite</summary>
+          <div class="checks-list-item" style="visibility: visible">
+            <svg aria-label="This check passed"></svg>
+            <a href="/octo/example/pull/42/checks?check_run_id=103">Lint</a>
+          </div>
+        </details>
+        <details class="checks-list-item" style="display: none" open>
+          <summary>Hidden suite</summary>
+          <a href="/octo/example/pull/42/checks?check_run_id=999">Hidden check</a>
+        </details>
+        <div class="checks-list-item" style="visibility: hidden">
+          <a href="/octo/example/pull/42/checks?check_run_id=998">Visibility hidden check</a>
+        </div>
+      </aside>
+      <section class="js-selected-check-run">
+        <div id="check_run_101">
+          <strong>Build suite / Build Linux</strong>
+          <p>All Linux checks passed.</p>
+          <p style="display: none">Hidden check log.</p>
+          <a href="https://ci.example.test/runs/101">View complete run</a>
+        </div>
+        <div id="check_run_998" style="visibility: hidden">
+          <p>Visibility hidden selected check detail.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

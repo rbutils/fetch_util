@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head><title>Improve fidelity · Pull Request #42 · octo/example</title></head>
+<body>
+  <main>
+    <h1 data-testid="issue-title">Improve fidelity</h1>
+    <section data-testid="commits-list">
+      <article data-testid="commit-row-item">
+        <a data-commit-link href="/octo/example/pull/42/commits/aaa111">Preserve conversations</a>
+        <a href="/alice">alice</a>
+        <relative-time datetime="2026-08-28T10:00:00Z">Aug 28</relative-time>
+        <p>First commit context remains visible.</p>
+      </article>
+      <article data-testid="commit-row-item">
+        <a data-commit-link href="/octo/example/pull/42/commits/bbb222">Add inventories</a>
+        <a href="/bob">bob</a>
+        <relative-time datetime="2026-08-29T10:00:00Z">Aug 29</relative-time>
+        <p>Second commit context remains visible.</p>
+      </article>
+      <div style="visibility: hidden">
+        <article data-testid="commit-row-item" style="visibility: visible">
+          <a data-commit-link href="/octo/example/pull/42/commits/ccc333">Restore visible commit</a>
+          <a href="/carol">carol</a>
+          <p>Restored commit context remains visible.</p>
+        </article>
+      </div>
+      <article data-testid="commit-row-item" style="display: none">
+        <a data-commit-link href="/octo/example/pull/42/commits/hidden">Hidden commit</a>
+      </article>
+      <article data-testid="commit-row-item" style="visibility: hidden">
+        <a data-commit-link href="/octo/example/pull/42/commits/visibility-hidden">Visibility hidden commit</a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

@@ -59,8 +59,38 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://github.com/octo/example/issues/12')).to eq(:stabilize_github_thread)
     expect(strategy_for.call('https://github.com/octo/example/pull/42')).to eq(:stabilize_github_thread)
     expect(strategy_for.call('https://github.com/octo/example/discussions/9')).to eq(:stabilize_github_thread)
-    expect(strategy_for.call('https://github.com/octo/example/pull/42/files')).to be_nil
+    expect(strategy_for.call('https://github.com/octo/example/pull/42/commits')).to eq(:stabilize_github_pull_resource)
+    expect(strategy_for.call('https://github.com/octo/example/pull/42/checks?check_run_id=7')).to eq(:stabilize_github_pull_resource)
+    expect(strategy_for.call('https://github.com/octo/example/pull/42/files#diff-123')).to eq(:stabilize_github_pull_resource)
+    expect(strategy_for.call('https://github.com/octo/example/pull/42/unknown')).to be_nil
     expect(strategy_for.call('https://github.com/octo/example')).to be_nil
+  end
+
+  it 'waits for stable GitHub pull-request resources' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    scripts = []
+    states = [
+      { "ready" => false, "signature" => "files:0:0::#diff-one" },
+      { "ready" => true, "signature" => "files:12:400::#diff-one" },
+      { "ready" => true, "signature" => "files:12:400::#diff-one" },
+      { "ready" => true, "signature" => "files:12:400::#diff-one" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do |_page, script, default:|
+      scripts << script
+      states.shift || { "ready" => true, "signature" => "files:12:400::#diff-one" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    browser.send(:stabilize_github_pull_resource, page)
+
+    expect(scripts.first).to include('[data-testid="commit-row-item"]', 'a[href*="check_run_id="]',
+                                     '.file-header[data-path][data-anchor]', "document.getElementById('check_run_' + requestedCheckId)",
+                                     'nodeVisible', 'selectedRequested', 'selectedReady')
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
   end
 
   it 'waits for a GitHub timeline after its opening body appears' do

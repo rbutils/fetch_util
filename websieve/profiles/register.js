@@ -26,6 +26,7 @@
   registerRailsRdocProfiles();
   registerRepoHostProfiles();
   registerGitHubThreadProfiles();
+  registerGitHubPullResourceProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
   registerCommunityWikiProfiles();
   registerHackerNewsProfiles();

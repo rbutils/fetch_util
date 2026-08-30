@@ -6,6 +6,7 @@ function githubResourceRoute() {
   if (!/^[\w.-]+$/.test(parts[0]) || !/^[\w.-]+$/.test(parts[1]) || !/^\d+$/.test(parts[3])) return null;
   if (["issues", "pull", "discussions"].indexOf(parts[2]) === -1) return null;
   if (parts[4] && ["commits", "checks", "files"].indexOf(parts[4]) === -1) return null;
+  if (parts[4] && parts[2] !== "pull") return null;
 
   return {
     owner: parts[0],
@@ -20,6 +21,11 @@ function githubResourceRoute() {
 function githubThreadRoute() {
   var route = githubResourceRoute();
   return route && !route.surface ? route : null;
+}
+
+function githubPullResourceRoute() {
+  var route = githubResourceRoute();
+  return route && route.kind === "pull" && route.surface ? route : null;
 }
 
 function githubRouteUrl(route, suffix) {
