@@ -264,13 +264,22 @@ RSpec.describe 'FetchUtil extractor integration' do
         <section class="comments"><h2>Comments</h2>
           <p>Alice: This longer comment adds detailed context about how the release affects teams, migration plans, support requests, and the daily work of people who depend on this update.</p>
           <p>Bob: Another longer comment records a separate perspective on rollout timing, compatibility concerns, documentation gaps, and follow-up work that will happen after launch.</p>
+          <p style="display: none">Hidden comment text must not become public extraction output even though its source text is long enough to qualify.</p>
+          <div style="visibility: hidden">
+            <p>Hidden parent text must not become public extraction output after clone cleanup.</p>
+            <p style="visibility: visible">Restored visible comment remains available to readers and must survive extraction.</p>
+          </div>
         </section>
       </article></main></body></html>
     HTML
-    with_url_page("https://dev.to/example/community-update", focal) do |page|
-      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
-      expect(payload["contentType"]).to eq("article")
-      expect(payload["markdown"]).to include("The focal article body", "Alice: This longer comment", "Bob: Another longer comment")
+
+    [false, true].each do |reader_mode|
+      with_url_page("https://dev.to/example/community-update", focal) do |page|
+        payload = FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+        expect(payload["contentType"]).to eq("article")
+        expect(payload["markdown"]).to include("The focal article body", "Alice: This longer comment", "Bob: Another longer comment", "Restored visible comment")
+        expect(payload["markdown"]).not_to include("Hidden comment text", "Hidden parent text")
+      end
     end
   end
 

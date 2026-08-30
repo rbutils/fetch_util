@@ -112,6 +112,21 @@
     return commentText > 0 && commentText >= total * 0.7;
   }
 
+  function visibleCommentMarkup(root) {
+    var containers = [];
+    root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]").forEach(function(node) {
+      if (!node.querySelector("p, li, [class*='body' i]")) return;
+      if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
+    });
+    return containers.map(function(node) {
+      return visibilityPrunedClone(node, document);
+    }).filter(function(node) {
+      return normalizeText(node.textContent || "").length >= 40;
+    }).map(function(node) {
+      return node.outerHTML;
+    }).join("");
+  }
+
   function cleanupGenericArticleRoot(root) {
     if (!root || !root.querySelectorAll) return root;
 

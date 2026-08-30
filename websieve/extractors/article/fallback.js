@@ -74,7 +74,7 @@
 
     var node = best && best.score > -Infinity ? best.node : document.body;
     var clone = cleanClone(visibilityPrunedClone(node, document));
-    var comments = fallbackFocalArticleRoot(clone) ? fallbackCommentMarkup(document) : "";
+    var comments = fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "";
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
     prepareFallbackInlineProse(clone);
@@ -102,15 +102,6 @@
       return !node.closest("#comments, .comments, .comment-list, [class*='comment' i], [id*='comment' i]");
     }).map(function(node) { return normalizeText(node.textContent); }).join(" ") : "";
     return !!title && body.length >= 40;
-  }
-
-  function fallbackCommentMarkup(root) {
-    var containers = [];
-    root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]").forEach(function(node) {
-      if (!node.querySelector("p, li, [class*='body' i]") || normalizeText(node.textContent || "").length < 40) return;
-      if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
-    });
-    return containers.map(function(node) { return node.outerHTML; }).join("");
   }
 
   function prepareFallbackInlineProse(root) {

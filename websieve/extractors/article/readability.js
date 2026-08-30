@@ -2,7 +2,7 @@
     if (typeof Readability !== "function") return null;
 
     try {
-      var comments = commentMarkup(document);
+      var comments = visibleCommentMarkup(document);
       var clone = safeReadableDocumentClone();
       pruneHiddenClone(document.documentElement, clone.documentElement);
       if (commentOnlyRoot(clone)) return null;
@@ -40,15 +40,6 @@
       return !node.closest("#comments, .comments, .comment-list, [class*='comment' i], [id*='comment' i]");
     }).map(function(node) { return normalizeText(node.textContent); }).join(" ");
     return !!title && body.length >= 40;
-  }
-
-  function commentMarkup(root) {
-    var containers = [];
-    root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]").forEach(function(node) {
-      if (!node.querySelector("p, li, [class*='body' i]") || normalizeText(node.textContent || "").length < 40) return;
-      if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
-    });
-    return containers.map(function(node) { return node.outerHTML; }).join("");
   }
 
   function prepareInlineArticleProse(root) {
