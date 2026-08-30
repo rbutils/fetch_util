@@ -86,9 +86,9 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     expect(client.send(:headers).keys + client.send(:headers).values).to all(be_frozen)
   end
 
-  it "preserves a successful response when connection cleanup fails" do
+  it "preserves a successful response when TLS connection cleanup fails" do
     http = streaming_http(response("ok"))
-    allow(http).to receive(:finish).and_raise(SocketError, "close failed")
+    allow(http).to receive(:finish).and_raise(OpenSSL::SSL::SSLError, "tls shutdown failed")
     allow(Net::HTTP).to receive(:start).and_return(http)
     client = described_class.new(timeout: 1)
 
@@ -112,10 +112,10 @@ RSpec.describe FetchUtil::HttpRedirectClient do
     expect(Net::HTTP).to have_received(:start).twice
   end
 
-  it "preserves a request error when connection cleanup also fails" do
+  it "preserves a request error when TLS connection cleanup also fails" do
     http = instance_double(Net::HTTP, started?: true)
     allow(http).to receive(:request).and_raise(FetchUtil::Error, "request failed")
-    allow(http).to receive(:finish).and_raise(SocketError, "close failed")
+    allow(http).to receive(:finish).and_raise(OpenSSL::SSL::SSLError, "tls shutdown failed")
     allow(Net::HTTP).to receive(:start).and_return(http)
     client = described_class.new(timeout: 1)
 

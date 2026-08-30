@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "net/http"
+require "openssl"
 require "timeout"
 require "uri"
 
@@ -9,6 +10,7 @@ module FetchUtil
     REDIRECT_LIMIT = 5
     MAX_RESPONSE_BYTES = 10 * 1024 * 1024
     TRANSIENT_ERRORS = [EOFError, IOError, SocketError, SystemCallError, Timeout::Error].freeze
+    CLEANUP_ERRORS = (TRANSIENT_ERRORS + [OpenSSL::SSL::SSLError]).freeze
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
 
     def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES)
@@ -104,14 +106,14 @@ module FetchUtil
     def close_connection(uri, connections)
       key = [uri.scheme, uri.host, uri.port]
       connections.delete(key)&.finish
-    rescue *TRANSIENT_ERRORS
+    rescue *CLEANUP_ERRORS
       nil
     end
 
     def close_connections(connections)
       connections.each_value do |http|
         http.finish if http.started?
-      rescue *TRANSIENT_ERRORS
+      rescue *CLEANUP_ERRORS
         nil
       end
     ensure
