@@ -112,7 +112,10 @@
     }
 
     Array.prototype.forEach.call((root || document).querySelectorAll(selector), function(node) {
-      var text = normalizeText(node.textContent || "").replace(/\s*(additional charge|extra fee)$/i, "");
+      var visibleNode = visibilityPrunedClone(node, document);
+      if (!visibleNode) return;
+
+      var text = normalizeText(visibleNode.textContent || "").replace(/\s*(additional charge|extra fee)$/i, "");
       if (!text || amenityGarbageText(text) || seen[text.toLowerCase()]) return;
       seen[text.toLowerCase()] = true;
       items.push(text);
@@ -133,7 +136,10 @@
     if (!descriptionRoot && structuredDescription) return structuredDescription;
     if (!descriptionRoot) return "";
 
-    var clone = cleanClone(descriptionRoot);
+    var visibleDescription = visibilityPrunedClone(descriptionRoot, document);
+    if (!visibleDescription) return structuredDescription;
+
+    var clone = cleanClone(visibleDescription);
     cleanupAgentRoot(clone);
     removeAll(clone, "nav, header, footer, aside, form, script, style, noscript, button, [role='button']");
     var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML));
