@@ -182,14 +182,15 @@ module FetchUtil
     end
 
     def fetch(url)
+      requested_url = url.dup.freeze
       t0 = monotonic_now
       pending_connection_retries = 0
 
       begin
-        transport_url = FetchUtil.normalize_url(url)
+        transport_url = FetchUtil.normalize_url(requested_url)
         parse_http_uri(transport_url)
 
-        if (pdf_result = direct_pdf_result(transport_url, requested_url: url))
+        if (pdf_result = direct_pdf_result(transport_url, requested_url: requested_url))
           return pdf_result
         end
 
@@ -199,12 +200,12 @@ module FetchUtil
             sleep Browser::PRE_EXTRACTION_SETTLE_WAIT
             payload = @extractor.extract(page)
           end
-          build_result(url, page.current_url, payload)
+          build_result(requested_url, page.current_url, payload)
         end
         fallback = seznam_cmp_redirect_fallback_candidate?(transport_url, result) ? @raw_docs_fallback.fetch(transport_url) : nil
         fallback ||= docs_fallback_candidate?(transport_url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(transport_url) : nil
         fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
-        result = fallback_result(url, fallback) if fallback
+        result = fallback_result(requested_url, fallback) if fallback
         result
       rescue BrowserError, ExtractionError => e
         if e.is_a?(BrowserError) && pending_connections_error?(e) && pending_connection_retries < PENDING_CONNECTIONS_FETCH_RETRIES
@@ -215,15 +216,15 @@ module FetchUtil
 
         fallback = docs_fallback_candidate?(transport_url) ? @raw_docs_fallback.fetch(transport_url) : nil
         if fallback
-          result = fallback_result(url, fallback)
+          result = fallback_result(requested_url, fallback)
           return result
         end
 
-        return network_error_result(url, e) if e.is_a?(BrowserError) && network_error?(e)
+        return network_error_result(requested_url, e) if e.is_a?(BrowserError) && network_error?(e)
 
         raise e
       ensure
-        log_request(url, t0)
+        log_request(requested_url, t0)
       end
     end
 

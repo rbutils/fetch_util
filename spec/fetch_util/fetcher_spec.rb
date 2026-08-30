@@ -25,6 +25,24 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.suspect).to eq(false)
   end
 
+  it 'owns the requested URL throughout deferred fetching' do
+    requested_url = +'https://example.com/input'
+    log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(browser).to receive(:with_page).with('https://example.com/input') do |_url, &block|
+      requested_url.replace('https://mutated.example.test/')
+      block.call(page)
+    end
+    allow(extractor).to receive(:extract).with(page).and_return(payload)
+
+    result = fetch_with_dependencies(requested_url, request_log: log)
+
+    expect(result.url).to eq('https://example.com/input')
+    expect(result.warnings).not_to include('cross_domain_redirect')
+    expect(log).to have_received(:append).with('https://example.com/input', duration: a_value >= 0)
+    expect(requested_url).to eq('https://mutated.example.test/')
+    expect(requested_url).not_to be_frozen
+  end
+
   it 'retries an article extraction for a public Telegram focal preview' do
     telegram_url = 'https://t.me/s/examplechannel/42'
     telegram_page = page_at(telegram_url)
