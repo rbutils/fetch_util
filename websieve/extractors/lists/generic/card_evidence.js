@@ -182,6 +182,7 @@
       var label = headers[cellsAreLogical ? index : headerIndex] || "";
       if (!cellsAreLogical) headerIndex += tableIndexSpan(cell, "colSpan", "colspan");
       var value = listTableCellText(cell);
+      if (genericListControlText(label) || genericListControlMetadataText(value)) return "";
       var titleIndex = value.indexOf(title);
       if (titleIndex !== -1) value = normalizeText(value.slice(0, titleIndex) + " " + value.slice(titleIndex + title.length));
       if (!value) return "";

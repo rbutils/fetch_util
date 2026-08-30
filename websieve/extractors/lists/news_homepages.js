@@ -3,7 +3,9 @@
     return normalizeText(heading ? heading.textContent : link.textContent);
   }
   function searchItemDetail(node, title) {
-    var detail = normalizeText(node && node.textContent).replace(normalizeText(title), "").replace(/\s*[|·]\s*/g, " - ");
+    var clone = node && node.cloneNode ? node.cloneNode(true) : node;
+    pruneGenericListControls(clone);
+    var detail = normalizeText(clone && clone.textContent).replace(normalizeText(title), "").replace(/\s*[|·]\s*/g, " - ");
     detail = detail
       .replace(/Only include results for this site.*$/i, "")
       .replace(/This search result is provided by Google Learn more Report result/gi, "")

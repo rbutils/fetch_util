@@ -10,6 +10,64 @@
     });
   }
 
+  function genericListControlText(text) {
+    return /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(normalizeText(text || ""));
+  }
+
+  function genericListControlSegments(text) {
+    return normalizeText(text || "").split(/\s+(?:[-–—|·])\s+/).map(function(segment) {
+      return normalizeText(segment).replace(/^[([]+\s*/, "").replace(/\s*[)\]]+$/, "");
+    }).filter(Boolean);
+  }
+
+  function genericListControlMetadataSegment(text) {
+    var match = normalizeText(text || "").match(/^(?:last post|first unread)(.*)$/i);
+    if (!match) return false;
+
+    var detail = normalizeText(match[1]).replace(/^\s*:\s*/, "");
+    if (!detail) return true;
+    if (/^by\s+\S+$/i.test(detail)) return true;
+    if (/^(?:at|on)\s+(?:today|yesterday|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}:\d{2}(?:\s*[ap]m)?)$/i.test(detail)) return true;
+    var timestamp = "(?:today|yesterday|\\d+(?:\\.\\d+)?\\s*(?:s|m|h|d|w|seconds?|minutes?|hours?|days?|weeks?|months?|years?)\\s+ago|\\d{1,2}:\\d{2}(?:\\s*[ap]m)?)";
+    return new RegExp("^(?:" + timestamp + "(?:\\s+by\\s+\\S+)?|by\\s+\\S+\\s+(?:at\\s+)?" + timestamp + ")$", "i").test(detail);
+  }
+
+  function genericListMetricSegment(text) {
+    return /^\d+(?:\.\d+)?\s*(?:comments?|repl(?:y|ies)|posts?|points?|likes?|views?)$/i.test(normalizeText(text || ""));
+  }
+
+  function genericListControlMetadataText(text) {
+    var segments = genericListControlSegments(text);
+    return segments.length > 0 && segments.every(function(segment) {
+      return genericListMetricSegment(segment) || genericListControlMetadataSegment(segment);
+    });
+  }
+
+  function stripGenericListControlPhrases(text) {
+    var normalized = normalizeText(text || "");
+    var separator = /\s+(?:[-–—|·])\s+/;
+    var segments = normalized.split(separator);
+    var filtered = segments.filter(function(segment) {
+      var comparable = genericListControlSegments(segment).join(" ");
+      return !genericListControlText(comparable) && !genericListControlMetadataSegment(comparable);
+    });
+    if (filtered.length === segments.length) return normalized;
+
+    var delimiter = normalized.match(separator);
+    return normalizeText(filtered.join(delimiter ? delimiter[0] : " - "));
+  }
+
+  function pruneGenericListControls(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll("*").forEach(function(node) {
+      var text = node.textContent || node.getAttribute("aria-label") || "";
+      var structuredText = Array.prototype.map.call(node.childNodes || [], function(child) {
+        return child.textContent || "";
+      }).join(" ");
+      if (genericListControlText(text) || genericListControlMetadataText(text) || genericListControlMetadataText(structuredText)) node.remove();
+    });
+  }
+
   function genericListCardBoundary(node) {
     if (!node || !node.matches || !node.matches(genericListCardSelector())) return false;
     if (genericListPresentationCardNode(node)) return false;
@@ -61,10 +119,11 @@
   function genericListCardText(node) {
     if (!node || !node.cloneNode) return "";
     var clone = node.cloneNode(true);
+    pruneGenericListControls(clone);
     clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
       if (genericListFieldBoundary(nested)) nested.remove();
     });
-    return normalizeText(clone.textContent || "");
+    return stripGenericListControlPhrases(clone.textContent || "");
   }
 
   function genericListNestedCard(node) {

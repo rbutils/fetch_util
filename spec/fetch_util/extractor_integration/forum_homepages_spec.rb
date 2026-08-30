@@ -19,7 +19,15 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
           </header>
           <main>
             <div class="topic-list">
-              <div class="topic-list-item"><h3><a href="/t/how-to-use-ractors-in-ruby-3/1234">How to use Ractors in Ruby 3</a></h3><span>42 replies - Last post 2h ago</span></div>
+              <div class="topic-list-item">
+                <h3><a href="/t/how-to-use-ractors-in-ruby-3/1234">How to use Ractors in Ruby 3</a></h3>
+                <span>42 replies – (Last post: 2h ago)</span>
+                <span><span>Last Post</span><span>7h ago</span><span>by alice</span></span>
+                <p>In my last post I explained actor isolation.</p>
+                <p>Last post at the conference was about actor isolation.</p>
+                <p>New thread by me discusses memory models.</p>
+                <p>Quick reply on this matter would be appreciated.</p>
+              </div>
               <div class="topic-list-item"><h3><a href="/t/best-practices-for-testing-rails-apps/1235">Best practices for testing Rails apps</a></h3><span>18 replies - Last post 5h ago</span></div>
               <div class="topic-list-item"><h3><a href="/t/understanding-ruby-memory-allocation/1236">Understanding Ruby memory allocation</a></h3><span>27 replies - Last post 1d ago</span></div>
               <div class="topic-list-item"><h3><a href="/t/migrating-from-minitest-to-rspec/1237">Migrating from Minitest to RSpec</a></h3><span>15 replies - Last post 2d ago</span></div>
@@ -44,6 +52,14 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
       expect(payload["markdown"]).not_to include("Forum Statistics")
       expect(payload["markdown"]).not_to include("Members online")
       expect(payload["markdown"]).not_to include("Categories")
+      expect(payload["markdown"]).not_to match(/\bLast post \d/i)
+      expect(payload["markdown"]).not_to include("2h ago")
+      expect(payload["markdown"]).not_to include("7h ago")
+      expect(payload["markdown"]).not_to include("by alice")
+      expect(payload["markdown"]).to include("In my last post I explained actor isolation.")
+      expect(payload["markdown"]).to include("Last post at the conference was about actor isolation.")
+      expect(payload["markdown"]).to include("New thread by me discusses memory models.")
+      expect(payload["markdown"]).to include("Quick reply on this matter would be appreciated.")
     end
   end
 
@@ -111,7 +127,7 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
         <body>
           <main>
             <table class="forumlist">
-              <tr><td><h3><a href="/forum/general-discussion/">General Discussion</a></h3><p>Talk about anything and everything</p></td><td>1,432 threads</td></tr>
+              <tr><td><h3><a href="/forum/general-discussion/">General Discussion</a></h3><p>Talk about anything and everything</p></td><td>1,432 threads</td><td>Last Post: 2h ago</td></tr>
               <tr><td><h3><a href="/forum/tech-support/">Technical Support and Troubleshooting</a></h3><p>Get help with hardware and software issues</p></td><td>876 threads</td></tr>
               <tr><td><h3><a href="/forum/marketplace/">Buy Sell Trade Marketplace</a></h3><p>Buy sell and trade with community members</p></td><td>543 threads</td></tr>
               <tr><td><h3><a href="/forum/off-topic/">Off Topic Lounge and Chat</a></h3><p>Relax and chat about non-tech topics</p></td><td>2,100 threads</td></tr>
@@ -141,6 +157,7 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
       expect(payload["markdown"]).not_to include("Board Statistics")
       expect(payload["markdown"]).not_to include("Who is online")
       expect(payload["markdown"]).not_to include("Currently active users")
+      expect(payload["markdown"]).not_to match(/\bLast Post\b/i)
     end
   end
 

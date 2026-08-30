@@ -99,7 +99,7 @@
       }
       if ((location.origin + resolvedPath) === context.currentUrl) return null;
     }
-    if (/^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(text)) return null;
+    if (genericListControlText(text)) return null;
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(url || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url || href) && text.length < 80) return null;
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
@@ -109,7 +109,7 @@
     var detail = card && card.matches && card.matches("tr") ?
       listTableRowDetail(card, text) :
       genericListCardText(detailSource).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
-    detail = detail.replace(/\b(last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)\b/gi, "").replace(/\s{2,}/g, " ").trim();
+    detail = stripGenericListControlPhrases(detail);
     if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url || href) && weatherModuleText(text + " " + detail)) return null;
     if (/\/(tv|spored)\//i.test(url || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
     var score = url ? listCandidateScore(text, url, detail, container || link.parentElement, context) : text.length + detail.length;

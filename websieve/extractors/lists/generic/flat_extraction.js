@@ -31,7 +31,7 @@
     function looksLikeMetaLink(text, href, container) {
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
       return text.length < (tableRow ? 2 : (caseRecordContext ? 3 : 18)) ||
-        /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(text) ||
+        genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
         /(?:^|[?&])(user|from|site|goto)=/i.test(href) ||
         looksLikeFooterLink(text, href) ||
@@ -80,7 +80,7 @@
         if (!primary) return;
 
         var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
-        var detail = listTableRowDetail(row, text, dataRow.cells);
+        var detail = stripGenericListControlPhrases(listTableRowDetail(row, text, dataRow.cells));
         var candidate = {
           text: text,
           url: primary.url,

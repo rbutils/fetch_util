@@ -12,7 +12,7 @@ function listItemMaterialIdentity(item, rawHref) {
 }
 
 function listDetailWithoutContext(detail, contextValues) {
-  var remaining = normalizeText(detail || "");
+  var remaining = stripGenericListControlPhrases(detail || "");
   if (!remaining) return "";
   var represented = contextValues.map(normalizeText).filter(Boolean);
   return remaining.split(/\s+(?:[-|·])\s+/).filter(function(segment) {
@@ -72,7 +72,8 @@ function listSupplementalDetail(item, contextValues, card) {
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
     if (nested !== contentCard && genericListFieldBoundary(nested)) nested.remove();
   });
-  return normalizeText(clone.textContent || "");
+  pruneGenericListControls(clone);
+  return stripGenericListControlPhrases(clone.textContent || "");
 }
 
 function cardField(card, selector) {
@@ -89,7 +90,7 @@ var listMarkdown = function(items) {
   return items.map(function(item) {
     var line = "- " + markdownLink(item.text, item.url);
     var card = item.card;
-    var rowDetail = card && card.matches && card.matches("tr") ? item.detail : "";
+    var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
     var contextValues = [
       item.category,
       item.summary,
