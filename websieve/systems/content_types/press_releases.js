@@ -40,24 +40,24 @@
     };
   }
 
-  function pressReleaseIndexPage() {
+  function pressReleaseIndexEntries() {
     var context = normalizeText([location.pathname, document.title, firstText(["main h1", "h1"])].join(" ")).toLowerCase();
-    if (!/\b(?:press releases?|news releases?|newsroom)\b/.test(context)) return false;
-    var entries = document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]");
+    if (!/\b(?:press releases?|news releases?|newsroom)\b/.test(context)) return null;
+    var entries = [];
     var dated = 0;
-    Array.prototype.forEach.call(entries, function(link) {
-      var entry = visiblePressReleaseIndexEntry(link);
-      if (entry && /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i.test(normalizeText(entry.card.textContent || ""))) dated += 1;
-    });
-    return dated >= 3;
-  }
-
-  function pressReleaseIndexContent(metadata) {
-    var items = [];
-    var seen = {};
     Array.prototype.forEach.call(document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]"), function(link) {
       var entry = visiblePressReleaseIndexEntry(link);
       if (!entry) return;
+      entries.push(entry);
+      if (/(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i.test(normalizeText(entry.card.textContent || ""))) dated += 1;
+    });
+    return dated >= 3 ? entries : null;
+  }
+
+  function pressReleaseIndexContent(metadata, entries) {
+    var items = [];
+    var seen = {};
+    entries.forEach(function(entry) {
       var card = entry.card;
       var visibleLink = entry.link;
       var title = normalizeText(visibleLink.textContent || visibleLink.getAttribute("aria-label") || "");
@@ -103,7 +103,8 @@
   }
 
   function pressReleaseContent(metadata) {
-    if (pressReleaseIndexPage()) return pressReleaseIndexContent(metadata);
+    var indexEntries = pressReleaseIndexEntries();
+    if (indexEntries) return pressReleaseIndexContent(metadata, indexEntries);
     if (!strongPressReleaseSignals(metadata)) return null;
 
     var schema = pressReleaseNode();
