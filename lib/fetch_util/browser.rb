@@ -71,6 +71,7 @@ module FetchUtil
       @browser_options = immutable_browser_option(default_opts.merge(browser_options || {}))
       @navigator_patch = build_navigator_patch
       @ferrum = nil
+      @pending_shutdown = nil
       @mutex = Mutex.new
     end
 
@@ -96,9 +97,10 @@ module FetchUtil
     # +with_page+ call will transparently launch a new process.
     def quit
       @mutex.synchronize do
-        browser = @ferrum
+        browser = @ferrum || @pending_shutdown
         @ferrum = nil
-        browser&.quit
+        @pending_shutdown = browser
+        shutdown_pending_browser
       end
     end
 
@@ -143,6 +145,7 @@ module FetchUtil
     # afterwards.
     def ensure_browser
       @mutex.synchronize do
+        shutdown_pending_browser
         return @ferrum if @ferrum
 
         browser = Ferrum::Browser.new(
@@ -162,6 +165,13 @@ module FetchUtil
         end
         raise
       end
+    end
+
+    def shutdown_pending_browser
+      return unless @pending_shutdown
+
+      @pending_shutdown.quit
+      @pending_shutdown = nil
     end
 
     def host_matches?(url, host)

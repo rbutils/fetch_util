@@ -242,18 +242,49 @@ RSpec.describe FetchUtil::Browser do
     expect(ferrum).to have_received(:quit).once
   end
 
-  it 'launches a fresh browser after shutdown fails' do
+  it 'does not launch a fresh browser while shutdown keeps failing' do
+    stale_ferrum = instance_double(Ferrum::Browser)
+    stale_page = instance_double('StaleFerrumPage')
+
+    allow(Ferrum::Browser).to receive(:new).and_return(stale_ferrum)
+    allow(stale_ferrum).to receive(:evaluate_on_new_document)
+    allow(stale_ferrum).to receive(:create_page).and_return(stale_page)
+    allow(stale_ferrum).to receive(:quit).and_raise(Ferrum::Error, 'shutdown failed')
+    stub_page_navigation(stale_page)
+    stub_page_network(stale_page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(stale_page, false)
+
+    browser = browser_with_idle
+    browser.with_page('https://example.com') {}
+
+    expect { browser.quit }.to raise_error(Ferrum::Error, 'shutdown failed')
+    expect { browser.with_page('https://example.org') {} }.to raise_error(FetchUtil::BrowserError, 'shutdown failed')
+    expect(stale_ferrum).to have_received(:quit).twice
+    expect(Ferrum::Browser).to have_received(:new).once
+  end
+
+  it 'finishes a pending shutdown before launching a fresh browser' do
     stale_ferrum = instance_double(Ferrum::Browser)
     fresh_ferrum = instance_double(Ferrum::Browser)
     stale_page = instance_double('StaleFerrumPage')
     fresh_page = instance_double('FreshFerrumPage')
+    browsers = [stale_ferrum, fresh_ferrum]
+    events = []
+    shutdown_attempts = 0
 
-    allow(Ferrum::Browser).to receive(:new).and_return(stale_ferrum, fresh_ferrum)
+    allow(Ferrum::Browser).to receive(:new) do
+      events << :launch
+      browsers.shift
+    end
     allow(stale_ferrum).to receive(:evaluate_on_new_document)
     allow(fresh_ferrum).to receive(:evaluate_on_new_document)
     allow(stale_ferrum).to receive(:create_page).and_return(stale_page)
     allow(fresh_ferrum).to receive(:create_page).and_return(fresh_page)
-    allow(stale_ferrum).to receive(:quit).and_raise(Ferrum::Error, 'shutdown failed')
+    allow(stale_ferrum).to receive(:quit) do
+      events << :shutdown
+      shutdown_attempts += 1
+      raise Ferrum::Error, 'shutdown failed' if shutdown_attempts == 1
+    end
 
     [stale_page, fresh_page].each do |page|
       stub_page_navigation(page)
@@ -266,6 +297,7 @@ RSpec.describe FetchUtil::Browser do
 
     expect { browser.quit }.to raise_error(Ferrum::Error, 'shutdown failed')
     expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
+    expect(events).to eq(%i[launch shutdown shutdown launch])
     expect(Ferrum::Browser).to have_received(:new).twice
   end
 
