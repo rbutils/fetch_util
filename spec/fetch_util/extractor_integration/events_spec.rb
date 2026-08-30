@@ -67,6 +67,33 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'excludes hidden event descriptions while preserving restored visibility' do
+    html = <<~HTML
+      <html><head><title>Visible event details</title></head><body>
+        <main class="event-detail">
+          <h1>Visible community gathering</h1>
+          <time datetime="2026-11-08T10:00:00Z">November 8, 2026 at 10:00 AM</time>
+          <div class="location">Central Hall</div>
+          <section class="description">
+            <p>EVENT:Visible description explains the complete gathering agenda and practical visitor information.</p>
+            <p style="display:none">EVENT:Display-none description must not appear.</p>
+            <div style="visibility:hidden">
+              EVENT:Inherited-hidden description must not appear.
+              <p style="visibility:visible">EVENT:Restored description remains available to every visitor.</p>
+            </div>
+          </section>
+        </main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/events/visible-gathering/1234', html) do |payload|
+      expect_content_type(payload, 'event')
+      expect(payload['markdown']).to include('EVENT:Visible description', 'EVENT:Restored description')
+      expect(payload['markdown']).not_to include('EVENT:Display-none description', 'EVENT:Inherited-hidden description')
+      expect(payload['html']).not_to include('EVENT:Display-none description', 'EVENT:Inherited-hidden description')
+    end
+  end
+
   it 'keeps conference schedule pages as rich list markdown' do
     html = fixture_contents(File.join(__dir__, '../../fixtures/rubyconf_schedule.html'))
 

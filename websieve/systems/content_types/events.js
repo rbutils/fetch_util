@@ -72,12 +72,12 @@
     if (!likelyEventDetailPage()) return null;
 
     var root = document.querySelector("main, article, [role='main'], [class*='event' i], #content") || document.body;
-    var clone = cleanClone(root);
+    var clone = cleanClone(visibilityPrunedClone(root, document));
     cleanupAgentRoot(clone);
     removeAll(clone, "nav, header, footer, aside, form, script, style, noscript, [class*='ticket' i], [class*='checkout' i], [class*='modal' i]");
 
     var descriptionRoot = root.querySelector("[data-testid*='description' i], [class*='description' i], [class*='about' i], [class*='summary' i], article, section") || root;
-    var descriptionClone = cleanClone(descriptionRoot);
+    var descriptionClone = cleanClone(visibilityPrunedClone(descriptionRoot, document));
     cleanupAgentRoot(descriptionClone);
     removeAll(descriptionClone, "nav, header, footer, aside, form, script, style, noscript, [class*='ticket' i], [class*='checkout' i]");
 
