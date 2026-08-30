@@ -124,16 +124,24 @@ module FetchUtil
       raise ArgumentError, "#{name} must be nonnegative"
     end
 
-    def immutable_browser_option(value)
+    def immutable_browser_option(value, memo = {}.compare_by_identity)
+      return memo[value] if memo.key?(value)
+
       case value
       when String
-        value.dup.freeze
+        memo[value] = value.dup.freeze
       when Array
-        value.map { |item| immutable_browser_option(item) }.freeze
+        owned = []
+        memo[value] = owned
+        value.each { |item| owned << immutable_browser_option(item, memo) }
+        owned.freeze
       when Hash
-        value.each_with_object({}) do |(key, item), owned|
-          owned[immutable_browser_option(key)] = immutable_browser_option(item)
-        end.freeze
+        owned = {}
+        memo[value] = owned
+        value.each do |key, item|
+          owned[immutable_browser_option(key, memo)] = immutable_browser_option(item, memo)
+        end
+        owned.freeze
       else
         value
       end

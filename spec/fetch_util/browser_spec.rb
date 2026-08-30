@@ -127,6 +127,20 @@ RSpec.describe FetchUtil::Browser do
     browser&.quit
   end
 
+  it 'owns cyclic browser option containers' do
+    nested = {}
+    nested['self'] = nested
+    options = { 'nested' => nested }
+
+    browser = described_class.new(browser_options: options)
+    owned_nested = browser.instance_variable_get(:@browser_options).fetch('nested')
+
+    expect(owned_nested.fetch('self')).to equal(owned_nested)
+    expect(owned_nested).to be_frozen
+    expect(nested).not_to be_frozen
+    expect(options).not_to be_frozen
+  end
+
   it 'normalizes non-ascii urls before navigation' do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
