@@ -41,6 +41,7 @@ RSpec.describe "extract asset bundle" do
     package = File.join(root, "node_modules", "terser", "package.json")
     FileUtils.mkdir_p([File.dirname(binary), File.dirname(package)])
     File.write(binary, "")
+    FileUtils.chmod(0o755, binary)
     File.write(package, JSON.generate("version" => version))
     binary
   end
@@ -656,6 +657,34 @@ RSpec.describe "extract asset bundle" do
       _stdout, stderr, status = run_build_script(root: root, env: env)
       expect(status.success?).to be(true), stderr
       install_fake_terser(root, version: "0.0.0")
+
+      _stdout, stderr, status = run_build_script("--check", root: root, env: env)
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Missing local Terser 5.51.2: run `npm ci`")
+      expect(File.read(invocation_count)).to eq("x")
+    end
+  end
+
+  it "rejects a non-executable Terser before accepting a cached check" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      invocation_count = File.join(root, "npx-invocations")
+      FileUtils.mkdir_p(bin_dir)
+      binary = install_fake_terser(root)
+      File.write(
+        File.join(bin_dir, "npx"),
+        "#!/bin/sh\nprintf x >> \"$NPX_INVOCATIONS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
+      )
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      env = {
+        "NPX_INVOCATIONS" => invocation_count,
+        "PATH" => [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+      }
+
+      _stdout, stderr, status = run_build_script(root: root, env: env)
+      expect(status.success?).to be(true), stderr
+      FileUtils.chmod(0o644, binary)
 
       _stdout, stderr, status = run_build_script("--check", root: root, env: env)
 

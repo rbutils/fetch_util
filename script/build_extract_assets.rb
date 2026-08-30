@@ -66,7 +66,7 @@ rescue Errno::ENOENT, JSON::ParserError, KeyError
 end
 
 def verify_terser_installation
-  return if LOCAL_TERSER.file? && installed_terser_version == TERSER_VERSION
+  return if LOCAL_TERSER.file? && LOCAL_TERSER.executable? && installed_terser_version == TERSER_VERSION
 
   abort("Missing local Terser #{TERSER_VERSION}: run `npm ci`")
 end
