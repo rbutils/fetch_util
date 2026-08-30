@@ -30,14 +30,24 @@
     return releaseWords && (newsroomHost || corporateReleaseRoute || dateline) && (!investorRelationsContext || dateline);
   }
 
+  function visiblePressReleaseIndexEntry(link) {
+    if (elementVisuallyHidden(link)) return null;
+    var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
+    if (!card) return null;
+    return {
+      card: visibilityPrunedClone(card, document),
+      link: visibilityPrunedClone(link, document)
+    };
+  }
+
   function pressReleaseIndexPage() {
     var context = normalizeText([location.pathname, document.title, firstText(["main h1", "h1"])].join(" ")).toLowerCase();
     if (!/\b(?:press releases?|news releases?|newsroom)\b/.test(context)) return false;
     var entries = document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]");
     var dated = 0;
     Array.prototype.forEach.call(entries, function(link) {
-      var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
-      if (card && /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i.test(normalizeText(card.textContent || ""))) dated += 1;
+      var entry = visiblePressReleaseIndexEntry(link);
+      if (entry && /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i.test(normalizeText(entry.card.textContent || ""))) dated += 1;
     });
     return dated >= 3;
   }
@@ -46,10 +56,13 @@
     var items = [];
     var seen = {};
     Array.prototype.forEach.call(document.querySelectorAll("article a[href], [class*='release' i] a[href], [class*='news' i] a[href]"), function(link) {
-      var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
-      var title = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+      var entry = visiblePressReleaseIndexEntry(link);
+      if (!entry) return;
+      var card = entry.card;
+      var visibleLink = entry.link;
+      var title = normalizeText(visibleLink.textContent || visibleLink.getAttribute("aria-label") || "");
       var date = normalizeText((card && card.querySelector("time, [class*='date' i]")) ? card.querySelector("time, [class*='date' i]").textContent : "");
-      var href = (link.getAttribute("href") || "").trim();
+      var href = (visibleLink.getAttribute("href") || "").trim();
       var url = href.charAt(0) === "#" ? "" : materializedHttpUrl(href);
       if (!title || !date || !url || seen[url]) return;
       seen[url] = true;
@@ -99,7 +112,7 @@
     var description = entityText(schema && schema.description) || metadata.excerpt;
     var publishedTime = entityText(schema && (schema.datePublished || schema.dateModified)) || metadata.publishedTime || null;
     var byline = entityName(schema && (schema.author || schema.publisher)) || metadata.byline || null;
-    var clone = root ? cleanClone(root) : document.createElement("div");
+    var clone = root ? cleanClone(visibilityPrunedClone(root, document)) : document.createElement("div");
 
     if (!root && schema) {
       var schemaBody = entityText(schema.articleBody || schema.text || schema.description);

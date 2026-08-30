@@ -64,6 +64,29 @@ RSpec.describe 'FetchUtil press release extraction' do
     end
   end
 
+  it 'excludes hidden press release body content while preserving restored visibility' do
+    html = <<~HTML
+      <html><head><title>Example Systems announces visibility update</title></head><body><main>
+        <article class="press-release"><h1>Example Systems announces visibility update</h1>
+          <p>PRESS:Visible opening describes the synthetic release, its documented rollout, and the operating practices used by the example team across every supported region.</p>
+          <p>PRESS:Visible detail provides enough substantive release context for deterministic body qualification while explaining the example launch schedule and support model.</p>
+          <p style="display:none">PRESS:Display-none body must not appear in public output.</p>
+          <div style="visibility:hidden">
+            PRESS:Inherited-hidden body must not appear in public output.
+            <p style="visibility:visible">PRESS:Restored body remains available as substantive release context for every reader.</p>
+          </div>
+        </article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://company.example.test/newsroom/press-release/visibility-update', html) do |payload|
+      expect_content_type(payload, 'press_release')
+      expect(payload['markdown']).to include('PRESS:Visible opening', 'PRESS:Restored body')
+      expect(payload['markdown']).not_to include('PRESS:Display-none body', 'PRESS:Inherited-hidden body')
+      expect(payload['html']).not_to include('PRESS:Display-none body', 'PRESS:Inherited-hidden body')
+    end
+  end
+
   it 'leaves a dated press release index to generic list extraction' do
     html = <<~HTML
       <html><head><title>Press releases</title></head><body><main><h1>Press releases</h1>
@@ -74,13 +97,17 @@ RSpec.describe 'FetchUtil press release extraction' do
         <article class="release"><a href="/news/two">Reports results</a><time>July 2, 2026</time></article>
         <article class="release"><a href="/news/three">Announces expansion</a><time>July 3, 2026</time></article>
         <article class="release"><a href="/news/four">Opens new office</a><time>July 4, 2026</time></article>
+        <article class="release" style="display:none"><a href="/news/hidden">Hidden release</a><time>July 5, 2026</time></article>
+        <article class="release" style="visibility:hidden"><a style="visibility:visible" href="/news/restored">Restored release</a><time style="visibility:visible">July 6, 2026</time></article>
       </main></body></html>
     HTML
 
     extract_from_url('https://news.example.test/press-releases', html) do |payload|
       expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Launches new service')
+      expect(payload['markdown']).to include('Restored release')
       expect(payload['markdown']).not_to include('Jump to archive', 'Open release dialog', 'Email the newsroom')
+      expect(payload['markdown']).not_to include('Hidden release')
       expect(payload['markdown']).not_to include('javascript:', 'mailto:', '#archive')
       expect(payload['markdown']).not_to include('Price:')
     end
