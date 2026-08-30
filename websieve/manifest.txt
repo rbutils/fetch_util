@@ -5,6 +5,7 @@ core/metadata/visible_metadata.js
 core/metadata/structured_data.js
 classifiers/list_pages/card_ownership.js
 markdown/lists.js
+markdown/inventory.js
 core/metadata/content_results.js
 core/metadata/collect.js
 core/noise_patterns.js
@@ -134,6 +135,7 @@ profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
+profiles/community/github_thread_shared.js
 profiles/community/github_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js

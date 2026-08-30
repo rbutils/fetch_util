@@ -1,0 +1,47 @@
+<html>
+<head><title>Modern pull request · octo/example · GitHub</title></head>
+<body>
+  <main data-testid="issue-viewer-container">
+    <h1 data-testid="issue-title">Modern pull request</h1>
+    <span data-testid="issue-comment-count">1 comment</span>
+    <div data-testid="timeline-row-border-OPENING">
+      <section data-testid="issue-body">
+        <a data-testid="issue-body-header-author" href="/maintainer">maintainer</a>
+        <a data-testid="issue-body-header-link" href="#issue-4200"><relative-time datetime="2026-08-02T09:00:00Z">Aug 2</relative-time></a>
+        <div data-testid="markdown-body"><p>Opening pull request body appears exactly once.</p></div>
+      </section>
+    </div>
+    <section data-testid="issue-timeline-container">
+      <div data-testid="timeline-row-border-REVIEW1">
+        <a data-testid="avatar-link" href="/reviewer">reviewer</a>
+        <a href="#pullrequestreview-4201"><relative-time datetime="2026-08-02T09:10:00Z">Aug 2</relative-time></a>
+        <div data-testid="markdown-body"><p>Review summary preserves the complete rationale.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-INLINE1">
+        <a data-testid="avatar-link" href="/inline-reviewer">inline-reviewer</a>
+        <a href="#discussion_r4202"><relative-time datetime="2026-08-02T09:15:00Z">Aug 2</relative-time></a>
+        <div data-testid="markdown-body"><p>Inline review thread preserves its code discussion.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-EVENT2">
+        <a data-testid="actor-link" href="/maintainer">maintainer</a>
+        marked this pull request ready for review
+        <a href="#event-4203"><relative-time datetime="2026-08-02T09:20:00Z">Aug 2</relative-time></a>
+      </div>
+      <div data-testid="timeline-row-border-COMMENT3">
+        <a data-testid="avatar-link" href="/commenter">commenter</a>
+        <a href="#issuecomment-4204"><relative-time datetime="2026-08-02T09:25:00Z">Aug 2</relative-time></a>
+        <div data-testid="markdown-body"><p>Responsive comment appears once.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-COMMENT3-COPY">
+        <a data-testid="avatar-link" href="/commenter">commenter</a>
+        <a href="#issuecomment-4204"><relative-time datetime="2026-08-02T09:25:00Z">Aug 2</relative-time></a>
+        <div data-testid="markdown-body"><p>Responsive comment appears once.</p></div>
+      </div>
+    </section>
+    <div data-testid="issue-timeline-load-more-wrapper-load-top">
+      <button data-testid="issue-timeline-load-more-load-top" disabled>Stale load more</button>
+    </div>
+    <a rel="next" aria-disabled="true" href="?timeline_page=7">Disabled continuation</a>
+  </main>
+</body>
+</html>

@@ -49,6 +49,91 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('not a URL')).to be_nil
   end
 
+  it 'routes only GitHub thread roots through timeline stabilization' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://github.com/octo/example/issues/12')).to eq(:stabilize_github_thread)
+    expect(strategy_for.call('https://github.com/octo/example/pull/42')).to eq(:stabilize_github_thread)
+    expect(strategy_for.call('https://github.com/octo/example/discussions/9')).to eq(:stabilize_github_thread)
+    expect(strategy_for.call('https://github.com/octo/example/pull/42/files')).to be_nil
+    expect(strategy_for.call('https://github.com/octo/example')).to be_nil
+  end
+
+  it 'waits for a GitHub timeline after its opening body appears' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    scripts = []
+    states = [
+      { "ready" => false, "complete" => false, "signature" => "1:0:4 comments:false" },
+      { "ready" => true, "complete" => false, "signature" => "4:1:4 comments:false" },
+      { "ready" => true, "complete" => false, "signature" => "4:1:4 comments:false" },
+      { "ready" => true, "complete" => false, "signature" => "4:1:4 comments:false" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do |_page, script, default:|
+      scripts << script
+      states.shift || { "ready" => true, "complete" => false, "signature" => "4:1:4 comments:false" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    browser.send(:stabilize_github_thread, page)
+
+    expect(scripts.first).to include(
+      'const commentRows',
+      '#issuecomment-',
+      'a[rel~="next"][href*="timeline_page="]',
+      'button[data-testid*="timeline-load-more"]',
+      "control.getAttribute('aria-disabled') === 'true'",
+      'usableContinuation',
+      'complete: false'
+    )
+    expect(scripts.first).not_to include('commentRows.length >= expected')
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'requires an unknown-size GitHub timeline to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    state = { "ready" => true, "complete" => false, "signature" => "3::false" }
+
+    allow(browser).to receive(:safe_evaluate).and_return(state)
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    browser.send(:stabilize_github_thread, page)
+
+    expect(browser).to have_received(:safe_evaluate).exactly(3).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'restarts GitHub stability when a continuation becomes usable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "ready" => true, "complete" => false, "signature" => "1:1:1 comment:false" },
+      { "ready" => true, "complete" => false, "signature" => "1:1:1 comment:true" },
+      { "ready" => true, "complete" => false, "signature" => "1:1:1 comment:true" },
+      { "ready" => true, "complete" => false, "signature" => "1:1:1 comment:true" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do
+      states.shift || { "ready" => true, "complete" => false, "signature" => "1:1:1 comment:true" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    browser.send(:stabilize_github_thread, page)
+
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
   it 'stabilizes a simple page fixture without the generic consent wait' do
     page = instance_double(Ferrum::Browser)
     network = instance_double('FerrumNetwork')

@@ -1,0 +1,53 @@
+<html>
+<head><title>Modern issue inventory · octo/example · GitHub</title></head>
+<body>
+  <main data-testid="issue-viewer-container">
+    <h1 data-testid="issue-title">Modern issue inventory</h1>
+    <span data-testid="issue-comment-count">3 comments</span>
+    <section data-testid="issue-body">
+      <a data-testid="issue-body-header-author" href="/octocat">octocat</a>
+      <a data-testid="issue-body-header-link" href="#issue-1200"><relative-time datetime="2026-08-01T10:00:00Z">Aug 1</relative-time></a>
+      <div data-testid="markdown-body"><p>Opening body for the modern issue. <a href="/octo/example/issues/12?timeline_page=9">UNOWNEDTIMELINELINK</a></p></div>
+      <span data-testid="reaction-count">5</span>
+    </section>
+    <section data-testid="issue-timeline-container">
+      <div data-testid="timeline-row-border-EVENT1">
+        <a data-testid="actor-link" href="/octocat">octocat</a>
+        labeled this as <a href="/octo/example/labels/fidelity">fidelity</a>
+        <a href="#event-1201"><relative-time datetime="2026-08-01T10:05:00Z">Aug 1</relative-time></a>
+      </div>
+      <div data-testid="timeline-row-border-COMMENT1">
+        <div data-testid="comment-viewer-outer-box-COMMENT1" id="issuecomment-1202">
+          <a data-hovercard-type="user" href="/hubot"><img alt="@hubot"></a>
+          <a data-testid="avatar-link" href="/hubot">hubot</a>
+          <a href="#issuecomment-1202"><relative-time datetime="2026-08-01T10:10:00Z">Aug 1</relative-time></a>
+          <div data-testid="markdown-body"><p>First modern comment keeps its <a href="/octo/example/issues/8">reference</a>.</p></div>
+          <div data-testid="markdown-body"><p>Grouped reply remains in the same timeline row.</p></div>
+          <div data-testid="markdown-body"><p>Repeated grouped reply.</p></div>
+          <div data-testid="markdown-body"><p>Repeated grouped reply.</p></div>
+          <span hidden>Hidden child must not leak into HTML.</span>
+        </div>
+      </div>
+      <div data-testid="timeline-row-border-HIDDEN" style="display: none">
+        <a data-testid="avatar-link">hidden-user</a>
+        <div data-testid="markdown-body"><p>Hidden modern comment must not render.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-COMMENT2">
+        <div data-testid="comment-viewer-outer-box-COMMENT2" id="issuecomment-1203">
+          <a data-testid="avatar-link" href="/reviewer">reviewer</a>
+          <a href="#issuecomment-1203"><relative-time datetime="2026-08-01T10:15:00Z">Aug 1</relative-time></a>
+          <div data-testid="markdown-body"><p>Second modern comment remains in DOM order.</p></div>
+        </div>
+      </div>
+    </section>
+    <div data-testid="issue-timeline-load-more-wrapper-load-top">
+      <a rel="next" href="?timeline_page=1">7 remaining items</a>
+    </div>
+    <aside data-testid="sticky-sidebar">
+      <section data-testid="sidebar-assignees-section"><h3>Assignees</h3><a href="/maintainer">maintainer</a></section>
+      <section data-testid="sidebar-labels-section"><h3>Labels</h3><a href="/octo/example/labels/fidelity">fidelity</a></section>
+      <section data-testid="sidebar-milestones-section"><h3>Milestone</h3><a href="/octo/example/milestone/1">Complete fidelity</a></section>
+    </aside>
+  </main>
+</body>
+</html>

@@ -208,6 +208,19 @@ RSpec.describe "extract asset bundle" do
     expect(list_source.index("function cardField")).to be < renderer_index
   end
 
+  it "loads browsable inventories and GitHub thread primitives before their consumers" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    inventory_path = "markdown/inventory.js"
+    shared_path = "profiles/community/github_thread_shared.js"
+    thread_path = "profiles/community/github_threads.js"
+
+    expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
+    expect(File.read(File.join(source_root, shared_path))).to include("function githubResourceRoute")
+    expect(manifest.index(inventory_path)).to be < manifest.index(thread_path)
+    expect(manifest.index(shared_path)).to be < manifest.index(thread_path)
+  end
+
   it "keeps relocated definitions before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
