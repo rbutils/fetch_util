@@ -95,4 +95,17 @@ RSpec.describe FetchUtil::Extractor do
       expect(JSON).to have_received(:generate).once
     end
   end
+
+  it 'owns the asset root used by later extraction' do
+    with_asset_root do |asset_root|
+      extractor = described_class.new(asset_root: asset_root)
+      asset_root.replace('/missing/assets')
+      allow(page).to receive(:add_script_tag).and_raise(Ferrum::TimeoutError)
+      allow(page).to receive(:evaluate) do |script|
+        script.match?(/window\.FetchUtilExtract\.extract/) ? { 'markdown' => 'Hello' } : true
+      end
+
+      expect(extractor.extract(page)).to include('markdown' => 'Hello')
+    end
+  end
 end

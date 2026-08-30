@@ -20,7 +20,7 @@ module FetchUtil
 
     def initialize(reader_mode: true, asset_root: nil)
       @reader_mode = reader_mode
-      @asset_root = asset_root || File.join(__dir__, "assets")
+      @asset_root = (asset_root || File.join(__dir__, "assets")).dup.freeze
       @extraction_call = nil
     end
 
