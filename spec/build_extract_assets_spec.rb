@@ -958,6 +958,8 @@ RSpec.describe "extract asset bundle" do
       )
       File.write(asset, "window.fetchUtil = {};\n")
       File.write(File.join(root, "Gemfile.lock"), "dependency lock\n")
+      FileUtils.mkdir_p(File.join(root, "vendor", "bundle"))
+      File.write(File.join(root, "vendor", "bundle", "Gemfile.lock"), "nested dependency lock\n")
       FileUtils.mkdir_p(File.join(root, "node_modules", "terser"))
       File.write(File.join(root, "node_modules", "terser", "sentinel.js"), "dependency\n")
       FileUtils.mkdir_p(File.join(root, "vendor", "node_modules", "helper"))
@@ -966,7 +968,7 @@ RSpec.describe "extract asset bundle" do
       specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
 
       expect(specification.files).to include("lib/fetch_util/assets/extract.js")
-      expect(specification.files).not_to include("Gemfile.lock")
+      expect(specification.files.grep(%r{(?:\A|/)Gemfile\.lock\z})).to be_empty
       expect(specification.files.grep(%r{(?:\A|/)node_modules/})).to be_empty
     end
   end

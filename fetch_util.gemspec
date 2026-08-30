@@ -48,7 +48,8 @@ Gem::Specification.new do |spec|
 
   spec.files = tracked_files.reject do |file|
     (file == gemspec) || file.split('/').include?('node_modules') ||
-      %w[Gemfile.lock package.json package-lock.json].include?(file) || file.end_with?(".gem") ||
+      file == 'Gemfile.lock' || file.end_with?('/Gemfile.lock') ||
+      %w[package.json package-lock.json].include?(file) || file.end_with?(".gem") ||
       file.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile coverage/ pkg/ tmp/ .bundle/ .ruby-lsp/
                            script/ websieve/])
   end
