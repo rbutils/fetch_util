@@ -168,6 +168,37 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(responses.map(&:source)).to eq(%w[google bing])
   end
 
+  it "joins started source requests when a later worker cannot start" do
+    client = BarrierSearchClient.new(response(fixture("bing")))
+    transport = described_class.new(sources: %w[google bing], timeout: 5, http_client: client)
+    original_thread_new = Thread.method(:new)
+    second_attempted = Queue.new
+    spawn_count = 0
+    started_thread = nil
+    allow(Thread).to receive(:new) do |&block|
+      spawn_count += 1
+      if spawn_count == 2
+        client.started.pop
+        second_attempted << true
+        raise ThreadError, "worker unavailable"
+      end
+
+      started_thread = original_thread_new.call(&block)
+    end
+    release_thread = original_thread_new.call do
+      second_attempted.pop
+      client.release
+    end
+
+    expect { transport.search("ruby") }.to raise_error(ThreadError, "worker unavailable")
+    release_thread.join
+    expect(started_thread).not_to be_alive
+    expect(client.deadlines.length).to eq(1)
+  ensure
+    client&.release
+    release_thread&.join
+  end
+
   it "requires finite timeout budgets for construction and search overrides" do
     expect { described_class.new(timeout: Float::INFINITY) }
       .to raise_error(ArgumentError, "timeout must be positive")

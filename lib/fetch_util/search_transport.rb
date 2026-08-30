@@ -117,8 +117,14 @@ module FetchUtil
 
       deadline = clock.call + request_timeout
       responses = Array.new(sources.length)
-      threads = sources.each_with_index.map do |source, index|
-        Thread.new { responses[index] = search_source(source, query, deadline) }
+      threads = []
+      begin
+        sources.each_with_index do |source, index|
+          threads << Thread.new { responses[index] = search_source(source, query, deadline) }
+        end
+      rescue ThreadError
+        threads.each(&:join)
+        raise
       end
       threads.each(&:join)
       responses
