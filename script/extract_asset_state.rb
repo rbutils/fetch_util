@@ -50,7 +50,8 @@ module FetchUtil
       root = Pathname(project_root)
       source_root = root.join("websieve")
       manifest = source_root.join("manifest.txt")
-      return true unless manifest.file?
+      return true unless source_root.directory?
+      return false unless manifest.file?
 
       entries = manifest_entries(manifest)
       source_entries = source_root.glob("**/*.js").select(&:file?).map do |path|
