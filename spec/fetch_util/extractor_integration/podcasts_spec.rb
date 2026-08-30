@@ -56,15 +56,27 @@ RSpec.describe 'FetchUtil podcast extraction' do
     html = <<~HTML
       <html><head><title>Planet Money podcast</title></head><body><main><h1>Planet Money</h1>
         <article class="episode"><h2><a href="/episodes/one">Prices explained</a></h2><time>July 1, 2026</time></article>
+        <article class="episode" style="display:none"><h2><a href="/episodes/hidden-display">Hidden display episode</a></h2><time>July 4, 2026</time></article>
+        <article class="episode" style="visibility:hidden"><h2><a href="/episodes/hidden-visibility">Hidden visibility episode</a></h2><time>July 5, 2026</time></article>
         <article class="episode"><h2><a href="/episodes/two">The shipping puzzle</a></h2><time>July 8, 2026</time></article>
+        <article class="episode"><h2><a href="/episodes/hidden-link" style="display:none">Hidden leading link</a><a href="/episodes/four">A visible second link</a></h2><time>July 12, 2026</time></article>
         <article class="episode"><h2><a href="/episodes/three">A practical budget</a></h2><time>July 15, 2026</time></article>
+        <article class="episode" style="visibility:hidden"><h2 style="visibility:visible"><a href="/episodes/restored">Restored visibility episode</a></h2><time style="visibility:visible">July 22, 2026</time></article>
       </main></body></html>
     HTML
 
     extract_from_url('https://podcasts.example.test/podcasts/planet-money', html) do |payload|
       expect_content_type(payload, 'podcast')
       expect(payload['markdown']).to include('[Prices explained](https://podcasts.example.test/episodes/one) - July 1, 2026')
+      expect(payload['markdown']).to include('[A visible second link](https://podcasts.example.test/episodes/four) - July 12, 2026')
       expect(payload['markdown']).to include('[A practical budget](https://podcasts.example.test/episodes/three) - July 15, 2026')
+      expect(payload['markdown']).to include('[Restored visibility episode](https://podcasts.example.test/episodes/restored) - July 22, 2026')
+      expect(payload['markdown']).not_to include('Hidden display episode', 'Hidden visibility episode', 'Hidden leading link')
+      expect(payload['markdown'].scan(%r{https://podcasts\.example\.test/episodes/}).length).to eq(5)
+      expect(payload['markdown'].index('Prices explained')).to be < payload['markdown'].index('The shipping puzzle')
+      expect(payload['markdown'].index('The shipping puzzle')).to be < payload['markdown'].index('A visible second link')
+      expect(payload['markdown'].index('A visible second link')).to be < payload['markdown'].index('A practical budget')
+      expect(payload['markdown'].index('A practical budget')).to be < payload['markdown'].index('Restored visibility episode')
     end
   end
 

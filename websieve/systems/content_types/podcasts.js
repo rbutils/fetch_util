@@ -158,9 +158,10 @@
     var selectors = "[class*='episode' i], [data-testid*='episode' i], article";
     Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {
       if (card.closest("nav, header, footer, aside, [aria-hidden='true'], [hidden]")) return;
-      var link = card.querySelector("a[href]");
-      var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
-      var date = normalizeText((card.querySelector("time, [class*='date' i]") || {}).textContent || "");
+      var visibleCard = visibilityPrunedClone(card, document);
+      var link = visibleCard.querySelector("a[href]");
+      var title = normalizeText((visibleCard.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
+      var date = normalizeText((visibleCard.querySelector("time, [class*='date' i]") || {}).textContent || "");
       var href = (link && link.getAttribute("href")) || "";
       var url = materializedHttpUrl(href);
       var item = { text: title, url: url, detail: date, admission: !href || !!url };
