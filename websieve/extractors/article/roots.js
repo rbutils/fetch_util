@@ -101,6 +101,17 @@
     ];
   }
 
+  function commentOnlyRoot(root) {
+    if (!root || !root.querySelector) return false;
+    var comments = root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]");
+    if (!comments.length) return false;
+    var total = normalizeText(root.textContent || "").length;
+    var commentText = Array.prototype.reduce.call(comments, function(length, node) {
+      return Math.max(length, normalizeText(node.textContent || "").length);
+    }, 0);
+    return commentText > 0 && commentText >= total * 0.7;
+  }
+
   function cleanupGenericArticleRoot(root) {
     if (!root || !root.querySelectorAll) return root;
 

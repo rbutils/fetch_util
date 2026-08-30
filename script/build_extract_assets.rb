@@ -45,6 +45,14 @@ contents = entries.map do |entry|
 
   path.read
 end
+duplicate_callables = FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)
+unless duplicate_callables.empty?
+  details = duplicate_callables.sort.map do |name, locations|
+    "#{name}: #{locations.join(", ")}"
+  end
+  abort("Duplicate top-level callable declarations:\n#{details.join("\n")}")
+end
+
 source = contents.join("\n")
 source_digest = FetchUtil::ExtractAssetState.source_digest(entries, source)
 

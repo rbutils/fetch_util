@@ -59,6 +59,81 @@ RSpec.describe "extract asset bundle" do
     expect(stdout).to include("Verified")
   end
 
+  it "keeps one manifest owner for every top-level callable" do
+    source_root = File.join(project_root, "websieve")
+    entries = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    contents = entries.map { |entry| File.read(File.join(source_root, entry)) }
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to be_empty
+    expect(entries.filter do |entry|
+      File.read(File.join(source_root, entry)).match?(/^\s*function commentOnlyRoot\b/)
+    end).to eq(["extractors/article/roots.js"])
+  end
+
+  it "ignores same-named nested callable declarations" do
+    entries = %w[first.js second.js]
+    contents = [
+      "function firstOwner() {\n  function push() {}\n}\n",
+      "function secondOwner() {\n  function push() {}\n}\n"
+    ]
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to be_empty
+  end
+
+  it "ignores nested callables without named outer declarations" do
+    entries = %w[object.js conditional.js]
+    contents = [
+      <<~JS,
+        // File-level comments do not establish source indentation.
+          global.One = {
+            run: function() {
+              function push() {}
+            }
+          };
+      JS
+      "  if (global.enabled) {\n    function push() {}\n  }\n"
+    ]
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to be_empty
+  end
+
+  it "recognizes duplicate top-level callable forms" do
+    entries = %w[function.js binding.js class.js]
+    contents = [
+      "function sharedOwner() {}\n",
+      "const sharedOwner = async (value) => value;\n",
+      "class sharedOwner {}\n"
+    ]
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to eq(
+      "sharedOwner" => %w[function.js:1 binding.js:1 class.js:1]
+    )
+  end
+
+  it "recognizes duplicate async and generator declarations" do
+    entries = %w[async.js generator.js async_generator.js]
+    contents = [
+      "  async function sharedOwner() {}\n",
+      "  function* sharedOwner() {}\n",
+      "  async function * sharedOwner() {}\n"
+    ]
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to eq(
+      "sharedOwner" => %w[async.js:1 generator.js:1 async_generator.js:1]
+    )
+  end
+
+  it "ignores block comment indentation when locating top-level declarations" do
+    entries = %w[first.js second.js]
+    contents = entries.map do
+      "/*\nAn unstarred comment continuation.\n*/\n  function sharedOwner() {}\n"
+    end
+
+    expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to eq(
+      "sharedOwner" => %w[first.js:4 second.js:4]
+    )
+  end
+
   it "registers generic portal homepages once in the source graph" do
     registrations = Dir[File.join(project_root, "websieve", "**", "*.js")].sum do |path|
       File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
@@ -623,6 +698,26 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "rejects duplicate top-level callable owners before bundling" do
+    with_asset_project(
+      manifest: "first.js\nsecond.js\n",
+      files: {
+        "first.js" => "function duplicateOwner() {}\n",
+        "second.js" => "function duplicateOwner() {}\n"
+      }
+    ) do |root|
+      [[], ["--check"]].each do |arguments|
+        _stdout, stderr, status = run_build_script(*arguments, root: root)
+
+        expect(status.success?).to be(false)
+        expect(stderr).to include(
+          "Duplicate top-level callable declarations:\n" \
+          "duplicateOwner: first.js:1, second.js:1"
+        )
+      end
+    end
+  end
+
   it "reports a missing built asset before invoking terser in check mode" do
     with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
       bin_dir = File.join(root, "bin")
@@ -706,6 +801,46 @@ RSpec.describe "extract asset bundle" do
       File.write(File.join(source_dir, "manifest.txt"), "#{entries.join("\n")}\n")
       File.write(File.join(source_dir, "present.js"), source)
       File.write(File.join(source_dir, "extra.js"), "const extra = true;\n")
+      File.write(File.join(asset_dir, "extract.js"), output)
+      File.write(
+        File.join(asset_dir, "extract.js.sha256"),
+        "#{FetchUtil::ExtractAssetState.source_digest(entries, source)} #{Digest::SHA256.hexdigest(output)}\n"
+      )
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+      package = File.join(root, specification.file_name)
+
+      expect do
+        Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+          Dir.chdir(root) { Gem::Package.build(specification, false, false, package) }
+        end
+      end.to raise_error(
+        Gem::InvalidSpecificationException,
+        'Stale built asset: run `bundle exec rake build_extract_assets`'
+      )
+      expect(File.exist?(package)).to be(false)
+    end
+  end
+
+  it "rejects direct package builds with duplicate top-level callable owners" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      asset_dir = File.join(version_dir, "assets")
+      source_dir = File.join(root, "websieve")
+      FileUtils.mkdir_p([asset_dir, source_dir])
+      copy_gemspec_support(root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+      entries = %w[first.js second.js]
+      contents = ["function duplicateOwner() {}\n", "function duplicateOwner() {}\n"]
+      entries.zip(contents).each do |entry, content|
+        File.write(File.join(source_dir, entry), content)
+      end
+      source = contents.join("\n")
+      output = "window.fetchUtil = {};\n"
+      File.write(File.join(source_dir, "manifest.txt"), "#{entries.join("\n")}\n")
       File.write(File.join(asset_dir, "extract.js"), output)
       File.write(
         File.join(asset_dir, "extract.js.sha256"),
