@@ -47,10 +47,10 @@
 
   function articleRouteFocalContent(content) {
     if (!document.body) return false;
-    if (!articleLikePath()) return false;
+    var focal = document.querySelector("[itemprop='articleBody'], article[role='main'], main article");
+    if (!articleLikePath() && !focal) return false;
     if (content && content.contentType !== "article" && content.contentType !== "medical") return false;
 
-    var focal = document.querySelector("[itemprop='articleBody'], article[role='main'], main article");
     var root = focal || document.createElement("div");
     if (!focal && content && content.html) root.innerHTML = content.html;
     var heading = document.querySelector("h1") || root.querySelector("h1");
