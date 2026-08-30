@@ -82,7 +82,7 @@ module FetchUtil
     def initialize(sources: SOURCES.keys, timeout: DEFAULT_TIMEOUT, clock: nil, http_client: nil, html_parser: nil)
       @sources = sources.map { |source| source.to_s.dup.freeze }.freeze
       unknown = @sources - SOURCES.keys
-      raise ArgumentError, "unknown search sources: #{unknown.join(", ")}" if unknown.any?
+      raise InputError, "unknown search sources: #{unknown.join(", ")}" if unknown.any?
 
       @timeout = validated_timeout(timeout)
 
@@ -111,7 +111,7 @@ module FetchUtil
 
     def search(query, timeout: @timeout)
       query = query.to_s.strip
-      raise ArgumentError, "query must not be empty" if query.empty?
+      raise InputError, "query must not be empty" if query.empty?
 
       request_timeout = validated_timeout(timeout)
 
@@ -130,7 +130,7 @@ module FetchUtil
 
     def validated_timeout(value)
       timeout = Float(value)
-      raise ArgumentError, "timeout must be positive" unless timeout.finite? && timeout.positive?
+      raise InputError, "timeout must be positive" unless timeout.finite? && timeout.positive?
 
       timeout
     end
@@ -488,7 +488,7 @@ module FetchUtil
 
         raise ArgumentError
       rescue ArgumentError, TypeError, FloatDomainError
-        raise ArgumentError, "max_response_bytes must be positive"
+        raise InputError, "max_response_bytes must be positive"
       end
 
       def fetch(uri, deadline, allowed_hosts, redirects_left)

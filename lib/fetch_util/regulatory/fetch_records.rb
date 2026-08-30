@@ -65,12 +65,12 @@ module FetchUtil
       def parse_http_uri(value)
         uri = URI.parse(value.to_s.strip)
         unless uri.is_a?(URI::HTTP) && uri.host
-          raise ArgumentError, "unsupported url: #{value}"
+          raise InputError, "unsupported url: #{value}"
         end
 
         uri
       rescue URI::InvalidURIError
-        raise ArgumentError, "unsupported url: #{value}"
+        raise InputError, "unsupported url: #{value}"
       end
 
       def first_header_value(headers, name)

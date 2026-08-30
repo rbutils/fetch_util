@@ -80,13 +80,15 @@ module FetchUtil
 
     desc "fetch URL [URL...]", "Fetch one or more URLs"
     def fetch(*urls)
-      raise ArgumentError, "at least one URL is required" if urls.empty?
+      raise Thor::Error, "at least one URL is required" if urls.empty?
 
-      results = if urls.length == 1
-                  [FetchUtil.fetch(urls.first, **fetch_options, request_log: request_log)]
-                else
-                  FetchUtil.fetch_many(urls, **fetch_options, request_log: request_log, concurrency: options[:concurrency])
-                end
+      results = translate_input_errors do
+        if urls.length == 1
+          [FetchUtil.fetch(urls.first, **fetch_options, request_log: request_log)]
+        else
+          FetchUtil.fetch_many(urls, **fetch_options, request_log: request_log, concurrency: options[:concurrency])
+        end
+      end
 
       if options[:format] == "markdown"
         puts results.map { |result| front_matter_document(result) }.join("\n\n")
@@ -101,15 +103,18 @@ module FetchUtil
     option :verbose_search, type: :boolean, default: false, desc: "Include per-result search provenance"
     def search(*terms)
       query = terms.join(" ").strip
-      raise ArgumentError, "query is required" if query.empty?
+      raise Thor::Error, "query is required" if query.empty?
 
-      payload = Searcher.new(
-        request_log: request_log,
-        sources: options[:source],
-        limit: options[:limit],
-        verbose: options[:verbose_search],
-        timeout: options[:timeout]
-      ).search(query)
+      searcher = translate_input_errors do
+        Searcher.new(
+          request_log: request_log,
+          sources: options[:source],
+          limit: options[:limit],
+          verbose: options[:verbose_search],
+          timeout: options[:timeout]
+        )
+      end
+      payload = translate_input_errors { searcher.search(query) }
 
       emit(payload)
     end
@@ -118,15 +123,17 @@ module FetchUtil
     option :sources, type: :string, default: "machine", desc: "Comma-separated source selectors, e.g. machine,-robotstxt or human,machine,-human"
     option :cache_path, type: :string, desc: "Structured regulatory cache directory"
     def regulatory(url)
-      raise ArgumentError, "url is required" if url.to_s.strip.empty?
+      raise Thor::Error, "url is required" if url.to_s.strip.empty?
 
       request_log.append("regulatory://#{url}?sources=#{options[:sources]}")
-      payload = FetchUtil.regulatory(
-        url,
-        cache_path: options[:cache_path],
-        sources: options[:sources],
-        timeout: options[:timeout]
-      )
+      payload = translate_input_errors do
+        FetchUtil.regulatory(
+          url,
+          cache_path: options[:cache_path],
+          sources: options[:sources],
+          timeout: options[:timeout]
+        )
+      end
 
       emit(payload)
     end
@@ -134,6 +141,20 @@ module FetchUtil
     no_commands do
       def request_log
         @request_log ||= options[:log_path] ? RequestLog.new(path: options[:log_path]) : RequestLog.new
+      end
+
+      def translate_input_errors
+        yield
+      rescue ParallelFetcher::ParallelFetchError => e
+        raise unless e.errors.all? { |error| input_error?(error) }
+
+        raise Thor::Error, e.message
+      rescue URI::InvalidURIError, InputError => e
+        raise Thor::Error, e.message
+      end
+
+      def input_error?(error)
+        error.is_a?(URI::InvalidURIError) || error.is_a?(InputError)
       end
 
       def fetch_options

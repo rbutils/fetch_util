@@ -58,6 +58,74 @@ RSpec.describe FetchUtil::CLI do
     expect(JSON.parse(output, symbolize_names: true)).to eq(payload)
   end
 
+  it "translates expected fetch input failures to Thor errors" do
+    allow(FetchUtil).to receive(:fetch).and_raise(URI::InvalidURIError, "unsupported url: bad")
+
+    expect do
+      described_class.new([], {}, {}).fetch("bad")
+    end.to raise_error(Thor::Error, "unsupported url: bad")
+  end
+
+  it "translates expected search configuration failures to Thor errors" do
+    allow(FetchUtil::Searcher).to receive(:new).and_raise(FetchUtil::InputError, "unsupported search source: invalid")
+
+    expect do
+      described_class.new([], {}, {}).search("ruby")
+    end.to raise_error(Thor::Error, "unsupported search source: invalid")
+  end
+
+  it "translates expected regulatory input failures to Thor errors" do
+    request_log = instance_double(FetchUtil::RequestLog, append: nil)
+    allow(FetchUtil::RequestLog).to receive(:new).and_return(request_log)
+    allow(FetchUtil).to receive(:regulatory).and_raise(URI::InvalidURIError, "unsupported url: bad")
+
+    expect do
+      described_class.new([], {}, {}).regulatory("bad")
+    end.to raise_error(Thor::Error, "unsupported url: bad")
+  end
+
+  it "does not translate unexpected command failures" do
+    allow(FetchUtil).to receive(:fetch).and_raise(RuntimeError, "unexpected failure")
+
+    expect do
+      described_class.new([], {}, {}).fetch("https://example.test")
+    end.to raise_error(RuntimeError, "unexpected failure")
+  end
+
+  it "does not translate unexpected argument errors" do
+    allow(FetchUtil::Searcher).to receive(:new).and_raise(ArgumentError, "unexpected argument failure")
+
+    expect do
+      described_class.new([], {}, {}).search("ruby")
+    end.to raise_error(ArgumentError, "unexpected argument failure")
+  end
+
+  it "translates parallel input failures without hiding worker bugs" do
+    input_failure = FetchUtil::ParallelFetcher::Failure.new(
+      index: 0,
+      url: "bad",
+      error: FetchUtil::InputError.new("unsupported url: bad")
+    )
+    input_error = FetchUtil::ParallelFetcher::ParallelFetchError.new([input_failure])
+    allow(FetchUtil).to receive(:fetch_many).and_raise(input_error)
+
+    expect do
+      described_class.new([], {}, {}).fetch("bad", "https://example.test")
+    end.to raise_error(Thor::Error, input_error.message)
+
+    worker_failure = FetchUtil::ParallelFetcher::Failure.new(
+      index: 0,
+      url: "https://example.test",
+      error: RuntimeError.new("unexpected worker failure")
+    )
+    worker_error = FetchUtil::ParallelFetcher::ParallelFetchError.new([input_failure, worker_failure])
+    allow(FetchUtil).to receive(:fetch_many).and_raise(worker_error)
+
+    expect do
+      described_class.new([], {}, {}).fetch("https://example.test", "https://example.org")
+    end.to raise_error(worker_error)
+  end
+
   it "fetches multiple urls in parallel and prints jsonl without urls by default" do
     first = result_double
     second = result_double(

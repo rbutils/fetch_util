@@ -40,7 +40,7 @@ module FetchUtil
 
       raise ArgumentError
     rescue ArgumentError, TypeError
-      raise ArgumentError, "timeout must be positive"
+      raise InputError, "timeout must be positive"
     end
 
     def positive_max_response_bytes(value)
@@ -49,7 +49,7 @@ module FetchUtil
 
       raise ArgumentError
     rescue ArgumentError, TypeError, FloatDomainError
-      raise ArgumentError, "max_response_bytes must be positive"
+      raise InputError, "max_response_bytes must be positive"
     end
 
     def fetch(uri, limit, redirects, connections)

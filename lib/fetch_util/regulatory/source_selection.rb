@@ -45,7 +45,7 @@ module FetchUtil
       def validate_source!(source)
         return if all_sources.include?(source)
 
-        raise ArgumentError, "unsupported regulatory source: #{source}"
+        raise InputError, "unsupported regulatory source: #{source}"
       end
 
       def needs_page_fetch?(selected_sources)

@@ -15,7 +15,7 @@ module FetchUtil
       def get(url, limit: FetchUtil::HttpRedirectClient::REDIRECT_LIMIT)
         build_response(redirect_client.get(url, limit: limit))
       rescue URI::InvalidURIError
-        raise ArgumentError, "unsupported url: #{url}"
+        raise InputError, "unsupported url: #{url}"
       end
 
       private

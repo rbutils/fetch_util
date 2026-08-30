@@ -112,7 +112,7 @@ module FetchUtil
 
       raise ArgumentError
     rescue ArgumentError, TypeError
-      raise ArgumentError, "timeout must be positive"
+      raise InputError, "timeout must be positive"
     end
 
     def nonnegative_duration(value, name)
@@ -121,7 +121,7 @@ module FetchUtil
 
       raise ArgumentError
     rescue ArgumentError, TypeError
-      raise ArgumentError, "#{name} must be nonnegative"
+      raise InputError, "#{name} must be nonnegative"
     end
 
     def immutable_browser_option(value, memo = {}.compare_by_identity)

@@ -18,7 +18,7 @@ module FetchUtil
       @sources_explicit = !sources.nil?
       @sources = Array(sources || DEFAULT_SOURCES).map { |source| source.to_s.dup.freeze }.uniq.freeze
       unknown = @sources - SearchTransport::SOURCES.keys
-      raise ArgumentError, "unsupported search source: #{unknown.first}" if unknown.any?
+      raise InputError, "unsupported search source: #{unknown.first}" if unknown.any?
 
       validate_limit!(limit)
       @limit = limit
@@ -28,7 +28,7 @@ module FetchUtil
 
     def search(query)
       encoded_query = query.to_s.strip
-      raise ArgumentError, "query must not be empty" if encoded_query.empty?
+      raise InputError, "query must not be empty" if encoded_query.empty?
 
       @request_log.append(search_request_uri(encoded_query))
       responses = @transport.search(encoded_query)
@@ -55,7 +55,7 @@ module FetchUtil
       return if value.nil?
       return if value.is_a?(Integer) && value >= 0
 
-      raise ArgumentError, "limit must be a nonnegative integer"
+      raise InputError, "limit must be a nonnegative integer"
     end
 
     def search_request_uri(query)

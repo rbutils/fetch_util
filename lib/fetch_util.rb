@@ -7,6 +7,7 @@ require_relative "fetch_util/version"
 
 module FetchUtil
   class Error < StandardError; end
+  class InputError < ArgumentError; end
   class BrowserError < Error; end
   class ExtractionError < Error; end
 

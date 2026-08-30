@@ -35,4 +35,13 @@ RSpec.describe "fetch_util executable" do
     expect(stderr).to include("Expected '--format' to be one of markdown, json, jsonl; got invalid")
     expect(stderr).not_to include("Deprecation warning")
   end
+
+  it "reports expected command failures without Ruby backtraces" do
+    stdout, stderr, status = run_executable("search", "ruby", "--source", "invalid")
+
+    expect(status).not_to be_success
+    expect(stdout).to be_empty
+    expect(stderr).to include("unsupported search source: invalid")
+    expect(stderr).not_to include("searcher.rb", "ArgumentError", "from ")
+  end
 end
