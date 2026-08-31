@@ -100,7 +100,7 @@ function giteaFamilyPullResourceResult(title, sections, htmlNodes, route) {
   return {
     title: title,
     siteName: giteaFamilyPlatform(),
-    excerpt: normalizeText(markdown).slice(0, 300),
+    excerpt: normalizeText(markdown),
     html: htmlNodes.filter(Boolean).map(function(node) { return node.outerHTML; }).join("\n"),
     markdown: markdown,
     textContent: normalizeText(markdown),

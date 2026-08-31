@@ -28,6 +28,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
                                   'Uncapped commit 1', 'Uncapped commit 24')
       expect(markdown).not_to include('Hidden commit', 'Global commit chrome must not leak')
       expect(markdown.index('Uncapped commit 1')).to be < markdown.index('Uncapped commit 24')
+      expect(payload.fetch('excerpt')).to include('Uncapped commit 24')
       expect(markdown).to include(
         'https://forge.example/gitlab/group/project/-/merge_requests/42/diffs',
         'https://forge.example/gitlab/api/v4/projects/88/merge_requests/42/commits?per_page=100&page=1'

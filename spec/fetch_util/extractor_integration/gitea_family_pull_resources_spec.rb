@@ -30,6 +30,7 @@ RSpec.describe 'FetchUtil extractor integration - Gitea and Forgejo pull resourc
       expect(markdown).not_to include('Hidden stale commit', 'Copy')
       expect(markdown.scan('Repeated visible commit').length).to eq(2)
       expect(markdown.index('Uncapped commit 1')).to be < markdown.index('Uncapped commit 24')
+      expect(payload.fetch('excerpt')).to include('Uncapped commit 24')
     end
   end
 

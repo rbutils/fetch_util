@@ -25,7 +25,7 @@ function gitlabResourceResult(title, sections, htmlNodes) {
   return {
     title: title,
     siteName: "GitLab",
-    excerpt: normalizeText(markdown).slice(0, 300),
+    excerpt: normalizeText(markdown),
     html: html,
     markdown: markdown,
     textContent: normalizeText(markdown),
