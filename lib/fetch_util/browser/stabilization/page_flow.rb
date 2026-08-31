@@ -14,6 +14,7 @@ module FetchUtil
           SiteStabilization::GithubPullResources::GITHUB_PULL_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GitlabThreads::GITLAB_THREAD_STABILIZATION_PROFILE,
           SiteStabilization::GitlabMergeRequestResources::GITLAB_MERGE_REQUEST_RESOURCE_STABILIZATION_PROFILE,
+          SiteStabilization::GiteaFamilyThreads::GITEA_FAMILY_THREAD_STABILIZATION_PROFILE,
           SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
           { host: "t.me", path_query: ->(uri) { uri.path.match?(%r{\A/s/[^/]+/\d+/?\z}) },
             strategy: :wait_for_telegram_message, notes: "Wait for the requested public Telegram preview message.",

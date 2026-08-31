@@ -6,6 +6,11 @@ module FetchUtil
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/github_threads"
+      autoload :GiteaFamilyThreadProductState,
+               "fetch_util/browser/site_stabilization/gitea_family_thread_product_state"
+      autoload :GiteaFamilyThreadTimelineState,
+               "fetch_util/browser/site_stabilization/gitea_family_thread_timeline_state"
+      autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/gitea_family_threads"
       autoload :GitlabRepo, "fetch_util/browser/site_stabilization/gitlab_repo"
       autoload :GitlabMergeRequestResourceVisibilityScript,
                "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_visibility_script"
@@ -21,6 +26,9 @@ module FetchUtil
       include CommunityAndMarketplace
       include GithubPullResources
       include GithubThreads
+      include GiteaFamilyThreadProductState
+      include GiteaFamilyThreadTimelineState
+      include GiteaFamilyThreads
       include GitlabRepo
       include GitlabMergeRequestResources
       include GitlabThreads

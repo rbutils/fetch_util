@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <title>Preserve complete Forgejo thread fidelity</title>
+  <meta name="author" content="forgejo">
+  <meta property="og:site_name" content="Code Forge">
+  <style>
+    .tw-hidden, .hidden-menu { display: none; }
+  </style>
+  <script>
+    window.config = {
+      appUrl: "https://code.example/",
+      appSubUrl: "",
+      assetVersionEncoded: "16.0.0-dev~gitea-1.22.0",
+      assetUrlPrefix: "/assets"
+    };
+  </script>
+  <script src="/assets/js/index.js"></script>
+</head>
+<body>
+  <main class="page-content repository view issue pull">
+    <header class="issue-title-header"><h1>Preserve complete Forgejo thread fidelity</h1></header>
+    <div class="issue-content">
+      <section class="issue-content-left comment-list">
+        <div id="issue-42" class="timeline-item comment first">
+          <header class="comment-header">
+            <a class="author" href="/alice">alice</a>
+            <relative-time datetime="2026-08-30T09:00:00Z">Aug 30</relative-time>
+          </header>
+          <div class="comment-body">
+            <div class="render-content markup">
+              <p>Opening Forgejo body keeps <a href="/forgejo/repo/src/branch/main/README.md">its reference</a>.</p>
+              <pre><code>puts :forgejo</code></pre>
+            </div>
+            <div class="raw-content tw-hidden">Hidden raw opening source must not leak.</div>
+            <div class="edit-content-zone tw-hidden">Hidden editor must not leak.</div>
+            <div class="dropzone-attachments">
+              <a href="/attachments/design.txt">design.txt</a><span>4 KiB</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="issuecomment-101" class="timeline-item comment">
+          <header class="comment-header">
+            <a class="author" href="/bob">bob</a>
+            <relative-time datetime="2026-08-30T09:10:00Z">Aug 30</relative-time>
+          </header>
+          <div class="comment-body"><div class="render-content markup"><p>First loaded Forgejo comment.</p></div></div>
+        </div>
+
+        <div id="event-102" class="timeline-item event">
+          <span class="timeline-avatar"><img alt="alice" src="/avatars/alice"></span>
+          <a class="author" href="/alice">alice</a>
+          <relative-time datetime="2026-08-30T09:20:00Z">Aug 30</relative-time>
+          <span>changed the milestone to Complete fidelity.</span>
+        </div>
+
+        <div id="issuecomment-103" class="timeline-item comment" style="visibility: hidden">
+          <header class="comment-header" style="visibility: visible">
+            <a class="author" href="/carol">carol</a>
+            <relative-time datetime="2026-08-30T09:30:00Z">Aug 30</relative-time>
+          </header>
+          <div class="comment-body" style="visibility: visible">
+            <div class="render-content markup"><p>Restored visible Forgejo comment.</p></div>
+          </div>
+        </div>
+
+        <div id="issuecomment-104" class="timeline-item comment" hidden>
+          <a class="author">hidden-user</a>
+          <div class="comment-body"><p>Hidden Forgejo comment must not leak.</p></div>
+        </div>
+        <!-- timeline-end -->
+      </section>
+
+      <aside class="issue-content-right ui segment">
+        <section><h3>Labels</h3><a href="/forgejo/repo/issues?labels=fidelity">fidelity</a></section>
+        <section><h3>Milestone</h3><a href="/forgejo/repo/milestone/1">Complete fidelity</a></section>
+        <div class="hidden-menu">Hidden stale metadata must not leak.</div>
+      </aside>
+    </div>
+  </main>
+  <footer><a href="https://forgejo.org/">Powered by Forgejo</a></footer>
+</body>
+</html>

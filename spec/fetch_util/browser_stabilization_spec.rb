@@ -83,7 +83,97 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/diffs#diff-a')).to eq(:stabilize_gitlab_merge_request_resource)
     expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/commits/not-real')).to be_nil
     expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/reports/codequality/detail')).to be_nil
-    expect(strategy_for.call('https://git.example/group/project/issues/12')).to be_nil
+    expect(strategy_for.call('https://git.example/group/project/issues/12')).to eq(:stabilize_gitea_family_thread)
+  end
+
+  it 'routes host-agnostic Gitea-family conversations through product-aware stabilization' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://code.example/forgejo/repo/issues/42')).to eq(:stabilize_gitea_family_thread)
+    expect(strategy_for.call('https://code.example/forgejo/repo/pulls/42')).to eq(:stabilize_gitea_family_thread)
+    expect(strategy_for.call('https://git.example/forge/alice/project/issues/7')).to eq(:stabilize_gitea_family_thread)
+    expect(strategy_for.call('https://code.example/forgejo/repo/pulls/42/files')).to be_nil
+    expect(strategy_for.call('https://code.example/forgejo/repo/issues/not-a-number')).to be_nil
+    expect(strategy_for.call('https://github.com/octo/example/issues/12')).to eq(:stabilize_github_thread)
+  end
+
+  it 'waits for a product-matched Gitea-family timeline to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    scripts = []
+    states = [
+      { "product" => true, "ready" => false, "signature" => "1:1:0::true:40" },
+      { "product" => true, "ready" => true, "signature" => "4:3:1:alice:false:400" },
+      { "product" => true, "ready" => true, "signature" => "4:3:1:alice:false:400" },
+      { "product" => true, "ready" => true, "signature" => "4:3:1:alice:false:400" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do |_page, script, default:|
+      scripts << script
+      states.shift || { "product" => true, "ready" => true, "signature" => "4:3:1:alice:false:400" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gitea_family_thread, page)).to be(true)
+
+    expect(scripts.first).to include('window.config || {}', 'runtime.appSubUrl', 'new URL(runtime.appUrl',
+                                     'runtime.assetUrlPrefix',
+                                     '.page-content.repository.view.issue .issue-content',
+                                     '.timeline-item.comment.issue-content-comment', '.timeline-item-group',
+                                     '.dropzone-attachments a[href]', '.timeline-item.comment.merge.box',
+                                     '.pull-merge-box', 'some(visible)', 'openingReady', 'rowSignatures')
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'resets Gitea-family stability when ordered row identities change without changing counts' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "product" => true, "ready" => true, "signature" => "3:2:1:alice:true:false:row-a" },
+      { "product" => true, "ready" => true, "signature" => "3:2:1:alice:true:false:row-b" },
+      { "product" => true, "ready" => true, "signature" => "3:2:1:alice:true:false:row-b" },
+      { "product" => true, "ready" => true, "signature" => "3:2:1:alice:true:false:row-b" }
+    ]
+    allow(browser).to receive(:safe_evaluate) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gitea_family_thread, page)).to be(true)
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+  end
+
+  it 'falls through after a stable non-loading Gitea-family skeleton remains incomplete' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 6.0)
+    state = { "product" => true, "ready" => false, "loading" => false, "signature" => "skeleton" }
+    allow(browser).to receive(:safe_evaluate).and_return(state)
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gitea_family_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).exactly(10).times
+    expect(browser).not_to have_received(:settle_after_stabilization)
+  end
+
+  it 'falls through immediately when a Gitea-family-shaped route lacks product evidence' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 8.0)
+    allow(browser).to receive(:safe_evaluate).and_return(
+      { "product" => false, "ready" => false, "signature" => "" }
+    )
+    allow(browser).to receive(:sleep)
+    allow(browser).to receive(:settle_after_stabilization)
+
+    expect(browser.send(:stabilize_gitea_family_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).once
+    expect(browser).not_to have_received(:sleep)
+    expect(browser).not_to have_received(:settle_after_stabilization)
   end
 
   it 'waits for a product-matched GitLab timeline to remain stable' do

@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <title>Native Gitea relative-root issue</title>
+  <meta name="author" content="Gitea - Git with a cup of tea">
+  <script>
+    window.config = {
+      appUrl: "https://git.example/forge/",
+      appSubUrl: "/forge",
+      assetVersionEncoded: "1.24.6",
+      assetUrlPrefix: "/forge/assets"
+    };
+  </script>
+  <script src="/forge/assets/js/index.js"></script>
+</head>
+<body>
+  <main class="page-content repository view issue">
+    <header class="issue-title-header"><h1>Native Gitea relative-root issue</h1></header>
+    <div class="issue-content">
+      <section class="issue-content-left comment-list">
+        <div id="issue-7" class="timeline-item comment issue-content-comment">
+          <header class="comment-header">
+            <div class="comment-header-left"><a class="tw-font-semibold" href="/forge/migrated-alice">migrated-alice</a></div>
+            <relative-time datetime="2026-08-30T10:00:00Z">Aug 30</relative-time>
+          </header>
+          <div class="comment-body"><div class="render-content markup"><p>Native Gitea opening body.</p></div></div>
+        </div>
+        <div id="issuecomment-8" class="timeline-item comment">
+          <header class="comment-header"><a class="tw-font-semibold" href="/forge/bob">bob</a></header>
+          <div class="comment-body"><div class="render-content markup"><p>Native Gitea loaded comment.</p></div></div>
+        </div>
+      </section>
+      <aside class="issue-content-right"><h3>Labels</h3><a>native</a></aside>
+    </div>
+  </main>
+  <footer><a href="https://about.gitea.com/">Powered by Gitea</a></footer>
+</body>
+</html>

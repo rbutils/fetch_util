@@ -144,6 +144,9 @@ profiles/community/gitlab_threads.js
 profiles/community/gitlab_merge_request_resource_shared.js
 profiles/community/gitlab_merge_request_diffs.js
 profiles/community/gitlab_merge_request_resources.js
+profiles/community/gitea_family_shared.js
+profiles/community/gitea_family_thread_entries.js
+profiles/community/gitea_family_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
