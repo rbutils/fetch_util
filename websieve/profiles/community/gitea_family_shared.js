@@ -10,7 +10,7 @@ function giteaFamilyRoute() {
   if (routePrefix && pathname.indexOf(routePrefix + "/") !== 0) return null;
 
   var relativePath = routePrefix ? pathname.slice(routePrefix.length) : pathname;
-  var match = relativePath.match(/^\/([\w.%+-]+)\/([\w.%+-]+)\/(issues|pulls)\/(\d+)(?:\/(commits|files))?\/?$/);
+  var match = relativePath.match(/^\/([\w.%+-]+)\/([\w.%+-]+)\/(issues|pulls)\/(\d+)(?:\/(commits|files)(?:\/([^/]+))?)?\/?$/);
   if (!match) return null;
 
   var projectPath = match[1] + "/" + match[2];
@@ -22,6 +22,7 @@ function giteaFamilyRoute() {
     kind: match[3],
     number: match[4],
     surface: match[5] || null,
+    surfaceDetail: match[6] || null,
     routePrefix: routePrefix,
     basePath: routePrefix + "/" + projectPath + "/" + match[3] + "/" + match[4]
   };

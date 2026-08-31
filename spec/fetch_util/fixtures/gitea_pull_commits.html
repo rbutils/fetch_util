@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <title>Complete pull resource fidelity - Commits</title>
+  <meta name="author" content="Gitea - Git with a cup of tea">
+  <script>
+    window.config = {
+      appUrl: "https://code.example/forge/",
+      appSubUrl: "/forge",
+      assetUrlPrefix: "/forge/assets",
+      assetVersionEncoded: "gitea-1.25.0"
+    };
+  </script>
+  <script src="/forge/assets/js/index.js"></script>
+  <style>.tw-hidden, .hidden-row { display: none; }</style>
+</head>
+<body>
+  <main class="page-content repository view issue pull commits">
+    <header class="issue-title-header"><h1>Complete pull resource fidelity</h1></header>
+    <table id="commits-table">
+      <tbody class="commit-list">
+        <tr>
+          <td class="author"><a href="/forge/alice">alice</a></td>
+          <td class="sha"><a href="/forge/team/repo/commit/aaa1111">aaa1111</a></td>
+          <td class="message">
+            <a class="commit-summary" title="Native Gitea commit row" href="/forge/team/repo/commit/aaa1111">Native Gitea commit row</a>
+            <div class="commit-body tw-hidden">Native collapsed commit body.</div>
+          </td>
+        </tr>
+        <tr class="hidden-row"><td>hidden</td><td>hidden</td><td>Hidden stale commit</td></tr>
+      </tbody>
+    </table>
+  </main>
+  <footer><a href="https://about.gitea.com/">Powered by Gitea</a></footer>
+</body>
+</html>

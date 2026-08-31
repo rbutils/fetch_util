@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <title>Complete pull resource fidelity - Files</title>
+  <meta name="author" content="forgejo">
+  <script>
+    window.config = {
+      appUrl: "https://code.example/",
+      appSubUrl: "",
+      assetUrlPrefix: "/assets",
+      assetVersionEncoded: "forgejo-16.0.0",
+      pageData: {
+        diffFileInfo: {
+          files: [
+            { Name: "lib/alpha.rb", NameHash: "alpha", Type: 1, OnPage: 1 },
+            { Name: "lib/beta.rb", NameHash: "beta", Type: 2, OnPage: 1 },
+            { Name: "lib/gamma.rb", NameHash: "gamma", Type: 3, OnPage: 2 },
+            { Name: "lib/unloaded.rb", NameHash: "unloaded", Type: 1, OnPage: 3 }
+          ]
+        }
+      }
+    };
+  </script>
+  <script src="/assets/js/index.js"></script>
+  <style>
+    .tw-hidden, .hidden-file { display: none; }
+    .visibility-hidden { visibility: hidden; }
+  </style>
+</head>
+<body>
+  <main class="page-content repository view issue pull files diff">
+    <header class="issue-title-header"><h1>Complete pull resource fidelity</h1></header>
+    <section id="diff-container">
+      <nav id="diff-file-tree">
+        <a class="item-file" title="lib/alpha.rb">alpha.rb</a>
+        <a class="item-file" title="lib/beta.rb">beta.rb</a>
+      </nav>
+      <div id="diff-file-boxes">
+        <section id="diff-alpha" class="diff-file-box file-content" data-old-filename="lib/alpha.rb" data-new-filename="lib/alpha.rb">
+          <header class="diff-file-header">
+            <a href="#diff-alpha">lib/alpha.rb</a>
+            <div class="diff-file-header-actions"><button>Copy path</button><label><input type="checkbox"> Viewed file</label></div>
+          </header>
+          <div class="diff-file-body">
+            <table><tbody><tr><td class="lines-code"><pre>+alpha complete body</pre></td></tr></tbody></table>
+            <div class="conversation-holder" data-path="lib/alpha.rb" data-side="right" data-idx="4">
+              <article id="issuecomment-501" class="comment">
+                <div class="comment-body"><div class="render-content markup"><p>Inline review remains with the selected file.</p></div></div>
+              </article>
+            </div>
+          </div>
+        </section>
+        <section id="diff-beta" class="diff-file-box file-content" data-old-filename="lib/beta.rb" data-new-filename="lib/beta.rb">
+          <header class="diff-file-header"><a href="#diff-beta">lib/beta.rb</a></header>
+          <div class="diff-file-body binary">
+            The diff was suppressed because it is too large.
+            <a class="diff-load-button" data-href="/forgejo/repo/pulls/42/files?file-only=true&amp;files=beta">Load file</a>
+          </div>
+        </section>
+        <section id="diff-gamma" class="diff-file-box file-content hidden-file" data-old-filename="lib/gamma.rb" data-new-filename="lib/gamma.rb">
+          <header class="diff-file-header">lib/gamma.rb</header><pre>Hidden stale diff body</pre>
+        </section>
+        <section id="diff-visibility-stale" class="diff-file-box file-content visibility-hidden" data-new-filename="lib/visibility-stale.rb">
+          <header class="diff-file-header">Visibility-hidden stale file</header>
+          <div class="diff-file-body"><pre>+visibility-hidden stale body</pre></div>
+          <div class="diff-file-body binary">
+            The stale diff was suppressed.
+            <a class="diff-load-button" data-href="/forgejo/repo/pulls/42/files?file-only=true&amp;files=visibility-stale">Load stale file</a>
+          </div>
+        </section>
+      </div>
+      <button id="diff-show-more-files" data-href="/forgejo/repo/pulls/42/files?skip-to=gamma">Show more files</button>
+      <button class="diff-load-button" data-href="/forgejo/repo/pulls/42/files?diff-page=2">Load next diff page</button>
+    </section>
+  </main>
+  <footer><a href="https://forgejo.org/">Powered by Forgejo</a></footer>
+</body>
+</html>

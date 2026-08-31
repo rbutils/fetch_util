@@ -222,6 +222,10 @@ RSpec.describe "extract asset bundle" do
     gitlab_diff_path = "profiles/community/gitlab_merge_request_diffs.js"
     gitlab_resources_path = "profiles/community/gitlab_merge_request_resources.js"
     gitea_shared_path = "profiles/community/gitea_family_shared.js"
+    gitea_resource_shared_path = "profiles/community/gitea_family_pull_resource_shared.js"
+    gitea_commits_path = "profiles/community/gitea_family_pull_commits.js"
+    gitea_files_path = "profiles/community/gitea_family_pull_files.js"
+    gitea_resources_path = "profiles/community/gitea_family_pull_resources.js"
     gitea_entries_path = "profiles/community/gitea_family_thread_entries.js"
     gitea_thread_path = "profiles/community/gitea_family_threads.js"
 
@@ -241,10 +245,18 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, gitlab_resource_shared_path))).to include("function gitlabResourceResult")
     expect(File.read(File.join(source_root, gitlab_resources_path))).to include("function gitlabMergeRequestResourceContent")
     expect(File.read(File.join(source_root, gitea_shared_path))).to include("function giteaFamilyRoute")
+    expect(File.read(File.join(source_root, gitea_resource_shared_path))).to include("function giteaFamilyPullResourceRoute")
+    expect(File.read(File.join(source_root, gitea_commits_path))).to include("function giteaFamilyPullCommitsContent")
+    expect(File.read(File.join(source_root, gitea_files_path))).to include("function giteaFamilyPullFilesContent")
+    expect(File.read(File.join(source_root, gitea_resources_path))).to include("function giteaFamilyPullResourceContent")
     expect(File.read(File.join(source_root, gitea_entries_path))).to include("function giteaFamilyThreadEntry")
     expect(File.read(File.join(source_root, gitea_thread_path))).to include("function giteaFamilyThreadContent")
     expect(manifest.index(gitlab_resources_path)).to be < manifest.index(gitea_shared_path)
-    expect(manifest.index(gitea_shared_path)).to be < manifest.index(gitea_entries_path)
+    expect(manifest.index(gitea_shared_path)).to be < manifest.index(gitea_resource_shared_path)
+    expect(manifest.index(gitea_resource_shared_path)).to be < manifest.index(gitea_commits_path)
+    expect(manifest.index(gitea_commits_path)).to be < manifest.index(gitea_files_path)
+    expect(manifest.index(gitea_files_path)).to be < manifest.index(gitea_resources_path)
+    expect(manifest.index(gitea_resources_path)).to be < manifest.index(gitea_entries_path)
     expect(manifest.index(gitea_entries_path)).to be < manifest.index(gitea_thread_path)
     expect(manifest.index(gitea_thread_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(gitlab_resources_path)).to be < manifest.index("profiles/register.js")
@@ -429,6 +441,7 @@ RSpec.describe "extract asset bundle" do
                           registerGitHubPullResourceProfiles
                           registerGitLabThreadProfiles
                           registerGitLabMergeRequestResourceProfiles
+                          registerGiteaFamilyPullResourceProfiles
                           registerGiteaFamilyThreadProfiles
                           registerCommunityWikiProfiles
                           registerHackerNewsProfiles

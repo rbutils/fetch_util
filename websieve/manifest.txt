@@ -145,6 +145,10 @@ profiles/community/gitlab_merge_request_resource_shared.js
 profiles/community/gitlab_merge_request_diffs.js
 profiles/community/gitlab_merge_request_resources.js
 profiles/community/gitea_family_shared.js
+profiles/community/gitea_family_pull_resource_shared.js
+profiles/community/gitea_family_pull_commits.js
+profiles/community/gitea_family_pull_files.js
+profiles/community/gitea_family_pull_resources.js
 profiles/community/gitea_family_thread_entries.js
 profiles/community/gitea_family_threads.js
 profiles/families/financial/links.js

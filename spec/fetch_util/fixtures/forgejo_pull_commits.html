@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <title>Complete pull resource fidelity - Commits</title>
+  <meta name="author" content="forgejo">
+  <script>
+    window.config = {
+      appUrl: "https://code.example/",
+      appSubUrl: "",
+      assetUrlPrefix: "/assets",
+      assetVersionEncoded: "forgejo-16.0.0"
+    };
+  </script>
+  <script src="/assets/js/index.js"></script>
+  <style>
+    .tw-hidden, .hidden-row { display: none; }
+    .restored-row { visibility: hidden; }
+    .restored-row > * { visibility: visible; }
+  </style>
+</head>
+<body>
+  <main class="page-content repository view issue pull commits">
+    <header class="issue-title-header"><h1>Complete pull resource fidelity</h1></header>
+    <section class="commit-groups">
+      <article class="commit-group">
+        <h4>Today</h4>
+        <div class="commits">
+          <div class="commit">
+            <span class="author"><a href="/alice">alice</a></span>
+            <span class="sha"><a href="/forgejo/repo/commit/aaa111">aaa111</a><button class="copy-commit-id" data-clipboard-text="aaa111">Copy</button></span>
+            <div class="message">
+            <a class="commit-summary" title="Preserve the full visible commit row" href="/forgejo/repo/commit/aaa111">Preserve the full visible commit row</a>
+            <div class="commit-body tw-hidden">Collapsed substantive commit body remains available.</div>
+            </div>
+          </div>
+          <div class="commit restored-row">
+            <span class="author">restored-author</span>
+            <span class="sha"><a href="/forgejo/repo/commit/bbb222">bbb222</a></span>
+            <span class="message commit-summary">Restored visible commit</span>
+          </div>
+          <div class="commit hidden-row"><span class="author">hidden-author</span><span class="sha">hidden</span><span class="message">Hidden stale commit</span></div>
+          <div class="commit"><span class="author">duplicate-author</span><span class="sha">ccc333</span><span class="message">Repeated visible commit</span></div>
+          <div class="commit"><span class="author">duplicate-author</span><span class="sha">ccc333</span><span class="message">Repeated visible commit</span></div>
+          <!-- records-end -->
+        </div>
+      </article>
+    </section>
+  </main>
+  <footer><a href="https://forgejo.org/">Powered by Forgejo</a></footer>
+</body>
+</html>

@@ -11,6 +11,11 @@ module FetchUtil
       autoload :GiteaFamilyThreadTimelineState,
                "fetch_util/browser/site_stabilization/gitea_family_thread_timeline_state"
       autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/gitea_family_threads"
+      autoload :GiteaFamilyPullResourceProductState,
+               "fetch_util/browser/site_stabilization/gitea_family_pull_resource_product_state"
+      autoload :GiteaFamilyPullResourceState,
+               "fetch_util/browser/site_stabilization/gitea_family_pull_resource_state"
+      autoload :GiteaFamilyPullResources, "fetch_util/browser/site_stabilization/gitea_family_pull_resources"
       autoload :GitlabRepo, "fetch_util/browser/site_stabilization/gitlab_repo"
       autoload :GitlabMergeRequestResourceVisibilityScript,
                "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_visibility_script"
@@ -29,6 +34,9 @@ module FetchUtil
       include GiteaFamilyThreadProductState
       include GiteaFamilyThreadTimelineState
       include GiteaFamilyThreads
+      include GiteaFamilyPullResourceProductState
+      include GiteaFamilyPullResourceState
+      include GiteaFamilyPullResources
       include GitlabRepo
       include GitlabMergeRequestResources
       include GitlabThreads

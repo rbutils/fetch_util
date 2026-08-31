@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <title>Native Gitea pull resource fidelity - Files</title>
+  <meta name="author" content="Gitea - Git with a cup of tea">
+  <script>
+    window.config = {
+      appUrl: "https://code.example/forge/",
+      appSubUrl: "/forge",
+      assetUrlPrefix: "/forge/assets",
+      assetVersionEncoded: "gitea-1.25.0",
+      pageData: {
+        DiffFileTree: {
+          TreeRoot: {
+            FullName: "",
+            EntryMode: "tree",
+            Children: [
+              {
+                FullName: "lib",
+                EntryMode: "tree",
+                Children: [
+                  { FullName: "lib/native.rb", NameHash: "native", EntryMode: "blob", Children: null },
+                  { FullName: "lib/deferred.rb", NameHash: "deferred", EntryMode: "blob", Children: null },
+                  { FullName: "lib/restored.rb", NameHash: "restored", EntryMode: "blob", Children: null }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    };
+  </script>
+  <script src="/forge/assets/js/index.js"></script>
+  <style>
+    .visibility-hidden { visibility: hidden; }
+    .visibility-hidden .restored-visible { visibility: visible; }
+  </style>
+</head>
+<body>
+  <main class="page-content repository view issue pull files diff">
+    <header class="issue-title-header"><h1>Native Gitea pull resource fidelity</h1></header>
+    <section id="diff-container">
+      <nav id="diff-file-tree">
+        <a class="item-file" href="#diff-native">lib/native.rb</a>
+        <a class="item-file" href="#diff-deferred">lib/deferred.rb</a>
+        <a class="item-file" href="#diff-restored">lib/restored.rb</a>
+      </nav>
+      <div id="diff-file-boxes">
+        <section id="diff-native" class="diff-file-box file-content" data-new-filename="lib/native.rb">
+          <header class="diff-file-header">
+            <a href="#diff-native">lib/native.rb</a>
+            <div class="diff-file-header-actions">
+              <button>Copy path</button>
+              <label><input type="checkbox"> Viewed file</label>
+            </div>
+          </header>
+          <div class="diff-file-body">
+            <table><tbody><tr><td><pre>+native complete body</pre></td></tr></tbody></table>
+            <article class="comment"><p>Native inline review remains.</p></article>
+          </div>
+        </section>
+        <section id="diff-deferred" class="diff-file-box file-content" data-new-filename="lib/deferred.rb">
+          <header class="diff-file-header">lib/deferred.rb</header>
+          <div class="diff-file-body binary">
+            The diff was suppressed because it is too large.
+            <a class="diff-load-button" data-href="/forge/team/repo/pulls/42/files?file-only=true&amp;files=lib/deferred.rb">Load file</a>
+          </div>
+        </section>
+        <section id="diff-restored" class="diff-file-box file-content visibility-hidden" data-new-filename="lib/restored.rb">
+          <header class="diff-file-header">Hidden responsive header</header>
+          <div class="diff-file-body"><pre class="restored-visible">+restored visible native body</pre></div>
+        </section>
+        <section id="diff-stale" class="diff-file-box file-content visibility-hidden" data-new-filename="lib/stale.rb">
+          <header class="diff-file-header">Hidden stale file</header>
+          <div class="diff-file-body"><pre>+hidden stale body</pre></div>
+        </section>
+      </div>
+      <button id="diff-show-more-files" data-href="/forge/team/repo/pulls/42/files?skip-to=restored">Show more files</button>
+    </section>
+  </main>
+  <footer><a href="https://about.gitea.com/">Powered by Gitea</a></footer>
+</body>
+</html>
