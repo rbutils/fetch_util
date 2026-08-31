@@ -76,8 +76,26 @@ RSpec.describe 'FetchUtil extractor integration - Gitea and Forgejo pull resourc
     end
   end
 
-  it 'executes the Browser resource state against both product fixtures' do
+  it 'executes the Browser resource state against both products and surfaces' do
     browser = FetchUtil::Browser.new
+
+    with_url_page('https://code.example/forgejo/repo/pulls/42/commits',
+                  gitea_pull_fixture('forgejo_pull_commits.html')) do |page|
+      script = browser.send(:gitea_family_pull_resource_product_state_script) +
+               browser.send(:gitea_family_pull_resource_state_script)
+      state = page.evaluate(script)
+      expect(state).to include('product' => true, 'ready' => true, 'loading' => false)
+      expect(state.fetch('signature')).to include('commits:', 'Preserve the full visible commit row')
+    end
+
+    with_url_page('https://code.example/forge/team/repo/pulls/42/commits',
+                  gitea_pull_fixture('gitea_pull_commits.html')) do |page|
+      script = browser.send(:gitea_family_pull_resource_product_state_script) +
+               browser.send(:gitea_family_pull_resource_state_script)
+      state = page.evaluate(script)
+      expect(state).to include('product' => true, 'ready' => true, 'loading' => false)
+      expect(state.fetch('signature')).to include('commits:', 'Native Gitea commit row')
+    end
 
     with_url_page('https://code.example/forge/team/repo/pulls/42/files#diff-restored',
                   gitea_pull_fixture('gitea_pull_files.html')) do |page|
