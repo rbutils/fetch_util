@@ -12,6 +12,8 @@ module FetchUtil
                "fetch_util/browser/site_stabilization/gitea_family_thread_timeline_state"
       autoload :GiteaFamilyStabilization,
                "fetch_util/browser/site_stabilization/gitea_family_stabilization"
+      autoload :GiteaFamilyVisibilityScript,
+               "fetch_util/browser/site_stabilization/gitea_family_visibility_script"
       autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/gitea_family_threads"
       autoload :GiteaFamilyPullResourceProductState,
                "fetch_util/browser/site_stabilization/gitea_family_pull_resource_product_state"
@@ -34,6 +36,7 @@ module FetchUtil
       include CommunityAndMarketplace
       include GithubPullResources
       include GithubThreads
+      include GiteaFamilyVisibilityScript
       include GiteaFamilyThreadProductState
       include GiteaFamilyThreadTimelineState
       include GiteaFamilyStabilization
