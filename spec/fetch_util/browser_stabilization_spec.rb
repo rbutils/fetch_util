@@ -362,7 +362,8 @@ RSpec.describe FetchUtil::Browser do
 
     expect(scripts.first).to include('[data-testid="commit-row-item"]', 'a[href*="check_run_id="]',
                                      '.file-header[data-path][data-anchor]', "document.getElementById('check_run_' + requestedCheckId)",
-                                     'nodeVisible', 'selectedRequested', 'selectedReady')
+                                     'nodeVisible', 'bodySelector', 'deferredSelector', 'selectedRequested',
+                                     'selectedLoaded', 'selectedDeferred', 'selectedReady')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
     expect(browser).to have_received(:settle_after_stabilization).with(0.5)
   end

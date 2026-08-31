@@ -33,6 +33,8 @@ module FetchUtil
                 const fileHeaders = document.querySelectorAll('.file.js-file .file-header[data-path][data-anchor]');
                 const selectedFile = location.hash && document.querySelector('.file-header[data-anchor="' + CSS.escape(location.hash.slice(1)) + '"]');
                 const selectedFileRoot = selectedFile && selectedFile.closest('.file.js-file');
+                const bodySelector = '.js-file-content, .blob-wrapper, table.diff-table, table, [data-testid="diff-lines"], [data-testid="diff-file-content"], .rendered-diff';
+                const deferredSelector = '.js-diff-load-container include-fragment[src], .js-diff-load-container[data-fragment-url], include-fragment[src*="/pull/"][src*="/files"]';
                 const nodeVisible = (node) => {
                   if (!node) return false;
                   const nodeStyle = getComputedStyle(node);
@@ -44,10 +46,19 @@ module FetchUtil
                   }
                   return true;
                 };
+                const materialNode = (node) => {
+                  if (!node) return false;
+                  return [node, ...node.querySelectorAll('*')].some((candidate) => {
+                    if (!nodeVisible(candidate)) return false;
+                    return !!(candidate.textContent || '').trim() || candidate.matches('img[src], canvas, video, audio');
+                  });
+                };
 
                 let loaded = 0;
                 let selectedSize = 0;
                 let selectedRequested = false;
+                let selectedLoaded = false;
+                let selectedDeferred = false;
                 let explicitEmpty = false;
                 if (surface === 'commits') loaded = commitRows.length;
                 if (surface === 'checks') {
@@ -59,16 +70,21 @@ module FetchUtil
                 if (surface === 'files') {
                   loaded = fileHeaders.length;
                   selectedRequested = !!location.hash;
-                  selectedSize = nodeVisible(selectedFileRoot) ? (selectedFileRoot.textContent || '').trim().length : 0;
+                  const selectedBody = selectedFileRoot && Array.from(selectedFileRoot.querySelectorAll(bodySelector)).find(materialNode);
+                  selectedLoaded = !!selectedBody;
+                  selectedDeferred = !!(selectedFileRoot && Array.from(selectedFileRoot.querySelectorAll(deferredSelector)).some((node) =>
+                    node.getAttribute('src') || node.getAttribute('data-fragment-url')
+                  ));
+                  selectedSize = selectedLoaded ? (selectedBody.textContent || '').trim().length : 0;
                   explicitEmpty = /(?:no files (?:were )?changed|there are no files)/i.test((document.querySelector('.blankslate, main') || {}).textContent || '');
                 }
 
                 const rootReady = surface === 'commits' ? !!commitRoot : (surface === 'checks' ? !!checksRoot : (loaded > 0 || explicitEmpty));
-                const selectedReady = explicitEmpty || !selectedRequested || selectedSize > 0;
+                const selectedReady = explicitEmpty || !selectedRequested || selectedLoaded || selectedDeferred;
                 const ready = rootReady && (loaded > 0 || explicitEmpty) && selectedReady;
                 return {
                   ready,
-                  signature: [surface, loaded, selectedSize, location.search, location.hash].join(':')
+                  signature: [surface, loaded, selectedLoaded, selectedDeferred, selectedSize, location.search, location.hash].join(':')
                 };
               })()
             JS

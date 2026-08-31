@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   include_context 'extractor integration helpers'
 
@@ -128,6 +130,20 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
                                   '[lib/second.rb deferred diff](https://github.com/octo/example/pull/42/files?file=second)')
       expect(markdown).not_to include('hidden diff line', 'first visible diff line', 'restored visible diff line')
       expect(payload.fetch('html')).not_to include('hidden diff line')
+    end
+  end
+
+  it 'reports a selected header-only file as deferred instead of loaded' do
+    document = Nokogiri::HTML(github_resource_fixture('github_pull_files.html'))
+    selected = document.at_css(".file-header[data-anchor='diff-second']").ancestors('.file').first
+    selected.css('table, .review-thread').remove
+
+    extract_from_url('https://github.com/octo/example/pull/42/files#diff-second', document.to_html, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('## lib/second.rb', 'Selected file body is deferred on this page',
+                                  '[lib/second.rb deferred diff](https://github.com/octo/example/pull/42/files?file=second)')
+      expect(markdown).not_to include('selected visible diff line', 'Inline review detail remains visible.')
+      expect(payload.fetch('html')).not_to include('js-diff-load-container')
     end
   end
 

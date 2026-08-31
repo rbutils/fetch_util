@@ -85,6 +85,16 @@ function githubPullAllDeferredFileEntries() {
   return entries;
 }
 
+function githubPullLoadedFileBody(file) {
+  if (!file) return null;
+  var selector = ".js-file-content, .blob-wrapper, table.diff-table, table, [data-testid='diff-lines'], [data-testid='diff-file-content'], .rendered-diff";
+  return Array.prototype.slice.call(file.querySelectorAll(selector)).find(function(node) {
+    if (elementSubtreeHidden(node)) return false;
+    var clone = visibilityPrunedClone(node);
+    return !!normalizeText(clone.textContent) || !!clone.querySelector("img[src], canvas, video, audio");
+  }) || null;
+}
+
 function githubPullFileDetail(header, path) {
   var accessibleStat = header.querySelector(".file-info .sr-only");
   if (normalizeText((accessibleStat && accessibleStat.textContent) || "")) return normalizeText(accessibleStat.textContent);
@@ -105,8 +115,18 @@ function githubPullFileContent(route, metadata) {
   if (selectedHeader && elementVisuallyHidden(selectedHeader)) selectedHeader = null;
   var selectedFile = selectedHeader && selectedHeader.closest(".file.js-file");
   if (selectedFile && elementVisuallyHidden(selectedFile)) selectedFile = null;
+  if (selectedAnchor && !selectedFile) return null;
   var sections = [];
-  if (selectedFile) sections.push("## " + normalizeText(selectedHeader.getAttribute("data-path")) + "\n\n" + githubPullResourceNodeMarkdown(selectedFile));
+  var selectedBody = githubPullLoadedFileBody(selectedFile);
+  var selectedPath = selectedHeader && normalizeText(selectedHeader.getAttribute("data-path"));
+  var selectedDeferred = selectedFile ? githubPullDeferredFileEntries(selectedFile, selectedPath + " deferred diff") : [];
+  if (selectedFile && selectedBody) {
+    sections.push("## " + selectedPath + "\n\n" + githubPullResourceNodeMarkdown(selectedFile));
+  } else if (selectedFile && selectedDeferred.length) {
+    sections.push("## " + selectedPath, "Selected file body is deferred on this page; use the deferred file resource below.");
+  } else if (selectedFile) {
+    return null;
+  }
   if (empty) sections.push("## Files changed\n\n" + empty);
   sections.push(browsableInventory("Files changed", entries));
   var expectedCount = githubPullFilesExpectedCount(route);
@@ -122,7 +142,8 @@ function githubPullFileContent(route, metadata) {
   if (deferredEntries.length) sections.push(browsableInventory("Deferred file content", deferredEntries));
   sections.push(browsableInventory("Browse this pull request", githubPullSiblingInventory(route)));
 
-  var html = selectedFile ? visibilityPrunedClone(selectedFile).outerHTML : entries.map(function(entry) {
+  var selectedHtmlNode = selectedBody ? selectedFile : selectedHeader;
+  var html = selectedHtmlNode ? visibilityPrunedClone(selectedHtmlNode).outerHTML : entries.map(function(entry) {
     var link = document.createElement("a");
     link.href = entry.url;
     link.textContent = entry.label;
