@@ -26,6 +26,7 @@ module FetchUtil
       autoload :GitlabMergeRequestResourceState,
                "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_state"
       autoload :GitlabMergeRequestResources, "fetch_util/browser/site_stabilization/gitlab_merge_request_resources"
+      autoload :GitlabStabilization, "fetch_util/browser/site_stabilization/gitlab_stabilization"
       autoload :GitlabThreads, "fetch_util/browser/site_stabilization/gitlab_threads"
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
@@ -41,6 +42,7 @@ module FetchUtil
       include GiteaFamilyPullResourceState
       include GiteaFamilyPullResources
       include GitlabRepo
+      include GitlabStabilization
       include GitlabMergeRequestResources
       include GitlabThreads
       include SocialPlatforms
