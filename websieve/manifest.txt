@@ -135,6 +135,7 @@ profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/families/repo_hosts.js
+profiles/community/forge_thread_entries.js
 profiles/community/github_thread_shared.js
 profiles/community/github_threads.js
 profiles/community/github_pull_file_resources.js

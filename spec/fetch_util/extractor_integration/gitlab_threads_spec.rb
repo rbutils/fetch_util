@@ -76,6 +76,30 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
     end
   end
 
+  it 'preserves distinct idless records while deduplicating stable permalinks' do
+    records = <<~HTML
+      <div class="js-timeline-entry timeline-entry note-wrapper note-comment">
+        <a class="js-user-link">idless-user</a>
+        <div class="note-body"><p>Repeated idless GitLab record.</p></div>
+      </div>
+      <div class="js-timeline-entry timeline-entry note-wrapper note-comment">
+        <a class="js-user-link">idless-user</a>
+        <div class="note-body"><p>Repeated idless GitLab record.</p></div>
+      </div>
+      <div class="js-timeline-entry timeline-entry note-wrapper note-comment" id="note_101">
+        <a class="js-user-link">bob</a>
+        <div class="note-body"><p>Duplicate permalink must not create another record.</p></div>
+      </div>
+    HTML
+    html = gitlab_fixture('gitlab_work_item_thread.html').sub('<!-- timeline-end -->', records)
+
+    extract_from_url('https://forge.example/team/project/-/work_items/12', html, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown.scan('Repeated idless GitLab record.').length).to eq(2)
+      expect(markdown).not_to include('Duplicate permalink must not create another record.')
+    end
+  end
+
   it 'extracts a GitLab merge request and inventories every public resource family' do
     extract_from_url('https://code.example.test/group/subgroup/project/-/merge_requests/42',
                      gitlab_fixture('gitlab_merge_request_thread.html'), reader_mode: false) do |payload|

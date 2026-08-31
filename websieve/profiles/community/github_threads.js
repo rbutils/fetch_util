@@ -45,18 +45,12 @@ function githubThreadEntries(root, opening, route) {
     ".discussion-item"
   ].join(", ")));
 
-  var seen = new Set();
-  return nodes.filter(function(node) {
+  var entries = nodes.filter(function(node) {
     return node !== opening && !node.contains(opening) && !opening.contains(node);
   }).map(function(node) {
     return githubThreadEntry(node, route);
-  }).filter(function(entry) {
-    if (!entry) return false;
-    var identity = entry.permalink || JSON.stringify([entry.kind, entry.author, entry.timestamp, normalizeText(entry.markdown)]);
-    if (seen.has(identity)) return false;
-    seen.add(identity);
-    return true;
   });
+  return deduplicateForgeThreadPermalinks(entries);
 }
 
 function githubThreadMetadataMarkdown(root) {

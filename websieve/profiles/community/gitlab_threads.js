@@ -45,16 +45,10 @@ function gitlabThreadEntries(root, opening, route) {
     }
     return !node.querySelector(atomicSelector);
   });
-  var seen = new Set();
-  return records.map(function(node) {
+  var entries = records.map(function(node) {
     return gitlabThreadEntry(node, route);
-  }).filter(function(entry) {
-    if (!entry) return false;
-    var identity = entry.permalink || JSON.stringify([entry.kind, entry.author, entry.timestamp, normalizeText(entry.markdown)]);
-    if (seen.has(identity)) return false;
-    seen.add(identity);
-    return true;
   });
+  return deduplicateForgeThreadPermalinks(entries);
 }
 
 function gitlabThreadMetadataMarkdown(root) {

@@ -115,19 +115,12 @@ function giteaFamilyThreadEntry(node, route) {
 }
 
 function giteaFamilyThreadEntries(root, opening, route) {
-  var seen = new Set();
-  return giteaFamilyTimelineItems(root).filter(function(node) {
+  var entries = giteaFamilyTimelineItems(root).filter(function(node) {
     return node !== opening && !node.contains(opening) && !opening.contains(node);
   }).map(function(node) {
     return giteaFamilyThreadEntry(node, route);
-  }).filter(function(entry) {
-    if (!entry) return false;
-    if (!entry.permalink) return true;
-    var identity = entry.permalink;
-    if (seen.has(identity)) return false;
-    seen.add(identity);
-    return true;
   });
+  return deduplicateForgeThreadPermalinks(entries);
 }
 
 function giteaFamilyThreadMetadata(root) {

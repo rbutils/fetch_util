@@ -95,6 +95,32 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
     end
   end
 
+  it 'preserves distinct idless records while deduplicating stable permalinks' do
+    records = <<~HTML
+      <div data-testid="timeline-row-border-IDLESS1">
+        <a data-testid="avatar-link">idless-user</a>
+        <div data-testid="markdown-body"><p>Repeated idless GitHub record.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-IDLESS2">
+        <a data-testid="avatar-link">idless-user</a>
+        <div data-testid="markdown-body"><p>Repeated idless GitHub record.</p></div>
+      </div>
+      <div data-testid="timeline-row-border-DUPLICATE">
+        <a data-testid="avatar-link">hubot</a>
+        <a href="#issuecomment-1202">Duplicate responsive permalink</a>
+        <div data-testid="markdown-body"><p>Duplicate permalink must not create another record.</p></div>
+      </div>
+    HTML
+    timeline_end = "</section>\n    <div data-testid=\"issue-timeline-load-more-wrapper-load-top\">"
+    html = github_fixture('github_modern_issue_thread.html').sub(timeline_end, "#{records}#{timeline_end}")
+
+    extract_from_url('https://github.com/octo/example/issues/12', html, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown.scan('Repeated idless GitHub record.').length).to eq(2)
+      expect(markdown).not_to include('Duplicate permalink must not create another record.')
+    end
+  end
+
   it 'extracts a modern discussion through the shared thread shape' do
     extract_from_url('https://github.com/octo/example/discussions/12', github_fixture('github_modern_issue_thread.html'), reader_mode: false) do |payload|
       expect(payload).to include('contentType' => 'social', 'platform' => 'GitHub', 'community' => 'octo/example')
