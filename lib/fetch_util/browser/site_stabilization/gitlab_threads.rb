@@ -31,9 +31,11 @@ module FetchUtil
                   /^GitLab$/i.test((site && site.content || '').trim());
                 const meta = !!document.querySelector('meta[name="gitlab-meta"], meta[name^="gitlab-"]');
                 const gon = window.gon || {};
-                let runtime = !!gon.api_version;
-                if (runtime && gon.gitlab_url) {
-                  try { runtime = new URL(gon.gitlab_url, location.href).origin === location.origin; } catch (_error) { runtime = false; }
+                const hasRelativeRoot = Object.prototype.hasOwnProperty.call(gon, 'relative_url_root');
+                const runtimeTarget = gon.gitlab_url || (hasRelativeRoot ? (gon.relative_url_root || location.origin) : '');
+                let runtime = !!gon.api_version && !!runtimeTarget;
+                if (runtime) {
+                  try { runtime = new URL(runtimeTarget, location.href).origin === location.origin; } catch (_error) { runtime = false; }
                 }
                 const asset = Array.from(document.querySelectorAll('script[src], link[href]')).some((node) => {
                   const value = node.getAttribute('src') || node.getAttribute('href') || '';

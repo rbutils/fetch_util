@@ -273,7 +273,9 @@ RSpec.describe FetchUtil::Browser do
     expect(browser.send(:stabilize_gitlab_thread, page)).to be(true)
 
     expect(scripts.first).to include("document.documentElement.classList.contains('gl-system')", "window.gon || {}",
-                                     "new URL(gon.gitlab_url, location.href).origin === location.origin",
+                                     "Object.prototype.hasOwnProperty.call(gon, 'relative_url_root')",
+                                     "gon.gitlab_url || (hasRelativeRoot ? (gon.relative_url_root || location.origin) : '')",
+                                     "new URL(runtimeTarget, location.href).origin === location.origin",
                                      ".js-timeline-entry.timeline-entry", "continuation.click()", "textSize")
     expect(scripts.first.index('const loading')).to be < scripts.first.index('const continuation')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
