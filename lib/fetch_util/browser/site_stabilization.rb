@@ -10,6 +10,8 @@ module FetchUtil
                "fetch_util/browser/site_stabilization/gitea_family_thread_product_state"
       autoload :GiteaFamilyThreadTimelineState,
                "fetch_util/browser/site_stabilization/gitea_family_thread_timeline_state"
+      autoload :GiteaFamilyStabilization,
+               "fetch_util/browser/site_stabilization/gitea_family_stabilization"
       autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/gitea_family_threads"
       autoload :GiteaFamilyPullResourceProductState,
                "fetch_util/browser/site_stabilization/gitea_family_pull_resource_product_state"
@@ -33,6 +35,7 @@ module FetchUtil
       include GithubThreads
       include GiteaFamilyThreadProductState
       include GiteaFamilyThreadTimelineState
+      include GiteaFamilyStabilization
       include GiteaFamilyThreads
       include GiteaFamilyPullResourceProductState
       include GiteaFamilyPullResourceState
