@@ -31,13 +31,7 @@ function gitlabDiffFileVisible(file) {
 
 function gitlabDiffFileNodes(root) {
   var selector = "diff-file[data-testid='rd-diff-file'], .diff-file, .file-holder, [data-testid='diff-file']";
-  var nodes = Array.prototype.slice.call(root.querySelectorAll(selector));
-  return nodes.filter(function(node, index) {
-    if (!gitlabDiffFileVisible(node)) return false;
-    return !nodes.some(function(other, otherIndex) {
-      return otherIndex < index && other.contains(node);
-    });
-  });
+  return topLevelQualifiedDescendants(root, selector, gitlabDiffFileVisible);
 }
 
 function gitlabDiffFilePath(file, index, fileIds) {

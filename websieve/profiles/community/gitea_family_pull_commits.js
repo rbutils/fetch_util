@@ -13,15 +13,12 @@ function giteaFamilyPullCommitClone(row) {
 }
 
 function giteaFamilyPullCommitRecords(root) {
-  var nodes = Array.prototype.slice.call(root.querySelectorAll(
-    "#commits-table > tbody.commit-list > tr, .commit-group .commits .commit"
-  ));
-  return nodes.filter(function(row, index) {
-    if (!giteaFamilyPullVisibleMaterial(row)) return false;
-    return !nodes.some(function(other, otherIndex) {
-      return otherIndex < index && other.contains(row);
-    });
-  }).map(function(row) {
+  var nodes = topLevelQualifiedDescendants(
+    root,
+    "#commits-table > tbody.commit-list > tr, .commit-group .commits .commit",
+    giteaFamilyPullVisibleMaterial
+  );
+  return nodes.map(function(row) {
     var clone = giteaFamilyPullCommitClone(row);
     return { node: clone, markdown: cleanupMarkdownNoise(markdownFor(clone.innerHTML)) };
   }).filter(function(record) {

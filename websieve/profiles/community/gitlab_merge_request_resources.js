@@ -7,12 +7,8 @@ function gitlabResourceRoot() {
 }
 
 function gitlabResourceNodes(root, selector) {
-  var nodes = Array.prototype.slice.call(root.querySelectorAll(selector));
-  return nodes.filter(function(node, index) {
-    if (elementSubtreeHidden(node)) return false;
-    return !nodes.some(function(other, otherIndex) {
-      return otherIndex < index && other.contains(node);
-    });
+  return topLevelQualifiedDescendants(root, selector, function(node) {
+    return !elementSubtreeHidden(node);
   });
 }
 

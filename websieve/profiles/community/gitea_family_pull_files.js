@@ -64,15 +64,13 @@ function giteaFamilyPullFileTreeEntries(route) {
 }
 
 function giteaFamilyPullFileBoxes(root) {
-  var nodes = Array.prototype.slice.call(root.querySelectorAll(
-    "#diff-file-boxes > .diff-file-box, .diff-file-box.file-content[id^='diff-']"
-  ));
-  return nodes.filter(function(node, index) {
-    if (node.id === "diff-incomplete" || !giteaFamilyPullVisibleMaterial(node)) return false;
-    return !nodes.some(function(other, otherIndex) {
-      return otherIndex < index && other.contains(node);
-    });
-  });
+  return topLevelQualifiedDescendants(
+    root,
+    "#diff-file-boxes > .diff-file-box, .diff-file-box.file-content[id^='diff-']",
+    function(node) {
+      return node.id !== "diff-incomplete" && giteaFamilyPullVisibleMaterial(node);
+    }
+  );
 }
 
 function giteaFamilyPullFileLabel(box, fallback) {

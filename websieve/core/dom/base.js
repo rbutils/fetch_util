@@ -111,6 +111,16 @@
     return clone;
   }
 
+  function topLevelQualifiedDescendants(root, selector, qualifies) {
+    var nodes = Array.prototype.slice.call(root.querySelectorAll(selector));
+    return nodes.filter(function(node, index) {
+      if (qualifies && !qualifies(node)) return false;
+      return !nodes.some(function(other, otherIndex) {
+        return otherIndex < index && other.contains(node);
+      });
+    });
+  }
+
   function safeReadableDocumentClone() {
     try {
       return document.cloneNode(true);
