@@ -7,6 +7,13 @@ module FetchUtil
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/github_threads"
       autoload :GitlabRepo, "fetch_util/browser/site_stabilization/gitlab_repo"
+      autoload :GitlabMergeRequestResourceVisibilityScript,
+               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_visibility_script"
+      autoload :GitlabMergeRequestResourceStateScript,
+               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_state_script"
+      autoload :GitlabMergeRequestResourceState,
+               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_state"
+      autoload :GitlabMergeRequestResources, "fetch_util/browser/site_stabilization/gitlab_merge_request_resources"
       autoload :GitlabThreads, "fetch_util/browser/site_stabilization/gitlab_threads"
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
@@ -15,6 +22,7 @@ module FetchUtil
       include GithubPullResources
       include GithubThreads
       include GitlabRepo
+      include GitlabMergeRequestResources
       include GitlabThreads
       include SocialPlatforms
       include TravelAndLodging

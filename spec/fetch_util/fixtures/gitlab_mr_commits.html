@@ -1,0 +1,26 @@
+<!doctype html>
+<html class="gl-system">
+<head>
+  <title>Complete MR resources</title>
+  <meta property="og:site_name" content="GitLab">
+  <script>window.gon = { api_version: "v4", gitlab_url: "https://forge.example/gitlab", relative_url_root: "/gitlab", current_project_id: 88 };</script>
+</head>
+<body data-page="projects:merge_requests:commits">
+<article data-testid="commit-content">Global commit chrome must not leak</article>
+<main data-project-id="88">
+  <h1>Complete MR resources</h1>
+  <section data-testid="commits-list">
+    <article data-testid="commit-content">
+      <a data-commit-link href="/gitlab/group/project/-/commit/aaaa">First resource commit</a>
+      <a href="/alice">alice</a><time datetime="2026-08-01T10:00:00Z">Aug 1</time>
+      <span>Verified</span>
+    </article>
+    <!-- records-end -->
+    <article data-testid="commit-content" hidden><a>Hidden commit</a></article>
+    <article data-testid="commit-content" style="visibility:hidden">
+      <a data-commit-link href="/gitlab/group/project/-/commit/bbbb" style="visibility:visible">Restored commit</a>
+    </article>
+  </section>
+</main>
+</body>
+</html>

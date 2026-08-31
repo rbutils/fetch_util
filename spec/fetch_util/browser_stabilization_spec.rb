@@ -76,7 +76,13 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://forge.example/group/project/-/issues/12')).to eq(:stabilize_gitlab_thread)
     expect(strategy_for.call('https://code.example/group/subgroup/project/-/work_items/12')).to eq(:stabilize_gitlab_thread)
     expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42')).to eq(:stabilize_gitlab_thread)
-    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/commits')).to be_nil
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/commits')).to eq(:stabilize_gitlab_merge_request_resource)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/pipelines')).to eq(:stabilize_gitlab_merge_request_resource)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/reports/codequality')).to eq(:stabilize_gitlab_merge_request_resource)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/reports/codequality/')).to eq(:stabilize_gitlab_merge_request_resource)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/diffs#diff-a')).to eq(:stabilize_gitlab_merge_request_resource)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/commits/not-real')).to be_nil
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/reports/codequality/detail')).to be_nil
     expect(strategy_for.call('https://git.example/group/project/issues/12')).to be_nil
   end
 
@@ -118,6 +124,51 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:settle_after_stabilization)
 
     expect(browser.send(:stabilize_gitlab_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).once
+    expect(browser).not_to have_received(:sleep)
+    expect(browser).not_to have_received(:settle_after_stabilization)
+  end
+
+  it 'waits for a selected GitLab merge-request resource to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    scripts = []
+    states = [
+      { "product" => true, "ready" => false, "signature" => "diffs:0:false:false:0" },
+      { "product" => true, "ready" => true, "signature" => "diffs:3:false:true:400" },
+      { "product" => true, "ready" => true, "signature" => "diffs:3:false:true:400" },
+      { "product" => true, "ready" => true, "signature" => "diffs:3:false:true:400" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do |_page, script, default:|
+      scripts << script
+      states.shift || { "product" => true, "ready" => true, "signature" => "diffs:3:false:true:400" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gitlab_merge_request_resource, page)).to be(true)
+
+    expect(scripts.first).to include("const surface = match[1].split('/')", "diff-file[data-testid=\"rd-diff-file\"]",
+                                     "decodeURIComponent((location.hash || '').replace(/^#/, ''))", "data-diff-id",
+                                     "row.getAttribute('data-file-path')", "other.contains(row)",
+                                     "while (reserved.has(identity) || assigned.has(identity))", "const textSize",
+                                     "document.querySelector('main') ||", "Object.prototype.hasOwnProperty.call",
+                                     "Array.from(rows[selectedIndex].querySelectorAll(bodySelector)).some")
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'falls through immediately when a GitLab resource route lacks product evidence' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 8.0)
+    allow(browser).to receive(:safe_evaluate).and_return(
+      { "product" => false, "ready" => false, "signature" => "" }
+    )
+    allow(browser).to receive(:sleep)
+    allow(browser).to receive(:settle_after_stabilization)
+
+    expect(browser.send(:stabilize_gitlab_merge_request_resource, page)).to be(false)
     expect(browser).to have_received(:safe_evaluate).once
     expect(browser).not_to have_received(:sleep)
     expect(browser).not_to have_received(:settle_after_stabilization)

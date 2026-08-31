@@ -121,36 +121,7 @@ function gitlabTimelineInventoryEntries(route, root) {
 }
 
 function gitlabThreadInventory(route, root) {
-  var entries = gitlabTimelineInventoryEntries(route, root);
-  var projectId = gitlabProjectId();
-  var apiKind = route.kind === "merge_requests" ? "merge_requests" : "issues";
-  var apiBase = projectId && gitlabApiRoot() + "/projects/" + projectId + "/" + apiKind + "/" + route.number;
-  if (apiBase) {
-    entries.push(
-      { label: "API details", url: apiBase, detail: "May require authentication on this GitLab instance." },
-      { label: "API notes", url: apiBase + "/notes?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
-      { label: "API discussions", url: apiBase + "/discussions?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." }
-    );
-  }
-
-  if (route.kind === "merge_requests") {
-    entries.push(
-      { label: "Commits", url: gitlabRouteUrl(route, "/commits") },
-      { label: "Pipelines", url: gitlabRouteUrl(route, "/pipelines") },
-      { label: "Reports", url: gitlabRouteUrl(route, "/reports") },
-      { label: "Changes", url: gitlabRouteUrl(route, "/diffs") },
-      { label: "Raw diff", url: gitlabRouteUrl(route) + ".diff" },
-      { label: "Raw patch", url: gitlabRouteUrl(route) + ".patch" }
-    );
-    if (apiBase) {
-      entries.push(
-        { label: "API commits", url: apiBase + "/commits?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
-        { label: "API pipelines", url: apiBase + "/pipelines?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
-        { label: "API diffs", url: apiBase + "/diffs?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
-        { label: "API approvals", url: apiBase + "/approvals", detail: "May require authentication on this GitLab instance." }
-      );
-    }
-  }
+  var entries = gitlabTimelineInventoryEntries(route, root).concat(gitlabCoreInventoryEntries(route));
   return browsableInventory("Browse this GitLab thread", entries);
 }
 

@@ -28,6 +28,7 @@
   registerGitHubThreadProfiles();
   registerGitHubPullResourceProfiles();
   registerGitLabThreadProfiles();
+  registerGitLabMergeRequestResourceProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
   registerCommunityWikiProfiles();
   registerHackerNewsProfiles();

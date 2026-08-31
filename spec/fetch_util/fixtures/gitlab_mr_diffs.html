@@ -1,0 +1,57 @@
+<!doctype html>
+<html class="gl-system">
+<head>
+  <title>Complete MR changes</title>
+  <meta property="og:site_name" content="GitLab">
+  <meta name="gitlab-meta" content="fixture">
+  <script>window.gon = { api_version: "v4", gitlab_url: "https://forge.example", current_project_id: 88 };</script>
+</head>
+<body>
+<main data-project-id="88">
+  <h1>Complete MR changes</h1>
+  <section class="merge-request-diffs">
+    <diff-file data-testid="rd-diff-file" id="diff-a" data-path="lib/alpha.rb">
+      <header data-testid="rd-diff-file-header" data-path="lib/alpha.rb">lib/alpha.rb +2 -1</header>
+      <div data-testid="rd-diff-file-body"></div>
+      <div class="diff-line"><pre>+alpha complete line</pre></div>
+      <div class="file-actions"><a href="/group/project/-/raw/main/lib/alpha.rb">View raw file</a><button>Copy path</button></div>
+      <include-fragment src="/group/project/-/merge_requests/42/diffs_batch.json?file=diff-a"></include-fragment>
+    </diff-file>
+    <diff-file data-testid="rd-diff-file" id="diff-b" data-path="spec/beta_spec.rb">
+      <header data-testid="rd-diff-file-header" data-path="spec/beta_spec.rb">spec/beta_spec.rb +3 -0</header>
+      <div data-testid="rd-diff-file-body"><pre>+beta complete line</pre></div>
+    </diff-file>
+    <diff-file data-testid="rd-diff-file" data-diff-id="diff-c" data-path="docs/gamma.md">
+      <header data-testid="rd-diff-file-header" data-path="docs/gamma.md">docs/gamma.md +1 -0</header>
+      <div data-testid="rd-diff-file-body"><pre>+gamma complete line</pre></div>
+    </diff-file>
+    <diff-file data-testid="rd-diff-file" data-file-path=" docs/space  name.md ">
+      <header data-testid="rd-diff-file-header" data-path="docs/space  name.md">docs/space  name.md +1 -0</header>
+      <div data-testid="rd-diff-file-body"><pre>+space complete line</pre></div>
+    </diff-file>
+    <diff-file data-testid="rd-diff-file">
+      <header data-testid="rd-diff-file-header" data-path="docs/no-id.md">docs/no-id.md +1 -0</header>
+      <div data-testid="rd-diff-file-body"><pre>+identifierless complete line</pre></div>
+    </diff-file>
+    <diff-file data-testid="rd-diff-file" id="fetch-util-diff-5" data-path="docs/real-prefix.md">
+      <header data-testid="rd-diff-file-header" data-path="docs/real-prefix.md">docs/real-prefix.md +1 -0</header>
+      <div data-testid="rd-diff-file-body"><pre>+real prefix complete line</pre></div>
+    </diff-file>
+    <div class="file-holder" data-file-id="diff-outer">
+      <diff-file data-testid="rd-diff-file" id="diff-inner">
+        <header data-testid="rd-diff-file-header" data-path="docs/nested.md">docs/nested.md +1 -0</header>
+        <div data-testid="rd-diff-file-body"><pre>+nested complete line</pre></div>
+      </diff-file>
+    </div>
+    <diff-file data-testid="rd-diff-file" id="diff-restored" data-path="docs/restored.md" style="visibility: hidden">
+      <header data-testid="rd-diff-file-header" data-path="docs/restored.md" style="visibility: visible">docs/restored.md +1 -0</header>
+      <div data-testid="rd-diff-file-body" style="visibility: visible"><pre>+restored complete line</pre></div>
+    </diff-file>
+    <!-- files-end -->
+    <diff-file data-testid="rd-diff-file" id="diff-hidden" data-path="hidden.txt" hidden>
+      <header>hidden.txt</header><pre>Hidden diff must not leak</pre>
+    </diff-file>
+  </section>
+</main>
+</body>
+</html>

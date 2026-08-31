@@ -218,6 +218,9 @@ RSpec.describe "extract asset bundle" do
     resources_path = "profiles/community/github_pull_resources.js"
     gitlab_shared_path = "profiles/community/gitlab_thread_shared.js"
     gitlab_thread_path = "profiles/community/gitlab_threads.js"
+    gitlab_resource_shared_path = "profiles/community/gitlab_merge_request_resource_shared.js"
+    gitlab_diff_path = "profiles/community/gitlab_merge_request_diffs.js"
+    gitlab_resources_path = "profiles/community/gitlab_merge_request_resources.js"
 
     expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
     expect(File.read(File.join(source_root, shared_path))).to include("function githubResourceRoute")
@@ -229,7 +232,12 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(gitlab_shared_path)).to be < manifest.index(gitlab_thread_path)
     expect(File.read(File.join(source_root, gitlab_shared_path))).to include("function gitlabResourceRoute")
     expect(File.read(File.join(source_root, gitlab_thread_path))).to include("function gitlabThreadContent")
-    expect(manifest.index(gitlab_thread_path)).to be < manifest.index("profiles/register.js")
+    expect(manifest.index(gitlab_thread_path)).to be < manifest.index(gitlab_resource_shared_path)
+    expect(manifest.index(gitlab_resource_shared_path)).to be < manifest.index(gitlab_diff_path)
+    expect(manifest.index(gitlab_diff_path)).to be < manifest.index(gitlab_resources_path)
+    expect(File.read(File.join(source_root, gitlab_resource_shared_path))).to include("function gitlabResourceResult")
+    expect(File.read(File.join(source_root, gitlab_resources_path))).to include("function gitlabMergeRequestResourceContent")
+    expect(manifest.index(gitlab_resources_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(resources_path)).to be < manifest.index("profiles/register.js")
   end
 
@@ -410,6 +418,7 @@ RSpec.describe "extract asset bundle" do
                           registerGitHubThreadProfiles
                           registerGitHubPullResourceProfiles
                           registerGitLabThreadProfiles
+                          registerGitLabMergeRequestResourceProfiles
                           registerCommunityWikiProfiles
                           registerHackerNewsProfiles
                           registerMastodonProfiles

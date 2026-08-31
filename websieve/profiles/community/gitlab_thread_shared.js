@@ -1,18 +1,34 @@
 function gitlabResourceRoute() {
-  var match = (location.pathname || "").match(/^(.+)\/-\/(issues|work_items|merge_requests)\/(\d+)(?:\/(commits|pipelines|reports|diffs))?\/?$/);
+  var match = (location.pathname || "").match(/^\/(.*?)\/-\/(issues|work_items|merge_requests)\/(\d+)(?:\/(commits|pipelines|reports|diffs)(?:\/(.*))?)?\/?$/);
   if (!match) return null;
 
-  var projectPath = match[1].replace(/^\/+|\/+$/g, "");
+  var surface = match[4] || null;
+  var surfaceDetail = match[5] || null;
+  if (surface === "reports" && surfaceDetail && /\/$/.test(surfaceDetail)) {
+    surfaceDetail = surfaceDetail.slice(0, -1);
+  }
+  if (surfaceDetail && (surface !== "reports" || !/^[\w.%+-]+$/.test(surfaceDetail))) return null;
+
+  var fullProjectPath = match[1].replace(/^\/+|\/+$/g, "");
+  var relativeRoot = normalizeText((window.gon || {}).relative_url_root || "").replace(/^\/+|\/+$/g, "");
+  var routePrefix = relativeRoot ? "/" + relativeRoot : "";
+  var projectPath = fullProjectPath;
+  if (relativeRoot && projectPath.indexOf(relativeRoot + "/") === 0) {
+    projectPath = projectPath.slice(relativeRoot.length + 1);
+  }
   var projectParts = projectPath.split("/").filter(Boolean);
   if (projectParts.length < 2 || projectParts.some(function(part) { return !/^[\w.%+-]+$/.test(part); })) return null;
+
+  var root = routePrefix + "/" + projectPath;
 
   return {
     projectPath: projectPath,
     community: projectPath,
     kind: match[2],
     number: match[3],
-    surface: match[4] || null,
-    basePath: "/" + projectPath + "/-/" + match[2] + "/" + match[3]
+    surface: surface,
+    surfaceDetail: surfaceDetail,
+    basePath: root + "/-/" + match[2] + "/" + match[3]
   };
 }
 
@@ -26,7 +42,7 @@ function gitlabRouteUrl(route, suffix) {
 }
 
 function gitlabRuntimeOriginMatches(value) {
-  if (!value) return true;
+  if (!value) return false;
 
   try {
     return new URL(value, location.href).origin === location.origin;
@@ -56,7 +72,9 @@ function gitlabProductMatch(root) {
   var branded = !!(html && html.classList.contains("gl-system") && site && /^GitLab$/i.test(normalizeText(site.getAttribute("content"))));
   var meta = !!document.querySelector("meta[name='gitlab-meta'], meta[name^='gitlab-']");
   var gon = window.gon || {};
-  var runtime = !!(gon.api_version && gitlabRuntimeOriginMatches(gon.gitlab_url || gon.relative_url_root));
+  var hasRelativeRoot = Object.prototype.hasOwnProperty.call(gon, "relative_url_root");
+  var runtimeTarget = gon.gitlab_url || (hasRelativeRoot ? (gon.relative_url_root || location.origin) : null);
+  var runtime = !!(gon.api_version && gitlabRuntimeOriginMatches(runtimeTarget));
   var asset = gitlabProductAssetEvidence();
 
   return (runtime && (branded || meta || asset)) || (branded && (meta || asset));
@@ -162,4 +180,43 @@ function gitlabProjectId() {
 function gitlabApiRoot() {
   var relativeRoot = normalizeText((window.gon || {}).relative_url_root || "").replace(/\/$/, "");
   return location.origin + relativeRoot + "/api/v4";
+}
+
+function gitlabApiResourceBase(route) {
+  var projectId = gitlabProjectId() || encodeURIComponent(route.projectPath);
+
+  var apiKind = route.kind === "merge_requests" ? "merge_requests" : "issues";
+  return gitlabApiRoot() + "/projects/" + projectId + "/" + apiKind + "/" + route.number;
+}
+
+function gitlabCoreInventoryEntries(route) {
+  var apiBase = gitlabApiResourceBase(route);
+  var entries = [];
+  if (apiBase) {
+    entries.push(
+      { label: "API details", url: apiBase, detail: "May require authentication on this GitLab instance." },
+      { label: "API notes", url: apiBase + "/notes?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
+      { label: "API discussions", url: apiBase + "/discussions?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." }
+    );
+  }
+
+  if (route.kind !== "merge_requests") return entries;
+  entries.push(
+    { label: "Conversation", url: gitlabRouteUrl(route) },
+    { label: "Commits", url: gitlabRouteUrl(route, "/commits") },
+    { label: "Pipelines", url: gitlabRouteUrl(route, "/pipelines") },
+    { label: "Reports", url: gitlabRouteUrl(route, "/reports") },
+    { label: "Changes", url: gitlabRouteUrl(route, "/diffs") },
+    { label: "Raw diff", url: gitlabRouteUrl(route) + ".diff" },
+    { label: "Raw patch", url: gitlabRouteUrl(route) + ".patch" }
+  );
+  if (apiBase) {
+    entries.push(
+      { label: "API commits", url: apiBase + "/commits?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
+      { label: "API pipelines", url: apiBase + "/pipelines?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
+      { label: "API diffs", url: apiBase + "/diffs?per_page=100&page=1", detail: "May require authentication; follow Link or X-Next-Page response headers." },
+      { label: "API approvals", url: apiBase + "/approvals", detail: "May require authentication on this GitLab instance." }
+    );
+  }
+  return entries;
 }
