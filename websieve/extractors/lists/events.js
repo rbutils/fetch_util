@@ -47,6 +47,21 @@
     var items = [];
     var seen = {};
     var selectors = "[class*='event-card' i], [class*='event-list' i] article, [class*='event' i] article, li[class*='event' i], [data-testid*='event' i]";
+    var records = [];
+    var recordsByCard = new Map();
+
+    function collectCard(card, link) {
+      if (!card) return;
+      var existing = recordsByCard.get(card);
+      if (existing) {
+        if (!existing.link && link) existing.link = link;
+        return;
+      }
+
+      var record = { card: card, link: link || null, index: records.length };
+      recordsByCard.set(card, record);
+      records.push(record);
+    }
 
     function addCard(card, link) {
       if (elementVisuallyHidden(card) || card.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
@@ -69,12 +84,22 @@
     }
 
     Array.prototype.forEach.call(document.querySelectorAll(selectors), function(card) {
-      addCard(card);
+      collectCard(card);
     });
     Array.prototype.forEach.call(document.querySelectorAll("a[href*='/e/'], a[href*='tickets-']"), function(link) {
       if (elementVisuallyHidden(link)) return;
       var card = link.closest("article, li, [role='listitem'], [data-testid*='event' i], [class*='event' i], [class*='card' i]") || link.parentElement;
-      if (card) addCard(card, link);
+      collectCard(card, link);
+    });
+    records.sort(function(left, right) {
+      if (left.card === right.card) return left.index - right.index;
+      var position = left.card.compareDocumentPosition(right.card);
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return left.index - right.index;
+    });
+    records.forEach(function(record) {
+      addCard(record.card, record.link);
     });
 
     return items;

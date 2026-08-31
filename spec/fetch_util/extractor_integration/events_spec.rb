@@ -173,6 +173,24 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'preserves DOM order across event cards and ticket-link fallbacks' do
+    html = <<~HTML
+      <html><head><title>Community events</title></head><body><main><h1>Community events</h1>
+        <div class="listing-card"><h2><a href="/e/early">Early community event</a></h2><time datetime="2026-10-01">Oct 1, 2026</time></div>
+        <article class="event-card"><h2><a href="/events/middle">Middle community event</a></h2><time datetime="2026-10-02">Oct 2, 2026</time></article>
+        <article class="event-card"><h2><a href="/events/late">Late community event</a></h2><time datetime="2026-10-03">Oct 3, 2026</time></article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/events', html) do |payload|
+      expect_content_type(payload, 'list')
+      markdown = payload.fetch('markdown')
+      expect(markdown.scan('community event').length).to eq(3)
+      expect(markdown.index('Early community event')).to be < markdown.index('Middle community event')
+      expect(markdown.index('Middle community event')).to be < markdown.index('Late community event')
+    end
+  end
+
   it 'does not replace a substantive article with related event cards' do
     html = <<~HTML
       <html><head>
