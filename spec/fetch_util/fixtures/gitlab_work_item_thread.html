@@ -1,0 +1,73 @@
+<!doctype html>
+<html class="gl-system">
+<head>
+  <title>Preserve complete issue fidelity</title>
+  <meta property="og:site_name" content="GitLab">
+  <meta name="gitlab-meta" content="fixture">
+  <script src="https://forge.example/assets/webpack/runtime.js"></script>
+  <script>window.gon = { api_version: "v4", gitlab_url: "https://forge.example", current_project_id: 77 };</script>
+</head>
+<body>
+<main class="work-item-page" data-project-id="77">
+  <h1 data-testid="work-item-title">Preserve complete issue fidelity</h1>
+  <span data-testid="work-item-type" aria-label="Issue">Issue</span>
+  <section data-testid="work-item-description-wrapper">
+    <a data-testid="work-item-author" href="/alice">alice</a>
+    <a href="#note_100"><time datetime="2026-08-01T10:00:00Z">Aug 1</time></a>
+    <div data-testid="work-item-description">
+      <p>Opening issue body keeps <a href="/team/project/-/issues/12#details">all links</a>.</p>
+      <p hidden>Hidden opening text must not leak.</p>
+      <div style="visibility:hidden"><span style="visibility:visible">Restored opening detail survives.</span></div>
+    </div>
+  </section>
+  <aside class="issuable-sidebar" hidden><p>Hidden stale metadata must not leak.</p></aside>
+  <section class="work-item-notes">
+    <div class="js-timeline-entry timeline-entry note-wrapper note-comment" id="note_101">
+      <a class="js-user-link" href="/bob">bob</a>
+      <a href="#note_101"><time datetime="2026-08-01T11:00:00Z">Aug 1</time></a>
+      <div class="note-body"><p>First loaded comment.</p></div>
+    </div>
+    <div class="js-timeline-entry timeline-entry system-note" id="note_102">
+      <a class="js-user-link" href="/alice">alice</a>
+      <a href="#note_102"><time datetime="2026-08-01T12:00:00Z">Aug 1</time></a>
+      <span>changed the milestone to Complete traversal</span>
+    </div>
+    <div class="js-timeline-entry timeline-entry note-discussion">
+      <div class="note-wrapper note-comment" id="note_103">
+        <a class="author-name-link" href="/carol">carol</a>
+        <a href="#note_103"><time datetime="2026-08-01T13:00:00Z">Aug 1</time></a>
+        <div class="note-body"><p>Discussion reply one.</p></div>
+      </div>
+      <div class="note-wrapper note-comment" id="note_105">
+        <a class="author-name-link" href="/dave">dave</a>
+        <a href="#note_105"><time datetime="2026-08-01T14:00:00Z">Aug 1</time></a>
+        <div class="note-body"><p>Discussion reply two.</p></div>
+      </div>
+    </div>
+    <div class="js-timeline-entry timeline-entry note-wrapper note-comment" hidden id="note_104">
+      <a class="js-user-link">hidden-user</a>
+      <div class="note-body"><p>Hidden comment must not leak.</p></div>
+    </div>
+    <div class="js-timeline-entry timeline-entry note-wrapper note-comment" style="visibility:hidden" id="note_106">
+      <a class="js-user-link">hidden-restored-author</a>
+      <a href="#note_106"><time datetime="2026-08-01T15:00:00Z">Aug 1</time></a>
+      <div class="note-body"><p style="visibility:visible">Restored timeline detail survives.</p></div>
+    </div>
+    <div data-testid="notes-load-more"><button>Load more notes</button></div>
+    <!-- timeline-end -->
+  </section>
+</main>
+<aside class="issuable-sidebar">
+  <h2>Labels</h2>
+  <a href="/team/project/-/labels/fidelity">fidelity</a>
+  <h2>Milestone</h2>
+  <span>Inventory milestone</span>
+</aside>
+<div data-testid="work-item-attributes-wrapper">
+  <h2>Labels</h2>
+  <a href="/team/project/-/labels/fidelity">fidelity</a>
+  <h2>Milestone</h2>
+  <span>Inventory milestone</span>
+</div>
+</body>
+</html>

@@ -7,6 +7,7 @@ module FetchUtil
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/github_threads"
       autoload :GitlabRepo, "fetch_util/browser/site_stabilization/gitlab_repo"
+      autoload :GitlabThreads, "fetch_util/browser/site_stabilization/gitlab_threads"
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
 
@@ -14,6 +15,7 @@ module FetchUtil
       include GithubPullResources
       include GithubThreads
       include GitlabRepo
+      include GitlabThreads
       include SocialPlatforms
       include TravelAndLodging
     end

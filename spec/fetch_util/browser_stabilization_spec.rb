@@ -66,6 +66,63 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://github.com/octo/example')).to be_nil
   end
 
+  it 'routes host-agnostic GitLab conversations through product-aware stabilization' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://forge.example/group/project/-/issues/12')).to eq(:stabilize_gitlab_thread)
+    expect(strategy_for.call('https://code.example/group/subgroup/project/-/work_items/12')).to eq(:stabilize_gitlab_thread)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42')).to eq(:stabilize_gitlab_thread)
+    expect(strategy_for.call('https://git.example/group/project/-/merge_requests/42/commits')).to be_nil
+    expect(strategy_for.call('https://git.example/group/project/issues/12')).to be_nil
+  end
+
+  it 'waits for a product-matched GitLab timeline to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    scripts = []
+    states = [
+      { "product" => true, "ready" => false, "signature" => "0:0:false" },
+      { "product" => true, "ready" => true, "signature" => "3:2:true" },
+      { "product" => true, "ready" => true, "signature" => "3:2:true" },
+      { "product" => true, "ready" => true, "signature" => "3:2:true" }
+    ]
+
+    allow(browser).to receive(:safe_evaluate) do |_page, script, default:|
+      scripts << script
+      states.shift || { "product" => true, "ready" => true, "signature" => "3:2:true" }
+    end
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gitlab_thread, page)).to be(true)
+
+    expect(scripts.first).to include("document.documentElement.classList.contains('gl-system')", "window.gon || {}",
+                                     "new URL(gon.gitlab_url, location.href).origin === location.origin",
+                                     ".js-timeline-entry.timeline-entry", "continuation.click()", "textSize")
+    expect(scripts.first.index('const loading')).to be < scripts.first.index('const continuation')
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'falls through immediately when a GitLab-shaped route lacks product evidence' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 8.0)
+    allow(browser).to receive(:safe_evaluate).and_return(
+      { "product" => false, "ready" => false, "signature" => "" }
+    )
+    allow(browser).to receive(:sleep)
+    allow(browser).to receive(:settle_after_stabilization)
+
+    expect(browser.send(:stabilize_gitlab_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).once
+    expect(browser).not_to have_received(:sleep)
+    expect(browser).not_to have_received(:settle_after_stabilization)
+  end
+
   it 'waits for stable GitHub pull-request resources' do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle(timeout: 1.0)

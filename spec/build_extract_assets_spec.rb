@@ -216,6 +216,8 @@ RSpec.describe "extract asset bundle" do
     thread_path = "profiles/community/github_threads.js"
     file_resources_path = "profiles/community/github_pull_file_resources.js"
     resources_path = "profiles/community/github_pull_resources.js"
+    gitlab_shared_path = "profiles/community/gitlab_thread_shared.js"
+    gitlab_thread_path = "profiles/community/gitlab_threads.js"
 
     expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
     expect(File.read(File.join(source_root, shared_path))).to include("function githubResourceRoute")
@@ -223,6 +225,11 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(shared_path)).to be < manifest.index(thread_path)
     expect(manifest.index(thread_path)).to be < manifest.index(file_resources_path)
     expect(manifest.index(file_resources_path)).to be < manifest.index(resources_path)
+    expect(manifest.index(resources_path)).to be < manifest.index(gitlab_shared_path)
+    expect(manifest.index(gitlab_shared_path)).to be < manifest.index(gitlab_thread_path)
+    expect(File.read(File.join(source_root, gitlab_shared_path))).to include("function gitlabResourceRoute")
+    expect(File.read(File.join(source_root, gitlab_thread_path))).to include("function gitlabThreadContent")
+    expect(manifest.index(gitlab_thread_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(resources_path)).to be < manifest.index("profiles/register.js")
   end
 
@@ -402,6 +409,7 @@ RSpec.describe "extract asset bundle" do
                           registerRepoHostProfiles
                           registerGitHubThreadProfiles
                           registerGitHubPullResourceProfiles
+                          registerGitLabThreadProfiles
                           registerCommunityWikiProfiles
                           registerHackerNewsProfiles
                           registerMastodonProfiles

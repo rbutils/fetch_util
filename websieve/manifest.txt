@@ -139,6 +139,8 @@ profiles/community/github_thread_shared.js
 profiles/community/github_threads.js
 profiles/community/github_pull_file_resources.js
 profiles/community/github_pull_resources.js
+profiles/community/gitlab_thread_shared.js
+profiles/community/gitlab_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
