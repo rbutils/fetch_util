@@ -648,22 +648,35 @@ RSpec.describe "extract asset bundle" do
     ) do |root|
       bin_dir = File.join(root, "bin")
       args_path = File.join(root, "npx-args")
+      source_path = File.join(root, "npx-source")
       FileUtils.mkdir_p(bin_dir)
       install_fake_terser(root)
       File.write(
         File.join(bin_dir, "npx"),
-        "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$NPX_ARGS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
+        <<~SH
+          #!/bin/sh
+          printf '%s\\n' "$@" > "$NPX_ARGS"
+          cp "$3" "$NPX_SOURCE"
+          printf 'window.fetchUtilAssetSmoke=!0;\\n'
+        SH
       )
       FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
       path = [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
 
-      stdout, stderr, status = run_build_script(root: root, env: { "NPX_ARGS" => args_path, "PATH" => path })
+      stdout, stderr, status = run_build_script(
+        root: root,
+        env: { "NPX_ARGS" => args_path, "NPX_SOURCE" => source_path, "PATH" => path }
+      )
       expect(status.success?).to be(true), [stdout, stderr].reject(&:empty?).join("\n")
 
       output = File.join(root, "lib", "fetch_util", "assets", "extract.js")
       expect(File.read(output)).to eq("window.fetchUtilAssetSmoke=!0;\n")
       expect(File.readlines(args_path, chomp: true)).to match(
         ["--no-install", "terser", match(%r{/fetch_util_extract[^/]*\.js\z}), "-cm"]
+      )
+      expect(File.read(source_path)).to eq(
+        "(function(){\n\n" \
+        "window.fetchUtilAssetSmoke = true;\n}());\n"
       )
     end
   end
