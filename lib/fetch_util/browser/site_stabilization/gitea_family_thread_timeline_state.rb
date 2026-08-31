@@ -7,7 +7,7 @@ module FetchUtil
         private
 
         def gitea_family_thread_timeline_state_script
-          <<~JS
+          <<~'JS'
               const candidates = Array.from(root.querySelectorAll([
                 '.issue-content-left .timeline-item-group',
                 '.issue-content-left .timeline-item',
@@ -34,8 +34,6 @@ module FetchUtil
               const loading = Array.from(root.querySelectorAll(
                 '[aria-busy="true"], .is-loading, .tw-loading, .ui.active.loader'
               )).some(visible);
-              const openingBody = opening.querySelector('.comment-body');
-              const rendered = openingBody && openingBody.querySelector('.render-content.markup');
               const openingReady = visible(openingBody) && !!(
                 (rendered && (rendered.innerText || '').trim()) ||
                 (openingBody && openingBody.querySelector('.no-content')) ||

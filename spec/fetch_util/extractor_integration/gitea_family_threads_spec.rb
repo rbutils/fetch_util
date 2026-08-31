@@ -122,6 +122,23 @@ RSpec.describe 'FetchUtil extractor integration - Gitea and Forgejo threads' do
     end
   end
 
+  it 'executes the Browser timeline state against both product fixtures' do
+    browser = FetchUtil::Browser.new
+
+    [
+      ['https://code.example/forgejo/repo/issues/42', 'forgejo_issue_thread.html'],
+      ['https://git.example/forge/alice/project/issues/7', 'gitea_issue_thread.html']
+    ].each do |url, fixture|
+      with_url_page(url, gitea_family_fixture(fixture)) do |page|
+        script = browser.send(:gitea_family_thread_product_state_script) +
+                 browser.send(:gitea_family_thread_timeline_state_script)
+        state = page.evaluate(script)
+        expect(state).to include('product' => true, 'ready' => true, 'loading' => false)
+        expect(state.fetch('signature')).not_to be_empty
+      end
+    end
+  end
+
   it 'preserves distinct idless records with identical visible content' do
     repeated = <<~HTML
       <div class="timeline-item event"><p>Repeated idless event remains visible.</p></div>

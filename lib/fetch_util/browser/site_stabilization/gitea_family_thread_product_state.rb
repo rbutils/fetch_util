@@ -7,7 +7,7 @@ module FetchUtil
         private
 
         def gitea_family_thread_product_state_script
-          <<~JS
+          <<~'JS'
             (() => {
               const subtreeHidden = (node) => {
                 let current = node;
