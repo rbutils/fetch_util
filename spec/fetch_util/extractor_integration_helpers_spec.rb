@@ -78,25 +78,41 @@ RSpec.describe 'extractor integration helpers' do
       .to raise_error(RuntimeError, 'Chromium not available; set FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1 to skip browser integration examples')
   end
 
-  it 'uses an executable configured browser path' do
+  it 'uses the configured browser path before discovered candidates' do
     path = '/custom/chromium'
-    allow(RSpec.configuration).to receive(:instance_variable_get).with(:@fetch_util_browser_path).and_return(nil)
+    allow(RSpec.configuration).to receive(:instance_variable_defined?)
+      .with(:@fetch_util_browser_path).and_return(false)
     expect(RSpec.configuration).to receive(:instance_variable_set)
       .with(:@fetch_util_browser_path, path).and_return(path)
     allow(ENV).to receive(:[]).with('BROWSER_PATH').and_return(path)
-    allow(File).to receive(:executable?).with(path).and_return(true)
+    expect(File).not_to receive(:executable?)
 
     expect(browser_path).to eq(path)
   end
 
-  it 'does not replace a non-executable configured browser path' do
+  it 'leaves configured path validation to the browser runtime' do
     path = '/missing/chromium'
-    allow(RSpec.configuration).to receive(:instance_variable_get).with(:@fetch_util_browser_path).and_return(nil)
+    allow(RSpec.configuration).to receive(:instance_variable_defined?)
+      .with(:@fetch_util_browser_path).and_return(false)
     expect(RSpec.configuration).to receive(:instance_variable_set)
-      .with(:@fetch_util_browser_path, nil).and_return(nil)
+      .with(:@fetch_util_browser_path, path).and_return(path)
     allow(ENV).to receive(:[]).with('BROWSER_PATH').and_return(path)
-    allow(File).to receive(:executable?).with(path).and_return(false)
+    expect(File).not_to receive(:executable?)
 
+    expect(browser_path).to eq(path)
+  end
+
+  it 'memoizes unavailable browser discovery' do
+    allow(RSpec.configuration).to receive(:instance_variable_defined?)
+      .with(:@fetch_util_browser_path).and_return(false, true)
+    expect(RSpec.configuration).to receive(:instance_variable_set)
+      .with(:@fetch_util_browser_path, nil).once.and_return(nil)
+    allow(RSpec.configuration).to receive(:instance_variable_get)
+      .with(:@fetch_util_browser_path).and_return(nil)
+    allow(ENV).to receive(:[]).with('BROWSER_PATH').and_return(nil)
+    allow(File).to receive(:executable?).and_return(false)
+
+    expect(browser_path).to be_nil
     expect(browser_path).to be_nil
   end
 

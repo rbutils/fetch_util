@@ -40,15 +40,15 @@ RSpec.shared_context 'extractor integration helpers' do
   end
 
   def browser_path
-    RSpec.configuration.instance_variable_get(:@fetch_util_browser_path) ||
-      RSpec.configuration.instance_variable_set(
-        :@fetch_util_browser_path,
-        if ENV["BROWSER_PATH"]
-          ENV["BROWSER_PATH"] if File.executable?(ENV["BROWSER_PATH"])
-        else
-          FetchUtil::Browser::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
-        end
-      )
+    configuration = RSpec.configuration
+    if configuration.instance_variable_defined?(:@fetch_util_browser_path)
+      return configuration.instance_variable_get(:@fetch_util_browser_path)
+    end
+
+    configuration.instance_variable_set(
+      :@fetch_util_browser_path,
+      ENV["BROWSER_PATH"] || FetchUtil::Browser::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+    )
   end
 
   def required_browser_path
