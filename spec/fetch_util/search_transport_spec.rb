@@ -751,6 +751,25 @@ RSpec.describe FetchUtil::SearchTransport do
       end
     end
 
+    it "bounds each inflated piece before appending it" do
+      payload = "x" * (8 * 1024 * 1024)
+      gzip = StringIO.new
+      Zlib::GzipWriter.wrap(gzip) { |writer| writer.write(payload) }
+      client = described_class.new(max_response_bytes: 64 * 1024)
+      piece_sizes = []
+      allow(client).to receive(:append_decoded).and_wrap_original do |method, decoded, piece|
+        piece_sizes << piece.bytesize
+        method.call(decoded, piece)
+      end
+
+      expect do
+        client.send(:inflate, gzip.string, "gzip", Float::INFINITY)
+      end.to raise_error(described_class::ResponseTooLarge)
+      expect(piece_sizes).not_to be_empty
+      expect(piece_sizes).to all(be <= 64 * 1024)
+      expect(piece_sizes.sum).to be > 64 * 1024
+    end
+
     it "stops a response stream and redirect chain when the shared deadline expires" do
       now = 0.0
       clock = -> { now }

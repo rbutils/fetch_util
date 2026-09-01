@@ -583,10 +583,16 @@ module FetchUtil
         while offset < body.bytesize
           ensure_remaining!(deadline)
           chunk = body.byteslice(offset, INFLATE_CHUNK_BYTES)
-          append_decoded(decoded, inflater.inflate(chunk))
+          inflater.inflate(chunk) do |piece|
+            ensure_remaining!(deadline)
+            append_decoded(decoded, piece)
+          end
           offset += chunk.bytesize
         end
-        append_decoded(decoded, inflater.finish)
+        inflater.finish do |piece|
+          ensure_remaining!(deadline)
+          append_decoded(decoded, piece)
+        end
         decoded
       ensure
         inflater&.close
