@@ -78,6 +78,28 @@ RSpec.describe 'extractor integration helpers' do
       .to raise_error(RuntimeError, 'Chromium not available; set FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1 to skip browser integration examples')
   end
 
+  it 'uses an executable configured browser path' do
+    path = '/custom/chromium'
+    allow(RSpec.configuration).to receive(:instance_variable_get).with(:@fetch_util_browser_path).and_return(nil)
+    expect(RSpec.configuration).to receive(:instance_variable_set)
+      .with(:@fetch_util_browser_path, path).and_return(path)
+    allow(ENV).to receive(:[]).with('BROWSER_PATH').and_return(path)
+    allow(File).to receive(:executable?).with(path).and_return(true)
+
+    expect(browser_path).to eq(path)
+  end
+
+  it 'does not replace a non-executable configured browser path' do
+    path = '/missing/chromium'
+    allow(RSpec.configuration).to receive(:instance_variable_get).with(:@fetch_util_browser_path).and_return(nil)
+    expect(RSpec.configuration).to receive(:instance_variable_set)
+      .with(:@fetch_util_browser_path, nil).and_return(nil)
+    allow(ENV).to receive(:[]).with('BROWSER_PATH').and_return(path)
+    allow(File).to receive(:executable?).with(path).and_return(false)
+
+    expect(browser_path).to be_nil
+  end
+
   it 'allows an explicit local opt-out when Chromium is unavailable' do
     allow(self).to receive(:browser_path).and_return(nil)
     allow(ENV).to receive(:[]).with('FETCH_UTIL_ALLOW_MISSING_CHROMIUM').and_return('1')
