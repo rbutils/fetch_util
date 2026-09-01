@@ -26,11 +26,14 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
         'Secondary pipeline', 'State: SUCCESSFUL', 'Result: failed after the complete test run',
         'Protocol: preserve this prose', 'https://details.example.test/build/42',
         '[Next statuses API page](https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42/statuses?after=opaque%2Bcursor)',
-        '[Build result for Primary pipeline](https://ci.example.test/results/42)'
+        '[Build result for Primary pipeline](https://ci.example.test/results/42)',
+        '/statuses/build/build-42', '/statuses/build/build-42-secondary'
       )
       expect(markdown).not_to include('javascript:unsafeStatus()', 'ftp://unsafe.example.test', 'file:///private')
       expect(markdown.index('Primary pipeline')).to be < markdown.index('Secondary pipeline')
       expect(markdown.scan('Key: build-42').length).to eq(2)
+      expect(markdown.scan(/^### Status 1:/).length).to eq(1)
+      expect(markdown.scan(/^### Status 2:/).length).to eq(1)
       expect(payload.fetch('html')).not_to include('javascript:unsafeStatus()')
       expect(payload.fetch('warnings')).not_to include('bitbucket_cloud_statuses_incomplete')
     end
@@ -112,6 +115,26 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
       markdown = result.fetch('markdown')
       expect(markdown).to include('### Status 1: \[Credential leak\]')
       expect(markdown).not_to include('### Status 1: [Credential leak](')
+    end
+  end
+
+  it 'rejects unsafe or mismatched status self links' do
+    javascript = JSON.parse(bitbucket_statuses_fixture).tap do |payload|
+      payload['values'][0]['links']['self']['href'] = 'javascript:unsafeStatus()'
+    end
+    wrong_repository = JSON.parse(bitbucket_statuses_fixture).tap do |payload|
+      payload['values'][0]['links']['self']['href'] =
+        "https://api.code.example.test/2.0/repositories/other/project/commit/#{'1' * 40}/statuses/build/build-42"
+    end
+    wrong_commit = JSON.parse(bitbucket_statuses_fixture).tap do |payload|
+      payload['values'][0]['links']['self']['href'] =
+        "https://api.code.example.test/2.0/repositories/workspace/project/commit/#{'f' * 40}/statuses/build/build-42"
+    end
+
+    [javascript, wrong_repository, wrong_commit].each do |payload|
+      extract_bitbucket_statuses(JSON.generate(payload)) do |result|
+        expect(result).not_to include('siteName' => 'Bitbucket')
+      end
     end
   end
 
