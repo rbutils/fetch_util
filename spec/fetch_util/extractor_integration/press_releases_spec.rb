@@ -102,13 +102,14 @@ RSpec.describe 'FetchUtil press release extraction' do
         <article class="release responsive-copy"><a href="/news/latest">Publishes first recurring update</a><time>July 5, 2026</time></article>
         <article class="release" style="display:none"><a href="/news/hidden">Hidden release</a><time>July 5, 2026</time></article>
         <article class="release" style="visibility:hidden"><a style="visibility:visible" href="/news/restored">Restored release</a><time style="visibility:visible">July 6, 2026</time></article>
+        <article class="release"><a style="visibility:hidden" href="/news/restored-child"><span style="visibility:visible">Child-restored release</span></a><time>July 7, 2026</time></article>
       </main></body></html>
     HTML
 
     extract_from_url('https://news.example.test/press-releases', html) do |payload|
       expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Launches new service')
-      expect(payload['markdown']).to include('Restored release')
+      expect(payload['markdown']).to include('Restored release', 'Child-restored release')
       expect(payload['markdown']).not_to include('Jump to archive', 'Open release dialog', 'Email the newsroom')
       expect(payload['markdown']).not_to include('Hidden release')
       expect(payload['markdown']).not_to include('javascript:', 'mailto:', '#archive')

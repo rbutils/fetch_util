@@ -31,7 +31,7 @@
   }
 
   function visiblePressReleaseIndexEntry(link) {
-    if (elementVisuallyHidden(link)) return null;
+    if (elementSubtreeHidden(link)) return null;
     var card = link.closest("article, li, [class*='release' i], [class*='news' i]") || link.parentElement;
     if (!card) return null;
     return {
