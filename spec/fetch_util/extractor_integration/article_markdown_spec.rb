@@ -1129,7 +1129,9 @@ RSpec.describe 'FetchUtil extractor integration' do
                   "@type": "Recipe",
                   "name": "Summer tomato tart",
                   "description": "A savory tart for the summer table.",
-                  "image": "https://example.com/images/summer-tomato-tart.jpg"
+                  "image": "https://example.com/images/summer-tomato-tart.jpg",
+                  "recipeIngredient": ["1 pastry sheet", "3 tomatoes"],
+                  "recipeInstructions": ["Layer the tomatoes on the pastry."]
                 },
                 {
                   "@type": "WebPage",
@@ -1138,7 +1140,7 @@ RSpec.describe 'FetchUtil extractor integration' do
                     "@id": "#recipe",
                     "@type": "Recipe",
                     "name": "Summer tomato tart",
-                    "recipeIngredient": ["1 pastry sheet", "3 tomatoes", "1 tablespoon herbs"],
+                    "recipeIngredient": ["3 tomatoes", "1 tablespoon herbs"],
                     "recipeInstructions": ["Layer the tomatoes on the pastry.", "Bake until crisp."]
                   }
                 }
