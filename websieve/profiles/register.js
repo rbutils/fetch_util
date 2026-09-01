@@ -31,6 +31,7 @@
   registerGitLabMergeRequestResourceProfiles();
   registerGiteaFamilyPullResourceProfiles();
   registerGiteaFamilyThreadProfiles();
+  registerBitbucketCloudPullStatusProfiles();
   registerBitbucketCloudPullResourceProfiles();
   registerBitbucketCloudThreadProfiles();
   registerPagurePullRequestProfiles();

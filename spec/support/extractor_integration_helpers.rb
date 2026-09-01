@@ -104,7 +104,7 @@ RSpec.shared_context 'extractor integration helpers' do
     end
   end
 
-  def with_url_page(url, html)
+  def with_url_page(url, html, content_type: 'text/html; charset=UTF-8')
     request_url = url.sub(/#.*/u, '')
     interception_enabled = false
 
@@ -115,7 +115,7 @@ RSpec.shared_context 'extractor integration helpers' do
         if request.url == request_url
           request.respond(
             body: html,
-            responseHeaders: { 'content-type' => 'text/html; charset=UTF-8' }
+            responseHeaders: { 'content-type' => content_type }
           )
         else
           request.abort

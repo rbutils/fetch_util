@@ -16,6 +16,46 @@ function bitbucketCloudPullRequestResourceRoute() {
   };
 }
 
+function bitbucketCloudSafeHttpUrl(value) {
+  var url = materializedHttpUrl(value);
+  if (!url) return null;
+
+  try {
+    var parsed = new URL(url);
+    return parsed.username || parsed.password ? null : parsed.href;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function bitbucketCloudJsonUrlField(key) {
+  return /(?:^|_)(?:href|link|uri|url)$/i.test(key || "");
+}
+
+function bitbucketCloudSafeSupplementalValue(value, key) {
+  if (Array.isArray(value)) return value.map(function(item) {
+    return bitbucketCloudSafeSupplementalValue(item, key);
+  }).filter(function(item) {
+    return item !== null;
+  });
+  if (value && typeof value === "object") {
+    return Object.keys(value).reduce(function(result, childKey) {
+      var safe = bitbucketCloudSafeSupplementalValue(value[childKey], childKey);
+      if (safe !== null) result[childKey] = safe;
+      return result;
+    }, {});
+  }
+  if (typeof value === "string") {
+    var candidate = value.trim();
+    var scheme = candidate.match(/^([a-z][a-z0-9+.-]*):/i);
+    if (scheme) {
+      if (!/^https?$/i.test(scheme[1])) return null;
+      return bitbucketCloudSafeHttpUrl(candidate);
+    }
+  }
+  return value;
+}
+
 function bitbucketCloudPullRequestRoute() {
   var route = bitbucketCloudPullRequestResourceRoute();
   return route && (!route.surface || route.surface === "overview") ? route : null;

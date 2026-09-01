@@ -153,6 +153,7 @@ profiles/community/gitea_family_pull_resources.js
 profiles/community/gitea_family_thread_entries.js
 profiles/community/gitea_family_threads.js
 profiles/community/bitbucket_cloud_shared.js
+profiles/community/bitbucket_cloud_pull_statuses.js
 profiles/community/bitbucket_cloud_pull_diff_files.js
 profiles/community/bitbucket_cloud_pull_diffs.js
 profiles/community/bitbucket_cloud_pull_resources.js

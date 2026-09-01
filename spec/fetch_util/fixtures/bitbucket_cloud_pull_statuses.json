@@ -1,0 +1,80 @@
+{
+  "values": [
+    {
+      "key": "build-42",
+      "type": "build",
+      "state": "FAILED",
+      "name": "Primary pipeline",
+      "refname": "feature/complete-statuses",
+      "commit": {
+        "hash": "1111111111111111111111111111111111111111",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/commit/1111111111111111111111111111111111111111" },
+          "html": { "href": "https://code.example.test/workspace/project/commits/1111111111111111111111111111111111111111" }
+        },
+        "type": "commit"
+      },
+      "url": "https://ci.example.test/results/42",
+      "repository": {
+        "type": "repository",
+        "full_name": "workspace/project",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project" },
+          "html": { "href": "https://code.example.test/workspace/project" }
+        },
+        "name": "Project",
+        "uuid": "{11111111-2222-3333-4444-555555555555}"
+      },
+      "description": "Result: failed after the complete test run",
+      "created_on": "2026-08-01T10:00:00+00:00",
+      "updated_on": "2026-08-01T10:05:00+00:00",
+      "links": {
+        "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/commit/1111111111111111111111111111111111111111/statuses/build/build-42" },
+        "commit": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/commit/1111111111111111111111111111111111111111" }
+      },
+      "metadata": {
+        "safe_url": "https://details.example.test/build/42",
+        "unsafe_url": " javascript:unsafeStatus()",
+        "legacy_transport": "ftp://unsafe.example.test/build/42",
+        "local_transport": "file:///private/build/42",
+        "note": "Protocol: preserve this prose"
+      }
+    },
+    {
+      "key": "build-42",
+      "type": "build",
+      "state": "SUCCESSFUL",
+      "name": "Secondary pipeline",
+      "refname": "feature/complete-statuses",
+      "commit": {
+        "hash": "1111111111111111111111111111111111111111",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/commit/1111111111111111111111111111111111111111" },
+          "html": { "href": "https://code.example.test/workspace/project/commits/1111111111111111111111111111111111111111" }
+        },
+        "type": "commit"
+      },
+      "url": "https://ci.example.test/results/43",
+      "repository": {
+        "type": "repository",
+        "full_name": "workspace/project",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project" },
+          "html": { "href": "https://code.example.test/workspace/project" }
+        },
+        "name": "Project",
+        "uuid": "{11111111-2222-3333-4444-555555555555}"
+      },
+      "description": "A distinct status with a repeated key and commit",
+      "created_on": "2026-08-01T10:06:00+00:00",
+      "updated_on": "2026-08-01T10:07:00+00:00",
+      "links": {
+        "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/commit/1111111111111111111111111111111111111111/statuses/build/build-42-secondary" }
+      }
+    }
+  ],
+  "pagelen": 30,
+  "size": 2,
+  "page": 1,
+  "next": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42/statuses?after=opaque%2Bcursor"
+}

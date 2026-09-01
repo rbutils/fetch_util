@@ -1,21 +1,3 @@
-function bitbucketCloudSafeSupplementalValue(value) {
-  if (Array.isArray(value)) return value.map(bitbucketCloudSafeSupplementalValue).filter(function(item) {
-    return item !== null;
-  });
-  if (value && typeof value === "object") {
-    return Object.keys(value).reduce(function(result, key) {
-      var safe = bitbucketCloudSafeSupplementalValue(value[key]);
-      if (safe !== null) result[key] = safe;
-      return result;
-    }, {});
-  }
-  if (typeof value === "string") {
-    var candidate = value.trim();
-    if (/^[a-z][a-z0-9+.-]*:/i.test(candidate)) return materializedHttpUrl(candidate);
-  }
-  return value;
-}
-
 function bitbucketCloudDiffFilePath(file) {
   return normalizeText(file && file.path);
 }
