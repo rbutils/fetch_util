@@ -1,5 +1,5 @@
 function bitbucketCloudPullRequestResourceRoute() {
-  var match = (location.pathname || "").match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/(overview|commits))?\/?$/);
+  var match = (location.pathname || "").match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/(overview|commits|diff))?\/?$/);
   if (!match) return null;
 
   var workspace = safeDecodeURI(match[1]);
@@ -185,6 +185,8 @@ function bitbucketCloudInventoryEntries(route) {
     { label: "Conversation", url: bitbucketCloudRouteUrl(route) },
     { label: "Commits", url: bitbucketCloudRouteUrl(route, "/commits") },
     { label: "Diff", url: bitbucketCloudRouteUrl(route, "/diff") },
+    { label: "Raw diff", url: bitbucketCloudRouteUrl(route, ".diff") },
+    { label: "Raw patch", url: bitbucketCloudRouteUrl(route, ".patch") },
     { label: "Reports", url: bitbucketCloudRouteUrl(route, "/reports") },
     { label: "Pull request API", url: apiBase },
     { label: "Activity API", url: apiBase + "/activity", detail: paginated },

@@ -9,6 +9,20 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull resources
     fixture_contents(File.expand_path('../fixtures/bitbucket_cloud_pull_commits.html', __dir__))
   end
 
+  def bitbucket_diff_fixture
+    fixture_contents(File.expand_path('../fixtures/bitbucket_cloud_pull_diff.html', __dir__))
+  end
+
+  def wait_for_bitbucket_diff_preparation(page)
+    100.times do
+      state = page.evaluate('window.__fetchUtilBitbucketPullDiff')
+      return state if state['status'] != 'loading'
+
+      sleep 0.01
+    end
+    page.evaluate('window.__fetchUtilBitbucketPullDiff')
+  end
+
   it 'preserves every loaded commit and exposes uncapped traversal inventory' do
     extract_from_url('https://code.example.test/workspace/project/pull-requests/42/commits',
                      bitbucket_commits_fixture, reader_mode: false) do |payload|
@@ -99,6 +113,95 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull resources
     with_url_page(url, mismatch) do |page|
       expect(page.evaluate(browser.send(:bitbucket_cloud_pull_resource_state_script)))
         .to include('product' => false, 'ready' => false)
+    end
+  end
+
+  it 'preserves every prepared changed file and exposes loaded diff content plus traversal' do
+    extract_from_url('https://code.example.test/workspace/project/pull-requests/42/diff',
+                     bitbucket_diff_fixture, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(payload).to include('contentType' => 'list', 'siteName' => 'Bitbucket')
+      expect(markdown).to include(
+        'Changed files shown: 2', 'lib/new_name.rb', 'Old path: lib/old_name.rb',
+        'Lines added: 8', 'Lines removed: 3', 'docs/new.md', 'loaded visible hunk',
+        'https://code.example.test/workspace/project/src/new/lib/new_name.rb',
+        '"type":"commit_file"', '"escaped_path":"lib%2Fnew_name.rb"',
+        'https://code.example.test/workspace/project/commits/new',
+        '[Raw diff](https://code.example.test/workspace/project/pull-requests/42.diff)'
+      )
+      expect(markdown).not_to include(
+        'javascript:unsafeDiff()', 'javascript:unsafePaddedDiff()', 'hidden hunk', 'Diff menu'
+      )
+      expect(markdown.index('lib/new_name.rb')).to be < markdown.index('docs/new.md')
+    end
+  end
+
+  it 'renders an explicit warning when trusted diffstat preparation fails' do
+    failed = bitbucket_diff_fixture.sub('status: "ready"', 'status: "failed"')
+    failed = failed.sub('reason: ""', 'reason: "opaque pagination repeated"')
+    extract_from_url('https://code.example.test/workspace/project/pull-requests/42/diff', failed,
+                     reader_mode: false) do |payload|
+      expect(payload.fetch('warnings')).to include('bitbucket_cloud_diffstat_incomplete')
+      expect(payload.fetch('markdown')).to include('opaque pagination repeated', 'Retrieval warning')
+    end
+  end
+
+  it 'routes diff resources only with matching public Bitbucket evidence' do
+    mismatch = bitbucket_diff_fixture.sub('full_name: "workspace/project"', 'full_name: "other/project"')
+    extract_from_url('https://code.example.test/workspace/project/pull-requests/42/diff', mismatch,
+                     reader_mode: false) do |payload|
+      expect(payload.fetch('markdown')).not_to include('Changed files shown: 2')
+    end
+  end
+
+  it 'prepares every opaque diffstat page with the real Browser state script' do
+    browser = FetchUtil::Browser.new
+    url = 'https://code.example.test/workspace/project/pull-requests/42/diff'
+    with_url_page(url, bitbucket_diff_fixture) do |page|
+      page.evaluate(<<~JS)
+        (() => {
+          const records = window.__fetchUtilBitbucketPullDiff.values;
+          delete window.__fetchUtilBitbucketPullDiff;
+          window.__bitbucketDiffRequests = [];
+          window.__bitbucketDiffOptions = [];
+          window.fetch = (value, options) => {
+            const url = new URL(value, location.href);
+            window.__bitbucketDiffRequests.push(url.href);
+            window.__bitbucketDiffOptions.push(options);
+            let payload;
+            if (url.pathname.endsWith('/pullrequests/42')) {
+              payload = {
+                id: 42,
+                destination: { repository: { full_name: 'workspace/project' } },
+                links: { diffstat: { href: 'https://api.bitbucket.org/2.0/repositories/workspace/project/diffstat/workspace/project:abcdef?from_pullrequest_id=42' } }
+              };
+            } else if (url.searchParams.get('after') === 'opaque-next') {
+              payload = { values: [records[1]] };
+            } else {
+              payload = {
+                values: [records[0]],
+                next: 'https://api.bitbucket.org/2.0/repositories/workspace/project/diffstat/workspace/project:abcdef?from_pullrequest_id=42&after=opaque-next'
+              };
+            }
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              url: url.href,
+              json: () => Promise.resolve(payload)
+            });
+          };
+        })()
+      JS
+
+      expect(page.evaluate(browser.send(:bitbucket_cloud_pull_resource_state_script)))
+        .to include('product' => true, 'loading' => true)
+      prepared = wait_for_bitbucket_diff_preparation(page)
+      expect(prepared).to include('status' => 'ready')
+      expect(prepared.fetch('values').length).to eq(2)
+      expect(page.evaluate('window.__bitbucketDiffRequests.every((value) => new URL(value).origin === location.origin)'))
+        .to be(true)
+      expect(page.evaluate('window.__bitbucketDiffOptions.every((options) => options.redirect === "error")')).to be(true)
+      expect(extract_payload(page, reader_mode: false).fetch('markdown')).to include('Changed files shown: 2')
     end
   end
 end

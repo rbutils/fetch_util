@@ -120,6 +120,8 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/overview')).to eq(:stabilize_bitbucket_cloud_thread)
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/commits'))
       .to eq(:stabilize_bitbucket_cloud_pull_resource)
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/diff'))
+      .to eq(:stabilize_bitbucket_cloud_pull_resource)
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/not-a-number')).to be_nil
     expect(strategy_for.call('https://code.example/workspace/project/issues/42')).not_to eq(:stabilize_bitbucket_cloud_thread)
   end
@@ -391,6 +393,21 @@ RSpec.describe FetchUtil::Browser do
     expect(browser.send(:stabilize_bitbucket_cloud_pull_resource, page)).to be(false)
     expect(browser).to have_received(:safe_evaluate).once
     expect(browser).not_to have_received(:sleep)
+  end
+
+  it 'prepares Bitbucket diffstat through a same-origin opaque-pagination pipeline' do
+    browser = browser_with_idle
+    product_script = browser.send(:bitbucket_cloud_pull_diff_product_state_script)
+    request_script = browser.send(:bitbucket_cloud_pull_diff_request_state_script)
+
+    expect(product_script).to include('bb-api-canon-url', "const proxyPrefix = '/!api/2.0'", 'currentRepository')
+    expect(request_script).to include(
+      "redirect: 'error'", "'X-Requested-With': 'XMLHttpRequest'",
+      'repeated Bitbucket diffstat continuation', 'incomplete Bitbucket diffstat payload',
+      "parsed.searchParams.get('from_pullrequest_id')", "hasOwnProperty.call(page, 'size')",
+      'records.length !== expectedCount'
+    )
+    expect(request_script).not_to include('api.bitbucket.org')
   end
 
   it 'waits for a product-matched Gitea-family timeline to remain stable' do

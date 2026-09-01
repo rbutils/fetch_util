@@ -7,6 +7,17 @@ module FetchUtil
         private
 
         def bitbucket_cloud_pull_resource_state_script
+          <<~JS
+            (() => {
+              if (location.pathname.endsWith("/diff") || location.pathname.endsWith("/diff/")) {
+                return (#{bitbucket_cloud_pull_diff_state_script});
+              }
+              return (#{bitbucket_cloud_pull_commit_resource_state_script});
+            })()
+          JS
+        end
+
+        def bitbucket_cloud_pull_commit_resource_state_script
           <<~'JS'
             (() => {
               const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)\/commits\/?$/);

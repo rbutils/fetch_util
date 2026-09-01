@@ -77,7 +77,9 @@ function bitbucketCloudPullCommitsContent(metadata, route, root) {
 
 function bitbucketCloudPullResourceContent(metadata) {
   var route = bitbucketCloudPullRequestResourceRoute();
-  if (!route || route.surface !== "commits" || !bitbucketCloudRuntimeProductMatch(route)) return null;
+  if (!route || !bitbucketCloudRuntimeProductMatch(route)) return null;
+  if (route.surface === "diff") return bitbucketCloudPullDiffContent(metadata, route);
+  if (route.surface !== "commits") return null;
   var root = bitbucketCloudPullCommitRoot();
   return root && bitbucketCloudPullCommitsContent(metadata, route, root);
 }

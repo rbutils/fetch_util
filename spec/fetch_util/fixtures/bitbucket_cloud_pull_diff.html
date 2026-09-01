@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="application-name" content="Bitbucket">
+  <meta name="bb-api-canon-url" content="https://api.bitbucket.org">
+  <title>Preserve complete changed files - Bitbucket</title>
+  <script src="https://bbc-frontbucket-static.example/assets/runtime.js"></script>
+  <script>
+    window.__initial_state__ = { section: { repository: { currentRepository: {
+      type: "repository", full_name: "workspace/project", is_private: false
+    } } } };
+    window.__fetchUtilBitbucketPullDiff = {
+      status: "ready", reason: "",
+      route: { workspace: "workspace", repository: "project", number: "42" },
+      metadata: { id: 42, destination: { repository: { full_name: "workspace/project" } } },
+      values: [
+        {
+          status: "modified", lines_added: 8, lines_removed: 3,
+          old: { path: "lib/old_name.rb", attributes: "source",
+            links: { html: { href: "https://code.example.test/workspace/project/src/old/lib/old_name.rb" } } },
+          new: { path: "lib/new_name.rb", type: "commit_file", escaped_path: "lib%2Fnew_name.rb", attributes: "source",
+            links: { html: { href: "https://code.example.test/workspace/project/src/new/lib/new_name.rb" },
+              commit: { href: "https://code.example.test/workspace/project/commits/new" } } },
+          links: { self: { href: "https://api.bitbucket.org/2.0/repositories/workspace/project/diffstat/one" },
+            commits: { href: "https://api.bitbucket.org/2.0/repositories/workspace/project/commits" } },
+          escaped: "javascript:unsafeDiff()", padded_escaped: " \tjavascript:unsafePaddedDiff()"
+        },
+        { status: "added", lines_added: 5, lines_removed: 0, old: null,
+          new: { path: "docs/new.md",
+            links: { html: { href: "https://code.example.test/workspace/project/src/new/docs/new.md" } } } }
+      ]
+    };
+  </script>
+</head>
+<body>
+  <header data-testid="pr-header"><h1>Preserve complete changed files</h1></header>
+  <main>
+    <article data-qa="branch-diff-file" data-path="lib/new_name.rb">
+      <h2>lib/new_name.rb</h2><pre>+loaded visible hunk</pre><button>Diff menu</button>
+    </article>
+    <article data-qa="branch-diff-file" style="display:none"><pre>hidden hunk</pre></article>
+    <div class="loading" style="display:none">Decorative loader</div>
+  </main>
+</body>
+</html>

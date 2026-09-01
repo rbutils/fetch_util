@@ -6,10 +6,10 @@ module FetchUtil
       module BitbucketCloudPullResources
         BITBUCKET_CLOUD_PULL_RESOURCE_STABILIZATION_PROFILE = {
           host: true,
-          path_query: ->(uri) { uri.path.match?(%r{\A/[^/]+/[^/]+/pull-requests/\d+/commits/?\z}) },
+          path_query: ->(uri) { uri.path.match?(%r{\A/[^/]+/[^/]+/pull-requests/\d+/(?:commits|diff)/?\z}) },
           strategy: :stabilize_bitbucket_cloud_pull_resource,
           fallthrough: true,
-          notes: "Wait for product-matched Bitbucket Cloud pull-request commit rows.",
+          notes: "Wait for product-matched Bitbucket Cloud pull-request commit or diff resources.",
           tests: "spec/fetch_util/browser_stabilization_spec.rb"
         }.freeze
 
@@ -57,6 +57,8 @@ module FetchUtil
           end
 
           return false if terminal_incomplete
+
+          fail_bitbucket_cloud_pull_diff_preparation(page) unless observed
 
           settle_after_stabilization(0.5) if observed
           !!observed

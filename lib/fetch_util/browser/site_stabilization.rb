@@ -17,10 +17,8 @@ module FetchUtil
       autoload :BitbucketCloudThreadState,
                "fetch_util/browser/site_stabilization/bitbucket_cloud_thread_state"
       autoload :BitbucketCloudThreads, "fetch_util/browser/site_stabilization/bitbucket_cloud_threads"
-      autoload :BitbucketCloudPullResourceState,
-               "fetch_util/browser/site_stabilization/bitbucket_cloud_pull_resource_state"
-      autoload :BitbucketCloudPullResources,
-               "fetch_util/browser/site_stabilization/bitbucket_cloud_pull_resources"
+      autoload :BitbucketCloudPullResourceModules,
+               "fetch_util/browser/site_stabilization/bitbucket_cloud_pull_resource_modules"
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
       autoload :GerritChangeProductStateScript,
                "fetch_util/browser/site_stabilization/gerrit_change_product_state_script"
@@ -78,8 +76,7 @@ module FetchUtil
       include AzureDevopsPrStabilization
       include BitbucketCloudThreadState
       include BitbucketCloudThreads
-      include BitbucketCloudPullResourceState
-      include BitbucketCloudPullResources
+      include BitbucketCloudPullResourceModules
       include CommunityAndMarketplace
       include GerritChangeState
       include GerritChangeStabilization
