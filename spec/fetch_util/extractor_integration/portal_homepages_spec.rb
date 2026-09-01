@@ -182,7 +182,9 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
         <h1>Latest public headlines</h1>
         <h2>Top stories</h2>
         <h2>Featured reports</h2>
-        <div class="cards-wrapper">
+        <section class="top-stories">
+          <h2>Regional updates</h2>
+          <div class="cards-wrapper">
           <div class="card"><h3><a href="/news/first">First visible portal headline with complete context</a></h3><p>Visible first detail.</p></div>
           <div class="card"><h3><a href="/news/second">Second visible portal headline with complete context</a></h3><p>Visible second detail.</p></div>
           <div class="card"><h3><a href="/news/third">Third visible portal headline with complete context</a></h3><p>Visible third detail.</p></div>
@@ -192,7 +194,20 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
             <h3 style="visibility:visible"><a style="visibility:visible" href="/news/restored">Restored portal headline with complete context</a></h3>
             <p style="visibility:visible">Restored portal detail remains visible.</p>
           </div>
-        </div>
+          <div class="card">
+            <a style="visibility:hidden" href="/news/restored-child">
+              Hidden inherited anchor text must not appear.
+              <span style="visibility:visible">Restored child portal headline with complete context</span>
+            </a>
+            <p>Restored child portal detail remains visible.</p>
+          </div>
+          <div class="card">
+            <h3>Sibling card portal headline with complete context</h3>
+            <a href="/news/sibling">Sibling card portal headline with complete context</a>
+            <p>Sibling card portal detail remains visible.</p>
+          </div>
+          </div>
+        </section>
       </main></body></html>
     HTML
 
@@ -201,10 +216,16 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
       markdown = payload.fetch('markdown')
 
       expect_content_type(payload, 'list')
-      expect(markdown).to include('Top stories', 'Featured reports', 'Restored portal detail remains visible')
-      expect(markdown).not_to include('Hidden portal headline', 'Hidden detail', 'INHERITED:Hidden portal text')
+      expect(markdown).to include('Top stories', 'Featured reports', 'Regional updates',
+                                  'Restored portal detail remains visible',
+                                  'Restored child portal headline with complete context',
+                                  'Restored child portal detail remains visible')
+      expect(markdown).not_to include('Hidden portal headline', 'Hidden detail',
+                                      'INHERITED:Hidden portal text', 'Hidden inherited anchor text')
       expect(markdown.scan('First visible portal headline').length).to eq(1)
       expect(markdown.scan('Restored portal headline').length).to eq(1)
+      expect(markdown.scan('Restored child portal headline').length).to eq(1)
+      expect(markdown.scan('Sibling card portal headline').length).to eq(1)
     end
   end
 

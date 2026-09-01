@@ -32,22 +32,34 @@
       var hero = normalizeText(((root.querySelector("h1") || {}).textContent) || "");
 
       root.querySelectorAll("h2, h3").forEach(function(heading) {
-        var text = normalizeText(heading.textContent || "");
-        if (elementVisuallyHidden(heading) || homepageCardRoot(heading)) return;
+        if (elementSubtreeHidden(heading)) return;
+        var visibleHeading = visibilityPrunedClone(heading, document);
+        var text = normalizeText(visibleHeading.textContent || "");
+        if (!text) return;
+        var titleCard = heading.closest("article, li, [class~='card'], [class~='tile'], [class~='item'], [class~='listing'], [class~='result'], [class~='destination'], [class~='route'], [class~='story']");
+        var cardTitle = !!(heading.closest("a[href]") || heading.querySelector("a[href]"));
+        if (!cardTitle && titleCard) {
+          cardTitle = Array.prototype.slice.call(titleCard.querySelectorAll("a[href]")).some(function(link) {
+            if (elementSubtreeHidden(link)) return false;
+            return normalizeText(visibilityPrunedClone(link, document).textContent || "") === text;
+          });
+        }
+        if (cardTitle) return;
         if (heading.closest && heading.closest("aside, nav, header, footer, [role='navigation'], [role='complementary'], [role='banner'], [role='contentinfo']")) return;
         if (listNoiseNode(heading.parentElement)) return;
         if (text.length >= 6 && text.length <= 90 && !rejectedHomepageLeadText(text, "") && headings.indexOf(text) === -1) headings.push(text);
       });
 
       root.querySelectorAll("a[href]").forEach(function(link) {
-        if (elementVisuallyHidden(link)) return;
+        if (elementSubtreeHidden(link)) return;
         if (link.closest("header, nav, footer, aside, form, [role='navigation'], [role='banner'], [role='contentinfo']")) return;
 
         var href = link.getAttribute("href") || "";
         var url = materializedHttpUrl(href);
         var visibleLink = visibilityPrunedClone(link, document);
         var titleNode = visibleLink && visibleLink.querySelector("h1, h2, h3, h4");
-        var title = normalizeText((titleNode && titleNode.textContent) || (visibleLink && visibleLink.textContent) || link.getAttribute("aria-label") || "");
+        var accessibleTitle = elementVisuallyHidden(link) ? "" : link.getAttribute("aria-label");
+        var title = normalizeText((titleNode && titleNode.textContent) || (visibleLink && visibleLink.textContent) || accessibleTitle || "");
         var canonicalUrl = url ? homepageCanonicalUrl(url) : "unlinked:" + title.toLowerCase() + "|href:" + href;
         if (seen[canonicalUrl] || rejectedHomepageLeadText(title, href)) return;
         if (title.length < 12 && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(title)) return;
@@ -56,7 +68,11 @@
         var cardRoot = homepageCardRoot(link);
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
-        var detail = searchItemDetail(visibilityPrunedClone(container, document), title);
+        var detailRoot = visibilityPrunedClone(container, document);
+        Array.prototype.slice.call(detailRoot.querySelectorAll("h1, h2, h3, h4, a[href]")).forEach(function(node) {
+          if (normalizeText(node.textContent || "") === title) node.remove();
+        });
+        var detail = searchItemDetail(detailRoot, title);
 
         seen[canonicalUrl] = true;
         items.push({ text: title, url: url, detail: detail });
