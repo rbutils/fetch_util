@@ -17,6 +17,7 @@ module FetchUtil
           SiteStabilization::GiteaFamilyPullResources::GITEA_FAMILY_PULL_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GiteaFamilyThreads::GITEA_FAMILY_THREAD_STABILIZATION_PROFILE,
           SiteStabilization::BitbucketCloudThreads::BITBUCKET_CLOUD_THREAD_STABILIZATION_PROFILE,
+          SiteStabilization::GerritFileResourceStabilization::GERRIT_FILE_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GerritChangeStabilization::GERRIT_CHANGE_STABILIZATION_PROFILE,
           SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
           { host: "t.me", path_query: ->(uri) { uri.path.match?(%r{\A/s/[^/]+/\d+/?\z}) },

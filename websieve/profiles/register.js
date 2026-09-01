@@ -33,6 +33,7 @@
   registerGiteaFamilyThreadProfiles();
   registerBitbucketCloudThreadProfiles();
   registerPagureThreadProfiles();
+  registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
   registerCommunityWikiProfiles();

@@ -14,6 +14,20 @@ module FetchUtil
       autoload :GerritChangeState, "fetch_util/browser/site_stabilization/gerrit_change_state"
       autoload :GerritChangeStabilization,
                "fetch_util/browser/site_stabilization/gerrit_change_stabilization"
+      autoload :GerritFileResourceProductStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_product_state_script"
+      autoload :GerritFileResourceRouteStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_route_state_script"
+      autoload :GerritFileResourceFetchStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_fetch_state_script"
+      autoload :GerritFileResourceValidationStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_validation_state_script"
+      autoload :GerritFileResourceRequestStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_request_state_script"
+      autoload :GerritFileResourceState,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_state"
+      autoload :GerritFileResourceStabilization,
+               "fetch_util/browser/site_stabilization/gerrit_file_resource_stabilization"
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubPullResourceStabilization,
                "fetch_util/browser/site_stabilization/github_pull_resource_stabilization"
@@ -50,6 +64,8 @@ module FetchUtil
       include CommunityAndMarketplace
       include GerritChangeState
       include GerritChangeStabilization
+      include GerritFileResourceState
+      include GerritFileResourceStabilization
       include GithubPullResources
       include GithubPullResourceStabilization
       include GithubThreads

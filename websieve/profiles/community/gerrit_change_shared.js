@@ -136,12 +136,25 @@ function gerritChangeInventory(prepared) {
     { label: "Selected patch set actions API", url: gerritChangeApiUrl(prepared, selectedPrefix + "/actions") }
   ].concat(gerritRevisionInventoryEntries(prepared));
   Object.keys(prepared.files || {}).forEach(function(filePath) {
-    var encoded = encodeURIComponent(filePath);
-    entries.push(
-      { label: "File: " + filePath, url: gerritChangeFileUiUrl(prepared, filePath) },
-      { label: "File content: " + filePath, url: gerritChangeApiUrl(prepared, selectedPrefix + "/files/" + encoded + "/content") },
-      { label: "File diff: " + filePath, url: gerritChangeApiUrl(prepared, selectedPrefix + "/files/" + encoded + "/diff") }
-    );
+    entries = entries.concat(gerritChangeFileInventoryEntries(prepared, filePath, selectedPatchset));
   });
   return browsableInventory("Browse this Gerrit change", entries);
+}
+
+function gerritChangeFileInventoryEntries(prepared, filePath, patchset, options) {
+  var settings = options || {};
+  var revision = normalizeText(patchset) || gerritSelectedPatchset(prepared);
+  var encoded = encodeURIComponent(filePath);
+  var prefix = "/revisions/" + encodeURIComponent(revision) + "/files/" + encoded;
+  var selector = settings.selector || revision;
+  var query = settings.diffParameters && settings.diffParameters.toString();
+  var diffEntry = { label: "File diff: " + filePath,
+    url: gerritChangeApiUrl(prepared, prefix + "/diff" + (query ? "?" + query : "")) };
+  var entries = [{ label: "File: " + filePath, url: gerritChangeFileUiUrl(prepared, filePath, selector) }];
+  if (settings.diffFirst) entries.push(diffEntry);
+  if (settings.targetContent !== false) {
+    entries.push({ label: "File content: " + filePath, url: gerritChangeApiUrl(prepared, prefix + "/content") });
+  }
+  if (!settings.diffFirst) entries.push(diffEntry);
+  return entries;
 }

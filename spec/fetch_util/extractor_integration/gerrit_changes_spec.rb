@@ -57,6 +57,14 @@ RSpec.describe 'FetchUtil extractor integration - Gerrit changes' do
     end
   end
 
+  it 'uses the shared Gerrit file inventory contract for every changed file' do
+    extract_from_url('https://review.example.test/c/platform/core/+/42', gerrit_fixture, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('src%2Fwidget.js/content', 'src%2Fwidget.js/diff', '/42/3/src/widget.js',
+                                  'docs%2Freview%20guide.md/content', 'docs%2Freview%20guide.md/diff')
+    end
+  end
+
   it 'uses the explicit patch set for descriptions, files, and traversal without hostname ownership' do
     html = gerrit_fixture
            .sub('routeKey: "https://review.example.test:/c/platform/core/+/42:"',

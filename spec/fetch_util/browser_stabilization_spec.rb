@@ -133,9 +133,59 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://review.example/c/platform/core/+/42')).to eq(:stabilize_gerrit_change)
     expect(strategy_for.call('https://review.example/platform/core/+/42/3')).to eq(:stabilize_gerrit_change)
     expect(strategy_for.call('https://review.example/r/review/c/platform/core/+/42')).to eq(:stabilize_gerrit_change)
+    expect(strategy_for.call('https://review.example/c/platform/core/+/42/3/src/widget.js'))
+      .to eq(:stabilize_gerrit_file_resource)
+    expect(strategy_for.call('https://review.example/platform/core/+/42/3/src/widget.js'))
+      .to eq(:stabilize_gerrit_file_resource)
+    expect(strategy_for.call('https://review.example/r/c/platform/core/+/42/2..3//COMMIT_MSG'))
+      .to eq(:stabilize_gerrit_file_resource)
+    expect(strategy_for.call('https://review.example/c/platform/core/+/42/-2..3/src/widget.js'))
+      .to eq(:stabilize_gerrit_file_resource)
     expect(strategy_for.call('https://review.example/c/platform/core/+/not-a-number')).to be_nil
-    expect(strategy_for.call('https://review.example/c/platform/core/+/42/3/src/widget.js')).to be_nil
+    expect(strategy_for.call('https://review.example/c/platform/core/+/42/edit/src/widget.js')).to be_nil
     expect(strategy_for.call('https://review.example/c/platform/core')).to be_nil
+  end
+
+  it 'prepares comparison-specific Gerrit file resources without embedding content' do
+    browser = browser_with_idle
+    product_script = browser.send(:gerrit_file_resource_product_state_script)
+    request_script = browser.send(:gerrit_file_resource_request_state_script)
+
+    expect(product_script).to include('comparisonKind = "patchset"', 'comparisonKind = "parent"',
+                                      'comparisonKind = "auto_merge"', 'patchset: target')
+    expect(request_script).to include('comparisonQuery.set("base", route.comparisonValue)',
+                                      'comparisonQuery.set("parent", route.comparisonValue)',
+                                      'diffQuery.set("context", "ALL")',
+                                      'Gerrit API file identity mismatch')
+    expect(request_script).not_to include('/content')
+    shared_source = File.read(File.expand_path(
+                                '../../websieve/profiles/community/gerrit_change_shared.js', __dir__
+                              ))
+    resource_source = File.read(File.expand_path(
+                                  '../../websieve/profiles/community/gerrit_change_resource_shared.js', __dir__
+                                ))
+    expect(shared_source).to include('function gerritChangeFileInventoryEntries')
+    expect(resource_source).to include('gerritChangeFileInventoryEntries(prepared, filePath, route.target')
+  end
+
+  it 'waits for Gerrit file REST preparation and falls through on unusable resources' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "matched" => true, "product" => true, "status" => "loading", "signature" => "loading" },
+      { "matched" => true, "product" => true, "status" => "ready", "signature" => "ready:12:3:4" }
+    ]
+    allow(browser).to receive(:gerrit_file_resource_state) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gerrit_file_resource, page)).to be(true)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+
+    allow(browser).to receive(:gerrit_file_resource_state).and_return(
+      { "matched" => true, "product" => true, "status" => "failed", "signature" => "failed" }
+    )
+    expect(browser.send(:stabilize_gerrit_file_resource, page)).to be(false)
   end
 
   it 'prepares files for the selected Gerrit patch set' do

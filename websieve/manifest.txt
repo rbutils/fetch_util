@@ -158,6 +158,9 @@ profiles/community/pagure_shared.js
 profiles/community/pagure_threads.js
 profiles/community/gerrit_change_shared.js
 profiles/community/gerrit_change_entries.js
+profiles/community/gerrit_change_resource_shared.js
+profiles/community/gerrit_change_resource_entries.js
+profiles/community/gerrit_change_resources.js
 profiles/community/gerrit_change_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js

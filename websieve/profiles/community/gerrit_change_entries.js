@@ -27,6 +27,8 @@ function gerritInlineComments(collection, kind, sourceOffset) {
         filePath: filePath,
         line: comment.line,
         range: comment.range || null,
+        side: normalizeText(comment.side),
+        parent: normalizeText(comment.parent),
         unresolved: comment.unresolved,
         inReplyTo: normalizeText(comment.in_reply_to),
         contextLines: Array.isArray(comment.context_lines) ? comment.context_lines : [],
@@ -78,6 +80,8 @@ function gerritTimelineSections(records, prepared) {
     sections.push("### " + record.kind + (record.author ? " by " + record.author : ""));
     if (record.timestamp) sections.push("- Time: " + record.timestamp);
     if (record.patchset) sections.push("- Patch set: " + record.patchset);
+    if (record.side) sections.push("- Side: " + record.side);
+    if (record.parent) sections.push("- Parent: " + record.parent);
     if (record.id) sections.push("- Record ID: " + record.id);
     if (record.filePath) sections.push("- Location: " + gerritCommentLocation(record, prepared));
     if (record.unresolved != null) sections.push("- Status: " + (record.unresolved ? "Unresolved" : "Resolved"));
