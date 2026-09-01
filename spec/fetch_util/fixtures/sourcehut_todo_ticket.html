@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <title>~alice/tracker#42: Preserve ticket history - sourcehut todo</title>
+    <link rel="stylesheet" href="/static/todo.sr.ht/main.min.abc123.css">
+  </head>
+  <body>
+    <header class="header-tabbed resource-nav ticket-header">
+      <a href="/~alice">~alice</a>
+      <a href="/~alice/project">project</a>
+      <a href="/~alice/tracker">tickets</a>
+    </header>
+    <nav class="project-nav"><a href="https://git.example.test/~alice/project">Source repository</a></nav>
+    <main>
+      <span class="tracker-owner">~alice</span>
+      <span class="tracker-name">tracker</span>
+      <span class="ticket-id">#42</span>
+      <h1 class="ticket-title">Preserve ticket history</h1>
+
+      <dl class="row">
+        <dt style="display:none">Submitter</dt><dd style="display:none">~spoofed</dd>
+        <dt>Status</dt><dd>OPEN</dd>
+        <dt>Submitter</dt><dd><a href="/~alice">~alice</a></dd>
+        <dt>Assignee</dt><dd>No-one</dd>
+        <dt>Submitted</dt><dd>recently</dd>
+        <dt>Labels</dt><dd><a href="/~alice/tracker?search=label%3Atriage">triage</a></dd>
+      </dl>
+
+      <div id="description-field">
+        <style>.highlight { background: inherit; }</style>
+        <div class="markdown"><p>Opening SourceHut ticket body.</p></div>
+        <div style="display:none">Hidden opening text.</div>
+        <div style="visibility:hidden"><span style="visibility:visible">Restored opening detail.</span></div>
+      </div>
+
+      <div class="event-list ticket-events">
+        <div class="event">
+          <h4 id="event-101"><a href="/~bob">~bob</a> commented <a href="/~alice/tracker/42?from=timeline#event-101"><span title="2025-01-02 03:04:05 UTC">recently</span></a></h4>
+          <blockquote><div class="markdown"><p>First SourceHut comment.</p></div></blockquote>
+        </div>
+        <div class="event">
+          <h4 id="event-102"><a href="/~meta-user">~meta-user</a> added <a href="/~alice/tracker?search=label%3Atriage">triage</a> <a href="#event-102">recently</a></h4>
+        </div>
+        <div class="event">
+          <h4 id="event-103"><a href="/~resolver">~resolver</a> RESOLVED DUPLICATE <a href="#event-103">recently</a></h4>
+        </div>
+        <div class="event">
+          <h4 id="event-106"><a href="/~assigner">~assigner</a> assigned <a href="/~assignee">~assignee</a> <a href="#event-106">recently</a></h4>
+        </div>
+        <div class="event">
+          <h4><a href="/~eve">~eve</a> commented</h4>
+          <blockquote><p>Repeated idless SourceHut event.</p></blockquote>
+        </div>
+        <div class="event">
+          <h4><a href="/~eve">~eve</a> commented</h4>
+          <blockquote><p>Repeated idless SourceHut event.</p></blockquote>
+        </div>
+        <div class="event" style="display:none">
+          <h4 id="event-104"><a href="/~hidden">~hidden</a> commented <a href="#event-104">recently</a></h4>
+          <blockquote><p>Hidden SourceHut event.</p></blockquote>
+        </div>
+        <div class="event" style="visibility:hidden">
+          <h4 id="event-105" style="visibility:visible"><a href="/~carol">~carol</a> commented <a href="#event-105">recently</a></h4>
+          <blockquote style="visibility:visible"><p>Restored SourceHut comment.</p></blockquote>
+        </div>
+        <div class="event">
+          <h4 id="event-101"><a href="/~duplicate">~duplicate</a> commented <a href="#event-101">recently</a></h4>
+          <blockquote><p>Duplicate stable event must not render.</p></blockquote>
+        </div>
+        <!-- bulk-events -->
+      </div>
+
+      <a href="mailto:~alice/tracker@todo.sr.ht?subject=Subscribe">Subscribe by email</a>
+      <a href="mailto:~alice/tracker/42@todo.sr.ht?subject=Comment">Comment by email</a>
+      <a href="/~alice/tracker/42?subscribe">Subscribe</a>
+    </main>
+  </body>
+</html>

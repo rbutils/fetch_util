@@ -237,6 +237,8 @@ RSpec.describe "extract asset bundle" do
     pagure_shared_path = "profiles/community/pagure_shared.js"
     pagure_thread_path = "profiles/community/pagure_threads.js"
     pagure_pull_path = "profiles/community/pagure_pull_requests.js"
+    sourcehut_shared_path = "profiles/community/sourcehut_todo_shared.js"
+    sourcehut_thread_path = "profiles/community/sourcehut_todo_threads.js"
     azure_shared_path = "profiles/community/azure_devops_pr_shared.js"
     azure_entries_path = "profiles/community/azure_devops_pr_entries.js"
     azure_thread_path = "profiles/community/azure_devops_pr_threads.js"
@@ -282,6 +284,8 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, pagure_shared_path))).to include("function pagureThreadEntrySections")
     expect(File.read(File.join(source_root, pagure_thread_path))).to include("function pagureIssueContent")
     expect(File.read(File.join(source_root, pagure_pull_path))).to include("function pagurePullRequestContent")
+    expect(File.read(File.join(source_root, sourcehut_shared_path))).to include("function sourcehutTodoRoute")
+    expect(File.read(File.join(source_root, sourcehut_thread_path))).to include("function sourcehutTodoTicketContent")
     expect(File.read(File.join(source_root, azure_shared_path))).to include("function azureDevopsPullRequestRoute")
     expect(File.read(File.join(source_root, azure_entries_path))).to include("function azureDevopsThreadSections")
     expect(File.read(File.join(source_root, azure_thread_path))).to include("function azureDevopsPullRequestContent")
@@ -310,7 +314,9 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(pagure_shared_path)).to be < manifest.index(pagure_thread_path)
     expect(manifest.index(pagure_thread_path)).to be < manifest.index(pagure_pull_path)
     expect(manifest.index(pagure_pull_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(pagure_pull_path)).to be < manifest.index(azure_shared_path)
+    expect(manifest.index(pagure_pull_path)).to be < manifest.index(sourcehut_shared_path)
+    expect(manifest.index(sourcehut_shared_path)).to be < manifest.index(sourcehut_thread_path)
+    expect(manifest.index(sourcehut_thread_path)).to be < manifest.index(azure_shared_path)
     expect(manifest.index(azure_shared_path)).to be < manifest.index(azure_entries_path)
     expect(manifest.index(azure_entries_path)).to be < manifest.index(azure_thread_path)
     expect(manifest.index(azure_thread_path)).to be < manifest.index(gerrit_shared_path)
@@ -508,6 +514,7 @@ RSpec.describe "extract asset bundle" do
                           registerBitbucketCloudThreadProfiles
                           registerPagurePullRequestProfiles
                           registerPagureThreadProfiles
+                          registerSourcehutTodoThreadProfiles
                           registerAzureDevopsPullRequestProfiles
                           registerGerritFileResourceProfiles
                           registerGerritChangeProfiles

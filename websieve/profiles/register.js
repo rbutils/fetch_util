@@ -35,6 +35,7 @@
   registerBitbucketCloudThreadProfiles();
   registerPagurePullRequestProfiles();
   registerPagureThreadProfiles();
+  registerSourcehutTodoThreadProfiles();
   registerAzureDevopsPullRequestProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
