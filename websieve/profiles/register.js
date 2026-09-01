@@ -32,6 +32,7 @@
   registerGiteaFamilyPullResourceProfiles();
   registerGiteaFamilyThreadProfiles();
   registerBitbucketCloudThreadProfiles();
+  registerPagureThreadProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
   registerCommunityWikiProfiles();
   registerHackerNewsProfiles();
