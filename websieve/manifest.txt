@@ -152,6 +152,8 @@ profiles/community/gitea_family_pull_files.js
 profiles/community/gitea_family_pull_resources.js
 profiles/community/gitea_family_thread_entries.js
 profiles/community/gitea_family_threads.js
+profiles/community/bitbucket_cloud_shared.js
+profiles/community/bitbucket_cloud_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js

@@ -109,6 +109,70 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://github.com/octo/example/issues/12')).to eq(:stabilize_github_thread)
   end
 
+  it 'routes only Bitbucket Cloud pull-request conversations through product-aware stabilization' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42')).to eq(:stabilize_bitbucket_cloud_thread)
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/overview')).to eq(:stabilize_bitbucket_cloud_thread)
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/commits')).to be_nil
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/not-a-number')).to be_nil
+    expect(strategy_for.call('https://code.example/workspace/project/issues/42')).not_to eq(:stabilize_bitbucket_cloud_thread)
+  end
+
+  it 'waits for a product-matched Bitbucket Cloud conversation to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "product" => true, "ready" => false, "loading" => true, "signature" => "loading" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "2:ready" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "2:ready" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "2:ready" }
+    ]
+    allow(browser).to receive(:safe_evaluate) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_bitbucket_cloud_thread, page)).to be(true)
+    expect(browser).to have_received(:safe_evaluate).exactly(4).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'restarts Bitbucket Cloud stability after loading resumes' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "ready" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "ready" },
+      { "product" => true, "ready" => false, "loading" => true, "signature" => "loading" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "ready" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "ready" },
+      { "product" => true, "ready" => true, "loading" => false, "signature" => "ready" }
+    ]
+    allow(browser).to receive(:safe_evaluate) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_bitbucket_cloud_thread, page)).to be(true)
+    expect(browser).to have_received(:safe_evaluate).exactly(6).times
+  end
+
+  it 'falls through immediately for a Bitbucket-shaped route without product evidence' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    allow(browser).to receive(:safe_evaluate).and_return(
+      { "product" => false, "ready" => false, "loading" => false, "signature" => "" }
+    )
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_bitbucket_cloud_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).once
+    expect(browser).not_to have_received(:sleep)
+  end
+
   it 'waits for a product-matched Gitea-family timeline to remain stable' do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle(timeout: 1.0)

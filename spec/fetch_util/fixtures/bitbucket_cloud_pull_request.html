@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="application-name" content="Bitbucket">
+    <title>Preserve complete Bitbucket pull requests</title>
+    <script src="https://bbc-frontbucket-static.example/assets/runtime.js"></script>
+    <script>
+      window.__initial_state__ = {
+        section: { repository: { currentRepository: { type: "repository", full_name: "workspace/project", is_private: false } } }
+      };
+    </script>
+  </head>
+  <body>
+    <main>
+      <header data-testid="pr-header">
+        <h1 hidden>Hidden pull request title</h1>
+        <h1>Preserve complete Bitbucket pull requests</h1>
+        <a data-testid="pull-request-author" href="/workspace">alice</a>
+      </header>
+      <section id="pull-request-description-panel" aria-label="Pull request description">
+        <a data-testid="pull-request-author" hidden>hidden-opening-author</a>
+        <a data-testid="pull-request-author" href="/workspace">alice</a>
+        <time datetime="2026-09-01T08:00:00Z">Sep 1</time>
+        <div data-testid="pull-request-description">
+          <p>Opening body keeps <a href="https://docs.example.test/bitbucket#fidelity">its reference</a>.</p>
+          <p hidden>Hidden opening text must not leak.</p>
+          <div style="visibility:hidden"><span style="visibility:visible">Restored opening detail survives.</span></div>
+        </div>
+      </section>
+      <aside data-testid="pr-cards-list">
+        <p>Reviewer: maintainer</p>
+        <p>Destination: main</p>
+        <p style="display:none">Hidden metadata must not leak.</p>
+      </aside>
+      <section aria-label="Conversation">
+        <article data-testid="comment" id="comment-101">
+          <header data-testid="comment-header">
+            <a data-testid="comment-author" hidden>hidden-comment-author</a>
+            <a data-testid="comment-author" href="/bob">bob</a>
+            <a href="/workspace/project/pull-requests/42#comment-101"><time datetime="2026-09-01T09:00:00Z">Sep 1</time></a>
+          </header>
+          <div data-testid="comment-content"><p>First loaded comment.</p></div>
+          <div class="replies">
+            <article data-testid="comment" id="comment-103">
+              <a data-testid="comment-author" href="/carol">carol</a>
+              <a href="#comment-103"><time datetime="2026-09-01T09:15:00Z">Sep 1</time></a>
+              <div data-testid="comment-content"><p>Nested loaded reply.</p></div>
+            </article>
+          </div>
+          <footer data-testid="comment-footer">Reply controls must not render.</footer>
+        </article>
+        <article data-testid="comment" id="comment-102">
+          <header data-testid="comment-header">
+            <a data-testid="comment-author" href="/reviewer">reviewer</a>
+            <a href="/workspace/project/pull-requests/42/diff#comment-102"><time datetime="2026-09-01T09:30:00Z">Sep 1</time></a>
+          </header>
+          <div data-testid="multiline-comment-header">src/widget.js:42</div>
+          <div data-testid="comment-content" style="visibility:hidden">
+            <p style="visibility:visible">Restored inline review survives.</p>
+            <p>Hidden inline review text must not leak.</p>
+          </div>
+        </article>
+        <article data-testid="comment" id="comment-102-alias">
+          <a href="/workspace/project/pull-requests/42/_/diff#comment-102">Responsive inline alias</a>
+          <div data-testid="comment-content"><p>Alias path duplicate must not create another record.</p></div>
+        </article>
+        <article data-testid="comment">
+          <a data-testid="comment-author">idless-user</a>
+          <div data-testid="comment-content"><p>Repeated idless Bitbucket record.</p></div>
+        </article>
+        <article data-testid="comment">
+          <a data-testid="comment-author">idless-user</a>
+          <div data-testid="comment-content"><p>Repeated idless Bitbucket record.</p></div>
+        </article>
+        <article data-testid="comment">
+          <div data-testid="comment-content"><p>Parent comment without nested metadata.</p></div>
+          <article data-testid="comment" id="comment-104">
+            <a data-testid="comment-author">nested-reviewer</a>
+            <a href="/workspace/project/pull-requests/42/_/diff#comment-104">
+              <time datetime="2026-09-01T09:45:00Z">Sep 1</time>
+            </a>
+            <div data-testid="multiline-comment-header">src/nested.js:7</div>
+            <div data-testid="comment-content"><p>Nested review keeps its own fields.</p></div>
+          </article>
+        </article>
+        <article data-testid="comment" id="comment-101-responsive">
+          <a href="/workspace/project/pull-requests/42#comment-101">Duplicate responsive permalink</a>
+          <div data-testid="comment-content"><p>Duplicate permalink must not create another record.</p></div>
+        </article>
+        <article data-testid="comment" hidden>
+          <div data-testid="comment-content"><p>Hidden comment must not leak.</p></div>
+        </article>
+        <!-- bulk-comments -->
+      </section>
+    </main>
+  </body>
+</html>

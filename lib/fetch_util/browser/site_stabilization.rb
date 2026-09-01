@@ -3,6 +3,9 @@
 module FetchUtil
   class Browser
     module SiteStabilization
+      autoload :BitbucketCloudThreadState,
+               "fetch_util/browser/site_stabilization/bitbucket_cloud_thread_state"
+      autoload :BitbucketCloudThreads, "fetch_util/browser/site_stabilization/bitbucket_cloud_threads"
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubPullResourceStabilization,
@@ -35,6 +38,8 @@ module FetchUtil
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
 
+      include BitbucketCloudThreadState
+      include BitbucketCloudThreads
       include CommunityAndMarketplace
       include GithubPullResources
       include GithubPullResourceStabilization

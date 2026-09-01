@@ -31,6 +31,7 @@
   registerGitLabMergeRequestResourceProfiles();
   registerGiteaFamilyPullResourceProfiles();
   registerGiteaFamilyThreadProfiles();
+  registerBitbucketCloudThreadProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
   registerCommunityWikiProfiles();
   registerHackerNewsProfiles();
