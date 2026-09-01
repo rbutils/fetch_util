@@ -230,6 +230,7 @@ RSpec.describe "extract asset bundle" do
     gitea_entries_path = "profiles/community/gitea_family_thread_entries.js"
     gitea_thread_path = "profiles/community/gitea_family_threads.js"
     bitbucket_shared_path = "profiles/community/bitbucket_cloud_shared.js"
+    bitbucket_resources_path = "profiles/community/bitbucket_cloud_pull_resources.js"
     bitbucket_thread_path = "profiles/community/bitbucket_cloud_threads.js"
     pagure_shared_path = "profiles/community/pagure_shared.js"
     pagure_thread_path = "profiles/community/pagure_threads.js"
@@ -267,6 +268,7 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, gitea_entries_path))).to include("function giteaFamilyThreadEntry")
     expect(File.read(File.join(source_root, gitea_thread_path))).to include("function giteaFamilyThreadContent")
     expect(File.read(File.join(source_root, bitbucket_shared_path))).to include("function bitbucketCloudPullRequestRoute")
+    expect(File.read(File.join(source_root, bitbucket_resources_path))).to include("function bitbucketCloudPullResourceContent")
     expect(File.read(File.join(source_root, bitbucket_thread_path))).to include("function bitbucketCloudPullRequestContent")
     expect(File.read(File.join(source_root, pagure_shared_path))).to include("function pagureIssueRoute")
     expect(File.read(File.join(source_root, pagure_thread_path))).to include("function pagureIssueContent")
@@ -286,7 +288,8 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(gitea_resources_path)).to be < manifest.index(gitea_entries_path)
     expect(manifest.index(gitea_entries_path)).to be < manifest.index(gitea_thread_path)
     expect(manifest.index(gitea_thread_path)).to be < manifest.index(bitbucket_shared_path)
-    expect(manifest.index(bitbucket_shared_path)).to be < manifest.index(bitbucket_thread_path)
+    expect(manifest.index(bitbucket_shared_path)).to be < manifest.index(bitbucket_resources_path)
+    expect(manifest.index(bitbucket_resources_path)).to be < manifest.index(bitbucket_thread_path)
     expect(manifest.index(bitbucket_thread_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(bitbucket_thread_path)).to be < manifest.index(pagure_shared_path)
     expect(manifest.index(pagure_shared_path)).to be < manifest.index(pagure_thread_path)
@@ -482,6 +485,7 @@ RSpec.describe "extract asset bundle" do
                           registerGitLabMergeRequestResourceProfiles
                           registerGiteaFamilyPullResourceProfiles
                           registerGiteaFamilyThreadProfiles
+                          registerBitbucketCloudPullResourceProfiles
                           registerBitbucketCloudThreadProfiles
                           registerPagureThreadProfiles
                           registerGerritFileResourceProfiles

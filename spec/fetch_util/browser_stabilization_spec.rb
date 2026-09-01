@@ -118,7 +118,8 @@ RSpec.describe FetchUtil::Browser do
 
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42')).to eq(:stabilize_bitbucket_cloud_thread)
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/overview')).to eq(:stabilize_bitbucket_cloud_thread)
-    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/commits')).to be_nil
+    expect(strategy_for.call('https://code.example/workspace/project/pull-requests/42/commits'))
+      .to eq(:stabilize_bitbucket_cloud_pull_resource)
     expect(strategy_for.call('https://code.example/workspace/project/pull-requests/not-a-number')).to be_nil
     expect(strategy_for.call('https://code.example/workspace/project/issues/42')).not_to eq(:stabilize_bitbucket_cloud_thread)
   end
@@ -281,6 +282,36 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:sleep)
 
     expect(browser.send(:stabilize_bitbucket_cloud_thread, page)).to be(false)
+    expect(browser).to have_received(:safe_evaluate).once
+    expect(browser).not_to have_received(:sleep)
+  end
+
+  it 'waits for hydrated Bitbucket Cloud commit resources to remain stable' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { 'product' => true, 'ready' => true, 'loading' => false, 'signature' => '2:ready' },
+      { 'product' => true, 'ready' => true, 'loading' => false, 'signature' => '2:ready' },
+      { 'product' => true, 'ready' => true, 'loading' => false, 'signature' => '2:ready' }
+    ]
+    allow(browser).to receive(:safe_evaluate) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_bitbucket_cloud_pull_resource, page)).to be(true)
+    expect(browser).to have_received(:safe_evaluate).exactly(3).times
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+  end
+
+  it 'falls through immediately for a commit route without Bitbucket product evidence' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    allow(browser).to receive(:safe_evaluate).and_return(
+      { 'product' => false, 'ready' => false, 'loading' => false, 'signature' => '' }
+    )
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_bitbucket_cloud_pull_resource, page)).to be(false)
     expect(browser).to have_received(:safe_evaluate).once
     expect(browser).not_to have_received(:sleep)
   end

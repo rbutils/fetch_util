@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="application-name" content="Bitbucket">
+  <meta name="bitbucket-product" content="cloud">
+  <title>Preserve complete commit history - Bitbucket</title>
+    <script src="https://bbc-frontbucket-static.example/assets/runtime.js"></script>
+  <script>
+    window.__initial_state__ = {
+      section: {
+        repository: {
+          currentRepository: {
+            type: "repository",
+            full_name: "workspace/project",
+            is_private: false
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <header data-testid="pr-header">
+    <h1>Preserve complete commit history</h1>
+  </header>
+  <aside>
+    <a aria-label="Commit: 5555555"
+       href="/workspace/project/commits/5555555555555555555555555555555555555555">Page chrome commit</a>
+    <span>Page chrome commit must not render.</span>
+  </aside>
+  <div id="pull-request-tabs-2-tab" role="tabpanel">
+  <main>
+    <table>
+      <tbody style="visibility: hidden">
+        <tr data-qa="commit-row" style="visibility: visible">
+          <td>
+            <div data-qa="commit-hash-wrapper-0">
+              <a aria-label="Commit: 1111111"
+                 href="/workspace/project/commits/1111111111111111111111111111111111111111">1111111</a>
+            </div>
+          </td>
+          <td>
+            <strong>Alice</strong>
+            <time datetime="2026-09-01T09:00:00Z">Sep 1</time>
+            <span>Restored visible commit context.</span>
+            <a href="/workspace/project/pipelines/results/1">Builds</a>
+          </td>
+        </tr>
+      </tbody>
+      <tbody>
+        <tr data-qa="commit-row">
+          <td>
+            <div data-qa="commit-hash-wrapper-1">
+              <a aria-label="Commit: 2222222"
+                 href="/workspace/project/commits/2222222222222222222222222222222222222222">2222222</a>
+            </div>
+          </td>
+          <td>
+            <strong>Bob</strong>
+            <time datetime="2026-09-01T10:00:00Z">Sep 1</time>
+            <span>Second complete commit context.</span>
+            <a href="/workspace/project/addon/pipelines/home#!/results/2">Passed</a>
+          </td>
+        </tr>
+        <tr data-qa="commit-row">
+          <td>
+            <a aria-label="Commit: 1111111"
+               href="/workspace/project/commits/1111111111111111111111111111111111111111">
+              1111111
+            </a>
+          </td>
+          <td>Responsive duplicate must not create another record.</td>
+        </tr>
+        <tr data-qa="commit-row" style="display: none">
+          <td>
+            <a aria-label="Commit: 3333333333333333333333333333333333333333"
+               href="/workspace/project/commits/3333333333333333333333333333333333333333">
+              3333333
+            </a>
+          </td>
+          <td>Hidden commit must not render.</td>
+        </tr>
+        <tr data-qa="commit-row">
+          <td><a href="/workspace/project/commits/not-a-full-hash">short</a></td>
+          <td>Malformed commit link must not render.</td>
+        </tr>
+        <tr data-qa="commit-row">
+          <td>
+            <a aria-label="Commit: short"
+               href="/workspace/project/commits/4444444444444444444444444444444444444444">short label</a>
+          </td>
+          <td>Malformed commit label must not render.</td>
+        </tr>
+        <!-- records-end -->
+      </tbody>
+    </table>
+    <div class="spinner" style="display: none">Loading commits</div>
+  </main>
+  </div>
+</body>
+</html>

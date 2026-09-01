@@ -27,6 +27,7 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud threads' do
         '## Metadata', 'Reviewer: maintainer',
         '[Commits](https://code.example.test/workspace/project/pull-requests/42/commits)',
         '[Diff](https://code.example.test/workspace/project/pull-requests/42/diff)',
+        '[Reports](https://code.example.test/workspace/project/pull-requests/42/reports)',
         'https://api.bitbucket.org/2.0/repositories/workspace/project/pullrequests/42/activity',
         "Follow the response's opaque next link until it is absent"
       )

@@ -1,5 +1,5 @@
-function bitbucketCloudPullRequestRoute() {
-  var match = (location.pathname || "").match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/overview)?\/?$/);
+function bitbucketCloudPullRequestResourceRoute() {
+  var match = (location.pathname || "").match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/(overview|commits))?\/?$/);
   if (!match) return null;
 
   var workspace = safeDecodeURI(match[1]);
@@ -10,9 +10,15 @@ function bitbucketCloudPullRequestRoute() {
     workspace: workspace,
     repository: repository,
     number: match[3],
+    surface: match[4] || null,
     community: workspace + "/" + repository,
     basePath: "/" + match[1] + "/" + match[2] + "/pull-requests/" + match[3]
   };
+}
+
+function bitbucketCloudPullRequestRoute() {
+  var route = bitbucketCloudPullRequestResourceRoute();
+  return route && (!route.surface || route.surface === "overview") ? route : null;
 }
 
 function bitbucketCloudRouteUrl(route, suffix) {
@@ -55,8 +61,8 @@ function bitbucketCloudAssetEvidence() {
   });
 }
 
-function bitbucketCloudProductMatch(route, root) {
-  if (!route || !root) return false;
+function bitbucketCloudRuntimeProductMatch(route) {
+  if (!route) return false;
 
   var repository = bitbucketCloudRuntimeRepository();
   var runtimeName = normalizeText(repository && repository.full_name).toLowerCase();
@@ -64,10 +70,13 @@ function bitbucketCloudProductMatch(route, root) {
     runtimeName === route.community.toLowerCase();
   var application = document.querySelector("meta[name='application-name']");
   var branded = /^Bitbucket$/i.test(normalizeText(application && application.getAttribute("content")));
-  var header = root.querySelector("[data-testid='pr-header']") || document.querySelector("[data-testid='pr-header']");
-  var opening = bitbucketCloudPullRequestOpening(root);
+  var header = document.querySelector("[data-testid='pr-header']");
 
-  return !!(runtime && branded && (header || bitbucketCloudAssetEvidence()) && opening);
+  return !!(runtime && branded && (header || bitbucketCloudAssetEvidence()));
+}
+
+function bitbucketCloudProductMatch(route, root) {
+  return bitbucketCloudRuntimeProductMatch(route) && !!root && !!bitbucketCloudPullRequestOpening(root);
 }
 
 function bitbucketCloudScopedText(node, selectors) {
@@ -176,6 +185,7 @@ function bitbucketCloudInventoryEntries(route) {
     { label: "Conversation", url: bitbucketCloudRouteUrl(route) },
     { label: "Commits", url: bitbucketCloudRouteUrl(route, "/commits") },
     { label: "Diff", url: bitbucketCloudRouteUrl(route, "/diff") },
+    { label: "Reports", url: bitbucketCloudRouteUrl(route, "/reports") },
     { label: "Pull request API", url: apiBase },
     { label: "Activity API", url: apiBase + "/activity", detail: paginated },
     { label: "Comments API", url: apiBase + "/comments", detail: paginated },
