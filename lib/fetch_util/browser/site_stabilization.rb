@@ -3,6 +3,17 @@
 module FetchUtil
   class Browser
     module SiteStabilization
+      autoload :AzureDevopsPrProductStateScript,
+               "fetch_util/browser/site_stabilization/azure_devops_pr_product_state_script"
+      autoload :AzureDevopsPrCommitDetailsScript,
+               "fetch_util/browser/site_stabilization/azure_devops_pr_commit_details_script"
+      autoload :AzureDevopsPrRequestHelpersScript,
+               "fetch_util/browser/site_stabilization/azure_devops_pr_request_helpers_script"
+      autoload :AzureDevopsPrRequestStateScript,
+               "fetch_util/browser/site_stabilization/azure_devops_pr_request_state_script"
+      autoload :AzureDevopsPrState, "fetch_util/browser/site_stabilization/azure_devops_pr_state"
+      autoload :AzureDevopsPrStabilization,
+               "fetch_util/browser/site_stabilization/azure_devops_pr_stabilization"
       autoload :BitbucketCloudThreadState,
                "fetch_util/browser/site_stabilization/bitbucket_cloud_thread_state"
       autoload :BitbucketCloudThreads, "fetch_util/browser/site_stabilization/bitbucket_cloud_threads"
@@ -63,6 +74,8 @@ module FetchUtil
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
 
+      include AzureDevopsPrState
+      include AzureDevopsPrStabilization
       include BitbucketCloudThreadState
       include BitbucketCloudThreads
       include BitbucketCloudPullResourceState

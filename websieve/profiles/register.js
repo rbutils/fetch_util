@@ -35,6 +35,7 @@
   registerBitbucketCloudThreadProfiles();
   registerPagurePullRequestProfiles();
   registerPagureThreadProfiles();
+  registerAzureDevopsPullRequestProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);

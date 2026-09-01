@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Inventory bootstrapping - Azure DevOps</title>
+  <script src="https://assets.example.test/ext/ms.vss-web/core-content/runtime.js"></script>
+  <script>window.__moduleNamespaces = ["Repos/Views/PullRequest", "Repos/Discussion"];</script>
+  <script>
+    window.__fetchUtilAzureDevopsPullRequest = {
+      status: "ready",
+      product: true,
+      routeKey: "https://code.example.test:/organization/public/_git/project/pullrequest/5",
+      route: {
+        prefixPath: "/organization/public",
+        project: "public",
+        repository: "project",
+        number: "5",
+        basePath: "/organization/public/_git/project/pullrequest/5",
+        apiPath: "/organization/public/_apis/git/repositories/project/pullRequests/5",
+        repositoryApiPath: "/organization/public/_apis/git/repositories/repo-id/pullRequests/5"
+      },
+      metadata: {
+        pullRequestId: 5,
+        title: "Inventory bootstrapping",
+        description: "Preserve every Azure DevOps conversation record.\n\nSecond description paragraph.",
+        status: "completed",
+        isDraft: false,
+        creationDate: "2026-09-01T09:00:00Z",
+        closedDate: "2026-09-01T13:00:00Z",
+        mergeStatus: "succeeded",
+        mergeId: "merge-id",
+        sourceRefName: "refs/heads/feature/inventory",
+        targetRefName: "refs/heads/main",
+        createdBy: { displayName: "Alice Author", uniqueName: "alice@example.test" },
+        repository: {
+          id: "repo-id",
+          name: "project",
+          webUrl: "https://code.example.test/organization/public/_git/project",
+          project: { id: "project-id", name: "public", visibility: "public" }
+        },
+        reviewers: [
+          { displayName: "Bob Reviewer", uniqueName: "bob@example.test", vote: 10, isRequired: true },
+          { displayName: "Carol Reviewer", uniqueName: "carol@example.test", vote: -5, hasDeclined: false }
+        ]
+      },
+      threads: {
+        count: 3,
+        value: [
+          {
+            id: 11,
+            status: "active",
+            properties: { "CodeReviewThreadType": { "$value": "RefUpdate" } },
+            comments: [
+              { id: 1, commentType: "system", content: "Alice Author updated the pull request.",
+                publishedDate: "2026-09-01T09:10:00Z",
+                _links: { self: { href: "https://code.example.test/organization/public/_apis/git/repositories/repo-id/pullRequests/5/threads/11/comments/1" } } }
+            ],
+            _links: { self: { href: "https://code.example.test/organization/public/_apis/git/repositories/repo-id/pullRequests/5/threads/11" } }
+          },
+          {
+            id: 12,
+            status: "closed",
+            isDeleted: true,
+            publishedDate: "2026-09-01T09:55:00Z",
+            lastUpdatedDate: "2026-09-01T10:05:00Z",
+            identities: { "reviewer-id": { displayName: "Deleted Reviewer" } },
+            comments: [
+              { id: 1, parentCommentId: 0, commentType: "text", isDeleted: true, content: "",
+                author: { displayName: "Deleted Reviewer" }, publishedDate: "2026-09-01T10:00:00Z",
+                lastContentUpdatedDate: "2026-09-01T10:01:00Z",
+                usersLiked: [{ displayName: "Audit User" }] }
+            ]
+          },
+          {
+            id: 13,
+            status: "fixed",
+            threadContext: {
+              filePath: "/src/widget.js",
+              rightFileStart: { line: 10, offset: 2 },
+              rightFileEnd: { line: 11, offset: 8 },
+              links: ["javascript:unsafeThread()", "https://code.example.test/thread-context"]
+            },
+            pullRequestThreadContext: { changeTrackingId: 77, iterationContext: { firstComparingIteration: 1, secondComparingIteration: 2 } },
+            properties: {
+              "CodeReviewThreadType": { "$value": "Review" },
+              documentationUrl: "javascript:unsafeProperty()",
+              safeLinks: ["javascript:unsafeArray()", "https://code.example.test/property"]
+            },
+            comments: [
+              { id: 1, commentType: "text", content: "Preserve this inline review comment.",
+                author: { displayName: "Bob Reviewer", uniqueName: "bob@example.test" },
+                publishedDate: "2026-09-01T11:00:00Z", lastUpdatedDate: "2026-09-01T11:05:00Z" },
+              { id: 2, parentCommentId: 1, commentType: "text", content: "Preserve this inline reply.",
+                author: { displayName: "Alice Author", uniqueName: "alice@example.test" },
+                publishedDate: "2026-09-01T11:30:00Z",
+                _links: { self: { href: "javascript:unsafeComment()" } } }
+            ]
+          }
+        ]
+      },
+      commits: [
+        {
+          commitId: "1111111111111111111111111111111111111111",
+          comment: "Initial inventory implementation",
+          author: { name: "Alice Author", email: "alice@example.test", date: "2026-09-01T08:00:00Z" },
+          committer: { name: "Alice Author", email: "alice@example.test", date: "2026-09-01T08:01:00Z" },
+          changeCounts: { Add: 3, Edit: 2, Delete: 1 },
+          parents: ["0000000000000000000000000000000000000000"],
+          statuses: [{ state: "succeeded", context: { name: "build" } }],
+          workItems: [{ id: "42" }],
+          commentTruncated: false,
+          remoteUrl: "https://code.example.test/organization/public/_git/project/commit/1111111111111111111111111111111111111111"
+        },
+        {
+          commitId: "2222222222222222222222222222222222222222",
+          comment: "Preserve complete discussion history",
+          author: { name: "Alice Author", date: "2026-09-01T08:30:00Z" },
+          committer: { name: "Merge Service", date: "2026-09-01T08:31:00Z" },
+          remoteUrl: "https://code.example.test/organization/public/_git/project/commit/2222222222222222222222222222222222222222"
+        }
+      ],
+      threadCount: 3,
+      commentCount: 4,
+      commitCount: 2
+    };
+  </script>
+</head>
+<body class="lwp ms-vss-web-vsts-theme">
+  <main>
+    <div role="heading" aria-level="1">Pull Request 5 Completed: Inventory bootstrapping</div>
+    <a id="__bolt-tab-overview" role="tab" href="/organization/public/_git/project/pullrequest/5?_a=overview">Overview</a>
+    <a id="__bolt-tab-files" role="tab" href="/organization/public/_git/project/pullrequest/5?_a=files">Files</a>
+    <a id="__bolt-tab-updates" role="tab" href="/organization/public/_git/project/pullrequest/5?_a=updates">Updates</a>
+    <a id="__bolt-tab-commits" role="tab" href="/organization/public/_git/project/pullrequest/5?_a=commits">Commits</a>
+  </main>
+</body>
+</html>

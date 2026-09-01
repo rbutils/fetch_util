@@ -147,6 +147,83 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://review.example/c/platform/core')).to be_nil
   end
 
+  it 'routes exact host-agnostic Azure DevOps pull requests through REST preparation' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://dev.azure.com/organization/project/_git/repository/pullrequest/5'))
+      .to eq(:stabilize_azure_devops_pr)
+    expect(strategy_for.call('https://devops.example/tfs/Collection/project/_git/repository/pullrequest/5'))
+      .to eq(:stabilize_azure_devops_pr)
+    expect(strategy_for.call('https://devops.example/project/_git/repository/pullrequest/not-a-number')).to be_nil
+    expect(strategy_for.call('https://devops.example/project/_git/repository/pullrequest/5/files')).to be_nil
+  end
+
+  it 'waits for Azure DevOps REST preparation and falls through on unusable resources' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "matched" => true, "product" => true, "status" => "loading", "signature" => "loading" },
+      { "matched" => true, "product" => true, "status" => "ready", "signature" => "ready:7:9:2" }
+    ]
+    allow(browser).to receive(:azure_devops_pr_state) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_azure_devops_pr, page)).to be(true)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+
+    allow(browser).to receive(:azure_devops_pr_state).and_return(
+      { "matched" => true, "product" => true, "status" => "failed", "signature" => "failed" }
+    )
+    expect(browser.send(:stabilize_azure_devops_pr, page)).to be(false)
+
+    allow(browser).to receive(:azure_devops_pr_state).and_return(
+      { "matched" => true, "product" => true, "status" => "loading", "signature" => "loading" }
+    )
+    allow(browser).to receive(:retry_until_timeout).and_yield.and_return(false)
+    expect(browser).to receive(:fail_azure_devops_pr_preparation).with(page)
+    expect(browser.send(:stabilize_azure_devops_pr, page)).to be(false)
+  end
+
+  it 'dispatches Azure DevOps pull requests through the real page flow' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle
+
+    expect(browser).to receive(:wait_for_anubis_challenge).with(page)
+    expect(browser).to receive(:stabilize_azure_devops_pr).with(page).and_return(true)
+    expect(browser).not_to receive(:wait_for_idle_or_content)
+
+    expect(browser.send(
+             :stabilize_page,
+             page,
+             'https://code.example.test/organization/public/_git/project/pullrequest/5'
+           )).to be(true)
+  end
+
+  it 'prepares complete Azure DevOps threads and opaque-paginated commits' do
+    browser = browser_with_idle
+    product_script = browser.send(:azure_devops_pr_product_state_script)
+    commit_details = browser.send(:azure_devops_pr_commit_details_script)
+    request_helpers = browser.send(:azure_devops_pr_request_helpers_script)
+    request_script = browser.send(:azure_devops_pr_request_state_script)
+
+    expect(product_script).to include('ms-vss-web-vsts-theme', 'const tabNames = ["overview", "files", "updates", "commits"]',
+                                      'document.querySelector("#__bolt-tab-" + name)', 'const moduleMatch =', 'routeKey')
+    expect(request_helpers).to include('X-TFS-FedAuthRedirect', 'redirect: "error"', 'if (!response.ok)')
+    expect(commit_details).to include('commit.commentTruncated', '/commits/', 'incomplete Azure DevOps commit detail')
+    expect(request_script).to include('X-TFS-FedAuthRedirect', 'if (!response.ok)', '"$top", "1000"',
+                                      'x-ms-continuationtoken', 'seenTokens.has(next)',
+                                      'Azure DevOps API pull request identity mismatch',
+                                      'incomplete Azure DevOps threads payload',
+                                      'incomplete Azure DevOps commits payload',
+                                      'invalid Azure DevOps continuation token')
+    expect(request_script).not_to include('_apis/Contribution')
+  end
+
   it 'prepares comparison-specific Gerrit file resources without embedding content' do
     browser = browser_with_idle
     product_script = browser.send(:gerrit_file_resource_product_state_script)

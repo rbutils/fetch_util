@@ -94,6 +94,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (firstMarkdownLine.length >= 100 && !/^[-*]\s+\[/.test(firstMarkdownLine)) content.contentType = "article";
   }
   var warnings = suspicionReasons(metadata, content, markdown, pageText, signals);
+  (Array.isArray(content.warningReasons) ? content.warningReasons : []).forEach(function(reason) {
+    reason = normalizeText(reason);
+    if (reason && warnings.indexOf(reason) === -1) warnings.push(reason);
+  });
   if (content.spaDataGuard && warnings.indexOf("spa_data_traversal_guard") === -1) warnings.push("spa_data_traversal_guard");
   var normalizedMarkdownForWarnings = normalizeText(markdown);
   if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdownForWarnings, { maxTextLength: 1800, checkStructured: true })) {

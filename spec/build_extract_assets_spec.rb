@@ -235,6 +235,9 @@ RSpec.describe "extract asset bundle" do
     pagure_shared_path = "profiles/community/pagure_shared.js"
     pagure_thread_path = "profiles/community/pagure_threads.js"
     pagure_pull_path = "profiles/community/pagure_pull_requests.js"
+    azure_shared_path = "profiles/community/azure_devops_pr_shared.js"
+    azure_entries_path = "profiles/community/azure_devops_pr_entries.js"
+    azure_thread_path = "profiles/community/azure_devops_pr_threads.js"
     gerrit_shared_path = "profiles/community/gerrit_change_shared.js"
     gerrit_entries_path = "profiles/community/gerrit_change_entries.js"
     gerrit_resource_shared_path = "profiles/community/gerrit_change_resource_shared.js"
@@ -275,6 +278,9 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, pagure_shared_path))).to include("function pagureThreadEntrySections")
     expect(File.read(File.join(source_root, pagure_thread_path))).to include("function pagureIssueContent")
     expect(File.read(File.join(source_root, pagure_pull_path))).to include("function pagurePullRequestContent")
+    expect(File.read(File.join(source_root, azure_shared_path))).to include("function azureDevopsPullRequestRoute")
+    expect(File.read(File.join(source_root, azure_entries_path))).to include("function azureDevopsThreadSections")
+    expect(File.read(File.join(source_root, azure_thread_path))).to include("function azureDevopsPullRequestContent")
     expect(File.read(File.join(source_root, gerrit_shared_path))).to include("function gerritChangeRoute")
     expect(File.read(File.join(source_root, gerrit_shared_path))).to include("function gerritChangeFileInventoryEntries")
     expect(File.read(File.join(source_root, gerrit_entries_path))).to include("function gerritTimelineRecords")
@@ -298,7 +304,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(pagure_shared_path)).to be < manifest.index(pagure_thread_path)
     expect(manifest.index(pagure_thread_path)).to be < manifest.index(pagure_pull_path)
     expect(manifest.index(pagure_pull_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(pagure_pull_path)).to be < manifest.index(gerrit_shared_path)
+    expect(manifest.index(pagure_pull_path)).to be < manifest.index(azure_shared_path)
+    expect(manifest.index(azure_shared_path)).to be < manifest.index(azure_entries_path)
+    expect(manifest.index(azure_entries_path)).to be < manifest.index(azure_thread_path)
+    expect(manifest.index(azure_thread_path)).to be < manifest.index(gerrit_shared_path)
     expect(manifest.index(gerrit_shared_path)).to be < manifest.index(gerrit_entries_path)
     expect(manifest.index(gerrit_entries_path)).to be < manifest.index(gerrit_resource_shared_path)
     expect(manifest.index(gerrit_resource_shared_path)).to be < manifest.index(gerrit_resource_entries_path)
@@ -493,6 +502,7 @@ RSpec.describe "extract asset bundle" do
                           registerBitbucketCloudThreadProfiles
                           registerPagurePullRequestProfiles
                           registerPagureThreadProfiles
+                          registerAzureDevopsPullRequestProfiles
                           registerGerritFileResourceProfiles
                           registerGerritChangeProfiles
                           registerCommunityWikiProfiles

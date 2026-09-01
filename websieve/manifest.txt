@@ -158,6 +158,9 @@ profiles/community/bitbucket_cloud_threads.js
 profiles/community/pagure_shared.js
 profiles/community/pagure_threads.js
 profiles/community/pagure_pull_requests.js
+profiles/community/azure_devops_pr_shared.js
+profiles/community/azure_devops_pr_entries.js
+profiles/community/azure_devops_pr_threads.js
 profiles/community/gerrit_change_shared.js
 profiles/community/gerrit_change_entries.js
 profiles/community/gerrit_change_resource_shared.js

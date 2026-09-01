@@ -18,6 +18,7 @@ module FetchUtil
           SiteStabilization::GiteaFamilyThreads::GITEA_FAMILY_THREAD_STABILIZATION_PROFILE,
           SiteStabilization::BitbucketCloudPullResources::BITBUCKET_CLOUD_PULL_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::BitbucketCloudThreads::BITBUCKET_CLOUD_THREAD_STABILIZATION_PROFILE,
+          SiteStabilization::AzureDevopsPrStabilization::AZURE_DEVOPS_PR_STABILIZATION_PROFILE,
           SiteStabilization::GerritFileResourceStabilization::GERRIT_FILE_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GerritChangeStabilization::GERRIT_CHANGE_STABILIZATION_PROFILE,
           SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
