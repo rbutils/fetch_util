@@ -215,8 +215,10 @@ RSpec.describe FetchUtil::Browser do
 
     expect(product_script).to include('ms-vss-web-vsts-theme', 'const tabNames = ["overview", "files", "updates", "commits"]',
                                       'document.querySelector("#__bolt-tab-" + name)', 'const moduleMatch =', 'routeKey')
-    expect(request_helpers).to include('X-TFS-FedAuthRedirect', 'redirect: "error"', 'if (!response.ok)')
-    expect(commit_details).to include('commit.commentTruncated', '/commits/', 'incomplete Azure DevOps commit detail')
+    expect(request_helpers).to include('X-TFS-FedAuthRedirect', 'redirect: "error"', 'signal: signal',
+                                       'if (!response.ok)')
+    expect(commit_details).to include('AZURE_DEVOPS_COMMIT_DETAIL_CONCURRENCY = 8', 'completeCommits', '/commits/',
+                                      'incomplete Azure DevOps commit detail')
     expect(request_script).to include('X-TFS-FedAuthRedirect', 'if (!response.ok)', '"$top", "1000"',
                                       'x-ms-continuationtoken', 'seenTokens.has(next)',
                                       'Azure DevOps API pull request identity mismatch',

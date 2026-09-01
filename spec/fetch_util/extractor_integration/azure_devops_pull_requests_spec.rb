@@ -129,6 +129,15 @@ RSpec.describe 'FetchUtil extractor integration - Azure DevOps pull requests' do
                 comment: "Initial inventory implementation with complete details",
                 commentTruncated: false
               });
+              payload.detailOnlyField = "first-detail";
+            } else if (url.pathname.endsWith('/commits/' + fixture.commits[1].commitId)) {
+              payload = Object.assign({}, fixture.commits[1], {
+                comment: "Complete second commit",
+                commentTruncated: false,
+                detailOnlyField: "second-detail",
+                detailUrl: "https://code.example.test/commit-detail",
+                unsafeDetailUrl: "javascript:unsafeDetail()"
+              });
             }
             else if (url.searchParams.get('continuationToken') === 'opaque-next') {
               payload = { count: 1, value: [fixture.commits[1]] };
@@ -152,13 +161,26 @@ RSpec.describe 'FetchUtil extractor integration - Azure DevOps pull requests' do
 
       expect(state).to include('status' => 'ready', 'threadCount' => 3, 'commentCount' => 4, 'commitCount' => 2)
       expect(state.fetch('commits').first).to include(
-        'comment' => 'Initial inventory implementation with complete details', 'commentTruncated' => false
+        'comment' => 'Initial inventory implementation with complete details', 'commentTruncated' => false,
+        'detailOnlyField' => 'first-detail'
       )
-      expect(page.evaluate('window.__azureRequests').grep(/commits/).length).to eq(3)
-      expect(page.evaluate('window.__azureRequestOptions.every((options) => options.redirect === "error")')).to be(true)
+      expect(state.fetch('commits').last).to include('detailOnlyField' => 'second-detail')
+      detail_requests = page.evaluate('window.__azureRequests').grep(%r{/commits/[0-9a-f]{40}\?api-version=7\.1\z})
+      expect(detail_requests).to eq(state.fetch('commits').map do |commit|
+        "/organization/public/_apis/git/repositories/11111111-2222-3333-4444-555555555555/commits/" \
+          "#{commit.fetch("commitId")}?api-version=7.1"
+      end)
+      expect(page.evaluate(<<~JS)).to be(true)
+        window.__azureRequestOptions.every((options) =>
+          options.redirect === "error" && options.signal instanceof AbortSignal
+        )
+      JS
       payload = extract_payload(page, reader_mode: false)
       expect(payload).to include('platform' => 'Azure DevOps', 'replyCount' => 4)
-      expect(payload.fetch('markdown')).to include('Initial inventory implementation with complete details')
+      expect(payload.fetch('markdown')).to include('Initial inventory implementation with complete details',
+                                                   'first-detail', 'second-detail',
+                                                   'https://code.example.test/commit-detail')
+      expect(payload.fetch('markdown')).not_to include('javascript:unsafeDetail')
     end
   end
 
@@ -205,19 +227,165 @@ RSpec.describe 'FetchUtil extractor integration - Azure DevOps pull requests' do
     url = 'https://code.example.test/organization/public/_git/project/pullrequest/5'
 
     with_url_page(url, azure_devops_fixture) do |page|
-      page.evaluate('window.__fetchUtilAzureDevopsPullRequest.status = "loading"')
+      page.evaluate(<<~JS)
+        window.__fetchUtilAzureDevopsPullRequest.status = "loading";
+        window.__fetchUtilAzureDevopsPullRequestAbortController = new AbortController();
+      JS
       state = FetchUtil::Browser.new.send(:fail_azure_devops_pr_preparation, page)
 
       expect(state).to include('status' => 'failed', 'reason' => 'Azure DevOps REST preparation timed out')
+      expect(page.evaluate('window.__fetchUtilAzureDevopsPullRequestAbortController')).to be_nil
       payload = extract_payload(page, reader_mode: false)
       expect(payload.fetch('warnings')).to include('azure_devops_rest_incomplete')
       expect(payload.fetch('markdown')).to include('Azure DevOps REST preparation timed out')
     end
   end
 
+  it 'keeps a timeout terminal while pending commit details abort' do
+    browser = FetchUtil::Browser.new
+    url = 'https://code.example.test/organization/public/_git/project/pullrequest/5'
+
+    with_url_page(url, azure_devops_fixture) do |page|
+      page.evaluate(<<~JS)
+        (() => {
+          const fixture = window.__fetchUtilAzureDevopsPullRequest;
+          delete window.__fetchUtilAzureDevopsPullRequest;
+          window.__azureDetailAborted = false;
+          window.fetch = (value, options) => {
+            const url = new URL(value, location.href);
+            let payload;
+            if (url.pathname.endsWith('/pullRequests/5')) payload = fixture.metadata;
+            else if (url.pathname.endsWith('/threads')) payload = fixture.threads;
+            else if (url.pathname.endsWith('/commits')) payload = { count: 1, value: [fixture.commits[0]] };
+            else {
+              return new Promise((_resolve, reject) => {
+                options.signal.addEventListener('abort', () => {
+                  window.__azureDetailAborted = true;
+                  reject(new DOMException('aborted', 'AbortError'));
+                });
+              });
+            }
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              url: url.href,
+              headers: { get: () => null },
+              json: () => Promise.resolve(payload)
+            });
+          };
+        })()
+      JS
+
+      expect(page.evaluate(browser.send(:azure_devops_pr_state_script))).to include('status' => 'loading')
+      100.times do
+        break if page.evaluate('window.__fetchUtilAzureDevopsPullRequestAbortController != null')
+
+        sleep 0.01
+      end
+      browser.send(:fail_azure_devops_pr_preparation, page)
+      sleep 0.02
+
+      expect(page.evaluate('window.__azureDetailAborted')).to be(true)
+      expect(page.evaluate('window.__fetchUtilAzureDevopsPullRequest')).to include(
+        'status' => 'failed', 'reason' => 'Azure DevOps REST preparation timed out'
+      )
+    end
+  end
+
+  it 'fails closed on malformed commit detail records' do
+    cases = {
+      'array_id' => { commitId: ['1111111111111111111111111111111111111111'],
+                      comment: 'Complete detail', commentTruncated: false },
+      'missing_comment' => { commitId: '1111111111111111111111111111111111111111',
+                             commentTruncated: false },
+      'truncated' => { commitId: '1111111111111111111111111111111111111111',
+                       comment: 'Incomplete detail', commentTruncated: true }
+    }
+    url = 'https://code.example.test/organization/public/_git/project/pullrequest/5'
+
+    cases.each_value do |detail|
+      with_url_page(url, azure_devops_fixture) do |page|
+        page.evaluate(<<~JS)
+          (() => {
+            const fixture = window.__fetchUtilAzureDevopsPullRequest;
+            const detail = #{JSON.generate(detail)};
+            delete window.__fetchUtilAzureDevopsPullRequest;
+            window.fetch = (value) => {
+              const url = new URL(value, location.href);
+              let payload;
+              if (url.pathname.endsWith('/pullRequests/5')) payload = fixture.metadata;
+              else if (url.pathname.endsWith('/threads')) payload = fixture.threads;
+              else if (url.pathname.endsWith('/commits')) payload = { count: 1, value: [fixture.commits[0]] };
+              else payload = detail;
+              return Promise.resolve({
+                ok: true,
+                status: 200,
+                url: url.href,
+                headers: { get: () => null },
+                json: () => Promise.resolve(payload)
+              });
+            };
+          })()
+        JS
+
+        expect(page.evaluate(FetchUtil::Browser.new.send(:azure_devops_pr_state_script))).to include('status' => 'loading')
+        expect(wait_for_azure_devops_preparation(page)).to include(
+          'status' => 'failed', 'reason' => 'incomplete Azure DevOps commit detail'
+        )
+      end
+    end
+  end
+
+  it 'aborts sibling commit detail requests after one fails' do
+    browser = FetchUtil::Browser.new
+    url = 'https://code.example.test/organization/public/_git/project/pullrequest/5'
+
+    with_url_page(url, azure_devops_fixture) do |page|
+      page.evaluate(<<~JS)
+        (() => {
+          const fixture = window.__fetchUtilAzureDevopsPullRequest;
+          delete window.__fetchUtilAzureDevopsPullRequest;
+          window.__azureSiblingDetailAborted = false;
+          window.fetch = (value, options) => {
+            const url = new URL(value, location.href);
+            let payload;
+            if (url.pathname.endsWith('/pullRequests/5')) payload = fixture.metadata;
+            else if (url.pathname.endsWith('/threads')) payload = fixture.threads;
+            else if (url.pathname.endsWith('/commits')) payload = { count: 2, value: fixture.commits };
+            else if (url.pathname.endsWith('/commits/' + fixture.commits[0].commitId)) {
+              payload = { commitId: fixture.commits[0].commitId, commentTruncated: false };
+            } else {
+              return new Promise((_resolve, reject) => {
+                options.signal.addEventListener('abort', () => {
+                  window.__azureSiblingDetailAborted = true;
+                  reject(new DOMException('aborted', 'AbortError'));
+                });
+              });
+            }
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              url: url.href,
+              headers: { get: () => null },
+              json: () => Promise.resolve(payload)
+            });
+          };
+        })()
+      JS
+
+      expect(page.evaluate(browser.send(:azure_devops_pr_state_script))).to include('status' => 'loading')
+      expect(wait_for_azure_devops_preparation(page)).to include(
+        'status' => 'failed', 'reason' => 'incomplete Azure DevOps commit detail'
+      )
+      expect(page.evaluate('window.__azureSiblingDetailAborted')).to be(true)
+    end
+  end
+
   it 'fails closed on untrusted REST routing and pagination responses' do
     cases = {
       'cross_origin' => 'cross-origin Azure DevOps API response',
+      'invalid_commit_id' => 'invalid Azure DevOps commit record',
+      'invalid_repository_id' => 'Azure DevOps API pull request identity mismatch',
       'repository_origin' => 'Azure DevOps API repository origin mismatch',
       'thread_continuation' => 'unexpected Azure DevOps threads continuation',
       'repeated_token' => 'repeated Azure DevOps continuation token'
@@ -231,10 +399,12 @@ RSpec.describe 'FetchUtil extractor integration - Azure DevOps pull requests' do
             const mode = #{JSON.generate(mode)};
             const fixture = window.__fetchUtilAzureDevopsPullRequest;
             if (mode === "repository_origin") fixture.metadata.repository.webUrl = "https://other.example.test/repository";
+            if (mode === "invalid_repository_id") fixture.metadata.repository.id = "repo-id";
             delete window.__fetchUtilAzureDevopsPullRequest;
             window.fetch = (value) => {
               const url = new URL(value, location.href);
               let payload;
+              if (mode === "invalid_commit_id") fixture.commits[0].commitId = "not-a-commit";
               if (url.pathname.endsWith('/pullRequests/5')) payload = fixture.metadata;
               else if (url.pathname.endsWith('/threads')) payload = fixture.threads;
               else payload = { count: 1, value: [fixture.commits[0]] };

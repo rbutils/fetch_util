@@ -8,11 +8,12 @@ module FetchUtil
 
         def azure_devops_pr_request_helpers_script
           <<~'JS'
-            const requestJson = async (url) => {
+            const requestJson = async (url, signal) => {
               if (url.origin !== location.origin) throw new Error("cross-origin Azure DevOps API route");
               const response = await fetch(url.href, {
                 credentials: "same-origin",
                 redirect: "error",
+                signal: signal,
                 headers: { Accept: "application/json", "X-TFS-FedAuthRedirect": "Suppress" }
               });
               if (response.url && new URL(response.url, location.href).origin !== location.origin) {
@@ -24,6 +25,25 @@ module FetchUtil
                 throw new Error("invalid Azure DevOps API payload");
               }
               return { response: response, value: value };
+            };
+          JS
+        end
+
+        def azure_devops_pr_request_lifecycle_script
+          <<~'JS'
+            const abortControllerKey = "__fetchUtilAzureDevopsPullRequestAbortController";
+            const abortController = new AbortController();
+            const signal = abortController.signal;
+            window[abortControllerKey] = abortController;
+            window[stateKey] = { status: "loading", product: true, routeKey: routeKey, route: route };
+
+            const preparationActive = () => {
+              const current = window[stateKey];
+              return current && current.status === "loading" && current.routeKey === routeKey &&
+                window[abortControllerKey] === abortController;
+            };
+            const clearAbortController = () => {
+              if (window[abortControllerKey] === abortController) delete window[abortControllerKey];
             };
           JS
         end

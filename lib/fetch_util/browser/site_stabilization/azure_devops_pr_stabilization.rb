@@ -33,6 +33,9 @@ module FetchUtil
             (() => {
               const state = window.__fetchUtilAzureDevopsPullRequest;
               if (!state || state.status !== "loading") return state;
+              const controller = window.__fetchUtilAzureDevopsPullRequestAbortController;
+              if (controller && typeof controller.abort === "function") controller.abort();
+              delete window.__fetchUtilAzureDevopsPullRequestAbortController;
               window.__fetchUtilAzureDevopsPullRequest = Object.assign({}, state, {
                 status: "failed",
                 reason: "Azure DevOps REST preparation timed out"
