@@ -64,9 +64,11 @@
       var date = normalizeText((card && card.querySelector("time, [class*='date' i]")) ? card.querySelector("time, [class*='date' i]").textContent : "");
       var href = (visibleLink.getAttribute("href") || "").trim();
       var url = href.charAt(0) === "#" ? "" : materializedHttpUrl(href);
-      if (!title || !date || !url || seen[url]) return;
-      seen[url] = true;
-      items.push({ text: title, url: url, detail: date });
+      var item = { text: title, url: url, detail: date };
+      var key = listItemMaterialIdentity(item, href);
+      if (!title || !date || !url || seen[key]) return;
+      seen[key] = true;
+      items.push(item);
     });
 
     if (items.length < 3) return null;

@@ -97,6 +97,9 @@ RSpec.describe 'FetchUtil press release extraction' do
         <article class="release"><a href="/news/two">Reports results</a><time>July 2, 2026</time></article>
         <article class="release"><a href="/news/three">Announces expansion</a><time>July 3, 2026</time></article>
         <article class="release"><a href="/news/four">Opens new office</a><time>July 4, 2026</time></article>
+        <article class="release"><a href="/news/latest">Publishes first recurring update</a><time>July 5, 2026</time></article>
+        <article class="release"><a href="/news/latest">Publishes second recurring update</a><time>July 6, 2026</time></article>
+        <article class="release responsive-copy"><a href="/news/latest">Publishes first recurring update</a><time>July 5, 2026</time></article>
         <article class="release" style="display:none"><a href="/news/hidden">Hidden release</a><time>July 5, 2026</time></article>
         <article class="release" style="visibility:hidden"><a style="visibility:visible" href="/news/restored">Restored release</a><time style="visibility:visible">July 6, 2026</time></article>
       </main></body></html>
@@ -110,6 +113,9 @@ RSpec.describe 'FetchUtil press release extraction' do
       expect(payload['markdown']).not_to include('Hidden release')
       expect(payload['markdown']).not_to include('javascript:', 'mailto:', '#archive')
       expect(payload['markdown']).not_to include('Price:')
+      expect(payload['markdown'].scan('Publishes first recurring update').length).to eq(1)
+      expect(payload['markdown'].scan('Publishes second recurring update').length).to eq(1)
+      expect(payload['markdown'].index('Publishes first recurring update')).to be < payload['markdown'].index('Publishes second recurring update')
     end
   end
 end
