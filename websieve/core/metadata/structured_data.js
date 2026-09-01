@@ -92,8 +92,9 @@ function mergeStructuredDataEntity(target, source) {
     var incoming = source[key];
     if (key === "@type" && target[key]) {
       target[key] = mergeStructuredDataTypes(target[key], incoming);
-    } else if (Array.isArray(incoming) && Array.isArray(target[key])) {
-      target[key] = mergeStructuredDataArrays(target[key], incoming);
+    } else if (Object.prototype.hasOwnProperty.call(target, key) &&
+               (Array.isArray(incoming) || Array.isArray(target[key]))) {
+      target[key] = mergeStructuredDataArrays(asArray(target[key]), asArray(incoming));
     } else if (incoming && typeof incoming === "object" && !Array.isArray(incoming)) {
       var current = target[key] && typeof target[key] === "object" && !Array.isArray(target[key]) ? target[key] : Object.create(null);
       var differentIds = current["@id"] && incoming["@id"] && current["@id"] !== incoming["@id"];
