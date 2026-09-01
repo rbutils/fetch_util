@@ -150,6 +150,27 @@ RSpec.describe FetchUtil::Regulatory do
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
 
+  it "does not cache request timeout responses" do
+    url = "https://example.com/timed-out"
+    attempts = 0
+    client = fake_client(
+      url => lambda do
+        attempts += 1
+        next response(url, status: 408) if attempts == 1
+
+        response(url, headers: { "x-robots-tag" => ["noindex"] })
+      end
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(client: client, cache_path: dir, sources: "xrobotstag")
+
+    expect(regulatory.call(url)).to eq({})
+    expect(regulatory.call(url)).to eq("xrobotstag" => [{ "disallow" => "index" }])
+    expect(client.requests).to eq([url, url])
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
+
   it "does not cache rate-limited TDM policy responses" do
     policy_url = "https://example.com/policies/tdm.json"
     attempts = 0

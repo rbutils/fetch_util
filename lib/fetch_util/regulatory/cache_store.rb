@@ -93,7 +93,7 @@ module FetchUtil
 
       def cacheable_response?(response)
         status = response.status
-        status != 429 && !status&.between?(500, 599)
+        ![408, 429].include?(status) && !status&.between?(500, 599)
       end
 
       def deep_copy(value)
