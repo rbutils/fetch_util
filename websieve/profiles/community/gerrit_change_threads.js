@@ -7,14 +7,14 @@ function gerritChangeMetadata(detail, prepared) {
   if (detail.topic) sections.push("- Topic: " + detail.topic);
   if (detail.created) sections.push("- Created: " + detail.created);
   if (detail.updated) sections.push("- Updated: " + detail.updated);
-  sections.push("- Current patch set: " + gerritCurrentPatchset(prepared));
+  sections.push("- Selected patch set: " + gerritSelectedPatchset(prepared));
   if (detail.total_comment_count != null) sections.push("- Inline comments reported: " + detail.total_comment_count);
   if (detail.unresolved_comment_count != null) sections.push("- Unresolved comments reported: " + detail.unresolved_comment_count);
   return sections;
 }
 
 function gerritChangeDescription(prepared) {
-  var revision = gerritCurrentRevision(prepared);
+  var revision = gerritSelectedRevision(prepared);
   return String(revision && revision.commit && revision.commit.message || prepared.detail.subject || "");
 }
 

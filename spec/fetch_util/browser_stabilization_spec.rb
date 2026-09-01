@@ -138,6 +138,17 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://review.example/c/platform/core')).to be_nil
   end
 
+  it 'prepares files for the selected Gerrit patch set' do
+    browser = browser_with_idle
+    script = browser.send(:gerrit_change_request_state_script)
+
+    expect(script).to include('const selectedRevision = route.patchset || "current";',
+                              'o=ALL_REVISIONS&o=ALL_COMMITS',
+                              'encodeURIComponent(selectedRevision) + "/files/"',
+                              'Gerrit API patch set identity mismatch')
+    expect(script).not_to include('requestJson("/revisions/current/files/")')
+  end
+
   it 'waits for Gerrit REST preparation to complete' do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle(timeout: 1.0)

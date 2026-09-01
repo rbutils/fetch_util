@@ -25,14 +25,19 @@ module FetchUtil
               }
               return value;
             };
+            const selectedRevision = route.patchset || "current";
             Promise.all([
-              requestJson("/detail?o=ALL_REVISIONS&o=CURRENT_COMMIT&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=MESSAGES"),
+              requestJson("/detail?o=ALL_REVISIONS&o=ALL_COMMITS&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=MESSAGES"),
               requestJson("/comments?enable-context=true&context-padding=3"),
-              requestJson("/revisions/current/files/")
+              requestJson("/revisions/" + encodeURIComponent(selectedRevision) + "/files/")
             ]).then(([detail, comments, files]) => {
               if (String(detail._number || "") !== number || !detail.project || detail.project !== projectPath) {
                 throw new Error("Gerrit API change identity mismatch");
               }
+              const selectedExists = !route.patchset || Object.values(detail.revisions || {}).some(
+                (revision) => String(revision && revision._number || "") === route.patchset
+              );
+              if (!selectedExists) throw new Error("Gerrit API patch set identity mismatch");
               const countComments = (collection) => Object.keys(collection || {}).reduce(
                 (total, path) => total + (Array.isArray(collection[path]) ? collection[path].length : 0), 0
               );

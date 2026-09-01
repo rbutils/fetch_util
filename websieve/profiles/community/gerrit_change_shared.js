@@ -45,6 +45,7 @@ function gerritPreparedChange(route) {
   var prepared = window.__fetchUtilGerritChange;
   if (!route || !prepared || prepared.status !== "ready" || !prepared.product || !prepared.route) return null;
   if (String(prepared.route.number || "") !== route.number || !prepared.route.project ||
+      normalizeText(prepared.route.patchset) !== normalizeText(route.patchset) ||
       !prepared.detail || !prepared.comments || !prepared.files) {
     return null;
   }
@@ -74,20 +75,28 @@ function gerritChangeApiUrl(prepared, suffix) {
   }
 }
 
-function gerritCurrentRevision(prepared) {
+function gerritSelectedRevision(prepared) {
   var detail = prepared.detail || {};
+  var selectedPatchset = normalizeText(prepared.route.patchset);
+  if (selectedPatchset) {
+    var revisions = detail.revisions || {};
+    var key = Object.keys(revisions).find(function(revisionKey) {
+      return normalizeText(revisions[revisionKey] && revisions[revisionKey]._number) === selectedPatchset;
+    });
+    return key ? revisions[key] : null;
+  }
   return (detail.revisions || {})[detail.current_revision] || null;
 }
 
-function gerritCurrentPatchset(prepared) {
-  var revision = gerritCurrentRevision(prepared);
-  return normalizeText(revision && revision._number) || normalizeText(prepared.route.patchset) || "current";
+function gerritSelectedPatchset(prepared) {
+  var revision = gerritSelectedRevision(prepared);
+  return normalizeText(prepared.route.patchset) || normalizeText(revision && revision._number) || "current";
 }
 
 function gerritChangeFileUiUrl(prepared, filePath, patchset) {
-  var path = String(filePath || "").replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/");
-  if (!path) return null;
-  var revision = normalizeText(patchset) || gerritCurrentPatchset(prepared);
+  var path = String(filePath || "").split("/").map(encodeURIComponent).join("/");
+  if (!path.replace(/\//g, "")) return null;
+  var revision = normalizeText(patchset) || gerritSelectedPatchset(prepared);
   return materializedHttpUrl(location.origin + prepared.route.changePath + "/" + revision + "/" + path);
 }
 
@@ -114,22 +123,24 @@ function gerritRevisionInventoryEntries(prepared) {
 }
 
 function gerritChangeInventory(prepared) {
+  var selectedPatchset = gerritSelectedPatchset(prepared);
+  var selectedPrefix = "/revisions/" + encodeURIComponent(selectedPatchset);
   var entries = [
     { label: "Change", url: location.origin + prepared.route.changePath },
-    { label: "Change detail API", url: gerritChangeApiUrl(prepared, "/detail?o=ALL_REVISIONS&o=CURRENT_COMMIT&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=MESSAGES") },
+    { label: "Change detail API", url: gerritChangeApiUrl(prepared, "/detail?o=ALL_REVISIONS&o=ALL_COMMITS&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=MESSAGES") },
     { label: "Inline comments API", url: gerritChangeApiUrl(prepared, "/comments?enable-context=true&context-padding=3") },
-    { label: "Changed files API", url: gerritChangeApiUrl(prepared, "/revisions/current/files/") },
-    { label: "Current commit API", url: gerritChangeApiUrl(prepared, "/revisions/current/commit") },
-    { label: "Current raw patch", url: gerritChangeApiUrl(prepared, "/revisions/current/patch?download&raw") },
-    { label: "Related changes API", url: gerritChangeApiUrl(prepared, "/revisions/current/related") },
-    { label: "Revision actions API", url: gerritChangeApiUrl(prepared, "/revisions/current/actions") }
+    { label: "Selected patch set files API", url: gerritChangeApiUrl(prepared, selectedPrefix + "/files/") },
+    { label: "Selected patch set commit API", url: gerritChangeApiUrl(prepared, selectedPrefix + "/commit") },
+    { label: "Selected patch set raw patch", url: gerritChangeApiUrl(prepared, selectedPrefix + "/patch?download&raw") },
+    { label: "Selected patch set related changes API", url: gerritChangeApiUrl(prepared, selectedPrefix + "/related") },
+    { label: "Selected patch set actions API", url: gerritChangeApiUrl(prepared, selectedPrefix + "/actions") }
   ].concat(gerritRevisionInventoryEntries(prepared));
   Object.keys(prepared.files || {}).forEach(function(filePath) {
     var encoded = encodeURIComponent(filePath);
     entries.push(
       { label: "File: " + filePath, url: gerritChangeFileUiUrl(prepared, filePath) },
-      { label: "File content: " + filePath, url: gerritChangeApiUrl(prepared, "/revisions/current/files/" + encoded + "/content") },
-      { label: "File diff: " + filePath, url: gerritChangeApiUrl(prepared, "/revisions/current/files/" + encoded + "/diff") }
+      { label: "File content: " + filePath, url: gerritChangeApiUrl(prepared, selectedPrefix + "/files/" + encoded + "/content") },
+      { label: "File diff: " + filePath, url: gerritChangeApiUrl(prepared, selectedPrefix + "/files/" + encoded + "/diff") }
     );
   });
   return browsableInventory("Browse this Gerrit change", entries);
