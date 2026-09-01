@@ -118,6 +118,11 @@ RSpec.describe 'FetchUtil event extraction' do
       </head><body><main>
         <h1>Community conference program</h1>
         <p>This program introduces a full day of practical sessions, with enough explanatory context to help visitors choose a useful route through the material and plan useful conversations between sessions.</p>
+        <p style="display:none">SCHEDULE:Display-none guidance must not appear.</p>
+        <div style="visibility:hidden">
+          SCHEDULE:Inherited-hidden guidance must not appear.
+          <p style="visibility:visible">SCHEDULE:Restored guidance remains available to every attendee.</p>
+        </div>
         <article><h2><a href="/sessions/opening">Opening patterns</a></h2><time datetime="2026-09-10T09:00:00Z">09:00 AM</time><p>A practical opening session about choosing simple designs and communicating their constraints clearly.</p></article>
         <article><h2><a href="/sessions/testing">Reliable checks</a></h2><time datetime="2026-09-10T10:30:00Z">10:30 AM</time><p>Focused techniques for dependable changes, useful failures, and maintainable regression coverage.</p></article>
         <article><h2><a href="/sessions/closing">Closing discussion</a></h2><time datetime="2026-09-10T14:00:00Z">02:00 PM</time><p>A final discussion that connects the day's lessons and gives participants time for detailed questions.</p></article>
@@ -129,6 +134,9 @@ RSpec.describe 'FetchUtil event extraction' do
       expect(payload['markdown']).to include('Opening patterns')
       expect(payload['markdown']).to include('Reliable checks')
       expect(payload['markdown']).to include('Closing discussion')
+      expect(payload['markdown']).to include('SCHEDULE:Restored guidance')
+      expect(payload['markdown']).not_to include('SCHEDULE:Display-none guidance', 'SCHEDULE:Inherited-hidden guidance')
+      expect(payload['html']).not_to include('SCHEDULE:Display-none guidance', 'SCHEDULE:Inherited-hidden guidance')
     end
   end
 

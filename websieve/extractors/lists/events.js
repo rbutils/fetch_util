@@ -242,7 +242,7 @@
     if (!conferenceSchedulePage()) return null;
 
     var root = document.querySelector("main, [role='main'], article, #content") || document.body;
-    var clone = cleanClone(root);
+    var clone = cleanClone(visibilityPrunedClone(root, document));
     cleanupAgentRoot(clone);
     cleanupListRoot(clone);
     removeAll(clone, "form, script, style, noscript, [class*='modal' i], [class*='newsletter' i]");
