@@ -157,6 +157,7 @@ profiles/community/bitbucket_cloud_pull_resources.js
 profiles/community/bitbucket_cloud_threads.js
 profiles/community/pagure_shared.js
 profiles/community/pagure_threads.js
+profiles/community/pagure_pull_requests.js
 profiles/community/gerrit_change_shared.js
 profiles/community/gerrit_change_entries.js
 profiles/community/gerrit_change_resource_shared.js

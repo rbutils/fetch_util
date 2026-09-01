@@ -33,6 +33,7 @@
   registerGiteaFamilyThreadProfiles();
   registerBitbucketCloudPullResourceProfiles();
   registerBitbucketCloudThreadProfiles();
+  registerPagurePullRequestProfiles();
   registerPagureThreadProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();

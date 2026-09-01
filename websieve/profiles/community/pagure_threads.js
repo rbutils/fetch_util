@@ -53,36 +53,6 @@ function pagureIssueOpeningAuthor(root, route) {
   return normalizeText(author && author.textContent);
 }
 
-function pagureIssueMetadata(root) {
-  var metadata = root.querySelector(".col-md-4");
-  if (!metadata || elementSubtreeHidden(metadata)) return null;
-  var clone = visibilityPrunedClone(metadata);
-  removeAll(clone, "button, form, [role='tooltip'], .dropdown-menu");
-  var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML));
-  return normalizeText(markdown) ? { node: clone, markdown: markdown } : null;
-}
-
-function pagureArchiveNotice() {
-  var node = Array.prototype.slice.call(document.querySelectorAll(".alert")).find(function(candidate) {
-    return !elementSubtreeHidden(candidate) && /static archive|read-only snapshot/i.test(normalizeText(candidate.textContent));
-  });
-  if (!node) return null;
-  var clone = visibilityPrunedClone(node);
-  var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML));
-  return normalizeText(markdown) ? { node: clone, markdown: markdown } : null;
-}
-
-function pagureIssueEntrySections(entries) {
-  var sections = [];
-  entries.forEach(function(entry) {
-    var label = entry.kind + (entry.author ? " by " + entry.author : "");
-    sections.push("### " + (entry.permalink ? markdownLink(label, entry.permalink) : label));
-    if (entry.timestamp) sections.push("- Time: " + entry.timestamp);
-    sections.push(entry.markdown);
-  });
-  return sections;
-}
-
 function pagureIssueContent(metadata) {
   var route = pagureIssueRoute();
   if (!route) return null;
@@ -96,7 +66,7 @@ function pagureIssueContent(metadata) {
   var author = pagureIssueOpeningAuthor(root, route);
   var entries = pagureIssueEntries(root, route);
   var archive = pagureArchiveNotice();
-  var issueMetadata = pagureIssueMetadata(root);
+  var issueMetadata = pagureThreadMetadata(root);
   var sections = ["# " + title, "- Issue: " + route.community];
   if (author) sections.push("- Author: " + author);
   if (archive) sections.push("## Archive status", archive.markdown);
@@ -104,7 +74,7 @@ function pagureIssueContent(metadata) {
   if (openingMarkdown) sections.push(openingMarkdown);
   if (issueMetadata) sections.push("## Metadata", issueMetadata.markdown);
   if (entries.length) sections.push("## Timeline");
-  sections = sections.concat(pagureIssueEntrySections(entries));
+  sections = sections.concat(pagureThreadEntrySections(entries));
   sections.push(pagureIssueInventory(route));
 
   var visibleNodes = [visibilityPrunedClone(opening)].concat(entries.map(function(entry) {

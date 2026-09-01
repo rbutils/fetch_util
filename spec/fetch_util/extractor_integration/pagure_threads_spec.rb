@@ -24,8 +24,12 @@ RSpec.describe 'FetchUtil extractor integration - Pagure threads' do
                                   'https://forge.example.test/api/0/team/project/issue/42?comments=true',
                                   'Static archives and some installations may not expose this route.')
       expect(markdown.scan('Repeated idless event.').length).to eq(2)
-      expect(markdown.scan('First Pagure comment.').length).to eq(1)
+      expect(markdown.scan('First Pagure comment, fixed by mallory.').length).to eq(1)
+      expect(markdown).to include('[Comment by bob]')
+      expect(markdown).not_to include('[Comment by mallory]')
       expect(markdown).to include('Direct-root Pagure event.', 'Card-root permalink comment.')
+      expect(markdown).to include('### Event by alice', 'Closed by bot from @alice.')
+      expect(markdown).not_to include('Comment by mallory')
       expect(markdown.scan('Card-root permalink comment.').length).to eq(1)
       expect(payload.fetch('excerpt')).to include('Opening Pagure issue body.', 'Restored opening detail.')
       expect(payload.fetch('excerpt')).not_to include('Hidden opening text')
@@ -33,7 +37,7 @@ RSpec.describe 'FetchUtil extractor integration - Pagure threads' do
                                       'Hidden metadata must not render', 'Duplicate permalink must not render',
                                       'Duplicate card-root permalink must not render', 'React')
       expect(payload.fetch('html')).not_to include('<button', 'Hidden card must not render')
-      expect(markdown.index('First Pagure comment.')).to be < markdown.index('Metadata Update from @alice')
+      expect(markdown.index('First Pagure comment, fixed by mallory.')).to be < markdown.index('Metadata Update from @alice')
       expect(markdown.index('Metadata Update from @alice')).to be < markdown.index('Restored Pagure comment.')
     end
   end
@@ -60,6 +64,22 @@ RSpec.describe 'FetchUtil extractor integration - Pagure threads' do
     extract_from_url('https://code.example.test/fork/alice/team/project/issue/42', html, reader_mode: false) do |payload|
       expect(payload).to include('platform' => 'Pagure', 'community' => 'fork/alice/team/project')
       expect(payload.fetch('markdown')).to include('https://code.example.test/fork/alice/team/project/issues')
+    end
+  end
+
+  it 'supports prefixed installations and keeps the prefix out of issue identity' do
+    html = pagure_fixture
+           .gsub('src="/static/', 'src="/pagure/static/')
+           .sub('<script src="/pagure/static/pagure-common.js?pagure=archive"></script>',
+                '<script src="/static/pagure-common.js?pagure=archive"></script>' \
+                '<script src="/static/pagure-relative-dates.js?pagure=archive"></script>' \
+                '<script src="/pagure/static/pagure-common.js?pagure=archive"></script>')
+           .gsub('href="/team/project', 'href="/pagure/team/project')
+
+    extract_from_url('https://code.example.test/pagure/team/project/issue/42', html, reader_mode: false) do |payload|
+      expect(payload).to include('platform' => 'Pagure', 'community' => 'team/project')
+      expect(payload.fetch('markdown')).to include('https://code.example.test/pagure/api/0/team/project/issue/42?comments=true',
+                                                   'https://code.example.test/pagure/team/project/issues')
     end
   end
 
@@ -105,7 +125,9 @@ RSpec.describe 'FetchUtil extractor integration - Pagure threads' do
   it 'keeps repository, pull-request, and malformed routes outside Pagure issue extraction' do
     ['https://forge.example.test/team/project',
      'https://forge.example.test/team/project/pull-request/7',
-     'https://forge.example.test/team/project/issue/not-a-number'].each do |url|
+     'https://forge.example.test/team/project/issue/not-a-number',
+     'https://forge.example.test/team//project/issue/42',
+     'https://forge.example.test//team/project/issue/42'].each do |url|
       extract_from_url(url, pagure_fixture, reader_mode: false) do |payload|
         expect(payload['platform']).not_to eq('Pagure')
       end
