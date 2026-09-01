@@ -58,6 +58,16 @@ RSpec.describe FetchUtil::Regulatory::CacheStore do
     end
   end
 
+  it "ignores cache entries dated in the future" do
+    entry = {
+      "cached_at" => (Time.now.utc + FetchUtil::Regulatory::CACHE_TTL).iso8601,
+      "payload" => { "stale" => true }
+    }
+    File.write(path, JSON.generate(entry))
+
+    expect(store.send(:read_cache, path)).to be_nil
+  end
+
   it "treats unreadable cache entries as misses" do
     File.write(path, "cached")
     allow(File).to receive(:read).with(path).and_raise(Errno::EACCES, path)

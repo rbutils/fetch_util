@@ -52,7 +52,8 @@ module FetchUtil
         return nil unless parsed.is_a?(Hash)
 
         cached_at = Time.parse(parsed.fetch("cached_at"))
-        return nil if Time.now.utc - cached_at > CACHE_TTL
+        now = Time.now.utc
+        return nil if cached_at > now || now - cached_at > CACHE_TTL
 
         parsed["payload"]
       rescue SystemCallError, IOError, JSON::ParserError, KeyError, TypeError, ArgumentError
