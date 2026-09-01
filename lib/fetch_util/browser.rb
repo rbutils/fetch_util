@@ -166,8 +166,9 @@ module FetchUtil
         browser.evaluate_on_new_document(navigator_patch)
         @ferrum = browser
       rescue Ferrum::Error
+        @pending_shutdown = browser
         begin
-          browser&.quit
+          shutdown_pending_browser
         rescue Ferrum::Error
           nil
         end
