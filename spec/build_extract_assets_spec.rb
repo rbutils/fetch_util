@@ -233,6 +233,9 @@ RSpec.describe "extract asset bundle" do
     bitbucket_thread_path = "profiles/community/bitbucket_cloud_threads.js"
     pagure_shared_path = "profiles/community/pagure_shared.js"
     pagure_thread_path = "profiles/community/pagure_threads.js"
+    gerrit_shared_path = "profiles/community/gerrit_change_shared.js"
+    gerrit_entries_path = "profiles/community/gerrit_change_entries.js"
+    gerrit_thread_path = "profiles/community/gerrit_change_threads.js"
 
     expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
     expect(File.read(File.join(source_root, thread_entries_path))).to include("function deduplicateForgeThreadPermalinks")
@@ -264,6 +267,9 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, bitbucket_thread_path))).to include("function bitbucketCloudPullRequestContent")
     expect(File.read(File.join(source_root, pagure_shared_path))).to include("function pagureIssueRoute")
     expect(File.read(File.join(source_root, pagure_thread_path))).to include("function pagureIssueContent")
+    expect(File.read(File.join(source_root, gerrit_shared_path))).to include("function gerritChangeRoute")
+    expect(File.read(File.join(source_root, gerrit_entries_path))).to include("function gerritTimelineRecords")
+    expect(File.read(File.join(source_root, gerrit_thread_path))).to include("function gerritChangeContent")
     expect(manifest.index(gitlab_resources_path)).to be < manifest.index(gitea_shared_path)
     expect(manifest.index(gitea_shared_path)).to be < manifest.index(gitea_resource_shared_path)
     expect(manifest.index(gitea_resource_shared_path)).to be < manifest.index(gitea_commits_path)
@@ -277,6 +283,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(bitbucket_thread_path)).to be < manifest.index(pagure_shared_path)
     expect(manifest.index(pagure_shared_path)).to be < manifest.index(pagure_thread_path)
     expect(manifest.index(pagure_thread_path)).to be < manifest.index("profiles/register.js")
+    expect(manifest.index(pagure_thread_path)).to be < manifest.index(gerrit_shared_path)
+    expect(manifest.index(gerrit_shared_path)).to be < manifest.index(gerrit_entries_path)
+    expect(manifest.index(gerrit_entries_path)).to be < manifest.index(gerrit_thread_path)
+    expect(manifest.index(gerrit_thread_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(gitlab_resources_path)).to be < manifest.index("profiles/register.js")
     expect(manifest.index(resources_path)).to be < manifest.index("profiles/register.js")
   end
@@ -463,6 +473,7 @@ RSpec.describe "extract asset bundle" do
                           registerGiteaFamilyThreadProfiles
                           registerBitbucketCloudThreadProfiles
                           registerPagureThreadProfiles
+                          registerGerritChangeProfiles
                           registerCommunityWikiProfiles
                           registerHackerNewsProfiles
                           registerMastodonProfiles

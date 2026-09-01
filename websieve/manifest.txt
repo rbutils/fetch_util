@@ -156,6 +156,9 @@ profiles/community/bitbucket_cloud_shared.js
 profiles/community/bitbucket_cloud_threads.js
 profiles/community/pagure_shared.js
 profiles/community/pagure_threads.js
+profiles/community/gerrit_change_shared.js
+profiles/community/gerrit_change_entries.js
+profiles/community/gerrit_change_threads.js
 profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js

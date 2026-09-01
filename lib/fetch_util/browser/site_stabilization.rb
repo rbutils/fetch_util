@@ -7,6 +7,13 @@ module FetchUtil
                "fetch_util/browser/site_stabilization/bitbucket_cloud_thread_state"
       autoload :BitbucketCloudThreads, "fetch_util/browser/site_stabilization/bitbucket_cloud_threads"
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
+      autoload :GerritChangeProductStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_change_product_state_script"
+      autoload :GerritChangeRequestStateScript,
+               "fetch_util/browser/site_stabilization/gerrit_change_request_state_script"
+      autoload :GerritChangeState, "fetch_util/browser/site_stabilization/gerrit_change_state"
+      autoload :GerritChangeStabilization,
+               "fetch_util/browser/site_stabilization/gerrit_change_stabilization"
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
       autoload :GithubPullResourceStabilization,
                "fetch_util/browser/site_stabilization/github_pull_resource_stabilization"
@@ -41,6 +48,8 @@ module FetchUtil
       include BitbucketCloudThreadState
       include BitbucketCloudThreads
       include CommunityAndMarketplace
+      include GerritChangeState
+      include GerritChangeStabilization
       include GithubPullResources
       include GithubPullResourceStabilization
       include GithubThreads

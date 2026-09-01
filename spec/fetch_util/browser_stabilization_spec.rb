@@ -123,6 +123,57 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://code.example/workspace/project/issues/42')).not_to eq(:stabilize_bitbucket_cloud_thread)
   end
 
+  it 'routes exact host-agnostic Gerrit changes through REST preparation' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+    strategy_for = lambda do |url|
+      browser.send(:matching_stabilization_profile, url, profiles)&.fetch(:strategy)
+    end
+
+    expect(strategy_for.call('https://review.example/c/platform/core/+/42')).to eq(:stabilize_gerrit_change)
+    expect(strategy_for.call('https://review.example/platform/core/+/42/3')).to eq(:stabilize_gerrit_change)
+    expect(strategy_for.call('https://review.example/r/review/c/platform/core/+/42')).to eq(:stabilize_gerrit_change)
+    expect(strategy_for.call('https://review.example/c/platform/core/+/not-a-number')).to be_nil
+    expect(strategy_for.call('https://review.example/c/platform/core/+/42/3/src/widget.js')).to be_nil
+    expect(strategy_for.call('https://review.example/c/platform/core')).to be_nil
+  end
+
+  it 'waits for Gerrit REST preparation to complete' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    states = [
+      { "matched" => true, "product" => true, "status" => "loading", "ready" => false,
+        "signature" => "loading" },
+      { "matched" => true, "product" => true, "status" => "ready", "ready" => true,
+        "signature" => "ready:25:11:19" }
+    ]
+    allow(browser).to receive(:gerrit_change_state) { states.shift }
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    expect(browser.send(:stabilize_gerrit_change, page)).to be(true)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+  end
+
+  it 'falls through immediately for Gerrit-shaped routes without product evidence or usable APIs' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle(timeout: 1.0)
+    allow(browser).to receive(:settle_after_stabilization)
+    allow(browser).to receive(:sleep)
+
+    allow(browser).to receive(:gerrit_change_state).and_return(
+      { "matched" => true, "product" => false, "status" => "idle", "ready" => false }
+    )
+    expect(browser.send(:stabilize_gerrit_change, page)).to be(false)
+    expect(browser).not_to have_received(:sleep)
+
+    allow(browser).to receive(:gerrit_change_state).and_return(
+      { "matched" => true, "product" => true, "status" => "failed", "ready" => false }
+    )
+    expect(browser.send(:stabilize_gerrit_change, page)).to be(false)
+    expect(browser).not_to have_received(:settle_after_stabilization)
+  end
+
   it 'waits for a product-matched Bitbucket Cloud conversation to remain stable' do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle(timeout: 1.0)
