@@ -571,7 +571,7 @@ RSpec.describe FetchUtil::Regulatory do
     policy = {
       "permission" => [
         permission.call("https://foreign.example.test/article", "research"),
-        permission.call("https://current.example.test/article", "research"),
+        permission.call("https://CURRENT.EXAMPLE.TEST/article", "research"),
         permission.call("/article", "non-research")
       ]
     }

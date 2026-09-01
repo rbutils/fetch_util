@@ -44,7 +44,7 @@ module FetchUtil
 
         uri = URI.parse(target)
         if uri.is_a?(URI::HTTP)
-          return nil unless target_origin && origin_key(uri) == origin_key(target_origin)
+          return nil unless target_origin && origin_key(uri).casecmp?(origin_key(target_origin))
 
           return normalize_output_path(request_target(uri))
         end
