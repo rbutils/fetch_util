@@ -147,6 +147,27 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
     end
   end
 
+  it 'executes Browser readiness against visible and hidden selected-file evidence' do
+    browser = FetchUtil::Browser.new
+    fixture = github_resource_fixture('github_pull_files.html')
+
+    with_url_page('https://github.com/octo/example/pull/42/files#diff-second', fixture) do |page|
+      state = page.evaluate(browser.send(:github_pull_resource_state_script))
+      expect(state).to include('ready' => true, 'selectedLoaded' => true, 'selectedDeferred' => true)
+    end
+
+    document = Nokogiri::HTML(fixture)
+    selected = document.at_css(".file-header[data-anchor='diff-second']").ancestors('.file').first
+    selected.css('table, .review-thread').remove
+    selected.at_css('include-fragment')['style'] = 'display:none'
+    selected.add_child('<div class="js-file-content"><span style="display:none">hidden-only body</span></div>')
+
+    with_url_page('https://github.com/octo/example/pull/42/files#diff-second', document.to_html) do |page|
+      state = page.evaluate(browser.send(:github_pull_resource_state_script))
+      expect(state).to include('ready' => false, 'selectedLoaded' => false, 'selectedDeferred' => false)
+    end
+  end
+
   it 'does not render a different or hidden selected resource' do
     checks = github_resource_fixture('github_pull_checks.html')
     files = github_resource_fixture('github_pull_files.html')

@@ -5,6 +5,8 @@ module FetchUtil
     module SiteStabilization
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
       autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
+      autoload :GithubPullResourceStabilization,
+               "fetch_util/browser/site_stabilization/github_pull_resource_stabilization"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/github_threads"
       autoload :GiteaFamilyThreadProductState,
                "fetch_util/browser/site_stabilization/gitea_family_thread_product_state"
@@ -35,6 +37,7 @@ module FetchUtil
 
       include CommunityAndMarketplace
       include GithubPullResources
+      include GithubPullResourceStabilization
       include GithubThreads
       include GiteaFamilyVisibilityScript
       include GiteaFamilyThreadProductState

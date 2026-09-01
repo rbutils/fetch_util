@@ -362,10 +362,13 @@ RSpec.describe FetchUtil::Browser do
 
     browser.send(:stabilize_github_pull_resource, page)
 
-    expect(scripts.first).to include('[data-testid="commit-row-item"]', 'a[href*="check_run_id="]',
-                                     '.file-header[data-path][data-anchor]', "document.getElementById('check_run_' + requestedCheckId)",
-                                     'nodeVisible', 'bodySelector', 'deferredSelector', 'selectedRequested',
-                                     'selectedLoaded', 'selectedDeferred', 'selectedReady')
+    expect(scripts.first).to include(
+      '[data-testid="commit-row-item"]', 'a[href*="check_run_id="]',
+      '.file-header[data-path][data-anchor]', "document.getElementById('check_run_' + requestedCheckId)",
+      'nodeVisible', 'materialTextSize', 'child.nodeType === Node.TEXT_NODE',
+      'bodySelector', 'deferredSelector', 'selectedRequested',
+      'selectedLoaded', 'selectedDeferred', 'selectedReady'
+    )
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
     expect(browser).to have_received(:settle_after_stabilization).with(0.5)
   end

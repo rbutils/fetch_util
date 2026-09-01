@@ -14,12 +14,9 @@ module FetchUtil
 
         private
 
-        def stabilize_github_pull_resource(page)
-          last_signature = nil
-          stable_observations = 0
-          ready = retry_until_timeout(capped_timeout(8.0), interval: 0.1) do
-            state = safe_evaluate(page, <<~JS, default: nil)
-              (() => {
+        def github_pull_resource_state_script
+          <<~'JS'
+            (() => {
                 const match = location.pathname.match(/\/pull\/\d+\/(commits|checks|files)\/?$/);
                 if (!match) return null;
 
@@ -46,11 +43,22 @@ module FetchUtil
                   }
                   return true;
                 };
+                const materialTextSize = (node) => {
+                  if (!node) return 0;
+                  return [node, ...node.querySelectorAll('*')].reduce((total, candidate) => {
+                    if (!nodeVisible(candidate)) return total;
+                    const directText = Array.from(candidate.childNodes)
+                      .filter((child) => child.nodeType === Node.TEXT_NODE)
+                      .map((child) => child.textContent || '')
+                      .join('')
+                      .trim();
+                    return total + directText.length;
+                  }, 0);
+                };
                 const materialNode = (node) => {
-                  if (!node) return false;
+                  if (materialTextSize(node) > 0) return true;
                   return [node, ...node.querySelectorAll('*')].some((candidate) => {
-                    if (!nodeVisible(candidate)) return false;
-                    return !!(candidate.textContent || '').trim() || candidate.matches('img[src], canvas, video, audio');
+                    return nodeVisible(candidate) && candidate.matches('img[src], canvas, video, audio');
                   });
                 };
 
@@ -73,9 +81,9 @@ module FetchUtil
                   const selectedBody = selectedFileRoot && Array.from(selectedFileRoot.querySelectorAll(bodySelector)).find(materialNode);
                   selectedLoaded = !!selectedBody;
                   selectedDeferred = !!(selectedFileRoot && Array.from(selectedFileRoot.querySelectorAll(deferredSelector)).some((node) =>
-                    node.getAttribute('src') || node.getAttribute('data-fragment-url')
+                    nodeVisible(node) && (node.getAttribute('src') || node.getAttribute('data-fragment-url'))
                   ));
-                  selectedSize = selectedLoaded ? (selectedBody.textContent || '').trim().length : 0;
+                  selectedSize = selectedLoaded ? materialTextSize(selectedBody) : 0;
                   explicitEmpty = /(?:no files (?:were )?changed|there are no files)/i.test((document.querySelector('.blankslate, main') || {}).textContent || '');
                 }
 
@@ -84,23 +92,12 @@ module FetchUtil
                 const ready = rootReady && (loaded > 0 || explicitEmpty) && selectedReady;
                 return {
                   ready,
+                  selectedLoaded,
+                  selectedDeferred,
                   signature: [surface, loaded, selectedLoaded, selectedDeferred, selectedSize, location.search, location.hash].join(':')
                 };
               })()
-            JS
-            next false unless state.is_a?(Hash) && state["ready"]
-
-            if state["signature"] == last_signature
-              stable_observations += 1
-              stable_observations >= 3
-            else
-              last_signature = state["signature"]
-              stable_observations = 1
-              false
-            end
-          end
-
-          settle_after_stabilization(0.5) if ready
+          JS
         end
       end
     end

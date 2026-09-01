@@ -61,6 +61,7 @@ function githubPullDeferredFileEntries(file, label) {
   if (!file) return [];
   var seen = new Set();
   return Array.prototype.slice.call(file.querySelectorAll(".js-diff-load-container include-fragment[src], .js-diff-load-container[data-fragment-url], include-fragment[src*='/pull/'][src*='/files']")).map(function(node) {
+    if (elementVisuallyHidden(node)) return null;
     var url = materializedHttpUrl(node.getAttribute("src") || node.getAttribute("data-fragment-url"));
     if (!url || seen.has(url)) return null;
     seen.add(url);
