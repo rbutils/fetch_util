@@ -148,6 +148,9 @@ RSpec.describe 'FetchUtil event extraction' do
         <article class="event-card"><h2><a href="/e/ruby">Ruby for teams</a></h2><time datetime="2026-09-12">Sep 12, 2026</time><p class="location">Online</p></article>
         <article class="event-card"><h2><a href="/e/testing">Testing clinic</a></h2><time datetime="2026-09-13">Sep 13, 2026</time><p class="location">Online</p></article>
         <article class="event-card"><h2><a href="/e/security">Security workshop</a></h2><time datetime="2026-09-14">Sep 14, 2026</time><p class="location">Online</p></article>
+        <article class="event-card" style="visibility:hidden"><h2 style="visibility:visible"><a href="/e/restored-card">Restored event card</a></h2><time style="visibility:visible" datetime="2026-09-15">Sep 15, 2026</time><p style="visibility:visible" class="location">Online</p></article>
+        <article class="event-card"><h2><a style="visibility:hidden" href="/e/restored-link"><span style="visibility:visible">Child-restored event link</span></a></h2><time datetime="2026-09-16">Sep 16, 2026</time><p class="location">Online</p></article>
+        <article class="event-card" style="display:none"><h2><a href="/e/hidden">Hidden event card</a></h2><time datetime="2026-09-17">Sep 17, 2026</time></article>
       </main></body></html>
     HTML
 
@@ -158,9 +161,11 @@ RSpec.describe 'FetchUtil event extraction' do
         - [Ruby for teams](https://events.example.test/e/ruby) - 2026-09-12 - Online
         - [Testing clinic](https://events.example.test/e/testing) - 2026-09-13 - Online
         - [Security workshop](https://events.example.test/e/security) - 2026-09-14 - Online
+        - [Restored event card](https://events.example.test/e/restored-card) - 2026-09-15 - Online
+        - [Child-restored event link](https://events.example.test/e/restored-link) - 2026-09-16 - Online
       MARKDOWN
       expect(payload['html']).to include('Ruby for teams')
-      expect(payload['markdown']).not_to include('javascript:')
+      expect(payload['markdown']).not_to include('javascript:', 'Hidden event card')
     end
   end
 

@@ -38,7 +38,9 @@
 
     var eventCards = eventCardItems().filter(function(item) { return item.admission; }).length;
     var eventLinks = Array.prototype.filter.call(document.querySelectorAll("a[href*='/events/'], a[href*='/event/'], a[href*='/e/'], a[href*='tickets-']"), function(link) {
-      return !elementVisuallyHidden(link) && normalizeText(link.textContent || "").length >= 8 && !!materializedHttpUrl(link.getAttribute("href"));
+      if (elementSubtreeHidden(link)) return false;
+      var visibleLink = visibilityPrunedClone(link, document);
+      return normalizeText(visibleLink.textContent || "").length >= 8 && !!materializedHttpUrl(visibleLink.getAttribute("href"));
     }).length;
     return eventCards >= 3 || eventLinks >= 4;
   }
@@ -64,16 +66,18 @@
     }
 
     function addCard(card, link) {
-      if (elementVisuallyHidden(card) || card.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]")) return;
-      if (!link || elementVisuallyHidden(link)) {
-        link = Array.prototype.find.call(card.querySelectorAll("a[href]"), function(candidate) {
-          return !elementVisuallyHidden(candidate);
-        });
-      }
-      var title = normalizeText((card.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
+      if (elementSubtreeHidden(card) || card.closest("nav, header, footer, aside, form, [aria-hidden='true']")) return;
+      var visibleCard = visibilityPrunedClone(card, document);
+      var visibleLinks = Array.prototype.slice.call(visibleCard.querySelectorAll("a[href]"));
+      var selectedHref = link && link.getAttribute("href");
+      link = selectedHref && visibleLinks.find(function(candidate) {
+        return candidate.getAttribute("href") === selectedHref;
+      }) || visibleLinks[0] || null;
+      var title = normalizeText((visibleCard.querySelector("h2, h3, h4, [class*='title' i]") || link || {}).textContent || "");
       var parent = card.parentElement || card;
-      var dateText = visibleEventDateTime(card) || visibleEventDateTime(parent);
-      var locationText = visibleEventLocation(card) || visibleEventLocation(parent);
+      var visibleParent = parent === card ? visibleCard : visibilityPrunedClone(parent, document);
+      var dateText = visibleEventDateTime(visibleCard) || visibleEventDateTime(visibleParent);
+      var locationText = visibleEventLocation(visibleCard) || visibleEventLocation(visibleParent);
       var href = (link && link.getAttribute("href")) || "";
       var url = materializedHttpUrl(href);
       var item = { text: title, url: url, detail: [dateText, locationText].filter(Boolean).join(" - "), admission: !href || !!url };
@@ -87,7 +91,7 @@
       collectCard(card);
     });
     Array.prototype.forEach.call(document.querySelectorAll("a[href*='/e/'], a[href*='tickets-']"), function(link) {
-      if (elementVisuallyHidden(link)) return;
+      if (elementSubtreeHidden(link)) return;
       var card = link.closest("article, li, [role='listitem'], [data-testid*='event' i], [class*='event' i], [class*='card' i]") || link.parentElement;
       collectCard(card, link);
     });
