@@ -160,7 +160,7 @@ RSpec.describe FetchUtil::HttpRedirectClient do
   end
 
   it "follows relative and cross-host HTTP redirects" do
-    client = described_class.new(timeout: 1)
+    client = described_class.new(timeout: 1, clock: -> { 10.0 })
     allow(client).to receive(:request).and_return(
       [redirect_response("/next"), ""],
       [redirect_response("https://cdn.example.test/final"), ""],
@@ -171,9 +171,45 @@ RSpec.describe FetchUtil::HttpRedirectClient do
 
     expect(result).to have_attributes(url: "https://cdn.example.test/final", status: 200, body: "ok")
     expect(result.redirects.map(&:url)).to eq(["https://example.com/start", "https://example.com/next"])
-    expect(client).to have_received(:request).with(URI("https://example.com/start"), kind_of(Hash)).ordered
-    expect(client).to have_received(:request).with(URI("https://example.com/next"), kind_of(Hash)).ordered
-    expect(client).to have_received(:request).with(URI("https://cdn.example.test/final"), kind_of(Hash)).ordered
+    expect(client).to have_received(:request).with(URI("https://example.com/start"), kind_of(Hash), 11.0).ordered
+    expect(client).to have_received(:request).with(URI("https://example.com/next"), kind_of(Hash), 11.0).ordered
+    expect(client).to have_received(:request).with(URI("https://cdn.example.test/final"), kind_of(Hash), 11.0).ordered
+  end
+
+  it "bounds body streaming by the request deadline" do
+    now = 0.0
+    incoming = response("first", "late")
+    allow(incoming).to receive(:read_body) do |&block|
+      block.call("first")
+      now = 0.06
+      block.call("late")
+    end
+    http = streaming_http(incoming)
+    allow(http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(http)
+    client = described_class.new(timeout: 0.05, clock: -> { now })
+
+    expect do
+      client.get("https://example.com/resource")
+    end.to raise_error(Timeout::Error, "execution expired")
+    expect(Net::HTTP).to have_received(:start).once
+  end
+
+  it "does not restart the deadline after a transient failure" do
+    now = 0.0
+    failed_http = instance_double(Net::HTTP, started?: true)
+    allow(failed_http).to receive(:request) do
+      now = 0.06
+      raise SocketError, "request failed"
+    end
+    allow(failed_http).to receive(:finish)
+    allow(Net::HTTP).to receive(:start).and_return(failed_http)
+    client = described_class.new(timeout: 0.05, clock: -> { now })
+
+    expect do
+      client.get("https://example.com/resource")
+    end.to raise_error(Timeout::Error, "execution expired")
+    expect(Net::HTTP).to have_received(:start).once
   end
 
   it "rejects redirects to unsupported or hostless URLs" do

@@ -13,7 +13,7 @@ module FetchUtil
     CLEANUP_ERRORS = (TRANSIENT_ERRORS + [OpenSSL::SSL::SSLError]).freeze
     Response = Struct.new(:url, :status, :headers, :body, :redirects, keyword_init: true)
 
-    def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES)
+    def initialize(timeout:, headers: {}, max_response_bytes: MAX_RESPONSE_BYTES, clock: nil)
       @timeout = positive_timeout(timeout)
       owned_headers = {}
       headers.each do |key, value|
@@ -23,18 +23,20 @@ module FetchUtil
       end
       @headers = owned_headers.freeze
       @max_response_bytes = positive_max_response_bytes(max_response_bytes)
+      @clock = clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
     end
 
     def get(url, limit: REDIRECT_LIMIT)
       connections = {}
-      fetch(parse_http_uri(url), limit, [], connections)
+      deadline = clock.call + timeout
+      fetch(parse_http_uri(url), limit, [], connections, deadline)
     ensure
       close_connections(connections) if connections
     end
 
     private
 
-    attr_reader :timeout, :headers, :max_response_bytes
+    attr_reader :timeout, :headers, :max_response_bytes, :clock
 
     def positive_timeout(value)
       timeout = Float(value)
@@ -54,8 +56,8 @@ module FetchUtil
       raise InputError, "max_response_bytes must be positive"
     end
 
-    def fetch(uri, limit, redirects, connections)
-      response, body = request(uri, connections)
+    def fetch(uri, limit, redirects, connections, deadline)
+      response, body = request(uri, connections, deadline)
       return build_response(uri, response, body: body, redirects: redirects) unless response.is_a?(Net::HTTPRedirection)
 
       raise FetchUtil::Error, "too many redirects for #{uri}" if limit <= 0
@@ -65,25 +67,28 @@ module FetchUtil
 
       redirect_response = build_response(uri, response, body: body)
       redirect_uri = parse_http_uri(uri.merge(location))
-      fetch(redirect_uri, limit - 1, redirects + [redirect_response], connections)
+      fetch(redirect_uri, limit - 1, redirects + [redirect_response], connections, deadline)
     end
 
-    def request(uri, connections)
+    def request(uri, connections, deadline)
       attempts = 0
       begin
-        http = connection_for(uri, connections)
-        request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
-        headers.each { |key, value| request[key] = value }
-        body = +""
-        response = http.request(request) do |incoming|
-          incoming.read_body do |chunk|
-            if body.bytesize + chunk.bytesize > max_response_bytes
-              raise FetchUtil::Error, "response body exceeds #{max_response_bytes} bytes for #{uri}"
+        response, body = within_deadline(deadline) do |remaining|
+          http = connection_for(uri, connections, remaining)
+          request = Net::HTTP::Get.new(uri.request_uri.empty? ? "/" : uri.request_uri)
+          headers.each { |key, value| request[key] = value }
+          body = +""
+          response = http.request(request) do |incoming|
+            incoming.read_body do |chunk|
+              ensure_remaining!(deadline)
+              if body.bytesize + chunk.bytesize > max_response_bytes
+                raise FetchUtil::Error, "response body exceeds #{max_response_bytes} bytes for #{uri}"
+              end
+              body << chunk
             end
-            body << chunk
           end
+          [response, body]
         end
-        [response, body]
       rescue *TRANSIENT_ERRORS
         close_connection(uri, connections)
         attempts += 1
@@ -92,15 +97,31 @@ module FetchUtil
       end
     end
 
-    def connection_for(uri, connections)
+    def connection_for(uri, connections, remaining)
       key = [uri.scheme, uri.host, uri.port]
       connections[key] ||= Net::HTTP.start(
         uri.host,
         uri.port,
         use_ssl: uri.scheme == "https",
-        open_timeout: timeout,
-        read_timeout: timeout
+        open_timeout: remaining,
+        read_timeout: remaining
       )
+    end
+
+    def within_deadline(deadline)
+      remaining = remaining_timeout(deadline)
+      Timeout.timeout(remaining) { yield remaining }
+    end
+
+    def ensure_remaining!(deadline)
+      remaining_timeout(deadline)
+    end
+
+    def remaining_timeout(deadline)
+      remaining = deadline - clock.call
+      raise Timeout::Error, "execution expired" unless remaining.positive?
+
+      remaining
     end
 
     def close_connection(uri, connections)
