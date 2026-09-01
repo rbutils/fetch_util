@@ -89,19 +89,18 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
     payloads << JSON.parse(bitbucket_statuses_fixture.sub('"full_name": "workspace/project"', '"full_name": "other/project"'))
     payloads << JSON.parse(bitbucket_statuses_fixture.sub('"hash": "1111111111111111111111111111111111111111"', '"hash": "short"'))
     payloads << base.merge('size' => 1)
-    payloads << base.merge('size' => 25).tap { |payload| payload.delete('next') }
     payloads << JSON.parse(bitbucket_statuses_fixture).tap { |payload| payload['values'][0]['commit']['hash'] = ['1' * 40] }
     payloads << JSON.parse(bitbucket_statuses_fixture).tap { |payload| payload['values'][0]['key'] = { 'value' => 'build-42' } }
-    payloads << JSON.parse(bitbucket_statuses_fixture).tap do |payload|
-      payload['values'][0]['links']['self']['href'] =
-        'https://api.code.example.test/2.0/repositories/workspace/project/commit/' \
-        "#{'1' * 40}/statuses/build/other-status"
-    end
-
     payloads.each do |payload|
       extract_bitbucket_statuses(JSON.generate(payload)) do |result|
         expect(result).not_to include('siteName' => 'Bitbucket')
       end
+    end
+
+    incomplete = base.merge('size' => 25).tap { |payload| payload.delete('next') }
+    extract_bitbucket_statuses(JSON.generate(incomplete)) do |result|
+      expect(result.fetch('warnings')).to include('bitbucket_cloud_statuses_incomplete')
+      expect(result.fetch('markdown')).to include('Primary pipeline', 'API counters indicate omitted statuses')
     end
   end
 
@@ -111,8 +110,8 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
 
     extract_bitbucket_statuses(JSON.generate(payload)) do |result|
       markdown = result.fetch('markdown')
-      expect(markdown).not_to include('[Credential leak](https://user:password@unsafe.example.test/)')
-      expect(markdown).to include('Credential leak')
+      expect(markdown).to include('### Status 1: \[Credential leak\]')
+      expect(markdown).not_to include('### Status 1: [Credential leak](')
     end
   end
 

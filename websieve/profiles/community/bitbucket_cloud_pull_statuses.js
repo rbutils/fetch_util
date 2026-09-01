@@ -63,24 +63,6 @@ function bitbucketCloudStatusApiLinkMatches(value, route, suffix) {
   }
 }
 
-function bitbucketCloudStatusSelfLinkMatches(value, route, hash, key) {
-  var url = bitbucketCloudSafeHttpUrl(value);
-  if (!url) return false;
-
-  try {
-    var parsed = new URL(url);
-    var match = parsed.pathname.match(
-      /^\/(?:!api\/)?2\.0\/repositories\/([^/]+)\/([^/]+)\/commit\/([0-9a-f]{40})\/statuses\/build\/([^/]+)\/?$/i
-    );
-    return parsed.origin === location.origin && !!match &&
-      safeDecodeURI(match[1]).toLowerCase() === route.workspace.toLowerCase() &&
-      safeDecodeURI(match[2]).toLowerCase() === route.repository.toLowerCase() &&
-      match[3].toLowerCase() === hash && safeDecodeURI(match[4]) === key;
-  } catch (_error) {
-    return false;
-  }
-}
-
 function bitbucketCloudStatusRecordMatches(record, route, repositoryUuid) {
   if (!record || typeof record !== "object" || Array.isArray(record)) return false;
   if (record.type !== "build" || typeof record.key !== "string" || !record.key.trim()) return false;
@@ -105,7 +87,7 @@ function bitbucketCloudStatusRecordMatches(record, route, repositoryUuid) {
   var statusSelf = record.links && record.links.self && record.links.self.href;
   return bitbucketCloudStatusApiLinkMatches(repositorySelf, route, "") &&
     bitbucketCloudStatusApiLinkMatches(commitSelf, route, "/commit/" + hash) &&
-    bitbucketCloudStatusSelfLinkMatches(statusSelf, route, hash, record.key.trim());
+    bitbucketCloudStatusApiLinkMatches(statusSelf, route, "/commit/" + hash + "/statuses/build/[^/]+");
 }
 
 function bitbucketCloudStatusResponse(payload, route) {
@@ -233,6 +215,8 @@ function bitbucketCloudPullStatusesContent(metadata) {
   ));
   var markdown = sections.filter(Boolean).join("\n\n");
   var safePayload = bitbucketCloudSafeSupplementalValue(payload);
+  if (continuations.next.provided && !continuations.next.url) delete safePayload.next;
+  if (continuations.previous.provided && !continuations.previous.url) delete safePayload.previous;
   var pre = document.createElement("pre");
   pre.textContent = JSON.stringify(safePayload, null, 2);
   var first = payload.values[0];

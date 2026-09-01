@@ -47,7 +47,7 @@ function bitbucketCloudSafeSupplementalValue(value, key) {
   }
   if (typeof value === "string") {
     var candidate = value.trim();
-    var scheme = candidate.match(/^([a-z][a-z0-9+.-]*):/i);
+    var scheme = candidate.match(/^([a-z][a-z0-9+.-]*):(?=\S)/i);
     if (scheme) {
       if (!/^https?$/i.test(scheme[1])) return null;
       return bitbucketCloudSafeHttpUrl(candidate);
