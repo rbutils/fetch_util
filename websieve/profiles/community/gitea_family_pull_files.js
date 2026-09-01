@@ -164,9 +164,7 @@ function giteaFamilyPullFilesContent(metadata, route, root) {
   var boxes = giteaFamilyPullFileBoxes(root);
   var files = giteaFamilyPullFileInventoryEntries(route, root, boxes);
   var deferred = giteaFamilyPullDeferredEntries(root, boxes);
-  var rawSelected = (location.hash || "").replace(/^#/, "");
-  var selectedId = safeDecodeURI(rawSelected);
-  if (rawSelected.indexOf("%") >= 0 && selectedId === rawSelected) selectedId = "";
+  var selectedId = safeDecodeFragment(location.hash);
   var selected = selectedId ? boxes.find(function(box) { return box.id === selectedId; }) : null;
   var indexed = selectedId && files.some(function(entry) { return entry.id === selectedId; });
   var empty = giteaFamilyPullEmptyMarkdown(root);

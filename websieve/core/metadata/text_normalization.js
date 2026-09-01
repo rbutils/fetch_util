@@ -7,6 +7,12 @@ function safeDecodeURI(value) {
   try { return decodeURIComponent(value); } catch (_e) { return value; }
 }
 
+function safeDecodeFragment(value) {
+  var raw = String(value || "").replace(/^#/, "");
+  var decoded = safeDecodeURI(raw);
+  return raw.indexOf("%") >= 0 && decoded === raw ? "" : decoded;
+}
+
 function textLength(node) {
   return normalizeText(node && node.textContent).length;
 }

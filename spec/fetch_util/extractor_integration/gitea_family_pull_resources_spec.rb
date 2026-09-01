@@ -199,6 +199,10 @@ RSpec.describe 'FetchUtil extractor integration - Gitea and Forgejo pull resourc
     extract_from_url('https://code.example/forgejo/repo/pulls/42/files#diff-unknown', html, reader_mode: false) do |payload|
       expect(payload.fetch('markdown')).to include('Selected file is not present in the loaded file inventory')
     end
+    extract_from_url('https://code.example/forgejo/repo/pulls/42/files#%E0%A4%A', html, reader_mode: false) do |payload|
+      expect(payload.fetch('markdown')).to include('Browse changed files', '[lib/alpha.rb]')
+      expect(payload.fetch('markdown')).not_to include('Selected file is not present')
+    end
 
     header_only = html.sub('class="diff-file-box file-content hidden-file"', 'class="diff-file-box file-content"')
                       .sub('<pre>Hidden stale diff body</pre>', '')

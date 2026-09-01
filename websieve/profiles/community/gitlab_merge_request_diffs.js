@@ -97,9 +97,7 @@ function gitlabDiffFileBodyLoaded(file) {
 function gitlabDiffResourceContent(metadata, route, root) {
   var files = gitlabDiffFileNodes(root);
   var fileIds = gitlabDiffFileIds(files);
-  var rawSelectedId = (location.hash || "").replace(/^#/, "");
-  var selectedId = safeDecodeURI(rawSelectedId);
-  if (rawSelectedId.indexOf("%") >= 0 && selectedId === rawSelectedId) selectedId = "";
+  var selectedId = safeDecodeFragment(location.hash);
   var selectedIndex = selectedId
     ? fileIds.indexOf(selectedId)
     : -1;
