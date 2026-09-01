@@ -47,9 +47,19 @@ RSpec.shared_context 'extractor integration helpers' do
       )
   end
 
-  def extractor_browser
+  def required_browser_path
     path = browser_path
-    skip 'Chromium not available' unless path
+    return path if path
+
+    if ENV["FETCH_UTIL_ALLOW_MISSING_CHROMIUM"] == "1"
+      return skip "Chromium not available (FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1)"
+    end
+
+    raise "Chromium not available; set FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1 to skip browser integration examples"
+  end
+
+  def extractor_browser
+    path = required_browser_path
 
     RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser) ||
       RSpec.configuration.instance_variable_set(

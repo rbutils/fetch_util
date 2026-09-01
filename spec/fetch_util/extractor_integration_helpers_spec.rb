@@ -69,4 +69,21 @@ RSpec.describe 'extractor integration helpers' do
 
     with_url_page('https://example.test/article', '<p>Fixture</p>') { |yielded| expect(yielded).to be(page) }
   end
+
+  it 'requires Chromium for browser integration coverage by default' do
+    allow(self).to receive(:browser_path).and_return(nil)
+    allow(ENV).to receive(:[]).with('FETCH_UTIL_ALLOW_MISSING_CHROMIUM').and_return(nil)
+
+    expect { required_browser_path }
+      .to raise_error(RuntimeError, 'Chromium not available; set FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1 to skip browser integration examples')
+  end
+
+  it 'allows an explicit local opt-out when Chromium is unavailable' do
+    allow(self).to receive(:browser_path).and_return(nil)
+    allow(ENV).to receive(:[]).with('FETCH_UTIL_ALLOW_MISSING_CHROMIUM').and_return('1')
+    allow(self).to receive(:skip).and_return(:skipped)
+
+    expect(required_browser_path).to eq(:skipped)
+    expect(self).to have_received(:skip).with('Chromium not available (FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1)')
+  end
 end

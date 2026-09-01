@@ -9,8 +9,7 @@ RSpec.describe 'FetchUtil Khaosod extractor integration' do
     url = 'https://www.khaosod.co.th/breaking-news/news_10314048'
     rest_url = 'https://www.khaosod.co.th/wp-json/wp/v2/posts/10314048'
 
-    path = browser_path
-    skip 'Chromium not available' unless path
+    path = required_browser_path
 
     browser = Ferrum::Browser.new(
       headless: true,
