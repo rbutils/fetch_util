@@ -10,6 +10,25 @@ RSpec.describe FetchUtil::ParallelFetcher do
     expect { described_class.new(concurrency: 1) }.not_to raise_error
   end
 
+  it "rejects one browser shared across multiple default workers" do
+    parallel_fetcher = described_class.new(browser: instance_double(FetchUtil::Browser), concurrency: 2)
+
+    expect { parallel_fetcher.fetch(%w[first second]) }
+      .to raise_error(
+        FetchUtil::InputError,
+        "browser cannot be shared across parallel workers; use fetcher_factory"
+      )
+  end
+
+  it "allows one default worker to own an injected browser" do
+    fetcher = instance_double(FetchUtil::Fetcher, fetch: "done", quit: nil)
+    allow(FetchUtil::Fetcher).to receive(:new).and_return(fetcher)
+
+    result = described_class.new(browser: instance_double(FetchUtil::Browser), concurrency: 2).fetch(["one"])
+
+    expect(result).to eq(["done"])
+  end
+
   it "returns results in input order" do
     fake_fetcher = Class.new do
       def fetch(url)

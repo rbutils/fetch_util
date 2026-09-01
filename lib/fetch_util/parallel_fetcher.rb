@@ -53,6 +53,7 @@ module FetchUtil
         raise InputError, "concurrency must be a positive Integer"
       end
 
+      @shared_browser = fetcher_factory.nil? && fetch_options[:browser]
       @fetcher_factory = fetcher_factory || default_fetcher_factory(fetch_options)
       @concurrency = concurrency
     end
@@ -74,6 +75,9 @@ module FetchUtil
       end
 
       worker_count = [@concurrency, pending_indices.length].min
+      if worker_count > 1 && @shared_browser
+        raise InputError, "browser cannot be shared across parallel workers; use fetcher_factory"
+      end
       next_index = 0
       mutex = Mutex.new
       stopping = false
