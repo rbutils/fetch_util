@@ -33,17 +33,21 @@
 
       root.querySelectorAll("h2, h3").forEach(function(heading) {
         var text = normalizeText(heading.textContent || "");
+        if (elementVisuallyHidden(heading) || homepageCardRoot(heading)) return;
         if (heading.closest && heading.closest("aside, nav, header, footer, [role='navigation'], [role='complementary'], [role='banner'], [role='contentinfo']")) return;
         if (listNoiseNode(heading.parentElement)) return;
-        if (text.length >= 6 && text.length <= 90 && !rejectedHomepageLeadText(text, "")) headings.push(text);
+        if (text.length >= 6 && text.length <= 90 && !rejectedHomepageLeadText(text, "") && headings.indexOf(text) === -1) headings.push(text);
       });
 
       root.querySelectorAll("a[href]").forEach(function(link) {
+        if (elementVisuallyHidden(link)) return;
         if (link.closest("header, nav, footer, aside, form, [role='navigation'], [role='banner'], [role='contentinfo']")) return;
 
         var href = link.getAttribute("href") || "";
         var url = materializedHttpUrl(href);
-        var title = normalizeText(((link.querySelector("h1, h2, h3, h4") || {}).textContent) || link.textContent || link.getAttribute("aria-label") || "");
+        var visibleLink = visibilityPrunedClone(link, document);
+        var titleNode = visibleLink && visibleLink.querySelector("h1, h2, h3, h4");
+        var title = normalizeText((titleNode && titleNode.textContent) || (visibleLink && visibleLink.textContent) || link.getAttribute("aria-label") || "");
         var canonicalUrl = url ? homepageCanonicalUrl(url) : "unlinked:" + title.toLowerCase() + "|href:" + href;
         if (seen[canonicalUrl] || rejectedHomepageLeadText(title, href)) return;
         if (title.length < 12 && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(title)) return;
@@ -52,7 +56,7 @@
         var cardRoot = homepageCardRoot(link);
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
-        var detail = searchItemDetail(container, title);
+        var detail = searchItemDetail(visibilityPrunedClone(container, document), title);
 
         seen[canonicalUrl] = true;
         items.push({ text: title, url: url, detail: detail });
