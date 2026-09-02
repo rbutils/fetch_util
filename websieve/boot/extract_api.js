@@ -146,7 +146,9 @@
       var eventArticle = content && content.contentType === "article" &&
         (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
-      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content) && (!eventArticle || strongEventListingPage())) {
+      var strongEventList = strongEventListingPage();
+      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content) &&
+          (!eventArticle || strongEventList) && (content.contentType !== "list" || strongEventList)) {
         content = eventList;
       }
 

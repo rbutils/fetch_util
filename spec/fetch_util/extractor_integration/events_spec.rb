@@ -234,6 +234,38 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'does not replace a broad homepage list with incidental event cards' do
+    stories = 4.times.map do |index|
+      <<~HTML
+        <article><h3><a href="/stories/#{index + 1}">Campus story #{index + 1}</a></h3><p>Material campus reporting #{index + 1} for the wider community.</p></article>
+      HTML
+    end.join
+    research = 4.times.map do |index|
+      <<~HTML
+        <article><h3><a href="/research/#{index + 1}">Research update #{index + 1}</a></h3><p>Material research context #{index + 1} from across the institution.</p></article>
+      HTML
+    end.join
+    events = 3.times.map do |index|
+      <<~HTML
+        <article class="event-card"><h3><a href="/events/#{index + 1}">Academic date #{index + 1}</a></h3><time datetime="2026-09-#{index + 11}">Sep #{index + 11}, 2026</time></article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Example University</title></head><body><main>
+        <h1>Example University</h1>
+        <section><h2>Campus stories</h2>#{stories}</section>
+        <section><h2>Research news</h2>#{research}</section>
+        <section><h2>Upcoming academic dates</h2>#{events}</section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://university.example.test/', html) do |payload|
+      expect_content_type(payload, 'list')
+      expect(payload['markdown']).to include('Campus story 1', 'Research update 4', 'Academic date 3')
+      expect(payload['markdown'].scan(/^- \[/).length).to eq(11)
+    end
+  end
+
   it 'does not treat a scheduled event detail page as an explicit event index' do
     html = <<~HTML
       <html><head>
