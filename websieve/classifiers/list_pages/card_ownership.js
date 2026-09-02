@@ -1,11 +1,13 @@
   function genericListCardSelector() {
-    return "tr, article, li, .post, .entry, [class*='card'], [class*='story'], [class*='teaser'], [class*='item'], [class*='result'], [class*='news'], [class*='headline']";
+    return "tr, article, li, .post, .entry, [class*='card' i], [class*='story' i], [class*='teaser' i], [class*='item' i], [class*='result' i], [class*='news' i], [class*='headline' i]";
   }
 
   function genericListPresentationCardNode(node) {
     var classes = ((node && node.getAttribute && node.getAttribute("class")) || "").split(/\s+/);
     return classes.some(function(name) {
       return /^(?:card|story|teaser|result|news|headline)[-_]+(?:body|content|meta(?:data)?|header|footer|details?)(?:[-_].*)?$/i.test(name) ||
+        /^(?:Card|Story|Teaser|Result|News|Headline)(?:Body|Content|Meta(?:data)?|Header|Footer|Details?)(?:[-_A-Z].*)?$/.test(name) ||
+        /styles__(?:(?:Card|Story|Teaser|Result|News|Headline)(?:Body|Content|Meta(?:data)?|Header|Footer|Details?|Title|Headline|Heading|Image|Media|Thumbnail)|(?:Title|Headline|Heading|Meta(?:data)?|Image|Media|Thumbnail|Kicker|Eyebrow))(?:[-_A-Z].*)?$/.test(name) ||
         /^item[-_]+meta(?:data)?(?:[-_].*)?$/i.test(name);
     });
   }

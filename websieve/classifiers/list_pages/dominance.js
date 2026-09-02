@@ -186,7 +186,7 @@
 
     var links = node.querySelectorAll("a[href]").length;
     var items = node.querySelectorAll("li, tr, article, section").length;
-    var cards = node.querySelectorAll("article, section, [class*='card'], [class*='item'], [class*='story'], [class*='post'], [class*='news'], [class*='headline'], [class*='feed'], [class*='thread'], [class*='topic'], .structItem, .discussionListItem").length;
+    var cards = node.querySelectorAll("article, section, [class*='card' i], [class*='item' i], [class*='story' i], [class*='post' i], [class*='news' i], [class*='headline' i], [class*='feed' i], [class*='thread' i], [class*='topic' i], .structItem, .discussionListItem").length;
     var headings = node.querySelectorAll("h2, h3, h4").length;
     var headlineLinks = Array.prototype.filter.call(node.querySelectorAll("a[href]"), function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");

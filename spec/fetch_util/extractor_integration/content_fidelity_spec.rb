@@ -217,6 +217,52 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'recognizes mixed-case CSS module cards without splitting presentation wrappers' do
+    cards = (1..12).map do |index|
+      <<~HTML
+        <div class="GridItem-styles__GridItemStyled">
+          <div class="IndexCard-styles__IndexCardStyled">
+            <img src="/images/#{index}.jpg" alt="FID:module-image-#{index}">
+            <div class="Promo-styles__CardStyled">
+              <div class="IndexCardHeading-styles__TitleGravityWrapper">
+                <div class="IndexCardHeading-styles__TitleWrapperStyled">
+                  <h3 class="IndexCardHeading-styles__CardHeadlineStyled"><a href="/news/#{index}">FID:module-title-#{index}</a></h3>
+                </div>
+              </div>
+              <p>FID:module-summary-#{index}</p>
+              <span class="CardMetadata-styles__MetaStyled">FID:module-meta-#{index}</span>
+            </div>
+          </div>
+        </div>
+      HTML
+    end
+    html = <<~HTML
+      <main>
+        <h1>FID:mixed-case-module-cards</h1>
+        <div class="IndexPage-styles__IndexPageArticleStyled">
+          <section><h2>FID:module-section-one</h2>#{cards.first(6).join}</section>
+          <section><h2>FID:module-section-two</h2>#{cards.last(6).join}</section>
+        </div>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/news', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      lines = result['markdown'].lines.grep(/^- \[/)
+
+      expect(result['contentType']).to eq('list')
+      expect(lines.length).to eq(12)
+      lines.each_with_index do |line, index|
+        record = index + 1
+        expect(line).to include(
+          "FID:module-title-#{record}", "FID:module-summary-#{record}",
+          "FID:module-meta-#{record}"
+        )
+        expect(line).not_to include("FID:module-summary-#{record == 12 ? 11 : record + 1}")
+      end
+    end
+  end
+
   it 'keeps sibling anchor-wrapped records within their own cards' do
     titles = ['FID:short-one'] + (2..6).map { |index| "FID:direct-record-#{index}" }
     records = (1..6).map do |index|

@@ -14,8 +14,8 @@
     var itemSelector = [
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
       ".item", ".story", ".post", ".entry", ".news", ".headline", ".feed-item",
-      "[class*='card']", "[class*='result']", "[class*='teaser']", "[class*='news']",
-      "[class*='headline']", "[class*='feed']", "[class*='thread']", "[class*='topic-list']",
+      "[class*='card' i]", "[class*='result' i]", "[class*='teaser' i]", "[class*='news' i]",
+      "[class*='headline' i]", "[class*='feed' i]", "[class*='thread' i]", "[class*='topic-list' i]",
       "[class*='job-card' i]", "[data-testid='slider_container']", "[data-test='jobListing']",
       "[data-jobid]", "[data-url*='/remote-jobs/']", ".structItem", ".discussionListItem"
     ].join(", ");
@@ -129,9 +129,9 @@
     context.tableIndexPage = !!linkedTableIndexRoot();
     var selectors = [
       "h1 a[href]", "h2 a[href]", "h3 a[href]", "h4 a[href]", "article a[href]",
-      "section a[href]", "[class*='headline'] a[href]", "[class*='story'] a[href]",
-      "[class*='post'] a[href]", "[class*='news'] a[href]", "[class*='feed'] a[href]",
-      "[class*='teaser'] a[href]", "[class*='result'] a[href]"
+      "section a[href]", "[class*='headline' i] a[href]", "[class*='story' i] a[href]",
+      "[class*='post' i] a[href]", "[class*='news' i] a[href]", "[class*='feed' i] a[href]",
+      "[class*='teaser' i] a[href]", "[class*='result' i] a[href]"
     ].join(", ");
 
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {

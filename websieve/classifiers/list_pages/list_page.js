@@ -23,7 +23,7 @@
       var listItems = root.querySelectorAll("li").length;
       var listish = root.querySelectorAll("table, ul, ol, .itemlist, .items, .stories, .posts, .news, .headlines, .feed, .threads, .topic-list, .forumlist, .discussionList").length;
       var headings = root.querySelectorAll("h1, h2, h3, h4").length;
-      var cards = root.querySelectorAll("article, section, [class*='card'], [class*='item'], [class*='story'], [class*='post'], [class*='news'], [class*='headline'], [class*='feed'], [class*='thread'], [class*='topic-list'], .structItem, .discussionListItem").length;
+      var cards = root.querySelectorAll("article, section, [class*='card' i], [class*='item' i], [class*='story' i], [class*='post' i], [class*='news' i], [class*='headline' i], [class*='feed' i], [class*='thread' i], [class*='topic-list' i], .structItem, .discussionListItem").length;
       var headlineLinks = materializedLinks.filter(function(link) {
         var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
         return text.length >= minimumListTitleLength(text) && text.length <= 220 && !looksLikeFooterLink(text, link.getAttribute("href") || "");
@@ -83,7 +83,7 @@
     root.innerHTML = (content && content.html) || document.body.innerHTML;
     var materializedLinks = materializedListLinks(root);
     var links = materializedLinks.length;
-    var cards = root.querySelectorAll("article, li, section, [class*='card'], [class*='item'], [class*='story'], [class*='product'], [class*='tile'], [class*='job'], [data-testid*='card'], [data-testid*='product'], [data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-url*='/remote-jobs/']").length;
+    var cards = root.querySelectorAll("article, li, section, [class*='card' i], [class*='item' i], [class*='story' i], [class*='product' i], [class*='tile' i], [class*='job' i], [data-testid*='card' i], [data-testid*='product' i], [data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-url*='/remote-jobs/']").length;
     var headings = root.querySelectorAll("h2, h3, h4").length;
     var headlineLinks = materializedLinks.filter(function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
@@ -225,7 +225,7 @@
   }
   function listCandidateRoot(metadata) {
     var context = listPageContext(metadata);
-    var selectors = ["main", "[role='main']", ".itemlist", "table", "ol", "ul", ".posts", ".stories", ".items", ".news", ".feed", ".headlines", ".view-case-listing", "[class*='case-listing' i]", "[class*='record-listing' i]", "[class*='news']", "[class*='feed']", "[class*='headline']", ".threads", ".topic-list", ".forumlist", ".discussionList", "[class*='threadlist']", "[class*='thread-list']", "[class*='topic-list']", "body"];
+    var selectors = ["main", "[role='main']", ".itemlist", "table", "ol", "ul", ".posts", ".stories", ".items", ".news", ".feed", ".headlines", ".view-case-listing", "[class*='case-listing' i]", "[class*='record-listing' i]", "[class*='news' i]", "[class*='feed' i]", "[class*='headline' i]", ".threads", ".topic-list", ".forumlist", ".discussionList", "[class*='threadlist' i]", "[class*='thread-list' i]", "[class*='topic-list' i]", "body"];
     var candidates = [];
 
     selectors.forEach(function(selector) {
