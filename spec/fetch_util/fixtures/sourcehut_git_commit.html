@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <title>~alice/project: Preserve complete commits - SourceHut git</title>
+  <meta name="vcs" content="git">
+  <meta name="forge:summary" content="https://git.example.test/~alice/project">
+  <meta name="forge:dir" content="https://git.example.test/~alice/project/tree/{ref}/{path}">
+  <meta name="forge:file" content="https://git.example.test/~alice/project/tree/{ref}/{path}">
+  <meta name="forge:rawfile" content="https://git.example.test/~alice/project/blob/{ref}/{path}">
+  <meta name="forge:line" content="https://git.example.test/~alice/project/tree/{ref}/{path}#L{line}">
+  <link rel="stylesheet" href="/static/git.sr.ht/main.min.deadbeef.css">
+</head>
+<body>
+  <div class="header-tabbed resource-nav">
+    <a href="/~alice/project">summary</a>
+    <a href="/~alice/project/tree">tree</a>
+    <a href="/~alice/project/log">log</a>
+    <a href="/~alice/project/refs">refs</a>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-10">
+        <div class="event-list">
+          <div class="event">
+            <div>
+              aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa &mdash;
+              <a class="commit-author" href="/~alice">Alice Example</a>
+              <small class="pull-right"><a id="log-aaaaaaaa" href="/~alice/project/log?from=aaaaaaaa"><span title="2026-08-28 09:04:49 UTC">three days ago</span></a></small>
+              <!-- parent-start -->
+              <span class="ml-2"><a href="/~alice/project/commit/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb">bbbbbbbb</a><!-- extra-parents --></span>
+              <!-- parent-end -->
+              <span class="ml-2">
+                <a class="ref branch" href="/~alice/project/tree/main">main</a>
+                <a class="ref tag" href="/~alice/project/refs/v1.0">v1.0</a>
+              </span>
+            </div>
+            <pre class="commit">Preserve complete commits
+
+Keep every rendered SourceHut commit detail.</pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <a class="btn" href="/~alice/project/commit/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.patch">patch</a>
+        <a class="btn" href="/~alice/project/tree/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">browse</a>
+        <a class="btn" href="/~alice/project/archive/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.tar.gz">.tar.gz</a>
+        <a class="btn" href="/~alice/project/archive/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip">.zip</a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="event-list commit-diff">
+          <div class="event diff"><pre>2 files changed, 3 insertions(+), 1 deletion(-)</pre></div>
+          <div style="margin-bottom: 2rem"></div>
+          <!-- diff-files-start -->
+          <pre class="mb-0 bg-transparent p-0">M <a href="/~alice/project/tree/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/item/old.txt">old.txt</a> =&gt; <a href="/~alice/project/tree/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/item/new.txt">new.txt</a> <span class="pull-right"><span class="text-success">+2</span> <span class="text-danger">-1</span></span></pre>
+          <div class="event diff"><pre><strong class="text-info">@@ 1,2 1,3 @@</strong>
+<span class="text-danger"><a class="lineno" aria-hidden="true" href="#old.txt-1-1">-</a>removed line</span>
+<span class="text-success"><a class="lineno" aria-hidden="true" href="#old.txt-1-2">+</a>added line</span>
+<span><a class="lineno" aria-hidden="true" href="#old.txt-1-3"> </a>context line</span></pre></div>
+          <pre class="mb-0 bg-transparent p-0">A =&gt; <a href="/~alice/project/tree/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/item/second.txt">second.txt</a> <span class="pull-right"><span class="text-success">+1</span> <span class="text-danger">-0</span></span></pre>
+          <div class="event diff"><pre><strong class="text-info">@@ 0,0 1,1 @@</strong>
+<span class="text-success"><a class="lineno" aria-hidden="true" href="#second.txt-1-1">+</a>second file line</span></pre></div>
+          <pre class="mb-0 bg-transparent p-0" style="display:none">A =&gt; <a href="/~alice/project/tree/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/item/hidden.txt">hidden.txt</a></pre>
+          <!-- bulk-files -->
+          <!-- diff-files-end -->
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

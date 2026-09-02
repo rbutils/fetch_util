@@ -163,6 +163,8 @@ profiles/community/bitbucket_cloud_threads.js
 profiles/community/pagure_shared.js
 profiles/community/pagure_threads.js
 profiles/community/pagure_pull_requests.js
+profiles/community/sourcehut_git_shared.js
+profiles/community/sourcehut_git_commits.js
 profiles/community/sourcehut_todo_shared.js
 profiles/community/sourcehut_todo_threads.js
 profiles/community/sourcehut_lists_shared.js

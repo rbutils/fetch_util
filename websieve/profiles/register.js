@@ -37,6 +37,7 @@
   registerBitbucketCloudThreadProfiles();
   registerPagurePullRequestProfiles();
   registerPagureThreadProfiles();
+  registerSourcehutGitCommitProfiles();
   registerSourcehutTodoThreadProfiles();
   registerSourcehutListsPatchsetProfiles();
   registerSourcehutListsArchiveThreadProfiles();
