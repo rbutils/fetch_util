@@ -43,6 +43,30 @@
     });
   }
 
+  function genericUnlabelledSectionRegion(region, root, options) {
+    var customSectionExtraction = !!(
+      options.regionSelector || options.headingSelector || options.headingBuilder ||
+      options.fallbackHeadingBuilder || options.additionalRegions || options.regionFilter ||
+      options.cardSelector || options.cardFilter || options.allowEmptyRegions ||
+      options.skipEditorialGuard
+    );
+    if (customSectionExtraction || region.parentElement !== root) return false;
+    if (!region.matches([
+      "section", "[role='region']", "[class~='section' i]", "[class~='slider' i]",
+      "[class~='push-slider' i]", "[class~='carousel' i]", "[class~='feed' i]",
+      "[class~='grid' i]", "[class~='list' i]"
+    ].join(", "))) return false;
+    return !viableNestedSectionRegions(region, options).length;
+  }
+
+  function genericUnlabelledSectionMaterial(cards) {
+    var identities = new Set();
+    cards.forEach(function(card) {
+      if (materializedHttpUrl(card.url)) identities.add(listItemMaterialIdentity(card));
+    });
+    return identities.size >= 3;
+  }
+
   function sectionCanonicalKey(url) {
     return listCanonicalKey(url)
       .replace(/([?&])(?:utm_[^&=]+|fbclid|gclid|dclid|msclkid|mc_cid|mc_eid)=[^&]*&?/gi, "$1")
@@ -115,7 +139,8 @@
 
     candidates.forEach(function(region) {
       var label = sectionRegionLabel(region, options);
-      if (!label || seen.some(function(existing) { return existing.contains(region); })) return;
+      var unlabelled = !label && genericUnlabelledSectionRegion(region, root, options);
+      if ((!label && !unlabelled) || seen.some(function(existing) { return existing.contains(region); })) return;
       if ((!options.skipEditorialGuard && !editorialSectionRegion(region)) || (options.regionFilter && !options.regionFilter(region))) return;
       var headingOwner = nestedSectionHeadingOwner(region, options);
       if (headingOwner) {
@@ -124,8 +149,12 @@
             !sectionRegionHasCardsOutside(region, nestedRegions, options)) return;
       }
 
-      var cards = sectionCards(region, options).filter(function(card) {
-        if (options.cardFilter && !options.cardFilter(card)) return false;
+      var discoveredCards = sectionCards(region, options).filter(function(card) {
+        return !options.cardFilter || options.cardFilter(card);
+      });
+      if (unlabelled && !genericUnlabelledSectionMaterial(discoveredCards)) return;
+
+      var cards = discoveredCards.filter(function(card) {
         var key = card.canonicalKey || sectionCanonicalKey(card.url);
         var time = normalizeText(card.time || "");
         var times = material[key];
@@ -153,7 +182,8 @@
     });
     if (materializedListItemCount(items) < 2) return null;
     var markdown = regions.map(function(region) {
-      return "## " + region.label + "\n\n" + listMarkdown(region.cards);
+      var cards = listMarkdown(region.cards);
+      return region.label ? "## " + region.label + "\n\n" + cards : cards;
     }).join("\n\n");
 
     return {

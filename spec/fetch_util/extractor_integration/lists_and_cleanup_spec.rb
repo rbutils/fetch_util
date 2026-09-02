@@ -192,6 +192,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps direct list regions that have no heading" do
+    cards = lambda do |range|
+      range.map do |number|
+        <<~HTML
+          <article>
+            <a href="/festival/#{number}">Festival archive record #{number}</a>
+            <p>Program details for archive record #{number}.</p>
+          </article>
+        HTML
+      end.join
+    end
+    html = <<~HTML
+      <html><head><title>Festival archive</title></head><body>
+        <main>
+          <h1>Festival archive</h1>
+          <div class="push-slider">#{cards.call(1..4)}</div>
+          <section class="program-section">#{cards.call(5..8)}</section>
+          <section>#{cards.call(9..10)}</section>
+          <section><h2>Official selection</h2>#{cards.call(9..12)}</section>
+          <div class="content-wrapper"><p>Background information about the complete festival program.</p></div>
+          <div class="content-section related-list">#{cards.call(13..16)}</div>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://festival.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"].scan(/^## (.+)$/).flatten).to eq(["Official selection"])
+      expect(payload["markdown"].scan(%r{\]\(https://festival\.example/festival/(\d+)\)}).flatten.map(&:to_i)).to eq((1..12).to_a)
+      expect(payload["markdown"]).not_to include("## Festival archive record")
+      expect(payload["markdown"]).not_to include("Festival archive record 13")
+    end
+  end
+
   it "does not let action links turn substantive prose into a list" do
     html = <<~HTML
       <html><head><title>Automation safety report</title></head><body><main><article>
