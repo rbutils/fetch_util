@@ -256,6 +256,63 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
     end
   end
 
+  it 'keeps portal details within each repeated record branch' do
+    long_detail = 'The first local report follows the proposal from its initial hearing through every funding revision, ' \
+                  'records the affected neighborhoods, and explains each remaining public review before the final vote.'
+    html = <<~HTML
+      <html><head><title>Daily Portal latest headlines</title></head><body><main>
+        <h1>Latest public reports</h1>
+        <div class="item">
+          <div class="record"><h2><a href="/first">First local headline with complete reporting</a></h2><p>#{long_detail}</p><a href="/regional">Regional coverage desk</a></div>
+          <div class="record"><h2><a href="/first">Responsive first local headline copy</a></h2><p>Responsive duplicate detail must not cross the record boundary.</p></div>
+          <div class="record"><a href="/first">Read More</a><p>Action-only sibling detail must not cross the record boundary.</p></div>
+          <div class="record"><h2><a href="/second">Second local headline with complete reporting</a></h2><p>Second record detail remains local.</p></div>
+          <div class="record"><h2><a href="/third">Third local headline with complete reporting</a></h2><p>Third record detail remains local.</p></div>
+          <div class="record"><h2><a href="/fourth">Fourth local headline with complete reporting</a></h2><p>Fourth record detail remains local.</p></div>
+          <p>Shared pool schedule and unrelated partner promotion must not become record detail.</p>
+        </div>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://portal.example/', html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+
+      expect(markdown).to include(long_detail)
+      expect(markdown).not_to include('Responsive duplicate detail')
+      expect(markdown).not_to include('Action-only sibling detail')
+      expect(markdown.scan('Second record detail remains local.').length).to eq(1)
+      expect(markdown.scan('Fourth record detail remains local.').length).to eq(1)
+      expect(markdown).not_to include('Shared pool schedule', 'unrelated partner promotion')
+    end
+  end
+
+  it 'uses local headings for generic portal action links' do
+    html = <<~HTML
+      <html><head><title>Daily Portal latest headlines</title></head><body><main>
+        <h1>Latest public reports</h1>
+        <div class="stories">
+          <div class="newsitem"><h2><a href="/first">First action-linked public report</a></h2><time>Today</time><p>First report summary remains visible.</p><a href="javascript:openStory()">Read More</a></div>
+          <div class="newsitem"><h2 style="visibility: hidden">Hidden responsive title</h2><h2 style="visibility: hidden"><span style="visibility: visible">Second action-linked public report</span></h2><time>Yesterday</time><p>Second report summary remains visible.</p><a href="/second">Read More</a><a href="/hidden" style="visibility: hidden">Read More</a></div>
+          <div class="newsitem"><h2>Third action-linked public report</h2><p>Third report summary remains visible.</p><a href="/third">Read More</a></div>
+          <div class="newsitem"><h2>Fourth action-linked public report</h2><p>Fourth report summary remains visible.</p><a href="/fourth">Read More</a></div>
+          <div class="newsitem"><div class="action"><h3 style="display: none">Hidden action heading</h3><a href="/fifth"><span style="display: none">Hidden action text</span>Read More</a></div><h2><a href="/fifth"><span style="display: none">Hidden heading text</span>Fifth action-linked public report</a></h2><p>Fifth report summary remains visible.</p></div>
+        </div>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://portal.example/', html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+
+      expect(markdown).to include('[First action-linked public report](https://portal.example/first)')
+      expect(markdown).to include('First report summary remains visible.', 'Second report summary remains visible.')
+      expect(markdown).to include('Fifth report summary remains visible.')
+      expect(markdown.scan('First action-linked public report').length).to eq(1)
+      expect(markdown.scan('First report summary remains visible.').length).to eq(1)
+      expect(markdown).not_to include('Read More')
+      expect(markdown).not_to include('openStory', '/hidden', 'Hidden responsive title')
+    end
+  end
+
   it 'keeps existing financial times homepage compaction working' do
     html = <<~HTML
       <html>
