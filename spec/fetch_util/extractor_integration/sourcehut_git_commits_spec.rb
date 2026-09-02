@@ -121,6 +121,13 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut git commits' do
       expect(Array(payload['warnings'])).not_to include('sourcehut_git_commit_diff_incomplete')
       expect(payload.fetch('markdown')).to include('new.txt', 'second.txt')
     end
+
+    deletion_only = html.sub('2 files changed, 3 insertions(+), 1 deletion(-)',
+                             '1 file changed, 12,345 deletions(-)')
+    extract_from_url('https://git.example.test/~alice/project/commit/main', deletion_only,
+                     reader_mode: false) do |payload|
+      expect(payload.fetch('warnings')).to include('sourcehut_git_commit_diff_incomplete')
+    end
   end
 
   it 'keeps malformed, patch, mismatched hash, and non-commit routes outside the profile' do

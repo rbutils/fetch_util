@@ -118,9 +118,12 @@ function sourcehutGitDiffstatNode(diffRoot) {
 }
 
 function sourcehutGitChangedLineCount(diffstat) {
-  var match = normalizeText(diffstat && diffstat.textContent).match(/([\d,]+) insertions?\(\+\).*?([\d,]+) deletions?\(-\)/i);
-  if (!match) return null;
-  return Number(match[1].replace(/,/g, "")) + Number(match[2].replace(/,/g, ""));
+  var text = normalizeText(diffstat && diffstat.textContent);
+  var insertions = text.match(/([\d,]+) insertions?\(\+\)/i);
+  var deletions = text.match(/([\d,]+) deletions?\(-\)/i);
+  if (!insertions && !deletions) return null;
+  return Number((insertions ? insertions[1] : "0").replace(/,/g, "")) +
+    Number((deletions ? deletions[1] : "0").replace(/,/g, ""));
 }
 
 function sourcehutGitLargeDiffNode(diffstat) {
