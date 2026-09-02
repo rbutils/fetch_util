@@ -6,6 +6,43 @@
     return label;
   }
 
+  function sectionRegionLabel(region, options) {
+    var label = sectionHeading(region, options);
+    if (!label && options.fallbackHeadingBuilder) label = options.fallbackHeadingBuilder(region);
+    return label;
+  }
+
+  function nestedSectionHeadingOwner(region, options) {
+    if (options && options.headingBuilder) return null;
+    var heading = region.querySelector((options && options.headingSelector) || "h1, h2, h3, h4");
+    var regionSelector = (options && options.regionSelector) || "section, [role='region'], main > div, main > article";
+    var owner = heading && heading.closest && heading.closest(regionSelector);
+    return owner && owner !== region && region.contains(owner) ? owner : null;
+  }
+
+  function sectionRegionViable(region, options) {
+    if ((!options.skipEditorialGuard && !editorialSectionRegion(region)) ||
+        (options.regionFilter && !options.regionFilter(region))) return false;
+    if (options.allowEmptyRegions) return true;
+    return sectionCards(region, options).some(function(card) {
+      return !options.cardFilter || options.cardFilter(card);
+    });
+  }
+
+  function viableNestedSectionRegions(region, options) {
+    var regionSelector = (options && options.regionSelector) || "section, [role='region'], main > div, main > article";
+    return Array.prototype.filter.call(region.querySelectorAll(regionSelector), function(candidate) {
+      return !!sectionRegionLabel(candidate, options) && sectionRegionViable(candidate, options);
+    });
+  }
+
+  function sectionRegionHasCardsOutside(region, nestedRegions, options) {
+    return sectionCards(region, options).some(function(card) {
+      if (options.cardFilter && !options.cardFilter(card)) return false;
+      return card.card && !nestedRegions.some(function(nested) { return nested.contains(card.card); });
+    });
+  }
+
   function sectionCanonicalKey(url) {
     return listCanonicalKey(url)
       .replace(/([?&])(?:utm_[^&=]+|fbclid|gclid|dclid|msclkid|mc_cid|mc_eid)=[^&]*&?/gi, "$1")
@@ -77,10 +114,15 @@
     });
 
     candidates.forEach(function(region) {
-      var label = sectionHeading(region, options);
-      if (!label && options.fallbackHeadingBuilder) label = options.fallbackHeadingBuilder(region);
+      var label = sectionRegionLabel(region, options);
       if (!label || seen.some(function(existing) { return existing.contains(region); })) return;
       if ((!options.skipEditorialGuard && !editorialSectionRegion(region)) || (options.regionFilter && !options.regionFilter(region))) return;
+      var headingOwner = nestedSectionHeadingOwner(region, options);
+      if (headingOwner) {
+        var nestedRegions = viableNestedSectionRegions(region, options);
+        if (nestedRegions.indexOf(headingOwner) >= 0 &&
+            !sectionRegionHasCardsOutside(region, nestedRegions, options)) return;
+      }
 
       var cards = sectionCards(region, options).filter(function(card) {
         if (options.cardFilter && !options.cardFilter(card)) return false;

@@ -104,6 +104,94 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps headings owned by nested list regions" do
+    headings = ["Popular books", "Latest books", "Editors' choices", "Free books"]
+    overview_cards = 4.times.map do |index|
+      <<~HTML
+        <article>
+          <h3><a href="/books/#{index + 1}">Complete catalog record #{index + 1}</a></h3>
+          <p>Catalog summary #{index + 1} with enough local context for this record.</p>
+        </article>
+      HTML
+    end.join
+    sections = headings.map.with_index do |heading, section_index|
+      cards = 4.times.map do |card_index|
+        number = (section_index * 4) + card_index + 5
+        <<~HTML
+          <article>
+            <h3><a href="/books/#{number}">Complete catalog record #{number}</a></h3>
+            <p>Catalog summary #{number} with enough local context for this record.</p>
+          </article>
+        HTML
+      end.join
+      "<section><h2>#{heading}</h2>#{cards}</section>"
+    end
+    mixed_nested = 4.times.map do |index|
+      number = index + 21
+      <<~HTML
+        <article>
+          <h3><a href="/books/#{number}">Complete catalog record #{number}</a></h3>
+          <p>Catalog summary #{number} with enough local context for this record.</p>
+        </article>
+      HTML
+    end.join
+    mixed_direct = 4.times.map do |index|
+      number = index + 25
+      <<~HTML
+        <article>
+          <h3><a href="/books/#{number}">Complete catalog record #{number}</a></h3>
+          <p>Catalog summary #{number} with enough local context for this record.</p>
+        </article>
+      HTML
+    end.join
+    unheaded_nested = 4.times.map do |index|
+      number = index + 33
+      <<~HTML
+        <article>
+          <a href="/books/#{number}">Complete catalog record #{number}</a>
+          <p>Catalog summary #{number} with enough local context for this record.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Complete book catalog</title></head><body>
+        <main>
+          <h1>Complete book catalog</h1>
+          <div class="catalog-content">
+            <section class="heading-only"><h2>Archive overview</h2></section>
+            #{overview_cards}
+          </div>
+          <div class="catalog-content">#{sections.first(2).join}</div>
+          <div class="catalog-content">#{sections.last(2).join}</div>
+          <div class="catalog-content">
+            <section><h2>New releases</h2>#{mixed_nested}</section>
+            #{mixed_direct}
+          </div>
+          <div class="catalog-content">
+            <section>
+              <h2>Community picks</h2>
+              <article><h3><a href="/books/29">Complete catalog record 29</a></h3></article>
+              <article><h3><a href="/books/30">Complete catalog record 30</a></h3></article>
+              <article><h3><a href="/books/31">Complete catalog record 31</a></h3></article>
+              <article><h3><a href="/books/32">Complete catalog record 32</a></h3></article>
+            </section>
+            <section class="unheaded">#{unheaded_nested}</section>
+          </div>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://catalog.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"].scan(/^## (.+)$/).flatten).to eq(
+        ["Archive overview"] + headings + ["New releases", "Community picks"]
+      )
+      expect(payload["markdown"].scan(%r{\]\(https://catalog\.example/books/(\d+)\)}).flatten.map(&:to_i)).to eq((1..36).to_a)
+    end
+  end
+
   it "does not let action links turn substantive prose into a list" do
     html = <<~HTML
       <html><head><title>Automation safety report</title></head><body><main><article>
