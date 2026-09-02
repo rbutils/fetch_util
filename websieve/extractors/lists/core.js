@@ -33,13 +33,11 @@
       itemQuality = fallbackQuality;
     }
 
-    var linkMarkdown = listMarkdown(items);
-    var markdown = descText ? descText + (linkMarkdown ? "\n\n" + linkMarkdown : "") : linkMarkdown;
+    var markdown = listMarkdownWithDescription(descText, items);
     if (normalizeText(markdown).length < 120 && (fallbackItems.length > items.length || fallbackQuality > itemQuality)) {
       items = fallbackItems;
       itemQuality = fallbackQuality;
-      linkMarkdown = listMarkdown(items);
-      markdown = descText ? descText + (linkMarkdown ? "\n\n" + linkMarkdown : "") : linkMarkdown;
+      markdown = listMarkdownWithDescription(descText, items);
     }
 
     return {
@@ -69,12 +67,17 @@
       var result = buildListExtraction(node);
       return listExtractionIsBetter(current, result) ? result : current;
     }, null) || buildListExtraction(document.body);
+    var rankedMarkdown = best.markdown;
+    if (!best.sectionCount) {
+      best.descText = listDescriptionMarkdown(best.root, best.items);
+      best.markdown = listMarkdownWithDescription(best.descText, best.items);
+    }
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");
     }).length;
     var rootContext = normalizeText([location.pathname, document.title, metadata.title].join(" "));
     var docsRoot = /\b(?:docs?|documentation|api|library|libraries|reference|class|module|namespace|package)\b/i.test(rootContext);
-    var substantialRoot = homepageRootPath() && !docsRoot && best.items.length >= 10 && normalizeText(best.markdown).length >= 3000;
+    var substantialRoot = homepageRootPath() && !docsRoot && best.items.length >= 10 && normalizeText(rankedMarkdown).length >= 3000;
     var broadRootEvidence = substantialRoot ? 2 : 0;
     var headingRootEvidence = substantialRoot ? namedHeadingCount : 0;
     var portalSectionCount = Math.max(best.sectionCount || 0, headingRootEvidence, broadRootEvidence);

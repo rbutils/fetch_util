@@ -346,7 +346,7 @@ RSpec.describe 'content fidelity contracts' do
           <article><h3><a href="/story/query?page=1">FID:query-one</a></h3></article>
         </section>
         <section><h2>FID:responsive</h2>
-          <article><h3><a href="/story/tracked?utm_source=mobile">FID:tracked-copy</a></h3></article>
+          <article><h3><a href="/story/tracked?utm_source=mobile">FID:tracked-copy</a></h3><p>FID:tracked-responsive-summary must stay suppressed.</p></article>
           <article><h3><a href="/story/query?page=2">FID:query-two</a></h3></article>
         </section>
       </main>
@@ -356,7 +356,7 @@ RSpec.describe 'content fidelity contracts' do
       result = extract_payload(page, reader_mode: false)
 
       expect(result['markdown']).to include('FID:tracked-first', 'FID:query-one', 'FID:query-two')
-      expect(result['markdown']).not_to include('FID:tracked-copy')
+      expect(result['markdown']).not_to include('FID:tracked-copy', 'FID:tracked-responsive-summary')
     end
   end
 
@@ -384,18 +384,25 @@ RSpec.describe 'content fidelity contracts' do
   it 'keeps flat list introductions without repeating card-local descriptions' do
     cards = Array.new(5) do |index|
       number = index + 1
+      extra = number == 1 ? '<p>FID:flat-card-unrepresented paragraph remains visible.</p>' : ''
       <<~HTML
         <article>
           <h2><a href="/flat-#{number}">FID:flat-card-#{number} with sufficient title</a></h2>
           <p>FID:flat-card-#{number}-summary with enough local context.</p>
+          #{extra}
         </article>
       HTML
     end.join
     html = <<~HTML
       <main>
-        <h1>FID:flat-portal</h1>
-        <p>FID:flat-introduction explains the complete visible collection.</p>
-        <div class="records">#{cards}</div>
+        <div class="story-grid">
+          <h1>FID:flat-portal collection heading with useful context</h1>
+          <p>FID:flat-introduction explains the complete visible collection.</p>
+          <div class="promotional-card">
+            <p>FID:standalone-context describes the collection without owning a record.</p>
+          </div>
+          <div class="records">#{cards}</div>
+        </div>
       </main>
     HTML
 
@@ -404,7 +411,9 @@ RSpec.describe 'content fidelity contracts' do
 
       expect(result['contentType']).to eq('list')
       expect(result['markdown'].scan('FID:flat-introduction').length).to eq(1)
+      expect(result['markdown'].scan('FID:standalone-context').length).to eq(1)
       expect(result['markdown'].scan('FID:flat-card-1-summary').length).to eq(1)
+      expect(result['markdown'].scan('FID:flat-card-unrepresented').length).to eq(1)
     end
   end
 

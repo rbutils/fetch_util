@@ -175,14 +175,54 @@
     return root;
   }
 
-  function listDescriptionCardNode(node) {
-    return closestGenericListCard(node);
+  function listDescriptionItemValues(item) {
+    var card = item && item.card;
+    return [
+      item && item.text,
+      item && item.detail,
+      item && item.category,
+      item && item.summary,
+      cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || (item && item.author),
+      cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]") || (item && item.time),
+      cardField(card, "[class*='score' i], [data-score], [data-karma]") || (item && item.score),
+      cardField(card, ".reply, .replies, .comment, .comments, [class*='reply'], [class*='replie'], [class*='comment']") || (item && item.replyCount),
+      cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || (item && item.community),
+      item && item.image,
+      item && item.caption
+    ].map(normalizeText).filter(Boolean);
   }
 
-  function listDescriptionMarkdown(root) {
+  function listDescriptionDuplicateCard(node, items) {
+    var card = closestGenericListCard(node);
+    if (!card || items.some(function(item) { return item && item.card === card; })) return null;
+
+    var retained = new Set(items.map(function(item) {
+      if (item && item.url) return listCanonicalKey(item.url);
+      return item && item.canonicalKey;
+    }).filter(Boolean));
+    var duplicate = cardOwnedNodes(card, "a[href]").some(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      return url && retained.has(listCanonicalKey(url));
+    });
+    return duplicate ? card : null;
+  }
+
+  function listDescriptionCardNode(node, items) {
+    if (!items) return closestGenericListCard(node);
+
+    var text = normalizeText(node.textContent || "");
+    var represented = text && items.find(function(item) {
+      return listDescriptionItemValues(item).some(function(value) {
+        return value === text || value.indexOf(text) >= 0;
+      });
+    });
+    return represented ? represented.card : listDescriptionDuplicateCard(node, items);
+  }
+
+  function listDescriptionMarkdown(root, items) {
     var descParts = [];
     root.querySelectorAll("h1, h2, h3, p").forEach(function(el) {
-      if (listDescriptionCardNode(el)) return;
+      if (listDescriptionCardNode(el, items)) return;
       var text = normalizeText(el.textContent);
       if (text.length < 30 || text.length > 2000) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
@@ -194,4 +234,9 @@
       }
     });
     return descParts.join("\n\n");
+  }
+
+  function listMarkdownWithDescription(descText, items) {
+    var linkMarkdown = listMarkdown(items);
+    return descText ? descText + (linkMarkdown ? "\n\n" + linkMarkdown : "") : linkMarkdown;
   }
