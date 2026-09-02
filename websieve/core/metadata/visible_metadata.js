@@ -87,9 +87,22 @@ function visibleByline() {
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
 }
 
+function visiblePublishedTimeRoots() {
+  var path = location.pathname || "/";
+  if (path !== "/" && !/^\/index\.(?:html?|php|aspx?)$/i.test(path)) return visibleMetadataRoots();
+
+  var roots = [];
+  document.querySelectorAll("[itemprop='articleBody'], article[role='main']").forEach(function(node) {
+    var root = node.closest("article, [role='main'], main") || node;
+    if (roots.indexOf(root) === -1 && textLength(root) >= 80) roots.push(root);
+  });
+  return roots;
+}
+
 function visiblePublishedTime() {
-  return firstScopedText(visibleMetadataRoots(), ["time[datetime]"], "datetime") ||
-    firstScopedText(visibleMetadataRoots(), [
+  var roots = visiblePublishedTimeRoots();
+  return firstScopedText(roots, ["time[datetime]"], "datetime") ||
+    firstScopedText(roots, [
       "[itemprop='datePublished']",
       "[itemprop='dateModified']",
       "[class*='pubdate' i]",

@@ -53,6 +53,57 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not let a sibling homepage card date suppress the page list" do
+    cards = 8.times.map do |index|
+      <<~HTML
+        <div class="story-card">
+          <h2><a href="/stories/#{index + 1}">University research story #{index + 1}</a></h2>
+          <p>Research summary #{index + 1} with enough substantive context for a visible homepage record.</p>
+          #{index.zero? ? '<span class="publish-date">Aug 31, 2026</span>' : ''}
+        </div>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Example University</title></head><body>
+        <div role="main">
+          <h1>Research that changes the world</h1>
+          <p>Explore current discoveries, education, and public service across the university.</p>
+          <div class="story-grid">#{cards}</div>
+        </div>
+      </body></html>
+    HTML
+
+    with_url_page("https://university.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"].scan(/^- \[/).length).to eq(8)
+      expect(payload["publishedTime"]).to be_nil
+    end
+  end
+
+  it "retains a focal article publication date on a homepage route" do
+    html = <<~HTML
+      <html><head><title>Research announcement</title></head><body>
+        <article role="main">
+          <h1>Research announcement</h1>
+          <time datetime="2026-08-30T12:00:00Z">August 30, 2026</time>
+          <div itemprop="articleBody">
+            <p>This focal report explains a significant research result with enough substantive detail to remain an article.</p>
+            <p>It documents the evidence, methods, and implications for readers across the university community.</p>
+          </div>
+        </article>
+      </body></html>
+    HTML
+
+    with_url_page("https://university.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["publishedTime"]).to eq("2026-08-30T12:00:00Z")
+    end
+  end
+
   it "does not let action links turn substantive prose into a list" do
     html = <<~HTML
       <html><head><title>Automation safety report</title></head><body><main><article>
