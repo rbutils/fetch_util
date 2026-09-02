@@ -59,7 +59,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         <div class="story-card">
           <h2><a href="/stories/#{index + 1}">University research story #{index + 1}</a></h2>
           <p>Research summary #{index + 1} with enough substantive context for a visible homepage record.</p>
-          #{index.zero? ? '<span class="publish-date">Aug 31, 2026</span>' : ''}
+          #{index.zero? ? "<span class=\"publish-date\">Aug 31, 2026</span>" : ""}
         </div>
       HTML
     end.join
