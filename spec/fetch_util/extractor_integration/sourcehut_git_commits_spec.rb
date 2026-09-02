@@ -100,8 +100,10 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut git commits' do
       missing_patch: sourcehut_git_fixture.sub("/commit/#{commit_id}.patch", "/commit/#{commit_id}.download"),
       missing_tree: sourcehut_git_fixture.sub("/tree/#{commit_id}\">browse", "/source/#{commit_id}\">browse"),
       malformed_identity: sourcehut_git_fixture.sub(commit_id, 'not-a-commit-id'),
-      duplicate_summary_meta: sourcehut_git_fixture.sub('</head>',
-                                                         '<meta name="forge:summary" content="https://git.example.test/~alice/project"></head>')
+      duplicate_summary_meta: sourcehut_git_fixture.sub(
+        '</head>',
+        '<meta name="forge:summary" content="https://git.example.test/~alice/project"></head>'
+      )
     }
 
     controls.each_value do |html|
