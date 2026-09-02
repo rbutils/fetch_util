@@ -252,18 +252,26 @@ RSpec.describe 'FetchUtil extractor integration' do
         <head><title>Amazon.com : ruby programming</title></head>
         <body>
           <main>
-            <div data-component-type="s-search-result">
+            <div data-component-type="s-search-result" data-asin="BOOK-1">
               <h2><a href="/dp/1"><span>Programming Ruby</span></a></h2>
+              <a href="/Dave-Thomas/e/AUTHOR-1">Dave Thomas</a>
               <span class="a-price"><span class="a-offscreen">$39.99</span></span>
               <span class="a-icon-alt">4.7 out of 5 stars</span>
             </div>
-            <div data-component-type="s-search-result">
+            <div data-component-type="s-search-result" data-asin="BOOK-2">
               <h2><a href="/dp/2"><span>Practical Object-Oriented Design in Ruby</span></a></h2>
+              <a href="/Sandi-Metz/e/AUTHOR-2">Sandi Metz</a>
               <span class="a-price"><span class="a-offscreen">$31.50</span></span>
             </div>
-            <div data-component-type="s-search-result">
+            <div data-component-type="s-search-result" data-asin="BOOK-3">
               <h2><a href="/dp/3"><span>Eloquent Ruby</span></a></h2>
+              <a href="/Russ-Olsen/e/AUTHOR-3">Russ Olsen</a>
               <span class="a-price"><span class="a-offscreen">$27.10</span></span>
+            </div>
+            <div data-component-type="s-search-result" data-asin="BOOK-4">
+              <h2><a href="/dp/4"><span>Metaprogramming Ruby</span></a></h2>
+              <a href="/Paolo-Perrotta/e/AUTHOR-4">Paolo Perrotta</a>
+              <span class="a-price"><span class="a-offscreen">$24.00</span></span>
             </div>
           </main>
         </body>
@@ -276,6 +284,10 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("- [Programming Ruby](https://www.amazon.com/dp/1) - $39.99 - 4.7 out of 5 stars")
       expect(payload["markdown"]).to include("- [Eloquent Ruby](https://www.amazon.com/dp/3) - $27.10")
+      expect(payload["markdown"]).to include("- [Metaprogramming Ruby](https://www.amazon.com/dp/4) - $24.00")
+      expect(payload["markdown"]).not_to include("/e/AUTHOR")
+      expect(payload["markdown"].scan(/^- \[/).length).to eq(4)
+      expect(payload["hostAware"]).to be(true)
     end
   end
 

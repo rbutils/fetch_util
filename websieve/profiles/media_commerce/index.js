@@ -30,7 +30,8 @@
     return listItemsContentResult(metadata, {
       title: metadata.title || document.title,
       excerpt: items[0].text,
-      items: items
+      items: items,
+      hostAware: true
     });
   }
 
