@@ -10,6 +10,27 @@
     });
   }
 
+  function genericListDirectAnchorCard(link, container) {
+    if (!link || !container || link.parentElement !== container || !link.matches("a[href]")) return false;
+
+    var recordEvidence = "picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
+    if (!link.querySelector(recordEvidence)) return false;
+
+    var peers = Array.prototype.filter.call(container.children, function(child) {
+      return child.matches && child.matches("a[href]") &&
+        materializedHttpUrl(child.getAttribute("href")) && child.querySelector(recordEvidence);
+    });
+    return peers.length >= 2;
+  }
+
+  function genericListDirectAnchorTitle(link, container) {
+    if (!genericListDirectAnchorCard(link, container)) return "";
+
+    var titleNode = link.querySelector("[class*='title' i]");
+    var title = normalizeText((titleNode && titleNode.textContent) || link.getAttribute("title") || "");
+    return title.length >= 6 && title.length <= 220 ? title : "";
+  }
+
   function genericListControlText(text) {
     return /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(normalizeText(text || ""));
   }
@@ -163,6 +184,7 @@
 
   function listCardRoot(link, fallback) {
     if (fallback && fallback.matches && fallback.matches("tr")) return fallback;
+    if (genericListDirectAnchorCard(link, fallback)) return link;
     var card = genericListContextCard(closestGenericListCard(link));
     return card || fallback || (link && link.parentElement);
   }

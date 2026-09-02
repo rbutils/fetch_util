@@ -217,6 +217,41 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'keeps sibling anchor-wrapped records within their own cards' do
+    titles = ['FID:short-one'] + (2..6).map { |index| "FID:direct-record-#{index}" }
+    records = (1..6).map do |index|
+      title = titles[index - 1]
+      <<~HTML
+        <a class="record-tile" href="/records/#{index}" title="#{title}">
+          <img src="/records/#{index}.jpg" alt="FID:direct-image-#{index}">
+          <span class="record-title">#{title}</span>
+          <span class="record-age">FID:direct-age-#{index}</span>
+          <span class="record-views">FID:direct-views-#{index}</span>
+        </a>
+      HTML
+    end.join
+    html = <<~HTML
+      <main>
+        <h1>FID:direct-anchor-records</h1>
+        <div class="items">#{records}</div>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/archive', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      lines = result['markdown'].lines.grep(/^- \[/)
+
+      expect(result['contentType']).to eq('list')
+      expect(lines.length).to eq(6)
+      lines.each_with_index do |line, index|
+        record = index + 1
+        expect(line).to include(titles[index], "FID:direct-age-#{record}", "FID:direct-views-#{record}")
+        expect(line.scan(titles[index]).length).to eq(1)
+        expect(line).not_to include(titles[record == 6 ? 4 : record])
+      end
+    end
+  end
+
   it 'keeps list metadata within an outer card instead of inheriting nested-card context' do
     with_url_page('https://fidelity.test/', fixture('fidelity_card_metadata_ownership')) do |page|
       result = extract_payload(page)

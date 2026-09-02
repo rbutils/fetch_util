@@ -65,7 +65,7 @@ function listSupplementalDetail(item, contextValues, card) {
   ].forEach(function(selector) {
     listRemoveCardField(card, clone, selector);
   });
-  Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4"), function(node) {
+  Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
   });
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);

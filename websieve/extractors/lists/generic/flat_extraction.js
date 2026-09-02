@@ -28,9 +28,10 @@
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
     var caseRecordContext = /\b(?:cases?|defendants?|records?|dockets?|matters?)\b/i.test(pageIdentity);
 
-    function looksLikeMetaLink(text, href, container) {
+    function looksLikeMetaLink(text, href, container, directAnchorCard) {
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
-      return text.length < (tableRow ? 2 : (caseRecordContext ? 3 : 18)) ||
+      var minimumLength = tableRow ? 2 : (directAnchorCard ? minimumListTitleLength(text) : (caseRecordContext ? 3 : 18));
+      return text.length < minimumLength ||
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
         /(?:^|[?&])(user|from|site|goto)=/i.test(href) ||
@@ -41,7 +42,8 @@
     function pushLink(link, container) {
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
-      if (!candidate || looksLikeMetaLink(candidate.text, href, container)) return;
+      var directAnchorCard = genericListDirectAnchorCard(link, container);
+      if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard)) return;
       addCardContext(candidate, candidate.card);
       pushUniqueListCandidate(candidates, seen, candidate);
     }

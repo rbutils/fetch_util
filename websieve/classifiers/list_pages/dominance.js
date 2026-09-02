@@ -82,7 +82,8 @@
 
     var href = link.getAttribute("href");
     var heading = link.querySelector("h1, h2, h3, h4");
-    var text = normalizeText((heading && heading.textContent) || link.textContent || link.getAttribute("aria-label") || "");
+    var directAnchorTitle = genericListDirectAnchorTitle(link, container);
+    var text = normalizeText((heading && heading.textContent) || directAnchorTitle || link.textContent || link.getAttribute("aria-label") || "");
     var resolvedPath = "";
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
     if (!href || href[0] === "#") return null;

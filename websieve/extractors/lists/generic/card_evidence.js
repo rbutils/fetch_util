@@ -199,5 +199,6 @@
     if (time) candidate.time = normalizeText(time.getAttribute("datetime") || time.textContent);
 
     candidate.image = meaningfulMediaText(card);
+    if (normalizeText(candidate.image) === normalizeText(candidate.text)) candidate.image = "";
     candidate.caption = completeCardText(card, "figcaption");
   }
