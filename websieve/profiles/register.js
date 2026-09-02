@@ -38,6 +38,7 @@
   registerPagureThreadProfiles();
   registerSourcehutTodoThreadProfiles();
   registerSourcehutListsPatchsetProfiles();
+  registerSourcehutListsArchiveThreadProfiles();
   registerAzureDevopsPullRequestProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();

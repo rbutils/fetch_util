@@ -1,12 +1,79 @@
-function sourcehutListsEntryWrapper(nodes) {
+function sourcehutListsEntryWrapper(nodes, options) {
   var wrapper = document.createElement("div");
   nodes.forEach(function(node) {
     var clone = visibilityPrunedClone(node);
     if (clone) wrapper.appendChild(clone);
   });
-  removeAll(wrapper, "script, style, noscript, button, form, details, summary, [role='tooltip'], a.btn");
+  removeAll(wrapper, "script, style, noscript, button, form, [role='tooltip'], a.btn");
+  if (!(options && options.preserveDetails)) removeAll(wrapper, "details, summary");
   var markdown = cleanupMarkdownNoise(markdownFor(wrapper.innerHTML));
   return normalizeText(markdown) ? { node: wrapper, markdown: markdown } : null;
+}
+
+function sourcehutListsArchivePermalink(header, route, root) {
+  var link = header && header.querySelector(":scope > .date > a[id][href]");
+  if (!link) return null;
+  try {
+    var url = new URL(link.getAttribute("href"), location.href);
+    var target = document.getElementById(safeDecodeURI(url.hash.slice(1)));
+    return url.origin === location.origin && url.pathname.replace(/\/$/, "") === route.threadPath &&
+      url.hash && target && root.contains(target)
+      ? location.origin + route.threadPath + url.hash
+      : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function sourcehutListsArchiveRecords(root, route) {
+  var records = sourcehutListsArchiveThreadWrappers(root).map(function(wrapper, index) {
+    var heading = wrapper.previousElementSibling;
+    var subjectNode = heading && heading.matches("h3") ? heading : null;
+    var rendered = sourcehutListsEntryWrapper(
+      [subjectNode, wrapper].filter(Boolean),
+      { preserveDetails: true }
+    );
+    if (!rendered) return null;
+    var header = wrapper.querySelector(":scope > .message-header");
+    return {
+      sourceNode: rendered.node,
+      kind: index === 0 ? "Opening message" : "Reply",
+      subject: normalizeText(subjectNode && subjectNode.textContent),
+      author: sourcehutListsMessageAuthor(header),
+      timestamp: sourcehutListsMessageTime(header),
+      permalink: sourcehutListsArchivePermalink(header, route, root),
+      rawUrl: sourcehutListsArchiveRawUrl(header, route),
+      markdown: rendered.markdown
+    };
+  }).filter(Boolean);
+  return deduplicateForgeThreadPermalinks(records);
+}
+
+function sourcehutListsArchiveInventory(route, root, records) {
+  var entries = [
+    { label: "List archive", url: location.origin + route.listPath },
+    { label: "Patchsets", url: location.origin + route.patchesPath },
+    { label: "Current thread", url: location.origin + route.threadPath }
+  ];
+  var mbox = sourcehutListsArchiveMboxUrl(route);
+  if (mbox) entries.push({ label: "Full thread mbox", url: mbox });
+  records.forEach(function(record, index) {
+    if (record.rawUrl) entries.push({
+      label: "Raw " + (index === 0 ? "opening message" : "reply " + index),
+      url: record.rawUrl
+    });
+  });
+  Array.prototype.slice.call(root.querySelectorAll(".alert.alert-info a[href]")).forEach(function(link) {
+    var url = sourcehutListsSameOriginUrl(link.getAttribute("href"));
+    if (url && new URL(url).pathname.indexOf(route.patchesPath + "/") === 0) {
+      entries.push({ label: normalizeText(link.textContent) || "Review patchset", url: url });
+    }
+  });
+  Array.prototype.slice.call(document.querySelectorAll(".project-nav a[href]")).forEach(function(link) {
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    if (url) entries.push({ label: normalizeText(link.textContent) || "Related project", url: url });
+  });
+  return browsableInventory("Browse this SourceHut thread", entries);
 }
 
 function sourcehutListsMessageAuthor(header) {
@@ -16,7 +83,9 @@ function sourcehutListsMessageAuthor(header) {
   });
   var value = normalizeText(link && link.textContent);
   if (value) return value;
-  return normalizeText(from && from.textContent).replace(/\s*<[^>]+>\s*$/, "");
+  var text = normalizeText(from && from.textContent);
+  var mailbox = text.match(/^(.*?)\s*<([^<>]+)>\s*$/);
+  return mailbox ? (normalizeText(mailbox[1]) || normalizeText(mailbox[2])) : text;
 }
 
 function sourcehutListsMessageTime(header) {

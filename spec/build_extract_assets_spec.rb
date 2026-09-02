@@ -242,7 +242,8 @@ RSpec.describe "extract asset bundle" do
     sourcehut_thread_path = "profiles/community/sourcehut_todo_threads.js"
     sourcehut_lists_shared_path = "profiles/community/sourcehut_lists_shared.js"
     sourcehut_lists_entries_path = "profiles/community/sourcehut_lists_entries.js"
-    sourcehut_lists_thread_path = "profiles/community/sourcehut_lists_patchsets.js"
+    sourcehut_lists_patchset_path = "profiles/community/sourcehut_lists_patchsets.js"
+    sourcehut_lists_thread_path = "profiles/community/sourcehut_lists_threads.js"
     azure_shared_path = "profiles/community/azure_devops_pr_shared.js"
     azure_entries_path = "profiles/community/azure_devops_pr_entries.js"
     azure_thread_path = "profiles/community/azure_devops_pr_threads.js"
@@ -294,7 +295,8 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, sourcehut_thread_path))).to include("function sourcehutTodoTicketContent")
     expect(File.read(File.join(source_root, sourcehut_lists_shared_path))).to include("function sourcehutListsPatchsetRoute")
     expect(File.read(File.join(source_root, sourcehut_lists_entries_path))).to include("function sourcehutListsPatchRecords")
-    expect(File.read(File.join(source_root, sourcehut_lists_thread_path))).to include("function sourcehutListsPatchsetContent")
+    expect(File.read(File.join(source_root, sourcehut_lists_patchset_path))).to include("function sourcehutListsPatchsetContent")
+    expect(File.read(File.join(source_root, sourcehut_lists_thread_path))).to include("function sourcehutListsArchiveThreadContent")
     expect(File.read(File.join(source_root, azure_shared_path))).to include("function azureDevopsPullRequestRoute")
     expect(File.read(File.join(source_root, azure_entries_path))).to include("function azureDevopsThreadSections")
     expect(File.read(File.join(source_root, azure_thread_path))).to include("function azureDevopsPullRequestContent")
@@ -328,7 +330,8 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(sourcehut_shared_path)).to be < manifest.index(sourcehut_thread_path)
     expect(manifest.index(sourcehut_thread_path)).to be < manifest.index(sourcehut_lists_shared_path)
     expect(manifest.index(sourcehut_lists_shared_path)).to be < manifest.index(sourcehut_lists_entries_path)
-    expect(manifest.index(sourcehut_lists_entries_path)).to be < manifest.index(sourcehut_lists_thread_path)
+    expect(manifest.index(sourcehut_lists_entries_path)).to be < manifest.index(sourcehut_lists_patchset_path)
+    expect(manifest.index(sourcehut_lists_patchset_path)).to be < manifest.index(sourcehut_lists_thread_path)
     expect(manifest.index(sourcehut_lists_thread_path)).to be < manifest.index(azure_shared_path)
     expect(manifest.index(azure_shared_path)).to be < manifest.index(azure_entries_path)
     expect(manifest.index(azure_entries_path)).to be < manifest.index(azure_thread_path)
@@ -530,6 +533,7 @@ RSpec.describe "extract asset bundle" do
                           registerPagureThreadProfiles
                           registerSourcehutTodoThreadProfiles
                           registerSourcehutListsPatchsetProfiles
+                          registerSourcehutListsArchiveThreadProfiles
                           registerAzureDevopsPullRequestProfiles
                           registerGerritFileResourceProfiles
                           registerGerritChangeProfiles

@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PATCH: Preserve archive fidelity — SourceHut lists</title>
+    <link rel="stylesheet" href="/static/lists.sr.ht/main.min.abc123.css">
+    <link rel="alternate" type="application/mbox" href="/~alice/project-list/thread/root/mbox">
+  </head>
+  <body>
+    <nav class="project-nav"><a href="https://git.example.test/~alice/project">Source repository</a></nav>
+    <header class="header-tabbed resource-nav">
+      <a href="/~alice/project-list">archives</a>
+      <a href="/~alice/project-list/patches">patches</a>
+    </header>
+    <div class="container">
+      <div class="row"><div class="col-md-12">
+        <div class="alert alert-info">This thread contains a patchset. <a href="/~alice/project-list/patches/42">Review patch</a></div>
+        <h3>PATCH: Preserve archive fidelity</h3>
+        <div>
+          <div class="message-header">
+            <div class="from"><a href="/~alice">Alice</a> <a href="mailto:alice@example.test">&lt;alice@example.test&gt;</a></div>
+            <details><summary>Details</summary><dl><div><dt>Message ID</dt><dd><code>thread/root</code></dd></div><div><dt>DKIM signature</dt><dd>pass</dd></div></dl><a href="/~alice/project-list/thread/root/raw">Download raw message</a></details>
+            <div class="date"><a id="thread/root" href="#thread/root">2025-02-03 04:05 UTC</a></div>
+            <div class="msg-info"><span>Patch: +12 -3</span></div>
+          </div>
+          <pre class="message-body">Opening archive message.<span style="display:none">Hidden opening text.</span><span style="visibility:hidden"><span style="visibility:visible">Restored opening detail.</span></span></pre>
+        </div>
+        <div>
+          <div class="message-header"><div class="from"><a href="/~bob">Bob</a></div><details><summary>Details</summary><a href="/~alice/project-list/reply-1/raw">Download raw message</a></details><div class="date"><a id="reply-1" href="#reply-1">2025-02-04 05:06 UTC</a></div></div>
+          <pre class="message-body">First archive reply.</pre>
+        </div>
+        <h3>Re: Different archive subject</h3>
+        <div>
+          <div class="message-header"><div class="from">Plain Sender <a href="mailto:plain@example.test">&lt;plain@example.test&gt;</a></div><details><summary>Details</summary><div>In-Reply-To: thread/root</div><a href="/~alice/project-list/reply/two/raw">Download raw message</a></details><div class="date"><a id="reply/two" href="#reply/two">2025-02-05 06:07 UTC</a></div></div>
+          <pre class="message-body">Second archive reply.</pre>
+        </div>
+        <div><div class="message-header"><div class="from">&lt;mailbox-only@example.test&gt;</div><div class="date">recently</div></div><pre class="message-body">Repeated idless archive reply.</pre></div>
+        <div><div class="message-header"><div class="from">Idless Sender</div><div class="date">recently</div></div><pre class="message-body">Repeated idless archive reply.</pre></div>
+        <div style="display:none"><div class="message-header"><div class="from">Hidden Sender</div><div class="date"><a id="hidden" href="#hidden">recently</a></div></div><pre class="message-body">Hidden archive reply.</pre></div>
+        <div style="visibility:hidden"><div class="message-header"><div class="from" style="visibility:visible"><a href="/~carol">Carol</a></div><details style="visibility:visible"><summary>Details</summary><a href="/~alice/project-list/restored/raw">Download raw message</a></details><div class="date" style="visibility:visible"><a id="restored" href="#restored">2025-02-06 07:08 UTC</a></div></div><pre class="message-body" style="visibility:visible">Restored archive reply.</pre></div>
+        <div><div class="message-header"><div class="from">Duplicate Sender</div><div class="date"><a id="reply-1-copy" href="#reply-1">recently</a></div></div><pre class="message-body">Duplicate stable reply must not render.</pre></div>
+        <!-- bulk-messages -->
+      </div></div>
+      <div class="row"><div class="col-md-6"><a href="/~alice/project-list/thread/root/mbox">Export thread (mbox)</a></div></div>
+    </div>
+  </body>
+</html>
