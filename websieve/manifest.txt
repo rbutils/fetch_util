@@ -163,6 +163,9 @@ profiles/community/pagure_threads.js
 profiles/community/pagure_pull_requests.js
 profiles/community/sourcehut_todo_shared.js
 profiles/community/sourcehut_todo_threads.js
+profiles/community/sourcehut_lists_shared.js
+profiles/community/sourcehut_lists_entries.js
+profiles/community/sourcehut_lists_patchsets.js
 profiles/community/azure_devops_pr_shared.js
 profiles/community/azure_devops_pr_entries.js
 profiles/community/azure_devops_pr_threads.js

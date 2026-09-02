@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PATCH: Preserve patchset review - SourceHut lists</title>
+    <link rel="stylesheet" href="/static/lists.sr.ht/main.min.abc123.css">
+  </head>
+  <body>
+    <nav class="project-nav"><a href="https://git.example.test/~alice/project">Source repository</a></nav>
+    <header class="header-tabbed resource-nav">
+      <a href="/~alice/project-list">archives</a>
+      <a href="/~alice/project-list/patches">patches</a>
+      <a href="mailto:~alice/project-list@lists.sr.ht">new post</a>
+    </header>
+    <div class="container">
+      <div class="row"><div class="col-md-12">
+        <h3>PATCH: Preserve patchset review <small>v2</small><span class="pull-right">NEEDS REVISION</span></h3>
+        <div class="message-header"><div class="from"><a href="/~alice">Alice</a> <a href="mailto:alice@example.test">&lt;alice@example.test&gt;</a></div><div class="date"><a id="cover-42" href="#cover-42">2025-02-03 04:05 UTC</a></div></div>
+      </div></div>
+      <div class="row">
+        <div class="col-md-8">
+          <pre class="message-body">Authored cover letter for the patchset.
+<span style="display:none">Hidden cover text.</span><span style="visibility:hidden"><span style="visibility:visible">Restored cover detail.</span></span></pre>
+          <div class="event-list tool-status">
+            <div class="event">Continuous integration passed.</div>
+            <div class="event" style="display:none">Hidden tool event.</div>
+            <div class="event" style="visibility:hidden"><span style="visibility:visible">Restored tool event.</span></div>
+          </div>
+          <div class="alert alert-info"><b>Notice</b>: This patchset supersedes an <a href="/~alice/project-list/patches/40">older revision</a> and has a <a href="/~alice/project-list/patches/44">newer revision</a>.</div>
+          <div class="message-header"><div class="from"><a href="/~bob">Bob</a></div><div class="date"><a href="#feedback-standalone">2025-02-04 05:06 UTC</a></div></div>
+          <pre class="message-body">Standalone review feedback.</pre>
+          <div class="message-header"><div class="from"><a href="/~duplicate">Duplicate</a></div><div class="date"><a href="#feedback-standalone">2025-02-04 05:07 UTC</a></div></div>
+          <pre class="message-body">Duplicate stable feedback must not render.</pre>
+          <div class="message-header"><div class="from"><a href="/~eve">Eve</a></div><div class="date">recently</div></div>
+          <pre class="message-body">Repeated idless feedback.</pre>
+          <div class="message-header"><div class="from"><a href="/~dana">Dana</a></div><div class="date"><a href="#feedback-missing">recently</a></div></div>
+          <pre class="message-body">Repeated dangling feedback.</pre>
+          <div class="message-header"><div class="from"><a href="/~dana">Dana</a></div><div class="date"><a href="#feedback-missing">recently</a></div></div>
+          <pre class="message-body">Repeated dangling feedback.</pre>
+          <div class="message-header"><div class="from"><a href="/~eve">Eve</a></div><div class="date">recently</div></div>
+          <pre class="message-body">Repeated idless feedback.</pre>
+          <div class="message-header" style="display:none"><div class="from">Hidden</div></div>
+          <pre class="message-body" style="display:none">Hidden standalone feedback.</pre>
+          <div class="message-header" style="visibility:hidden"><div class="from" style="visibility:visible"><a href="/~carol">Carol</a></div><div class="date" style="visibility:visible"><a href="#feedback-restored">2025-02-05 06:07 UTC</a></div></div>
+          <pre class="message-body" style="visibility:hidden"><span style="visibility:visible">Restored standalone feedback.</span></pre>
+        </div>
+        <div class="col-md-4"><div class="event-list">
+          <div class="event"><a class="btn" href="/~alice/project-list/patches/42/mbox">Export patchset (mbox)</a></div>
+          <div class="event"><a class="btn" href="mailto:~alice/project-list@lists.sr.ht?subject=Re">Reply to thread</a><a class="btn" href="/~alice/project-list/thread/message">View this thread in the archives</a></div>
+        </div></div>
+      </div>
+      <div class="row" style="margin-top: 5rem"><div class="col-md-12">
+        <h3>PATCH 1/3: Add parser <a class="btn" href="/~alice/project-list/patch-one/raw">Export this patch</a></h3>
+        <div class="message-header"><div class="from"><a href="/~alice">Alice</a></div><div class="date"><a id="patch-one" href="#patch-one">2025-02-03 04:06 UTC</a></div></div>
+        <pre class="message-body">Patch one body.
+diff --git a/parser.rb b/parser.rb
+<span style="display:none">Hidden patch body.</span><span style="visibility:hidden"><span style="visibility:visible">Restored patch line.</span></span></pre>
+        <blockquote class="feedback" id="feedback-standalone"><div class="message-header"><div class="from"><a href="/~bob">Bob</a></div><div class="date"><a href="#feedback-standalone">2025-02-04 05:06 UTC</a></div></div><pre class="message-body">Inline rendering of standalone feedback. <a href="/~alice/project-list/quoted/raw">Quoted raw URL.</a></pre></blockquote>
+        <blockquote class="feedback" id="feedback-restored"><pre class="message-body">Restored target.</pre></blockquote>
+        <h3>PATCH 2/3: Add tests <a class="btn" href="/~alice/project-list/patch/two/raw">Export this patch</a></h3>
+        <div class="message-header"><div class="from"><a href="/~alice">Alice</a></div><div class="date"><a id="patch-two" href="#patch-two">2025-02-03 04:07 UTC</a></div></div>
+        <pre class="message-body">Patch two body.</pre>
+        <h3>PATCH 3/3: Add docs <a class="btn" href="/~alice/project-list/patch-three/raw">Export this patch</a></h3>
+        <div class="message-header"><div class="from">Unregistered Author <a href="mailto:plain@example.test">&lt;plain@example.test&gt;</a></div><div class="date"><a id="patch-three" href="#patch-three">2025-02-03 04:08 UTC</a></div></div>
+        <pre class="message-body">Patch three body.</pre>
+        <!-- bulk-patches -->
+      </div></div>
+    </div>
+  </body>
+</html>

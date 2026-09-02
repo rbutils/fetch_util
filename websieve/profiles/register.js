@@ -37,6 +37,7 @@
   registerPagurePullRequestProfiles();
   registerPagureThreadProfiles();
   registerSourcehutTodoThreadProfiles();
+  registerSourcehutListsPatchsetProfiles();
   registerAzureDevopsPullRequestProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
