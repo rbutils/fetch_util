@@ -1,0 +1,99 @@
+{
+  "values": [
+    {
+      "pull_request": {
+        "type": "pullrequest",
+        "id": 42,
+        "title": "Preserve complete activity",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42" },
+          "html": { "href": "https://code.example.test/workspace/project/pull-requests/42" }
+        }
+      },
+      "approval": {
+        "date": "2026-08-01T10:00:00+00:00",
+        "user": {
+          "type": "user",
+          "display_name": "Approving User",
+          "uuid": "{11111111-2222-3333-4444-555555555555}",
+          "links": {
+            "html": { "href": "https://code.example.test/users/approver" },
+            "avatar": { "href": "javascript:unsafeAvatar()" }
+          }
+        },
+        "pullrequest": {
+          "type": "pullrequest",
+          "id": 42,
+          "links": {
+            "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42" },
+            "html": { "href": "https://code.example.test/workspace/project/pull-requests/42" }
+          }
+        }
+      }
+    },
+    {
+      "pull_request": {
+        "type": "pullrequest",
+        "id": 42,
+        "title": "Preserve complete activity",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42" },
+          "html": { "href": "https://code.example.test/workspace/project/pull-requests/42" }
+        }
+      },
+      "update": {
+        "state": "OPEN",
+        "title": "Preserve complete activity",
+        "description": "Protocol: preserve this update prose",
+        "date": "2026-08-01T10:01:00+00:00",
+        "author": {
+          "type": "user",
+          "display_name": "Updating User",
+          "links": { "html": { "href": "https://code.example.test/users/updater" } }
+        },
+        "metadata": {
+          "safe_url": "https://details.example.test/activity/42",
+          "safe_relative_url": "//public.example.test/activity/42",
+          "credential_relative_url": "//user:password@unsafe.example.test/activity/42",
+          "unsafe_url": "ftp://unsafe.example.test/activity/42",
+          "local_url": "file:///private/activity/42"
+        }
+      }
+    },
+    {
+      "pull_request": {
+        "type": "pullrequest",
+        "id": 42,
+        "title": "Preserve complete activity",
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42" },
+          "html": { "href": "https://code.example.test/workspace/project/pull-requests/42" }
+        }
+      },
+      "comment": {
+        "id": 99,
+        "type": "pullrequest_comment",
+        "created_on": "2026-08-01T10:02:00+00:00",
+        "updated_on": "2026-08-01T10:03:00+00:00",
+        "deleted": false,
+        "content": {
+          "type": "rendered",
+          "raw": "Complete review comment",
+          "markup": "markdown",
+          "html": "<p>Complete review comment</p>"
+        },
+        "user": {
+          "type": "user",
+          "display_name": "Commenting User",
+          "links": { "html": { "href": "https://code.example.test/users/commenter" } }
+        },
+        "links": {
+          "self": { "href": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42/comments/99" },
+          "html": { "href": "https://code.example.test/workspace/project/pull-requests/42/_/diff#comment-99" }
+        }
+      }
+    }
+  ],
+  "pagelen": 30,
+  "next": "https://api.code.example.test/2.0/repositories/workspace/project/pullrequests/42/activity?ctx=opaque%2Bcursor"
+}

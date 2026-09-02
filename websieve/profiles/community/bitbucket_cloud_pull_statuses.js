@@ -1,49 +1,12 @@
 function bitbucketCloudStatusRouteFromPath(pathname) {
-  var match = (pathname || "").match(
-    /^\/(?:(!api)\/)?2\.0\/repositories\/([^/]+)\/([^/]+)\/pullrequests\/(\d+)\/statuses\/?$/
-  );
-  if (!match) return null;
-
-  var workspace;
-  var repository;
-  try {
-    workspace = decodeURIComponent(match[2]);
-    repository = decodeURIComponent(match[3]);
-  } catch (_error) {
-    return null;
-  }
-  if (!workspace || !repository || /[\/?#]/.test(workspace) || /[\/?#]/.test(repository)) return null;
-
-  var apiPrefix = match[1] ? "/!api/2.0" : "/2.0";
-  var encodedWorkspace = match[2];
-  var encodedRepository = match[3];
-  var pullRequestPath = apiPrefix + "/repositories/" + encodedWorkspace + "/" + encodedRepository +
-    "/pullrequests/" + match[4];
-  return {
-    workspace: workspace,
-    repository: repository,
-    number: match[4],
-    community: workspace + "/" + repository,
-    pullRequestPath: pullRequestPath,
-    statusesPath: pullRequestPath + "/statuses"
-  };
+  var route = bitbucketCloudPullApiRouteFromPath(pathname, "statuses");
+  if (!route) return null;
+  route.statusesPath = route.resourcePath;
+  return route;
 }
 
 function bitbucketCloudPullStatusRoute() {
   return bitbucketCloudStatusRouteFromPath(location.pathname);
-}
-
-function bitbucketCloudStatusJsonPayload() {
-  if (!/^application\/json(?:$|;)/i.test(document.contentType || "")) return null;
-  var nodes = document.querySelectorAll("body > pre");
-  if (nodes.length !== 1) return null;
-
-  try {
-    var payload = JSON.parse(nodes[0].textContent || "");
-    return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : null;
-  } catch (_error) {
-    return null;
-  }
 }
 
 function bitbucketCloudStatusApiLinkMatches(value, route, suffix) {
@@ -136,7 +99,7 @@ function bitbucketCloudStatusInventory(route, payload, continuations) {
   if (continuations.next.url) entries.push({ label: "Next statuses API page", url: continuations.next.url });
 
   payload.values.forEach(function(record, index) {
-    var name = bitbucketCloudStatusInlineText(record.name) || bitbucketCloudStatusInlineText(record.key) || String(index + 1);
+    var name = bitbucketCloudInlineText(record.name) || bitbucketCloudInlineText(record.key) || String(index + 1);
     var resultUrl = bitbucketCloudSafeHttpUrl(record.url);
     var statusUrl = bitbucketCloudSafeHttpUrl(record.links && record.links.self && record.links.self.href);
     var commitUrl = bitbucketCloudSafeHttpUrl(record.commit && record.commit.links &&
@@ -148,13 +111,8 @@ function bitbucketCloudStatusInventory(route, payload, continuations) {
   return entries;
 }
 
-function bitbucketCloudStatusInlineText(value) {
-  if (typeof value !== "string" && typeof value !== "number") return "";
-  return normalizeText(String(value)).replace(/([\\`*_[\]<>])/g, "\\$1");
-}
-
 function bitbucketCloudStatusSections(record, index) {
-  var name = bitbucketCloudStatusInlineText(record.name) || bitbucketCloudStatusInlineText(record.key) ||
+  var name = bitbucketCloudInlineText(record.name) || bitbucketCloudInlineText(record.key) ||
     ("Status " + (index + 1));
   var sections = ["### Status " + (index + 1) + ": " + name];
   [
@@ -166,7 +124,7 @@ function bitbucketCloudStatusSections(record, index) {
     ["Created", record.created_on],
     ["Updated", record.updated_on]
   ].forEach(function(pair) {
-    var value = bitbucketCloudStatusInlineText(pair[1]);
+    var value = bitbucketCloudInlineText(pair[1]);
     if (value) sections.push("- " + pair[0] + ": " + value);
   });
   var safeRecord = bitbucketCloudSafeSupplementalValue(record);
@@ -176,7 +134,7 @@ function bitbucketCloudStatusSections(record, index) {
 
 function bitbucketCloudPullStatusesContent(metadata) {
   var route = bitbucketCloudPullStatusRoute();
-  var response = route && bitbucketCloudStatusResponse(bitbucketCloudStatusJsonPayload() || {}, route);
+  var response = route && bitbucketCloudStatusResponse(bitbucketCloudJsonObjectPayload() || {}, route);
   if (!response) return null;
   if (metadata) metadata.language = null;
 
@@ -193,7 +151,7 @@ function bitbucketCloudPullStatusesContent(metadata) {
   var title = "Bitbucket pull request " + route.number + " build statuses";
   var sections = [
     "# " + title,
-    "- Repository: " + route.community,
+    "- Repository: " + bitbucketCloudInlineText(route.community),
     "- Pull request: " + route.number,
     "- Statuses shown on this API page: " + payload.values.length,
     "- Page: " + payload.page,
@@ -224,7 +182,8 @@ function bitbucketCloudPullStatusesContent(metadata) {
   return {
     title: title,
     siteName: "Bitbucket",
-    excerpt: first ? normalizeText(first.state) + ": " + (normalizeText(first.name) || normalizeText(first.key)) :
+    excerpt: first ? bitbucketCloudInlineText(first.state) + ": " +
+      (bitbucketCloudInlineText(first.name) || bitbucketCloudInlineText(first.key)) :
       "No build statuses returned on this API page.",
     html: pre.outerHTML,
     markdown: markdown,

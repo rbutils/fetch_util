@@ -47,11 +47,11 @@ function bitbucketCloudSafeSupplementalValue(value, key) {
   }
   if (typeof value === "string") {
     var candidate = value.trim();
-    var scheme = candidate.match(/^([a-z][a-z0-9+.-]*):(?=\S)/i);
-    if (scheme) {
-      if (!/^https?$/i.test(scheme[1])) return null;
-      return bitbucketCloudSafeHttpUrl(candidate);
-    }
+    if (bitbucketCloudJsonUrlField(key)) return bitbucketCloudSafeHttpUrl(candidate);
+    var embeddedUrls = candidate.match(/(?:[a-z][a-z0-9+.-]*:)?\/\/[^\s<>\[\]()]+/gi) || [];
+    if (embeddedUrls.some(function(url) { return !bitbucketCloudSafeHttpUrl(url); })) return null;
+    if (/^\/\//.test(candidate)) return bitbucketCloudSafeHttpUrl(candidate);
+    if (/\b(?:javascript|data|vbscript|file|ftp|ftps|ssh|mailto|tel|sms|geo|magnet|irc|ircs):\S+/i.test(candidate)) return null;
   }
   return value;
 }

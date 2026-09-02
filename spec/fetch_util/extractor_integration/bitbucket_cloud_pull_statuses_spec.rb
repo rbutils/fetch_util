@@ -35,6 +35,7 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
       expect(markdown.scan(/^### Status 1:/).length).to eq(1)
       expect(markdown.scan(/^### Status 2:/).length).to eq(1)
       expect(payload.fetch('html')).not_to include('javascript:unsafeStatus()')
+      expect(payload.fetch('excerpt')).to eq('FAILED: Primary pipeline')
       expect(payload.fetch('warnings')).not_to include('bitbucket_cloud_statuses_incomplete')
     end
   end
@@ -115,6 +116,19 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
       markdown = result.fetch('markdown')
       expect(markdown).to include('### Status 1: \[Credential leak\]')
       expect(markdown).not_to include('### Status 1: [Credential leak](')
+      expect(result.fetch('excerpt')).not_to include('user:password@unsafe.example.test')
+    end
+  end
+
+  it 'preserves colon-delimited labels while rejecting embedded unsafe URI tokens' do
+    payload = JSON.parse(bitbucket_statuses_fixture)
+    payload.fetch('values')[0]['name'] = 'CI:nightly'
+    payload.fetch('values')[0]['description'] = 'Review //user:secret@evil.example/path'
+
+    extract_bitbucket_statuses(JSON.generate(payload)) do |result|
+      markdown = result.fetch('markdown')
+      expect(markdown).to include('CI:nightly')
+      expect(markdown).not_to include('user:secret')
     end
   end
 
@@ -124,11 +138,11 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
     end
     wrong_repository = JSON.parse(bitbucket_statuses_fixture).tap do |payload|
       payload['values'][0]['links']['self']['href'] =
-        "https://api.code.example.test/2.0/repositories/other/project/commit/#{'1' * 40}/statuses/build/build-42"
+        "https://api.code.example.test/2.0/repositories/other/project/commit/#{"1" * 40}/statuses/build/build-42"
     end
     wrong_commit = JSON.parse(bitbucket_statuses_fixture).tap do |payload|
       payload['values'][0]['links']['self']['href'] =
-        "https://api.code.example.test/2.0/repositories/workspace/project/commit/#{'f' * 40}/statuses/build/build-42"
+        "https://api.code.example.test/2.0/repositories/workspace/project/commit/#{"f" * 40}/statuses/build/build-42"
     end
 
     [javascript, wrong_repository, wrong_commit].each do |payload|
@@ -156,6 +170,21 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull statuses'
     extract_bitbucket_statuses(JSON.generate(proxy_payload)) do |result|
       expect(result.fetch('warnings')).to include('bitbucket_cloud_statuses_incomplete')
       expect(result.fetch('markdown')).not_to include('other-surface')
+    end
+  end
+
+  it 'escapes repository labels decoded from API route segments' do
+    encoded = '%5Brepositories%5D(javascript%3Aunsafe)'
+    payload = JSON.parse(bitbucket_statuses_fixture.gsub('workspace/project', "#{encoded}/project"))
+    payload.fetch('values').each do |record|
+      record.fetch('repository')['full_name'] = '[repositories](javascript:unsafe)/project'
+    end
+    url = "https://api.code.example.test/2.0/repositories/#{encoded}/project/pullrequests/42/statuses"
+
+    extract_bitbucket_statuses(JSON.generate(payload), url: url) do |result|
+      markdown = result.fetch('markdown')
+      expect(markdown).to include('Repository: \[repositories\]', 'unsafe URL removed')
+      expect(markdown).not_to include('javascript:unsafe')
     end
   end
 end

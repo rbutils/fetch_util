@@ -230,6 +230,8 @@ RSpec.describe "extract asset bundle" do
     gitea_entries_path = "profiles/community/gitea_family_thread_entries.js"
     gitea_thread_path = "profiles/community/gitea_family_threads.js"
     bitbucket_shared_path = "profiles/community/bitbucket_cloud_shared.js"
+    bitbucket_api_shared_path = "profiles/community/bitbucket_cloud_api_shared.js"
+    bitbucket_activity_path = "profiles/community/bitbucket_cloud_pull_activity.js"
     bitbucket_statuses_path = "profiles/community/bitbucket_cloud_pull_statuses.js"
     bitbucket_diff_files_path = "profiles/community/bitbucket_cloud_pull_diff_files.js"
     bitbucket_diffs_path = "profiles/community/bitbucket_cloud_pull_diffs.js"
@@ -282,6 +284,8 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, gitea_thread_path))).to include("function giteaFamilyThreadContent")
     expect(File.read(File.join(source_root, bitbucket_shared_path))).to include("function bitbucketCloudPullRequestRoute")
     expect(File.read(File.join(source_root, bitbucket_shared_path))).to include("function bitbucketCloudSafeSupplementalValue")
+    expect(File.read(File.join(source_root, bitbucket_api_shared_path))).to include("function bitbucketCloudPullApiRouteFromPath")
+    expect(File.read(File.join(source_root, bitbucket_activity_path))).to include("function bitbucketCloudPullActivityContent")
     expect(File.read(File.join(source_root, bitbucket_statuses_path))).to include("function bitbucketCloudPullStatusesContent")
     expect(File.read(File.join(source_root, bitbucket_diff_files_path))).to include("function bitbucketCloudDiffFileSections")
     expect(File.read(File.join(source_root, bitbucket_diffs_path))).to include("function bitbucketCloudPullDiffContent")
@@ -316,7 +320,9 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(gitea_resources_path)).to be < manifest.index(gitea_entries_path)
     expect(manifest.index(gitea_entries_path)).to be < manifest.index(gitea_thread_path)
     expect(manifest.index(gitea_thread_path)).to be < manifest.index(bitbucket_shared_path)
-    expect(manifest.index(bitbucket_shared_path)).to be < manifest.index(bitbucket_statuses_path)
+    expect(manifest.index(bitbucket_shared_path)).to be < manifest.index(bitbucket_api_shared_path)
+    expect(manifest.index(bitbucket_api_shared_path)).to be < manifest.index(bitbucket_activity_path)
+    expect(manifest.index(bitbucket_activity_path)).to be < manifest.index(bitbucket_statuses_path)
     expect(manifest.index(bitbucket_statuses_path)).to be < manifest.index(bitbucket_diff_files_path)
     expect(manifest.index(bitbucket_diff_files_path)).to be < manifest.index(bitbucket_diffs_path)
     expect(manifest.index(bitbucket_diffs_path)).to be < manifest.index(bitbucket_resources_path)
@@ -526,6 +532,7 @@ RSpec.describe "extract asset bundle" do
                           registerGitLabMergeRequestResourceProfiles
                           registerGiteaFamilyPullResourceProfiles
                           registerGiteaFamilyThreadProfiles
+                          registerBitbucketCloudPullActivityProfiles
                           registerBitbucketCloudPullStatusProfiles
                           registerBitbucketCloudPullResourceProfiles
                           registerBitbucketCloudThreadProfiles
