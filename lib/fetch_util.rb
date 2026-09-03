@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "addressable/uri"
+require "public_suffix"
 require "uri"
 
 require_relative "fetch_util/version"

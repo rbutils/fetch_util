@@ -59,5 +59,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'ferrum', '~> 0.17'
   spec.add_dependency 'nokogiri', '~> 1.19'
+  spec.add_dependency 'public_suffix', '>= 5.0', '< 8.0'
   spec.add_dependency 'thor', '~> 1.3'
 end

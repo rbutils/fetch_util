@@ -70,7 +70,6 @@ module FetchUtil
       tag tags topic topics wholesale
     ].freeze
     CONTENT_ROUTE_SEGMENTS = %w[article articles content paper papers preprint preprints].freeze
-    SECOND_LEVEL_COUNTRY_TLDS = /\A(co|com|org|net|gov|edu|ac)\z/
     GOOGLE_HOST_PATTERN = /\Agoogle\.[a-z.]+\z/
     NETWORK_ERROR_PATTERN = Regexp.new(
       "\\b(?:net::ERR_|ERR_NAME_NOT_RESOLVED|pending connections|DNS|resolve|resolution|ENOTFOUND|" \
@@ -992,15 +991,8 @@ module FetchUtil
 
     def effective_domain(url)
       host = FetchUtil.strip_www_host(url)
-      parts = host.split(".")
-      return host if parts.length <= 2
-
-      if parts.length >= 3 && parts[-2].match?(SECOND_LEVEL_COUNTRY_TLDS) && parts[-1].length == 2
-        parts.last(3).join(".")
-      else
-        parts.last(2).join(".")
-      end
-    rescue URI::InvalidURIError
+      PublicSuffix.domain(host, default_rule: nil) || host
+    rescue URI::InvalidURIError, PublicSuffix::Error
       nil
     end
 

@@ -378,6 +378,60 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('cross_domain_redirect')
   end
 
+  it 'flags redirects between sibling private-suffix tenants' do
+    final_page = page_at('https://evil.github.io/article')
+    stub_browser_extraction(
+      'https://victim.github.io/article',
+      page: final_page,
+      payload: payload_with(warnings: [])
+    )
+
+    result = fetch_with_dependencies('https://victim.github.io/article')
+
+    expect(result.warnings).to include('cross_domain_redirect')
+  end
+
+  it 'does not flag subdomain redirects within one private-suffix tenant' do
+    final_page = page_at('https://docs.victim.github.io/article')
+    stub_browser_extraction(
+      'https://victim.github.io/article',
+      page: final_page,
+      payload: payload_with(warnings: [])
+    )
+
+    result = fetch_with_dependencies('https://victim.github.io/article')
+
+    expect(result.warnings).not_to include('cross_domain_redirect')
+  end
+
+  it 'flags redirects between blogspot tenants' do
+    final_page = page_at('https://other.blogspot.com/article')
+    stub_browser_extraction(
+      'https://writer.blogspot.com/article',
+      page: final_page,
+      payload: payload_with(warnings: [])
+    )
+
+    result = fetch_with_dependencies('https://writer.blogspot.com/article')
+
+    expect(result.warnings).to include('cross_domain_redirect')
+  end
+
+  it 'preserves same-host IP and localhost redirect identity' do
+    ip_page = page_at('http://127.0.0.1/new')
+    localhost_page = page_at('http://localhost/new')
+    allow(browser).to receive(:with_page).with('http://127.0.0.1/old').and_yield(ip_page)
+    allow(browser).to receive(:with_page).with('http://localhost/old').and_yield(localhost_page)
+    allow(extractor).to receive(:extract).with(ip_page).and_return(payload_with(warnings: []))
+    allow(extractor).to receive(:extract).with(localhost_page).and_return(payload_with(warnings: []))
+
+    ip_result = fetch_with_dependencies('http://127.0.0.1/old')
+    localhost_result = fetch_with_dependencies('http://localhost/old')
+
+    expect(ip_result.warnings).not_to include('cross_domain_redirect')
+    expect(localhost_result.warnings).not_to include('cross_domain_redirect')
+  end
+
   it 'flags aggregator_redirect_url for news.google.com URLs' do
     google_news_page = page_at('https://www.reuters.com/world/europe/article-123')
     google_news_payload = payload_with(warnings: [])
