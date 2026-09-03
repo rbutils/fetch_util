@@ -298,6 +298,38 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'keeps sibling figure records local during anchor fallback' do
+    figures = (1..6).map do |index|
+      <<~HTML
+        <figure>
+          <a href="/media/#{index}"><img src="/media/#{index}.jpg" alt=""><h3>FID:figure-record-#{index}</h3></a>
+          <figcaption>FID:figure-summary-#{index}</figcaption>
+        </figure>
+      HTML
+    end.join
+    labels = (1..6).map { |index| %(<section><h2>FID:collection-label-#{index}</h2></section>) }.join
+    html = <<~HTML
+      <main>
+        <h1>FID:fallback-records</h1>
+        #{labels}
+        <article class="media-grid">#{figures}</article>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/archive', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      lines = result['markdown'].lines.grep(/^- \[/)
+
+      expect(result['contentType']).to eq('list')
+      expect(lines.length).to eq(6)
+      (1..6).each do |index|
+        figure_line = lines.find { |line| line.include?("FID:figure-record-#{index}") }
+        expect(figure_line).to include("FID:figure-summary-#{index}")
+        expect(figure_line).not_to include("FID:figure-summary-#{index == 6 ? 5 : index + 1}")
+      end
+    end
+  end
+
   it 'keeps list metadata within an outer card instead of inheriting nested-card context' do
     with_url_page('https://fidelity.test/', fixture('fidelity_card_metadata_ownership')) do |page|
       result = extract_payload(page)

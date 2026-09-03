@@ -113,7 +113,7 @@
         return (tableRow || text.length >= minimumListTitleLength(text)) && text.length <= 220;
       });
       anchors.forEach(function(link) {
-        var container = link.closest("tr, li, article, section, div") || link.parentElement;
+        var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;
         pushLink(link, container);
       });
     }
