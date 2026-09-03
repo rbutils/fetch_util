@@ -27,8 +27,9 @@
   function statuspageVisible(node) {
     if (!node) return false;
     if (node.hidden || node.getAttribute("aria-hidden") === "true") return false;
+    if (elementSubtreeHidden(node)) return false;
     var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
-    return !(style && (style.display === "none" || style.visibility === "hidden" || style.opacity === "0"));
+    return !(style && (style.visibility === "hidden" || style.visibility === "collapse"));
   }
 
   function statuspageComponents() {

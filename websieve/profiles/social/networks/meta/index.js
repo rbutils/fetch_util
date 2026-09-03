@@ -10,10 +10,10 @@
 
   function visibleMetaSocialRoot(selectors) {
     var root = document.querySelector(selectors);
-    if (!root) return null;
+    if (!root || elementSubtreeHidden(root)) return null;
 
     var rect = root.getBoundingClientRect();
     var style = window.getComputedStyle(root);
-    if (rect.width <= 0 || rect.height <= 0 || style.display === "none" || style.visibility === "hidden") return null;
+    if (rect.width <= 0 || rect.height <= 0 || style.visibility === "hidden" || style.visibility === "collapse") return null;
     return root;
   }

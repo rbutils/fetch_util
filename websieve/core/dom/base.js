@@ -61,7 +61,7 @@
     while (current && current.nodeType === 1) {
       var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
       if (current.hidden) return true;
-      if (style && style.display === "none") return true;
+      if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0))) return true;
       current = current.parentElement;
     }
     return false;

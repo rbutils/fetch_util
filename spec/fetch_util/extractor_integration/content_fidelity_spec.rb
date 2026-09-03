@@ -533,6 +533,54 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
+  it 'excludes exactly transparent list records while keeping visible records' do
+    ordinary = (1..8).map do |number|
+      <<~HTML
+        <article>
+          <h2><a href="/opacity-#{number}">FID:opacity-record-#{number} with sufficient title</a></h2>
+          <p>FID:opacity-record-#{number}-summary remains visible.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <main>
+        <h1>FID:opacity-list</h1>
+        <section class="records">
+          <article style="opacity: 0">
+            <h2><a href="/opacity-hidden">FID:opacity-hidden with sufficient title</a></h2>
+            <p>FID:opacity-hidden-summary must not materialize.</p>
+          </article>
+          <div style="opacity: 0">
+            <article>
+              <h2><a href="/opacity-ancestor-hidden">FID:opacity-ancestor-hidden with sufficient title</a></h2>
+              <p>FID:opacity-ancestor-hidden-summary must not materialize.</p>
+            </article>
+          </div>
+          <article style="opacity: 0.01">
+            <h2><a href="/opacity-low">FID:opacity-low with sufficient title</a></h2>
+            <p>FID:opacity-low-summary remains visible.</p>
+          </article>
+          <article style="visibility: hidden">
+            <div style="visibility: visible">
+              <h2><a href="/visibility-restored">FID:visibility-restored with sufficient title</a></h2>
+              <p>FID:visibility-restored-summary remains visible.</p>
+            </div>
+          </article>
+          #{ordinary}
+        </section>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/opacity', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+
+      expect(result['contentType']).to eq('list')
+      expect(result['markdown']).not_to include('FID:opacity-hidden', 'FID:opacity-ancestor-hidden')
+      expect(result['markdown']).to include('FID:opacity-low', 'FID:visibility-restored')
+      expect(result['markdown'].scan(/^- \[/).length).to eq(10)
+    end
+  end
+
   it 'does not section-extract a long article with many paragraphs' do
     paragraphs = Array.new(8) { |index| "<p>FID:article-paragraph-#{index} #{"substantive article text " * 12}</p>" }.join
     html = <<~HTML

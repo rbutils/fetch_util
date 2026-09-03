@@ -162,6 +162,11 @@ RSpec.describe 'FetchUtil extractor integration' do
                 <div class="component-container border-color" style="display: none;">
                   <div data-component-status="operational"><span class="name">Visit www.example-status.com</span></div>
                 </div>
+                <div style="opacity: 0">
+                  <div class="component-container border-color">
+                    <div data-component-status="operational"><span class="name">Invisible billing service</span></div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="incidents-list">
@@ -192,6 +197,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("## Recent Incidents")
       expect(payload["markdown"]).to include("Webhook delivery delays")
       expect(payload["markdown"]).to include("Resolved - The backlog has cleared. - Jul 4, 13:24 UTC")
+      expect(payload["markdown"]).not_to include("Invisible billing service")
       expect(payload["warnings"]).not_to include("homepage_index_page")
     end
   end

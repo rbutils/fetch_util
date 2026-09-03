@@ -114,6 +114,24 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'does not type a Facebook profile inside a transparent subtree' do
+    html = <<~HTML
+      <html><head><title>Example Page | Facebook</title></head><body>
+        <div style="opacity: 0"><main role="main">
+          <div>Page · Community</div><div>12K followers</div><div>Intro</div>
+          <p>Invisible public updates for the local community, events, and workshops.</p>
+        </main></div>
+      </body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/example-page/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['contentType']).not_to eq('social')
+      expect_empty_social_fields(payload)
+    end
+  end
+
   it 'keeps a Facebook login shell as an interstitial' do
     html = <<~HTML
       <html><head><title>Facebook - Log In</title><meta name="description" content="Log in to Facebook"></head><body><main><h1>Log in to Facebook</h1><p>Create new account</p></main></body></html>

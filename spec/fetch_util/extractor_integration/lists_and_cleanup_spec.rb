@@ -631,8 +631,9 @@ RSpec.describe 'FetchUtil extractor integration' do
   it "keeps logical columns after hidden rowspan rows are pruned" do
     rows = 6.times.map do |index|
       number = index + 1
+      hidden_style = number.odd? ? "display: none" : "opacity: 0"
       <<~ROWS
-        <tr style="display: none">
+        <tr style="#{hidden_style}">
           <td rowspan="2">Hidden batch #{number}</td>
           <td>helper package #{number}</td>
           <td>helper state</td>
