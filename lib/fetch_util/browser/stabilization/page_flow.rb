@@ -133,7 +133,7 @@ module FetchUtil
             now = monotonic_now
             if page.network.idle?
               idle_since ||= now
-              (now - idle_since) >= @idle_duration
+              now >= idle_since + @idle_duration
             else
               idle_since = nil
               false
