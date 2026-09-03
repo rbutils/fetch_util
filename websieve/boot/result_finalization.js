@@ -139,7 +139,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (content.contentType === "interstitial") clearSocialFields(content);
   var socialFields = content.contentType === "social" ? content : {};
 
-  return {
+  var result = {
     title: primaryTitle || normalizeText(metadata.title),
     byline: byline,
     excerpt: content.excerpt || metadata.excerpt,
@@ -179,7 +179,11 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     contentCompletenessRatio: completenessRatio,
     contentFormat: contentFormat,
     paywallState: paywallState,
-    textContent: content.textContent,
-    url: location.href
+    textContent: credentialFreeHttpText(content.textContent),
+    url: credentialFreeHttpUrl(location.href)
   };
+  Object.keys(result).forEach(function(key) {
+    if (key !== "markdown" && key !== "html") result[key] = credentialFreeHttpValue(result[key]);
+  });
+  return result;
 }

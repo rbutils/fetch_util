@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil public URL materialization' do
   include_context 'extractor integration helpers'
 
-  def profile_payload(markdown:, html: '<p>Visible profile content</p>')
+  def profile_payload(markdown:, html: '<p>Visible profile content</p>', text_content: 'Visible profile content', overrides: {})
     page_html = '<html><head><title>URL materialization</title></head><body><main>Visible page content</main></body></html>'
 
     with_url_page('https://materialization.example/result', page_html) do |page|
@@ -11,14 +11,14 @@ RSpec.describe 'FetchUtil public URL materialization' do
       return page.evaluate(<<~JS)
         (function () {
           window.registerHostAwareProfile(/materialization\.example$/, function () {
-            return {
+            return Object.assign({
               contentType: "article",
               markdown: #{JSON.generate(markdown)},
               html: #{JSON.generate(html)},
-              textContent: "Visible profile content",
+              textContent: #{JSON.generate(text_content)},
               readerMode: false,
               siteName: "Materialization Probe"
-            };
+            }, #{JSON.generate(overrides)});
           });
           return window.FetchUtilExtract.extract({ reader_mode: false });
         })()
@@ -50,6 +50,55 @@ RSpec.describe 'FetchUtil public URL materialization' do
     expect(output).not_to include('javascript:unsafeLabel', 'javascript:unsafeRaw', 'onclick=')
   end
 
+  it 'removes credential-bearing HTTP destinations while preserving visible labels' do
+    markdown = <<~'MARKDOWN'
+      [Credential link](https://reader:secret@public.example.test/private)
+      <https://reader:secret@public.example.test/autolink>
+      Bare https://reader:sec'ret@public.example.test/bare reference
+      Adjacent https://reader:secret@public.example.test/adjacent,https://writer:token@public.example.test/malformed
+      <a href="https://reader:secret@public.example.test/raw">Raw credential link</a>
+    MARKDOWN
+    html = <<~'HTML'
+      <section>
+        <a href="https://reader:secret@public.example.test/html">HTML credential link</a>
+        <img src="https://reader:secret@public.example.test/image.png" alt="Credential image">
+        <p>Visible https://reader:secret@public.example.test/html-text reference</p>
+        <pre>Literal https://reader:secret@public.example.test/html-code</pre>
+      </section>
+    HTML
+
+    payload = profile_payload(
+      markdown: markdown,
+      html: html,
+      text_content: 'Visible https://reader:secret@public.example.test/text reference',
+      overrides: {
+        title: 'Read https://reader:secret@public.example.test/title',
+        excerpt: 'Summary https://reader:secret@public.example.test/excerpt',
+        language: 'https://reader:secret@public.example.test/language',
+        ingredients: ['https://reader:secret@public.example.test/ingredient']
+      }
+    )
+
+    expect(payload['markdown']).to include(
+      'Credential link', 'Raw credential link', 'https&#58;//public.example.test/autolink',
+      "https://public.example.test/bare", 'https://public.example.test/adjacent',
+      'https://public.example.test/malformed'
+    )
+    expect(payload['html']).to include(
+      'HTML credential link', 'Credential image', 'https://public.example.test/html-text',
+      'https://reader:secret@public.example.test/html-code'
+    )
+    expect(payload['textContent']).to include('https://public.example.test/text')
+    expect(payload.values_at('title', 'excerpt').join).to include(
+      'https://public.example.test/title', 'https://public.example.test/excerpt'
+    )
+    expect(payload['language']).to eq('https://public.example.test/language')
+    expect(payload['ingredients']).to eq(['https://public.example.test/ingredient'])
+    expect(payload.reject { |key, _value| key == 'html' }.values.join).not_to include(
+      'reader', 'secret', "sec'ret", 'writer', 'token', 'public.example.test/private'
+    )
+  end
+
   it 'preserves destinations inside CommonMark code and closed raw blocks' do
     markdown = <<~'MARKDOWN'
       <pre>
@@ -66,7 +115,10 @@ RSpec.describe 'FetchUtil public URL materialization' do
 
       - > ~~~~lang`name
         > [Fenced code](javascript:fencedCode())
+        > https://reader:secret@public.example.test/fenced
         > ~~~~
+
+      `https://reader:secret@public.example.test/inline-code`
 
       [Active action](javascript:active())
     MARKDOWN
@@ -79,7 +131,9 @@ RSpec.describe 'FetchUtil public URL materialization' do
       '      [List code](javascript:listCode())',
       '- > ~~~~lang`name',
       '> [Fenced code](javascript:fencedCode())',
+      '> https://reader:secret@public.example.test/fenced',
       "  > ~~~~\n",
+      '`https://reader:secret@public.example.test/inline-code`',
       'Active action'
     )
     expect(output).not_to include('[Active action](', 'javascript:active')
@@ -297,6 +351,7 @@ RSpec.describe 'FetchUtil public URL materialization' do
   it 'uses the first safe canonical link in document order' do
     html = <<~HTML
       <html><head><title>Canonical fallback</title>
+        <link rel="canonical" href="https://reader:secret@materialization.example/private-canonical">
         <link rel="canonical" href="javascript:unsafeCanonical()">
         <link rel="canonical" href="/safe-canonical">
       </head><body><main><p>Visible canonical content with enough detail for extraction.</p></main></body></html>

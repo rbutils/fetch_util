@@ -31,6 +31,7 @@ RSpec.describe 'FetchUtil extractor integration' do
               <tr class="athing"><td><a href="javascript:secondRepeatedAction()">Repeated action story</a><span>Second action context</span></td></tr>
               <tr class="athing"><td><a href="mailto:news@example.test">Email action story</a></td></tr>
               <tr class="athing"><td><a href="ftp://files.example.test/story">FTP download action story</a></td></tr>
+              <tr class="athing"><td><a href="https://reader:secret@example.com/private-story">Credential action story</a></td></tr>
             </table>
           </main>
         </body>
@@ -43,12 +44,12 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload["readerMode"]).to eq(false)
       expect(payload["markdown"]).to include("- [First story about Ruby agents](https://example.com/a)")
-      expect(payload["markdown"]).to include("- Script action story", "- Email action story", "- FTP download action story")
+      expect(payload["markdown"]).to include("- Script action story", "- Email action story", "- FTP download action story", "- Credential action story")
       expect(payload["markdown"].scan(/Repeated action story/).length).to eq(2)
       expect(payload["markdown"]).to include("First action context", "Second action context")
-      expect(payload["markdown"]).not_to include("javascript:", "mailto:", "ftp:")
+      expect(payload["markdown"]).not_to include("javascript:", "mailto:", "ftp:", "reader:secret@")
       expect(payload["html"]).to include("Script action story", "Email action story", "FTP download action story")
-      expect(payload["html"]).not_to include("javascript:", "mailto:", "ftp:")
+      expect(payload["html"]).not_to include("javascript:", "mailto:", "ftp:", "reader:secret@")
       expect(payload["markdown"]).not_to include("<table")
     end
   end

@@ -5,6 +5,14 @@
     root.querySelectorAll("template").forEach(function(el) {
       materializeHttpAttributes(el.content, retainUnsafeLinks);
     });
+    var textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    var textNodes = [];
+    while (textWalker.nextNode()) textNodes.push(textWalker.currentNode);
+    textNodes.forEach(function(node) {
+      var parent = node.parentElement;
+      if (parent && parent.closest("pre, code, kbd, samp")) return;
+      node.data = credentialFreeHttpText(node.data);
+    });
     root.querySelectorAll("[href]").forEach(function(el) {
       var href = materializedHttpUrl(el.getAttribute("href"));
       if (href) el.setAttribute("href", href);

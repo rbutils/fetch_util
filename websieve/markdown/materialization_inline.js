@@ -160,8 +160,31 @@ function markdownAutolinkAt(markdown, position) {
   var email = /^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(value);
   if (!uri && !email) return null;
   var url = uri ? materializedHttpUrl(value) : null;
-  var visible = value.replace(/:/g, "&#58;").replace(/@/g, "&#64;");
+  var visibleValue = value;
+  if (uri && !url) {
+    try {
+      var parsed = new URL(value);
+      if ((parsed.protocol === "http:" || parsed.protocol === "https:") && (parsed.username || parsed.password)) {
+        parsed.username = "";
+        parsed.password = "";
+        visibleValue = parsed.href;
+      }
+    } catch (_error) {
+      // Preserve malformed literal text.
+    }
+  }
+  var visible = visibleValue.replace(/:/g, "&#58;").replace(/@/g, "&#64;");
   return { value: url ? "<" + url + ">" : visible, end: end + 1 };
+}
+
+function markdownCredentialUrlAt(markdown, position) {
+  if (markdownEscaped(markdown, position)) return null;
+  var candidate = markdown.slice(position).match(/^https?:\/\/[^\s<>]+/i);
+  if (!candidate) return null;
+
+  var visible = credentialFreeHttpText(candidate[0]);
+  if (visible === candidate[0]) return null;
+  return { value: visible, end: position + candidate[0].length };
 }
 
 function markdownDelimiterEnd(value, start, opening, closing) {

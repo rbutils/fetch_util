@@ -33,10 +33,41 @@ function materializedHttpUrl(value) {
   try {
     var parsed = new URL(url);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (parsed.username || parsed.password) return null;
     return parsed.href.replace(/\(/g, "%28").replace(/\)/g, "%29");
   } catch (_error) {
     return null;
   }
+}
+
+function credentialFreeHttpUrl(value) {
+  var url = absoluteUrl(value);
+  if (!url) return null;
+
+  try {
+    var parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    parsed.username = "";
+    parsed.password = "";
+    return parsed.href.replace(/\(/g, "%28").replace(/\)/g, "%29");
+  } catch (_error) {
+    return null;
+  }
+}
+
+function credentialFreeHttpText(value) {
+  return String(value || "").replace(/(https?:[\\/]{2})[^\\/\s?#@]+@/gi, "$1");
+}
+
+function credentialFreeHttpValue(value) {
+  if (typeof value === "string") return credentialFreeHttpText(value);
+  if (Array.isArray(value)) return value.map(credentialFreeHttpValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.keys(value).reduce(function(result, key) {
+    result[key] = credentialFreeHttpValue(value[key]);
+    return result;
+  }, {});
 }
 
 function materializedCanonicalUrl() {

@@ -15,6 +15,10 @@ module FetchUtil
 
     BLOCK_ELEMENTS = %w[h1 h2 h3 h4 h5 h6 p pre ul ol li table tr].freeze
     BLOCK_SELECTOR = BLOCK_ELEMENTS.join(", ").freeze
+    URL_ATTRIBUTES = %w[action background cite classid codebase data data-lazy data-lazy-src data-original data-src formaction
+                        href itemid longdesc manifest poster profile src usemap xlink:href].freeze
+    SRCSET_ATTRIBUTES = %w[imagesrcset srcset].freeze
+    DROP_ATTRIBUTES = %w[archive ping srcdoc style].freeze
     DROP_SELECTORS = [
       "script",
       "style",
@@ -69,21 +73,22 @@ module FetchUtil
       return nil unless root
 
       prune!(root)
+      prune_credential_urls!(root, final_url)
       title = [fragment_title(document, final_url), first_heading(root), meta_title(document), document.title]
               .map { |candidate| clean_text(candidate) }
               .find { |candidate| !candidate.empty? }
       markdown = markdown_from_root(root, title)
       return nil if clean_text(markdown).length < 40
 
-      language = document.at_css("html")&.[]("lang").to_s.strip
-      language = nil if language.empty?
+      language = clean_optional_text(document.at_css("html")&.[]("lang"))
 
       {
         "title" => title,
-        "byline" => meta_value(document, "author"),
+        "byline" => clean_optional_text(meta_value(document, "author")),
         "excerpt" => first_paragraph(root),
-        "siteName" => meta_value(document, "og:site_name", attr: "property") || safe_host(final_url),
-        "publishedTime" => meta_value(document, "article:published_time", attr: "property") || meta_value(document, "publish-date"),
+        "siteName" => clean_optional_text(meta_value(document, "og:site_name", attr: "property")) || safe_host(final_url),
+        "publishedTime" => clean_optional_text(meta_value(document, "article:published_time", attr: "property") ||
+                                                meta_value(document, "publish-date")),
         "canonicalUrl" => canonical_url(document, final_url),
         "language" => language,
         "html" => root.to_html,
@@ -103,19 +108,58 @@ module FetchUtil
 
     def canonical_url(document, final_url)
       fallback_url = http_url(strip_fragment(final_url))
-      href = document.at_css('link[rel="canonical"]')&.[]("href")
-      return fallback_url unless href && !href.empty?
+      document.css('link[rel="canonical"]').each do |node|
+        href = node["href"]
+        next unless href && !href.empty?
 
-      http_url(URI.join(final_url, href).to_s) || fallback_url
-    rescue URI::InvalidURIError
+        url = http_url(URI.join(final_url, href).to_s)
+        return url if url
+      rescue URI::InvalidURIError
+        next
+      end
       fallback_url
     end
 
     def http_url(value)
       uri = URI.parse(value.to_s)
-      uri.to_s if uri.is_a?(URI::HTTP) && !uri.host.to_s.empty?
+      uri.to_s if uri.is_a?(URI::HTTP) && !uri.host.to_s.empty? && uri.userinfo.nil?
     rescue URI::InvalidURIError
       nil
+    end
+
+    def prune_credential_urls!(root, base_url)
+      ([root] + root.css("*").to_a).each do |node|
+        DROP_ATTRIBUTES.each { |attribute| node.remove_attribute(attribute) }
+        URL_ATTRIBUTES.each do |attribute|
+          value = node[attribute]
+          next unless value
+
+          node.remove_attribute(attribute) if credential_url?(value, base_url)
+        end
+        SRCSET_ATTRIBUTES.each do |attribute|
+          value = node[attribute]
+          next unless value
+
+          entries = value.split(",").map(&:strip).reject do |entry|
+            reference = entry.split(/\s+/, 2).first
+            credential_url?(reference, base_url)
+          end
+          entries.empty? ? node.remove_attribute(attribute) : node[attribute] = entries.join(", ")
+        end
+      end
+      root.xpath(".//text() | self::text()").each do |node|
+        sanitized = credential_free_text(node.text)
+        node.content = sanitized unless sanitized == node.text
+      end
+    end
+
+    def credential_url?(value, base_url)
+      return true if value.to_s.match?(%r{\A\s*(?:https?:)?[\\/]{2}[^\\/\s?#@]+@}i)
+
+      uri = URI.join(base_url, value.to_s)
+      uri.is_a?(URI::HTTP) && !uri.userinfo.nil?
+    rescue URI::InvalidURIError
+      false
     end
 
     def fragment_id(url)
@@ -259,7 +303,15 @@ module FetchUtil
     end
 
     def clean_text(text)
-      FetchUtil.normalize_whitespace(text)
+      FetchUtil.normalize_whitespace(credential_free_text(text))
+    end
+
+    def clean_optional_text(text)
+      clean_text(text) if text
+    end
+
+    def credential_free_text(text)
+      text.to_s.gsub(%r{(https?:[\\/]{2})[^\\/\s?#@]+@}i, "\\1")
     end
 
     def strip_fragment(url)

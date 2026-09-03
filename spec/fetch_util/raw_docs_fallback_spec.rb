@@ -158,6 +158,51 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["canonicalUrl"]).to eq("https://docs.example.test/guide")
   end
 
+  it "removes credentials from raw documentation output" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Credential boundary</title>
+          <link rel="canonical" href="https://reader:secret@docs.example.test/private" />
+          <link rel="canonical" href="/safe-canonical" />
+          <meta name="author" content="https://reader:sec'ret@docs.example.test/author" />
+          <meta property="og:site_name" content="https://reader:secret@docs.example.test/site" />
+          <meta property="article:published_time" content="https://reader:secret@docs.example.test/time" />
+        </head>
+        <body>
+          <main href="https://reader:secret@assets.example.test/root">
+            <h1>Credential boundary</h1>
+            <p>Read https://reader:secret@assets.example.test/reference for complete documentation details.</p>
+            <a href="https://reader:secret@assets.example.test/archive">Visible archive label</a>
+            <img srcset="https://reader:secret@assets.example.test/one.png 1x, /two.png 2x" alt="Visible diagram">
+            <link imagesrcset="https://reader:secret@assets.example.test/three.png 1x" title="Visible preload">
+            <img data-lazy-src="https://reader:secret@assets.example.test/lazy.png" alt="Visible lazy image">
+            <object data="https://reader:secret@assets.example.test/object"><span>Visible object</span></object>
+            <div background="https://reader:secret@assets.example.test/background" style="background: url(https://reader:secret@assets.example.test/style)">Visible panel</div>
+            <iframe srcdoc="&lt;a href='https://reader:secret@assets.example.test/frame'&gt;Frame&lt;/a&gt;"></iframe>
+            <svg><a xlink:href="https://reader:secret@assets.example.test/vector"><text>Visible vector</text></a></svg>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(
+      html,
+      requested_url: "https://docs.example.test/guide#section"
+    )
+
+    expect(payload["canonicalUrl"]).to eq("https://docs.example.test/safe-canonical")
+    expect(payload["markdown"]).to include("https://assets.example.test/reference")
+    expect(payload["html"]).to include(
+      "Visible archive label", "Visible diagram", "Visible preload", "Visible lazy image", "Visible object", "Visible panel",
+      "Visible vector", "/two.png 2x"
+    )
+    expect(payload.values_at("byline", "siteName", "publishedTime")).to eq(
+      ["https://docs.example.test/author", "https://docs.example.test/site", "https://docs.example.test/time"]
+    )
+    expect(payload.values.join).not_to include("reader", "secret", "sec'ret", "assets.example.test/archive")
+  end
+
   it "extracts named-anchor directive sections from raw html" do
     html = <<~HTML
       <html>

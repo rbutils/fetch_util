@@ -80,6 +80,13 @@ function materializedMarkdown(markdown) {
       continue;
     }
 
+    var credentialUrl = markdownCredentialUrlAt(input, position);
+    if (credentialUrl) {
+      output += credentialUrl.value;
+      position = credentialUrl.end;
+      continue;
+    }
+
     output += input[position];
     position += 1;
   }
