@@ -307,7 +307,8 @@ module FetchUtil
     end
 
     def clean_optional_text(text)
-      clean_text(text) if text
+      value = clean_text(text)
+      value unless value.empty?
     end
 
     def credential_free_text(text)
