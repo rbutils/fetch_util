@@ -15,10 +15,11 @@ module FetchUtil
 
         private
 
-        def stabilize_gitea_family_thread(page)
+        def stabilize_gitea_family_thread(page, deadline: stabilization_deadline)
           stabilize_gitea_family_state(
             page,
-            gitea_family_thread_product_state_script + gitea_family_thread_timeline_state_script
+            gitea_family_thread_product_state_script + gitea_family_thread_timeline_state_script,
+            deadline: deadline
           )
         end
       end

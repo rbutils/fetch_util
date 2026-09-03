@@ -22,17 +22,18 @@ module FetchUtil
 
         private
 
-        def stabilize_reddit(page)
-          retry_until_timeout(capped_timeout(3.0), interval: 0.1) do
+        def stabilize_reddit(page, deadline: stabilization_deadline)
+          ready = retry_until_timeout(capped_timeout(3.0, deadline: deadline), interval: 0.1, deadline: deadline) do
             dismiss_reddit_cookie_dialog(page)
             reddit_content_ready?(page)
           end
 
-          settle_after_stabilization(0.25)
-          dismiss_reddit_cookie_dialog(page)
+          settle_after_stabilization(0.25, deadline: deadline)
+          dismiss_reddit_cookie_dialog(page) if stabilization_time_remaining?(deadline)
+          ready
         end
 
-        def stabilize_ebay_search(page)
+        def stabilize_ebay_search(page, deadline: stabilization_deadline)
           accepted_cookies = false
           cookie_config = consent_config(
             accept_labels: [
@@ -46,7 +47,7 @@ module FetchUtil
             ]
           )
 
-          retry_until_timeout(capped_timeout(6.0), interval: 0.15) do
+          retry_until_timeout(capped_timeout(6.0, deadline: deadline), interval: 0.15, deadline: deadline) do
             accepted_cookies ||= click_visible_button_by_text(
               page,
               consent_accept_labels(cookie_config),
@@ -66,7 +67,7 @@ module FetchUtil
             state["itemCount"].to_i >= 4 || (state["challengeVisible"] ? 0.35 : false)
           end
 
-          settle_after_stabilization(0.25) if accepted_cookies
+          settle_after_stabilization(0.25, deadline: deadline) if accepted_cookies
         end
 
         def reddit_content_ready?(page)

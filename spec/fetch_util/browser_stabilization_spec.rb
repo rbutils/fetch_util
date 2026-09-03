@@ -14,13 +14,17 @@ RSpec.describe FetchUtil::Browser do
     allow(network).to receive(:idle?).and_return(true)
     allow(network).to receive(:wait_for_idle)
     allow(browser).to receive(:safe_evaluate).and_return({})
-    allow(browser).to receive(:wait_for_idle_or_content).with(page).and_return(true)
+    allow(browser).to receive(:wait_for_idle_or_content).with(page, deadline: kind_of(Numeric)).and_return(true)
     allow(browser).to receive(:preserve_consent_wall?).with(page, 'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener').and_return(true)
-    allow(browser).to receive(:wait_for_spa_hydration).with(page)
+    allow(browser).to receive(:wait_for_spa_hydration).with(page, deadline: kind_of(Numeric))
     expect(browser).not_to receive(:accept_cookie_consent)
     expect(browser).not_to receive(:dismiss_privacy_preference_overlay)
     allow(browser).to receive(:sleep)
-    expect(browser).to receive(:wait_for_france24_article).with(page, 'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener')
+    expect(browser).to receive(:wait_for_france24_article).with(
+      page,
+      'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener',
+      deadline: kind_of(Numeric)
+    )
 
     browser.send(:stabilize_page, page, 'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener')
   end
@@ -29,8 +33,9 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle
 
-    expect(browser).to receive(:wait_for_anubis_challenge).with(page).and_return(true).ordered
-    expect(browser).to receive(:wait_for_telegram_message).with(page).ordered
+    expect(browser).to receive(:wait_for_anubis_challenge)
+      .with(page, deadline: kind_of(Numeric)).and_return(true).ordered
+    expect(browser).to receive(:wait_for_telegram_message).with(page, deadline: kind_of(Numeric)).ordered
 
     browser.send(:stabilize_page, page, 'https://t.me/s/examplechannel/42')
   end
@@ -176,7 +181,7 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:sleep)
 
     expect(browser.send(:stabilize_azure_devops_pr, page)).to be(true)
-    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25, deadline: kind_of(Numeric))
 
     allow(browser).to receive(:azure_devops_pr_state).and_return(
       { "matched" => true, "product" => true, "status" => "failed", "signature" => "failed" }
@@ -195,8 +200,9 @@ RSpec.describe FetchUtil::Browser do
     page = instance_double(Ferrum::Browser)
     browser = browser_with_idle
 
-    expect(browser).to receive(:wait_for_anubis_challenge).with(page)
-    expect(browser).to receive(:stabilize_azure_devops_pr).with(page).and_return(true)
+    expect(browser).to receive(:wait_for_anubis_challenge).with(page, deadline: kind_of(Numeric))
+    expect(browser).to receive(:stabilize_azure_devops_pr)
+      .with(page, deadline: kind_of(Numeric)).and_return(true)
     expect(browser).not_to receive(:wait_for_idle_or_content)
 
     expect(browser.send(
@@ -262,7 +268,7 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:sleep)
 
     expect(browser.send(:stabilize_gerrit_file_resource, page)).to be(true)
-    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25, deadline: kind_of(Numeric))
 
     allow(browser).to receive(:gerrit_file_resource_state).and_return(
       { "matched" => true, "product" => true, "status" => "failed", "signature" => "failed" }
@@ -295,7 +301,7 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:sleep)
 
     expect(browser.send(:stabilize_gerrit_change, page)).to be(true)
-    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25, deadline: kind_of(Numeric))
   end
 
   it 'falls through immediately for Gerrit-shaped routes without product evidence or usable APIs' do
@@ -332,7 +338,7 @@ RSpec.describe FetchUtil::Browser do
 
     expect(browser.send(:stabilize_bitbucket_cloud_thread, page)).to be(true)
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'restarts Bitbucket Cloud stability after loading resumes' do
@@ -381,7 +387,7 @@ RSpec.describe FetchUtil::Browser do
 
     expect(browser.send(:stabilize_bitbucket_cloud_pull_resource, page)).to be(true)
     expect(browser).to have_received(:safe_evaluate).exactly(3).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'falls through immediately for a commit route without Bitbucket product evidence' do
@@ -439,7 +445,7 @@ RSpec.describe FetchUtil::Browser do
                                      '.dropzone-attachments a[href]', '.timeline-item.comment.merge.box',
                                      '.pull-merge-box', 'some(visible)', 'openingReady', 'rowSignatures')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'resets Gitea-family stability when ordered row identities change without changing counts' do
@@ -512,7 +518,7 @@ RSpec.describe FetchUtil::Browser do
                                      '.diff-load-button[data-href]', 'selectedLoaded', 'selectedDeferred',
                                      'selectedTerminal', 'rowSignatures')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'accepts a stable terminal selected Gitea-family diff state' do
@@ -582,7 +588,7 @@ RSpec.describe FetchUtil::Browser do
                                      ".js-timeline-entry.timeline-entry", "continuation.click()", "textSize")
     expect(scripts.first.index('const loading')).to be < scripts.first.index('const continuation')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'falls through immediately when a GitLab-shaped route lacks product evidence' do
@@ -627,7 +633,7 @@ RSpec.describe FetchUtil::Browser do
                                      "document.querySelector('main') ||", "Object.prototype.hasOwnProperty.call",
                                      "Array.from(rows[selectedIndex].querySelectorAll(bodySelector)).some")
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'falls through immediately when a GitLab resource route lacks product evidence' do
@@ -673,7 +679,7 @@ RSpec.describe FetchUtil::Browser do
       'selectedLoaded', 'selectedDeferred', 'selectedReady'
     )
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'waits for a GitHub timeline after its opening body appears' do
@@ -707,7 +713,7 @@ RSpec.describe FetchUtil::Browser do
     )
     expect(scripts.first).not_to include('commentRows.length >= expected')
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'requires an unknown-size GitHub timeline to remain stable' do
@@ -722,7 +728,7 @@ RSpec.describe FetchUtil::Browser do
     browser.send(:stabilize_github_thread, page)
 
     expect(browser).to have_received(:safe_evaluate).exactly(3).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'restarts GitHub stability when a continuation becomes usable' do
@@ -744,7 +750,7 @@ RSpec.describe FetchUtil::Browser do
     browser.send(:stabilize_github_thread, page)
 
     expect(browser).to have_received(:safe_evaluate).exactly(4).times
-    expect(browser).to have_received(:settle_after_stabilization).with(0.5)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.5, deadline: kind_of(Numeric))
   end
 
   it 'stabilizes a simple page fixture without the generic consent wait' do
@@ -756,11 +762,11 @@ RSpec.describe FetchUtil::Browser do
     allow(network).to receive(:idle?).and_return(true)
     allow(network).to receive(:wait_for_idle)
     allow(browser).to receive(:safe_evaluate).and_return({})
-    allow(browser).to receive(:wait_for_idle_or_content).with(page).and_return(true)
+    allow(browser).to receive(:wait_for_idle_or_content).with(page, deadline: kind_of(Numeric)).and_return(true)
     allow(browser).to receive(:preserve_consent_wall?).with(page, 'https://example.com').and_return(false)
     allow(browser).to receive(:accept_cookie_consent).with(page).and_return(false)
     allow(browser).to receive(:dismiss_privacy_preference_overlay).with(page).and_return(false)
-    allow(browser).to receive(:wait_for_spa_hydration).with(page)
+    allow(browser).to receive(:wait_for_spa_hydration).with(page, deadline: kind_of(Numeric))
     allow(browser).to receive(:sleep)
     browser.send(:stabilize_page, page, 'https://example.com')
 
@@ -802,7 +808,7 @@ RSpec.describe FetchUtil::Browser do
     browser.send(:stabilize_reddit, page)
 
     expect(attempts).to eq(2)
-    expect(browser).to have_received(:settle_after_stabilization).with(0.25)
+    expect(browser).to have_received(:settle_after_stabilization).with(0.25, deadline: kind_of(Numeric))
   end
 
   it 'resolves a short same-URL page after a rendered Anubis shell' do

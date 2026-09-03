@@ -16,6 +16,18 @@ module FetchUtil
           safe_evaluate(page, gerrit_file_resource_state_script, default: nil)
         end
 
+        def fail_gerrit_file_resource_preparation(page)
+          safe_evaluate(page, <<~'JS', default: false)
+            (() => {
+              const prepared = window.__fetchUtilGerritFileResource;
+              if (!prepared || prepared.status !== "loading") return false;
+              prepared.status = "failed";
+              prepared.reason = "Gerrit file preparation timed out";
+              return true;
+            })()
+          JS
+        end
+
         def gerrit_file_resource_state_script
           <<~JS
             (() => {

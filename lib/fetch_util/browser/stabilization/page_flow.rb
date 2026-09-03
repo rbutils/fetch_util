@@ -49,32 +49,48 @@ module FetchUtil
         private
 
         def stabilize_page(page, url)
-          wait_for_anubis_challenge(page)
+          deadline = stabilization_deadline
+          wait_for_anubis_challenge(page, deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
 
           if (profile = matching_stabilization_profile(url, PAGE_FLOW_STABILIZATION_PROFILES))
-            handled = send(profile.fetch(:strategy), page)
+            handled = send(profile.fetch(:strategy), page, deadline: deadline)
             return handled unless profile[:fallthrough] && !handled
+            return false unless stabilization_time_remaining?(deadline)
           end
 
-          reached_idle = !@wait_for_idle || wait_for_idle_or_content(page)
+          reached_idle = !@wait_for_idle || wait_for_idle_or_content(page, deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
+
           preserve_consent = preserve_consent_wall?(page, url)
+          return false unless stabilization_time_remaining?(deadline)
+
           accepted_cookies = preserve_consent ? false : dismiss_cookie_overlays(page)
+          return false unless stabilization_time_remaining?(deadline)
+
           if @wait.positive? && (!@wait_for_idle || accepted_cookies)
-            sleep @wait
+            sleep_before_deadline(@wait, deadline: deadline)
+            return false unless stabilization_time_remaining?(deadline)
+
             accepted_cookies = dismiss_cookie_overlays(page) || accepted_cookies unless preserve_consent
+            return false unless stabilization_time_remaining?(deadline)
           end
 
-          wait_for_spa_hydration(page) if @wait_for_idle && reached_idle
+          wait_for_spa_hydration(page, deadline: deadline) if @wait_for_idle && reached_idle
+          return false unless stabilization_time_remaining?(deadline)
+
           if accepted_cookies
             accepted_cookies = dismiss_cookie_overlays(page) || accepted_cookies
+            return false unless stabilization_time_remaining?(deadline)
           end
           if (profile = matching_stabilization_profile(url, POST_GENERIC_STABILIZATION_PROFILES))
-            send(profile.fetch(:strategy), page, url)
+            send(profile.fetch(:strategy), page, url, deadline: deadline)
+            return false unless stabilization_time_remaining?(deadline)
           end
 
           return unless accepted_cookies && @wait_for_idle && reached_idle
 
-          wait_for_network_idle(page)
+          wait_for_network_idle(page, deadline: deadline)
         end
 
         def matching_stabilization_profile(url, profiles)
@@ -93,11 +109,12 @@ module FetchUtil
           Array(matcher).any? { |candidate| host == candidate || host.end_with?(".#{candidate}") }
         end
 
-        def wait_for_idle_or_content(page)
+        def wait_for_idle_or_content(page, deadline: stabilization_deadline)
           content_seen_at = nil
 
-          retry_until_timeout(@timeout, interval: @idle_duration) do
-            now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          retry_until_timeout(capped_timeout(@timeout, deadline: deadline),
+                              interval: @idle_duration, deadline: deadline) do
+            now = monotonic_now
             next true if page.network.idle?
             if content_seen_at.nil? && page_has_content?(page)
               content_seen_at = now
@@ -109,11 +126,19 @@ module FetchUtil
           false
         end
 
-        def wait_for_network_idle(page)
-          page.network.wait_for_idle(duration: @idle_duration, timeout: POST_CONSENT_IDLE_TIMEOUT)
-          true
-        rescue Ferrum::TimeoutError
-          false
+        def wait_for_network_idle(page, deadline: stabilization_deadline)
+          idle_since = nil
+          timeout = capped_timeout(POST_CONSENT_IDLE_TIMEOUT, deadline: deadline)
+          retry_until_timeout(timeout, interval: @idle_duration, deadline: deadline) do
+            now = monotonic_now
+            if page.network.idle?
+              idle_since ||= now
+              (now - idle_since) >= @idle_duration
+            else
+              idle_since = nil
+              false
+            end
+          end
         rescue Ferrum::Error => e
           raise if retryable_pending_connections_error?(e)
 
@@ -151,8 +176,8 @@ module FetchUtil
           false
         end
 
-        def wait_for_agora_article(page, _url)
-          retry_until_timeout(7.0, interval: 0.25) do
+        def wait_for_agora_article(page, _url, deadline: stabilization_deadline)
+          retry_until_timeout(capped_timeout(7.0, deadline: deadline), interval: 0.25, deadline: deadline) do
             page.evaluate(<<~JS)
               (() => {
                 const selectors = ['.mrf-article-body', '.article_body', 'div.articleBody', '.art_content', '.article-inner', 'section.article', '[itemprop=articleBody]'];
@@ -166,8 +191,8 @@ module FetchUtil
           false
         end
 
-        def wait_for_france24_article(page, _url)
-          retry_until_timeout(15.0, interval: 0.25) do
+        def wait_for_france24_article(page, _url, deadline: stabilization_deadline)
+          retry_until_timeout(capped_timeout(15.0, deadline: deadline), interval: 0.25, deadline: deadline) do
             page.evaluate(<<~JS)
               (() => {
                 const body = document.querySelector('.t-content__body') || document.querySelector('.t-content--article');
@@ -181,18 +206,21 @@ module FetchUtil
           false
         end
 
-        def wait_for_onet_homepage(page)
-          wait_for_structural_readiness(page, "section[class*='Feed_']", "article[class*='Card_']")
+        def wait_for_onet_homepage(page, deadline: stabilization_deadline)
+          wait_for_structural_readiness(page, "section[class*='Feed_']", "article[class*='Card_']",
+                                        deadline: deadline)
         end
 
-        def wait_for_wp_homepage(page)
-          wait_for_structural_readiness(page, ".wp-section-grid", ".wp-teaser-tile, .wp-teaser-regular")
+        def wait_for_wp_homepage(page, deadline: stabilization_deadline)
+          wait_for_structural_readiness(page, ".wp-section-grid", ".wp-teaser-tile, .wp-teaser-regular",
+                                        deadline: deadline)
         end
 
-        def wait_for_telegram_message(page)
+        def wait_for_telegram_message(page, deadline: stabilization_deadline)
           target = URI.parse(page.current_url).path.delete_prefix("/s/")
 
-          ready = retry_until_timeout(capped_timeout(5.0), interval: 0.25) do
+          ready = retry_until_timeout(capped_timeout(5.0, deadline: deadline),
+                                      interval: 0.25, deadline: deadline) do
             page.evaluate(<<~JS)
               (() => {
                 const card = document.querySelector('.tgme_widget_message[data-post="#{target}"]');
@@ -201,7 +229,7 @@ module FetchUtil
               })()
             JS
           end
-          sleep PRE_EXTRACTION_SETTLE_WAIT if ready
+          sleep_before_deadline(PRE_EXTRACTION_SETTLE_WAIT, deadline: deadline) if ready
           ready
         rescue URI::InvalidURIError, Ferrum::JavaScriptError, Ferrum::TimeoutError
           false

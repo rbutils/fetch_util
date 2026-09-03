@@ -8,18 +8,17 @@ module FetchUtil
 
         private
 
-        def wait_for_anubis_challenge(page)
-          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + @timeout
+        def wait_for_anubis_challenge(page, deadline: stabilization_deadline)
           state = anubis_page_state(page)
-          if !valid_anubis_state?(state) && Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          if !valid_anubis_state?(state) && monotonic_now < deadline
             state = anubis_page_state(page)
           end
           return false unless valid_anubis_state?(state) && state["challenge"] == true
 
-          remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          remaining = capped_timeout(@timeout, deadline: deadline)
           return false unless remaining.positive?
 
-          retry_until_timeout(remaining, interval: ANUBIS_POLL) do
+          retry_until_timeout(remaining, interval: ANUBIS_POLL, deadline: deadline) do
             state = anubis_page_state(page)
             next false unless valid_anubis_state?(state)
             next false unless state["challenge"] == false

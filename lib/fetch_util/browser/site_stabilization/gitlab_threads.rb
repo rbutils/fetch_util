@@ -17,8 +17,8 @@ module FetchUtil
 
         private
 
-        def stabilize_gitlab_thread(page)
-          stabilize_gitlab_state do
+        def stabilize_gitlab_thread(page, deadline: stabilization_deadline)
+          stabilize_gitlab_state(deadline: deadline) do
             safe_evaluate(page, <<~JS, default: nil)
               (() => {
                 const route = location.pathname.match(/\/-\/(issues|work_items|merge_requests)\/\d+\/?$/);

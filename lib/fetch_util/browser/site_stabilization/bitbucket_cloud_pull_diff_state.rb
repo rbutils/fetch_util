@@ -23,10 +23,12 @@ module FetchUtil
                 window.__fetchUtilBitbucketPullDiff = prepared;
                 if (!product.error) {
                   fetchUtilBitbucketDiffRequest(product).then((result) => {
+                    if (window.__fetchUtilBitbucketPullDiff !== prepared || prepared.status !== 'loading') return;
                     Object.assign(prepared, {
                       status: 'ready', reason: '', metadata: result.metadata, values: result.records
                     });
                   }).catch((error) => {
+                    if (window.__fetchUtilBitbucketPullDiff !== prepared || prepared.status !== 'loading') return;
                     prepared.status = 'failed';
                     prepared.reason = String(error && error.message || error || 'Bitbucket diffstat preparation failed');
                   });

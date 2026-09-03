@@ -27,11 +27,15 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:dismiss_privacy_preference_overlay).and_return(false)
     allow(browser).to receive(:wait_for_spa_hydration).and_return(true)
     allow(browser).to receive(:heavy_script_page?).and_return(false)
-    allow(network1).to receive(:wait_for_idle).and_raise(
-      Ferrum::PendingConnectionsError,
-      'Request to https://example.com reached server, but there are still pending connections'
-    )
-    allow(network2).to receive(:wait_for_idle).and_return(true)
+    idle_checks = 0
+    allow(network1).to receive(:idle?) do
+      idle_checks += 1
+      next true if idle_checks == 1
+
+      raise Ferrum::PendingConnectionsError,
+            'Request to https://example.com reached server, but there are still pending connections'
+    end
+    allow(network2).to receive(:idle?).and_return(true)
 
     yielded = nil
 
@@ -48,7 +52,7 @@ RSpec.describe FetchUtil::Browser do
     call_count = 0
 
     allow(page).to receive(:network).and_return(network)
-    allow(network).to receive(:wait_for_idle) do
+    allow(network).to receive(:idle?) do
       call_count += 1
       raise Ferrum::PendingConnectionsError, 'Request to https://example.com reached server, but there are still pending connections'
     end

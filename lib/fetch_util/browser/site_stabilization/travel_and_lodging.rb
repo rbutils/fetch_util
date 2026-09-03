@@ -16,10 +16,10 @@ module FetchUtil
 
         private
 
-        def stabilize_lodging_detail(page)
+        def stabilize_lodging_detail(page, deadline: stabilization_deadline)
           accepted_cookies = dismiss_cookie_overlays(page)
 
-          retry_until_timeout(capped_timeout(8.0), interval: 0.25) do
+          retry_until_timeout(capped_timeout(8.0, deadline: deadline), interval: 0.25, deadline: deadline) do
             safe_evaluate(page, <<~JS, default: false)
               (() => {
                 const bodyText = document.body ? (document.body.innerText || '') : '';
@@ -31,7 +31,7 @@ module FetchUtil
             JS
           end
 
-          settle_after_stabilization(0.25) if accepted_cookies
+          settle_after_stabilization(0.25, deadline: deadline) if accepted_cookies
         end
       end
     end

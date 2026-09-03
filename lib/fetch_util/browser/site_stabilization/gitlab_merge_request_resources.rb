@@ -19,8 +19,8 @@ module FetchUtil
 
         private
 
-        def stabilize_gitlab_merge_request_resource(page)
-          stabilize_gitlab_state { gitlab_merge_request_resource_state(page) }
+        def stabilize_gitlab_merge_request_resource(page, deadline: stabilization_deadline)
+          stabilize_gitlab_state(deadline: deadline) { gitlab_merge_request_resource_state(page) }
         end
       end
     end

@@ -15,13 +15,27 @@ module FetchUtil
 
         private
 
-        def stabilize_instagram(page)
-          wait_for_idle_or_content(page) if @wait_for_idle
+        def stabilize_instagram(page, deadline: stabilization_deadline)
+          wait_for_idle_or_content(page, deadline: deadline) if @wait_for_idle
+          return false unless stabilization_time_remaining?(deadline)
+
           accept_instagram_cookie_dialog(page) || accept_cookie_consent(page)
-          social_login_phase_pause
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
+
           accept_instagram_cookie_dialog(page) || accept_cookie_consent(page)
-          retry_until_timeout(capped_timeout(5.0)) { dismiss_instagram_login_modal(page) }
-          social_login_phase_pause
+          return false unless stabilization_time_remaining?(deadline)
+
+          retry_until_timeout(capped_timeout(5.0, deadline: deadline), deadline: deadline) do
+            dismiss_instagram_login_modal(page)
+          end
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
+
           dismiss_instagram_login_modal(page)
         end
 
@@ -73,13 +87,25 @@ module FetchUtil
           )
         end
 
-        def stabilize_facebook(page)
-          wait_for_idle_or_content(page) if @wait_for_idle
-          social_login_phase_pause
+        def stabilize_facebook(page, deadline: stabilization_deadline)
+          wait_for_idle_or_content(page, deadline: deadline) if @wait_for_idle
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
+
           dismiss_facebook_cookie_dialog(page)
-          social_login_phase_pause
-          retry_until_timeout(capped_timeout(5.0)) { dismiss_facebook_login_dialog(page) }
-          social_login_phase_pause
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
+          return false unless stabilization_time_remaining?(deadline)
+
+          retry_until_timeout(capped_timeout(5.0, deadline: deadline), deadline: deadline) do
+            dismiss_facebook_login_dialog(page)
+          end
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
         end
 
         def dismiss_facebook_cookie_dialog(page)

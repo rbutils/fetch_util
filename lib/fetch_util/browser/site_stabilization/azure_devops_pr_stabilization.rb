@@ -15,15 +15,19 @@ module FetchUtil
 
         private
 
-        def stabilize_azure_devops_pr(page)
+        def stabilize_azure_devops_pr(page, deadline: stabilization_deadline)
           state = nil
-          ready = retry_until_timeout(capped_timeout(12.0), interval: 0.1) do
+          ready = retry_until_timeout(
+            capped_timeout(12.0, deadline: deadline),
+            interval: 0.1,
+            deadline: deadline
+          ) do
             state = azure_devops_pr_state(page)
             return false if state.is_a?(Hash) && (state["product"] == false || state["status"] == "failed")
 
             state.is_a?(Hash) && state["status"] == "ready"
           end
-          settle_after_stabilization(0.25) if ready
+          settle_after_stabilization(0.25, deadline: deadline) if ready
           fail_azure_devops_pr_preparation(page) if !ready && state.is_a?(Hash) && state["status"] == "loading"
           ready
         end

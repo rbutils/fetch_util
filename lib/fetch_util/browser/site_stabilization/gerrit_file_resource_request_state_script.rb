@@ -8,7 +8,8 @@ module FetchUtil
 
         def gerrit_file_resource_request_state_script
           gerrit_file_resource_fetch_state_script + gerrit_file_resource_validation_state_script + <<~'JS'
-            window[stateKey] = { status: "loading", product: true, routeKey: routeKey, route: route };
+            const prepared = { status: "loading", product: true, routeKey: routeKey, route: route };
+            window[stateKey] = prepared;
 
             const comparisonQuery = new URLSearchParams();
             if (route.comparison === "patchset") comparisonQuery.set("base", route.comparisonValue);
@@ -22,6 +23,7 @@ module FetchUtil
               requestJson("/comments?enable-context=true&context-padding=3"),
               requestJson(filesSuffix)
             ]).then(async ([detail, comments, files]) => {
+              if (window[stateKey] !== prepared || prepared.status !== "loading") return;
               if (String(detail._number || "") !== route.number || detail.project !== route.project) {
                 throw new Error("Gerrit API change identity mismatch");
               }
@@ -66,6 +68,7 @@ module FetchUtil
                   "/files/" + encodedFile + "/diff?" + firstParentQuery.toString());
                 validateDiff(firstParentDiff, filePath);
               }
+              if (window[stateKey] !== prepared || prepared.status !== "loading") return;
               const countComments = Object.keys(comments || {}).reduce(
                 (total, path) => total + (Array.isArray(comments[path]) ? comments[path].length : 0), 0
               );
@@ -89,6 +92,7 @@ module FetchUtil
                   ? firstParentDiff.content.length : 0
               };
             }).catch((error) => {
+              if (window[stateKey] !== prepared || prepared.status !== "loading") return;
               window[stateKey] = {
                 status: "failed",
                 product: true,

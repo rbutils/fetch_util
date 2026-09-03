@@ -7,21 +7,23 @@ module FetchUtil
       module SpaHydration
         private
 
-        def wait_for_spa_hydration(page)
+        def wait_for_spa_hydration(page, deadline: stabilization_deadline)
           framework = detect_spa_framework(page)
           return unless framework
 
-          retry_until_timeout(SPA_HYDRATION_TIMEOUT, interval: SPA_HYDRATION_POLL) do
+          retry_until_timeout(capped_timeout(SPA_HYDRATION_TIMEOUT, deadline: deadline),
+                              interval: SPA_HYDRATION_POLL, deadline: deadline) do
             spa_hydration_complete?(page, framework)
           end
 
-          sleep SPA_HYDRATION_POLL
+          sleep_before_deadline(SPA_HYDRATION_POLL, deadline: deadline)
         rescue Ferrum::JavaScriptError, Ferrum::TimeoutError
         end
 
-        def wait_for_structural_readiness(page, region_selector, card_selector)
+        def wait_for_structural_readiness(page, region_selector, card_selector, deadline: stabilization_deadline)
           previous_count = nil
-          retry_until_timeout(SPA_HYDRATION_TIMEOUT, interval: SPA_HYDRATION_POLL) do
+          retry_until_timeout(capped_timeout(SPA_HYDRATION_TIMEOUT, deadline: deadline),
+                              interval: SPA_HYDRATION_POLL, deadline: deadline) do
             counts = page.evaluate(<<~JS)
               (() => ({
                 regions: document.querySelectorAll(#{region_selector.to_json}).length,

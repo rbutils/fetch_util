@@ -22,7 +22,7 @@ RSpec.describe FetchUtil::Browser do
 
     expect(yielded).to eq(page)
     expect(page).to have_received(:evaluate).with(include('consentContext')).at_least(:once)
-    expect(network).to have_received(:wait_for_idle).once
+    expect(network).to have_received(:idle?).exactly(3).times
   end
 
   it 'does not perform a second idle wait when no cookie prompt was accepted' do
@@ -52,13 +52,13 @@ RSpec.describe FetchUtil::Browser do
     allow(browser).to receive(:dismiss_privacy_preference_overlay).and_return(false)
     allow(browser).to receive(:wait_for_spa_hydration)
     allow(browser).to receive(:safe_evaluate).and_return({})
-    allow(network).to receive(:wait_for_idle)
+    allow(network).to receive(:idle?).and_return(true)
 
     browser.send(:stabilize_page, page, 'https://example.com')
 
     expect(browser).to have_received(:accept_cookie_consent).exactly(2).times
     expect(browser).to have_received(:wait_for_spa_hydration).once
-    expect(network).to have_received(:wait_for_idle).once
+    expect(network).to have_received(:idle?).twice
   end
 
   it 'does not count hidden consent templates as handled overlays' do

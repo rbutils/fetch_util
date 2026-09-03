@@ -17,10 +17,11 @@ module FetchUtil
 
         private
 
-        def stabilize_gitea_family_pull_resource(page)
+        def stabilize_gitea_family_pull_resource(page, deadline: stabilization_deadline)
           stabilize_gitea_family_state(
             page,
-            gitea_family_pull_resource_product_state_script + gitea_family_pull_resource_state_script
+            gitea_family_pull_resource_product_state_script + gitea_family_pull_resource_state_script,
+            deadline: deadline
           )
         end
       end

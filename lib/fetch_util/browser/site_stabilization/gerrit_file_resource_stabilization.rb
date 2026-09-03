@@ -15,14 +15,20 @@ module FetchUtil
 
         private
 
-        def stabilize_gerrit_file_resource(page)
-          ready = retry_until_timeout(capped_timeout(10.0), interval: 0.1) do
+        def stabilize_gerrit_file_resource(page, deadline: stabilization_deadline)
+          state = nil
+          ready = retry_until_timeout(
+            capped_timeout(10.0, deadline: deadline),
+            interval: 0.1,
+            deadline: deadline
+          ) do
             state = gerrit_file_resource_state(page)
             return false if state.is_a?(Hash) && (state["product"] == false || state["status"] == "failed")
 
             state.is_a?(Hash) && state["status"] == "ready"
           end
-          settle_after_stabilization(0.25) if ready
+          fail_gerrit_file_resource_preparation(page) if !ready && state.is_a?(Hash) && state["status"] == "loading"
+          settle_after_stabilization(0.25, deadline: deadline) if ready
           ready
         end
       end

@@ -15,13 +15,17 @@ module FetchUtil
 
         private
 
-        def stabilize_bitbucket_cloud_pull_resource(page)
+        def stabilize_bitbucket_cloud_pull_resource(page, deadline: stabilization_deadline)
           last_signature = nil
           stable_observations = 0
           incomplete_signature = nil
           incomplete_observations = 0
           terminal_incomplete = false
-          observed = retry_until_timeout(capped_timeout(6.0), interval: 0.1) do
+          observed = retry_until_timeout(
+            capped_timeout(6.0, deadline: deadline),
+            interval: 0.1,
+            deadline: deadline
+          ) do
             state = safe_evaluate(page, bitbucket_cloud_pull_resource_state_script, default: nil)
             return false if state.is_a?(Hash) && state["product"] == false
             next false unless state.is_a?(Hash) && state["product"]
@@ -60,7 +64,7 @@ module FetchUtil
 
           fail_bitbucket_cloud_pull_diff_preparation(page) unless observed
 
-          settle_after_stabilization(0.5) if observed
+          settle_after_stabilization(0.5, deadline: deadline) if observed
           !!observed
         end
       end

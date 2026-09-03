@@ -8,7 +8,8 @@ module FetchUtil
 
         def gerrit_change_request_state_script
           <<~'JS'
-            window[stateKey] = { status: "loading", product: true, routeKey: routeKey, route: route };
+            const prepared = { status: "loading", product: true, routeKey: routeKey, route: route };
+            window[stateKey] = prepared;
 
             const requestJson = async (suffix) => {
               const url = new URL(apiPath + suffix, location.origin);
@@ -31,6 +32,7 @@ module FetchUtil
               requestJson("/comments?enable-context=true&context-padding=3"),
               requestJson("/revisions/" + encodeURIComponent(selectedRevision) + "/files/")
             ]).then(([detail, comments, files]) => {
+              if (window[stateKey] !== prepared || prepared.status !== "loading") return;
               if (String(detail._number || "") !== number || !detail.project || detail.project !== projectPath) {
                 throw new Error("Gerrit API change identity mismatch");
               }
@@ -54,6 +56,7 @@ module FetchUtil
                 fileCount: Object.keys(files).length
               };
             }).catch((error) => {
+              if (window[stateKey] !== prepared || prepared.status !== "loading") return;
               window[stateKey] = {
                 status: "failed",
                 product: true,
