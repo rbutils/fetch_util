@@ -2,6 +2,7 @@
 
 require "uri"
 require "net/http"
+require "timeout"
 require "English"
 
 module FetchUtil
@@ -864,21 +865,29 @@ module FetchUtil
       nil
     end
 
-    def probe_pdf_headers(url, limit = PDF_REDIRECT_LIMIT)
+    def probe_pdf_headers(url, limit = PDF_REDIRECT_LIMIT, deadline: nil)
+      deadline ||= monotonic_now + @timeout
       uri = parse_http_uri(url)
-      response = request_head(uri)
+      remaining = deadline - monotonic_now
+      return nil unless remaining.positive?
+
+      response = request_head(uri, timeout: remaining)
+      return nil unless deadline > monotonic_now
+
       if response.is_a?(Net::HTTPRedirection) && limit.positive? && response["location"].to_s.strip != ""
-        return probe_pdf_headers(uri.merge(response["location"]).to_s, limit - 1)
+        return probe_pdf_headers(uri.merge(response["location"]).to_s, limit - 1, deadline: deadline)
       end
       return nil unless response.is_a?(Net::HTTPSuccess)
 
       { final_url: uri.to_s, headers: response.to_hash.transform_keys(&:downcase) }
     end
 
-    def request_head(uri)
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: @timeout, read_timeout: @timeout) do |http|
-        request = Net::HTTP::Head.new(uri.request_uri.empty? ? "/" : uri.request_uri)
-        http.request(request)
+    def request_head(uri, timeout: @timeout)
+      Timeout.timeout(timeout) do
+        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: timeout, read_timeout: timeout) do |http|
+          request = Net::HTTP::Head.new(uri.request_uri.empty? ? "/" : uri.request_uri)
+          http.request(request)
+        end
       end
     end
 

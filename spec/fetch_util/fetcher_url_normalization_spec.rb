@@ -290,6 +290,111 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to eq(['pdf_document'])
   end
 
+  it 'shares one timeout budget across PDF HEAD redirects' do
+    redirect = Net::HTTPFound.new('1.1', '302', 'Found')
+    redirect['location'] = '/paper.pdf'
+    success = Net::HTTPOK.new('1.1', '200', 'OK')
+    success['content-type'] = 'application/pdf'
+    now = 10.0
+    requests = []
+    fetcher = described_class.new(
+      browser: browser,
+      extractor: extractor,
+      raw_docs_fallback: raw_docs_fallback,
+      timeout: 5
+    )
+    allow(fetcher).to receive(:monotonic_now) { now }
+    allow(fetcher).to receive(:request_head) do |uri, timeout:|
+      requests << [uri.to_s, timeout]
+      now += 3.0 if requests.length == 1
+      requests.length == 1 ? redirect : success
+    end
+
+    info = fetcher.send(:probe_pdf_headers, 'https://example.com/download?id=paper')
+
+    expected_requests = [
+      ['https://example.com/download?id=paper', 5.0],
+      ['https://example.com/paper.pdf', 2.0]
+    ]
+    expect(requests).to eq(expected_requests)
+    expect(info[:final_url]).to eq('https://example.com/paper.pdf')
+  end
+
+  it 'stops PDF HEAD redirects when their shared timeout budget expires' do
+    redirect = Net::HTTPFound.new('1.1', '302', 'Found')
+    redirect['location'] = '/paper.pdf'
+    now = 10.0
+    requests = []
+    fetcher = described_class.new(
+      browser: browser,
+      extractor: extractor,
+      raw_docs_fallback: raw_docs_fallback,
+      timeout: 5
+    )
+    allow(fetcher).to receive(:monotonic_now) { now }
+    allow(fetcher).to receive(:request_head) do |uri, timeout:|
+      requests << [uri.to_s, timeout]
+      now += 5.0
+      redirect
+    end
+
+    info = fetcher.send(:probe_pdf_headers, 'https://example.com/download?id=paper')
+
+    expect(info).to be_nil
+    expect(requests).to eq([['https://example.com/download?id=paper', 5.0]])
+  end
+
+  it 'keeps the PDF HEAD redirect ceiling within the shared timeout budget' do
+    redirect = Net::HTTPFound.new('1.1', '302', 'Found')
+    redirect['location'] = '/next'
+    requests = 0
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    allow(fetcher).to receive(:request_head) do |_uri, timeout:|
+      expect(timeout).to be_positive
+      requests += 1
+      redirect
+    end
+
+    info = fetcher.send(:probe_pdf_headers, 'https://example.com/download?id=paper')
+
+    expect(info).to be_nil
+    expect(requests).to eq(described_class::PDF_REDIRECT_LIMIT + 1)
+  end
+
+  it 'bounds a PDF HEAD request across connection and response phases' do
+    response = Net::HTTPOK.new('1.1', '200', 'OK')
+    http = instance_double(Net::HTTP)
+    uri = URI('https://example.com/download?id=paper')
+    allow(http).to receive(:request).and_return(response)
+    allow(Net::HTTP).to receive(:start).and_yield(http)
+    allow(Timeout).to receive(:timeout).with(4.25).and_yield
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+
+    result = fetcher.send(:request_head, uri, timeout: 4.25)
+
+    expect(result).to equal(response)
+    expect(Net::HTTP).to have_received(:start).with(
+      'example.com', 443, use_ssl: true, open_timeout: 4.25, read_timeout: 4.25
+    )
+  end
+
+  it 'uses browser extraction when a bounded PDF HEAD request times out' do
+    url = 'https://example.com/download?id=article'
+    article_page = page_at(url)
+    article_payload = payload_with(
+      title: 'Download article',
+      markdown: '# Download article\n\nReadable HTML article text.',
+      warnings: []
+    )
+    stub_browser_extraction(url, page: article_page, payload: article_payload)
+    allow(Timeout).to receive(:timeout).and_raise(Timeout::Error, 'execution expired')
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.warnings).not_to include('pdf_document')
+  end
+
   it 'uses browser extraction after unsuccessful Content-Type PDF HEAD responses' do
     url = 'https://example.com/articles/pdf-metadata-error'
     response = Net::HTTPNotFound.new('1.1', '404', 'Not Found')
