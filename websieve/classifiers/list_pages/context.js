@@ -54,7 +54,13 @@
       "article[class*='article-body' i]",
       "article[class*='article_body' i]"
     ].join(", "));
-    var focal = semanticFocal || classFocal || document.querySelector("main article");
+    var topLevelMainArticles = Array.prototype.filter.call(document.querySelectorAll("main article"), function(article) {
+      if (elementSubtreeHidden(article) || article.parentElement.closest("article")) return false;
+      var visible = visibilityPrunedClone(article, document);
+      return !!(normalizeText(visible.textContent || "") || visible.querySelector("img[src], picture, video, audio, svg"));
+    });
+    var mainFocal = topLevelMainArticles[0] || null;
+    var focal = semanticFocal || classFocal || mainFocal;
     if (!articleLikePath() && !focal) return false;
     if (focal === classFocal && !articleLikePath()) return false;
     if (content && content.contentType !== "article" && content.contentType !== "medical") return false;
@@ -86,7 +92,11 @@
       return total + normalizeText(link.textContent || "").length;
     }, 0);
     var effectiveLinkDensity = paragraphlessBody ? paragraphlessLinkText / rootText.length : linkDensity;
-    var bodyEvidence = focal === classFocal ? paragraphlessBody : (substantialProse || structuredLiveBody || paragraphlessBody);
+    var requiresExclusiveMainOwnership = focal === classFocal || focal === mainFocal;
+    var ownsMainBody = topLevelMainArticles.length === 1 && topLevelMainArticles[0] === focal;
+    var bodyEvidence = requiresExclusiveMainOwnership && !ownsMainBody
+      ? paragraphlessBody
+      : (substantialProse || structuredLiveBody || paragraphlessBody);
     return !!heading && bodyEvidence && effectiveLinkDensity < 0.45 &&
       (!!focal || !!content) && (!!bylineOrTime || (content && (content.byline || content.publishedTime)) || !!focal);
   }

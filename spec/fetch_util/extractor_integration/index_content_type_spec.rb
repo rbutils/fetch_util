@@ -50,6 +50,54 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it 'does not let repeated class article bodies protect an index page' do
+    cards = 6.times.map do |index|
+      <<~HTML
+        <article class="article-body">
+          <h2><a href="/news/story-#{index + 1}">Visible index story #{index + 1}</a></h2>
+          <p>First substantial teaser paragraph #{index + 1} explains one separate archive story in enough detail for a useful card.</p>
+          <p>Second substantial teaser paragraph #{index + 1} remains part of the same card rather than becoming a focal page body.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>News archive</title></head><body>
+        <main><h1>News archive</h1><section><h2>Latest news</h2>#{cards}</section></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://example.test/news/article-archive-12345', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Visible index story 1', 'Visible index story 6')
+    end
+  end
+
+  it 'does not let repeated plain articles protect an index page' do
+    cards = 6.times.map do |index|
+      <<~HTML
+        <article>
+          <h2><a href="/news/story-#{index + 1}">Visible index story #{index + 1}</a></h2>
+          <p>First substantial teaser paragraph #{index + 1} explains one separate archive story in enough detail for a useful card.</p>
+          <p>Second substantial teaser paragraph #{index + 1} remains part of the same card rather than becoming a focal page body.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>News archive</title></head><body>
+        <main><h1>News archive</h1><section><h2>Latest news</h2>#{cards}</section></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://example.test/news/article-archive-12345', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Visible index story 1', 'Visible index story 6')
+    end
+  end
+
   it 'classifies section pages dominated by teaser cards as lists' do
     cards = (1..9).map do |i|
       <<~HTML
