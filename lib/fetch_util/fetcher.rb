@@ -2,6 +2,7 @@
 
 require "uri"
 require "net/http"
+require "English"
 
 module FetchUtil
   class Fetcher
@@ -224,7 +225,12 @@ module FetchUtil
 
         raise e
       ensure
-        log_request(requested_url, t0)
+        active_exception = $ERROR_INFO
+        begin
+          log_request(requested_url, t0)
+        rescue SystemCallError, IOError
+          raise unless active_exception
+        end
       end
     end
 

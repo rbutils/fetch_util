@@ -632,4 +632,18 @@ RSpec.describe FetchUtil::Fetcher do
 
     expect(log).to have_received(:append).with(url, duration: a_value >= 0).once
   end
+
+  it 'preserves an unexpected collaborator error when request logging fails' do
+    log = instance_double(FetchUtil::RequestLog, append: nil)
+    url = 'https://example.com/unexpected'
+    allow(log).to receive(:append).and_raise(IOError, 'log failed')
+    allow(browser).to receive(:with_page).with(url).and_yield(page)
+    allow(extractor).to receive(:extract).and_raise(RuntimeError, 'unexpected failure')
+
+    expect do
+      fetch_with_dependencies(url, request_log: log)
+    end.to raise_error(RuntimeError, 'unexpected failure')
+
+    expect(log).to have_received(:append).with(url, duration: a_value >= 0).once
+  end
 end
