@@ -299,7 +299,11 @@ module FetchUtil
 
     def markdown_from_root(root, title)
       sections = []
-      root.css(BLOCK_SELECTOR).each do |node|
+      blocks = root.css(BLOCK_SELECTOR).to_a
+      blocks.unshift(root) if %w[ul ol].include?(root.name)
+      blocks.each do |node|
+        next if node.ancestors.any? { |ancestor| %w[ul ol].include?(ancestor.name) }
+
         text = clean_text(node.text)
         next if text.empty?
 
@@ -314,8 +318,8 @@ module FetchUtil
           fence_length = [3, code.scan(/`+/).map(&:length).max.to_i + 1].max
           fence = "`" * fence_length
           sections << [fence, code, fence].join("\n")
-        when "li"
-          sections << "- #{text}"
+        when "ul", "ol"
+          sections << markdown_list(node)
         when "tr"
           cells = node.css("th, td").map { |cell| clean_text(cell.text) }.reject(&:empty?)
           sections << "- #{cells.join(": ")}" unless cells.empty?
@@ -325,6 +329,34 @@ module FetchUtil
       markdown = sections.join("\n\n").gsub(/\n{3,}/, "\n\n").strip
       markdown = "# #{title}\n\n#{markdown}" if title && !markdown.start_with?("# #{title}")
       markdown
+    end
+
+    def markdown_list(list, depth = 0)
+      ordinal = integer_attribute(list, "start") || 1
+      items = list.css("li").select do |item|
+        item.ancestors.find { |ancestor| %w[ul ol].include?(ancestor.name) } == list
+      end
+      lines = items.flat_map do |item|
+        marker_value = integer_attribute(item, "value")
+        ordinal = marker_value if marker_value
+        marker = list.name == "ol" ? "#{ordinal}." : "-"
+        content = item.dup
+        content.css("ul, ol").remove
+        line = "#{"  " * depth}#{marker} #{clean_text(content.text)}"
+        ordinal += 1 if list.name == "ol"
+
+        nested = item.css("ul, ol").select do |child|
+          child.ancestors.find { |ancestor| ancestor.name == "li" } == item
+        end
+        [line] + nested.flat_map { |child| markdown_list(child, depth + 1).lines(chomp: true) }
+      end
+      lines.join("\n")
+    end
+
+    def integer_attribute(node, name)
+      Integer(node[name], 10)
+    rescue ArgumentError, TypeError
+      nil
     end
 
     def clean_text(text)

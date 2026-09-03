@@ -134,6 +134,64 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).to include("````\nbefore\n```ruby\nputs \"literal fence\"\n```\nafter\n````")
   end
 
+  it "renders nested lists once with hierarchy and ordered values" do
+    html = <<~HTML
+      <html lang="en"><head><title>Deployment guide</title></head><body><main>
+        <h1>Deployment guide</h1>
+        <p>Follow these deployment stages in order before publishing the application.</p>
+        <ul>
+          <li>Prepare the release
+            <div class="nested-list-wrapper"><ol start="3">
+              <li>Build the package</li>
+              <li value="5">Verify the package
+                <ul><li>Check the signed checksum</li></ul>
+              </li>
+            </ol></div>
+          </li>
+          <li>Publish the release</li>
+        </ul>
+        <p>Keep the release record after publishing for future audits.</p>
+        <ol start="8"><li>Notify maintainers</li><li value="10">Close the release</li></ol>
+      </main></body></html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://docs.example.com/deployment")
+    markdown = payload.fetch("markdown")
+
+    expect(markdown.scan("Prepare the release").length).to eq(1)
+    expect(markdown.scan("Build the package").length).to eq(1)
+    expect(markdown.scan("Verify the package").length).to eq(1)
+    expect(markdown.scan("Check the signed checksum").length).to eq(1)
+    expect(markdown).to include(
+      "- Prepare the release\n  3. Build the package\n  5. Verify the package\n    - Check the signed checksum",
+      "- Publish the release",
+      "8. Notify maintainers\n10. Close the release"
+    )
+    expect(markdown.index("Publish the release")).to be < markdown.index("Keep the release record")
+    expect(markdown.index("Keep the release record")).to be < markdown.index("Notify maintainers")
+  end
+
+  it "renders a list itself when it is the requested fragment root" do
+    html = <<~HTML
+      <html lang="en"><head><title>Choice reference</title></head><body><main>
+        <h1>Choice reference</h1>
+        <ul id="choices">
+          <div class="choice-row">
+            <li>First choice includes enough substantive reference detail for extraction.</li>
+          </div>
+          <li>Second choice preserves the remaining documented behavior in order.</li>
+        </ul>
+      </main></body></html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://docs.example.com/reference#choices")
+
+    expect(payload.fetch("markdown")).to include(
+      "- First choice includes enough substantive reference detail for extraction.",
+      "- Second choice preserves the remaining documented behavior in order."
+    )
+  end
+
   it "falls back to the final http url for unsafe canonical metadata" do
     html = <<~HTML
       <html>
