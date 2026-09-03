@@ -67,12 +67,12 @@ module FetchUtil
         [value]
       end
 
-      def policy_ref(url, path)
+      def policy_ref(url, path, target_origin:)
         candidate = url.to_s.strip
         return nil if candidate.empty?
 
         parse_http_uri(candidate)
-        { "url" => candidate, "path" => path }
+        { "url" => candidate, "path" => path, "target_origin" => origin_key(target_origin) }
       rescue ArgumentError
         nil
       end
@@ -81,7 +81,7 @@ module FetchUtil
         seen = {}
         list = []
         Array(policy_refs).compact.each do |policy_ref|
-          key = [policy_ref["url"], policy_ref["path"]]
+          key = [policy_ref["url"], policy_ref["path"], policy_ref["target_origin"]]
           next if seen[key]
 
           seen[key] = true

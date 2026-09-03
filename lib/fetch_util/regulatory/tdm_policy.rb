@@ -5,7 +5,9 @@ module FetchUtil
     module TdmPolicy
       def expanded_tdm_policy_signals(policy_refs, target_origin:)
         dedupe_policy_refs(policy_refs).flat_map do |policy_ref|
-          record = tdm_policy_record(policy_ref["url"], target_origin: target_origin)
+          policy_origin = policy_ref["target_origin"]
+          policy_origin = policy_origin ? parse_http_uri(policy_origin) : target_origin
+          record = tdm_policy_record(policy_ref["url"], target_origin: policy_origin)
           Array(record["signals"]).map do |template|
             signal = deep_copy(template)
             signal["path"] ||= policy_ref["path"]

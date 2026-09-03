@@ -3,7 +3,7 @@
 module FetchUtil
   class Regulatory
     module TdmPage
-      def extract_tdm_meta_signals(meta_tags, path:)
+      def extract_tdm_meta_signals(meta_tags, path:, target_origin:)
         reservation = nil
         policy_url = nil
 
@@ -13,10 +13,15 @@ module FetchUtil
           policy_url ||= attributes["content"] if name == "tdm-policy"
         end
 
-        extract_tdm_value_signals(reservation: reservation, policy_url: policy_url, path: path)
+        extract_tdm_value_signals(
+          reservation: reservation,
+          policy_url: policy_url,
+          path: path,
+          target_origin: target_origin
+        )
       end
 
-      def extract_tdm_value_signals(reservation:, policy_url:, path:)
+      def extract_tdm_value_signals(reservation:, policy_url:, path:, target_origin:)
         value = reservation.to_s.strip
         return [[], []] unless %w[0 1].include?(value)
 
@@ -31,7 +36,7 @@ module FetchUtil
             conditions: conditions
           )
         ]
-        policies = value == "1" ? [policy_ref(policy, path)] : []
+        policies = value == "1" ? [policy_ref(policy, path, target_origin: target_origin)] : []
         [signals, dedupe_policy_refs(policies)]
       end
     end

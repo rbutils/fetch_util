@@ -13,13 +13,17 @@ module FetchUtil
           header_policies = []
 
           response_chain(response).each do |step|
-            path = request_target(parse_http_uri(step.url))
+            step_uri = parse_http_uri(step.url)
+            next unless origin_key(step_uri).casecmp?(origin_key(final_uri))
+
+            path = request_target(step_uri)
             xrobotstag.concat(extract_x_robot_signals(step.headers, path: path))
             contentusageheader.concat(extract_content_usage_header_signals(step.headers, path: path))
             step_tdmheaders, step_policies = extract_tdm_value_signals(
               reservation: first_header_value(step.headers, "tdm-reservation"),
               policy_url: first_header_value(step.headers, "tdm-policy"),
-              path: path
+              path: path,
+              target_origin: step_uri
             )
             tdmheaders.concat(step_tdmheaders)
             header_policies.concat(step_policies)
@@ -32,7 +36,7 @@ module FetchUtil
           if html_content?(response.headers, response.body)
             meta_tags = parse_meta_tags(response.body)
             metarobots = sort_generic_signals(extract_meta_robot_signals(meta_tags, path: final_path))
-            tdmmeta, meta_policies = extract_tdm_meta_signals(meta_tags, path: final_path)
+            tdmmeta, meta_policies = extract_tdm_meta_signals(meta_tags, path: final_path, target_origin: final_uri)
             human = sort_generic_signals(extract_human_signals(response.body, path: final_path))
           end
 

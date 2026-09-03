@@ -794,6 +794,74 @@ RSpec.describe FetchUtil::Regulatory do
   ensure
     FileUtils.remove_entry(dir) if dir && File.exist?(dir)
   end
+
+  it "does not carry page signals across redirect origins" do
+    policy_url = "https://destination.example/policies/tdm.json"
+    redirect = response(
+      "https://origin.example/start",
+      status: 302,
+      headers: {
+        "location" => ["https://destination.example/article"],
+        "x-robots-tag" => ["noindex"],
+        "tdm-reservation" => ["1"],
+        "tdm-policy" => ["https://origin.example/policies/tdm.json"]
+      }
+    )
+    client = fake_client(
+      "https://origin.example/start" => response(
+        "https://destination.example/article",
+        headers: {
+          "content-type" => ["text/html; charset=utf-8"],
+          "x-robots-tag" => ["nofollow"],
+          "tdm-reservation" => ["1"],
+          "tdm-policy" => [policy_url]
+        },
+        body: <<~HTML,
+          <html>
+            <head>
+              <meta name="robots" content="noarchive">
+              <meta name="tdm-reservation" content="0">
+            </head>
+            <body>ok</body>
+          </html>
+        HTML
+        redirects: [redirect]
+      ),
+      "https://origin.example/.well-known/tdmrep.json" => response(
+        "https://origin.example/.well-known/tdmrep.json",
+        status: 404
+      ),
+      policy_url => response(
+        policy_url,
+        headers: { "content-type" => ["application/json"] },
+        body: JSON.generate(
+          "permission" => [{ "action" => "tdm:mine", "target" => "https://destination.example/article" }]
+        )
+      )
+    )
+    dir = Dir.mktmpdir
+    regulatory = described_class.new(
+      client: client,
+      cache_path: dir,
+      sources: "xrobotstag,metarobots,tdmheaders,tdmmeta,tdmpolicy"
+    )
+
+    expect(regulatory.call("https://origin.example/start")).to eq(
+      {
+        "xrobotstag" => [{ "disallow" => "follow" }],
+        "metarobots" => [{ "disallow" => "archive" }],
+        "tdmheaders" => [
+          { "disallow" => "text-and-data-mining", "conditions" => { "policy" => policy_url } }
+        ],
+        "tdmmeta" => [{ "allow" => "text-and-data-mining" }],
+        "tdmpolicy" => [
+          { "allow" => "text-and-data-mining", "conditions" => { "policy" => policy_url } }
+        ]
+      }
+    )
+  ensure
+    FileUtils.remove_entry(dir) if dir && File.exist?(dir)
+  end
 end
 
 RSpec.describe FetchUtil::Regulatory::HttpClient do

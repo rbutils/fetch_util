@@ -9,7 +9,7 @@ module FetchUtil
           tdmrep_uri(requested_uri),
           fallback: { "signals" => [], "policies" => [] }
         ) do |body|
-          signals, policies = extract_tdmrep_signals(body)
+          signals, policies = extract_tdmrep_signals(body, target_origin: requested_uri)
           {
             "signals" => sort_specificity_signals(signals),
             "policies" => policies
@@ -17,7 +17,7 @@ module FetchUtil
         end
       end
 
-      def extract_tdmrep_signals(body)
+      def extract_tdmrep_signals(body, target_origin:)
         payload = JSON.parse(body.to_s)
         return [[], []] unless payload.is_a?(Array)
 
@@ -35,7 +35,8 @@ module FetchUtil
           rule_signals, rule_policies = extract_tdm_value_signals(
             reservation: reservation,
             policy_url: policy_url,
-            path: normalize_output_path(location)
+            path: normalize_output_path(location),
+            target_origin: target_origin
           )
           signals.concat(rule_signals)
           policies.concat(rule_policies)
