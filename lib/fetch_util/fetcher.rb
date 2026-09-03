@@ -953,7 +953,24 @@ module FetchUtil
     end
 
     def log_request(url, t0)
-      @request_log&.append(url, duration: monotonic_now - t0)
+      @request_log&.append(request_log_url(url), duration: monotonic_now - t0)
+    end
+
+    def request_log_url(url)
+      value = url.to_s
+      scheme = value.match(/\Ahttps?:/i)
+      return value unless scheme
+
+      separators = value[scheme.end(0)..].to_s.match(%r{\A[\\/]+})
+      return value unless separators
+
+      authority_start = scheme.end(0) + separators[0].length
+      authority_end = value.index(%r{[\\/?#\s]}, authority_start) || value.length
+      authority = value[authority_start...authority_end]
+      userinfo_end = authority.rindex("@")
+      return value unless userinfo_end
+
+      value[0...authority_start] + authority[(userinfo_end + 1)..] + value[authority_end..]
     end
 
     def monotonic_now
