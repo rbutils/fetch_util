@@ -94,6 +94,7 @@ RSpec.describe FetchUtil::Browser do
 
     allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
     allow(browser).to receive(:load_page_with_retry).and_return(page)
+    allow(page).to receive(:current_url).and_return('https://example.com')
     allow(browser).to receive(:heavy_script_page?).and_return(true)
     allow(page).to receive(:close)
     allow(browser).to receive(:sleep)
@@ -115,6 +116,7 @@ RSpec.describe FetchUtil::Browser do
     allow(page).to receive(:headers).and_return(double(set: true))
     allow(page).to receive(:bypass_csp)
     allow(page).to receive(:go_to).and_raise(Ferrum::TimeoutError)
+    allow(page).to receive(:current_url).and_return('https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#pod-v1-core')
     stub_page_network(page, network, idle: true, wait_for_idle: true)
     allow(page).to receive(:evaluate).and_return(true, false, false)
     allow(page).to receive(:close)

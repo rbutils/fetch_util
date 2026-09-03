@@ -84,7 +84,7 @@ module FetchUtil
 
       normalized_url = FetchUtil.normalize_url(url)
       page = load_page_with_retry(ensure_browser, normalized_url)
-      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, normalized_url)
+      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, loaded_page_url(page, normalized_url))
       yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message
@@ -212,6 +212,11 @@ module FetchUtil
       nil
     end
 
+    def loaded_page_url(page, fallback)
+      current_url = page.current_url
+      current_url.to_s.empty? ? fallback : current_url
+    end
+
     def load_page_with_retry(ferrum, url)
       retries = 0
 
@@ -224,7 +229,7 @@ module FetchUtil
         rescue Ferrum::TimeoutError
           raise unless page_loaded_enough?(page)
         end
-        stabilize_page(page, url)
+        stabilize_page(page, loaded_page_url(page, url))
         page
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
         close_page(page)

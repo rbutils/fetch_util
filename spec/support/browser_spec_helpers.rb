@@ -15,10 +15,11 @@ RSpec.shared_context 'browser spec helpers' do
     allow(ferrum).to receive(:create_page).and_return(*pages)
   end
 
-  def stub_page_navigation(page)
+  def stub_page_navigation(page, current_url: 'https://example.com')
     allow(page).to receive(:headers).and_return(double(set: true))
     allow(page).to receive(:bypass_csp)
     allow(page).to receive(:go_to)
+    allow(page).to receive(:current_url).and_return(current_url)
   end
 
   def stub_page_network(page, network, idle: nil, wait_for_idle: nil)

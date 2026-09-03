@@ -145,20 +145,36 @@ RSpec.describe FetchUtil::Browser do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
     page = instance_double('FerrumPage')
+    normalized_url = 'https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC'
+
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page, current_url: normalized_url)
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
+    allow(page).to receive(:close)
+    allow(browser).to receive(:stabilize_page)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+
+    expect(page).to receive(:go_to).with(normalized_url)
+
+    browser.with_page('https://ja.wikipedia.org/wiki/日本') {}
+  end
+
+  it 'stabilizes and settles against the final redirected url' do
+    browser = browser_without_idle
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage', current_url: 'https://github.com/rbutils/fetch_util/issues/1')
 
     stub_ferrum_page_creation(ferrum, page)
     allow(browser).to receive(:ensure_browser).and_return(ferrum)
     allow(page).to receive(:headers).and_return(double(set: true))
     allow(page).to receive(:bypass_csp)
+    allow(page).to receive(:go_to)
     allow(page).to receive(:close)
-    allow(browser).to receive(:stabilize_page)
-    allow(browser).to receive(:heavy_script_page?).and_return(false)
 
-    normalized_url = 'https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC'
+    expect(browser).to receive(:stabilize_page).with(page, 'https://github.com/rbutils/fetch_util/issues/1')
+    expect(browser).to receive(:heavy_script_page?).with(page, 'https://github.com/rbutils/fetch_util/issues/1').and_return(false)
 
-    expect(page).to receive(:go_to).with(normalized_url)
-
-    browser.with_page('https://ja.wikipedia.org/wiki/日本') {}
+    browser.with_page('https://example.com/redirect') {}
   end
 
   it 'reuses the browser process across multiple with_page calls' do
@@ -240,6 +256,7 @@ RSpec.describe FetchUtil::Browser do
 
     allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
     allow(browser).to receive(:load_page_with_retry).and_return(page)
+    allow(page).to receive(:current_url).and_return('https://example.com')
     allow(browser).to receive(:heavy_script_page?).and_return(false)
     allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
 
@@ -252,6 +269,7 @@ RSpec.describe FetchUtil::Browser do
 
     allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
     allow(browser).to receive(:load_page_with_retry).and_return(page)
+    allow(page).to receive(:current_url).and_return('https://example.com')
     allow(browser).to receive(:heavy_script_page?).and_return(false)
     allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
 
