@@ -47,11 +47,19 @@
 
   function articleRouteFocalContent(content) {
     if (!document.body) return false;
-    var focal = document.querySelector("[itemprop='articleBody'], article[role='main'], main article");
+    var semanticFocal = document.querySelector("[itemprop='articleBody'], article[role='main']");
+    var classFocal = document.querySelector([
+      "article[class*='article-content' i]",
+      "article[class*='article_content' i]",
+      "article[class*='article-body' i]",
+      "article[class*='article_body' i]"
+    ].join(", "));
+    var focal = semanticFocal || classFocal || document.querySelector("main article");
     if (!articleLikePath() && !focal) return false;
+    if (focal === classFocal && !articleLikePath()) return false;
     if (content && content.contentType !== "article" && content.contentType !== "medical") return false;
 
-    var root = focal || document.createElement("div");
+    var root = focal ? visibilityPrunedClone(focal, document) : document.createElement("div");
     if (!focal && content && content.html) root.innerHTML = content.html;
     var heading = document.querySelector("h1") || root.querySelector("h1");
     var paragraphs = Array.prototype.filter.call(root.querySelectorAll("p"), function(paragraph) {
@@ -60,7 +68,9 @@
     });
     var text = normalizeText(paragraphs.map(function(paragraph) { return paragraph.textContent || ""; }).join(" "));
     if (!focal && content && content.html) text = normalizeText(root.textContent || "");
-    var nestedArticles = root.querySelectorAll("article").length - (root.matches && root.matches("article") ? 1 : 0);
+    var nestedArticles = root.querySelectorAll("article").length;
+    var rootText = normalizeText(root.textContent || "");
+    var rootLinks = root.querySelectorAll("a[href]");
     var bylineOrTime = document.querySelector("[rel='author'], [itemprop='author'], [itemprop='datePublished'], time, .byline, [class*='byline' i]");
     var linkText = Array.prototype.reduce.call(root.querySelectorAll("p a[href]"), function(total, link) {
       return total + normalizeText(link.textContent || "").length;
@@ -69,7 +79,15 @@
 
     var substantialProse = paragraphs.length >= 2 && text.length >= 120;
     var structuredLiveBody = nestedArticles >= 2 && normalizeText(root.textContent || "").length >= 280;
-    return !!heading && (substantialProse || structuredLiveBody) && linkDensity < 0.45 &&
+    var paragraphlessBody = articleLikePath() && root.matches && root.matches("article") &&
+      paragraphs.length === 0 && nestedArticles === 0 && !root.querySelector("h1, h2, h3, h4") &&
+      rootText.length >= 280 && rootLinks.length <= 2;
+    var paragraphlessLinkText = Array.prototype.reduce.call(rootLinks, function(total, link) {
+      return total + normalizeText(link.textContent || "").length;
+    }, 0);
+    var effectiveLinkDensity = paragraphlessBody ? paragraphlessLinkText / rootText.length : linkDensity;
+    var bodyEvidence = focal === classFocal ? paragraphlessBody : (substantialProse || structuredLiveBody || paragraphlessBody);
+    return !!heading && bodyEvidence && effectiveLinkDensity < 0.45 &&
       (!!focal || !!content) && (!!bylineOrTime || (content && (content.byline || content.publishedTime)) || !!focal);
   }
 

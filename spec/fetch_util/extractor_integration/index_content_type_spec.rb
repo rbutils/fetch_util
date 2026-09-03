@@ -3,6 +3,53 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
+  it 'keeps a paragraphless focal article body as an article' do
+    body = "A paragraphless newsroom body reports detailed financial results, explains the market context, " \
+           "quotes company leadership, and describes the consequences for customers and employees. " * 4
+    related = 10.times.map do |index|
+      %(<li><a href="/article/related-#{index + 1}">Related analysis #{index + 1}</a></li>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Quarterly results explained</title></head><body>
+        <main>
+          <article><h2><a href="/article/earlier-teaser">Earlier newsroom teaser</a></h2><p>Earlier teaser copy.</p></article>
+          <section><h2>Related analysis</h2><ul>#{related}</ul></section>
+        </main>
+        <h1>Quarterly results explained</h1>
+        <time datetime="2026-09-03">September 3, 2026</time>
+        <article class="_article_content"><div>#{body}</div></article>
+      </body></html>
+    HTML
+
+    with_url_page('https://example.test/article/quarterly-results-12345', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('paragraphless newsroom body')
+    end
+  end
+
+  it 'does not let hidden article-body content protect an index page' do
+    cards = 9.times.map do |index|
+      %(<article><h2><a href="/news/story-#{index + 1}">Visible index story #{index + 1}</a></h2><p>Visible teaser #{index + 1}.</p></article>)
+    end.join
+    html = <<~HTML
+      <html><head><title>News archive</title></head><body>
+        <h1>News archive</h1>
+        <article class="article-body" style="display:none"><div>#{"Hidden article prose. " * 30}</div></article>
+        <main><section><h2>Latest news</h2>#{cards}</section></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://example.test/news/article-archive-12345', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Visible index story 1', 'Visible index story 9')
+      expect(payload['markdown']).not_to include('Hidden article prose')
+    end
+  end
+
   it 'classifies section pages dominated by teaser cards as lists' do
     cards = (1..9).map do |i|
       <<~HTML

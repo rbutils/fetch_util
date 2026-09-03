@@ -2,7 +2,13 @@
     extract: function(options) {
       mwananchiPrePageTextCleanup();
       var metadata = collectMetadata();
+      var focalArticleRoute = articleRouteFocalContent();
       var content;
+
+      function cachedFocalArticleContent(candidate) {
+        return !!(focalArticleRoute && candidate &&
+          (candidate.contentType === "article" || candidate.contentType === "medical"));
+      }
 
       if (!content) {
         var mediaWiki = mediaWikiContent(metadata);
@@ -122,7 +128,8 @@
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
       content = applySocialContentType(content);
-      var strongArticle = substantialArticleContent(content) || strongArticleMetadata(metadata, content);
+      var strongArticle = cachedFocalArticleContent(content) || articleRouteFocalContent(content) ||
+        substantialArticleContent(content) || strongArticleMetadata(metadata, content);
 
       var productList = genericProductListContent(metadata);
       if (productList && content && content.contentType !== "social" && content.contentType !== "product" && content.contentType !== "property" && content.contentType !== "hotel" && !content.hostAware && !content.docsLike) {
@@ -139,7 +146,8 @@
       }
 
       var jobList = genericJobListContent(metadata);
-      if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike && !articleRouteFocalContent(content)) {
+      if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike &&
+          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content)) {
         content = jobList;
       }
 
@@ -147,7 +155,8 @@
         (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
       var strongEventList = strongEventListingPage();
-      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" && !articleRouteFocalContent(content) &&
+      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" &&
+          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
           (!eventArticle || strongEventList) && (content.contentType !== "list" || strongEventList)) {
         content = eventList;
       }
@@ -158,17 +167,20 @@
        if (portalRootContent) content = portalRootContent;
 
        var medicalArticle = medicalArticlePage(metadata, content);
-      var strongArticle = medicalArticle || substantialArticleContent(content) || strongArticleMetadata(metadata, content);
+      var strongArticle = cachedFocalArticleContent(content) || articleRouteFocalContent(content) || medicalArticle ||
+        substantialArticleContent(content) || strongArticleMetadata(metadata, content);
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;
       }
-      if (content.contentType === "article" && !content.hostAware && !content.docsLike && !articleRouteFocalContent(content) && legalFooterText(content.textContent || content.markdown || "")) {
+      if (content.contentType === "article" && !content.hostAware && !content.docsLike &&
+          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
+          legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
         if (normalizeText(footerListFallback.markdown || "").length >= 400) content = footerListFallback;
       }
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && dominantIndexListPage(content)) content = listContent(metadata);
-      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || !articleRouteFocalContent(content)) && !strongArticle) content = listContent(metadata);
+      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) && !strongArticle) content = listContent(metadata);
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
