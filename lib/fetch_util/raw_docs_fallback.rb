@@ -176,6 +176,8 @@ module FetchUtil
       node = fragment_node(document, id)
       return nil unless node
 
+      return fragment_heading_root(document, node) if fragment_heading_level(node)
+
       if fragment_anchor?(node, id)
         container = Nokogiri::XML::Node.new("div", document)
         sibling = node.next_sibling
@@ -196,6 +198,29 @@ module FetchUtil
       end
 
       node.dup
+    end
+
+    def fragment_heading_root(document, heading)
+      level = fragment_heading_level(heading)
+      container = Nokogiri::XML::Node.new("div", document)
+      sibling = heading
+
+      while sibling
+        if sibling != heading && sibling.element?
+          sibling_level = fragment_heading_level(sibling)
+          break if empty_fragment_anchor?(sibling) || (sibling_level && sibling_level <= level)
+        end
+
+        container.add_child(sibling.dup)
+        sibling = sibling.next_sibling
+      end
+
+      container
+    end
+
+    def fragment_heading_level(node)
+      match = node&.name&.match(/\Ah([1-6])\z/)
+      match && Integer(match[1], 10)
     end
 
     def fragment_title(document, url)
@@ -339,6 +364,11 @@ module FetchUtil
       anchor_id = node["name"]
       anchor_id ||= node["id"] if node.element_children.empty? && clean_text(node.text).empty?
       id ? anchor_id == id : !anchor_id.to_s.empty?
+    end
+
+    def empty_fragment_anchor?(node)
+      node.name == "a" && node.element_children.empty? && clean_text(node.text).empty? &&
+        ![node["name"], node["id"]].compact.empty?
     end
 
     def xpath_literal(value)

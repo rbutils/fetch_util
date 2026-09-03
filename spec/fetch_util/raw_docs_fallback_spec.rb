@@ -249,6 +249,60 @@ RSpec.describe FetchUtil::RawDocsFallback do
     expect(payload["markdown"]).not_to include("following directive")
   end
 
+  it "extracts sections whose fragment id is on the heading" do
+    html = <<~HTML
+      <html>
+        <head><title>Reference guide</title></head>
+        <body>
+          <main>
+            <h2 id="configuration">Configuration</h2>
+            <p>The configuration section explains every supported option and its runtime behavior.</p>
+            <h3>Advanced options</h3>
+            <p>Advanced option details remain part of the requested configuration section.</p>
+            <a id="configuration_source" href="/source">Configuration source</a>
+            <p>A nonempty inline anchor does not end the requested section.</p>
+            <a name="legacy_source" href="/legacy-source">Legacy configuration source</a>
+            <p>A visible named anchor also remains part of the requested section.</p>
+            <h2 id="deployment">Deployment</h2>
+            <p>Deployment belongs to the following same-level section and must not be included.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://example.test/docs#configuration")
+
+    expect(payload["title"]).to eq("Configuration")
+    expect(payload["markdown"]).to include(
+      "every supported option", "Advanced option details", "does not end", "visible named anchor"
+    )
+    expect(payload["markdown"]).not_to include("Deployment", "following same-level section")
+  end
+
+  it "stops heading-owned fragments at explicit empty anchor boundaries" do
+    html = <<~HTML
+      <html>
+        <head><title>Reference guide</title></head>
+        <body>
+          <main>
+            <h3 id="selected">Selected topic</h3>
+            <p>The selected topic has enough substantive reference content to produce a useful result.</p>
+            <h4>Nested detail</h4>
+            <p>A lower-level heading remains inside the selected topic.</p>
+            <a id="next_topic"></a>
+            <h4>Next topic</h4>
+            <p>Content after an explicit fragment boundary must not be included.</p>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    payload = described_class.new.payload_from_html(html, requested_url: "https://example.test/docs#selected")
+
+    expect(payload["markdown"]).to include("selected topic has enough", "lower-level heading remains")
+    expect(payload["markdown"]).not_to include("Next topic", "explicit fragment boundary")
+  end
+
   it "retains content wrapped by a matching nonempty id anchor" do
     html = <<~HTML
       <html>
