@@ -428,6 +428,31 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(result.candidates.map(&:title)).to eq(["A", "Second result"])
   end
 
+  it "keeps challenge and no-result phrases owned by organic cards for every source" do
+    described_class::SOURCES.each do |source, configuration|
+      organic_html = fixture(source)
+                     .sub(">A<", ">Consent practices for public records<")
+                     .sub("First detail", "No results found in legacy catalogs")
+      html = ["<title>CAPTCHA and unusual traffic research</title>", organic_html].join
+      client = FixtureSearchClient.new({ configuration.fetch(:hosts).first => response(html) })
+
+      transport = described_class.new(sources: [source], http_client: client)
+      result = transport.search("consent practices public records").first
+
+      expect(result).to have_attributes(status: "ok", reason: nil)
+      expect(result.candidates.map(&:title)).to eq(["Consent practices for public records", "Second result"])
+    end
+  end
+
+  it "keeps visible challenge phrases outside organic cards authoritative" do
+    html = [fixture("brave"), "<aside>Verify you are human to continue.</aside>"].join
+    client = FixtureSearchClient.new({ "search.brave.com" => response(html) })
+
+    result = described_class.new(sources: ["brave"], http_client: client).search("ruby").first
+
+    expect(result).to have_attributes(status: "failed", reason: "challenge")
+  end
+
   it "parses once before challenge inspection" do
     calls = 0
     parser = lambda do |body|

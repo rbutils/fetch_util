@@ -150,9 +150,10 @@ module FetchUtil
       end
       outcome = within_deadline(deadline) do
         document = html_parser.call(result.body)
-        next [:failed, "challenge"] if challenge?(source, result, document)
+        shell_text = search_shell_text(source, document)
+        next [:failed, "challenge"] if challenge?(source, result, shell_text)
         next [:failed, "http_status"] unless result.status.between?(200, 299)
-        next [:empty] if no_results?(source, document)
+        next [:empty] if no_results?(source, shell_text)
 
         candidates = parse_candidates(source, document)
         next [:ok, candidates] if candidates.empty?
@@ -399,19 +400,16 @@ module FetchUtil
       node ? node.text.encode("UTF-8", invalid: :replace, undef: :replace, replace: " ").gsub(/\s+/, " ").strip : ""
     end
 
-    def challenge?(source, response, document)
+    def challenge?(source, response, shell_text)
       return true if source == "google" && URI.parse(response.final_url).path.start_with?("/sorry")
       return true if source == "duckduckgo" && response.status == 202
 
-      title = normalized_text(document.at_css("title")).downcase
-      visible_text = visible_document_text(document)
-      "#{title} #{visible_text}".match?(/captcha|unusual traffic|verify you are human|consent/)
+      shell_text.match?(/captcha|unusual traffic|verify you are human|consent/)
     rescue URI::InvalidURIError
       true
     end
 
-    def no_results?(source, document)
-      text = visible_document_text(document)
+    def no_results?(source, text)
       patterns = {
         "brave" => /no results|did not match any documents/,
         "bing" => /there are no results|no results found/,
@@ -423,9 +421,10 @@ module FetchUtil
       text.match?(patterns.fetch(source))
     end
 
-    def visible_document_text(document)
+    def search_shell_text(source, document)
       visible = document.dup
-      visible.css("script, style, template, noscript").remove
+      result_nodes(source, visible).each(&:remove)
+      visible.css("title, script, style, template, noscript").remove
       normalized_text(visible).downcase
     end
 
