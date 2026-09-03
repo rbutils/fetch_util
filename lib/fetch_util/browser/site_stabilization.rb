@@ -20,6 +20,7 @@ module FetchUtil
       autoload :BitbucketCloudPullResourceModules,
                "fetch_util/browser/site_stabilization/bitbucket_cloud_pull_resource_modules"
       autoload :CommunityAndMarketplace, "fetch_util/browser/site_stabilization/community_and_marketplace"
+      autoload :FacebookStabilization, "fetch_util/browser/site_stabilization/facebook_stabilization"
       autoload :GerritChangeProductStateScript,
                "fetch_util/browser/site_stabilization/gerrit_change_product_state_script"
       autoload :GerritChangeRequestStateScript,
@@ -78,6 +79,7 @@ module FetchUtil
       include BitbucketCloudThreads
       include BitbucketCloudPullResourceModules
       include CommunityAndMarketplace
+      include FacebookStabilization
       include GerritChangeState
       include GerritChangeStabilization
       include GerritFileResourceState
