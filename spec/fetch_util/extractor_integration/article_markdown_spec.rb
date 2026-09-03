@@ -1115,6 +1115,59 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "excludes unrelated structured records when a page owner resolves its main entity" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Policy analysis</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "@id": "https://example.com/analysis/policy#page",
+                  "mainEntity": {"@id": "#article"}
+                },
+                {
+                  "@id": "#article",
+                  "@type": "Article",
+                  "headline": "Policy analysis",
+                  "description": "A detailed analysis of current policy choices."
+                },
+                {
+                  "@type": "Event",
+                  "name": "Sidebar webinar",
+                  "startDate": "2026-10-01",
+                  "description": "An unrelated promotional event."
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Policy analysis</h1>
+              <p>This analysis explains how the current policy choices affect public services and institutional planning.</p>
+              <p>It compares the available approaches, their practical constraints, and the evidence supporting each option.</p>
+              <p>The conclusion identifies implementation priorities without treating a sidebar promotion as the page subject.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.com/analysis/policy", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("current policy choices")
+      expect(payload["markdown"]).not_to include("Sidebar webinar", "unrelated promotional event")
+      expect(payload["startTime"]).to be_nil
+    end
+  end
+
   it "merges page-owned entities with graph descriptions" do
     html = <<~HTML
       <html>

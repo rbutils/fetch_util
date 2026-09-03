@@ -37,6 +37,42 @@ RSpec.describe 'FetchUtil event extraction' do
     end
   end
 
+  it 'keeps standalone structured records when a page owner reference is unresolved' do
+    html = <<~HTML
+      <html><head>
+        <script type="application/ld+json">
+          {
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebPage",
+                "mainEntity": {
+                  "@id": "#missing",
+                  "@type": "Article",
+                  "headline": "",
+                  "keywords": [],
+                  "author": {}
+                }
+              },
+              {
+                "@type": "Event",
+                "name": "Independent community workshop",
+                "startDate": "2026-10-12",
+                "description": "A complete standalone event record remains available when the declared page entity cannot be resolved."
+              }
+            ]
+          }
+        </script>
+      </head><body><main><h1>Independent community workshop</h1></main></body></html>
+    HTML
+
+    extract_from_url('https://events.example.test/independent-workshop', html) do |payload|
+      expect_content_type(payload, 'event')
+      expect(payload['title']).to eq('Independent community workshop')
+      expect(payload['description']).to include('complete standalone event record')
+    end
+  end
+
   it 'materializes links in source-authored structured descriptions' do
     html = <<~HTML
       <html><head>

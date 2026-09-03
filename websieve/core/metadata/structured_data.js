@@ -106,10 +106,18 @@ function mergeStructuredDataEntity(target, source) {
   return target;
 }
 
-function structuredDataEntityHasProperties(node) {
-  return Object.keys(node).some(function(key) {
-    return key !== "@context" && key !== "@id" && key !== "@type" && node[key] != null;
+function structuredDataValueHasMaterial(value) {
+  if (value == null) return false;
+  if (typeof value === "string") return !!normalizeText(value);
+  if (Array.isArray(value)) return value.some(structuredDataValueHasMaterial);
+  if (typeof value === "object") return Object.keys(value).some(function(key) {
+    return key !== "@context" && key !== "@id" && key !== "@type" && structuredDataValueHasMaterial(value[key]);
   });
+  return true;
+}
+
+function structuredDataEntityHasProperties(node) {
+  return structuredDataValueHasMaterial(node);
 }
 
 function structuredDataIdentityKey(id) {
@@ -176,6 +184,9 @@ function pageOwnedStructuredDataNodes(nodes) {
       });
     }
   });
+
+  expanded = expanded.filter(structuredDataEntityHasProperties);
+  if (expanded.length) return expanded;
 
   nodes.forEach(function(node) {
     appendNode(node);
