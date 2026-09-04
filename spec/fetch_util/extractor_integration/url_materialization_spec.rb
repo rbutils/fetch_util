@@ -92,7 +92,7 @@ RSpec.describe 'FetchUtil public URL materialization' do
     expect(payload.values_at('title', 'excerpt').join).to include(
       'https://public.example.test/title', 'https://public.example.test/excerpt'
     )
-    expect(payload['language']).to eq('https://public.example.test/language')
+    expect(payload['language']).to be_nil
     expect(payload['ingredients']).to eq(['https://public.example.test/ingredient'])
     expect(payload.reject { |key, _value| key == 'html' }.values.join).not_to include(
       'reader', 'secret', "sec'ret", 'writer', 'token', 'public.example.test/private'
