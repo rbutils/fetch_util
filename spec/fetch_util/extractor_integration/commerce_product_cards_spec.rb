@@ -100,6 +100,88 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "does not let an anonymous page owner suppress a standalone product" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Primary Field Recorder | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "mainEntity": {
+                    "@type": "Event",
+                    "name": "Unrelated Sidebar Exhibition",
+                    "startDate": "2026-11-14T18:00:00Z"
+                  }
+                },
+                {
+                  "@type": "Product",
+                  "name": "Primary Field Recorder",
+                  "description": "A durable field recorder for documenting interviews and ambient sound.",
+                  "offers": {"@type": "Offer", "price": "84.00", "priceCurrency": "USD"}
+                }
+              ]
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Primary Field Recorder</h1>
+            <p>A durable field recorder for documenting interviews and ambient sound.</p>
+            <button type="button" data-testid="add-to-cart">Add to cart</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/primary-field-recorder", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$84.00")
+      expect(payload["markdown"]).not_to include("Unrelated Sidebar Exhibition", "2026-11-14")
+    end
+  end
+
+  it "preserves an anonymous page owner's sole embedded product" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Portable Document Scanner | Example Store</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "mainEntity": {
+                "@type": "Product",
+                "name": "Portable Document Scanner",
+                "description": "A compact scanner for preserving field notes and archival documents.",
+                "offers": {"@type": "Offer", "price": "129.00", "priceCurrency": "USD"}
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <h1>Portable Document Scanner</h1>
+            <p>A compact scanner for preserving field notes and archival documents.</p>
+            <button type="button" data-testid="add-to-cart">Add to cart</button>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://store.example.test/products/portable-document-scanner", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("product")
+      expect(payload["price"]).to eq("$129.00")
+    end
+  end
+
   it "prioritizes page-owned products over earlier unrelated entities" do
     html = <<~HTML
       <html>

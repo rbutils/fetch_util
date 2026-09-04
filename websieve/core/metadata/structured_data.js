@@ -32,14 +32,48 @@ function pageStructuredDataDocumentKeys() {
   return [location.href, materializedCanonicalUrl()].map(structuredDataDocumentKey).filter(Boolean);
 }
 
-function pageStructuredDataOwner(node, documentKeys) {
+function structuredDataFocalRecord(node) {
+  var focalTypes = [
+    "Article", "NewsArticle", "BlogPosting", "ReportageNewsArticle", "AnalysisNewsArticle",
+    "OpinionNewsArticle", "LiveBlogPosting", "Product", "Book", "Recipe", "Event", "MusicEvent",
+    "SportsEvent", "TheaterEvent", "Festival", "JobPosting", "MedicalWebPage", "Dataset", "DataCatalog",
+    "VideoObject", "Clip", "Movie", "TVEpisode", "TVSeries", "TVSeason", "DiscussionForumPosting",
+    "SocialMediaPosting"
+  ];
+  return nodeTypes(node).some(function(type) { return focalTypes.indexOf(type) !== -1; });
+}
+
+function anonymousPageStructuredDataOwner(node, nodes) {
+  var mainEntityIds = asArray(node.mainEntity).map(function(entity) {
+    var id = typeof entity === "string" ? entity : structuredDataNodeId(entity);
+    return structuredDataIdentityKey(id);
+  }).filter(Boolean);
+  var resolvedFocalEntity = (nodes || []).some(function(candidate) {
+    if (!structuredDataFocalRecord(candidate)) return false;
+
+    var id = structuredDataIdentityKey(structuredDataNodeId(candidate));
+    return id && mainEntityIds.indexOf(id) !== -1;
+  });
+  if (resolvedFocalEntity) return true;
+
+  return !(nodes || []).some(function(candidate) {
+    if (candidate === node || !structuredDataFocalRecord(candidate)) return false;
+
+    var id = structuredDataIdentityKey(structuredDataNodeId(candidate));
+    return !id || mainEntityIds.indexOf(id) === -1;
+  });
+}
+
+function pageStructuredDataOwner(node, documentKeys, nodes) {
   var pageType = nodeTypes(node).some(function(type) {
     return type === "WebPage" || type === "ProfilePage";
   });
   if (!pageType) return false;
 
   var identity = structuredDataNodeId(node) || node.url;
-  return !identity || documentKeys.indexOf(structuredDataDocumentKey(identity)) !== -1;
+  if (identity) return documentKeys.indexOf(structuredDataDocumentKey(identity)) !== -1;
+
+  return anonymousPageStructuredDataOwner(node, nodes);
 }
 
 function mergeStructuredDataTypes(current, incoming) {
@@ -145,7 +179,7 @@ function pageOwnedStructuredDataNodes(nodes) {
   var documentKeys = pageStructuredDataDocumentKeys();
 
   nodes.forEach(function(node) {
-    if (!pageStructuredDataOwner(node, documentKeys)) return;
+    if (!pageStructuredDataOwner(node, documentKeys, nodes)) return;
 
     asArray(node.mainEntity).forEach(function(entity) {
       var id = typeof entity === "string" ? entity : entity && entity["@id"];
@@ -177,7 +211,7 @@ function pageOwnedStructuredDataNodes(nodes) {
   }
 
   nodes.forEach(function(node) {
-    if (pageStructuredDataOwner(node, documentKeys)) {
+    if (pageStructuredDataOwner(node, documentKeys, nodes)) {
       asArray(node.mainEntity).forEach(function(entity) {
         var id = typeof entity === "string" ? entity : entity && entity["@id"];
         appendNode(id ? mergedById[structuredDataIdentityKey(id)] : entity);
