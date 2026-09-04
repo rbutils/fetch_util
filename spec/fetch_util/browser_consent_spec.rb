@@ -209,6 +209,8 @@ RSpec.describe FetchUtil::Browser do
     end
 
     browser = browser_with_idle
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+    allow(browser).to receive(:safe_evaluate).and_return(false)
     allow(browser).to receive(:safe_evaluate).with(page, include('#anubis_challenge'), default: {}).and_return(
       {
         'challenge' => false,
