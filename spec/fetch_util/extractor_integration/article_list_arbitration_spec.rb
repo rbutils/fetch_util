@@ -11,6 +11,38 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     File.expand_path('../../fixtures/article_route_related_only.html', __dir__)
   end
 
+  def homepage_article_with_directory_fixture(path_prefix:, paragraph_count:, item_count:, wrapped_card:, context_paragraph_count: 0)
+    paragraphs = (1..paragraph_count).map do |index|
+      <<~HTML
+        <p>Operational section #{index} explains how the platform coordinates implementation planning, data governance,
+        deployment architecture, training, and long-term support for teams with different technical requirements. It
+        describes the decisions customers make before launch, the safeguards used during migration, and the specialists
+        who keep each rollout reliable after production traffic arrives. This material is the primary explanation a
+        reader needs in order to understand the service rather than a caption for any directory link.</p>
+      HTML
+    end.join
+    article_body = <<~HTML
+      <h1>Platform implementation and customer operations</h1>
+      #{paragraphs}
+      <a href="#{path_prefix}1">More</a>
+    HTML
+    context_paragraphs = (1..context_paragraph_count).map do |index|
+      %(<p>Directory group #{index}</p>)
+    end.join
+
+    <<~HTML
+      <div id="article-content"#{' class="card"' if wrapped_card}>
+        #{wrapped_card ? article_body : %(<div class="card">#{article_body}</div>)}
+      </div>
+      <main>
+        #{context_paragraphs}
+        <ul class="itemlist">
+          #{(1..item_count).map { |index| %(<li><a href="#{path_prefix}#{index}">Directory record #{index} with operational guidance</a></li>) }.join}
+        </ul>
+      </main>
+    HTML
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 
@@ -50,6 +82,37 @@ RSpec.describe 'FetchUtil article/list arbitration' do
 
     extract_from_url(url, fixture_contents(body_present_fixture)) do |payload|
       expect(payload['contentType']).to eq('article')
+    end
+  end
+
+  it 'keeps material article prose when dominant index signals find a smaller directory' do
+    html = homepage_article_with_directory_fixture(
+      path_prefix: '/news/directory-record-',
+      paragraph_count: 3,
+      item_count: 6,
+      context_paragraph_count: 6,
+      wrapped_card: false
+    )
+
+    extract_from_url('https://portal.example/', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Operational section 1 explains how the platform')
+      expect(payload['markdown']).to include('Operational section 3 explains how the platform')
+    end
+  end
+
+  it 'keeps material article prose when general list signals find a smaller directory' do
+    html = homepage_article_with_directory_fixture(
+      path_prefix: '/records/',
+      paragraph_count: 5,
+      item_count: 8,
+      wrapped_card: true
+    )
+
+    extract_from_url('https://platform.example/', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Operational section 1 explains how the platform')
+      expect(payload['markdown']).to include('Operational section 5 explains how the platform')
     end
   end
 

@@ -13,6 +13,43 @@
     return hits.length >= 3;
   }
 
+  function listCandidateLosesArticleMaterial(content, candidate) {
+    if (!content || !candidate || content.contentType !== "article" || candidate.contentType !== "list") return false;
+
+    var root = document.createElement("div");
+    root.innerHTML = content.html || "";
+    var seen = Object.create(null);
+    var paragraphs = [];
+    var substantialParagraphs = 0;
+    var paragraphChars = 0;
+
+    Array.prototype.forEach.call(root.querySelectorAll("p"), function(paragraph) {
+      var text = normalizeText(paragraph.textContent || "");
+      if (!text || seen[text]) return;
+
+      seen[text] = true;
+      paragraphs.push(text);
+      paragraphChars += text.length;
+      if (text.length >= 80) substantialParagraphs += 1;
+    });
+
+    if (substantialParagraphs < 3 || paragraphChars < 1200) return false;
+
+    var articleText = normalizeText(content.textContent || content.markdown || "");
+    var candidateMarkdown = candidate.markdown || candidate.textContent || "";
+    var candidateText = normalizeText(candidateMarkdown
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+      .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1")
+      .replace(/[`*_~#>|]/g, " "));
+    if (candidateText.length >= articleText.length * 0.75) return false;
+
+    // Compare article-owned prose, not page-wide records that can include navigation and footer links.
+    var missingParagraphChars = paragraphs.reduce(function(total, paragraph) {
+      return total + (candidateText.indexOf(paragraph) === -1 ? paragraph.length : 0);
+    }, 0);
+    return missingParagraphChars >= 900;
+  }
+
   function listNoiseNode(node) {
     if (!node || node.nodeType !== 1) return false;
 

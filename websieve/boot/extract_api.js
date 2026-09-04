@@ -179,8 +179,13 @@
         if (normalizeText(footerListFallback.markdown || "").length >= 400) content = footerListFallback;
       }
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
-      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && dominantIndexListPage(content)) content = listContent(metadata);
-      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) && !strongArticle) content = listContent(metadata);
+      var indexListCandidate = null;
+      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && dominantIndexListPage(content)) {
+        indexListCandidate = listContent(metadata);
+      } else if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) && !strongArticle) {
+        indexListCandidate = listContent(metadata);
+      }
+      if (indexListCandidate && !listCandidateLosesArticleMaterial(content, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
