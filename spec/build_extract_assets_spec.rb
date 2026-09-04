@@ -1127,6 +1127,32 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "excludes hidden paths when the gemspec is loaded without git" do
+    Dir.mktmpdir("fetch_util_gemspec") do |root|
+      version_dir = File.join(root, "lib", "fetch_util")
+      asset = File.join(version_dir, "assets", "extract.js")
+      FileUtils.mkdir_p(File.dirname(asset))
+      copy_gemspec_support(root)
+      File.write(
+        File.join(version_dir, "version.rb"),
+        "module FetchUtil\n  VERSION = '0.0.0' unless const_defined?(:VERSION, false)\nend\n"
+      )
+      File.write(asset, "window.fetchUtil = {};\n")
+      File.write(File.join(root, "README.md"), "Visible package documentation.\n")
+      File.write(File.join(root, ".rspec_status"), "private test state\n")
+      File.write(File.join(version_dir, ".credentials"), "private runtime state\n")
+      FileUtils.mkdir_p(File.join(root, "docs", ".draft"))
+      File.write(File.join(root, "docs", ".draft", "notes.md"), "private draft\n")
+
+      specification = Gem::Specification.load(File.join(root, "fetch_util.gemspec"))
+
+      expect(specification.files).to include("README.md", "lib/fetch_util/assets/extract.js")
+      expect(specification.files).not_to include(
+        ".rspec_status", "lib/fetch_util/.credentials", "docs/.draft/notes.md"
+      )
+    end
+  end
+
   it "excludes dependency trees when the gemspec is loaded without git" do
     Dir.mktmpdir("fetch_util_gemspec") do |root|
       version_dir = File.join(root, "lib", "fetch_util")

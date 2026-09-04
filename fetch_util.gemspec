@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   tracked_files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL, &:read)&.split("\x0")
   tracked_files&.reject!(&:empty?)
   if tracked_files.nil? || tracked_files.empty?
-    tracked_files = Dir.glob("**/*", File::FNM_DOTMATCH, base: __dir__).select do |file|
+    tracked_files = Dir.glob("**/*", base: __dir__).select do |file|
       next false if %w[. ..].include?(file)
 
       File.file?(File.join(__dir__, file))
