@@ -62,7 +62,13 @@ module FetchUtil
       inject_assets_inline(page)
       page.evaluate(extraction_call)
     ensure
-      page.timeout = original_timeout if timeout_supported
+      restore_page_timeout(page, original_timeout) if timeout_supported
+    end
+
+    def restore_page_timeout(page, timeout)
+      page.timeout = timeout
+    rescue Ferrum::Error
+      nil
     end
 
     def extraction_call

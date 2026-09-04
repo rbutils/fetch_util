@@ -70,6 +70,27 @@ RSpec.describe FetchUtil::Extractor do
     expect(page).to have_received(:timeout=).with(nil).once
   end
 
+  it 'preserves a successful payload when timeout restoration fails' do
+    allow(page).to receive(:timeout).and_return(15)
+    allow(page).to receive(:timeout=) do |timeout|
+      raise Ferrum::Error, 'timeout restore failed' if timeout == 15
+    end
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Hello' })
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Hello')
+  end
+
+  it 'preserves a primary exception when timeout restoration fails' do
+    allow(page).to receive(:timeout).and_return(15)
+    allow(page).to receive(:timeout=) do |timeout|
+      raise Ferrum::Error, 'timeout restore failed' if timeout == 15
+    end
+    allow(page).to receive(:add_script_tag).and_raise(RuntimeError, 'primary extraction failure')
+
+    expect { described_class.new.extract(page) }.to raise_error(RuntimeError, 'primary extraction failure')
+  end
+
   it 'retries extraction after stopping a busy page when asset injection times out' do
     add_script_attempts = 0
 
