@@ -17,13 +17,26 @@
 
     var best = null;
     var minItems = options.minItems || 5;
+    var portalIntentPattern = /\b(find|search|book|compare|deals?|offers?|destinations?|routes?|tickets?|timetables?|trains?|travel|hotels?|homes?|properties|real estate|for sale|for rent|marketplaces?|listings?|latest|top stories|headlines|breaking news)\b/i;
+    var titleIntentText = normalizeText([
+      (metadata && metadata.title) || "",
+      (metadata && metadata.siteName) || "",
+      document.title || ""
+    ].join(" ")).toLowerCase();
+    var descriptionIntentText = normalizeText((metadata && metadata.excerpt) || "").toLowerCase();
+    var descriptionPortalIntentTerms = [];
+    (descriptionIntentText.match(new RegExp(portalIntentPattern.source, "gi")) || []).forEach(function(term) {
+      term = term.toLowerCase();
+      if (descriptionPortalIntentTerms.indexOf(term) === -1) descriptionPortalIntentTerms.push(term);
+    });
     var intentText = normalizeText([
       (metadata && metadata.title) || "",
       (metadata && metadata.siteName) || "",
       document.title || "",
       document.body.textContent || ""
     ].join(" ")).toLowerCase().slice(0, 6000);
-    var portalIntent = /\b(find|search|book|compare|deals?|offers?|destinations?|routes?|tickets?|timetables?|trains?|travel|hotels?|homes?|properties|real estate|for sale|for rent|marketplaces?|listings?|latest|top stories|headlines|breaking news)\b/i.test(intentText);
+    var metadataPortalIntent = portalIntentPattern.test(titleIntentText) || descriptionPortalIntentTerms.length >= 2;
+    var portalIntent = portalIntentPattern.test(intentText);
 
     function leadActionText(text) {
       return /^(?:read|learn|see) more$/i.test(normalizeText(text || ""));
@@ -214,6 +227,7 @@
 
     if (!best) return null;
     if (best.materializedItems < minItems && (!best.hero || best.headings.length < 2)) return null;
+    best.provisional = best.materializedItems < minItems && !metadataPortalIntent;
     return best;
   }
 
@@ -242,11 +256,13 @@
     var markdown = markdownParts.filter(Boolean).join("\n\n").trim();
     if (normalizeText(markdown).length < 180) return null;
 
-    return listContentResult({
+    var result = listContentResult({
       title: title,
       excerpt: metadata && metadata.excerpt,
       siteName: (metadata && metadata.siteName) || location.hostname,
       markdown: markdown,
       textContent: normalizeText(markdown)
     });
+    if (leadRoot.provisional) result.provisionalPortal = true;
+    return result;
   }

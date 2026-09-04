@@ -43,6 +43,40 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     HTML
   end
 
+  def weak_portal_article_fixture
+    paragraphs = (1..6).map do |index|
+      <<~HTML
+        <p>Trust program section #{index} explains how credential teams coordinate governance, implementation planning,
+        issuer verification, privacy reviews, and long-term support across a distributed workforce. It documents the
+        decisions administrators make before launch, the evidence reviewers inspect during delivery, and the safeguards
+        that keep each deployment reliable as organizations add new learners, partners, and regional requirements.</p>
+      HTML
+    end.join
+
+    <<~HTML
+      <html><head><title>TrustCloud workforce credential platform</title></head><body>
+        <main>
+          <h1>Build trusted workforce programs</h1>
+          <p>Teams can search verified records when evaluating program outcomes without turning this explanation into a directory.</p>
+          #{paragraphs}
+          <div class="content-group"><h2>Technology for credential teams</h2>
+            <div class="card"><a href="/credentials/issue"><h3>Issue portable credentials for every learner</h3></a></div>
+            <div class="card"><a href="/credentials/connect"><h3>Connect verified skills with workforce opportunities</h3></a></div>
+          </div>
+          <div class="content-group"><h2>Evidence across the network</h2>
+            <div class="card"><a href="/credentials/measure"><h3>Measure program outcomes across every region</h3></a></div>
+          </div>
+        </main>
+        <aside class="product-grid">
+          <div class="product-card"><a href="/product/workforce-response">Workforce credential response service</a></div>
+          <div class="product-card"><a href="/product/security-analytics">Credential security analytics platform</a></div>
+          <div class="product-card"><a href="/product/identity-governance">Workforce identity governance toolkit</a></div>
+          <div class="product-card"><a href="/product/program-assurance">Credential program assurance suite</a></div>
+        </aside>
+      </body></html>
+    HTML
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 
@@ -113,6 +147,66 @@ RSpec.describe 'FetchUtil article/list arbitration' do
       expect(payload['contentType']).to eq('article')
       expect(payload['markdown']).to include('Operational section 1 explains how the platform')
       expect(payload['markdown']).to include('Operational section 5 explains how the platform')
+    end
+  end
+
+  it 'keeps article material when body-only portal evidence precedes a product list' do
+    extract_from_url('https://trustcloud.example/', weak_portal_article_fixture) do |payload|
+      expect(payload['markdown']).to include('Trust program section 1 explains how credential teams')
+      expect(payload['markdown']).to include('Trust program section 6 explains how credential teams')
+      expect(payload['markdown']).not_to include('Credential security analytics platform')
+    end
+  end
+
+  it 'keeps a three-item portal whose page metadata identifies a marketplace' do
+    html = <<~HTML
+      <html><head><title>Learning Marketplace | Verified resources</title></head><body><main>
+        <h1>Learning Marketplace</h1>
+        <div class="content-group"><h2>For credential teams</h2>
+          <div class="card"><a href="/resources/issue"><h3>Issue trusted credentials to every learner</h3></a></div>
+        </div>
+        <div class="content-group"><h2>For workforce partners</h2>
+          <div class="card"><a href="/resources/connect"><h3>Connect verified skills with open opportunities</h3></a></div>
+          <div class="card"><a href="/resources/measure"><h3>Measure verified outcomes across every region</h3></a></div>
+        </div>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://learning-market.example/', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Issue trusted credentials', 'Connect verified skills', 'Measure verified outcomes')
+    end
+  end
+
+  it 'keeps a three-item portal whose metadata description identifies a marketplace' do
+    html = weak_portal_article_fixture.sub(
+      '</title>',
+      '</title><meta name="description" content="Find and compare trusted credential programs">'
+    )
+
+    extract_from_url('https://trustcloud.example/', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      record_urls = %w[
+        https://trustcloud.example/credentials/issue
+        https://trustcloud.example/credentials/connect
+        https://trustcloud.example/credentials/measure
+      ]
+      record_positions = record_urls.map { |url| payload['markdown'].index(url) }
+      expect(record_positions).to all(be_a(Integer))
+      expect(record_positions).to eq(record_positions.sort)
+      expect(payload['markdown']).not_to include('Trust program section 1 explains how credential teams')
+    end
+  end
+
+  it 'does not treat one portal word in a metadata description as portal identity' do
+    html = weak_portal_article_fixture.sub(
+      '</title>',
+      '</title><meta name="description" content="Find out how trusted credential programs support workforce teams">'
+    )
+
+    extract_from_url('https://trustcloud.example/', html) do |payload|
+      expect(payload['markdown']).to include('Trust program section 1 explains how credential teams')
+      expect(payload['markdown']).to include('Trust program section 6 explains how credential teams')
     end
   end
 

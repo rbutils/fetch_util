@@ -4,6 +4,14 @@
       var metadata = collectMetadata();
       var focalArticleRoute = articleRouteFocalContent();
       var content;
+      var provisionalHomepageContent = null;
+      var provisionalHomepageAlternative = null;
+
+      function deferProvisionalHomepage(candidate) {
+        if (!candidate || !candidate.provisionalPortal) return candidate;
+        provisionalHomepageContent = candidate;
+        return null;
+      }
 
       function cachedFocalArticleContent(candidate) {
         return !!(focalArticleRoute && candidate &&
@@ -44,7 +52,7 @@
         content = recipeStructuredDataContent(metadata);
       }
       if (!content && homepageRootPath()) {
-        content = hostAwareContent(metadata, pageText);
+        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText));
       }
       if (!content) {
         var podcastRootContext = normalizeText([
@@ -61,7 +69,7 @@
         content = podcastEpisodeContent(metadata);
       }
       if (!content) {
-        content = hostAwareContent(metadata, pageText);
+        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText));
       }
       if (!content) {
         content = challengeContent(metadata, pageText, signals);
@@ -105,6 +113,7 @@
       if (!content) {
         content = readableOrFallbackContent(options);
       }
+      if (provisionalHomepageContent) provisionalHomepageAlternative = content;
 
       var weatherLikeArticle = content &&
         content.contentType === "article" &&
@@ -165,6 +174,14 @@
 
        var portalRootContent = crediblePortalRootListContent(metadata, content);
        if (portalRootContent) content = portalRootContent;
+
+       if (provisionalHomepageContent && provisionalHomepageAlternative) {
+         if (!listCandidateLosesArticleMaterial(provisionalHomepageAlternative, provisionalHomepageContent)) {
+           content = provisionalHomepageContent;
+         } else if (!content || listCandidateLosesArticleMaterial(provisionalHomepageAlternative, content)) {
+           content = provisionalHomepageAlternative;
+         }
+       }
 
        var medicalArticle = medicalArticlePage(metadata, content);
       var strongArticle = cachedFocalArticleContent(content) || articleRouteFocalContent(content) || medicalArticle ||
