@@ -173,6 +173,19 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "loads structured data entity helpers before their consumers" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    entities_path = "core/metadata/structured_data_entities.js"
+    structured_data_path = "core/metadata/structured_data.js"
+    entities_source = File.read(File.join(source_root, entities_path))
+
+    expect(manifest.index(entities_path)).to be < manifest.index(structured_data_path)
+    expect(entities_source).to include(
+      "function mergeStructuredDataEntity", "function structuredDataIdentityKey", "function nodeTypes"
+    )
+  end
+
   it "places shared list rendering and glossary scoring before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
