@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'open3'
+require 'rbconfig'
 require 'tmpdir'
 
 RSpec.describe FetchUtil::Extractor do
@@ -15,6 +17,28 @@ RSpec.describe FetchUtil::Extractor do
 
       yield asset_root
     end
+  end
+
+  it 'loads Ferrum error classes from the public entrypoint' do
+    root = File.expand_path('../..', __dir__)
+    script = <<~'RUBY'
+      require 'fetch_util'
+
+      page = Object.new
+      def page.add_script_tag(**) = raise 'primary failure'
+
+      begin
+        FetchUtil::Extractor.new.extract(page)
+      rescue StandardError => error
+        puts "#{error.class}: #{error.message}"
+      end
+    RUBY
+
+    stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I#{File.join(root, "lib")}", '-e', script, chdir: root)
+
+    expect(status).to be_success
+    expect(stderr).to be_empty
+    expect(stdout).to eq("RuntimeError: primary failure\n")
   end
 
   it 'injects bundled assets before extraction' do

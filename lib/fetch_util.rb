@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "addressable/uri"
+require "ferrum"
 require "public_suffix"
 require "uri"
 
