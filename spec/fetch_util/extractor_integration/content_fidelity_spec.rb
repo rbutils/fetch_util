@@ -300,19 +300,29 @@ RSpec.describe 'content fidelity contracts' do
 
   it 'keeps sibling figure records local during anchor fallback' do
     figures = (1..6).map do |index|
-      <<~HTML
+      figure = <<~HTML
         <figure>
           <a href="/media/#{index}"><img src="/media/#{index}.jpg" alt=""><h3>FID:figure-record-#{index}</h3></a>
           <figcaption>FID:figure-summary-#{index}</figcaption>
         </figure>
       HTML
+      index.odd? ? %(<div class="media-cell">#{figure}</div>) : figure
     end.join
     labels = (1..6).map { |index| %(<section><h2>FID:collection-label-#{index}</h2></section>) }.join
     html = <<~HTML
       <main>
         <h1>FID:fallback-records</h1>
         #{labels}
-        <article class="media-grid">#{figures}</article>
+        <article class="media-grid">
+          #{figures}
+          <div class="media-cell">
+            <figure>
+              <a href="/media/promo"><span>FID:figure-malformed-promo</span></a>
+              <figcaption>FID:figure-malformed-summary</figcaption>
+            </figure>
+          </div>
+          <div class="actions"><a href="/media/all">FID:figure-view-all-action</a></div>
+        </article>
       </main>
     HTML
 
@@ -327,6 +337,68 @@ RSpec.describe 'content fidelity contracts' do
         expect(figure_line).to include("FID:figure-summary-#{index}")
         expect(figure_line).not_to include("FID:figure-summary-#{index == 6 ? 5 : index + 1}")
       end
+      expect(result['markdown']).not_to include(
+        'FID:figure-malformed-promo', 'FID:figure-malformed-summary', 'FID:figure-view-all-action'
+      )
+    end
+  end
+
+  it 'keeps a single editorial figure on its enclosing card' do
+    cards = (1..5).map do |index|
+      <<~HTML
+        <article><h3><a href="/archive/#{index}">FID:ordinary-record-#{index}</a></h3></article>
+      HTML
+    end.join
+    html = <<~HTML
+      <main>
+        <h1>FID:single-editorial-figure</h1>
+        <section><h2>FID:archive</h2>
+          <article>
+            <figure>
+              <a href="/archive/figure"><h3>FID:single-figure-record</h3></a>
+              <figcaption>FID:single-figure-caption</figcaption>
+            </figure>
+            <p>FID:single-figure-parent-context</p>
+          </article>
+          #{cards}
+        </section>
+      </main>
+    HTML
+
+    with_url_page('https://fidelity.test/archive', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      line = result['markdown'].lines.find { |candidate| candidate.include?('FID:single-figure-record') }
+
+      expect(result['contentType']).to eq('list')
+      expect(line).to include('FID:single-figure-parent-context')
+    end
+  end
+
+  it 'keeps headingless sibling figures on the enclosing card' do
+    figures = (1..2).map do |index|
+      <<~HTML
+        <figure>
+          <a href="/archive/headingless-#{index}">FID:headingless-figure-record-#{index}</a>
+          <figcaption>FID:headingless-figure-caption-#{index}</figcaption>
+        </figure>
+      HTML
+    end.join
+    cards = (1..4).map do |index|
+      %(<article><h3><a href="/archive/regular-#{index}">FID:regular-record-#{index}</a></h3></article>)
+    end.join
+    html = <<~HTML
+      <main><h1>FID:headingless-figures</h1><section><h2>FID:archive</h2>
+        <article>#{figures}<p>FID:headingless-parent-context</p></article>
+        #{cards}
+      </section></main>
+    HTML
+
+    with_url_page('https://fidelity.test/archive', html) do |page|
+      result = extract_payload(page, reader_mode: false)
+      line = result['markdown'].lines.find { |candidate| candidate.include?('FID:headingless-figure-record-1') }
+
+      expect(result['contentType']).to eq('list')
+      expect(line).to include('FID:headingless-figure-caption-2')
     end
   end
 

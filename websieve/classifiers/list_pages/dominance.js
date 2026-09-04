@@ -104,6 +104,7 @@
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(url || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url || href) && text.length < 80) return null;
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
+    if (genericListFigureCollectionRejectsLink(link, container)) return null;
 
     var card = listCardRoot(link, container);
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;

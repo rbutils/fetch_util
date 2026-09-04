@@ -33,6 +33,47 @@
     return title.length >= 6 && title.length <= 220 ? title : "";
   }
 
+  function genericListFigureRecordLink(figure) {
+    if (!figure || !figure.matches || !figure.matches("figure") || !figure.querySelector("figcaption")) return null;
+
+    var heading = figure.querySelector("a[href] h1, a[href] h2, a[href] h3, a[href] h4");
+    var link = heading && heading.closest("a[href]");
+    return link && materializedHttpUrl(link.getAttribute("href")) ? link : null;
+  }
+
+  function genericListFigureCollection(node) {
+    if (!node || !node.children) return false;
+    var records = Array.prototype.filter.call(node.children, function(child) {
+      var figures = child.matches && child.matches("figure") ?
+        [child] : Array.prototype.slice.call(child.querySelectorAll ? child.querySelectorAll("figure") : []);
+      return figures.filter(function(figure) { return !!genericListFigureRecordLink(figure); }).length === 1;
+    });
+    return records.length >= 2;
+  }
+
+  function genericListFigureCollectionAncestor(node) {
+    var current = node;
+    while (current && current !== document.body) {
+      if (genericListFigureCollection(current)) return current;
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  function genericListFigureAnchorCard(link, figure) {
+    return !!(link && figure && link.closest("figure") === figure &&
+      genericListFigureRecordLink(figure) === link && genericListFigureCollectionAncestor(figure.parentElement));
+  }
+
+  function genericListFigureCollectionRejectsLink(link, container) {
+    if (!link || !link.closest) return false;
+    var figure = link.closest("figure");
+    var collection = genericListFigureCollectionAncestor(figure ? figure.parentElement : (container || link.parentElement));
+    if (!collection) return false;
+
+    return !figure || !collection.contains(figure) || genericListFigureRecordLink(figure) !== link;
+  }
+
   function genericListControlText(text) {
     return /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(normalizeText(text || ""));
   }
@@ -187,6 +228,8 @@
   function listCardRoot(link, fallback) {
     if (fallback && fallback.matches && fallback.matches("tr")) return fallback;
     if (genericListDirectAnchorCard(link, fallback)) return link;
+    var figure = link && link.closest && link.closest("figure");
+    if (genericListFigureAnchorCard(link, figure)) return figure;
     var card = genericListContextCard(closestGenericListCard(link));
     return card || fallback || (link && link.parentElement);
   }
