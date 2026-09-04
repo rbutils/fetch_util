@@ -6,11 +6,96 @@
     return b.rankScore - a.rankScore;
   }
 
+  function sameRootListRecordKey(item) {
+    var url = materializedHttpUrl(item && item.url);
+    var identity = url ? listCanonicalKey(url) : ((item && item.canonicalKey) || "");
+    return JSON.stringify([
+      identity,
+      normalizeText(item && item.text || ""),
+      normalizeText(item && item.detail || "")
+    ]);
+  }
+
+  function sameRootCanonicalDestinations(items) {
+    var destinations = {};
+    (items || []).forEach(function(item) {
+      var url = materializedHttpUrl(item && item.url);
+      if (url) destinations[listCanonicalKey(url)] = true;
+    });
+    return Object.keys(destinations);
+  }
+
+  function sameRootFlatSectionCoverage(sectioned, flatItems) {
+    if (!sectioned || sectioned.items.length * 2 >= flatItems.length) return null;
+
+    var sectionDestinations = sameRootCanonicalDestinations(sectioned.items);
+    var flatDestinations = sameRootCanonicalDestinations(flatItems);
+    if (!sectionDestinations.length || sectionDestinations.length * 2 >= flatDestinations.length) return null;
+
+    var flatKeys = flatItems.map(sameRootListRecordKey);
+    var cursor = 0;
+    var replacements = {};
+    var headings = {};
+    var complete = sectioned.regions.every(function(region) {
+      var firstIndex = null;
+      var regionComplete = region.cards.every(function(item) {
+        var key = sameRootListRecordKey(item);
+        while (cursor < flatKeys.length && flatKeys[cursor] !== key) cursor += 1;
+        if (cursor >= flatKeys.length) return false;
+        replacements[cursor] = item;
+        if (firstIndex === null) firstIndex = cursor;
+        cursor += 1;
+        return true;
+      });
+      if (regionComplete && region.label && firstIndex !== null) {
+        if (!headings[firstIndex]) headings[firstIndex] = [];
+        headings[firstIndex].push(region.label);
+      }
+      return regionComplete;
+    });
+    if (!complete) return null;
+
+    var unmatchedCount = flatItems.length - Object.keys(replacements).length;
+    var unmatchedCards = [];
+    flatItems.forEach(function(item, index) {
+      if (replacements[index] || !item.card) return;
+      var owner = unmatchedCards.find(function(entry) { return entry.card === item.card; });
+      if (owner) owner.count += 1;
+      else unmatchedCards.push({ card: item.card, count: 1 });
+    });
+    if (unmatchedCards.some(function(entry) { return entry.count * 2 >= unmatchedCount; })) return null;
+
+    return {
+      items: flatItems.map(function(item, index) { return replacements[index] || item; }),
+      headings: headings
+    };
+  }
+
+  function sameRootFlatListMarkdown(items, headings) {
+    return items.map(function(item, index) {
+      var blocks = (headings[index] || []).map(function(heading) { return "## " + heading; });
+      blocks.push(listMarkdown([item]));
+      return blocks.join("\n\n");
+    }).join("\n");
+  }
+
   function buildListExtraction(node) {
     var root = visibleListClone(node);
     cleanupListRoot(root);
     var sectioned = sectionedListExtraction(root);
-    if (sectioned) {
+
+    var items = extractListItems(root);
+    var itemQuality = listItemsQualityScore(items);
+    var descText = listDescriptionMarkdown(root);
+    var fallbackItems = extractFallbackHeadlineItems(root);
+    var fallbackQuality = listItemsQualityScore(fallbackItems);
+    if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
+      items = fallbackItems;
+      itemQuality = fallbackQuality;
+    }
+
+    var flatCoverage = sameRootFlatSectionCoverage(sectioned, items);
+    if (sectioned && !flatCoverage) {
       return {
         root: root,
         items: sectioned.items,
@@ -21,20 +106,12 @@
         sectionRank: (sectioned.regions.length * 100000) - root.querySelectorAll("a[href]").length
       };
     }
+    if (flatCoverage) items = flatCoverage.items;
 
-    var items = extractListItems(root);
-    var itemQuality = listItemsQualityScore(items);
-    var descText = listDescriptionMarkdown(root);
-    var fallbackItems = extractFallbackHeadlineItems(root);
-    var fallbackQuality = listItemsQualityScore(fallbackItems);
-
-    if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
-      items = fallbackItems;
-      itemQuality = fallbackQuality;
-    }
-
-    var markdown = listMarkdownWithDescription(descText, items);
-    if (normalizeText(markdown).length < 120 && (fallbackItems.length > items.length || fallbackQuality > itemQuality)) {
+    var itemMarkdown = flatCoverage ? sameRootFlatListMarkdown(items, flatCoverage.headings) : listMarkdown(items);
+    var markdown = descText ? descText + (itemMarkdown ? "\n\n" + itemMarkdown : "") : itemMarkdown;
+    if (!flatCoverage && normalizeText(markdown).length < 120 &&
+        (fallbackItems.length > items.length || fallbackQuality > itemQuality)) {
       items = fallbackItems;
       itemQuality = fallbackQuality;
       markdown = listMarkdownWithDescription(descText, items);
@@ -45,7 +122,13 @@
       items: items,
       descText: descText,
       markdown: markdown,
-      score: itemQuality + (items.length * 80) + Math.min(descText.length, 4000)
+      score: flatCoverage ? sectioned.score :
+        itemQuality + (items.length * 80) + Math.min(descText.length, 4000),
+      sectionCount: flatCoverage ? sectioned.regions.length : 0,
+      sectionRank: flatCoverage ?
+        (sectioned.regions.length * 100000) - root.querySelectorAll("a[href]").length : 0,
+      portalEvidenceItemCount: flatCoverage ? sectioned.items.length : null,
+      portalEvidenceMaterializedItemCount: flatCoverage ? materializedListItemCount(sectioned.items) : null
     };
   }
 
@@ -81,9 +164,10 @@
     var broadRootEvidence = substantialRoot ? 2 : 0;
     var headingRootEvidence = substantialRoot ? namedHeadingCount : 0;
     var portalSectionCount = Math.max(best.sectionCount || 0, headingRootEvidence, broadRootEvidence);
-    var materializedItemCount = best.items.filter(function(item) {
+    var portalEvidenceItemCount = best.portalEvidenceItemCount == null ? best.items.length : best.portalEvidenceItemCount;
+    var materializedItemCount = best.portalEvidenceMaterializedItemCount == null ? best.items.filter(function(item) {
       return !!materializedHttpUrl(item && item.url);
-    }).length;
+    }).length : best.portalEvidenceMaterializedItemCount;
 
     return listItemsContentResult(metadata, {
       title: metadata.title || document.title,
@@ -92,9 +176,9 @@
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,
-      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && best.items.length >= 4 && materializedItemCount >= 2 ? {
+      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && portalEvidenceItemCount >= 4 && materializedItemCount >= 2 ? {
         namedSectionCount: portalSectionCount,
-        canonicalCardCount: best.items.length
+        canonicalCardCount: portalEvidenceItemCount
       } : null
     });
   }
