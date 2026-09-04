@@ -133,6 +133,85 @@ RSpec.describe 'FetchUtil extractor integration - redirect title mismatch warnin
     expect(result.warnings).not_to include('url_content_mismatch')
   end
 
+  it 'preserves repeated decoded query pairs across a same-organization redirect' do
+    html = <<~HTML
+      <html><head><title>Quarterly filing</title></head><body>
+        <main><article><h1>Quarterly filing</h1><p>This filing describes the organization and its current results.</p></article></main>
+      </body></html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://go.example.org/redirect?utm_source=mail&id=ABC%20123&id=SECOND',
+      'https://www.example.org/article?id=SECOND&id=ABC%20123&utm_campaign=fall',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).not_to include('url_content_mismatch')
+  end
+
+  it 'preserves decoded query pairs linked by the redirected article' do
+    html = <<~HTML
+      <html><head><title>Quarterly filing</title></head><body>
+        <main><article>
+          <h1>Quarterly filing</h1>
+          <p>This filing describes the organization and its current results.</p>
+          <a href="https://www.example.org/source?id=ABC%20123">Original filing</a>
+        </article></main>
+      </body></html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://go.example.org/redirect?id=ABC+123',
+      'https://www.example.org/article',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).not_to include('url_content_mismatch')
+  end
+
+  it 'does not trust case-changed or missing duplicate query pairs' do
+    html = <<~HTML
+      <html><head><title>Unrelated filing</title></head><body>
+        <main><article><h1>Unrelated filing</h1><p>This page describes a different subject after redirection.</p></article></main>
+      </body></html>
+    HTML
+
+    case_changed = fetch_result_from_fixture(
+      'https://go.example.org/redirect?id=ABC',
+      'https://www.example.org/article?id=abc',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+    missing_duplicate = fetch_result_from_fixture(
+      'https://go.example.org/redirect?id=ABC&id=ABC',
+      'https://www.example.org/article?id=ABC',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(case_changed.warnings).to include('url_content_mismatch')
+    expect(missing_duplicate.warnings).to include('url_content_mismatch')
+  end
+
+  it 'does not trust a same-organization redirect from tracking query pairs alone' do
+    html = <<~HTML
+      <html><head><title>Unrelated filing</title></head><body>
+        <main><article><h1>Unrelated filing</h1><p>This page describes a different subject after redirection.</p></article></main>
+      </body></html>
+    HTML
+
+    result = fetch_result_from_fixture(
+      'https://go.example.org/redirect?utm_source=mail&ref=sidebar&sessionid=first&click_id=track',
+      'https://www.example.org/article?utm_source=mail&ref=sidebar&sessionid=first&click_id=track',
+      html,
+      warnings: ['url_content_mismatch']
+    )
+
+    expect(result.warnings).to include('url_content_mismatch')
+  end
+
   it 'does not flag same-organization subdomain redirects when the article matches the requested code' do
     html = <<~HTML
       <html>

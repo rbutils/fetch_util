@@ -35,6 +35,12 @@ module FetchUtil
       /(?:20\d{2}|\d{4}/\d{2}/\d{2}|article|articles|blog|blogs|column|columns|
       entry|entries|post|posts|news/[\w-]+|wiki|dictionary|definition|definitions|thesaurus|\d{5,}[\w-]*\.html?)\b
     }ix
+    REDIRECT_QUERY_NOISE_PATTERN = /\A(?:_gl|click_?id|dclid|fbclid|gclid|jsessionid|mc_cid|mc_eid|msclkid|phpsessid|ref|session_?id|sid|utm_[a-z0-9_]+|yclid)\z/i
+    MARKDOWN_HTTP_RESOURCE_PATTERN = %r{
+      \]\(\s*(https?://[^\s)]+)|
+      <\s*(https?://[^>\s]+)\s*>|
+      (?:href|src)\s*=\s*["'](https?://[^"']+)["']
+    }ix
     LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
     INDEX_QUERY_PATTERN = /(?:^|[&?])(?:q|query|search|searchtext|keyword|k)=/i
@@ -708,7 +714,8 @@ module FetchUtil
       content = snapshot.content_downcase
       matches = tokens.select { |token| content.include?(token) }
 
-      matches.any? { |token| code_like_identifier?(token) } || matches.length >= 2
+      matches.any? { |token| code_like_identifier?(token) } || matches.length >= 2 ||
+        matching_redirect_query_pair?(snapshot)
     rescue URI::InvalidURIError
       false
     end
@@ -747,6 +754,48 @@ module FetchUtil
       end.uniq
     rescue ArgumentError, URI::InvalidURIError
       []
+    end
+
+    def matching_redirect_query_pair?(snapshot)
+      requested_pairs = redirect_query_pairs(snapshot.requested_url)
+      return false if requested_pairs.empty?
+
+      final_pairs = redirect_query_pairs(snapshot.final_url)
+      return true if redirect_query_pairs_preserved?(requested_pairs, final_pairs)
+
+      final_host = FetchUtil.strip_www_host(snapshot.final_url)
+      markdown_http_resource_urls(snapshot.markdown).any? do |url|
+        FetchUtil.strip_www_host(url) == final_host &&
+          redirect_query_pairs_preserved?(requested_pairs, redirect_query_pairs(url))
+      end
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def redirect_query_pairs(url)
+      query = URI.parse(url).query.to_s
+      URI.decode_www_form(query).filter_map do |key, value|
+        next if key.empty? || value.empty? || key.match?(REDIRECT_QUERY_NOISE_PATTERN)
+
+        [key, value]
+      end
+    rescue ArgumentError, URI::InvalidURIError
+      []
+    end
+
+    def redirect_query_pairs_preserved?(requested_pairs, candidate_pairs)
+      remaining = candidate_pairs.dup
+      requested_pairs.all? do |pair|
+        index = remaining.index(pair)
+        next false unless index
+
+        remaining.delete_at(index)
+        true
+      end
+    end
+
+    def markdown_http_resource_urls(markdown)
+      markdown.scan(MARKDOWN_HTTP_RESOURCE_PATTERN).flat_map(&:compact)
     end
 
     def matching_apex_instrument_redirect?(payload, requested_url, final_url)
