@@ -211,6 +211,9 @@
         if (glossaryListFallback) content = glossaryListFallback;
       }
 
+      var dormantBodyList = dormantBodyRootListContent(content, metadata);
+      if (dormantBodyList) content = dormantBodyList;
+
       return finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
     }
   };

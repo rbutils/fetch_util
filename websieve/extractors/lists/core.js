@@ -145,7 +145,8 @@
     };
   }
 
-  function bestListExtraction(metadata, pageTitles) {
+  function bestListExtraction(metadata, pageTitles, options) {
+    options = options || {};
     var candidates = [];
     function pushCandidate(node) {
       if (!node || candidates.indexOf(node) !== -1) return;
@@ -158,16 +159,16 @@
     pushCandidate(document.body);
 
     var tableIndexRoot = linkedTableIndexRoot();
-    return tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles) : candidates.reduce(function(current, node) {
-      var result = buildListExtraction(node, pageTitles);
+    return tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles, options) : candidates.reduce(function(current, node) {
+      var result = buildListExtraction(node, pageTitles, options);
       return listExtractionIsBetter(current, result) ? result : current;
-    }, null) || buildListExtraction(document.body, pageTitles);
+    }, null) || buildListExtraction(document.body, pageTitles, options);
   }
 
   function listContent(metadata, options) {
     options = options || {};
     var pageTitles = [metadata.title, document.title];
-    var best = bestListExtraction(metadata, pageTitles);
+    var best = bestListExtraction(metadata, pageTitles, options);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
       best.descText = listDescriptionMarkdown(best.root, best.items);
