@@ -79,8 +79,9 @@
     }).join("\n");
   }
 
-  function buildListExtraction(node, pageTitles) {
-    var root = visibleListClone(node);
+  function buildListExtraction(node, pageTitles, options) {
+    options = options || {};
+    var root = visibleListClone(node, options.preservedRoots);
     cleanupListRoot(root);
     var sectioned = sectionedListExtraction(root);
 
@@ -106,6 +107,7 @@
       var sectionMarkdownWithDescription = sectionedListMarkdownWithDescriptions(sectioned, sectionDescriptionParts);
 
       return {
+        sourceNode: node,
         root: root,
         items: sectioned.items,
         descText: "",
@@ -128,6 +130,7 @@
     }
 
     return {
+      sourceNode: node,
       root: root,
       items: items,
       descText: descText,
@@ -142,8 +145,7 @@
     };
   }
 
-  function listContent(metadata, options) {
-    options = options || {};
+  function bestListExtraction(metadata, pageTitles) {
     var candidates = [];
     function pushCandidate(node) {
       if (!node || candidates.indexOf(node) !== -1) return;
@@ -156,11 +158,16 @@
     pushCandidate(document.body);
 
     var tableIndexRoot = linkedTableIndexRoot();
-    var pageTitles = [metadata.title, document.title];
-    var best = tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles) : candidates.reduce(function(current, node) {
+    return tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles) : candidates.reduce(function(current, node) {
       var result = buildListExtraction(node, pageTitles);
       return listExtractionIsBetter(current, result) ? result : current;
     }, null) || buildListExtraction(document.body, pageTitles);
+  }
+
+  function listContent(metadata, options) {
+    options = options || {};
+    var pageTitles = [metadata.title, document.title];
+    var best = bestListExtraction(metadata, pageTitles);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
       best.descText = listDescriptionMarkdown(best.root, best.items);
@@ -192,6 +199,7 @@
         canonicalCardCount: portalEvidenceItemCount
       } : null
     });
+    result.listExtraction = best;
     if (best.sectionMarkdownWithDescription) result.sectionMarkdownWithDescription = best.sectionMarkdownWithDescription;
     return result;
   }

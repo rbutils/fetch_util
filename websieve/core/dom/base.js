@@ -56,9 +56,9 @@
     }
   }
 
-  function elementSubtreeHidden(node) {
+  function elementSubtreeHiddenWithin(node, boundary) {
     var current = node;
-    while (current && current.nodeType === 1) {
+    while (current && current !== boundary && current.nodeType === 1) {
       var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
       if (current.hidden) return true;
       if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0))) return true;
@@ -67,21 +67,46 @@
     return false;
   }
 
-  function elementVisuallyHidden(node) {
+  function elementSubtreeHidden(node) {
+    return elementSubtreeHiddenWithin(node, null);
+  }
+
+  function elementVisuallyHiddenWithin(node, boundary) {
     if (!node || node.nodeType !== 1) return false;
-    if (elementSubtreeHidden(node)) return true;
+    if (elementSubtreeHiddenWithin(node, boundary)) return true;
     var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
     return !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
   }
 
-  function pruneHiddenClone(source, clone) {
+  function elementVisuallyHidden(node) {
+    return elementVisuallyHiddenWithin(node, null);
+  }
+
+  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot) {
     if (!source || !clone) return;
-    if (source.nodeType === 1 && elementSubtreeHidden(source)) {
+    var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
+    var preservedRoot = exactPreservedRoot ? source : preservingRoot;
+    var subtreeHidden = preservedRoot ? elementSubtreeHiddenWithin(source, preservedRoot) : elementSubtreeHidden(source);
+    if (source.nodeType === 1 && !exactPreservedRoot && subtreeHidden) {
       clone.remove();
       return;
     }
 
-    var visibilityHidden = source.nodeType === 1 && elementVisuallyHidden(source);
+    if (source.nodeType === 1 && exactPreservedRoot) {
+      clone.removeAttribute("hidden");
+      clone.removeAttribute("inert");
+      if (clone.getAttribute("aria-hidden") === "true") clone.removeAttribute("aria-hidden");
+      if (clone.style) {
+        clone.style.removeProperty("display");
+        clone.style.removeProperty("visibility");
+        clone.style.removeProperty("opacity");
+        if (!clone.getAttribute("style")) clone.removeAttribute("style");
+      }
+      clone.setAttribute("data-fetchutil-controlled-list-panel", "true");
+    }
+
+    var visibilityHidden = source.nodeType === 1 && !exactPreservedRoot &&
+      (preservedRoot ? elementVisuallyHiddenWithin(source, preservedRoot) : elementVisuallyHidden(source));
     var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
@@ -91,7 +116,7 @@
         childClone.remove();
         return;
       }
-      pruneHiddenClone(child, childClone);
+      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot);
     });
 
     if (visibilityHidden) {

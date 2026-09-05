@@ -131,6 +131,11 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
     content.textContent = markdown;
   }
+  var controlledPanelMarkdown = listMarkdownWithControlledPanels(content, metadata, markdown);
+  if (controlledPanelMarkdown) {
+    markdown = materializedMarkdown(cleanupMarkdownNoise(controlledPanelMarkdown));
+    content.textContent = markdown;
+  }
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;

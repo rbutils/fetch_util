@@ -263,6 +263,8 @@
       markdown: markdown,
       textContent: normalizeText(markdown)
     });
+    result.listSourceNode = leadRoot.root;
+    result.listSourceItems = leadRoot.items;
     if (leadRoot.provisional) result.provisionalPortal = true;
     return result;
   }

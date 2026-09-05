@@ -2,11 +2,11 @@
     return elementSubtreeHidden(node);
   }
 
-  function visibleListClone(node) {
+  function visibleListClone(node, preservedRoots) {
     if (!node || listElementHidden(node)) return document.createElement("div");
     var clone = safeDeepClone(node, document);
     if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
-    pruneHiddenClone(node, clone);
+    pruneHiddenClone(node, clone, preservedRoots);
     return cleanClone(clone);
   }
 
