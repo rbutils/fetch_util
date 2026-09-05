@@ -97,6 +97,24 @@
     var bodyEvidence = requiresExclusiveMainOwnership && !ownsMainBody
       ? paragraphlessBody
       : (substantialProse || structuredLiveBody || paragraphlessBody);
+    var broadListRoute = queryOrCategoryPage() || (likelyListPath() && !articleLikePath());
+    if (semanticFocal !== focal && ownsMainBody && broadListRoute) {
+      var recordSelector = genericListCardSelector();
+      var recordNodes = Array.prototype.filter.call(root.querySelectorAll(recordSelector), function(node) {
+        return !node.querySelector(recordSelector) && normalizeText(node.textContent).length >= 40;
+      });
+      var linkedRecordNodes = [];
+      Array.prototype.forEach.call(root.querySelectorAll("a[href]"), function(link) {
+        var linkedHeading = link.closest("h1, h2, h3, h4") || link.querySelector("h1, h2, h3, h4");
+        var title = normalizeText(linkedHeading && linkedHeading.textContent);
+        if (title.length < minimumListTitleLength(title) || title.length > 220 ||
+            !materializedHttpUrl(link.getAttribute("href"))) return;
+        var recordNode = linkedHeading.closest(recordSelector);
+        if (recordNodes.indexOf(recordNode) < 0 || linkedRecordNodes.indexOf(recordNode) >= 0) return;
+        linkedRecordNodes.push(recordNode);
+      });
+      if (linkedRecordNodes.length >= 3) return false;
+    }
     return !!heading && bodyEvidence && effectiveLinkDensity < 0.45 &&
       (!!focal || !!content) && (!!bylineOrTime || (content && (content.byline || content.publishedTime)) || !!focal);
   }
