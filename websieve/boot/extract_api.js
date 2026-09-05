@@ -214,6 +214,9 @@
       var dormantBodyList = dormantBodyRootListContent(content, metadata);
       if (dormantBodyList) content = dormantBodyList;
 
+      var staleOpacityList = staleOpacitySectionListContent(content, metadata);
+      if (staleOpacityList) content = staleOpacityList;
+
       return finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
     }
   };
