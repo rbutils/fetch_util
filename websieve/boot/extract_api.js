@@ -193,7 +193,9 @@
           !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
           legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
-        if (normalizeText(footerListFallback.markdown || "").length >= 400) content = footerListFallback;
+        if (normalizeText(footerListFallback.markdown || "").length >= 400 &&
+            !listCandidateLosesArticleMaterial(content, footerListFallback) &&
+            !listCandidateLosesArticleListMaterial(content, footerListFallback)) content = footerListFallback;
       }
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
       var indexListCandidate = null;

@@ -77,6 +77,63 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     HTML
   end
 
+  def trailing_privacy_article_fixture
+    core_paragraphs = (1..3).map do |index|
+      <<~HTML
+        <p>Delivery section #{index} explains how publisher teams coordinate auction quality, inventory governance,
+        implementation planning, measurement, and long-term operational support. It documents the decisions specialists
+        make before launch, the safeguards applied to every campaign, and the evidence reviewed after delivery.</p>
+      HTML
+    end.join
+    context_paragraphs = (1..5).map do |index|
+      <<~HTML
+        <p>Platform context #{index} connects publishers with transparent advertising demand while preserving direct
+        control over inventory, reporting, and campaign quality across every supported channel.</p>
+      HTML
+    end.join
+
+    <<~HTML
+      <html><head><title>Publisher delivery platform</title></head><body><main>
+        <div id="platform-content">
+          <h1>Publisher delivery platform</h1>
+          <p>Our supply-side platform gives publishers one accountable place to manage advertising inventory and delivery.</p>
+          #{context_paragraphs}
+          <section id="core-delivery"><h2>Core delivery model</h2>#{core_paragraphs}</section>
+          <section><h2>Benefits for publishers</h2><ul>
+            <li>One platform coordinates every approved source of demand for publisher teams.</li>
+            <li>Bundled demand reaches audiences across every supported channel and device.</li>
+            <li>Transparent controls let publishers review quality, pricing, and delivery evidence.</li>
+            <li>Additional demand can be enabled without replacing the publisher workflow.</li>
+          </ul></section>
+          <section class="resource-grid"><h2>Publisher resources</h2>
+            #{(1..4).map { |index| %(<article class="card"><a href="/resources/#{index}">Publisher resource #{index} with implementation guidance</a></article>) }.join}
+          </section>
+          <section><h2>Privacy choices</h2><p>Privacy policy and cookie settings explain how visitors can manage consent preferences.</p><a href="/privacy">Manage privacy choices</a></section>
+        </div>
+      </main></body></html>
+    HTML
+  end
+
+  def extract_with_readability_root(page, root_expression)
+    extract_payload(page)
+    page.evaluate <<~JS
+      (() => {
+        const NarrowReadability = function() {};
+        NarrowReadability.prototype.parse = function() {
+          const root = #{root_expression};
+          return {
+            title: 'Core delivery model',
+            content: root.outerHTML,
+            textContent: root.textContent
+          };
+        };
+        window.Readability = NarrowReadability;
+
+        return window.FetchUtilExtract.extract({ reader_mode: true });
+      })()
+    JS
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 
@@ -155,6 +212,57 @@ RSpec.describe 'FetchUtil article/list arbitration' do
       expect(payload['markdown']).to include('Trust program section 1 explains how credential teams')
       expect(payload['markdown']).to include('Trust program section 6 explains how credential teams')
       expect(payload['markdown']).not_to include('Credential security analytics platform')
+    end
+  end
+
+  it 'keeps visible article sections when trailing privacy copy and a footer list overlap' do
+    with_url_page('https://platform.example/publisher-delivery', trailing_privacy_article_fixture) do |page|
+      payload = extract_with_readability_root(page, "document.querySelector('#core-delivery')")
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Platform context 1 connects publishers')
+      expect(payload['markdown']).to include('Platform context 5 connects publishers')
+      expect(payload['markdown']).to include('One platform coordinates every approved source')
+      expect(payload['markdown']).to include('Additional demand can be enabled')
+      expect(payload['markdown']).not_to include('Privacy policy and cookie settings')
+    end
+  end
+
+  it 'does not prefer a similarly sized fallback that does not contain the reader content' do
+    broad_paragraphs = (1..8).map do |index|
+      <<~HTML
+        <p>Broad source section #{index} explains implementation planning, operational governance, measurement practice,
+        service ownership, and the evidence teams review before launch. It preserves local context for each decision and
+        records how the program changes after delivery without repeating the independent reader report.</p>
+      HTML
+    end.join
+    unrelated_paragraphs = (1..3).map do |index|
+      <<~HTML
+        <p>Independent reader section #{index} documents archival research, source verification, editorial review,
+        publication history, and the evidence needed to interpret an unrelated report without relying on platform copy.
+        It records why reviewers accepted each conclusion and preserves distinctions needed for later research.</p>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Broad source report</title></head><body><main><article>
+        <h1>Broad source report</h1>
+        #{broad_paragraphs}
+      </article></main></body></html>
+    HTML
+    unrelated_reader = "<article><h1>Independent reader report</h1>#{unrelated_paragraphs}</article>"
+    root_expression = <<~JS.strip
+      (() => {
+        const root = document.createElement('div');
+        root.innerHTML = #{unrelated_reader.dump};
+        return root.firstElementChild;
+      })()
+    JS
+
+    with_url_page('https://journal.example/report/overview', html) do |page|
+      payload = extract_with_readability_root(page, root_expression)
+
+      expect(payload['markdown']).to include('Independent reader section 1 documents archival research')
+      expect(payload['markdown']).not_to include('Broad source section 1 explains implementation planning')
     end
   end
 

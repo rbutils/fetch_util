@@ -41,7 +41,14 @@
         if (computed && /fixed|sticky/.test(computed.position) && cookieNoticeText(text)) return true;
       } catch (e) {}
     }
-    if (cookieNoticeText(text) && text.length < 3000 && node.querySelectorAll("button, a, input[type='button'], input[type='submit']").length >= 1) return true;
+    if (cookieNoticeText(text) && text.length < 3000 && node.querySelectorAll("button, a, input[type='button'], input[type='submit']").length >= 1) {
+      var paragraphCount = node.querySelectorAll("p").length;
+      var formControlCount = node.querySelectorAll("button, input, select, textarea").length;
+      var leadingText = text.slice(0, Math.max(40, Math.ceil(text.length / 2)));
+      var substantiveTrailingNotice = node.tagName !== "BODY" && text.length > 1000 && paragraphCount >= 2 &&
+        paragraphCount >= formControlCount && !cookieNoticeText(leadingText);
+      if (!substantiveTrailingNotice) return true;
+    }
 
     return false;
   }

@@ -162,6 +162,7 @@
       return total + textLength(link);
     }, 0);
     var fallbackLinkDensity = fallbackText.length > 0 ? fallbackLinkText / fallbackText.length : 0;
+    var fallbackContainsPrimary = primaryText.length >= 600 && fallbackText.indexOf(primaryText) !== -1;
     var adLikePrimary = /\b(oglas|advertisement|sponsored|ad)\b/i.test(primaryText.slice(0, 160));
     var footerLikePrimary = legalFooterText(primaryText);
     var weatherLikePrimary = weatherWidgetText(primaryText);
@@ -170,7 +171,7 @@
     if (!fallbackText) return primary;
     if (fallback.legalProvision) return fallback;
     if (primaryText.length < 4000 &&
-        fallbackText.length >= Math.max(1800, primaryText.length * 3) &&
+        fallbackText.length >= Math.max(1800, primaryText.length * (fallbackContainsPrimary ? 2.5 : 3)) &&
         fallbackParagraphs >= Math.max(8, primaryParagraphs + 5) &&
         fallbackLinkDensity < 0.28) {
       return fallback;

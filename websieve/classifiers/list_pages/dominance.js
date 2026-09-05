@@ -50,6 +50,45 @@
     return missingParagraphChars >= 900;
   }
 
+  function listCandidateLosesArticleListMaterial(content, candidate) {
+    if (!content || !candidate || content.contentType !== "article" || candidate.contentType !== "list") return false;
+
+    var articleText = normalizeText(content.textContent || content.markdown || "");
+    var candidateMarkdown = candidate.markdown || candidate.textContent || "";
+    var candidateText = normalizeText(candidateMarkdown
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+      .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1")
+      .replace(/[`*_~#>|]/g, " "));
+    if (articleText.length < 1800 || candidateText.length < articleText.length * 0.5 || candidateText.length >= articleText.length) return false;
+
+    var root = document.createElement("div");
+    root.innerHTML = content.html || "";
+    return Array.prototype.some.call(root.querySelectorAll("ul, ol"), function(list) {
+      if (list.closest("nav, footer, aside, [role='navigation'], [role='menu'], [aria-hidden='true']")) return false;
+
+      var seen = Object.create(null);
+      var items = [];
+      Array.prototype.forEach.call(list.children, function(item) {
+        if (!item || item.tagName !== "LI") return;
+
+        var text = normalizeText(item.textContent || "");
+        if (text.length < 20 || text.length > 500 || seen[text]) return;
+        var linkedText = Array.prototype.reduce.call(item.querySelectorAll("a[href]"), function(total, link) {
+          return total + textLength(link);
+        }, 0);
+        if (linkedText >= text.length * 0.5) return;
+
+        seen[text] = true;
+        items.push(text);
+      });
+      if (items.length < 3) return false;
+
+      var missingItems = items.filter(function(item) { return candidateText.indexOf(item) === -1; });
+      var missingChars = missingItems.reduce(function(total, item) { return total + item.length; }, 0);
+      return missingItems.length >= 3 && missingItems.length >= Math.ceil(items.length / 2) && missingChars >= 120;
+    });
+  }
+
   function listNoiseNode(node) {
     if (!node || node.nodeType !== 1) return false;
 
