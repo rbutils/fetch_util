@@ -88,6 +88,7 @@
         directCandidate.canonicalKey = directUrl ? listCanonicalKey(directUrl) : "unlinked:" + directText.toLowerCase() + "|href:" + directHref;
         directCandidate.url = directUrl ? directCandidate.canonicalKey : null;
         directCandidate.card = card;
+        directCandidate.sourceNode = directLink;
         addCardContext(directCandidate, card);
         return directCandidate;
       }
@@ -135,6 +136,7 @@
       candidate.url = candidate.canonicalKey;
     }
     candidate.card = listCardRoot(link, card);
+    candidate.sourceNode = link;
     addCardContext(candidate, candidate.card);
     return candidate;
   }

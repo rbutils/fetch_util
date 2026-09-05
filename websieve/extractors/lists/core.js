@@ -79,7 +79,7 @@
     }).join("\n");
   }
 
-  function buildListExtraction(node) {
+  function buildListExtraction(node, pageTitles) {
     var root = visibleListClone(node);
     cleanupListRoot(root);
     var sectioned = sectionedListExtraction(root);
@@ -96,10 +96,20 @@
 
     var flatCoverage = sameRootFlatSectionCoverage(sectioned, items);
     if (sectioned && !flatCoverage) {
+      var sectionDescriptionParts = listDescriptionParts(root, sectioned.items, {
+        excludeRecordCards: true,
+        pageTitles: pageTitles,
+        preserveTextLengths: true,
+        sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
+        suppressRepresentedText: true
+      });
+      var sectionMarkdownWithDescription = sectionedListMarkdownWithDescriptions(sectioned, sectionDescriptionParts);
+
       return {
         root: root,
         items: sectioned.items,
         descText: "",
+        sectionMarkdownWithDescription: sectionMarkdownWithDescription,
         markdown: sectioned.markdown,
         score: sectioned.score,
         sectionCount: sectioned.regions.length,
@@ -146,10 +156,11 @@
     pushCandidate(document.body);
 
     var tableIndexRoot = linkedTableIndexRoot();
-    var best = tableIndexRoot ? buildListExtraction(tableIndexRoot) : candidates.reduce(function(current, node) {
-      var result = buildListExtraction(node);
+    var pageTitles = [metadata.title, document.title];
+    var best = tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles) : candidates.reduce(function(current, node) {
+      var result = buildListExtraction(node, pageTitles);
       return listExtractionIsBetter(current, result) ? result : current;
-    }, null) || buildListExtraction(document.body);
+    }, null) || buildListExtraction(document.body, pageTitles);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
       best.descText = listDescriptionMarkdown(best.root, best.items);
@@ -169,7 +180,7 @@
       return !!materializedHttpUrl(item && item.url);
     }).length : best.portalEvidenceMaterializedItemCount;
 
-    return listItemsContentResult(metadata, {
+    var result = listItemsContentResult(metadata, {
       title: metadata.title || document.title,
       excerpt: best.items[0] ? best.items[0].text : metadata.excerpt,
       html: best.root.innerHTML,
@@ -181,4 +192,6 @@
         canonicalCardCount: portalEvidenceItemCount
       } : null
     });
+    if (best.sectionMarkdownWithDescription) result.sectionMarkdownWithDescription = best.sectionMarkdownWithDescription;
+    return result;
   }

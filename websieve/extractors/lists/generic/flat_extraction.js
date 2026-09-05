@@ -207,7 +207,14 @@
     return duplicate ? card : null;
   }
 
-  function listDescriptionCardNode(node, items) {
+  function listDescriptionRecordClass(node) {
+    return Array.prototype.some.call(node.classList || [], function(className) {
+      return /(?:^|[-_])(?:card|story|teaser|item|result|news|post|entry)(?:$|[-_])/i.test(className) ||
+        /(?:Card|Story|Teaser|Item|Result|News)(?:$|[A-Z])/.test(className);
+    });
+  }
+
+  function listDescriptionCardNode(node, items, options) {
     if (!items) return closestGenericListCard(node);
 
     var text = normalizeText(node.textContent || "");
@@ -216,24 +223,60 @@
         return value === text || value.indexOf(text) >= 0;
       });
     });
-    return represented ? represented.card : listDescriptionDuplicateCard(node, items);
+    var recordCard;
+    var sectionLabels;
+
+    if (represented) {
+      if (represented.card) return represented.card;
+      if (options && options.suppressRepresentedText) return node;
+    }
+
+    if (options && options.excludeRecordCards) {
+      recordCard = closestGenericListCard(node);
+      if (recordCard && (recordCard !== node || listDescriptionRecordClass(node))) return recordCard;
+    }
+
+    if (options && options.sectionLabels && /^H[1-3]$/.test(node.tagName || "")) {
+      sectionLabels = options.sectionLabels.map(function(label) {
+        return normalizeText(label).toLowerCase();
+      });
+      if (sectionLabels.indexOf(text.toLowerCase()) !== -1) return node;
+      if (items.some(function(item) {
+        return listDescriptionItemValues(item).some(function(value) {
+          return value.length >= 12 && text.indexOf(value) !== -1;
+        });
+      })) return node;
+    }
+
+    return listDescriptionDuplicateCard(node, items);
   }
 
-  function listDescriptionMarkdown(root, items) {
+  function listDescriptionParts(root, items, options) {
     var descParts = [];
+    var pageTitles = (options && options.pageTitles || []).map(function(title) {
+      return normalizeText(title).toLowerCase();
+    }).filter(Boolean);
     root.querySelectorAll("h1, h2, h3, p").forEach(function(el) {
-      if (listDescriptionCardNode(el, items)) return;
+      if (listDescriptionCardNode(el, items, options)) return;
       var text = normalizeText(el.textContent);
-      if (text.length < 30 || text.length > 2000) return;
+      var heading = /^H[123]$/.test(el.tagName);
+      if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
+      if (!(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;
       if (links <= 1 || (links / words) < 0.3) {
-        var prefix = /^H[123]$/.test(el.tagName) ? "## " : "";
-        descParts.push(prefix + text);
+        var prefix = heading ? "## " : "";
+        descParts.push({ node: el, markdown: prefix + text });
       }
     });
-    return descParts.join("\n\n");
+    return descParts;
+  }
+
+  function listDescriptionMarkdown(root, items, options) {
+    return listDescriptionParts(root, items, options).map(function(part) {
+      return part.markdown;
+    }).join("\n\n");
   }
 
   function listMarkdownWithDescription(descText, items) {

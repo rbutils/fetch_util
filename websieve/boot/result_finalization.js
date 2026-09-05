@@ -127,6 +127,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     warnings.push("access_error_interstitial");
   }
   promoteWarningToInterstitial(content, warnings, "access_error_interstitial", 1200, markdown);
+  if (content.contentType === "list" && content.sectionMarkdownWithDescription) {
+    markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
+    content.textContent = markdown;
+  }
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;
