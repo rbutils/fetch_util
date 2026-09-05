@@ -28,9 +28,11 @@
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
     var caseRecordContext = /\b(?:cases?|defendants?|records?|dockets?|matters?)\b/i.test(pageIdentity);
 
-    function looksLikeMetaLink(text, href, container, directAnchorCard) {
+    function looksLikeMetaLink(text, href, container, directAnchorCard, link) {
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
-      var minimumLength = tableRow ? 2 : (directAnchorCard ? minimumListTitleLength(text) : (caseRecordContext ? 3 : 18));
+      var chromeOwnedCard = !!(link && container && container.parentElement &&
+        container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
+      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? minimumListTitleLength(text) : (caseRecordContext ? 3 : 18));
       return text.length < minimumLength ||
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
@@ -43,7 +45,7 @@
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       var directAnchorCard = genericListDirectAnchorCard(link, container);
-      if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard)) return;
+      if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       addCardContext(candidate, candidate.card);
       pushUniqueListCandidate(candidates, seen, candidate);
     }
@@ -162,7 +164,15 @@
       el.remove();
     });
     root.querySelectorAll("section, div, aside, form, ul, ol").forEach(function(el) {
-      if (listChromeNode(el)) el.remove();
+      if (!listChromeNode(el)) return;
+      var recordRoots = genericListChromeOwnedRecordRoots(el);
+      if (recordRoots.length && el.parentNode) {
+        recordRoots.forEach(function(recordRoot) {
+          recordRoot.__fetchUtilChromeOwnedListRecords = true;
+          el.parentNode.insertBefore(recordRoot, el);
+        });
+      }
+      el.remove();
     });
     root.querySelectorAll('a[href^="#"]').forEach(function(el) {
       var text = normalizeText(el.textContent);
