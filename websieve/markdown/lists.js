@@ -50,6 +50,7 @@ function listClonedCardFields(card, clone, selector) {
 function listSupplementalDetail(item, contextValues, card) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
+  var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
   [
     "[class*='category'], [class*='eyebrow'], [class*='kicker']",
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
@@ -67,7 +68,6 @@ function listSupplementalDetail(item, contextValues, card) {
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
   });
-  var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
     if (nested !== contentCard && genericListFieldBoundary(nested)) nested.remove();
   });

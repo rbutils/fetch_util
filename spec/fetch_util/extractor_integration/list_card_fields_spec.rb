@@ -8,7 +8,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
       File.read(File.join(root, "websieve", entry))
     end.join("\n")
-    source.sub("})(window);", "global.FetchUtilListFieldsTest = { render: listMarkdown }; })(window);")
+    source.sub("})(window);", "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, context: listPageContext }; })(window);")
   end
 
   def list_card_fields_html
@@ -53,6 +53,45 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         expect(markdown).to include("[Learn maps](https://learning.example/learn/maps)")
         expect(markdown).not_to include("September 6, 2026")
       end
+    end
+  end
+
+  it "keeps the focal inner record when removing an earlier wrapper field" do
+    html = <<~HTML
+      <html><head><title>Learning collections</title></head><body><main>
+        <div class="post">
+          <span class="category">Cartography</span>
+          <div class="entry">
+            <h2><a href="/learn/maps">Learn maps</a></h2>
+            <p>Choose projections and build detailed interactive maps for your community.</p>
+            <p>Compare historical maps with current land use before publishing your results.</p>
+          </div>
+          <div class="story-card">Unrelated sibling notes must not replace the selected record.</div>
+        </div>
+      </main></body></html>
+    HTML
+    with_url_page("https://learning.example/collections", html.gsub(/>\s+</, "><")) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const card = document.querySelector('.post');
+          const item = FetchUtilListFieldsTest.candidate(card.querySelector('a'), card, FetchUtilListFieldsTest.context());
+          item.summary = card.querySelector('p').textContent;
+          return {
+            wrapperOwned: item.card === card,
+            contentOwned: item.contentCard === card.querySelector('.entry'),
+            markdown: FetchUtilListFieldsTest.render([item])
+          };
+        })()
+      JAVASCRIPT
+
+      expect(result.values_at("wrapperOwned", "contentOwned")).to eq([true, true])
+      expect(result["markdown"]).to include(
+        "[Learn maps](https://learning.example/learn/maps)",
+        "Choose projections and build detailed interactive maps for your community.",
+        "Compare historical maps with current land use before publishing your results."
+      )
+      expect(result["markdown"]).not_to include("Unrelated sibling notes")
     end
   end
 end
