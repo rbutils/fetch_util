@@ -402,7 +402,7 @@ RSpec.describe "extract asset bundle" do
 
     expect(manifest.index(base_path)).to be < manifest.index(list_path)
     expect(base_source).to include("function pruneHiddenClone", "function visibilityPrunedClone")
-    expect(list_source).to include("pruneHiddenClone(node, clone)")
+    expect(list_source).to include("pruneHiddenClone(node, clone, preservedRoots)")
     expect(list_source).not_to include("function pruneHiddenListClone")
   end
 
