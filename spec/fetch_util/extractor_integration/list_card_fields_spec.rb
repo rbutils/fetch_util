@@ -11,7 +11,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     source.sub(
       "})(window);",
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
-      "context: listPageContext, description: listDescriptionMarkdown }; })(window);"
+      "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone }; })(window);"
     )
   end
 
@@ -188,6 +188,89 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         "- [Explore cartography workshops](https://learning.example/learn/maps) - " \
         "Compare historical maps with current land use before publishing your results."
       )
+    end
+  end
+
+  it "preserves headings of every level and length without changing candidate scoring" do
+    headings = ["Courses", "Research", "Alumni", "Support", "Partners", "Specialized institutional guidance " * 90]
+    html = <<~HTML
+      <html><head><title>Learning collections</title></head><body><main>
+        #{headings.each_with_index.map { |text, index| "<h#{index + 1}>#{text}</h#{index + 1}>" }.join}
+        <h4 hidden>Hidden draft heading</h4>
+        <aside class="weather-widget"><h3>Weather forecast</h3><p>Weather forecast: wind, rain, snow and temperature.</p></aside>
+        <p>Short paragraph</p>
+        <div class="story-card"><a href="/learn/maps">Explore cartography workshops</a></div>
+      </main></body></html>
+    HTML
+    with_url_page("https://learning.example/collections", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const root = FetchUtilListFieldsTest.clone(document.querySelector('main'));
+          const card = root.querySelector('.story-card');
+          const items = [{ card, text: 'Explore cartography workshops', url: '/learn/maps' }];
+          return { scoring: FetchUtilListFieldsTest.description(root),
+            empty: FetchUtilListFieldsTest.description(root, []),
+            description: FetchUtilListFieldsTest.description(root, items) };
+        })()
+      JAVASCRIPT
+
+      expect(result["scoring"]).to eq("")
+      expect(result["empty"]).to eq("")
+      expect(result["description"]).to eq(headings.map { |text| "## #{text.strip}" }.join("\n\n"))
+      expect(result["description"]).not_to include("Hidden draft", "Short paragraph", "Weather forecast")
+    end
+  end
+
+  it "deduplicates short lower-level headings already owned by a section, page, or item" do
+    html = <<~HTML
+      <html><head><title>Learning collections</title></head><body><main>
+        <h4>Workshops</h4><h5>Learning collections</h5><h6>Explore cartography workshops</h6>
+        <h4>Help</h4>
+        <div class="story-card"><a href="/learn/maps">Explore cartography workshops</a></div>
+      </main></body></html>
+    HTML
+    with_url_page("https://learning.example/collections", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      description = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const root = document.querySelector('main');
+          const card = root.querySelector('.story-card');
+          const items = [{ card, text: 'Explore cartography workshops', url: '/learn/maps' }];
+          return FetchUtilListFieldsTest.description(root, items, {
+            sectionLabels: ['Workshops'], pageTitles: ['Learning collections']
+          });
+        })()
+      JAVASCRIPT
+
+      expect(description).to eq("## Help")
+    end
+  end
+
+  it "keeps linked record titles on the existing description admission path" do
+    title = "Build geographic maps with historical and contemporary observations"
+    html = <<~HTML
+      <html><head><title>Learning collections</title></head><body><main>
+        <a href="/short"><h2>Short record</h2></a>
+        <h2><a href="/long">#{title}</a></h2>
+        <h4><a href="/deep">Deep linked records are not standalone page description labels</a></h4>
+        <div class="story-card"><a href="/learn/maps">Explore cartography workshops</a></div>
+      </main></body></html>
+    HTML
+    with_url_page("https://learning.example/collections", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const root = document.querySelector('main');
+          const card = root.querySelector('.story-card');
+          return { scoring: FetchUtilListFieldsTest.description(root),
+            description: FetchUtilListFieldsTest.description(root, [
+              { card, text: 'Explore cartography workshops', url: '/learn/maps' }
+            ]) };
+        })()
+      JAVASCRIPT
+
+      expect(result.values).to eq(["## #{title}", "## #{title}"])
     end
   end
 end

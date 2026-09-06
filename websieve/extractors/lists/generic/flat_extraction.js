@@ -234,7 +234,7 @@
       if (recordCard && (recordCard !== node || listDescriptionRecordClass(node))) return recordCard;
     }
 
-    if (options && options.sectionLabels && /^H[1-3]$/.test(node.tagName || "")) {
+    if (options && options.sectionLabels && /^H[1-6]$/.test(node.tagName || "")) {
       sectionLabels = options.sectionLabels.map(function(label) {
         return normalizeText(label).toLowerCase();
       });
@@ -251,16 +251,22 @@
 
   function listDescriptionParts(root, items, options) {
     var descParts = [];
+    var hasItems = items && items.length > 0;
     var itemValues = items && items.map(listDescriptionItemValues);
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
-    root.querySelectorAll("h1, h2, h3, p").forEach(function(el) {
+    root.querySelectorAll(hasItems ? "h1, h2, h3, h4, h5, h6, p" : "h1, h2, h3, p").forEach(function(el) {
       if (listDescriptionCardNode(el, items, options, itemValues)) return;
       var text = normalizeText(el.textContent);
-      var heading = /^H[123]$/.test(el.tagName);
+      var heading = /^H[1-6]$/.test(el.tagName);
+      var pageHeading = heading && !el.closest("a[href]") && !el.querySelector("a[href]");
+      var weatherOwner = pageHeading && el.closest("[class*='weather' i], [id*='weather' i]");
+      if (weatherOwner && weatherModuleText(weatherOwner.textContent)) pageHeading = false;
+      // Linked record titles keep their existing admission, not page-label treatment.
+      if (heading && !pageHeading && !/^H[1-3]$/.test(el.tagName)) return;
       if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
-      if (!(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
+      if (!(hasItems && pageHeading) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;

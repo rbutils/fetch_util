@@ -988,7 +988,8 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("Marotta manda un messaggio alla squadra")
       expect(payload["markdown"]).to include("Kessie torna nel mirino di Inter e Juve")
       expect(payload["markdown"]).to include("Calciomercato.it e' una testata")
-      expect(payload["markdown"]).not_to include("Chi siamo")
+      expect(payload["markdown"].scan("Chi siamo")).to eq(["Chi siamo"])
+      expect(payload["markdown"]).not_to include("/chi-siamo")
     end
   end
 
