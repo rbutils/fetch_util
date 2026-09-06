@@ -64,6 +64,7 @@ extractors/glossary/detection.js
 extractors/glossary/extraction.js
 extractors/lists/relabeling.js
 extractors/lists/generic/card_evidence.js
+extractors/lists/generic/inline_descriptions.js
 extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/core.js

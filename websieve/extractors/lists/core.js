@@ -99,6 +99,7 @@
     if (sectioned && !flatCoverage) {
       var sectionDescriptionParts = listDescriptionParts(root, sectioned.items, {
         excludeRecordCards: true,
+        includeInlineProse: true,
         pageTitles: pageTitles,
         preserveTextLengths: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),

@@ -75,13 +75,7 @@
     });
 
     service.addRule("paragraphLikeDivs", {
-      filter: function(node) {
-        if (node.nodeName !== "DIV") return false;
-        var text = normalizeText(node.textContent);
-        if (!text || text.length < 20) return false;
-        var blockChildren = node.querySelectorAll("div, p, table, ul, ol, h1, h2, h3, h4, h5, h6, pre, blockquote, article, section");
-        return blockChildren.length === 0;
-      },
+      filter: paragraphLikeDiv,
       replacement: function(content) {
         var text = normalizeText(content);
         if (!text) return "";
@@ -112,6 +106,13 @@
       return codeBlock ? codeBlock : "";
     });
     return md.replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function paragraphLikeDiv(node) {
+    if (node.nodeName !== "DIV") return false;
+    var text = normalizeText(node.textContent);
+    if (!text || text.length < 20) return false;
+    return !node.querySelector("div, p, table, ul, ol, h1, h2, h3, h4, h5, h6, pre, blockquote, article, section");
   }
 
   function preserveInlineProse(root) {

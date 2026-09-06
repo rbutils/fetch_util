@@ -252,11 +252,15 @@
   function listDescriptionParts(root, items, options) {
     var descParts = [];
     var hasItems = items && items.length > 0;
+    var includeInlineProse = hasItems && options && options.includeInlineProse;
     var itemValues = items && items.map(listDescriptionItemValues);
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
-    root.querySelectorAll(hasItems ? "h1, h2, h3, h4, h5, h6, p" : "h1, h2, h3, p").forEach(function(el) {
+    var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p" : "h1, h2, h3, p";
+    root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
+      var inlineProse = el.tagName === "DIV";
+      if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (listDescriptionCardNode(el, items, options, itemValues)) return;
       var text = normalizeText(el.textContent);
       var heading = /^H[1-6]$/.test(el.tagName);
@@ -266,7 +270,7 @@
       // Linked record titles keep their existing admission, not page-label treatment.
       if (heading && !pageHeading && !/^H[1-3]$/.test(el.tagName)) return;
       if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
-      if (!(hasItems && pageHeading) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
+      if (!(hasItems && (pageHeading || inlineProse)) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;

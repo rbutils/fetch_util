@@ -131,6 +131,14 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
     content.textContent = markdown;
   }
+  var listExtraction = content.listExtraction;
+  if (content.contentType === "list" && listExtraction && !listExtraction.sectionCount && content.markdown === listExtraction.markdown) {
+    var inlineDescriptionMarkdown = listMarkdownWithInlineDescriptions(listExtraction);
+    if (inlineDescriptionMarkdown) {
+      markdown = materializedMarkdown(cleanupMarkdownNoise(inlineDescriptionMarkdown));
+      content.textContent = markdown;
+    }
+  }
   var controlledPanelMarkdown = listMarkdownWithControlledPanels(content, metadata, markdown);
   if (controlledPanelMarkdown) {
     markdown = materializedMarkdown(cleanupMarkdownNoise(controlledPanelMarkdown));
