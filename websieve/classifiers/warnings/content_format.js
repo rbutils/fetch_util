@@ -169,7 +169,7 @@
     // matches specific title patterns — this catches structural layout patterns.
     if (formatMarkdown && content && content.html) {
       var mdLines = formatMarkdown.split("\n").filter(function(l) { return l.trim().length > 0; });
-      var mdLinks = (formatMarkdown.match(/\[([^\]]*)\]\([^)]+\)/g) || []);
+      var mdLinks = (formatMarkdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
       var mdHeadings = (formatMarkdown.match(/^#{1,3}\s+/gm) || []).length;
 
       // Count short text blocks (< 200 chars between headings/links) — characteristic of
