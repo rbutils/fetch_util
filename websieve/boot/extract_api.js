@@ -217,6 +217,12 @@
       var staleOpacityList = staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
-      return finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
+      var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);
+      var result = finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
+      if (!hiddenMainArticle || result.contentType !== "article") return result;
+
+      hiddenMainArticle.warningReasons = (hiddenMainArticle.warningReasons || []).concat(result.warnings || []);
+      var hiddenMainResult = finalizeExtractResult(hiddenMainArticle, metadata, pageText, signals, medicalArticle);
+      return hiddenSubstantiveMainFinalResultSafe(result, hiddenMainResult) ? hiddenMainResult : result;
     }
   };

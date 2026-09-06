@@ -58,6 +58,7 @@ classifiers/warnings/index.js
 extractors/article/roots.js
 extractors/article/fallback.js
 extractors/article/readability.js
+extractors/article/hidden_substantive_main.js
 extractors/glossary/cleanup.js
 extractors/glossary/detection.js
 extractors/glossary/extraction.js
