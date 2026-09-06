@@ -34,19 +34,16 @@ function listClonedCardNode(card, clone, node) {
   }, clone);
 }
 
-function listRemoveCardField(card, clone, selector) {
+function listClonedCardFields(card, clone, selector) {
   var fields = cardOwnedNodes(card, selector);
   var selectedValue = fields[0] && normalizeText(
     fields[0].getAttribute("datetime") || fields[0].getAttribute("content") || fields[0].textContent || ""
   );
-  var clonedFields = fields.filter(function(field) {
+  return fields.filter(function(field) {
     var value = normalizeText(field.getAttribute("datetime") || field.getAttribute("content") || field.textContent || "");
     return value === selectedValue;
   }).map(function(field) {
     return listClonedCardNode(card, clone, field);
-  });
-  clonedFields.forEach(function(clonedField) {
-    if (clonedField && clonedField.remove) clonedField.remove();
   });
 }
 
@@ -62,8 +59,10 @@ function listSupplementalDetail(item, contextValues, card) {
     ".reply, .replies, .comment, .comments, [class*='reply'], [class*='replie'], [class*='comment']",
     "[class*='community' i], [class*='subreddit' i], [data-community]",
     "figcaption"
-  ].forEach(function(selector) {
-    listRemoveCardField(card, clone, selector);
+  ].reduce(function(fields, selector) {
+    return fields.concat(listClonedCardFields(card, clone, selector));
+  }, []).forEach(function(field) {
+    if (field && field.remove) field.remove();
   });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
