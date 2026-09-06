@@ -20,7 +20,7 @@
     var extractedNotFoundBody = notFoundInterstitialEvidence(title, extractedNotFoundText, { maxTextLength: 1100 });
     var hasPublicContent = document.querySelectorAll("main a[href], article a[href]").length >= 3 || (content && content.contentType === "list");
     var consentDominatedBody = consentWallDominates(body);
-    var substantialContent = body.length > 500 && !(consentDominatedBody && !hasPublicContent);
+    var substantialContent = body.length > 500 && (!contentText || contentText.length > 500) && !(consentDominatedBody && !hasPublicContent);
     var clearStructure = clearArticleStructure(content, markdown, body);
 
     reasons = reasons.concat(accessWarningReasons(metadata, content, markdown, body, page, combined, title, docsLike, readableDocsPage,
