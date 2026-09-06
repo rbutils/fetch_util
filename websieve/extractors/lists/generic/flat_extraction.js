@@ -186,20 +186,8 @@
   }
 
   function listDescriptionItemValues(item) {
-    var card = item && item.card;
-    return [
-      item && item.text,
-      item && item.detail,
-      item && item.category,
-      item && item.summary,
-      cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || (item && item.author),
-      cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]") || (item && item.time),
-      cardField(card, "[class*='score' i], [data-score], [data-karma]") || (item && item.score),
-      cardField(card, ".reply, .replies, .comment, .comments, [class*='reply'], [class*='replie'], [class*='comment']") || (item && item.replyCount),
-      cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || (item && item.community),
-      item && item.image,
-      item && item.caption
-    ].map(normalizeText).filter(Boolean);
+    if (!item) return [];
+    return [item.text].concat(listItemContextValues(item)).map(normalizeText).filter(Boolean);
   }
 
   function listDescriptionDuplicateCard(node, items) {
@@ -224,12 +212,12 @@
     });
   }
 
-  function listDescriptionCardNode(node, items, options) {
+  function listDescriptionCardNode(node, items, options, itemValues) {
     if (!items) return closestGenericListCard(node);
 
     var text = normalizeText(node.textContent || "");
-    var represented = text && items.find(function(item) {
-      return listDescriptionItemValues(item).some(function(value) {
+    var represented = text && items.find(function(item, index) {
+      return itemValues[index].some(function(value) {
         return value === text || value.indexOf(text) >= 0;
       });
     });
@@ -251,8 +239,8 @@
         return normalizeText(label).toLowerCase();
       });
       if (sectionLabels.indexOf(text.toLowerCase()) !== -1) return node;
-      if (items.some(function(item) {
-        return listDescriptionItemValues(item).some(function(value) {
+      if (itemValues.some(function(values) {
+        return values.some(function(value) {
           return value.length >= 12 && text.indexOf(value) !== -1;
         });
       })) return node;
@@ -263,11 +251,12 @@
 
   function listDescriptionParts(root, items, options) {
     var descParts = [];
+    var itemValues = items && items.map(listDescriptionItemValues);
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
     root.querySelectorAll("h1, h2, h3, p").forEach(function(el) {
-      if (listDescriptionCardNode(el, items, options)) return;
+      if (listDescriptionCardNode(el, items, options, itemValues)) return;
       var text = normalizeText(el.textContent);
       var heading = /^H[123]$/.test(el.tagName);
       if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
