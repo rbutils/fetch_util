@@ -12,15 +12,23 @@
     });
   }
 
+  function genericListAnchorRecordEvidence(link) {
+    var recordEvidence = "picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
+    if (link.querySelector(recordEvidence)) return true;
+    var heading = link.querySelector("h1, h2, h3, h4");
+    return !!(heading && normalizeText(heading.textContent) &&
+      Array.prototype.some.call(link.querySelectorAll("p"), function(paragraph) {
+        return !!normalizeText(paragraph.textContent);
+      }));
+  }
+
   function genericListDirectAnchorCard(link, container) {
     if (!link || !container || link.parentElement !== container || !link.matches("a[href]")) return false;
-
-    var recordEvidence = "picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
-    if (!link.querySelector(recordEvidence)) return false;
+    if (!genericListAnchorRecordEvidence(link)) return false;
 
     var peers = Array.prototype.filter.call(container.children, function(child) {
       return child.matches && child.matches("a[href]") &&
-        materializedHttpUrl(child.getAttribute("href")) && child.querySelector(recordEvidence);
+        materializedHttpUrl(child.getAttribute("href")) && genericListAnchorRecordEvidence(child);
     });
     return peers.length >= 2;
   }
