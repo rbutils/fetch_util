@@ -140,7 +140,10 @@
       var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
       var candidate = listLinkCandidate(link, container, context, true);
-      if (candidate) pushUniqueListCandidate(ranked, seen, candidate);
+      if (candidate) {
+        addCardContext(candidate, candidate.card);
+        pushUniqueListCandidate(ranked, seen, candidate);
+      }
     });
     return ranked;
   }

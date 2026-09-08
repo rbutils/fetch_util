@@ -26,40 +26,6 @@
     return card.querySelector(recordEvidence) ? link : null;
   }
 
-  function genericListChromeOwnedRecordRoots(node) {
-    if (!node || !node.querySelectorAll) return [];
-
-    var selector = "ul, ol, [role='list'], [class*='listing' i], [class*='grid' i], [class*='feed' i], [class*='results' i]";
-    var roots = [];
-    Array.prototype.forEach.call(node.querySelectorAll(selector), function(collection) {
-      if (listChromeNode(collection) || scoreListContainer(collection, listPageContext()) === -Infinity) return;
-      var records = Array.prototype.filter.call(collection.querySelectorAll(genericListCardSelector()), function(card) {
-        return !!genericListStructuredCardLink(card);
-      });
-      var recordRoots = [];
-      records.forEach(function(record) {
-        var root = record.parentElement;
-        if (recordRoots.indexOf(root) < 0) recordRoots.push(root);
-      });
-      recordRoots.forEach(function(root) {
-        if (roots.indexOf(root) >= 0) return;
-        var peers = Array.prototype.filter.call(root.children, function(sibling) {
-          return !!genericListStructuredCardLink(sibling);
-        });
-        if (peers.length >= 4) roots.push(root);
-      });
-    });
-    return roots.filter(function(root) {
-      return !roots.some(function(other) {
-        return other !== root && other.contains(root);
-      });
-    });
-  }
-
-  function genericListChromeOwnsCollection(node) {
-    return genericListChromeOwnedRecordRoots(node).length > 0;
-  }
-
   function genericListFigureRecordLink(figure) {
     if (!figure || !figure.matches || !figure.matches("figure") || !figure.querySelector("figcaption")) return null;
 
