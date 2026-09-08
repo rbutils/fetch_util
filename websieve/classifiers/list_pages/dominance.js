@@ -165,7 +165,7 @@
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
     if (!href || href[0] === "#") return null;
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
-    var group = genericListLinkGroup(link);
+    var group = genericListLinkGroup(link, context.linkGroups);
     var minimumTitleLength = minimumListTitleLength(text);
     if (group) minimumTitleLength = 1;
     else if (tableIndexRow) minimumTitleLength = 2;
@@ -186,11 +186,17 @@
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
     if ((!group && looksLikeFooterLink(text, href)) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
-    if (genericListFigureCollectionRejectsLink(link, container)) return null;
+    if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
-    var card = listCardRoot(link, container);
+    var card = listCardRoot(link, container, group, context.figureCollections);
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
-    var detailText = genericListCardText(detailSource);
+    var detailText;
+    if (context.cardText && detailSource && context.cardText.has(detailSource)) {
+      detailText = context.cardText.get(detailSource);
+    } else {
+      detailText = genericListCardText(detailSource);
+      if (context.cardText && detailSource) context.cardText.set(detailSource, detailText);
+    }
     if (headings.length > 1) {
       headings.forEach(function(heading) { detailText = detailText.replace(normalizeText(heading.textContent), ""); });
     } else detailText = detailText.replace(text, "");

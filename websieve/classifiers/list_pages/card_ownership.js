@@ -54,24 +54,35 @@
     return records.length >= 2;
   }
 
-  function genericListFigureCollectionAncestor(node) {
+  function genericListFigureCollectionAncestor(node, cache) {
     var current = node;
+    var visited = [];
+    var result = null;
     while (current && current !== document.body) {
-      if (genericListFigureCollection(current)) return current;
+      if (cache && cache.has(current)) {
+        result = cache.get(current);
+        break;
+      }
+      if (cache) visited.push(current);
+      if (genericListFigureCollection(current)) {
+        result = current;
+        break;
+      }
       current = current.parentElement;
     }
-    return null;
+    if (cache) visited.forEach(function(ancestor) { cache.set(ancestor, result); });
+    return result;
   }
 
-  function genericListFigureAnchorCard(link, figure) {
+  function genericListFigureAnchorCard(link, figure, cache) {
     return !!(link && figure && link.closest("figure") === figure &&
-      genericListFigureRecordLink(figure) === link && genericListFigureCollectionAncestor(figure.parentElement));
+      genericListFigureRecordLink(figure) === link && genericListFigureCollectionAncestor(figure.parentElement, cache));
   }
 
-  function genericListFigureCollectionRejectsLink(link, container) {
+  function genericListFigureCollectionRejectsLink(link, container, cache) {
     if (!link || !link.closest) return false;
     var figure = link.closest("figure");
-    var collection = genericListFigureCollectionAncestor(figure ? figure.parentElement : (container || link.parentElement));
+    var collection = genericListFigureCollectionAncestor(figure ? figure.parentElement : (container || link.parentElement), cache);
     if (!collection) return false;
 
     return !figure || !collection.contains(figure) || genericListFigureRecordLink(figure) !== link;
@@ -260,13 +271,14 @@
     return card;
   }
 
-  function listCardRoot(link, fallback) {
+  function listCardRoot(link, fallback, knownGroup, figureCollections) {
     if (fallback && fallback.matches && fallback.matches("tr")) return fallback;
     if (genericListDirectAnchorCard(link, fallback)) return link;
     var figure = link && link.closest && link.closest("figure");
-    if (genericListFigureAnchorCard(link, figure)) return figure;
-    var group = genericListLinkGroup(link);
+    if (genericListFigureAnchorCard(link, figure, figureCollections)) return figure;
+    var group = knownGroup === undefined ? genericListLinkGroup(link) : knownGroup;
     if (group) return group.card;
     var card = genericListContextCard(closestGenericListCard(link));
-    return card || (fallback && !genericListPageContainer(fallback) ? fallback : null) || (link && link.parentElement);
+    if (!card && genericListPageContainer(fallback)) return link.parentElement;
+    return card || fallback || (link && link.parentElement);
   }

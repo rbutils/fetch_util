@@ -38,7 +38,7 @@
       var anchorMinimum = minimumListTitleLength(text);
       if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
       var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? anchorMinimum : (caseRecordContext ? 3 : 18));
-      if (link && genericListLinkGroup(link)) minimumLength = 1;
+      if (link && genericListLinkGroup(link, context.linkGroups)) minimumLength = 1;
       return text.length < minimumLength ||
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||

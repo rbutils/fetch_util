@@ -1,31 +1,38 @@
-  function genericListPlainLinkGroup(link) {
+  function genericListPlainLinkGroup(link, cache) {
+    var visited = [];
+    function finish(result) {
+      if (cache) visited.forEach(function(node) { cache.set(node, result); });
+      return result;
+    }
     var group = link.parentElement;
     while (group && !group.matches("body, main, [role='main']")) {
-      if (listChromeNode(group) || elementSubtreeHidden(group)) return null;
+      if (cache && cache.has(group)) return finish(cache.get(group));
+      if (cache) visited.push(group);
+      if (listChromeNode(group) || elementSubtreeHidden(group)) return finish(null);
       var anchors = Array.from(group.querySelectorAll("a[href]")).filter(function(anchor) {
         return !elementSubtreeHidden(anchor);
       });
       if (anchors.some(function(anchor) {
         return !materializedHttpUrl(anchor.getAttribute("href")) || genericListAnchorRecordEvidence(anchor);
-      })) return null;
+      })) return finish(null);
       var clone = group.cloneNode(true);
       pruneHiddenClone(group, clone);
       clone.querySelectorAll("a").forEach(function(anchor) { anchor.remove(); });
-      if (normalizeText(clone.textContent)) return null;
+      if (normalizeText(clone.textContent)) return finish(null);
       var destinations = new Set(anchors.map(function(anchor) { return materializedHttpUrl(anchor.getAttribute("href")); }));
-      if (destinations.size >= 2) return { card: group, label: "" };
+      if (destinations.size >= 2) return finish({ card: group, label: "" });
       group = group.parentElement;
     }
-    return null;
+    return finish(null);
   }
 
-  function genericListLinkGroup(link) {
+  function genericListLinkGroup(link, cache) {
     if (!link || !materializedHttpUrl(link.getAttribute("href")) || elementSubtreeHidden(link)) return null;
     if (link.closest("header, footer, nav, aside, menu, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar'], [role='banner'], [role='complementary'], [role='contentinfo']")) return null;
     if (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
 
     var collection = genericListContextCard(closestGenericListCard(link));
-    if (!collection) return genericListPlainLinkGroup(link);
+    if (!collection) return genericListPlainLinkGroup(link, cache);
     if (!collection || collection === link || collection.matches("tr") || !collection.contains(link)) return null;
     var branch = link;
     while (branch.parentElement && branch.parentElement !== collection) branch = branch.parentElement;

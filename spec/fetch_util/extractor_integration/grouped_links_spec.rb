@@ -11,7 +11,8 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
     source.sub(
       "})(window);",
       "global.FetchUtilGroupTest = { group: genericListLinkGroup, " \
-      "items: extractFallbackHeadlineItems, flat: extractListItems, clone: visibleListClone, render: listMarkdown }; })(window);"
+       "items: extractFallbackHeadlineItems, flat: extractListItems, context: listPageContext, candidate: listLinkCandidate, " \
+       "figures: genericListFigureCollectionAncestor, clone: visibleListClone, render: listMarkdown }; })(window);"
     )
   end
 
@@ -216,6 +217,70 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
         ["https://services.example/cost-of-living"] + (0...125).map { |index| "https://services.example/record/#{index}" }
       )
       (0...125).each { |index| expect(result.fetch("markdown")).to include("Own detail #{index}.") }
+    end
+  end
+
+  it "reuses plain-group proofs within one candidate pass without keeping stale proofs across passes" do
+    links = (0...125).map { |index| "<a href='/genre/#{index}'>G #{index}</a><br>" }.join
+    with_url_page("https://services.example/", "<main><div id='genres'>#{links}</div></main>") do |page|
+      page.add_script_tag(content: grouped_links_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const api = FetchUtilGroupTest;
+          const group = document.querySelector('#genres');
+          const anchors = Array.from(group.querySelectorAll('a'));
+          const originalClone = group.cloneNode;
+          let clones = 0;
+          group.cloneNode = function(deep) { clones++; return originalClone.call(this, deep); };
+          function inspect() {
+            const context = api.context();
+            const start = clones;
+            const results = anchors.map(anchor => api.group(anchor, context.linkGroups));
+            const proofClones = clones - start;
+            const candidates = anchors.map(anchor => api.candidate(anchor, group, context)).filter(Boolean);
+            return {clones: proofClones, detailClones: clones - start - proofClones, count: candidates.length,
+              accepted: results.every(value => value && value.card === group),
+              rejected: results.every(value => value === null),
+              independentText: !candidates.length || (!candidates[0].detail.includes('G 0') && candidates[124].detail.includes('G 0'))};
+          }
+          const plain = inspect();
+          group.insertAdjacentHTML('beforeend', '<p>Material shared prose must not become a link label.</p>');
+          const described = inspect();
+          group.querySelector('p').remove();
+          return {plain, described, restored: inspect(), count: anchors.length};
+        })()
+      JAVASCRIPT
+      expect(result.fetch("plain")).to eq("clones" => 1, "detailClones" => 1, "count" => 125,
+                                          "accepted" => true, "rejected" => false, "independentText" => true)
+      expect(result.fetch("described")).to eq("clones" => 1, "detailClones" => 0, "count" => 0,
+                                              "accepted" => false, "rejected" => true, "independentText" => true)
+      expect(result.fetch("restored")).to eq(result.fetch("plain"))
+      expect(result.fetch("count")).to eq(125)
+    end
+  end
+
+  it "reuses figure-collection ancestry only within its read-only candidate pass" do
+    figures = (1..2).map do |index|
+      "<figure><a href='/record/#{index}'><h3>Named figure record #{index}</h3></a><figcaption>Local caption</figcaption></figure>"
+    end.join
+    with_url_page("https://services.example/", "<main><div id='figures'>#{figures}</div></main>") do |page|
+      page.add_script_tag(content: grouped_links_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const api = FetchUtilGroupTest;
+          const group = document.querySelector('#figures');
+          const children = Object.getOwnPropertyDescriptor(Element.prototype, 'children').get;
+          let reads = 0;
+          Object.defineProperty(group, 'children', {get() { reads++; return children.call(this); }});
+          const context = api.context();
+          const accepted = Array.from({length: 125}, () => api.figures(group, context.figureCollections) === group);
+          const reusedReads = reads;
+          group.querySelector('figure').remove();
+          const fresh = api.figures(group, api.context().figureCollections);
+          return {accepted: accepted.every(Boolean), reusedReads, fresh: fresh === null, reads};
+        })()
+      JAVASCRIPT
+      expect(result).to eq("accepted" => true, "reusedReads" => 2, "fresh" => true, "reads" => 4)
     end
   end
 end

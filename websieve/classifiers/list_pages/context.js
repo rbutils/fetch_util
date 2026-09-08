@@ -170,6 +170,9 @@
 
     return {
       currentUrl: currentListPageUrl(),
+      linkGroups: new WeakMap(),
+      cardText: new WeakMap(),
+      figureCollections: new WeakMap(),
       keywords: keywords,
       sectionFragments: sectionFragments.slice(0, 4)
     };
