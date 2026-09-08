@@ -154,6 +154,8 @@
         }
       }
 
+      if (content === productList) content = mixedHomepageProductListContent(metadata, productList) || content;
+
       var jobList = genericJobListContent(metadata);
       if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike &&
           !cachedFocalArticleContent(content) && !articleRouteFocalContent(content)) {

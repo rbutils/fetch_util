@@ -145,8 +145,10 @@
 
     if (items.length < 4 || materializedListItemCount(items) < 4) return null;
 
-    return listItemsContentResult(metadata, {
+    var result = listItemsContentResult(metadata, {
       excerpt: items[0].text,
       items: items
     });
+    result.productListItems = items;
+    return result;
   }
