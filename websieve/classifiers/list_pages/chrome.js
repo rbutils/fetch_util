@@ -37,7 +37,7 @@
       node.getAttribute("role"),
       ariaLabel,
       node.getAttribute("data-testid")
-    ].join(" ")).toLowerCase();
+    ].join(" ")).replace(/([a-z\d])([A-Z])/g, "$1 $2").toLowerCase();
 
     if (!attrs) return false;
     if (/(news|headline|story|article|post|feed|stream|content|result|listing|archive|topic|thread|discussion|feature)/.test(attrs)) return false;
@@ -46,8 +46,9 @@
       var primaryLink = card && genericListStructuredCardLink(card);
       if (primaryLink && node.contains(primaryLink)) return false;
     }
-    if (includeSocial) return /(nav|menu|menubar|navbar|breadcrumb|breadcrumbs|pager|pagination|footer|header|toolbar|sidebar|drawer|utility|meta|social|share|follow|account|login|signup|register)/.test(attrs);
-    return /(nav|menu|menubar|navbar|breadcrumb|breadcrumbs|pager|pagination|footer|header|toolbar|sidebar|drawer)/.test(attrs);
+    var navigation = /nav(?:igation|bar|menu|links?|items?|list|container)?(?:$|[\s_-])|(?:^|[\s_-])pager(?:$|[\s_-])/.test(attrs);
+    if (includeSocial) return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer|utility|meta|social|share|follow|account|login|signup|register)/.test(attrs);
+    return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer)/.test(attrs);
   }
 
   function listChromeNode(node) {
