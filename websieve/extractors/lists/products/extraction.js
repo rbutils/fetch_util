@@ -64,6 +64,27 @@
       var image = link.querySelector("img[alt], img[title]");
       var card = link.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
       if (card === link && link.parentElement) card = link.parentElement.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
+      var productPath = "";
+      if (url) {
+        try {
+          productPath = new URL(url, location.href).pathname;
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      var productUrl = /(\/product|\/perfume|\/cologne|\/dp\/|\/itm\/|\/pdp\/|\/shop\/products\/|\/p\/(?!pl(?:\/|$)))/i.test(productPath);
+      var cardAttrs = normalizeText(card && [
+        card.getAttribute("id"),
+        card.getAttribute("class"),
+        card.getAttribute("data-testid"),
+        card.getAttribute("data-hb-id"),
+        card.getAttribute("itemtype")
+      ].join(" "));
+      var productCard = /(product|item-cell|item-container|schema\.org\/Product)/i.test(cardAttrs);
+      // Reject non-products before scanning potentially page-wide containers.
+      if (!productUrl && !productCard) return null;
+
       var titleLinkOptions = [];
       var titleOptions = [
         normalizeText(link.textContent || ""),
@@ -86,25 +107,6 @@
       if (url && /(sort|filter|review|rating|privacy|cookie|onetrust)/i.test(url) && title.length < 32) return null;
       if (url === location.href) return null;
 
-      var productPath = "";
-      if (url) {
-        try {
-          productPath = new URL(url, location.href).pathname;
-        } catch (_error) {
-          return null;
-        }
-      }
-
-      var productUrl = /(\/product|\/perfume|\/cologne|\/dp\/|\/itm\/|\/pdp\/|\/shop\/products\/|\/p\/(?!pl(?:\/|$)))/i.test(productPath);
-      var cardAttrs = normalizeText(card && [
-        card.getAttribute("id"),
-        card.getAttribute("class"),
-        card.getAttribute("data-testid"),
-        card.getAttribute("data-hb-id"),
-        card.getAttribute("itemtype")
-      ].join(" "));
-      var productCard = /(product|item-cell|item-container|schema\.org\/Product)/i.test(cardAttrs);
-      if (!productUrl && !productCard) return null;
       if (queryTerms.length && !titleMatchesQueryTerms(title)) return null;
       if (pageTerms.length && queryOrCategoryPage() && !titleMatchesPageTerms(title)) return null;
 
