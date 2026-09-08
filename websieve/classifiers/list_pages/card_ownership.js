@@ -1,6 +1,6 @@
-  function genericListCardSelector(includeAnchors) {
+  function genericListCardSelector(includeLinkedLayouts) {
     var selector = "tr, article, li, .post, .entry, .product, .product-tile, [itemtype$='/Product'], [class*='card' i], [class*='story' i], [class*='teaser' i], [class*='item' i], [class*='result' i], [class*='news' i], [class*='headline' i]";
-    return includeAnchors === false ? selector : selector + ", " + genericListAnchorCardSelector();
+    return includeLinkedLayouts === false ? selector : selector + ", " + genericListAnchorCardSelector() + ", " + genericListLinkedMediaRowSelector();
   }
 
   function genericListPresentationCardNode(node) {
@@ -33,7 +33,7 @@
         title.length < minimumListTitleLength(title) || title.length > 220) return null;
 
     var recordEvidence = "picture, video, img[alt]:not([alt='']), p, time, [datetime], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i], [class*='pages' i]";
-    return card.querySelector(recordEvidence) ? link : null;
+    return card.querySelector(recordEvidence) || genericListLinkedMediaRow(card) ? link : null;
   }
 
   function genericListFigureRecordLink(figure) {
@@ -179,6 +179,8 @@
     if (!node || !node.matches || !node.matches(genericListCardSelector())) return false;
     if (genericListPresentationCardNode(node)) return false;
     if (genericListPageContainer(node)) return false;
+    if (node.matches(genericListLinkedMediaRowSelector()) && !node.matches(genericListCardSelector(false)) &&
+        !genericListLinkedMediaRow(node)) return false;
     if (node.matches("a[href]") && !node.matches(genericListCardSelector(false)) &&
         !node.matches("a:has([class$='-name' i]):has([class$='-desc' i])") &&
         !genericListDirectAnchorCard(node, node.parentElement)) return false;
