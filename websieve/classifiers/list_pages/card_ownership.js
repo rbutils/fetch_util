@@ -4,6 +4,9 @@
   }
 
   function genericListPresentationCardNode(node) {
+    // A wrapper inside the record's own anchor does not own a separate destination.
+    var enclosingLink = node && node.closest && node.closest("a[href]");
+    if (enclosingLink && enclosingLink !== node && !node.querySelector("a[href]")) return true;
     var classes = ((node && node.getAttribute && node.getAttribute("class")) || "").split(/\s+/);
     return classes.some(function(name) {
       return /^(?:card|story|teaser|result|news|headline)[-_]+(?:body|content|meta(?:data)?|header|footer|details?)(?:[-_].*)?$/i.test(name) ||
@@ -215,7 +218,7 @@
   function genericListNestedCard(node) {
     if (!node || !node.querySelector || !genericListCardBoundary(node)) return false;
     var explicitCard = node.matches && node.matches("tr, article, li, .post, .entry");
-    var linkSelector = explicitCard ? "a[href]" : "h1 a[href], h2 a[href], h3 a[href], h4 a[href]";
+    var linkSelector = explicitCard ? "a[href]" : "h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4";
     return !!node.querySelector(linkSelector);
   }
 

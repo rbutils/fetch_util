@@ -102,7 +102,7 @@
         !anchor.closest("[class*='author' i], [class*='byline' i]");
     });
     var headingLink = links.filter(function(anchor) {
-      return !!anchor.closest("h1, h2, h3, h4");
+      return !!anchor.closest("h1, h2, h3, h4") || !!anchor.querySelector("h1, h2, h3, h4");
     })[0];
     if (card.matches && card.matches("a[href]")) links = [card];
     var namedCard = card.matches && (card.matches("tr") ||
@@ -110,11 +110,6 @@
       genericListDirectAnchorCard(card, card.parentElement));
     if (!headingLink && !namedCard && !cardOwnedNodes(card, "p, [class*='summary'], [class*='description'], [class*='excerpt'], time, img[alt]:not([alt=''])").length) return null;
     var link = headingLink;
-    if (!link) {
-      link = links.filter(function(anchor) {
-        return anchor.querySelector("h1, h2, h3, h4");
-      })[0];
-    }
     if (!link) {
       link = links.reduce(function(best, anchor) {
         var candidate = listLinkCandidate(anchor, card, listPageContext(), true);
