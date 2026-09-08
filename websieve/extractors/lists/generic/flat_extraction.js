@@ -240,6 +240,7 @@
       })) return node;
     }
 
+    if (options && options.preserveUnrepresentedText) return null;
     return listDescriptionDuplicateCard(node, items);
   }
 

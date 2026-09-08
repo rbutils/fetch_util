@@ -58,7 +58,7 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
     end
   end
 
-  it 'retains section-only output at exactly half of flat coverage' do
+  it 'retains independent records when sections cover exactly half of the page' do
     html = <<~HTML
       <html><head><title>Balanced archive</title></head><body><main>
         <h1>Balanced archive</h1>
@@ -71,12 +71,13 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
     with_url_page('https://coverage.example/', html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
-      expect(extracted_record_numbers(payload['markdown'])).to eq((1..4).to_a)
-      expect(payload['markdown']).not_to include('/records/5')
+      expect(extracted_record_numbers(payload['markdown'])).to eq((1..8).to_a)
+      expect(payload['markdown']).to include('## Featured records', '## Latest records')
+      expect(payload['markdown']).to include('Local summary for archive record 1.', 'Local summary for archive record 4.')
     end
   end
 
-  it 'retains section-only output when flat extraction loses a section record' do
+  it 'retains short section records alongside independently discovered records' do
     html = <<~HTML
       <html><head><title>Identity archive</title></head><body><main>
         <h1>Identity archive</h1>
@@ -89,13 +90,13 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
     with_url_page('https://coverage.example/', html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
-      expect(extracted_record_numbers(payload['markdown'])).to eq([1, 2])
+      expect(extracted_record_numbers(payload['markdown'])).to eq((1..8).to_a)
       expect(payload['markdown']).to include('Short 1')
-      expect(payload['markdown']).not_to include('/records/3')
+      expect(payload['markdown']).to include('## Featured records', '## Latest records', 'Local summary for archive record 2.')
     end
   end
 
-  it 'requires a flat occurrence for every repeated section record' do
+  it 'retains every recurring section occurrence and its fields alongside additional records' do
     html = <<~HTML
       <html><head><title>Recurring record archive</title></head><body><main><h1>Recurring record archive</h1>
         <section>
@@ -116,11 +117,13 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
 
       expect(markdown.scan('](https://coverage.example/records/recurring)').length).to eq(2)
       expect(markdown).to include('## Spring records', '## Autumn records', '2026-03-01', '2026-09-01')
-      expect(markdown).not_to include('/records/3')
+      expect(extracted_record_numbers(markdown)).to eq((3..8).to_a)
+      expect(markdown.index('2026-03-01')).to be < markdown.index('2026-09-01')
+      expect(markdown.index('2026-09-01')).to be < markdown.index('/records/3')
     end
   end
 
-  it 'rejects flat additions when one shared wrapper owns half of them' do
+  it 'rejects additions when an unowned shared-prose wrapper owns half of them' do
     shared_links = (3..4).map do |number|
       "<h3><a href=\"/records/#{number}\">Complete archive record #{number}</a></h3>"
     end.join
@@ -132,7 +135,7 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
         <h1>Local archive</h1>
         #{same_root_section("Featured records", [1])}
         #{same_root_section("Latest records", [2])}
-        <div class="record-pool">#{shared_links}</div>
+        <div class="record-pool"><p>This collection introduction does not describe either individual record.</p>#{shared_links}</div>
         #{local_links}
       </body></html>
     HTML

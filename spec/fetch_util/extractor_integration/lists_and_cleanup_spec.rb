@@ -193,7 +193,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "keeps direct list regions that have no heading" do
+  it "keeps all material direct list regions, including unheaded and related records" do
     cards = lambda do |range|
       range.map do |number|
         <<~HTML
@@ -223,9 +223,9 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"].scan(/^## (.+)$/).flatten).to eq(["Official selection"])
-      expect(payload["markdown"].scan(%r{\]\(https://festival\.example/festival/(\d+)\)}).flatten.map(&:to_i)).to eq((1..12).to_a)
+      expect(payload["markdown"].scan(%r{\]\(https://festival\.example/festival/(\d+)\)}).flatten.map(&:to_i)).to eq((1..16).to_a)
       expect(payload["markdown"]).not_to include("## Festival archive record")
-      expect(payload["markdown"]).not_to include("Festival archive record 13")
+      expect(payload["markdown"]).to include("Program details for archive record 13.", "Program details for archive record 16.")
     end
   end
 

@@ -79,6 +79,79 @@
     }).join("\n");
   }
 
+  function supplementalSameRootSectionCoverage(sectioned, flatItems, fallbackItems, root, pageTitles) {
+    if (!sectioned || !sectioned.items.length) return null;
+    var key = function(item) { return item.dedupeKey || listCanonicalKey(item.url || ""); };
+    var nodes = Array.from(root.querySelectorAll("a[href], h1, h2, h3, h4, h5, h6"));
+    var sourcePosition = function(item) {
+      var node = item.sourceNode;
+      if (!node || !root.contains(node)) node = nodes.find(function(candidate) {
+        return candidate.tagName === "A" && (!item.card || item.card.contains(candidate)) &&
+          listCanonicalKey(materializedHttpUrl(candidate.getAttribute("href")) || "") === listCanonicalKey(item.url || "");
+      });
+      return nodes.indexOf(node);
+    };
+    var represented = new Set(sectioned.items.map(key));
+    var representedPositions = new Set(sectioned.items.map(sourcePosition));
+    var additions = [];
+    flatItems.concat(fallbackItems).forEach(function(item) {
+      if (!materializedHttpUrl(item.url) || represented.has(key(item))) return;
+      var position = sourcePosition(item);
+      if (position >= 0 && representedPositions.has(position)) return;
+      represented.add(key(item));
+      representedPositions.add(position);
+      additions.push(item);
+    });
+    if (!additions.length) return null;
+    if (additions.length === 1 && (!additions[0].card || additions[0].card === root)) return null;
+    var owners = new Map();
+    additions.forEach(function(item) {
+      if (item.card && item.groupLabel == null) owners.set(item.card, (owners.get(item.card) || 0) + 1);
+    });
+    if (Array.from(owners.values()).some(function(count) { return count > 1 && count * 2 >= additions.length; })) return null;
+    var localParagraphs = new Set();
+    var completeItems = sectioned.items.concat(additions).map(function(item) {
+      if (!item.card || genericListCardBoundary(item.card) || item.groupLabel != null ||
+          sameRootCanonicalDestinations(Array.from(item.card.querySelectorAll("a[href]")).map(function(link) {
+            return { url: materializedHttpUrl(link.getAttribute("href")) };
+          })).length < 2) return item;
+      var link = nodes.find(function(node) {
+        return node.tagName === "A" && item.card.contains(node) &&
+          listCanonicalKey(materializedHttpUrl(node.getAttribute("href")) || "") === listCanonicalKey(item.url || "");
+      });
+      var paragraph = link && link.closest("p");
+      if (!paragraph || !item.card.contains(paragraph) || paragraph.querySelectorAll("a[href]").length !== 1) return item;
+      if (genericListStructuredCardLink(item.card) === link) return item;
+      // Inline prose belongs to its paragraph, not the shared collection's introduction.
+      var local = { text: item.text, url: item.url, dedupeKey: item.dedupeKey, card: paragraph, sourceNode: link };
+      addCardContext(local, paragraph);
+      localParagraphs.add(paragraph);
+      return local;
+    });
+    var entries = completeItems.map(function(item) {
+      return { item: item, position: sourcePosition(item) };
+    });
+    if (entries.some(function(entry) { return entry.position < 0; })) return null;
+    entries.sort(function(a, b) { return a.position - b.position; });
+    var items = entries.map(function(entry) { return entry.item; });
+    var headings = {};
+    sectioned.regions.forEach(function(region) {
+      var index = items.findIndex(function(item) { return key(item) === key(region.cards[0]); });
+      if (region.label && index >= 0) {
+        if (!headings[index]) headings[index] = [];
+        headings[index].push(region.label);
+      }
+    });
+    var descriptions = listDescriptionParts(root, items, {
+      includeInlineProse: true, preserveTextLengths: true,
+      pageTitles: pageTitles, preserveUnrepresentedText: true
+    }).filter(function(part) { return !localParagraphs.has(part.node); });
+    return { items: items, headings: headings,
+      markdown: sectionedListMarkdownWithDescriptions({
+        regions: [{ node: root, label: "", cards: items }]
+      }, descriptions) || sameRootFlatListMarkdown(items, headings) };
+  }
+
   function buildListExtraction(node, pageTitles, options) {
     options = options || {};
     var root = visibleListClone(node, options.preservedRoots);
@@ -95,7 +168,8 @@
       itemQuality = fallbackQuality;
     }
 
-    var flatCoverage = sameRootFlatSectionCoverage(sectioned, items);
+    var flatCoverage = sameRootFlatSectionCoverage(sectioned, items) ||
+      supplementalSameRootSectionCoverage(sectioned, items, fallbackItems, root, pageTitles);
     if (sectioned && !flatCoverage) {
       var sectionDescriptionParts = listDescriptionParts(root, sectioned.items, {
         excludeRecordCards: true,
@@ -123,6 +197,7 @@
 
     var itemMarkdown = flatCoverage ? sameRootFlatListMarkdown(items, flatCoverage.headings) : listMarkdown(items);
     var markdown = descText ? descText + (itemMarkdown ? "\n\n" + itemMarkdown : "") : itemMarkdown;
+    if (flatCoverage && flatCoverage.markdown) markdown = flatCoverage.markdown;
     if (!flatCoverage && normalizeText(markdown).length < 120 &&
         (fallbackItems.length > items.length || fallbackQuality > itemQuality)) {
       items = fallbackItems;
