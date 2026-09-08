@@ -237,7 +237,7 @@
     var tableIndexRoot = linkedTableIndexRoot();
     return tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles, options) : candidates.reduce(function(current, node) {
       var result = buildListExtraction(node, pageTitles, options);
-      return listExtractionIsBetter(current, result) ? result : current;
+      return nestedListMaterialCoverage(current, result) || (listExtractionIsBetter(current, result) ? result : current);
     }, null) || buildListExtraction(document.body, pageTitles, options);
   }
 

@@ -70,8 +70,9 @@ extractors/glossary/extraction.js
 extractors/lists/relabeling.js
 extractors/lists/generic/card_evidence.js
 extractors/lists/generic/inline_descriptions.js
-extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/headline_extraction.js
+extractors/lists/generic/nested_coverage.js
+extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/core.js
 extractors/lists/generic/dormant_body_root.js
