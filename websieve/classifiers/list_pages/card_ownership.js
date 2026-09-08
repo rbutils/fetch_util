@@ -1,5 +1,5 @@
   function genericListCardSelector(includeAnchors) {
-    var selector = "tr, article, li, .post, .entry, [class*='card' i], [class*='story' i], [class*='teaser' i], [class*='item' i], [class*='result' i], [class*='news' i], [class*='headline' i]";
+    var selector = "tr, article, li, .post, .entry, .product, .product-tile, [itemtype$='/Product'], [class*='card' i], [class*='story' i], [class*='teaser' i], [class*='item' i], [class*='result' i], [class*='news' i], [class*='headline' i]";
     return includeAnchors === false ? selector : selector + ", " + genericListAnchorCardSelector();
   }
 
