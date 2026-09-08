@@ -68,6 +68,31 @@ RSpec.describe FetchUtil::Extractor do
     end
   end
 
+  it "keeps a promotional destination when an untyped article wraps the homepage" do
+    stories = Array.new(125) do |index|
+      "<article class='story'><h3><a href='/story/#{index}'>Independently named story #{index}</a></h3>" \
+        "<p>Local story information number #{index}.</p></article>"
+    end.join
+    result = shared_context_records(<<~HTML)
+      <main><article class="page-shell">
+        <h1>Material collection</h1>
+        <section class="support-section"><h2>Household support</h2>
+          <p>Available rebates and practical assistance help households reduce their regular bills.</p>
+          <a href="/household-support">Read more</a>
+        </section>
+        <section>#{stories}</section>
+      </article><a href="#top">Top of page</a></main>
+    HTML
+    expect(result.fetch("records").map { |record| record.fetch("url") }).to eq(
+      ["https://publisher.example/household-support"] +
+        Array.new(125) { |index| "https://publisher.example/story/#{index}" }
+    )
+    support = result.fetch("records").first
+    expect(support.fetch("owner")).to eq("support-section")
+    expect(support.fetch("markdown")).to include("Available rebates and practical assistance")
+    expect(support.fetch("markdown")).not_to include("Local story information")
+  end
+
   it "retains individual article ownership when other main material or an article route exists" do
     article = "<article class='feature-card'><h2><a href='/feature'>Distinct feature destination</a></h2>" \
               "<p>Local feature description remains associated with this destination.</p></article>"

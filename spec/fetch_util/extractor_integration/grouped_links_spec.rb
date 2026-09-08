@@ -35,10 +35,12 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
       markdown = page.evaluate(<<~JAVASCRIPT)
         (() => {
           const api = FetchUtilGroupTest;
-          return api.render(api.items(api.clone(document.querySelector('main'))));
+          const root = api.clone(document.querySelector('main'));
+          return {flat: api.render(api.flat(root)), fallback: api.render(api.items(root))};
         })()
       JAVASCRIPT
-      expect(markdown.lines.map(&:strip)).to eq(
+      expect(markdown.fetch("flat")).to eq(markdown.fetch("fallback"))
+      expect(markdown.fetch("flat").lines.map(&:strip)).to eq(
         [
           "- [Energy](https://services.example/energy) - Living here",
           "- [Housing assistance](https://services.example/housing) - Living here",
@@ -193,6 +195,27 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
       expect(markdown.lines.map(&:strip)).to eq(
         labels.map { |label| "- [#{label}](https://services.example/#{label.downcase})" }
       )
+    end
+  end
+
+  it "retains independently accepted short headings alongside an already populated flat collection" do
+    records = (0...125).map do |index|
+      "<article><h2><a href='/record/#{index}'>Detailed record number #{index}</a></h2><p>Own detail #{index}.</p></article>"
+    end.join
+    html = "<html><body><main><h1>Records</h1><h2><a href='/cost-of-living'>Cost of living</a></h2>#{records}</main></body></html>"
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: grouped_links_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const api = FetchUtilGroupTest;
+          const items = api.flat(api.clone(document.querySelector('main')));
+          return {urls: items.map(item => item.url), markdown: api.render(items)};
+        })()
+      JAVASCRIPT
+      expect(result.fetch("urls")).to eq(
+        ["https://services.example/cost-of-living"] + (0...125).map { |index| "https://services.example/record/#{index}" }
+      )
+      (0...125).each { |index| expect(result.fetch("markdown")).to include("Own detail #{index}.") }
     end
   end
 end

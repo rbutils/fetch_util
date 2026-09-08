@@ -87,6 +87,30 @@ RSpec.describe "Wrapped anchor collections" do
     expect(result.fetch("figureOwners")).to eq(2.times.map { |i| "https://publisher.example/figure/#{i}" })
   end
 
+  it "keeps existing figure products alongside the newly recognized categories" do
+    categories = 6.times.map { |i| wrapped_record(i) }.join
+    products = 4.times.map do |i|
+      "<div class=\"search-item\"><figure><a class=\"search-item-anchor\" href=\"/products/#{i}\"><figcaption>" \
+        "<div>Maker #{i}</div><h3>Independent product number #{i}</h3></figcaption></a></figure></div>"
+    end.join
+    result = wrapped_collection("<main><div>#{categories}</div><div>#{products}</div></main>")
+    expected = 6.times.map { |i| "https://publisher.example/collection/#{i}" } +
+               4.times.map { |i| "https://publisher.example/products/#{i}" }
+    expect(result.fetch("items").map { |item| item.fetch("url") }).to eq(expected)
+  end
+
+  it "does not let six rich cards suppress 125 other visible headlines" do
+    headlines = 125.times.map do |i|
+      %(<div class="layout-cell"><a href="/headline/#{i}">Independent visible headline number #{i}</a></div>)
+    end
+    cards = 6.times.map { |i| wrapped_record(i) }.join
+    result = wrapped_collection("<main>#{headlines.shift}<div>#{cards}</div>#{headlines.join}</main>")
+    expected = ["https://publisher.example/headline/0"] +
+               6.times.map { |i| "https://publisher.example/collection/#{i}" } +
+               (1...125).map { |i| "https://publisher.example/headline/#{i}" }
+    expect(result.fetch("items").map { |item| item.fetch("url") }).to eq(expected)
+  end
+
   it "keeps independent layout rows and surrounding paragraphs in DOM order" do
     html = "<main><p>Opening explanation for all the independent collections.</p>" \
       "<div>#{wrapped_record(0)}<a href='/other'>Other</a></div>#{wrapped_record(1)}" \
@@ -133,5 +157,21 @@ RSpec.describe "Wrapped anchor collections" do
     result.fetch("items").each_with_index do |item, i|
       expect(item.fetch("detail")).not_to include("Featured independent headline number #{(i + 1) % 3}")
     end
+  end
+
+  it "preserves all 125 short heading records and dates in either heading-link orientation" do
+    records = 125.times.map do |i|
+      "<div class='card'><h3><a href='/short/#{i}'>Record #{i.to_s.rjust(3, "0")}</a></h3>" \
+        "<time>Published date number #{i}.</time></div>"
+    end.join
+    inside = wrapped_collection("<main>#{records}</main>")
+    outside_records = records.gsub(%r{<h3><a href='([^']+)'>([^<]+)</a></h3>}, '<a href=\'\1\'><h3>\2</h3></a>')
+    outside = wrapped_collection("<main>#{outside_records}</main>")
+    expect(outside.fetch("items").map { |item| item.fetch("url") }).to eq(125.times.map { |i| "https://publisher.example/short/#{i}" })
+    expect(outside.fetch("markdown")).to eq(inside.fetch("markdown"))
+    125.times do |i|
+      expect(outside.fetch("markdown")).to include("Published date number #{i}.")
+    end
+    expect(wrapped_collection("<main><nav>#{outside_records}</nav></main>").fetch("items")).to be_empty
   end
 end

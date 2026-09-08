@@ -192,7 +192,9 @@ RSpec.describe 'content fidelity contracts' do
         '## FID:entry-section', 'FID:entry-one-summary', 'FID:entry-two-title',
         '## FID:row-section', 'FID:row-one-title', 'FID:row-one-context'
       )
-      expect(markdown.scan(/^- \[/).length).to eq(6)
+      expect(markdown.scan(%r{^- \[[^\]]+\]\(https://fidelity\.test(/[^)]+)\)}).flatten).to eq(
+        %w[/post-one /post-nested /post-two /entry-one /entry-two /row-one]
+      )
       expect(markdown.index('FID:post-one-title')).to be < markdown.index('FID:post-nested-title')
       expect(markdown.index('## FID:post-section')).to be < markdown.index('## FID:entry-section')
     end

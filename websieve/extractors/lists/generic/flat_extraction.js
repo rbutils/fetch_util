@@ -15,7 +15,7 @@
       genericListAnchorCardSelector(),
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
       ".item", ".story", ".post", ".entry", ".news", ".headline", ".feed-item",
-      "[class*='card' i]", "[class*='result' i]", "[class*='teaser' i]", "[class*='news' i]",
+      "[class*='card' i]", "a[href][class*='item' i]", "[class*='result' i]", "[class*='teaser' i]", "[class*='news' i]",
       "[class*='headline' i]", "[class*='feed' i]", "[class*='thread' i]", "[class*='topic-list' i]",
       "[class*='job-card' i]", "[data-testid='slider_container']", "[data-test='jobListing']",
       "[data-jobid]", "[data-url*='/remote-jobs/']", ".structItem", ".discussionListItem"
@@ -24,6 +24,7 @@
     var seen = {};
     var candidates = [];
     var sourceNodes = new Map();
+    var acceptedLinks = new Set();
     var context = listPageContext();
     var tableIndexSource = linkedTableIndexRoot();
     context.tableIndexPage = !!tableIndexSource;
@@ -47,13 +48,17 @@
     }
 
     function pushLink(link, container) {
+      if (acceptedLinks.has(link)) return;
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       var directAnchorCard = genericListDirectAnchorCard(link, container);
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
-      if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, link);
+      if (pushUniqueListCandidate(candidates, seen, candidate)) {
+        sourceNodes.set(candidate, link);
+        acceptedLinks.add(link);
+      }
     }
 
     function bestLink(node) {
@@ -111,36 +116,29 @@
       pushLink(bestLink(node), node);
     });
 
-    if (candidates.length < 5) {
-      var anchors = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
-        var text = normalizeText(link.textContent);
-        var href = link.getAttribute("href");
-        if (!href || href[0] === "#") return false;
-        var tableRow = context.tableIndexPage && link.closest("tr");
-        if (looksLikeMetaLink(text, href, tableRow, false, link)) return false;
-        return text.length <= 220;
-      });
-      anchors.forEach(function(link) {
-        var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;
-        pushLink(link, container);
-      });
-    }
-
+    // Recognizing one collection must not disable discovery of the other records.
+    var anchors = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
+      var text = normalizeText(link.textContent);
+      var href = link.getAttribute("href");
+      if (!href || href[0] === "#") return false;
+      var tableRow = context.tableIndexPage && link.closest("tr");
+      if (looksLikeMetaLink(text, href, tableRow, false, link)) return false;
+      return text.length <= 220;
+    });
+    anchors.forEach(function(link) {
+      var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;
+      pushLink(link, container);
+    });
+    extractFallbackHeadlineItems(root).forEach(function(candidate) {
+      if (acceptedLinks.has(candidate.sourceNode)) return;
+      if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.sourceNode);
+    });
     candidates.sort(function(a, b) {
       var position = sourceNodes.get(a).compareDocumentPosition(sourceNodes.get(b));
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
 
     return candidates;
-  }
-
-  function listItemsQualityScore(items) {
-    return (items || []).reduce(function(total, item, index) {
-      var value = Math.max(0, item && item.rankScore ? item.rankScore : textLength(item && item.text));
-      value = Math.min(value, 1200);
-      if (index >= 8) value = Math.round(value / 2);
-      return total + value;
-    }, 0);
   }
 
   function cleanupListRoot(root) {
