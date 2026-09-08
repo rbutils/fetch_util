@@ -62,7 +62,9 @@ function listSupplementalDetail(item, contextValues, card) {
     "figcaption"
   ].reduce(function(fields, selector) {
     return fields.concat(listClonedCardFields(card, clone, selector));
-  }, []).forEach(function(field) {
+  }, (item.titleHeadings || []).map(function(heading) {
+    return listClonedCardNode(card, clone, heading);
+  })).forEach(function(field) {
     if (field && field.remove) field.remove();
   });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {

@@ -74,4 +74,18 @@ RSpec.describe "Wrapped heading card ownership" do
     expect(markdown.scan("Only this record owns its complete local description.").length).to eq(1)
     expect(markdown.lines.first).to include("/Regional/0", "Only this record owns")
   end
+
+  it "retains a short series heading and the longer episode heading in one record" do
+    html = wrapped_heading_page.sub(
+      "<h3>Regional report number 0</h3>",
+      "<h2>Daily News</h2><h3>An independently named episode about public transit</h3>"
+    )
+    markdown = wrapped_heading_items(html, flat: true)
+    expect(markdown.lines.first).to include(
+      "[Daily News - An independently named episode about public transit](https://publisher.example/Regional/0)"
+    )
+    expect(markdown.lines.drop(1).join).not_to include("Daily News", "public transit")
+    expect(markdown.scan("Daily News").length).to eq(1)
+    expect(markdown.scan("public transit").length).to eq(1)
+  end
 end

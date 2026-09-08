@@ -157,9 +157,10 @@
     if (!link) return null;
 
     var href = link.getAttribute("href");
-    var heading = link.querySelector("h1, h2, h3, h4");
+    var headings = Array.prototype.slice.call(link.querySelectorAll("h1, h2, h3, h4"));
+    var headingText = headings.map(function(heading) { return normalizeText(heading.textContent); }).filter(Boolean).join(" - ");
     var directAnchorTitle = genericListDirectAnchorTitle(link, container);
-    var text = normalizeText((heading && heading.textContent) || directAnchorTitle || link.textContent || link.getAttribute("aria-label") || "");
+    var text = normalizeText(headingText || directAnchorTitle || link.textContent || link.getAttribute("aria-label") || "");
     var resolvedPath = "";
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
     if (!href || href[0] === "#") return null;
@@ -189,9 +190,13 @@
 
     var card = listCardRoot(link, container);
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
+    var detailText = genericListCardText(detailSource);
+    if (headings.length > 1) {
+      headings.forEach(function(heading) { detailText = detailText.replace(normalizeText(heading.textContent), ""); });
+    } else detailText = detailText.replace(text, "");
     var detail = card && card.matches && card.matches("tr") ?
       listTableRowDetail(card, text) :
-      genericListCardText(detailSource).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
+      detailText.replace(/\s*[|·]\s*/g, " - ");
     detail = stripGenericListControlPhrases(detail);
     if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(resolvedPath || href) && weatherModuleText(text + " " + detail)) return null;
     if (/\/(tv|spored)\//i.test(resolvedPath || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
@@ -199,6 +204,7 @@
     if (score === -Infinity) return null;
 
     var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    if (headings.length > 1) candidate.titleHeadings = headings;
     if (group) {
       candidate.groupLabel = group.label;
       candidate.dedupeKey = listCanonicalKey(url) + "|label:" + text.toLowerCase();
