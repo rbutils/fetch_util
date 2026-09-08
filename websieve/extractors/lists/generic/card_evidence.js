@@ -106,7 +106,8 @@
     })[0];
     if (card.matches && card.matches("a[href]")) links = [card];
     var namedCard = card.matches && (card.matches("tr") ||
-      (card.matches(".post, .entry") && genericListCardBoundary(card)));
+      (card.matches(".post, .entry") && genericListCardBoundary(card)) ||
+      genericListDirectAnchorCard(card, card.parentElement));
     if (!headingLink && !namedCard && !cardOwnedNodes(card, "p, [class*='summary'], [class*='description'], [class*='excerpt'], time, img[alt]:not([alt=''])").length) return null;
     var link = headingLink;
     if (!link) {
