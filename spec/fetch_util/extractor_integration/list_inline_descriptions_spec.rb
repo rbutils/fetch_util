@@ -112,7 +112,7 @@ RSpec.describe "FetchUtil extractor integration - inline list descriptions" do
         })()
       JAVASCRIPT
 
-      expect(description).to eq("Learn with experienced teachers in small groups.\n\n" \
+      expect(description).to eq("Learn with [experienced teachers](https://learning.example/learn/maps) in small groups.\n\n" \
                                 "Explore local history at your own pace.\n\nLearn from Jane Example about field research.")
     end
   end
