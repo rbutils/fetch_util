@@ -82,11 +82,13 @@
     return elementVisuallyHiddenWithin(node, null);
   }
 
-  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot) {
+  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent) {
     if (!source || !clone) return;
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
     var preservedRoot = exactPreservedRoot ? source : preservingRoot;
-    var subtreeHidden = preservedRoot ? elementSubtreeHiddenWithin(source, preservedRoot) : elementSubtreeHidden(source);
+    // Recursion reaches a child only after its parent's subtree visibility passed.
+    var boundary = checkedParent ? source.parentElement : preservedRoot;
+    var subtreeHidden = elementSubtreeHiddenWithin(source, boundary || null);
     if (source.nodeType === 1 && !exactPreservedRoot && subtreeHidden) {
       clone.remove();
       return;
@@ -105,8 +107,8 @@
       clone.setAttribute("data-fetchutil-controlled-list-panel", "true");
     }
 
-    var visibilityHidden = source.nodeType === 1 && !exactPreservedRoot &&
-      (preservedRoot ? elementVisuallyHiddenWithin(source, preservedRoot) : elementVisuallyHidden(source));
+    var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
+    var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
     var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
@@ -116,7 +118,7 @@
         childClone.remove();
         return;
       }
-      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot);
+      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true);
     });
 
     if (visibilityHidden) {
