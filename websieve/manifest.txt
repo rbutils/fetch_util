@@ -16,6 +16,7 @@ core/dom/selectors.js
 core/dom/cookie_chrome.js
 core/dom/noise_cleanup.js
 core/dom/materialization.js
+core/dom/deferred_reveals.js
 core/dom/base.js
 core/dom/cleanup.js
 core/article/content_helpers.js
