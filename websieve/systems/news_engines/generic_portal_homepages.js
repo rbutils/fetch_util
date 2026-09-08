@@ -254,6 +254,8 @@
     markdownParts.push(listMarkdown(leadRoot.items));
 
     var markdown = markdownParts.filter(Boolean).join("\n\n").trim();
+    var supplemented = supplementedHomepageLead(leadRoot, sectioned);
+    if (supplemented) markdown = supplemented.markdown;
     if (normalizeText(markdown).length < 180) return null;
 
     var result = listContentResult({
@@ -264,7 +266,7 @@
       textContent: normalizeText(markdown)
     });
     result.listSourceNode = leadRoot.root;
-    result.listSourceItems = leadRoot.items;
+    result.listSourceItems = supplemented ? supplemented.items : leadRoot.items;
     if (leadRoot.provisional) result.provisionalPortal = true;
     return result;
   }

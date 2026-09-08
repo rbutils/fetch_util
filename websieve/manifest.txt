@@ -77,6 +77,7 @@ extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/core.js
 extractors/lists/search_tools.js
+extractors/lists/lead_coverage.js
 extractors/lists/generic/dormant_body_root.js
 extractors/lists/generic/stale_opacity_sections.js
 extractors/lists/generic/controlled_panels.js
