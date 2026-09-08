@@ -19,7 +19,14 @@
   function genericListStructuredCardLink(card) {
     if (!card || !card.parentElement || !genericListCardBoundary(card)) return null;
 
-    var titleNode = card.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4");
+    var titleNode = Array.prototype.find.call(card.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4"), function(node) {
+      var anchor = node.matches("a[href]") ? node : node.closest("a[href]");
+      if (!anchor.matches("[rel~='author'], [itemprop~='author']")) return true;
+      return !Array.prototype.some.call(card.querySelectorAll("a[href]"), function(other) {
+        return other !== anchor && !other.matches("[rel~='author'], [itemprop~='author']") &&
+          materializedHttpUrl(other.getAttribute("href")) && closestGenericListFieldCard(other) === card;
+      });
+    });
     var link = titleNode && (titleNode.matches("a[href]") ? titleNode : titleNode.closest("a[href]"));
     var title = normalizeText(titleNode && titleNode.textContent);
     if (!link || !materializedHttpUrl(link.getAttribute("href")) ||

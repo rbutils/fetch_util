@@ -61,4 +61,20 @@ RSpec.describe "Record metadata and page chrome" do
       125.times.map { |index| "https://publisher.example/stories/#{index}" }
     )
   end
+
+  it "does not promote heading-formatted bylines over the record's own destination" do
+    markdown = metadata_card_records(byline: true, count: 125)
+    expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(
+      125.times.map { |index| "https://publisher.example/stories/#{index}" }
+    )
+    expect(markdown).not_to include("/authors/")
+    expect(markdown).to include("Owned description for report 124.")
+  end
+
+  it "retains author-directory records when the author link is the primary destination" do
+    markdown = metadata_card_records(author_record: true)
+    expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(
+      4.times.map { |index| "https://publisher.example/stories/#{index}" }
+    )
+  end
 end
