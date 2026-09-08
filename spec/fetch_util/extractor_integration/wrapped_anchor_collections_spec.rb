@@ -122,4 +122,16 @@ RSpec.describe "Wrapped anchor collections" do
     result = wrapped_collection("<main><div class='product-card-bg'>#{offers}</div></main>")
     expect(result.fetch("items").map { |item| item.fetch("text") }).to eq(names)
   end
+
+  it "keeps visible image-backed headlines local even when their image alt is empty" do
+    anchors = 3.times.map do |i|
+      "<a href='/featured/#{i}'><img src='/image-#{i}.jpg' alt=''>" \
+        "<span>Featured independent headline number #{i}</span></a>"
+    end.join
+    result = wrapped_collection("<main><div>#{anchors}</div></main>")
+    expect(result.fetch("items").map { |item| item.fetch("url") }).to eq(3.times.map { |i| "https://publisher.example/featured/#{i}" })
+    result.fetch("items").each_with_index do |item, i|
+      expect(item.fetch("detail")).not_to include("Featured independent headline number #{(i + 1) % 3}")
+    end
+  end
 end

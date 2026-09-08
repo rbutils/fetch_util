@@ -10,6 +10,11 @@
     if (name && description && normalizeText(name.textContent) && normalizeText(description.textContent)) return true;
     var recordEvidence = "picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
     if (link.querySelector(recordEvidence)) return true;
+    var text = normalizeText(link.textContent);
+    if (text.length >= minimumListTitleLength(text) && !genericListControlText(text) &&
+        Array.prototype.some.call(link.querySelectorAll("img[src]"), function(image) {
+          return materializedHttpUrl(image.getAttribute("src")) && !elementSubtreeHidden(image);
+        })) return true;
     var heading = link.querySelector("h1, h2, h3, h4");
     return !!(heading && normalizeText(heading.textContent) &&
       Array.prototype.some.call(link.querySelectorAll("p"), function(paragraph) {
