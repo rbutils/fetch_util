@@ -50,4 +50,35 @@ RSpec.describe FetchUtil::Extractor do
       end
     end
   end
+
+  it "does not repeat a page-level article beneath each destination" do
+    links = Array.new(6) do |index|
+      "<div><p>Independent explanatory prose number #{index} is retained for this service.</p>" \
+        "<p><a href='/service/#{index}'>Explore independently named service #{index}</a></p></div>"
+    end.join
+    result = shared_context_records("<main><article class='type-page'><h1>Material collection</h1>#{links}</article></main>")
+    expect(result.fetch("records").length).to eq(6)
+    result.fetch("records").each_with_index do |record, index|
+      (0...6).reject { |other| other == index }.each do |other|
+        expect(record.fetch("markdown")).not_to include("Independent explanatory prose number #{other}")
+      end
+    end
+    6.times do |index|
+      expect(result.fetch("markdown").scan("Independent explanatory prose number #{index}").length).to eq(1)
+    end
+  end
+
+  it "retains individual article ownership when other main material or an article route exists" do
+    article = "<article class='feature-card'><h2><a href='/feature'>Distinct feature destination</a></h2>" \
+              "<p>Local feature description remains associated with this destination.</p></article>"
+    ["<p>Independent main introduction.</p>", "<img src='/outside.jpg' alt='Independent visual'>",
+     "<a href='/outside'>Independent destination</a>"].each do |outside|
+      record = shared_context_records("<main>#{article}#{outside}</main>").fetch("records").first
+      expect(record.fetch("owner")).to eq("feature-card")
+      expect(record.fetch("markdown")).to include("Local feature description")
+    end
+    record = shared_context_records("<main>#{article}</main>", url: "https://publisher.example/features/current")
+             .fetch("records").first
+    expect(record.fetch("owner")).to eq("feature-card")
+  end
 end

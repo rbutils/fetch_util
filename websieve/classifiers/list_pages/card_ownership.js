@@ -159,10 +159,39 @@
     });
   }
 
+  function genericListPageContainer(node) {
+    if (!node || !node.matches) return false;
+    if (node.matches("body, main, [role='main'], article.type-page, [itemtype$='/WebPage']")) return true;
+    if (!node.matches("article") || !homepageRootPath() ||
+        (node.parentElement && node.parentElement.closest("article"))) return false;
+
+    var main = node.closest("main, [role='main']");
+    if (!main) return !!node.querySelector("main, [role='main']");
+    // Reject the article subtree rather than repeatedly cloning the entire page.
+    var walker = document.createTreeWalker(main, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: function(current) {
+        if (current === node || (current.nodeType === 1 && current.matches("script, style, template"))) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (current.nodeType === 1 && current.matches("a[href]")) {
+          var url = materializedHttpUrl(current.getAttribute("href"));
+          if (url && url.indexOf("#") >= 0 && url.split("#")[0] === location.href.split("#")[0]) return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var current;
+    while ((current = walker.nextNode())) {
+      if (current.nodeType === 3 && normalizeText(current.nodeValue)) return false;
+      if (current.nodeType === 1 && current.matches("a[href], img, picture, video, audio, iframe, canvas, object, embed, [role='img'], input, select, textarea, button")) return false;
+    }
+    return true;
+  }
+
   function genericListCardBoundary(node) {
     if (!node || !node.matches || !node.matches(genericListCardSelector())) return false;
     if (genericListPresentationCardNode(node)) return false;
-    if (node.matches("main, [role='main']")) return false;
+    if (genericListPageContainer(node)) return false;
     if (!node.matches(".post, .entry")) return true;
 
     var links = node.matches("a[href]") ? [node] : Array.prototype.slice.call(node.querySelectorAll("a[href]"));
@@ -260,5 +289,5 @@
     var group = genericListLinkGroup(link);
     if (group) return group.card;
     var card = genericListContextCard(closestGenericListCard(link));
-    return card || fallback || (link && link.parentElement);
+    return card || (fallback && !genericListPageContainer(fallback) ? fallback : null) || (link && link.parentElement);
   }
