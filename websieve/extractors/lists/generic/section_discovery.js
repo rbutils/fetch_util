@@ -92,6 +92,7 @@
   }
 
   function sectionCards(region, options) {
+    options = Object.assign({}, options, { listContext: options && options.listContext || listPageContext() });
     var candidates = [];
     var cards = [];
 
@@ -124,7 +125,7 @@
   }
 
   function sectionRegions(root, options) {
-    options = options || {};
+    options = Object.assign({}, options, { listContext: listPageContext() });
     var selector = options.regionSelector || "section, [role='region'], main > div, main > article";
     var regions = [];
     var seen = [];

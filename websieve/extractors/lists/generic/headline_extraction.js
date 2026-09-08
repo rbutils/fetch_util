@@ -3,6 +3,7 @@
     var seen = {};
     var ranked = [];
     var context = listPageContext();
+    var sectionContext = Object.assign({}, context);
     context.tableIndexPage = !!linkedTableIndexRoot();
     var selectors = [
       "h1 a[href]", "h2 a[href]", "h3 a[href]", "h4 a[href]", "a[href]:has(h1, h2, h3, h4)", "article a[href]",
@@ -21,7 +22,7 @@
         if (Array.prototype.some.call(nested, function(card) {
           return genericListNestedCard(card) && genericListNestedCardReplaces(candidate.card, card);
         })) return;
-        var primary = sectionCardCandidate(candidate.card);
+        var primary = sectionCardCandidate(candidate.card, { listContext: sectionContext });
         if (primary && primary.sourceNode !== link &&
             (!candidate.url || listCanonicalKey(primary.url) !== listCanonicalKey(candidate.url))) return;
       }

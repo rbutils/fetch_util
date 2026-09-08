@@ -87,6 +87,7 @@
   }
 
   function sectionCardCandidate(card, options) {
+    var context = options && options.listContext || listPageContext();
     if (options && options.directCard) {
       var directLink = card.matches && card.matches("a[href]") ? card : card.querySelector("a[href]");
       var directText = normalizeText((card.querySelector("h1, h2, h3, h4") || directLink || {}).textContent || "");
@@ -121,12 +122,12 @@
     var link = headingLink;
     if (!link) {
       link = links.reduce(function(best, anchor) {
-        var candidate = listLinkCandidate(anchor, card, listPageContext(), true);
+        var candidate = listLinkCandidate(anchor, card, context, true);
         return candidate && (!best || candidate.rankScore > best.rankScore) ? anchor : best;
       }, null);
     }
     if (!link && options && options.ancestorLink) link = card.closest("a[href]");
-    var candidate = listLinkCandidate(link, card, listPageContext(), true);
+    var candidate = listLinkCandidate(link, card, context, true);
     if (!candidate && link) {
       var href = link.getAttribute("href");
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
@@ -135,12 +136,16 @@
     }
     if (!candidate) return null;
 
-    candidate.domIndex = Array.prototype.indexOf.call(document.querySelectorAll("a[href]"), link);
+    if (!context.anchorIndices) {
+      context.anchorIndices = new WeakMap();
+      document.querySelectorAll("a[href]").forEach(function(anchor, index) { context.anchorIndices.set(anchor, index); });
+    }
+    candidate.domIndex = context.anchorIndices.has(link) ? context.anchorIndices.get(link) : -1;
     if (candidate.url) {
       candidate.canonicalKey = listCanonicalKey(candidate.url);
       candidate.url = candidate.canonicalKey;
     }
-    candidate.card = listCardRoot(link, card);
+    candidate.card = listCardRoot(link, card, genericListLinkGroup(link, context.linkGroups), context.figureCollections);
     candidate.sourceNode = link;
     addCardContext(candidate, candidate.card);
     return candidate;
