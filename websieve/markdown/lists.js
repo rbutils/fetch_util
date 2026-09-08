@@ -92,6 +92,7 @@ function listItemContextValues(item) {
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
   if (rowDetail) {
+    if (!item.tableCells) return [rowDetail];
     if (item.tableReferenceDetail == null) {
       item.tableReferenceDetail = stripGenericListControlPhrases(listTableRowDetail(card, item.text, item.tableCells, { url: item.url }));
     }
