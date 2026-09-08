@@ -271,6 +271,13 @@
       var words = text.split(/\s+/).length;
       if (links <= 1 || (links / words) < 0.3) {
         var prefix = heading ? "## " : "";
+        if (!heading && links) {
+          var description = el.cloneNode(true);
+          description.querySelectorAll("a[href]").forEach(function(link) {
+            link.replaceWith(document.createTextNode(markdownLink(normalizeText(link.textContent), link.getAttribute("href"))));
+          });
+          text = normalizeText(description.textContent);
+        }
         descParts.push({ node: el, markdown: prefix + text });
       }
     });
