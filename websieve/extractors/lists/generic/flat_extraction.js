@@ -37,6 +37,7 @@
       var anchorMinimum = minimumListTitleLength(text);
       if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
       var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? anchorMinimum : (caseRecordContext ? 3 : 18));
+      if (link && genericListLinkGroup(link)) minimumLength = 1;
       return text.length < minimumLength ||
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
@@ -116,9 +117,8 @@
         var href = link.getAttribute("href");
         if (!href || href[0] === "#") return false;
         var tableRow = context.tableIndexPage && link.closest("tr");
-        if (text.length < (tableRow ? 2 : minimumListTitleLength(text))) return false;
-        if (looksLikeMetaLink(text, href, tableRow)) return false;
-        return (tableRow || text.length >= minimumListTitleLength(text)) && text.length <= 220;
+        if (looksLikeMetaLink(text, href, tableRow, false, link)) return false;
+        return text.length <= 220;
       });
       anchors.forEach(function(link) {
         var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;

@@ -1,8 +1,31 @@
+  function genericListPlainLinkGroup(link) {
+    var group = link.parentElement;
+    while (group && !group.matches("body, main, [role='main']")) {
+      if (listChromeNode(group) || elementSubtreeHidden(group)) return null;
+      var anchors = Array.from(group.querySelectorAll("a[href]")).filter(function(anchor) {
+        return !elementSubtreeHidden(anchor);
+      });
+      if (anchors.some(function(anchor) {
+        return !materializedHttpUrl(anchor.getAttribute("href")) || genericListAnchorRecordEvidence(anchor);
+      })) return null;
+      var clone = group.cloneNode(true);
+      pruneHiddenClone(group, clone);
+      clone.querySelectorAll("a").forEach(function(anchor) { anchor.remove(); });
+      if (normalizeText(clone.textContent)) return null;
+      var destinations = new Set(anchors.map(function(anchor) { return materializedHttpUrl(anchor.getAttribute("href")); }));
+      if (destinations.size >= 2) return { card: group, label: "" };
+      group = group.parentElement;
+    }
+    return null;
+  }
+
   function genericListLinkGroup(link) {
     if (!link || !materializedHttpUrl(link.getAttribute("href")) || elementSubtreeHidden(link)) return null;
+    if (link.closest("header, footer, nav, aside, menu, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar'], [role='banner'], [role='complementary'], [role='contentinfo']")) return null;
     if (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
 
     var collection = genericListContextCard(closestGenericListCard(link));
+    if (!collection) return genericListPlainLinkGroup(link);
     if (!collection || collection === link || collection.matches("tr") || !collection.contains(link)) return null;
     var branch = link;
     while (branch.parentElement && branch.parentElement !== collection) branch = branch.parentElement;

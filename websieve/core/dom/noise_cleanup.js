@@ -238,6 +238,8 @@
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;
       if (links >= 6 && words > 0 && (links / words) > 0.5 && text.length < 600 && !el.querySelector("article, main, [role='main'], p, h1, h2, h3, blockquote, pre, table")) {
+        var group = genericListLinkGroup(el.querySelector("a[href]"));
+        if (group && el.contains(group.card)) return;
         el.remove();
       }
     });

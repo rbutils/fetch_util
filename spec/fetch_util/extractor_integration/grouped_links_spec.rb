@@ -11,7 +11,7 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
     source.sub(
       "})(window);",
       "global.FetchUtilGroupTest = { group: genericListLinkGroup, " \
-      "items: extractFallbackHeadlineItems, clone: visibleListClone, render: listMarkdown }; })(window);"
+      "items: extractFallbackHeadlineItems, flat: extractListItems, clone: visibleListClone, render: listMarkdown }; })(window);"
     )
   end
 
@@ -132,6 +132,67 @@ RSpec.describe "FetchUtil extractor integration - grouped links" do
         (0...125).map { |index| "- [ID #{index}](https://services.example/record/#{index}) - Living here" }
       )
       expect(lines.length).to eq(127)
+    end
+  end
+
+  it "keeps uncapped short plain-link groups without treating their sibling labels as descriptions" do
+    links = (0...125).map { |index| "<a href='/genre/#{index}'>G #{index}</a><br>" }.join
+    html = "<html><body><div class='mainContent'><h1>Browse genres</h1><div>#{links}</div></div></body></html>"
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: grouped_links_source)
+      markdown = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const api = FetchUtilGroupTest;
+          return api.render(api.flat(api.clone(document.body)));
+        })()
+      JAVASCRIPT
+      expect(markdown.lines.map(&:strip)).to eq(
+        (0...125).map { |index| "- [G #{index}](https://services.example/genre/#{index})" }
+      )
+    end
+  end
+
+  it "does not use semantic navigation or independently described records as plain-link groups" do
+    with_url_page("https://services.example/", "<html><body><div id='root'></div></body></html>") do |page|
+      page.add_script_tag(content: grouped_links_source)
+      results = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const root = document.querySelector('#root');
+          const links = '<a href="/music">Music</a><a href="/art">Art</a>';
+          const cases = [
+            '<nav><li>' + links + '</li></nav>',
+            '<footer><div>' + links + '</div></footer>',
+            '<div role="navigation"><article>' + links + '</article></div>',
+            '<menu><li>' + links + '</li></menu>',
+            '<div role="toolbar"><li>' + links + '</li></div>',
+            '<div>' + links + '<p>Local explanatory material.</p></div>',
+            '<div><a href="/music"><h2>Music</h2><p>Own description.</p></a><a href="/art">Art</a></div>',
+            '<div><a href="/music">Music</a><a hidden href="/art">Art</a></div>',
+            '<div><a href="/music">Music</a><a href="https://user:secret@example.net/art">Art</a></div>',
+            '<div>' + links + '<a href="tel:18001234567">18001234567</a></div>'
+          ];
+          return cases.map(html => {
+            root.innerHTML = html;
+            return !!FetchUtilGroupTest.group(root.querySelector('a'));
+          });
+        })()
+      JAVASCRIPT
+      expect(results).to eq(Array.new(10, false))
+    end
+  end
+
+  it "keeps short-link columns when their shared wrapper also looks link-dense" do
+    labels = %w[Music Art Sports Fiction Romance Ebooks History Drama]
+    columns = labels.each_slice(4).map do |column|
+      "<div>#{column.map { |label| "<a href='/#{label.downcase}'>#{label}</a><br>" }.join}</div>"
+    end.join
+    html = "<html><body><div class='mainContent'><h1>Browse</h1><div>#{columns}</div></div></body></html>"
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: grouped_links_source)
+      markdown = page.evaluate("FetchUtilGroupTest.render(FetchUtilGroupTest.flat(FetchUtilGroupTest.clone(document.body)))")
+      expect(markdown.lines.map(&:strip)).to eq(
+        labels.map { |label| "- [#{label}](https://services.example/#{label.downcase})" }
+      )
     end
   end
 end

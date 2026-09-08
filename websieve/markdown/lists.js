@@ -86,7 +86,7 @@ function cardField(card, selector) {
 }
 
 function listItemContextValues(item) {
-  if (item.groupLabel) return [item.groupLabel];
+   if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
   if (rowDetail) return [rowDetail];
