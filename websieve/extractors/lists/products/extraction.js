@@ -49,9 +49,19 @@
     }
 
     function candidateInfo(link) {
-      var image = link.querySelector("img[alt], img[title]");
       var href = link.getAttribute("href") || "";
       var url = materializedHttpUrl(href);
+      for (var ancestor = link; ancestor && ancestor.nodeType === 1; ancestor = ancestor.parentElement) {
+        if (/^(MAIN|BODY|HTML)$/.test(ancestor.tagName || "")) break;
+        if (ancestor.matches("header") && url) {
+          var product = ancestor.parentElement && ancestor.parentElement.closest("[itemscope][itemtype$='/Product']");
+          var heading = product && !product.matches("body, html") && product.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]");
+          var headingUrl = heading && materializedHttpUrl(heading.getAttribute("href"));
+          if (headingUrl && productUrlKey(headingUrl) === productUrlKey(url)) continue;
+        }
+        if (ancestor.matches("header, footer, nav, aside, [role='navigation'], [role='menu'], [role='menubar'], [role='complementary'], [role='contentinfo']")) return null;
+      }
+      var image = link.querySelector("img[alt], img[title]");
       var card = link.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
       if (card === link && link.parentElement) card = link.parentElement.closest("article, li, [class*='product'], [class*='item'], [class*='card'], div, section") || link.parentElement;
       var titleLinkOptions = [];
