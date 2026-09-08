@@ -165,7 +165,11 @@
     if (!href || href[0] === "#") return null;
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
     var group = genericListLinkGroup(link);
-    if (text.length < (group ? 1 : (tableIndexRow ? 2 : minimumListTitleLength(text))) || text.length > 220) return null;
+    var minimumTitleLength = minimumListTitleLength(text);
+    if (group) minimumTitleLength = 1;
+    else if (tableIndexRow) minimumTitleLength = 2;
+    else if (directAnchorTitle && genericListWrappedAnchorCard(link)) minimumTitleLength = Math.min(6, minimumTitleLength);
+    if (text.length < minimumTitleLength || text.length > 220) return null;
 
     var url = materializedHttpUrl(href);
     if (!url && !retainUnsafeLink) return null;

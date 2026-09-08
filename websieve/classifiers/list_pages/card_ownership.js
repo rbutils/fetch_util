@@ -34,7 +34,7 @@
 
     var heading = figure.querySelector("a[href] h1, a[href] h2, a[href] h3, a[href] h4");
     var link = heading && heading.closest("a[href]");
-    return link && materializedHttpUrl(link.getAttribute("href")) ? link : null;
+    return link && figure.contains(link) && materializedHttpUrl(link.getAttribute("href")) ? link : null;
   }
 
   function genericListFigureCollection(node) {
@@ -161,6 +161,9 @@
     if (!node || !node.matches || !node.matches(genericListCardSelector())) return false;
     if (genericListPresentationCardNode(node)) return false;
     if (genericListPageContainer(node)) return false;
+    if (node.matches("a[href]") && !node.matches(genericListCardSelector(false)) &&
+        !node.matches("a:has([class$='-name' i]):has([class$='-desc' i])") &&
+        !genericListDirectAnchorCard(node, node.parentElement)) return false;
     if (!node.matches(".post, .entry")) return true;
 
     var links = node.matches("a[href]") ? [node] : Array.prototype.slice.call(node.querySelectorAll("a[href]"));

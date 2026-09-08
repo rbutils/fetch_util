@@ -12,6 +12,7 @@
 
   function extractListItems(root) {
     var itemSelector = [
+      genericListAnchorCardSelector(),
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
       ".item", ".story", ".post", ".entry", ".news", ".headline", ".feed-item",
       "[class*='card' i]", "[class*='result' i]", "[class*='teaser' i]", "[class*='news' i]",
@@ -22,6 +23,7 @@
     var itemNodes = Array.prototype.slice.call(root.querySelectorAll(itemSelector));
     var seen = {};
     var candidates = [];
+    var sourceNodes = new Map();
     var context = listPageContext();
     var tableIndexSource = linkedTableIndexRoot();
     context.tableIndexPage = !!tableIndexSource;
@@ -32,7 +34,9 @@
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
       var chromeOwnedCard = !!(link && container && container.parentElement &&
         container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
-      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? minimumListTitleLength(text) : (caseRecordContext ? 3 : 18));
+      var anchorMinimum = minimumListTitleLength(text);
+      if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
+      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? anchorMinimum : (caseRecordContext ? 3 : 18));
       return text.length < minimumLength ||
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
@@ -46,11 +50,13 @@
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       var directAnchorCard = genericListDirectAnchorCard(link, container);
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
+      candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
-      pushUniqueListCandidate(candidates, seen, candidate);
+      if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, link);
     }
 
     function bestLink(node) {
+      if (node.matches("a[href]")) return genericListCardBoundary(node) ? node : null;
       var headingLink = node.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4");
       if (headingLink) return headingLink.closest("a[href]") || headingLink;
 
@@ -120,32 +126,12 @@
       });
     }
 
-    return candidates;
-  }
-
-  function extractFallbackHeadlineItems(node) {
-    if (!node || !node.querySelectorAll) return [];
-    var seen = {};
-    var ranked = [];
-    var context = listPageContext();
-    context.tableIndexPage = !!linkedTableIndexRoot();
-    var selectors = [
-      "h1 a[href]", "h2 a[href]", "h3 a[href]", "h4 a[href]", "article a[href]",
-      "section a[href]", "[class*='headline' i] a[href]", "[class*='story' i] a[href]",
-      "[class*='post' i] a[href]", "[class*='news' i] a[href]", "[class*='feed' i] a[href]",
-      "[class*='teaser' i] a[href]", "[class*='result' i] a[href]"
-    ].join(", ");
-
-    Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
-      var container = link.closest("tr, article, section, li, div") || link.parentElement;
-      if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
-      var candidate = listLinkCandidate(link, container, context, true);
-      if (candidate) {
-        addCardContext(candidate, candidate.card);
-        pushUniqueListCandidate(ranked, seen, candidate);
-      }
+    candidates.sort(function(a, b) {
+      var position = sourceNodes.get(a).compareDocumentPosition(sourceNodes.get(b));
+      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
-    return ranked;
+
+    return candidates;
   }
 
   function listItemsQualityScore(items) {

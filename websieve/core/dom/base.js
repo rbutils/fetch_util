@@ -205,6 +205,12 @@
       }
     });
     clone.querySelectorAll("script, style, noscript, template, iframe, form, button, input, aside, nav, footer").forEach(function(el) {
+      var record = el.tagName === "FOOTER" && el.closest("a[href]");
+      if (record && genericListWrappedAnchorCard(record) && !el.querySelector("a, button, input")) {
+        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+        el.remove();
+        return;
+      }
       if (!el.hasAttribute("data-fetchutil-preserve")) el.remove();
     });
     return materializeHttpAttributes(clone, true);
