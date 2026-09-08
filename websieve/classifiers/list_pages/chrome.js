@@ -62,9 +62,13 @@
     if (!node || !node.querySelectorAll) return [];
 
     var selector = "ul, ol, [role='list'], [class*='listing' i], [class*='grid' i], [class*='feed' i], [class*='results' i]";
+    var collections = Array.prototype.slice.call(node.querySelectorAll(selector));
+    if (homepageRootPath()) node.querySelectorAll(genericListCardSelector()).forEach(function(card) {
+      if (genericListStructuredCardLink(card) && collections.indexOf(card.parentElement) < 0) collections.push(card.parentElement);
+    });
     var roots = [];
-    Array.prototype.forEach.call(node.querySelectorAll(selector), function(collection) {
-      if (listChromeNode(collection) || scoreListContainer(collection, listPageContext()) === -Infinity) return;
+    collections.forEach(function(collection) {
+      if (listChromeNode(collection) || (!homepageRootPath() && scoreListContainer(collection, listPageContext()) === -Infinity)) return;
       var records = Array.prototype.filter.call(collection.querySelectorAll(genericListCardSelector()), function(card) {
         return !!genericListStructuredCardLink(card);
       });
@@ -85,6 +89,8 @@
       return !roots.some(function(other) {
         return other !== root && other.contains(root);
       });
+    }).sort(function(a, b) {
+      return a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
     });
   }
 

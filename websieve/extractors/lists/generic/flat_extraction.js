@@ -157,6 +157,13 @@
       var recordRoots = genericListChromeOwnedRecordRoots(el);
       if (recordRoots.length && el.parentNode) {
         recordRoots.forEach(function(recordRoot) {
+          if (!homepageRootPath()) recordRoot.querySelectorAll("ul, ol, [role='list'], [class*='listing' i], [class*='grid' i], [class*='feed' i], [class*='results' i]").forEach(function(collection) {
+            if (!listNoiseNode(collection)) return;
+            var nestedRecords = Array.prototype.some.call(collection.querySelectorAll(genericListCardSelector()), function(card) {
+              return !!genericListStructuredCardLink(card);
+            });
+            if (nestedRecords) collection.remove();
+          });
           recordRoot.__fetchUtilChromeOwnedListRecords = true;
           el.parentNode.insertBefore(recordRoot, el);
         });

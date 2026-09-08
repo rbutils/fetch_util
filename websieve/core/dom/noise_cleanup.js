@@ -220,6 +220,13 @@
 
     // Strip generic sidebar/toc/rail/menu containers by class pattern when link-dense.
     root.querySelectorAll("[class*='sidebar'], [class*='side-nav'], [class*='sidenav'], [class*='left-rail'], [class*='right-rail'], [class*='article-drawer'], [class*='toc-drawer'], [class*='table-of-contents'], [class*='mobile-menu'], [class*='mobile-nav'], [class*='hamburger-menu'], [class*='toc']").forEach(function(el) {
+      if (homepageRootPath() && el.parentNode && el.matches("[class*='sidebar'], [class*='left-rail'], [class*='right-rail']") &&
+          !el.closest("nav, header, footer, aside, [role='navigation'], [role='menu'], [role='menubar'], [role='complementary']") &&
+          genericListChromeOwnsCollection(el)) {
+        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+        el.remove();
+        return;
+      }
       var links = el.querySelectorAll("a[href]").length;
       var text = normalizeText(el.textContent || "");
       // Only strip if it has multiple links and no heavy content children

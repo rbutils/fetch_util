@@ -62,6 +62,16 @@ RSpec.describe "Record metadata and page chrome" do
     )
   end
 
+  it "keeps structured homepage media collections without restoring article sidebars or menus" do
+    markdown = metadata_card_records(count: 125, rail: true)
+    expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(
+      125.times.map { |index| "https://publisher.example/stories/#{index}" }
+    )
+    expect(metadata_card_records(rail: true, wrapper: "nav")).not_to include("/stories/")
+    expect(metadata_card_records(rail: true, path: "/articles/report")).not_to include("/stories/")
+    expect(metadata_card_records(count: 3, rail: true)).not_to include("/stories/")
+  end
+
   it "does not mistake a record's descriptive label for a follow control" do
     markdown = metadata_card_records(aria_label: "Audio: Follow the money in the economy")
     expect(markdown).to include("/stories/0", "Owned description for report 0.")
