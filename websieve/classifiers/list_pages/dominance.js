@@ -138,7 +138,7 @@
     var matchInfo = listContextMatchInfo(text, url, detail, context);
     var path = matchInfo.path;
 
-    if ((location.origin + path) === context.currentUrl) return -Infinity;
+    if (url.replace(/[?#].*$/, "") === context.currentUrl) return -Infinity;
     if (container && container.matches("article, section, li")) score += 120;
 
     var heading = container && container.querySelector("h1, h2, h3, h4");
@@ -174,13 +174,13 @@
       } catch (_error) {
         return null;
       }
-      if ((location.origin + resolvedPath) === context.currentUrl) return null;
+      if (url.replace(/[?#].*$/, "") === context.currentUrl) return null;
     }
     if (genericListControlText(text)) return null;
-    if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(url || href)) return null;
-    if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(url || href) && text.length < 80) return null;
     if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
     if (genericListFigureCollectionRejectsLink(link, container)) return null;
+    if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
+    if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
 
     var card = listCardRoot(link, container);
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
@@ -188,8 +188,8 @@
       listTableRowDetail(card, text) :
       genericListCardText(detailSource).replace(text, "").replace(/\s*[|·]\s*/g, " - ");
     detail = stripGenericListControlPhrases(detail);
-    if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(url || href) && weatherModuleText(text + " " + detail)) return null;
-    if (/\/(tv|spored)\//i.test(url || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
+    if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(resolvedPath || href) && weatherModuleText(text + " " + detail)) return null;
+    if (/\/(tv|spored)\//i.test(resolvedPath || href) && (/(vsak dan|poglej več|sezona|epizoda|oddaja)/i.test(text + " " + detail) || /\b\d{1,2}\.\d{2}\b/.test(text + " " + detail))) return null;
     var score = url ? listCandidateScore(text, url, detail, container || link.parentElement, context) : text.length + detail.length;
     if (score === -Infinity) return null;
 

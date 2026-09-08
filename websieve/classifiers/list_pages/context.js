@@ -124,8 +124,12 @@
   }
 
   function looksLikeFooterLink(text, href) {
-    return /^(privacy|cookies?|terms|chi siamo|about us|contact|contatti|redazione|advertising|newsletter|subscribe|login|sign in|register|cookie settings|manage preferences)$/i.test(text) ||
-      /\/(privacy|cookie|cookies|terms|about|contatti|contact|redazione|login|register)\b/i.test(href || "");
+    if (/^(privacy|cookies?|terms|chi siamo|about us|contact|contatti|redazione|advertising|newsletter|subscribe|login|sign in|register|cookie settings|manage preferences)$/i.test(text)) return true;
+    try {
+      return /\/(privacy|cookie|cookies|terms|about|contatti|contact|redazione|login|register)\b/i.test(new URL(href || "", location.href).pathname);
+    } catch (_error) {
+      return false;
+    }
   }
 
   function currentListPageUrl() {
