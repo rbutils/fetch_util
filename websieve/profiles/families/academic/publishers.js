@@ -46,14 +46,15 @@
     }
 
     var parts = articleParts(document);
-    if (!parts || parts.bodySections.length < 3) {
+    if (!parts) return null;
+    if (parts.bodySections.length < 3) {
       var fallback = fallbackContent();
       var fallbackRoot = document.createElement("div");
       fallbackRoot.innerHTML = fallback && fallback.html || "";
       var fallbackParts = articleParts(fallbackRoot);
-      if (fallbackParts && (!parts || fallbackParts.bodySections.length > parts.bodySections.length)) parts = fallbackParts;
+      if (fallbackParts && fallbackParts.bodySections.length > parts.bodySections.length) parts = fallbackParts;
     }
-    if (!parts || !parts.abstractNode || parts.bodySections.length < 2) return null;
+    if (!parts.abstractNode || parts.bodySections.length < 2) return null;
 
     var abstractNode = parts.abstractNode;
     var bodySections = parts.bodySections;
