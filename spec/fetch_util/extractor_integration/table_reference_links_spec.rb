@@ -3,13 +3,14 @@ require "support/extractor_integration_helpers"
 RSpec.describe FetchUtil::Extractor do
   include_context "extractor integration helpers"
 
-  def table_reference_render(rows, headers = "<th>Record</th><th>Description</th><th>Status</th>")
+  def table_reference_render(rows, headers = "<th>Record</th><th>Description</th><th>Status</th>", section_cards: false)
     root = File.expand_path("../../..", __dir__)
     source = File.readlines("#{root}/websieve/manifest.txt").map(&:strip)
                  .reject { |path| path.empty? || path.start_with?("#") }
                  .map { |path| File.read("#{root}/websieve/#{path}") }.join("\n")
     source = source.sub("})(window);", "global.__tableReferenceClone = visibleListClone; " \
                                          "global.__tableReferenceItems = extractListItems; " \
+                                         "global.__tableReferenceSections = sectionCards; " \
                                          "global.__tableReferenceMarkdown = listMarkdown; })(window);")
     html = "<html><body><main><h1>Records</h1><table><thead><tr>#{headers}</tr></thead><tbody>#{rows}</tbody></table></main></body></html>"
     with_url_page("https://research.example/records", html) do |page|
@@ -18,9 +19,10 @@ RSpec.describe FetchUtil::Extractor do
         (() => {
           const table = document.querySelector('table');
           const original = table.outerHTML;
-          const items = __tableReferenceItems(__tableReferenceClone(table));
+          const items = #{section_cards ? '__tableReferenceSections' : '__tableReferenceItems'}(__tableReferenceClone(table));
           return {
             markdown: __tableReferenceMarkdown(items), details: items.map(item => item.detail),
+            logicalCells: items.map(item => !!item.tableCells),
             unchanged: table.outerHTML === original
           };
         })()
@@ -75,5 +77,20 @@ RSpec.describe FetchUtil::Extractor do
           "Description: Shared evidence: [reference #{index}](https://research.example/references/#{index}). | Status: confirmed"
       end
     end.join("\n"))
+  end
+
+  it "preserves references in full row details produced by section cards" do
+    rows = 6.times.map do |index|
+      "<tr><td><h4><a href='/records/#{index}'>Detailed variant record #{index}</a></h4></td>" \
+        "<td>Evidence: <a href='/references/#{index}'>reference #{index}</a>.</td><td>confirmed</td></tr>"
+    end.join
+    result = table_reference_render(rows, section_cards: true)
+    expect(result["logicalCells"]).to eq([false] * 6)
+    expect(result["markdown"]).to eq(6.times.map do |index|
+      "- [Detailed variant record #{index}](https://research.example/records/#{index}) - " \
+        "Description: Evidence: [reference #{index}](https://research.example/references/#{index}). | Status: confirmed"
+    end.join("\n"))
+    expect(result["details"].join).not_to include("https://")
+    expect(result["unchanged"]).to be(true)
   end
 end

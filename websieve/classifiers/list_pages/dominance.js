@@ -210,6 +210,7 @@
     if (score === -Infinity) return null;
 
     var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    if (card && card.matches && card.matches("tr")) candidate.tableRowDetail = true;
     if (headings.length > 1) candidate.titleHeadings = headings;
     if (group) {
       candidate.groupLabel = group.label;
