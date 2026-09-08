@@ -19,7 +19,7 @@ RSpec.describe FetchUtil::Extractor do
         (() => {
           const table = document.querySelector('table');
           const original = table.outerHTML;
-          const items = #{section_cards ? '__tableReferenceSections' : '__tableReferenceItems'}(__tableReferenceClone(table));
+          const items = #{section_cards ? "__tableReferenceSections" : "__tableReferenceItems"}(__tableReferenceClone(table));
           return {
             markdown: __tableReferenceMarkdown(items), details: items.map(item => item.detail),
             logicalCells: items.map(item => !!item.tableCells),
