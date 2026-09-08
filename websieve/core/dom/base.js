@@ -183,6 +183,7 @@
         el.setAttribute("data-fetchutil-preserve", "true");
       });
     }
+    cleanupCookieChrome(clone);
     preserveMeaningfulButtons(clone);
     // Preserve ReDoc endpoint bars before removing buttons.
     // These have: <button><span class="http-verb get">get</span><span>/path</span></button>
@@ -206,7 +207,6 @@
     clone.querySelectorAll("script, style, noscript, template, iframe, form, button, input, aside, nav, footer").forEach(function(el) {
       if (!el.hasAttribute("data-fetchutil-preserve")) el.remove();
     });
-    cleanupCookieChrome(clone);
     return materializeHttpAttributes(clone, true);
   }
 

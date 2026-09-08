@@ -13,6 +13,7 @@ core/noise_patterns.js
 core/dom/text.js
 extractors/lists/generic/canonical_identity.js
 core/dom/selectors.js
+core/dom/cookie_chrome.js
 core/dom/noise_cleanup.js
 core/dom/materialization.js
 core/dom/base.js
