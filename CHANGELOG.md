@@ -2,6 +2,55 @@
 
 ## Unreleased
 
+## v0.6.0 - 2026-09-08
+
+### Added
+
+- Expand issue, pull-request, merge-request and code-review conversation extraction across GitHub, GitLab, Gitea/Forgejo, Bitbucket Cloud, Pagure, Gerrit and Azure DevOps, preserving materialized comments, replies, timeline activity and record-local attribution.
+- Add forge resource inventories for supported commit, changed-file, diff, check, pipeline and report pages, including selected Gerrit patch sets, Azure DevOps commit details, and Bitbucket pull activity and statuses.
+- Add SourceHut todo-ticket conversations, mailing-list threads, patchset reviews and Git commit diffs, including one-sided changes.
+
+### Fixed
+
+- Preserve independently owned direct, wrapped, named and image-backed cards, including product tiles, figure collections, short CJK titles, series/episode headings, prices and local descriptive fields. Avoid borrowing page-wide prose or promoting bylines and nested references into separate records.
+- Retain named and plain grouped-link labels, including short labels and distinct destination aliases, without assigning sibling labels as descriptions or mistaking qualified groups for navigation.
+- Combine structured cards, plain links and headline records in DOM order without stopping discovery after an initial set of candidates. Preserve recurring records, table rowspans, section headings and surrounding prose while avoiding duplicate representations of the same physical record.
+- Improve article/list arbitration and same-root or nested-root coverage so partial sections do not replace fuller material. Preserve mixed product-homepage narrative and enrich proven main articles only after root arbitration, retaining the selected article's metadata.
+- Recover material from controlled panels, dormant document roots and stale or deferred visibility when ownership is established, while excluding hidden navigation, unrelated variants and unsupported access states.
+- Improve portal, event, press-release, product, job, lodging and podcast extraction, including restored records, local fields and recurring entries. Keep record-owned metadata and descriptive accessibility labels separate from page chrome.
+- Resolve page-owned structured data across scripts and same-document identifiers, merge array and scalar values, reject foreign owners, and keep publication and modification times distinct.
+- Preserve nested Markdown structure, embedded code fences and fragment-targeted documentation sections, including empty ID anchors and literal plus signs. Leave unknown optional language and document metadata unset instead of inventing values.
+- Reduce false consent, newsletter, redirect, homepage and content-completeness warnings by using owned evidence rather than unrelated footer links, card dates or inflated URL text. Classify access warnings after the final content has been selected.
+- Stabilize redirected and dynamically hydrated pages within bounded browser lifecycles. Preserve successful results and primary exceptions across page, browser, extractor-timeout and connection cleanup failures, including failed startup and shutdown paths.
+- Preserve ordered partial results and blank input positions in parallel fetches, join workers after startup failures, and reject unsafe shared-browser worker configurations. Validate concurrency and finite timeout/wait budgets.
+- Snapshot caller-owned URLs, headers, paths, browser options and source configuration before deferred or concurrent work; retain immutable result warnings and metadata without freezing caller-owned strings.
+- Normalize IRIs before transport, preserve meaningful redirect query identity and private-suffix tenant boundaries, and require appropriate evidence for DOI redirects and PDF detection. Bound PDF redirect probes and fall back after failed or TLS-error probes.
+- Enforce total HTTP deadlines and response-body limits before buffering, isolate concurrent connection pools, and preserve fractional timeout budgets. Apply search byte limits during decompression, retain monotonic deadlines, report DNS failures and avoid treating organic result text as response-shell boilerplate.
+- Make regulatory cache writes atomic and cache failures nonfatal; avoid caching transient failures and ignore invalid or future-dated entries. Improve active crawler-meta parsing, expanded ODRL terms, origin-scoped policy targets and bounded transient HTTP retries.
+- Honor command-local CLI help and return nonzero status with concise messages for expected input and option errors instead of misleading success or Ruby backtraces.
+
+### Security
+
+- Reject unsupported URL schemes and credential-bearing public fetch URLs, canonical URLs and extracted destinations; restrict materialized public links to HTTP(S).
+- Reject HTTPS-to-HTTP downgrades in search redirects and validate redirect targets before transport.
+- Redact credentials from request logs, escape record delimiters and normalize log filenames without replacing a primary fetch exception with a logging failure.
+
+### Changed
+
+- Make one-shot `FetchUtil.fetch` close its browser session; reusable `Fetcher` instances retain explicit lifecycle control.
+- Declare `public_suffix` as a runtime dependency for tenant-aware URL comparisons and load Ferrum when loading the public library classes.
+- Pin the contributor-only Terser toolchain through `package-lock.json`; use `npm ci` before building. Asset verification now checks the installed toolchain, complete ordered manifest, duplicate entries and duplicate top-level callable ownership.
+- Fail gem packaging when the required runtime bundle is missing or stale. Exclude dependency trees, nested lockfiles, build-time JavaScript sources and hidden fallback files, including packaging outside a Git checkout.
+
+### Performance
+
+- Reuse group, card-text and figure-ownership proofs within a single immutable extraction pass, including negative results, while invalidating them for subsequent DOM states. This avoids repeated scans without increasing timeouts or capping material output.
+- Avoid redundant browser idle waits, share forge stabilization loops and index search-source responses once.
+
+### Known Limitations
+
+- Some sites still regress relative to v0.5.2, particularly in card-local metadata and description ownership. The multi-site regression comparison does not establish lossless extraction or uniform improvement across all sites.
+
 ## v0.5.2 - 2026-07-21
 
 ### Fixed
