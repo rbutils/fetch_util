@@ -91,6 +91,8 @@
       html: clone.innerHTML,
       textContent: text,
       readerMode: false,
+      mainContentRoot: homepageRootPath() && (node.matches("main, [role='main']") ||
+        (node.matches("article") && genericListPageContainer(node))),
       contentType: "article"
     };
   }

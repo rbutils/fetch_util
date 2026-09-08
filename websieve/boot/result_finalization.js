@@ -1,4 +1,6 @@
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
+  // Additional material must not change the preceding root-selection decision.
+  content = enrichMainArticleContent(content);
   var byline = sanitizeByline(content.byline || metadata.byline || visibleByline());
   var cleanedHtml = sanitizedHtml(content.html);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));

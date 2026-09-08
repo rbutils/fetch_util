@@ -1,0 +1,89 @@
+  function mainFallbackPreservesArticle(primaryRoot, fallbackRoot) {
+    if (!normalizeText(primaryRoot.textContent || "")) return false;
+
+    var fallbackUnits = [];
+    var fallbackWalker = document.createTreeWalker(fallbackRoot, NodeFilter.SHOW_TEXT);
+    while (fallbackWalker.nextNode()) {
+      var unit = normalizeText(fallbackWalker.currentNode.textContent || "");
+      if (unit) fallbackUnits.push(unit);
+    }
+    // Adjacent elements must not turn separate text units into a single word.
+    var fallbackText = fallbackUnits.join(" ");
+
+    var walker = document.createTreeWalker(primaryRoot, NodeFilter.SHOW_TEXT);
+    var cursor = 0;
+    while (walker.nextNode()) {
+      var text = normalizeText(walker.currentNode.textContent || "");
+      if (!text) continue;
+      var position = fallbackText.indexOf(text, cursor);
+      while (position >= 0) {
+        var startInsideWord = /[\p{L}\p{N}]/u.test(text[0]) && /[\p{L}\p{N}]/u.test(fallbackText.charAt(position - 1));
+        var endInsideWord = /[\p{L}\p{N}]/u.test(text[text.length - 1]) && /[\p{L}\p{N}]/u.test(fallbackText.charAt(position + text.length));
+        if (!startInsideWord && !endInsideWord) break;
+        position = fallbackText.indexOf(text, position + 1);
+      }
+      if (position < 0) return false;
+      cursor = position + text.length;
+    }
+
+    function resources(root) {
+      return Array.prototype.map.call(root.querySelectorAll("a, img, source, video, audio, iframe, image, object, embed"), function(node) {
+        var urls = [];
+        ["href", "xlink:href", "src", "poster", "data"].forEach(function(attribute) {
+          var url = materializedHttpUrl(node.getAttribute(attribute));
+          if (url) urls.push(attribute + ":" + url);
+        });
+        srcsetCandidates(node.getAttribute("srcset")).forEach(function(candidate) {
+          var url = materializedHttpUrl(candidate.url);
+          if (url && validSrcsetDescriptor(candidate.descriptor)) urls.push("srcset:" + url + " " + candidate.descriptor);
+        });
+        var alt = node.localName === "img" ? normalizeText(node.getAttribute("alt") || "") : "";
+        return { kind: node.localName, urls: urls, alt: alt };
+      }).filter(function(resource) { return resource.urls.length || resource.alt; });
+    }
+
+    var primaryResources = resources(primaryRoot);
+    var fallbackResources = resources(fallbackRoot);
+    var resourcePosition = 0;
+    if (!primaryResources.every(function(resource) {
+      while (resourcePosition < fallbackResources.length) {
+        var candidate = fallbackResources[resourcePosition++];
+        if (resource.kind === candidate.kind && resource.alt === candidate.alt && resource.urls.every(function(url) {
+          return candidate.urls.indexOf(url) !== -1;
+        })) return true;
+      }
+      return false;
+    })) return false;
+
+    var primaryLinks = new Set(Array.prototype.map.call(primaryRoot.querySelectorAll("a[href]"), function(link) {
+      return materializedHttpUrl(link.getAttribute("href"));
+    }));
+    var additionalLinks = new Set();
+    fallbackRoot.querySelectorAll("a[href]").forEach(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+      if (!url || primaryLinks.has(url) || url.split("#")[0] === location.href.split("#")[0]) return;
+      if (text.length < minimumListTitleLength(text) || genericListControlText(text) || looksLikeFooterLink(text, url)) return;
+      if (elementSubtreeHidden(link) || link.closest("nav, header, footer, aside, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='contentinfo']")) return;
+      if (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return;
+      additionalLinks.add(url);
+    });
+    return additionalLinks.size >= 2;
+  }
+
+  function enrichMainArticleContent(content) {
+    if (!content || !content.readerMode || content.contentType !== "article" || content.markdown ||
+        content.hostAware || content.docsLike || content.legalProvision || !homepageRootPath()) return content;
+    var mediaWikiLike = document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");
+    if (mediaWikiLike && normalizeText(content.textContent || "").length >= 800) return content;
+
+    var fallback = fallbackContent();
+    if (!fallback || !fallback.mainContentRoot) return content;
+    var primaryRoot = document.createElement("div");
+    var fallbackRoot = document.createElement("div");
+    primaryRoot.innerHTML = content.html || "";
+    fallbackRoot.innerHTML = fallback.html || "";
+    if (!mainFallbackPreservesArticle(primaryRoot, fallbackRoot)) return content;
+
+    return Object.assign({}, content, { html: fallback.html, textContent: fallback.textContent });
+  }
