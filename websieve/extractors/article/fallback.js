@@ -56,16 +56,25 @@
     if (legalProvision) return legalProvision;
 
     var selectors = genericArticleSelectors();
-    var candidates = [];
+    var candidates = new Set();
 
     selectors.forEach(function(selector) {
       document.querySelectorAll(selector).forEach(function(node) {
-        candidates.push(node);
+        candidates.add(node);
       });
     });
 
-    var best = candidates.reduce(function(current, node) {
-      var scoringNode = cleanClone(visibilityPrunedClone(node, document));
+    var sourceClones = new WeakMap();
+    var visibleBody = visibilityPrunedClone(document.body, document, sourceClones);
+    var best = Array.from(candidates).reduce(function(current, node) {
+      var visibleNode;
+      if (document.body.contains(node)) {
+        visibleNode = sourceClones.get(node);
+        if (!visibleNode || !visibleBody.contains(visibleNode)) return current;
+      } else {
+        visibleNode = visibilityPrunedClone(node, document);
+      }
+      var scoringNode = cleanClone(visibleNode);
       cleanupGenericArticleRoot(scoringNode);
       var score = scoreNode(scoringNode);
       if (!current || score > current.score) return { node: node, score: score };

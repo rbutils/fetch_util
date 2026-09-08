@@ -82,7 +82,7 @@
     return elementVisuallyHiddenWithin(node, null);
   }
 
-  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent) {
+  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones) {
     if (!source || !clone) return;
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
     var preservedRoot = exactPreservedRoot ? source : preservingRoot;
@@ -93,6 +93,7 @@
       clone.remove();
       return;
     }
+    if (sourceClones) sourceClones.set(source, clone);
 
     if (source.nodeType === 1 && exactPreservedRoot) {
       clone.removeAttribute("hidden");
@@ -118,7 +119,7 @@
         childClone.remove();
         return;
       }
-      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true);
+      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones);
     });
 
     if (visibilityHidden) {
@@ -130,11 +131,11 @@
     }
   }
 
-  function visibilityPrunedClone(node, ownerDoc) {
+  function visibilityPrunedClone(node, ownerDoc, sourceClones) {
     if (!node || elementSubtreeHidden(node)) return (ownerDoc || document).createElement("div");
     var clone = safeDeepClone(node, ownerDoc || document);
     if (!clone) return (ownerDoc || document).createElement("div");
-    pruneHiddenClone(node, clone);
+    pruneHiddenClone(node, clone, null, null, false, sourceClones);
     return clone;
   }
 
