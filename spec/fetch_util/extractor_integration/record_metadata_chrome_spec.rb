@@ -62,6 +62,13 @@ RSpec.describe "Record metadata and page chrome" do
     )
   end
 
+  it "does not mistake a record's descriptive label for a follow control" do
+    markdown = metadata_card_records(aria_label: "Audio: Follow the money in the economy")
+    expect(markdown).to include("/stories/0", "Owned description for report 0.")
+    expect(markdown).not_to include("/channel")
+    expect(metadata_card_records(wrapper: "nav", aria_label: "Audio: Follow the money")).not_to include("/stories/")
+  end
+
   it "does not promote heading-formatted bylines over the record's own destination" do
     markdown = metadata_card_records(byline: true, count: 125)
     expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(

@@ -26,11 +26,16 @@
     if (!node || node.nodeType !== 1) return false;
     if (node.matches("nav, header, footer, menu, [role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']")) return true;
 
+    var ariaLabel = node.getAttribute("aria-label");
+    if (ariaLabel && node.matches("a[href]")) {
+      var record = closestGenericListCard(node.parentElement);
+      if (record && genericListStructuredCardLink(record) === node) ariaLabel = "";
+    }
     var attrs = normalizeText([
       node.getAttribute("id"),
       node.getAttribute("class"),
       node.getAttribute("role"),
-      node.getAttribute("aria-label"),
+      ariaLabel,
       node.getAttribute("data-testid")
     ].join(" ")).toLowerCase();
 
