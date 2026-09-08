@@ -179,7 +179,32 @@
     return labels.join(" ");
   }
 
-  function listTableRowDetail(row, title, logicalCells) {
+  function listTableCellReferences(cell, title, primaryUrl, titleCell) {
+    var links = Array.prototype.slice.call(cell.querySelectorAll("a[href]"));
+    if (!links.some(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      var label = listTableCellText(link);
+      return url && label && (!titleCell || url !== primaryUrl || label !== title);
+    })) return null;
+
+    var clone = cell.cloneNode(true);
+    var references = Array.prototype.map.call(clone.querySelectorAll("a[href]"), function(link) {
+      var slot = clone.ownerDocument.createTextNode("");
+      link.replaceWith(slot);
+      return { slot: slot, link: link };
+    });
+    if (!normalizeText(clone.textContent)) return null;
+
+    references.forEach(function(reference) {
+      var link = reference.link;
+      var label = listTableCellText(link);
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      reference.slot.textContent = !label || (titleCell && label === title && url === primaryUrl) ? "" : markdownLink(label, url);
+    });
+    return normalizeText(clone.textContent);
+  }
+
+  function listTableRowDetail(row, title, logicalCells, references) {
     var cells = logicalCells || tableIndexCells(row);
     var cellsAreLogical = !!logicalCells;
     var table = row.closest && row.closest("table");
@@ -198,6 +223,8 @@
       var titleIndex = value.indexOf(title);
       if (titleIndex !== -1) value = normalizeText(value.slice(0, titleIndex) + " " + value.slice(titleIndex + title.length));
       if (!value) return "";
+      // Format references after title removal so a title cannot alter a destination URL.
+      if (references) value = listTableCellReferences(cell, title, references.url, index === titleCellIndex) || value;
 
       return index !== titleCellIndex && label && label.toLowerCase() !== value.toLowerCase() ? label + ": " + value : value;
     }).filter(Boolean).join(" | ");

@@ -91,7 +91,12 @@ function listItemContextValues(item) {
    if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
-  if (rowDetail) return [rowDetail];
+  if (rowDetail) {
+    if (item.tableReferenceDetail == null) {
+      item.tableReferenceDetail = stripGenericListControlPhrases(listTableRowDetail(card, item.text, item.tableCells, { url: item.url }));
+    }
+    return [item.tableReferenceDetail];
+  }
 
   var contextValues = [
     item.category,

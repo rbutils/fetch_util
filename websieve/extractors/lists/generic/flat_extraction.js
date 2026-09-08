@@ -103,6 +103,7 @@
           detail: detail,
           rankScore: text.length + detail.length,
           card: row,
+          tableCells: dataRow.cells,
           canonicalKey: primary.url || "unlinked:" + text.toLowerCase() + "|href:" + primary.href,
           dedupeKey: (primary.url || "unlinked:" + text.toLowerCase() + "|href:" + primary.href) + "|row:" + normalizeText(detail).toLowerCase()
         };
