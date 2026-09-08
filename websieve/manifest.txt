@@ -6,6 +6,7 @@ core/metadata/structured_data_entities.js
 core/metadata/structured_data.js
 classifiers/list_pages/anchor_cards.js
 classifiers/list_pages/card_ownership.js
+classifiers/list_pages/link_groups.js
 markdown/lists.js
 markdown/inventory.js
 core/metadata/content_results.js

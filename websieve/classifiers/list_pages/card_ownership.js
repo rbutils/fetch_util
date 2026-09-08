@@ -257,6 +257,8 @@
     if (genericListDirectAnchorCard(link, fallback)) return link;
     var figure = link && link.closest && link.closest("figure");
     if (genericListFigureAnchorCard(link, figure)) return figure;
+    var group = genericListLinkGroup(link);
+    if (group) return group.card;
     var card = genericListContextCard(closestGenericListCard(link));
     return card || fallback || (link && link.parentElement);
   }

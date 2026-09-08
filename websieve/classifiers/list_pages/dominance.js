@@ -164,7 +164,8 @@
     var weatherPage = /(weather|forecast|ve[ðd]ur|vedur|meteo)/i.test((location.pathname || "") + " " + document.title);
     if (!href || href[0] === "#") return null;
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
-    if (text.length < (tableIndexRow ? 2 : minimumListTitleLength(text)) || text.length > 220) return null;
+    var group = genericListLinkGroup(link);
+    if (text.length < (group ? 1 : (tableIndexRow ? 2 : minimumListTitleLength(text))) || text.length > 220) return null;
 
     var url = materializedHttpUrl(href);
     if (!url && !retainUnsafeLink) return null;
@@ -177,10 +178,10 @@
       if (url.replace(/[?#].*$/, "") === context.currentUrl) return null;
     }
     if (genericListControlText(text)) return null;
-    if (looksLikeFooterLink(text, href) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
-    if (genericListFigureCollectionRejectsLink(link, container)) return null;
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
+    if ((!group && looksLikeFooterLink(text, href)) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
+    if (genericListFigureCollectionRejectsLink(link, container)) return null;
 
     var card = listCardRoot(link, container);
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
@@ -194,6 +195,10 @@
     if (score === -Infinity) return null;
 
     var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    if (group) {
+      candidate.groupLabel = group.label;
+      candidate.dedupeKey = listCanonicalKey(url) + "|label:" + text.toLowerCase();
+    }
     var contentCard = closestGenericListCard(link);
     if (contentCard && contentCard !== card && !(card && card.matches && card.matches("tr"))) {
       candidate.contentCard = contentCard;
