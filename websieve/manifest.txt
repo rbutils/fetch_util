@@ -73,6 +73,7 @@ extractors/lists/generic/card_evidence.js
 extractors/lists/generic/inline_descriptions.js
 extractors/lists/generic/headline_extraction.js
 extractors/lists/generic/nested_coverage.js
+extractors/lists/description_parts.js
 extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/card_visibility.js
