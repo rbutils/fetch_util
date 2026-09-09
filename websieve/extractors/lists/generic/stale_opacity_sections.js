@@ -151,11 +151,11 @@ function staleOpacityDetailedListMarkdown(recovered) {
   var searchIndex = 0;
 
   items.forEach(function(item) {
-    var currentLine = listMarkdown([item]);
     var detailedItem = {};
     Object.keys(item || {}).forEach(function(key) { detailedItem[key] = item[key]; });
     detailedItem.card = null;
     detailedItem.contentCard = null;
+    var currentLine = listMarkdown([detailedItem]);
     var itemDetail = normalizeText(detailedItem.detail || "");
     var actionDetail = /^(?:learn more|read more|view all|see all|show more)$/i.test(itemDetail);
     if ((!itemDetail || genericListControlText(itemDetail) || actionDetail) && item.card && item.card.querySelectorAll) {
