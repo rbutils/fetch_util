@@ -31,8 +31,24 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
           const unsafeReference = document.createElement('a');
           unsafeReference.href = 'https://fixture-user:fixture-secret@example.net/private';
           unsafeReference.textContent = 'private label';
+          const supportingCache = new WeakMap();
+          let supportingQueries = 0;
+          const querySelectorAll = detached && detached.querySelectorAll;
+          const querySelector = detached && detached.querySelector;
+          if (detached) detached.querySelectorAll = function(selector) {
+            supportingQueries += 1;
+            return querySelectorAll.call(this, selector);
+          };
+          if (detached) detached.querySelector = function(selector) {
+            supportingQueries += 1;
+            return querySelector.call(this, selector);
+          };
+          const detachedSupporting = detached && !!supportingProof(detachedReference, detached, supportingCache);
+          const firstSupportingQueries = supportingQueries;
+          if (detached) supportingProof(detachedReference, detached, supportingCache);
           return {items: items.map(item => ({text: item.text, url: item.url})),
-                  markdown: supportingMarkdown(items), detachedSupporting: detached && !!supportingProof(detachedReference, detached),
+                  markdown: supportingMarkdown(items), detachedSupporting: detachedSupporting,
+                  supportingQueryCounts: [firstSupportingQueries, supportingQueries],
                   rootReference: authorReference && supportingText(authorReference),
                   unsafeRootReference: supportingText(unsafeReference),
                   supplementalText: supplementalContent && supportingText(supplementalContent),
@@ -60,6 +76,8 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       {"text" => "Article #{index}", "url" => "https://articles.example/articles/#{index}"}
     end)
     expect(result.fetch("detachedSupporting")).to be(true)
+    expect(result.fetch("supportingQueryCounts").first).to be > 0
+    expect(result.fetch("supportingQueryCounts").last).to eq(result.fetch("supportingQueryCounts").first)
     expect(result.fetch("rootReference")).to eq("[Author 0](https://articles.example/authors/0)")
     expect(result.fetch("unsafeRootReference")).to eq("private label")
     (0...125).each do |index|

@@ -47,14 +47,25 @@
     return null;
   }
 
-  function genericListSupportingCard(link, candidateCard) {
-    var candidatePrimary = candidateCard && candidateCard.contains(link) && genericListStructuredCardLink(candidateCard, false);
+  function genericListSupportingCard(link, candidateCard, cache) {
+    function structuredCardLink(card, requireBoundary) {
+      if (!cache) return genericListStructuredCardLink(card, requireBoundary);
+      var cached = cache.get(card) || {};
+      var key = requireBoundary === false ? "detached" : "bounded";
+      if (Object.prototype.hasOwnProperty.call(cached, key)) return cached[key];
+      cached[key] = genericListStructuredCardLink(card, requireBoundary);
+      cache.set(card, cached);
+      return cached[key];
+    }
+
+    var candidateBoundary = candidateCard && candidateCard.parentElement && genericListCardBoundary(candidateCard);
+    var candidatePrimary = candidateCard && candidateCard.contains(link) && !candidateBoundary && structuredCardLink(candidateCard, false);
     if (candidatePrimary && candidatePrimary !== link) return candidateCard;
 
     var current = link && link.parentElement;
     while (current && current !== document.body && current !== document.documentElement) {
       if (genericListCardBoundary(current)) {
-        var primary = genericListStructuredCardLink(current);
+        var primary = structuredCardLink(current);
         if (primary && primary !== link) return current;
       }
       current = current.parentElement;

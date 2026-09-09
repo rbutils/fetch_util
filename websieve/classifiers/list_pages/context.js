@@ -173,6 +173,7 @@
       linkGroups: new WeakMap(),
       cardText: new WeakMap(),
       figureCollections: new WeakMap(),
+      supportingCards: new WeakMap(),
       keywords: keywords,
       sectionFragments: sectionFragments.slice(0, 4)
     };
