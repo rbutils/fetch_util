@@ -47,12 +47,15 @@ function listClonedCardFields(card, clone, selector) {
   });
 }
 
-function listTextWithReferences(node, visibilityChecked) {
+function listTextWithReferences(node, visibilityChecked, primaryUrl) {
   if (!node || !node.cloneNode) return "";
   var clone = node.cloneNode(true);
   if (!visibilityChecked) pruneListCardVisibility(node, clone);
   if (clone.matches && clone.matches("a[href]")) {
-    return markdownLink(normalizeText(clone.textContent || clone.getAttribute("aria-label") || ""), clone.getAttribute("href"));
+    var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
+    var rootUrl = materializedHttpUrl(clone.getAttribute("href"));
+    if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
+    return markdownLink(rootLabel, clone.getAttribute("href"));
   }
   clone.querySelectorAll("a[href]").forEach(function(link) {
     var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
@@ -69,6 +72,21 @@ function listSupplementalDetail(item, contextValues, card) {
   var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
       return !!genericListSupportingCard(link, supportingOwner);
+    });
+  }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
+  var metadataSelector = "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], time, [datetime], [class*='score' i], [class*='point' i], [class*='reply' i], [class*='comment' i], [class*='community' i], [class*='metric' i], [class*='stat' i]";
+  var nestedMetadataCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
+    if (!genericListPresentationCardNode(nested)) return false;
+    var nestedFields = Array.prototype.filter.call(nested.querySelectorAll(metadataSelector), function(field) {
+      return !listCardNodeHidden(field);
+    });
+    if (!nestedFields.length) return false;
+    var nestedClone = nested.cloneNode(true);
+    pruneListCardVisibility(nested, nestedClone);
+    nestedClone.querySelectorAll(metadataSelector).forEach(function(field) { field.remove(); });
+    if (normalizeText(nestedClone.textContent || "")) return false;
+    return Array.prototype.some.call(card.querySelectorAll(metadataSelector), function(field) {
+      return !nested.contains(field) && !listCardNodeHidden(field);
     });
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
   var selectedFields = [
@@ -90,14 +108,14 @@ function listSupplementalDetail(item, contextValues, card) {
     if (field && field.remove) field.remove();
   });
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
-    if (nested === contentCard || !genericListFieldBoundary(nested)) return;
+    if (nested === contentCard || (!genericListFieldBoundary(nested) && nestedMetadataCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
   });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
   });
   pruneGenericListControls(clone);
-  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true));
+  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url));
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
