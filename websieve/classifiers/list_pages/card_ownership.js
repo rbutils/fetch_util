@@ -4,9 +4,12 @@
   }
 
   function genericListPresentationCardNode(node) {
+    if (genericListActionAnchor(node)) return true;
     // A wrapper inside the record's own anchor does not own a separate destination.
     var enclosingLink = node && node.closest && node.closest("a[href]");
     if (enclosingLink && enclosingLink !== node && !node.querySelector("a[href]")) return true;
+    if (node && node.matches && !node.matches("a[href], article, li, tr, .post, .entry, .product, .product-tile, [itemtype$='/Product']") &&
+        !node.querySelector("a[href]")) return true;
     var classes = ((node && node.getAttribute && node.getAttribute("class")) || "").split(/\s+/);
     return classes.some(function(name) {
       return /^(?:card|story|teaser|result|news|headline)[-_]+(?:body|content|meta(?:data)?|header|footer|details?)(?:[-_].*)?$/i.test(name) ||
@@ -276,7 +279,7 @@
 
   function listCardRoot(link, fallback, knownGroup, figureCollections) {
     if (fallback && fallback.matches && fallback.matches("tr")) return fallback;
-    if (genericListDirectAnchorCard(link, fallback)) return link;
+    if (!genericListActionAnchor(link) && genericListDirectAnchorCard(link, fallback)) return link;
     var figure = link && link.closest && link.closest("figure");
     if (genericListFigureAnchorCard(link, figure, figureCollections)) return figure;
     var group = knownGroup === undefined ? genericListLinkGroup(link) : knownGroup;

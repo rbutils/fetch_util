@@ -1,20 +1,31 @@
+  function genericListActionAnchor(node) {
+    var explicitAction = node && Array.prototype.some.call(node.classList || [], function(name) {
+      return /^(?:card|story|teaser|result|news)[-_](?:cta|action)(?:[-_].*)?$/i.test(name);
+    });
+    return !!(node && node.matches && node.matches("a[href]") &&
+      Array.prototype.some.call(node.classList, function(name) {
+        return /^(?:card|story|teaser|result|news)[-_](?:cta|link|action)(?:[-_].*)?$/i.test(name);
+      }) && !genericListAnchorRecordEvidence(node, !explicitAction));
+  }
+
   function genericListAnchorCardSelector() {
     return "a[href]:has([class$='-name' i]:not(:empty)):has([class$='-desc' i]:not(:empty)), " +
       "a[href]:has(h1, h2, h3, h4):has(p), a[href]:has([class$='-name' i]):has(time, [datetime], [class*='date' i]), " +
       "a[href]:has([class*='title' i]):has([class*='description' i])";
   }
 
-  function genericListAnchorRecordEvidence(link) {
+  function genericListAnchorRecordEvidence(link, includeImages) {
     var name = link.querySelector("[class$='-name' i]");
     var description = link.querySelector("[class$='-desc' i]");
     if (name && description && !listCardNodeHidden(name) && !listCardNodeHidden(description) &&
         normalizeText(name.textContent) && normalizeText(description.textContent)) return true;
-    var recordEvidence = "article, picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
+    var recordEvidence = "article, time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
+    if (includeImages !== false) recordEvidence += ", picture, video, img[alt]:not([alt=''])";
     if (Array.prototype.some.call(link.querySelectorAll(recordEvidence), function(node) {
       return !listCardNodeHidden(node) && (!node.matches("article") || !!normalizeText(node.textContent));
     })) return true;
     var text = normalizeText(link.textContent);
-    if (text.length >= minimumListTitleLength(text) && !genericListControlText(text) &&
+    if (includeImages !== false && text.length >= minimumListTitleLength(text) && !genericListControlText(text) &&
         Array.prototype.some.call(link.querySelectorAll("img[src]"), function(image) {
           return materializedHttpUrl(image.getAttribute("src")) && !elementSubtreeHidden(image);
         })) return true;
