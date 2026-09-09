@@ -205,21 +205,16 @@
     return card;
   }
 
-  function listDescriptionItemValues(item, primaryUrls, primaryReferences) {
+  function listDescriptionItemValues(item, primaryUrls) {
     if (!item) return [];
     var values = [item.text].concat(listItemContextValues(item, primaryUrls));
-    primaryReferences = primaryReferences || primaryUrls;
     var ownerCard = listDescriptionOwnerCard(item);
     if (ownerCard) {
       var rendered = values.join("\n");
       cardOwnedNodes(ownerCard, "p, blockquote").forEach(function(block) {
         if (elementSubtreeHidden(block)) return;
-        var complete = cardOwnedNodes(block, "a[href]").every(function(link) {
-          var url = materializedHttpUrl(link.getAttribute("href"));
-          return !url || rendered.indexOf(url) >= 0 ||
-            (primaryReferences && primaryReferences.has(url));
-        });
-        if (complete) values.push(block.textContent || "");
+        var expected = listTextWithReferences(block, false, item.url);
+        if (expected && rendered.indexOf(expected) >= 0) values.push(block.textContent || "");
       });
     }
     return values.map(normalizeText).filter(Boolean);

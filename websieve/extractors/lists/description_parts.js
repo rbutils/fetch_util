@@ -10,7 +10,7 @@
       return materializedHttpUrl(item.url || "");
     }).filter(Boolean));
     var itemValues = items && items.map(function(item) {
-      return listDescriptionItemValues(item, primaryUrls, primaryReferences);
+      return listDescriptionItemValues(item, primaryUrls);
     });
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
