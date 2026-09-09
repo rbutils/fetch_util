@@ -131,7 +131,7 @@
       var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;
       pushLink(link, container);
     });
-    extractFallbackHeadlineItems(root).forEach(function(candidate) {
+    extractFallbackHeadlineItems(root, context).forEach(function(candidate) {
       if (acceptedLinks.has(candidate.sourceNode)) return;
       if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.sourceNode);
     });
@@ -140,6 +140,7 @@
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
 
+    Object.defineProperty(candidates, "__fetchUtilSupportingLinks", { value: context.supportingLinks });
     return candidates;
   }
 
@@ -181,12 +182,45 @@
     return root;
   }
 
-  function listDescriptionItemValues(item) {
+  function listDescriptionOwnerCard(item) {
+    var card = item && item.card;
+    var itemUrl = materializedHttpUrl(item && item.url);
+    if (!card || !itemUrl) return null;
+    var primary = genericListStructuredCardLink(card);
+    if (!primary || listCanonicalKey(materializedHttpUrl(primary.getAttribute("href")) || "") !== listCanonicalKey(itemUrl)) {
+      return null;
+    }
+    if (item.contentCard) return item.contentCard;
+    var headingUrls = {};
+    cardOwnedNodes(card, "h1 a[href], h2 a[href], h3 a[href], h4 a[href]").forEach(function(link) {
+      if (elementSubtreeHidden(link)) return;
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      if (url) headingUrls[listCanonicalKey(url)] = true;
+    });
+    if (Object.keys(headingUrls).length !== 1) return null;
+    var proseCount = cardOwnedNodes(card, "p").filter(function(paragraph) {
+      return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent || "").length >= 24;
+    }).length;
+    if (!card.matches("article, [class~='story' i], [itemtype*='Article']") && proseCount < 2) return null;
+    return card;
+  }
+
+  function listDescriptionItemValues(item, primaryUrls, primaryReferences) {
     if (!item) return [];
-    var values = [item.text].concat(listItemContextValues(item));
-    var primary = item.card && genericListStructuredCardLink(item.card);
-    if (primary && listCanonicalKey(materializedHttpUrl(primary.getAttribute("href")) || "") === listCanonicalKey(item.url || "")) {
-      values.push(item.card.textContent || "");
+    var values = [item.text].concat(listItemContextValues(item, primaryUrls));
+    primaryReferences = primaryReferences || primaryUrls;
+    var ownerCard = listDescriptionOwnerCard(item);
+    if (ownerCard) {
+      var rendered = values.join("\n");
+      cardOwnedNodes(ownerCard, "p, blockquote").forEach(function(block) {
+        if (elementSubtreeHidden(block)) return;
+        var complete = cardOwnedNodes(block, "a[href]").every(function(link) {
+          var url = materializedHttpUrl(link.getAttribute("href"));
+          return !url || rendered.indexOf(url) >= 0 ||
+            (primaryReferences && primaryReferences.has(url));
+        });
+        if (complete) values.push(block.textContent || "");
+      });
     }
     return values.map(normalizeText).filter(Boolean);
   }
@@ -213,14 +247,25 @@
     });
   }
 
-  function listDescriptionCardNode(node, items, options, itemValues) {
+  function listDescriptionReferencesRepresented(node, values, primaryReferences) {
+    return Array.prototype.every.call(node.querySelectorAll("a[href]"), function(link) {
+      if (listCardNodeHidden(link)) return true;
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      if (!url) return true;
+      if (primaryReferences && primaryReferences.has(url)) return true;
+      return values.some(function(value) { return value.indexOf(url) >= 0; });
+    });
+  }
+
+  function listDescriptionCardNode(node, items, options, itemValues, primaryReferences) {
     if (!items) return closestGenericListCard(node);
 
     var text = normalizeText(node.textContent || "");
     var represented = text && items.find(function(item, index) {
-      return itemValues[index].some(function(value) {
+      var values = itemValues[index];
+      return values.some(function(value) {
         return value === text || value.indexOf(text) >= 0;
-      });
+      }) && listDescriptionReferencesRepresented(node, values, primaryReferences);
     });
     var recordCard;
     var sectionLabels;

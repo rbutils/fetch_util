@@ -10,8 +10,10 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
         File.read(File.join(root, "websieve", entry))
       end.join("\n").sub("})(window);", "global.supportingClone = visibleListClone; " \
                                            "global.supportingItems = extractListItems; " \
-                                           "global.supportingProof = genericListSupportingCard; " \
-                                           "global.supportingSupplemental = listSupplementalDetail; " \
+                                            "global.supportingProof = genericListSupportingCard; " \
+                                            "global.supportingDescriptionValues = listDescriptionItemValues; " \
+                                            "global.supportingDescription = listDescriptionMarkdown; " \
+                                            "global.supportingSupplemental = listSupplementalDetail; " \
                                            "global.supportingText = listTextWithReferences; " \
                                            "global.supportingMarkdown = listMarkdown; })(window);")
       page.add_script_tag(content: source)
@@ -19,6 +21,16 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
         (() => {
           const main = document.querySelector('main'), original = main.outerHTML;
           const items = supportingItems(supportingClone(main));
+          const firstStory = main.querySelector('.story');
+          const firstStoryLink = firstStory && firstStory.querySelector('h1 a[href], h2 a[href], h3 a[href], h4 a[href]');
+          const primaryUrls = new Set(items.map(item => item.url).filter(Boolean));
+          const firstStoryItem = firstStoryLink && items.find(item => item.url === firstStoryLink.href);
+          const firstStoryDescriptionValues = firstStoryItem && supportingDescriptionValues(firstStoryItem, primaryUrls);
+          const collection = main.querySelector('.card-grid');
+          const collectionLink = collection && collection.querySelector('a[href]');
+          const collectionDescriptionValues = collectionLink && supportingDescriptionValues({
+            text: collectionLink.textContent, url: collectionLink.href, card: collection, contentCard: null
+          });
           const postbody = main.querySelector('.postbody');
           const detached = postbody && postbody.cloneNode(true);
           const detachedReference = detached && detached.querySelector('p a[href]');
@@ -48,7 +60,11 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
           if (detached) supportingProof(detachedReference, detached, supportingCache);
           return {items: items.map(item => ({text: item.text, url: item.url})),
                   markdown: supportingMarkdown(items), detachedSupporting: detachedSupporting,
+                  description: supportingDescription(main, items, {includeInlineProse: true,
+                    preserveTextLengths: true, preserveUnrepresentedText: true}),
                   supportingQueryCounts: [firstSupportingQueries, supportingQueries],
+                  firstStoryDescriptionValues: firstStoryDescriptionValues,
+                  collectionDescriptionValues: collectionDescriptionValues,
                   rootReference: authorReference && supportingText(authorReference),
                   unsafeRootReference: supportingText(unsafeReference),
                   supplementalText: supplementalContent && supportingText(supplementalContent),
@@ -89,6 +105,9 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       expect(line).not_to include("Summary #{(index + 1) % 125}")
     end
     expect(result.fetch("unchanged")).to be(true)
+    expect(result.fetch("firstStoryDescriptionValues").join(" ")).to include(
+      "Summary 0 cites evidence 0", "Additional statement 0 with details 0"
+    )
   end
 
   it "keeps supporting lists inside their primary record" do
@@ -107,6 +126,21 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     )
   end
 
+  it "keeps prose interaction references local without repeating their paragraphs" do
+    cards = <<~HTML
+      <article class="story"><h2><a href="/articles/first">First article title</a></h2>
+      <p>Background already covers <a href="/articles/second">the second article</a> in this collection.</p>
+      <p>Discussion continues in <a href="/comments/visible">this visible comment</a> with material context.</p></article>
+      <article class="story"><h2><a href="/articles/second">Second article title</a></h2>
+      <p>Independent material summary for the second article.</p></article>
+    HTML
+    result = render_supporting_cards(cards)
+    expect(result.fetch("description")).not_to include("Background already covers", "Discussion continues")
+    expect(result.fetch("markdown")).to include("[this visible comment](https://articles.example/comments/visible)")
+    expect(result.fetch("markdown").scan("Background already covers").length).to eq(1)
+    expect(result.fetch("markdown").scan("Discussion continues").length).to eq(1)
+  end
+
   it "does not let a collection wrapper claim its linked card peers" do
     cards = <<~HTML
       <div class="card-grid">
@@ -121,6 +155,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       {"text" => "Second linked card", "url" => "https://articles.example/articles/second"},
       {"text" => "Third linked card", "url" => "https://articles.example/articles/third"}
     ])
+    expect(result.fetch("collectionDescriptionValues").join(" ")).not_to include("Second summary")
   end
 
   it "keeps short titles when paired media proves their descriptive cards" do

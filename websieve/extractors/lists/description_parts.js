@@ -2,7 +2,16 @@
     var descParts = [];
     var hasItems = items && items.length > 0;
     var includeInlineProse = hasItems && options && options.includeInlineProse;
-    var itemValues = items && items.map(listDescriptionItemValues);
+    var primaryUrls = new Set((items || []).map(function(item) {
+      var url = materializedHttpUrl(item.url || "");
+      return url && listCanonicalKey(url);
+    }).filter(Boolean));
+    var primaryReferences = new Set((items || []).map(function(item) {
+      return materializedHttpUrl(item.url || "");
+    }).filter(Boolean));
+    var itemValues = items && items.map(function(item) {
+      return listDescriptionItemValues(item, primaryUrls, primaryReferences);
+    });
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
@@ -13,7 +22,7 @@
       var inlineProse = el.tagName === "DIV";
       if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (quote && listCardNodeHidden(el)) return;
-      if (listDescriptionCardNode(el, items, options, itemValues)) return;
+      if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences)) return;
       if (quote) {
         var quotation = el.cloneNode(true);
         pruneListCardVisibility(el, quotation);

@@ -174,6 +174,7 @@
       cardText: new WeakMap(),
       figureCollections: new WeakMap(),
       supportingCards: new WeakMap(),
+      supportingLinks: new WeakSet(),
       keywords: keywords,
       sectionFragments: sectionFragments.slice(0, 4)
     };

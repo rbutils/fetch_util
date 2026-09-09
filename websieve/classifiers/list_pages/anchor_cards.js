@@ -58,7 +58,10 @@
       return cached[key];
     }
 
-    var candidateBoundary = candidateCard && candidateCard.parentElement && genericListCardBoundary(candidateCard);
+    if (!link || !candidateCard || !candidateCard.contains(link) || link === candidateCard) return null;
+    var section = link.closest("section");
+    if (section && candidateCard.contains(section) && structuredCardLink(section, false) === link) return null;
+    var candidateBoundary = candidateCard.parentElement && genericListCardBoundary(candidateCard);
     if (candidateBoundary && candidateCard === link) {
       var directHeading = link.querySelector("h1, h2, h3, h4");
       var directTitle = normalizeText(directHeading && directHeading.textContent);

@@ -47,9 +47,9 @@ function listClonedCardFields(card, clone, selector) {
   });
 }
 
-function listTextWithReferences(node, visibilityChecked, primaryUrl) {
+function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLinks) {
   if (!node || !node.cloneNode) return "";
-  var clone = node.cloneNode(true);
+  var clone = visibilityChecked ? node : node.cloneNode(true);
   if (!visibilityChecked) pruneListCardVisibility(node, clone);
   if (clone.matches && clone.matches("a[href]")) {
     var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
@@ -59,21 +59,43 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl) {
   }
   clone.querySelectorAll("a[href]").forEach(function(link) {
     var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
-    link.replaceWith(clone.ownerDocument.createTextNode(markdownLink(label, link.getAttribute("href"))));
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    var linked = (!allowedLinks || allowedLinks.has(link)) &&
+      !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl));
+    link.replaceWith(clone.ownerDocument.createTextNode(linked ? markdownLink(label, url) : label));
   });
   return normalizeText(clone.textContent);
 }
 
-function listSupplementalDetail(item, contextValues, card) {
+function listSupplementalInteractionLink(link) {
+  if (!link || !link.matches) return false;
+  var owner = link.closest("[class*='comment' i], [id*='comment' i], [class*='reply' i], [id*='reply' i]");
+  var url = materializedHttpUrl(link.getAttribute("href")) || "";
+  return !!owner || /\/(?:comments?|comentarios?|replies)(?:\/|$)/i.test(url);
+}
+
+function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
-  var supportingOwner = item.contentCard || card;
   var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
-      return !!genericListSupportingCard(link, supportingOwner);
+      return !!genericListSupportingCard(link, item.contentCard || card);
     });
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
+  var supportingLinks = new WeakSet();
+  var descriptionOwner = listDescriptionOwnerCard(item);
+  var ownerProse = descriptionOwner ? cardOwnedNodes(descriptionOwner, "p, blockquote") : [];
+  Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) {
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    var prose = link.closest("p, blockquote");
+    var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&
+      normalizeText(prose.textContent || "").length >= 30;
+    if (!url || (!ownedProseReference && (listSupplementalInteractionLink(link) ||
+        (primaryUrls && primaryUrls.has(listCanonicalKey(url)))))) return;
+    var clonedLink = listClonedCardNode(card, clone, link);
+    if (clonedLink) supportingLinks.add(clonedLink);
+  });
   var metadataSelector = "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], time, [datetime], [class*='score' i], [class*='point' i], [class*='reply' i], [class*='comment' i], [class*='community' i], [class*='metric' i], [class*='stat' i]";
   var nestedMetadataCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     if (!genericListPresentationCardNode(nested)) return false;
@@ -89,6 +111,10 @@ function listSupplementalDetail(item, contextValues, card) {
       return !nested.contains(field) && !listCardNodeHidden(field);
     });
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
+  var siblingPresentationCards = item.contentCard ? Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
+    return nested !== item.contentCard && !nested.contains(item.contentCard) &&
+      !item.contentCard.contains(nested) && genericListPresentationCardNode(nested);
+  }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean) : [];
   var selectedFields = [
     "[class*='category'], [class*='eyebrow'], [class*='kicker']",
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
@@ -108,18 +134,19 @@ function listSupplementalDetail(item, contextValues, card) {
     if (field && field.remove) field.remove();
   });
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
-    if (nested === contentCard || (!genericListFieldBoundary(nested) && nestedMetadataCards.indexOf(nested) === -1)) return;
+    if (nested === contentCard || (!genericListFieldBoundary(nested) &&
+        nestedMetadataCards.indexOf(nested) === -1 && siblingPresentationCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
   });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
   });
   pruneGenericListControls(clone);
-  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url));
+  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url, supportingLinks));
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
-function cardField(card, selector, primaryUrl) {
+function cardField(card, selector, primaryUrl, allowReference) {
   if (!card || !card.querySelector) return "";
   var node = cardOwnedNodes(card, selector)[0];
   if (!node) return "";
@@ -128,13 +155,14 @@ function cardField(card, selector, primaryUrl) {
     return normalizeText(node.textContent || node.getAttribute("aria-label") || "");
   }
   var value = node.hasAttribute("datetime") || node.hasAttribute("content") ?
-    normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || "") : listTextWithReferences(node);
+    normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || "") :
+    (allowReference === false ? normalizeText(node.textContent) : listTextWithReferences(node));
   if (!value) return "";
   if (/^(comment|comments|reply|replies|score|points|likes?)$/i.test(value)) return "";
   return value;
 }
 
-function listItemContextValues(item) {
+function listItemContextValues(item, primaryUrls) {
    if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
@@ -152,12 +180,12 @@ function listItemContextValues(item) {
     cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]", item.url) || item.author,
     cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
     cardField(card, "[class*='score' i], [data-score], [data-karma]", item.url) || item.score,
-    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url) || item.replyCount,
+    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false) || item.replyCount,
     cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]", item.url) || item.community,
     item.image,
     item.caption
   ];
-  var supplementalDetail = listSupplementalDetail(item, contextValues, card);
+  var supplementalDetail = listSupplementalDetail(item, contextValues, card, primaryUrls);
   if (supplementalDetail) contextValues.push(supplementalDetail);
   return contextValues.filter(Boolean).filter(function(value, index, values) {
     return values.indexOf(value) === index;
@@ -165,9 +193,13 @@ function listItemContextValues(item) {
 }
 
 var listMarkdown = function(items) {
+  var primaryUrls = new Set(items.map(function(item) {
+    var url = materializedHttpUrl(item.url || "");
+    return url && listCanonicalKey(url);
+  }).filter(Boolean));
   return items.map(function(item) {
     var line = "- " + markdownLink(item.text, item.url);
-    var context = listItemContextValues(item).join(" - ");
+    var context = listItemContextValues(item, primaryUrls).join(" - ");
     if (context) line += " - " + context;
     return line;
   }).join("\n");

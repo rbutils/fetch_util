@@ -189,7 +189,10 @@
     if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
     var card = listCardRoot(link, container, group, context.figureCollections);
-    if (genericListSupportingCard(link, card, context.supportingCards)) return null;
+    if (genericListSupportingCard(link, card, context.supportingCards)) {
+      context.supportingLinks.add(link);
+      return null;
+    }
     var detailSource = link.querySelector("h1, h2, h3, h4, p") ? link : card;
     var detailText;
     if (context.cardText && detailSource && context.cardText.has(detailSource)) {

@@ -1,8 +1,9 @@
-  function extractFallbackHeadlineItems(node) {
+  function extractFallbackHeadlineItems(node, existingContext) {
     if (!node || !node.querySelectorAll) return [];
     var seen = {};
     var ranked = [];
     var context = listPageContext();
+    if (existingContext) context.supportingLinks = existingContext.supportingLinks || existingContext;
     var sectionContext = Object.assign({}, context);
     context.tableIndexPage = !!linkedTableIndexRoot();
     var selectors = [
@@ -13,6 +14,7 @@
     ].join(", ");
 
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
+      if (context.supportingLinks.has(link)) return;
       var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
       var candidate = listLinkCandidate(link, container, context, true);
