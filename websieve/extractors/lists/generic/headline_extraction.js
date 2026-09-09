@@ -12,18 +12,6 @@
       "[class*='teaser' i] a[href]", "[class*='result' i] a[href]"
     ].join(", ");
 
-    function shortCardProof(link, container, candidate) {
-      if (genericListDirectAnchorCard(link, container) || genericListPairedMediaCard(link) === candidate.card) return true;
-      if (candidate.category || candidate.time || candidate.image || candidate.caption) return true;
-
-      var owner = genericListStructuredCardLink(candidate.card);
-      if (!owner || listCanonicalKey(owner.href) !== listCanonicalKey(candidate.url)) return false;
-      return Array.prototype.some.call(candidate.card.querySelectorAll("a[href]"), function(peer) {
-        var peerUrl = peer !== link && !listCardNodeHidden(peer) && materializedHttpUrl(peer.getAttribute("href"));
-        return peerUrl && listCanonicalKey(peerUrl) !== listCanonicalKey(candidate.url);
-      });
-    }
-
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
       var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
@@ -47,7 +35,6 @@
       if (genericListStructuredCardLink(candidate.card) === link || (primary && primary.sourceNode === link) || ownSection) {
         addCardContext(candidate, candidate.card);
       }
-      if (candidate.text.length < 18 && !shortCardProof(link, container, candidate)) return;
       pushUniqueListCandidate(ranked, seen, candidate);
     });
     return ranked;
