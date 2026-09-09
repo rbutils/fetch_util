@@ -7,7 +7,10 @@ RSpec.describe "FetchUtil extractor integration - paired media ownership" do
     root = File.expand_path("../../..", __dir__)
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
       File.read(File.join(root, "websieve", entry))
-    end.join("\n").sub("})(window);", "global.pairedProbe = genericListPairedMediaCard; global.pairedItems = extractListItems; global.pairedRender = listMarkdown; })(window);")
+    end.join("\n")
+    probe = "global.pairedProbe = genericListPairedMediaCard; global.pairedItems = extractListItems; " \
+            "global.pairedRender = listMarkdown; })(window);"
+    source = source.sub("})(window);", probe)
     page.add_script_tag(content: source)
   end
 
@@ -37,9 +40,10 @@ RSpec.describe "FetchUtil extractor integration - paired media ownership" do
   end
 
   it "rejects mismatched, hidden, unsafe, navigation and whole-page pairs" do
-    pair = "<div><a href='/item'><img src='https://images.example/a.jpg' alt=''></a></div><div><a class='name' href='/item'>Independent named item</a><p>Local description.</p></div>"
+    pair = "<div><a href='/item'><img src='https://images.example/a.jpg' alt=''></a></div>" \
+           "<div><a class='name' href='/item'>Independent named item</a><p>Local description.</p></div>"
     html = "<main><div>#{pair.sub("href='/item'", "href='/other'")}</div>" \
-           "<div>#{pair.sub('<img ', '<img hidden ')}</div>" \
+           "<div>#{pair.sub("<img ", "<img hidden ")}</div>" \
            "<div>#{pair.gsub("href='/item'", "href='https://fixture:secret@vehicles.example/item'")}</div>" \
            "<nav>#{pair}</nav><div>#{pair}<p>Unrelated page-wide prose.</p></div><article>#{pair}</article></main>"
     with_url_page("https://vehicles.example/", html) do |page|

@@ -89,7 +89,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     end.join
     result = render_supporting_cards(cards)
     expect(result.fetch("items")).to eq(125.times.map do |index|
-      {"text" => "Article #{index}", "url" => "https://articles.example/articles/#{index}"}
+      { "text" => "Article #{index}", "url" => "https://articles.example/articles/#{index}" }
     end)
     expect(result.fetch("detachedSupporting")).to be(true)
     expect(result.fetch("supportingQueryCounts").first).to be > 0
@@ -150,11 +150,12 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       </div>
     HTML
     result = render_supporting_cards(cards)
-    expect(result.fetch("items")).to eq([
-      {"text" => "First linked card", "url" => "https://articles.example/articles/first"},
-      {"text" => "Second linked card", "url" => "https://articles.example/articles/second"},
-      {"text" => "Third linked card", "url" => "https://articles.example/articles/third"}
-    ])
+    expected = [
+      { "text" => "First linked card", "url" => "https://articles.example/articles/first" },
+      { "text" => "Second linked card", "url" => "https://articles.example/articles/second" },
+      { "text" => "Third linked card", "url" => "https://articles.example/articles/third" }
+    ]
+    expect(result.fetch("items")).to eq(expected)
     expect(result.fetch("collectionDescriptionValues").join(" ")).not_to include("Second summary")
   end
 
@@ -176,7 +177,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     HTML
     result = render_supporting_cards(cards)
     expect(result.fetch("items")).to eq(%w[Educator Guidance Resources].map.with_index do |title, index|
-      {"text" => title, "url" => "https://articles.example/resources/#{index}"}
+      { "text" => title, "url" => "https://articles.example/resources/#{index}" }
     end)
   end
 

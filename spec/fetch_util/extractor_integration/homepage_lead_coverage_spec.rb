@@ -9,9 +9,9 @@ RSpec.describe FetchUtil::Extractor do
                  .reject { |path| path.empty? || path.start_with?("#") }
                  .map { |path| File.read("#{root}/websieve/#{path}") }.join("\n")
     source.sub("})(window);", <<~JS)
-      global.__leadCoverage = supplementedHomepageLead;
-      global.__leadAncestorDescription = homepageLeadAncestorDescription;
-    })(window);
+        global.__leadCoverage = supplementedHomepageLead;
+        global.__leadAncestorDescription = homepageLeadAncestorDescription;
+      })(window);
     JS
   end
 
@@ -95,9 +95,8 @@ RSpec.describe FetchUtil::Extractor do
           ];
         })()
       JS
-      expect(result).to eq([
-        "[Research organization](https://services.example/about) supports discovery.", "", ""
-      ])
+      expected = ["[Research organization](https://services.example/about) supports discovery.", "", ""]
+      expect(result).to eq(expected)
     end
   end
 end

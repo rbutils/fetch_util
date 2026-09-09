@@ -20,7 +20,10 @@ RSpec.describe "FetchUtil extractor integration - card presentation fields" do
       root = File.expand_path("../../..", __dir__)
       source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
         File.read(File.join(root, "websieve", entry))
-      end.join("\n").sub("})(window);", "global.fieldProbe = {clone: visibleListClone, items: extractListItems, render: listMarkdown, boundary: genericListCardBoundary}; })(window);")
+      end.join("\n")
+      probe = "global.fieldProbe = {clone: visibleListClone, items: extractListItems, render: listMarkdown, " \
+              "boundary: genericListCardBoundary}; })(window);"
+      source = source.sub("})(window);", probe)
       page.add_script_tag(content: source)
       result = page.evaluate(<<~JS)
         (() => {
