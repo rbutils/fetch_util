@@ -87,3 +87,26 @@
 
     return Object.assign({}, content, { html: fallback.html, textContent: fallback.textContent });
   }
+
+  function articleCitationResourceMarkdown(content, markdown) {
+    if (!content || content.contentType !== "article" ||
+        !document.querySelector("meta[name='citation_doi'], meta[name='citation_journal_title'], meta[name='dc.identifier' i][content*='doi' i]")) return markdown;
+
+    var seen = new Set();
+    var resources = [];
+    document.querySelectorAll("a[href]").forEach(function(link) {
+      if (elementSubtreeHidden(link) || link.closest("nav, header, footer, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='contentinfo']")) return;
+      if (!link.closest("[class*='citation' i], [class*='cite' i], [class*='download' i], [id*='citation' i], [id*='cite' i], [id*='download' i]")) return;
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+      if (!url || !label || !/\.(?:bib|ris|enw|nbib)$/i.test(new URL(url).pathname) || seen.has(url)) return;
+      seen.add(url);
+      resources.push({ label: label, url: url });
+    });
+    if (resources.length < 2) return markdown;
+
+    var missing = resources.filter(function(resource) { return markdown.indexOf(resource.url) === -1; });
+    if (!missing.length) return markdown;
+    var resourceMarkdown = missing.map(function(resource) { return "- " + markdownLink(resource.label, resource.url); }).join("\n");
+    return [markdown, "## Citation downloads\n\n" + resourceMarkdown].filter(Boolean).join("\n\n");
+  }

@@ -95,6 +95,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     var firstMarkdownLine = (markdown.split("\n").map(function(line) { return normalizeText(line).replace(/^#+\s*/, ""); }).filter(Boolean)[0] || "");
     if (firstMarkdownLine.length >= 100 && !/^[-*]\s+\[/.test(firstMarkdownLine)) content.contentType = "article";
   }
+  if (content.contentType === "article") markdown = articleCitationResourceMarkdown(content, markdown);
   var warnings = suspicionReasons(metadata, content, markdown, pageText, signals);
   (Array.isArray(content.warningReasons) ? content.warningReasons : []).forEach(function(reason) {
     reason = normalizeText(reason);
