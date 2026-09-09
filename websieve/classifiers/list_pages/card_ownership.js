@@ -279,6 +279,8 @@
 
   function listCardRoot(link, fallback, knownGroup, figureCollections) {
     if (fallback && fallback.matches && fallback.matches("tr")) return fallback;
+    var pairedMedia = genericListPairedMediaCard(link);
+    if (pairedMedia) return pairedMedia;
     if (!genericListActionAnchor(link) && genericListDirectAnchorCard(link, fallback)) return link;
     var figure = link && link.closest && link.closest("figure");
     if (genericListFigureAnchorCard(link, figure, figureCollections)) return figure;
