@@ -231,6 +231,14 @@
     return best;
   }
 
+  function homepageLeadAncestorDescription(lead, content, metadata) {
+    var extraction = content && content.listExtraction;
+    var description = extraction && extraction.ancestorDescription;
+    if (!lead || !description || extraction.ancestorDescriptionSourceNode !== lead.root) return "";
+    if (normalizeText(description) === normalizeText((metadata && metadata.excerpt) || "")) return "";
+    return description;
+  }
+
   function genericPortalHomepageContent(metadata) {
     if (homepageRootPath()) {
       var sectioned = listContent(metadata, { portalRoot: true });
@@ -244,6 +252,8 @@
     var markdownParts = [];
     if (leadRoot.hero) markdownParts.push("# " + leadRoot.hero);
     if (metadata && metadata.excerpt) markdownParts.push(metadata.excerpt);
+    var ancestorDescription = homepageLeadAncestorDescription(leadRoot, sectioned, metadata);
+    if (ancestorDescription) markdownParts.push(ancestorDescription);
     var itemTitles = new Set(leadRoot.items.map(function(item) { return normalizeText(item.text).toLowerCase(); }));
     var sectionHeadings = leadRoot.headings.filter(function(text) {
       return !itemTitles.has(normalizeText(text).toLowerCase());

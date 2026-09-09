@@ -235,10 +235,22 @@
     pushCandidate(document.body);
 
     var tableIndexRoot = linkedTableIndexRoot();
-    return tableIndexRoot ? buildListExtraction(tableIndexRoot, pageTitles, options) : candidates.reduce(function(current, node) {
+    if (tableIndexRoot) return buildListExtraction(tableIndexRoot, pageTitles, options);
+
+    var extractions = [];
+    var best = candidates.reduce(function(current, node) {
       var result = buildListExtraction(node, pageTitles, options);
+      extractions.push(result);
       return nestedListMaterialCoverage(current, result) || (listExtractionIsBetter(current, result) ? result : current);
     }, null) || buildListExtraction(document.body, pageTitles, options);
+    var ancestorDescription = extractions.find(function(extraction) {
+      return extraction !== best && extraction.descText && extraction.sourceNode.contains(best.sourceNode);
+    });
+    if (ancestorDescription) {
+      best.ancestorDescription = ancestorDescription.descText;
+      best.ancestorDescriptionSourceNode = ancestorDescription.sourceNode;
+    }
+    return best;
   }
 
   function listContent(metadata, options) {

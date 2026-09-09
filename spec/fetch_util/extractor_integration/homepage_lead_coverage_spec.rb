@@ -8,7 +8,11 @@ RSpec.describe FetchUtil::Extractor do
     source = File.readlines("#{root}/websieve/manifest.txt").map(&:strip)
                  .reject { |path| path.empty? || path.start_with?("#") }
                  .map { |path| File.read("#{root}/websieve/#{path}") }.join("\n")
-    source.sub("})(window);", "global.__leadCoverage = supplementedHomepageLead; })(window);")
+    source.sub("})(window);", <<~JS)
+      global.__leadCoverage = supplementedHomepageLead;
+      global.__leadAncestorDescription = homepageLeadAncestorDescription;
+    })(window);
+    JS
   end
 
   it "retains every lead detail and adds short independently owned actions and prose in DOM order" do
@@ -71,6 +75,29 @@ RSpec.describe FetchUtil::Extractor do
         })()
       JS
       expect(result).to eq(Array.new(5, true))
+    end
+  end
+
+  it "retains a distinct visible description from the exact lead ancestor" do
+    with_url_page("https://services.example/", "<html><body><main></main><section></section></body></html>") do |page|
+      page.add_script_tag(content: lead_coverage_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const leadRoot = document.body;
+          const otherRoot = document.querySelector('section');
+          const description = '[Research organization](https://services.example/about) supports discovery.';
+          const content = { listExtraction: { ancestorDescription: description,
+            ancestorDescriptionSourceNode: leadRoot } };
+          return [
+            __leadAncestorDescription({ root: leadRoot }, content, { excerpt: 'A metadata summary.' }),
+            __leadAncestorDescription({ root: otherRoot }, content, { excerpt: 'A metadata summary.' }),
+            __leadAncestorDescription({ root: leadRoot }, content, { excerpt: description })
+          ];
+        })()
+      JS
+      expect(result).to eq([
+        "[Research organization](https://services.example/about) supports discovery.", "", ""
+      ])
     end
   end
 end
