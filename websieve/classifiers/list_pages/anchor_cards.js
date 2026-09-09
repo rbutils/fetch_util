@@ -59,6 +59,11 @@
     }
 
     var candidateBoundary = candidateCard && candidateCard.parentElement && genericListCardBoundary(candidateCard);
+    if (candidateBoundary && candidateCard === link) {
+      var directHeading = link.querySelector("h1, h2, h3, h4");
+      var directTitle = normalizeText(directHeading && directHeading.textContent);
+      if (directTitle.length >= minimumListTitleLength(directTitle) && directTitle.length <= 220) return null;
+    }
     var candidatePrimary = candidateCard && candidateCard.contains(link) && !candidateBoundary && structuredCardLink(candidateCard, false);
     if (candidatePrimary && candidatePrimary !== link) return candidateCard;
 
@@ -67,6 +72,7 @@
       if (genericListCardBoundary(current)) {
         var primary = structuredCardLink(current);
         if (primary && primary !== link) return current;
+        if (primary === link) return null;
       }
       current = current.parentElement;
     }
@@ -80,9 +86,12 @@
         normalizeText(name.textContent) && normalizeText(description.textContent)) return true;
     var recordEvidence = "article, time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
     if (includeImages !== false) recordEvidence += ", picture, video, img[alt]:not([alt=''])";
-    if (Array.prototype.some.call(link.querySelectorAll(recordEvidence), function(node) {
+    function visibleEvidence(node) {
       return !listCardNodeHidden(node) && (!node.matches("article") || !!normalizeText(node.textContent));
-    })) return true;
+    }
+    var firstEvidence = link.querySelector(recordEvidence);
+    if (firstEvidence && visibleEvidence(firstEvidence)) return true;
+    if (Array.prototype.some.call(link.querySelectorAll(recordEvidence), visibleEvidence)) return true;
     var text = normalizeText(link.textContent);
     if (includeImages !== false && text.length >= minimumListTitleLength(text) && !genericListControlText(text) &&
         Array.prototype.some.call(link.querySelectorAll("img[src]"), function(image) {

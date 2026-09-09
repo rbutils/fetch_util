@@ -107,6 +107,22 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     )
   end
 
+  it "does not let a collection wrapper claim its linked card peers" do
+    cards = <<~HTML
+      <div class="card-grid">
+        <a class="card-grid-card" href="/articles/first"><h3>First linked card</h3><p>First summary.</p></a>
+        <a class="card-grid-card" href="/articles/second"><h3>Second linked card</h3><p>Second summary.</p></a>
+        <a class="card-grid-card" href="/articles/third"><h3>Third linked card</h3><p>Third summary.</p></a>
+      </div>
+    HTML
+    result = render_supporting_cards(cards)
+    expect(result.fetch("items")).to eq([
+      {"text" => "First linked card", "url" => "https://articles.example/articles/first"},
+      {"text" => "Second linked card", "url" => "https://articles.example/articles/second"},
+      {"text" => "Third linked card", "url" => "https://articles.example/articles/third"}
+    ])
+  end
+
   it "keeps unsafe and hidden supporting destinations out of rendered output" do
     cards = 6.times.map do |index|
       <<~HTML
