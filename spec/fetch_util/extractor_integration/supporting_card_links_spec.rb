@@ -123,6 +123,28 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     ])
   end
 
+  it "keeps short titles when paired media proves their descriptive cards" do
+    cards = %w[Educator Guidance Resources].map.with_index do |title, index|
+      <<~HTML
+        <div class="promo-card">
+          <a href="/resources/#{index}"><img src="/images/#{index}.jpg" alt=""></a>
+          <div class="promo-card-content">
+            <h3><a href="/resources/#{index}">#{title}</a></h3>
+            <p>Material guidance owned by #{title.downcase}.</p>
+          </div>
+        </div>
+      HTML
+    end.join
+    cards += <<~HTML
+      <article><h3><a href="/related">Related</a></h3>
+      <p>This unpaired short record must not lower the generic threshold.</p></article>
+    HTML
+    result = render_supporting_cards(cards)
+    expect(result.fetch("items")).to eq(%w[Educator Guidance Resources].map.with_index do |title, index|
+      {"text" => title, "url" => "https://articles.example/resources/#{index}"}
+    end)
+  end
+
   it "keeps unsafe and hidden supporting destinations out of rendered output" do
     cards = 6.times.map do |index|
       <<~HTML

@@ -51,7 +51,8 @@
       if (acceptedLinks.has(link)) return;
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
-      var directAnchorCard = genericListDirectAnchorCard(link, container);
+      var directAnchorCard = genericListDirectAnchorCard(link, container) ||
+        !!(candidate && genericListPairedMediaCard(link) === candidate.card);
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
