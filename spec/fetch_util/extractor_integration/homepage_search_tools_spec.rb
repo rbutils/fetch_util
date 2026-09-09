@@ -63,6 +63,40 @@ RSpec.describe FetchUtil::Extractor do
     end
   end
 
+  it "completes a validated tool group when consecutive peers are already represented" do
+    html = <<~HTML
+      <html><body><table><tr><td><input type="search"></td></tr><tr><td>
+      <a href="/search/one">First research tool</a>
+      <a href="/search/two">Second research tool</a>
+      <a href="/search/three">Third research tool</a>
+      </td><td><a href="/help/search">Search help</a></td></tr></table>
+      <main><a href="/news/one">Independent research bulletin</a></main></body></html>
+    HTML
+    with_url_page("https://research.example/", html) do |page|
+      page.add_script_tag(content: search_tools_source)
+      actual = page.evaluate(<<~JS)
+        __searchTools({ contentType: 'list', listSourceItems: [
+          { url: 'https://research.example/search/one' },
+          { url: 'https://research.example/search/two' },
+          { url: 'https://research.example/search/three' },
+          { url: 'https://research.example/news/one' }
+        ] }, [
+          '- [First research tool](https://research.example/search/one)',
+          '- [Second research tool](https://research.example/search/two)',
+          '- [Third research tool](https://research.example/search/three)',
+          '- [Independent research bulletin](https://research.example/news/one)'
+        ].join('\\n'))
+      JS
+      expect(actual).to eq(<<~MARKDOWN.chomp)
+        - [First research tool](https://research.example/search/one)
+        - [Second research tool](https://research.example/search/two)
+        - [Third research tool](https://research.example/search/three)
+        - [Search help](https://research.example/help/search)
+        - [Independent research bulletin](https://research.example/news/one)
+      MARKDOWN
+    end
+  end
+
   it "leaves non-homepage and non-list content unchanged" do
     html = <<~HTML
       <html><body><table><tr><td><input type="search">

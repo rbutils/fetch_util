@@ -1,3 +1,18 @@
+  function mergeHomepageSearchTools(markdown, tools, retained) {
+    var present = tools.filter(function(tool) { return retained.has(tool.url); });
+    if (present.length < 2 || present.length === tools.length) return "";
+    var lines = markdown.split("\n");
+    var presentLines = present.map(function(tool) { return "- " + markdownLink(tool.text, tool.url); });
+    var indices = presentLines.map(function(line) {
+      return lines.filter(function(candidate) { return candidate === line; }).length === 1 ? lines.indexOf(line) : -1;
+    });
+    if (indices.some(function(index) { return index < 0; }) ||
+        indices.some(function(index, offset) { return offset && index !== indices[0] + offset; })) return "";
+    var completeLines = tools.map(function(tool) { return "- " + markdownLink(tool.text, tool.url); });
+    lines.splice.apply(lines, [indices[0], present.length].concat(completeLines));
+    return lines.join("\n");
+  }
+
   function homepageSearchToolsMarkdown(content, markdown) {
     if (!content || content.contentType !== "list" || content.hostAware || content.docsLike ||
         content.legalProvision || !homepageRootPath()) return "";
@@ -16,9 +31,10 @@
       return normalizeText(node.textContent) && !node.closest(chrome) && !elementSubtreeHidden(node) && !elementVisuallyHidden(node);
     });
     var groups = [];
+    var merged = false;
     tables.forEach(function(table) {
-      if (table.closest(chrome) || elementSubtreeHidden(table) || table.contains(firstRecord) ||
-          !(table.compareDocumentPosition(firstRecord) & Node.DOCUMENT_POSITION_FOLLOWING)) return;
+      if (table.closest(chrome) || elementSubtreeHidden(table) ||
+          (!table.contains(firstRecord) && !(table.compareDocumentPosition(firstRecord) & Node.DOCUMENT_POSITION_FOLLOWING))) return;
       if (prose.some(function(node) {
         return !node.contains(table) && !!(table.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_PRECEDING);
       })) return;
@@ -33,9 +49,18 @@
         var url = materializedHttpUrl(href);
         return text && href[0] !== "#" && url && !looksLikeFooterLink(text, url) ? { text: text, url: url } : null;
       });
-      if (tools.some(function(tool) { return !tool || retained.has(tool.url); }) ||
+      if (tools.some(function(tool) { return !tool; }) ||
           new Set(tools.map(function(tool) { return tool.url; })).size < 2) return;
-      groups.push(listMarkdown(tools));
+      var present = tools.filter(function(tool) { return retained.has(tool.url); });
+      if (!present.length) {
+        groups.push(listMarkdown(tools));
+        return;
+      }
+      var complete = mergeHomepageSearchTools(markdown, tools, retained);
+      if (!complete) return;
+      markdown = complete;
+      merged = true;
+      tools.forEach(function(tool) { retained.add(tool.url); });
     });
-    return groups.length ? groups.join("\n\n") + "\n\n" + markdown : "";
+    return groups.length ? groups.join("\n\n") + "\n\n" + markdown : merged ? markdown : "";
   }
