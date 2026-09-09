@@ -101,10 +101,14 @@ function listSupplementalDetail(item, contextValues, card) {
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
-function cardField(card, selector) {
+function cardField(card, selector, primaryUrl) {
   if (!card || !card.querySelector) return "";
   var node = cardOwnedNodes(card, selector)[0];
   if (!node) return "";
+  var nodeUrl = node.matches && node.matches("a[href]") && materializedHttpUrl(node.getAttribute("href"));
+  if (nodeUrl && primaryUrl && listCanonicalKey(nodeUrl) === listCanonicalKey(primaryUrl)) {
+    return normalizeText(node.textContent || node.getAttribute("aria-label") || "");
+  }
   var value = node.hasAttribute("datetime") || node.hasAttribute("content") ?
     normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || "") : listTextWithReferences(node);
   if (!value) return "";
@@ -127,11 +131,11 @@ function listItemContextValues(item) {
   var contextValues = [
     item.category,
     item.summary,
-    cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]") || item.author,
-    cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]") || item.time,
-    cardField(card, "[class*='score' i], [data-score], [data-karma]") || item.score,
-    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]") || item.replyCount,
-    cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]") || item.community,
+    cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]", item.url) || item.author,
+    cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
+    cardField(card, "[class*='score' i], [data-score], [data-karma]", item.url) || item.score,
+    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url) || item.replyCount,
+    cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]", item.url) || item.community,
     item.image,
     item.caption
   ];
