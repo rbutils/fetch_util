@@ -137,8 +137,11 @@
     var score = text.length;
     var matchInfo = listContextMatchInfo(text, url, detail, context);
     var path = matchInfo.path;
+    var containerNoise = listNoiseNode(container);
 
     if (url.replace(/[?#].*$/, "") === context.currentUrl) return -Infinity;
+    if (containerNoise && listNoiseNode(container && container.parentElement) &&
+        !matchInfo.keywordMatches && !matchInfo.sectionMatches) return -Infinity;
     if (container && container.matches("article, section, li")) score += 120;
 
     var heading = container && container.querySelector("h1, h2, h3, h4");
@@ -147,7 +150,7 @@
     score += matchInfo.keywordMatches * 70;
     score += matchInfo.sectionMatches * 220;
 
-    if (listNoiseNode(container) || listNoiseNode(container && container.parentElement)) score -= 260;
+    if (containerNoise || listNoiseNode(container && container.parentElement)) score -= 260;
     if (listNoiseText(text) || listNoiseText(detail)) score -= 220;
 
     return score;
