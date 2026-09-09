@@ -78,7 +78,7 @@
   }
 
   function cardOwnedNodes(card, selector) {
-    var nodes = Array.prototype.slice.call(card.querySelectorAll(selector));
+    var nodes = Array.prototype.filter.call(card.querySelectorAll(selector), function(node) { return !listCardNodeHidden(node); });
     if (card.matches && card.matches("tr")) return nodes;
     if (!genericListFieldBoundary(card)) return nodes;
     return nodes.filter(function(node) {

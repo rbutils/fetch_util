@@ -229,8 +229,9 @@
   }
 
   function genericListCardText(node) {
-    if (!node || !node.cloneNode) return "";
+    if (!node || !node.cloneNode || listCardNodeHidden(node)) return "";
     var clone = node.cloneNode(true);
+    pruneListCardVisibility(node, clone);
     pruneGenericListControls(clone);
     clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
       if (genericListFieldBoundary(nested)) nested.remove();

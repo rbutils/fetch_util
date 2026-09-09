@@ -75,6 +75,7 @@ extractors/lists/generic/headline_extraction.js
 extractors/lists/generic/nested_coverage.js
 extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/section_discovery.js
+extractors/lists/card_visibility.js
 extractors/lists/core.js
 extractors/lists/search_tools.js
 extractors/lists/lead_coverage.js

@@ -51,7 +51,7 @@ function listSupplementalDetail(item, contextValues, card) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
-  [
+  var selectedFields = [
     "[class*='category'], [class*='eyebrow'], [class*='kicker']",
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
     "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]",
@@ -64,7 +64,9 @@ function listSupplementalDetail(item, contextValues, card) {
     return fields.concat(listClonedCardFields(card, clone, selector));
   }, (item.titleHeadings || []).map(function(heading) {
     return listClonedCardNode(card, clone, heading);
-  })).forEach(function(field) {
+  }));
+  pruneListCardVisibility(card, clone);
+  selectedFields.forEach(function(field) {
     if (field && field.remove) field.remove();
   });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
