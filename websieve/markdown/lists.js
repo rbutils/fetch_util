@@ -76,7 +76,8 @@ function listSupplementalDetail(item, contextValues, card) {
     if (nested !== contentCard && genericListFieldBoundary(nested)) nested.remove();
   });
   pruneGenericListControls(clone);
-  return stripGenericListControlPhrases(clone.textContent || "");
+  var supplemental = stripGenericListControlPhrases(clone.textContent || "");
+  return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
 function cardField(card, selector) {

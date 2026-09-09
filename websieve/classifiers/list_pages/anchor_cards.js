@@ -7,9 +7,12 @@
   function genericListAnchorRecordEvidence(link) {
     var name = link.querySelector("[class$='-name' i]");
     var description = link.querySelector("[class$='-desc' i]");
-    if (name && description && normalizeText(name.textContent) && normalizeText(description.textContent)) return true;
-    var recordEvidence = "picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
-    if (link.querySelector(recordEvidence)) return true;
+    if (name && description && !listCardNodeHidden(name) && !listCardNodeHidden(description) &&
+        normalizeText(name.textContent) && normalizeText(description.textContent)) return true;
+    var recordEvidence = "article, picture, video, img[alt]:not([alt='']), time, [datetime], [class*='title' i], [class*='summary' i], [class*='description' i], [class*='excerpt' i], [class*='date' i], [class*='duration' i], [class*='count' i], [class*='view' i]";
+    if (Array.prototype.some.call(link.querySelectorAll(recordEvidence), function(node) {
+      return !listCardNodeHidden(node) && (!node.matches("article") || !!normalizeText(node.textContent));
+    })) return true;
     var text = normalizeText(link.textContent);
     if (text.length >= minimumListTitleLength(text) && !genericListControlText(text) &&
         Array.prototype.some.call(link.querySelectorAll("img[src]"), function(image) {
@@ -23,7 +26,7 @@
   }
 
   function genericListWrappedAnchorCard(link) {
-    if (!link || !link.matches || !link.matches(genericListAnchorCardSelector()) ||
+    if (!link || !link.matches || !link.matches("a[href]") ||
         !materializedHttpUrl(link.getAttribute("href")) || elementSubtreeHidden(link) ||
         !genericListAnchorRecordEvidence(link)) return false;
     var chromeSelector = "nav, header, footer, aside, [role='navigation'], [role='menu'], [role='menubar'], [role='complementary'], [hidden], [inert], [aria-hidden='true']";
@@ -39,7 +42,7 @@
         if (!anchor || anchor === link) return false;
         var url = materializedHttpUrl(anchor.getAttribute("href"));
         return !!(url && url !== destination && !anchor.closest(chromeSelector) && !elementSubtreeHidden(anchor) &&
-          anchor.matches(genericListAnchorCardSelector()) && normalizeText(peer.textContent) === normalizeText(anchor.textContent) &&
+          normalizeText(peer.textContent) === normalizeText(anchor.textContent) &&
           genericListAnchorRecordEvidence(anchor));
       });
       if (hasIndependentPeer) return true;
