@@ -182,7 +182,12 @@
 
   function listDescriptionItemValues(item) {
     if (!item) return [];
-    return [item.text].concat(listItemContextValues(item)).map(normalizeText).filter(Boolean);
+    var values = [item.text].concat(listItemContextValues(item));
+    var primary = item.card && genericListStructuredCardLink(item.card);
+    if (primary && listCanonicalKey(materializedHttpUrl(primary.getAttribute("href")) || "") === listCanonicalKey(item.url || "")) {
+      values.push(item.card.textContent || "");
+    }
+    return values.map(normalizeText).filter(Boolean);
   }
 
   function listDescriptionDuplicateCard(node, items) {

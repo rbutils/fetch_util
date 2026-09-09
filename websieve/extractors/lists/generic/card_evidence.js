@@ -154,7 +154,7 @@
   function completeCardText(card, selectors) {
     var field = cardOwnedNodes(card, selectors)[0];
     if (!field) return "";
-    return normalizeText(field.textContent);
+    return listTextWithReferences(field);
   }
 
   function meaningfulMediaText(card) {

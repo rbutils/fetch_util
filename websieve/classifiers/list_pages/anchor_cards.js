@@ -47,6 +47,21 @@
     return null;
   }
 
+  function genericListSupportingCard(link, candidateCard) {
+    var candidatePrimary = candidateCard && candidateCard.contains(link) && genericListStructuredCardLink(candidateCard, false);
+    if (candidatePrimary && candidatePrimary !== link) return candidateCard;
+
+    var current = link && link.parentElement;
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (genericListCardBoundary(current)) {
+        var primary = genericListStructuredCardLink(current);
+        if (primary && primary !== link) return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
   function genericListAnchorRecordEvidence(link, includeImages) {
     var name = link.querySelector("[class$='-name' i]");
     var description = link.querySelector("[class$='-desc' i]");

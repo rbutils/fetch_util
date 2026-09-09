@@ -19,8 +19,10 @@
     });
   }
 
-  function genericListStructuredCardLink(card) {
-    if (!card || !card.parentElement || !genericListCardBoundary(card)) return null;
+  function genericListStructuredCardLink(card, requireBoundary) {
+    if (!card ||
+        (requireBoundary !== false && (!card.parentElement || !genericListCardBoundary(card))) ||
+        (requireBoundary === false && (genericListPageContainer(card) || !!card.closest("nav, header, footer, aside, menu, [role='navigation'], [role='menu']")))) return null;
 
     var titleNode = Array.prototype.find.call(card.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4"), function(node) {
       var anchor = node.matches("a[href]") ? node : node.closest("a[href]");

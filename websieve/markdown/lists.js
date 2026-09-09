@@ -47,10 +47,30 @@ function listClonedCardFields(card, clone, selector) {
   });
 }
 
+function listTextWithReferences(node, visibilityChecked) {
+  if (!node || !node.cloneNode) return "";
+  var clone = node.cloneNode(true);
+  if (!visibilityChecked) pruneListCardVisibility(node, clone);
+  if (clone.matches && clone.matches("a[href]")) {
+    return markdownLink(normalizeText(clone.textContent || clone.getAttribute("aria-label") || ""), clone.getAttribute("href"));
+  }
+  clone.querySelectorAll("a[href]").forEach(function(link) {
+    var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+    link.replaceWith(clone.ownerDocument.createTextNode(markdownLink(label, link.getAttribute("href"))));
+  });
+  return normalizeText(clone.textContent);
+}
+
 function listSupplementalDetail(item, contextValues, card) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
+  var supportingOwner = item.contentCard || card;
+  var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
+    return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
+      return !!genericListSupportingCard(link, supportingOwner);
+    });
+  }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
   var selectedFields = [
     "[class*='category'], [class*='eyebrow'], [class*='kicker']",
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
@@ -69,14 +89,15 @@ function listSupplementalDetail(item, contextValues, card) {
   selectedFields.forEach(function(field) {
     if (field && field.remove) field.remove();
   });
+  clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
+    if (nested === contentCard || !genericListFieldBoundary(nested)) return;
+    if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
+  });
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
   });
-  clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
-    if (nested !== contentCard && genericListFieldBoundary(nested)) nested.remove();
-  });
   pruneGenericListControls(clone);
-  var supplemental = stripGenericListControlPhrases(clone.textContent || "");
+  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true));
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
@@ -84,7 +105,8 @@ function cardField(card, selector) {
   if (!card || !card.querySelector) return "";
   var node = cardOwnedNodes(card, selector)[0];
   if (!node) return "";
-  var value = normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || node.textContent || "");
+  var value = node.hasAttribute("datetime") || node.hasAttribute("content") ?
+    normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || "") : listTextWithReferences(node);
   if (!value) return "";
   if (/^(comment|comments|reply|replies|score|points|likes?)$/i.test(value)) return "";
   return value;
