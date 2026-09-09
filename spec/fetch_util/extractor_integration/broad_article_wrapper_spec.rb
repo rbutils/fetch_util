@@ -169,6 +169,29 @@ RSpec.describe "broad article wrapper extraction" do
     expect(result["markdown"]).to include("This briefing is a single report")
   end
 
+  it "preserves an article-shaped route without a semantic article wrapper" do
+    html = <<~HTML
+      <main><div id="article-content">
+        <h1>Detailed research report</h1>
+        <p>This report explains the complete research question and the evidence supporting its conclusions.</p>
+        <p>The methods and results provide substantial context for readers of the complete article.</p>
+      </div></main>
+    HTML
+    with_url_page("https://example.com/articles/98363", html) do |page|
+      root = File.expand_path("../../..", __dir__)
+      source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, "websieve", entry))
+      end.join("\n").sub("})(window);", "global.articleRouteProbe = articleRouteFocalContent; })(window);")
+      page.add_script_tag(content: source)
+      expect(page.evaluate(<<~JS)).to be_truthy
+        (() => {
+          const main = document.querySelector('main'), text = main.textContent;
+          return articleRouteProbe({contentType: 'article', html: main.innerHTML, markdown: text, textContent: text, publishedTime: '2024-10-09'});
+        })()
+      JS
+    end
+  end
+
   def extract_result(url)
     result = nil
     extract_from_url(url, yield) { |payload| result = payload }

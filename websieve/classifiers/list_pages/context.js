@@ -92,7 +92,7 @@
       return total + normalizeText(link.textContent || "").length;
     }, 0);
     var effectiveLinkDensity = paragraphlessBody ? paragraphlessLinkText / rootText.length : linkDensity;
-    var requiresExclusiveMainOwnership = focal === classFocal || focal === mainFocal;
+    var requiresExclusiveMainOwnership = !!focal && (focal === classFocal || focal === mainFocal);
     var ownsMainBody = topLevelMainArticles.length === 1 && topLevelMainArticles[0] === focal;
     var bodyEvidence = requiresExclusiveMainOwnership && !ownsMainBody
       ? paragraphlessBody
