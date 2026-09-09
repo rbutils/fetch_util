@@ -26,10 +26,30 @@
     return finish(null);
   }
 
+  function genericListDescribedLinkGroup(link) {
+    if (!homepageRootPath()) return null;
+    var group = link.parentElement;
+    if (!group || !group.closest("main, [role='main']")) return null;
+    var children = Array.from(group.children).filter(function(node) { return !elementSubtreeHidden(node); });
+    if (children.some(function(node) { return !node.matches("h1, h2, h3, h4, p, a[href]"); })) return null;
+    var headings = children.filter(function(node) { return node.matches("h1, h2, h3, h4"); });
+    var prose = children.filter(function(node) { return node.matches("p") && normalizeText(node.textContent); });
+    var links = children.filter(function(node) { return node.matches("a[href]"); });
+    if (headings.length !== 1 || !normalizeText(headings[0].textContent) || !prose.length || links.indexOf(link) < 0) return null;
+    if (headings[0].querySelector("a") || prose.some(function(node) { return node.querySelector("a, button, input"); })) return null;
+    if (links.some(function(node) {
+      return !materializedHttpUrl(node.getAttribute("href")) || !normalizeText(node.textContent) || genericListAnchorRecordEvidence(node);
+    })) return null;
+    var destinations = new Set(links.map(function(node) { return materializedHttpUrl(node.getAttribute("href")); }));
+    return destinations.size >= 2 ? { card: group, label: normalizeText(headings[0].textContent) } : null;
+  }
+
   function genericListLinkGroup(link, cache) {
     if (!link || !materializedHttpUrl(link.getAttribute("href")) || elementSubtreeHidden(link)) return null;
     if (link.closest("header, footer, nav, aside, menu, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar'], [role='banner'], [role='complementary'], [role='contentinfo']")) return null;
     if (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
+    var described = genericListDescribedLinkGroup(link);
+    if (described) return described;
 
     var collection = genericListContextCard(closestGenericListCard(link));
     if (!collection) return genericListPlainLinkGroup(link, cache);
