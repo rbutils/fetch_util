@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## v0.6.1 - 2026-09-10
+
+### Fixed
+
+- Preserve visible homepage actions, wrapped semantic records, short paired-media cards, search tools, scholarly citation exports, quotations and record-owned fields without reviving inactive panels or navigation.
+- Keep supporting citations, source lists, author profiles and exact fragment references with their nearest record while avoiding sibling ownership, fallback pseudo-records, duplicate primary links and repeated article prose.
+- Preserve unrendered card summaries, broader homepage descriptions and stale-opacity record headings while rejecting nested noise collections and incomplete fallback ownership.
+- Retain safe inline references and selected details in table rows and descriptions, including records discovered outside the primary table-index path.
+
+### Performance
+
+- Reuse visibility, section, headline and supporting-card ownership proofs within each immutable extraction pass, and skip unrelated product and scholarly probes without raising timeouts or capping output.
+
+### Known Limitations
+
+- The latest 300-site comparison against v0.5.2 has no high-severity regressions, but still contains one medium and twenty low regressions plus mixed outcomes. This patch does not establish a generalized strict win.
+
 ## v0.6.0 - 2026-09-08
 
 ### Added
