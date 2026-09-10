@@ -72,14 +72,7 @@
     });
   }
 
-  function railsApiContent(metadata) {
-    var signature = docsHostSignature(metadata).toLowerCase();
-    if (!hostMatches(/(^|\.)api\.rubyonrails\.org$/) && !/rubyonrails|activerecord::|actioncontroller::/.test(signature)) return null;
-    return rdocDocsContent(metadata);
-  }
-
   function registerRailsRdocProfiles() {
     registerHostAwareProfile(true, railsGuidesContent);
     registerHostAwareProfile(true, rdocDocsContent);
-    registerHostAwareProfile(true, railsApiContent);
   }
