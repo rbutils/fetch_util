@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## v0.6.2 - 2026-09-10
+
+### Changed
+
+- Prefer generic and shared extraction over lossy or unreachable host profiles, removing eleven redundant Drupal, Rails API, Fandom, O País, France24, Dinakaran, MediaWiki, Der Standard, Top Channel, GeoTV, and Sözcü registrations while retaining profiles with demonstrated ownership or warning behavior.
+- Register the FAZ article extractor directly while preserving its separate homepage behavior.
+
+### Fixed
+
+- Preserve complete visible liveblogs and owned article context, metadata, media, captions, and categories across NHK, Jang, Kurir, Gazeta, 20minutos, Zeit, Civil.ge, and Ghost pages while continuing to reject attached navigation, share controls, comments, and related feeds.
+- Restore linked scholarly sections and complete bibliographies, substantive article sidebars and rails, and metadata-confirmed article leads with their locally attached hero figures.
+- Improve generic language, title, and byline finalization for stale Open Graph locales, title-like opening prose, timestamps, date-only values, invalid author URLs, and author-section placeholders.
+- Keep WordPress post templates out of the broad static-site profile and prefer owned post descriptions over earlier related-entry cards.
+
+### Known Limitations
+
+- An immutable-DOM comparison of 600 websites against v0.6.1 found 26 improvements, 569 ties, no regressions, four mixed outcomes, and one dual-timeout inconclusive. Mixed and inconclusive outcomes are not wins, so this does not establish a universal strict improvement.
+
 ## v0.6.1 - 2026-09-10
 
 ### Fixed
