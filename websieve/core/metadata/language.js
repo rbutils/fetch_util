@@ -19,6 +19,7 @@ function languageFromText() {
 
   var compact = text.replace(/\s/g, "");
   var scriptPatterns = [
+    ["th", /[\u0E00-\u0E7F]/g],
     ["hi", /[\u0900-\u097F]/g],
     ["ar", /[\u0600-\u06FF]/g],
     ["zh", /[\u4E00-\u9FFF]/g],
@@ -59,8 +60,14 @@ function languageFromText() {
 }
 
 function documentLanguage() {
-  return normalizeLanguageCode(metadataValue("og:locale", "property")) ||
-    normalizeLanguageCode(document.documentElement && document.documentElement.getAttribute("lang")) ||
+  var openGraphLanguage = normalizeLanguageCode(metadataValue("og:locale", "property"));
+  var htmlLanguage = normalizeLanguageCode(document.documentElement && document.documentElement.getAttribute("lang"));
+  var inferredLanguage = languageFromText();
+
+  if (htmlLanguage && htmlLanguage === inferredLanguage) return htmlLanguage;
+
+  return openGraphLanguage ||
+    htmlLanguage ||
     normalizeLanguageCode(metadataValue("Content-Language", "http-equiv")) ||
-    languageFromText();
+    inferredLanguage;
 }

@@ -626,6 +626,27 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers page language when visible text confirms it over contradictory Open Graph locale" do
+    thai_text = "ห้องสมุดชุมชนเปิดให้บริการทุกวันสำหรับนักเรียนและครอบครัวในพื้นที่"
+    html = <<~HTML
+      <html lang="th">
+        <head>
+          <title>ห้องสมุดชุมชน</title>
+          <meta property="og:locale" content="en_US">
+        </head>
+        <body>
+          <main><article><h1>ห้องสมุดชุมชน</h1><p>#{thai_text * 3}</p></article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/library", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("th")
+    end
+  end
+
   it "falls back to text language detection when metadata is absent" do
     html = <<~HTML
       <html>
