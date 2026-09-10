@@ -237,7 +237,6 @@ profiles/news/global/xinhua.js
 profiles/news/asia/central/avesta.js
 profiles/news/europe/southern/opais.js
 profiles/news/middle_east/walla.js
-profiles/news/global/france24.js
 profiles/news/asia/east/chosun.js
 profiles/news/europe/southern/spain/20minutos.js
 profiles/news/asia/east/nhk.js

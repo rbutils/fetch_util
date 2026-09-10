@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil France24 extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts France24 article bodies without empty extraction warnings' do
+  it 'extracts France24 article bodies generically without empty extraction warnings' do
     expect_fixture_article(
       url: 'https://www.france24.com/es/francia/20260707-condena-de-marine-le-pen-lo-que-hay-que-retener',
       fixture_path: File.expand_path('../../fixtures/france24_article.html', __dir__),
