@@ -458,12 +458,9 @@ RSpec.describe "extract asset bundle" do
     combined_source = sources.values.join
 
     expect(combined_source.scan(/function\s+mediaWikiContent\s*\(/).length).to eq(1)
-    expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(1)
+    expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(0)
     expect(sources.fetch("profiles/families/community_wikis.js")).not_to include("mediaWikiContent")
-    expect(sources.fetch("systems/cms/mediawiki.js")).to include(
-      "function mediaWikiContent(metadata)",
-      "registerHostAwareProfile(true, mediaWikiContent);"
-    )
+    expect(sources.fetch("systems/cms/mediawiki.js")).to include("function mediaWikiContent(metadata)")
   end
 
   it "keeps docs and Unidad Editorial modules in their ownership slots" do
@@ -714,7 +711,6 @@ RSpec.describe "extract asset bundle" do
                                 systems/cms/blogger.js
                                 systems/cms/static_ssg.js
                                 systems/cms/ghost.js
-                                systems/cms/mediawiki.js
                                 systems/cms/wordpress.js
                                 profiles/news/asia/south/india/hindustantimes.js
                                 profiles/news/asia/central/azerbaijan/oxu.js

@@ -124,5 +124,3 @@
       hostAware: true
     };
   }
-
-  registerHostAwareProfile(true, mediaWikiContent);
