@@ -1,9 +1,3 @@
-  function sozcuContent(metadata) {
-    if (!hostMatches(/(^|\.)sozcu\.com\.tr$/)) return null;
-
-    return sozcuHomepageContent(metadata);
-  }
-
   function sozcuHomepageContent(metadata) {
     return newsHomepageListContent(metadata, sozcuHomepageListConfig());
   }
@@ -24,4 +18,3 @@
   }
 
   registerNewsHomepageListProfile(/(^|\.)sozcu\.com\.tr$/, sozcuHomepageListConfig);
-  registerHostAwareProfile(true, sozcuContent);

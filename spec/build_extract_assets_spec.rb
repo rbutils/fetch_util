@@ -139,8 +139,11 @@ RSpec.describe "extract asset bundle" do
     registrations = Dir[File.join(project_root, "websieve", "**", "*.js")].sum do |path|
       File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
     end
+    sozcu_source = File.read(File.join(project_root, "websieve", "profiles", "news", "middle_east", "turkey", "sozcu.js"))
 
     expect(registrations).to eq(1)
+    expect(sozcu_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
+    expect(sozcu_source).not_to include("sozcuContent", "registerHostAwareProfile")
   end
 
   it "keeps warning policy delegates ordered before the entrypoint" do
@@ -725,7 +728,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/middle_east/turkey/milliyet_live.js
                                 profiles/news/europe/central/aktuality_sk.js
                                 profiles/news/middle_east/turkey/sabah.js
-                                profiles/news/middle_east/turkey/sozcu.js
                                 profiles/news/europe/central/poland/interia.js
                                 profiles/news/americas/south/clarin.js
                                 profiles/news/europe/eastern/serbia/blic.js
