@@ -10,6 +10,15 @@ RSpec.describe 'FetchUtil extractor integration for Zeit articles' do
           <title>Der Fall Balogun: Trump bestätigt Bitte um Überprüfung der Balogun-Sperre | DIE ZEIT</title>
           <meta property="og:site_name" content="DIE ZEIT">
           <meta name="description" content="Trump spricht über Baloguns Sperre.">
+          <meta property="article:author" content="https://www.zeit.de/autoren/V/Yannick_von-Eisenhart-Rothe/index">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": "Trump bestätigt Bitte um Überprüfung der Balogun-Sperre",
+              "author": { "@type": "Person", "name": "Yannick von Eisenhart Rothe" }
+            }
+          </script>
         </head>
         <body>
           <main class="main main--article" id="main">
@@ -19,10 +28,12 @@ RSpec.describe 'FetchUtil extractor integration for Zeit articles' do
                   <span class="article-heading__kicker">Der Fall Balogun</span><span class="visually-hidden">: </span><span class="article-heading__title">Trump bestätigt Bitte um Überprüfung der Balogun-Sperre</span>
                 </h1>
                 <div class="summary">»Ich habe lediglich um eine Überprüfung gebeten«, sagt Trump zu seinem Gespräch mit Fifa-Präsident Infantino.</div>
+                <a rel="author" title="Yannick von Eisenhart Rothe" href="/autoren/V/Yannick_von-Eisenhart-Rothe/index">yer</a>
               </header>
               <figure>Donald Trump sprach im Oval Office über den Fall Balogun.</figure>
               <div class="article-body article-body--article">
                 <div class="iqdcontainer" data-placement="pos_1"></div>
+                <div class="audio-player">Ihr Browser kann dieses Tondokument nicht wiedergeben.</div>
                 <div class="article-page" data-page-number="1">
                   <p class="paragraph article__item">US-Präsident Donald Trump hat bestätigt, dass er wegen der Roten Karte gegen US-Nationalspieler Folarin Balogun mit Fifa-Präsident Gianni Infantino gesprochen hat. Er habe nicht explizit gefordert, dass die Sperre aufgehoben werde.</p>
                   <p class="paragraph article__item">Die Fifa hatte die Sperre Baloguns für das Viertelfinalspiel gegen Belgien aufgehoben und für ein Jahr auf Bewährung ausgesetzt. Zuvor hatten diverse Medien berichtet, Trump habe sich in die Entscheidung eingemischt.</p>
@@ -35,6 +46,10 @@ RSpec.describe 'FetchUtil extractor integration for Zeit articles' do
                   <p class="paragraph article__item">Der belgische Fußballverband legte Einspruch gegen die Aufhebung der Sperre ein. Die Fifa erklärte den Einspruch jedoch für unzulässig, weil der belgische Verband nicht Verfahrenspartei sei.</p>
                 </div>
               </div>
+              <footer class="article-footer">
+                <button>Kommentieren</button><button>Link kopieren</button>
+                <nav class="article-tags"><a href="https://www.zeit.de/thema/fussball-wm">Fußball-WM</a></nav>
+              </footer>
               <aside aria-label="Mehr zum Thema: Der Fall Balogun">Selbst Sepp Blatter wundert sich</aside>
               <nav aria-label="Seitennavigation"><a href="#comments">Kommentieren</a></nav>
             </article>
@@ -48,6 +63,9 @@ RSpec.describe 'FetchUtil extractor integration for Zeit articles' do
       expect(payload["markdown"]).to include("# Der Fall Balogun")
       expect(payload["markdown"]).to include("US-Präsident Donald Trump hat bestätigt")
       expect(payload["markdown"]).to include("Fifa weist Beschwerde Belgiens zurück")
+      expect(payload["byline"]).to eq("Yannick von Eisenhart Rothe")
+      expect(payload["markdown"]).not_to include("Ihr Browser kann dieses Tondokument nicht wiedergeben")
+      expect(payload["markdown"]).not_to include("Link kopieren")
       expect(payload["markdown"]).not_to include("Newsletteranmeldung")
       expect(payload["markdown"]).not_to include("Selbst Sepp Blatter wundert sich")
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])

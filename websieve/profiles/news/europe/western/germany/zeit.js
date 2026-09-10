@@ -8,11 +8,13 @@
 
     return profileArticleContent(metadata, article, {
       title: firstText([".article-heading", ".article-heading__headline", "h1.article-heading", "h1"]) || metadata.title,
-      byline: firstText([".article-meta .authors", ".article__authors", "[rel='author']"]) || metadata.byline,
+      byline: metadata.byline || firstText([".article-meta .authors", ".article__authors", "[rel='author']"]),
       minTextLength: 500,
       rewriteRoot: function(root) {
         root.querySelectorAll([
           ".iqdcontainer",
+          ".audio-player",
+          ".article-footer > :not(.article-tags)",
           ".summy",
           ".summary__feedback",
           ".newsletter",
