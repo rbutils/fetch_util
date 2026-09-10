@@ -466,7 +466,10 @@ RSpec.describe "extract asset bundle" do
 
     expect(combined_source.scan(/function\s+mediaWikiContent\s*\(/).length).to eq(1)
     expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(0)
-    expect(sources.fetch("profiles/families/community_wikis.js")).not_to include("mediaWikiContent")
+    community_source = sources.fetch("profiles/families/community_wikis.js")
+    expect(community_source).not_to include("mediaWikiContent")
+    expect(community_source).not_to include("fandomWikiPage")
+    expect(community_source).not_to include("fandomContent")
     expect(sources.fetch("systems/cms/mediawiki.js")).to include("function mediaWikiContent(metadata)")
   end
 

@@ -23,64 +23,6 @@
     });
   }
 
-  function fandomWikiPage() {
-    return hostMatches(/(^|\.)fandom\.com$/) && !!document.querySelector(".mw-parser-output, .page-content, #content");
-  }
-
-  function fandomContent(metadata) {
-    if (!fandomWikiPage()) return null;
-
-    var node = document.querySelector(".mw-parser-output") ||
-      document.querySelector(".page-content") ||
-      document.querySelector("#content");
-    if (!node) return null;
-
-    var title = firstText(["h1.page-header__title", "#firstHeading", "h1"]) ||
-      normalizeText((metadata.title || document.title).replace(/\s*\|\s*.*Wiki\s*\|\s*Fandom$/i, ""));
-
-    return profileArticleContent(metadata, node, {
-      title: title,
-      byline: metadata.byline,
-      minTextLength: 40,
-      rewriteRoot: function(root) {
-        root.querySelectorAll(".navbox, table.navbox, .navbox-styles, .portable-infobox, .pi-collapse, .mw-editsection, .toc, #toc, .catlinks, #catlinks, .printfooter, .noprint, .mw-empty-elt, .page-footer, .article-footer, .fandom-community-header, .mcf-card-header, .mcf-card-footer, .mcf-card, .page-header__categories, .article-categories, .wds-button-group, .fandom-sticky-header").forEach(function(el) {
-          el.remove();
-        });
-
-        // Remove signin/registration links and discussion prompts
-        root.querySelectorAll("a[href*='auth.fandom.com'], a[href*='fandom.com/signin'], a[href*='fandom.com/register']").forEach(function(el) {
-          var container = el.closest("div, span, li, p");
-          if (container && normalizeText(container.textContent || "").length < 120) container.remove();
-          else el.remove();
-        });
-
-        root.querySelectorAll("table").forEach(function(table) {
-          var text = normalizeText(table.textContent || "");
-          var links = table.querySelectorAll("a[href]").length;
-          // Detect fandom nav index tables by header pattern (e.g. "Characters of Hades")
-          var firstCell = table.querySelector("th, td, caption");
-          var headerText = firstCell ? normalizeText(firstCell.textContent || "") : "";
-          if (links >= 10 && /^(characters|items|locations|enemies|weapons|quests|episodes|levels|bosses|creatures|missions|npcs|monsters|equipment|fishes?|fish of|cast of)\b/i.test(headerText)) {
-            table.remove(); return;
-          }
-          // Skip tables inside the article body that have content elements (paragraphs, headings)
-          if (table.querySelector("p, h2, h3, h4, blockquote, pre")) return;
-          if (links >= 15) {
-            var rows = table.querySelectorAll("tr").length || 1;
-            var linksPerRow = links / rows;
-            // Remove dense navigation tables: many links, high link-to-row ratio
-            if (linksPerRow > 3) { table.remove(); return; }
-            // Remove large link-index tables at bottom (character/item navboxes without .navbox class)
-            if (links >= 30 && text.length > 300) {
-              var words = text.split(/\s+/).length;
-              if (links / words > 0.15) { table.remove(); return; }
-            }
-          }
-        });
-      }
-    });
-  }
-
   function stackExchangeQuestionPage() {
     return /(^|\.)(stackexchange\.com|stackoverflow\.com|superuser\.com|serverfault\.com|askubuntu\.com|stackapps\.com|mathoverflow\.net)$/.test(location.hostname) &&
       /\/questions\//.test(location.pathname || "");
@@ -193,6 +135,5 @@
   }
 
   function registerCommunityWikiProfiles() {
-    registerHostAwareProfile(true, fandomContent);
     registerHostAwareProfile(true, stackExchangeContent);
   }
