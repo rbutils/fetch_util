@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil O Pais and Avesta extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts the O Pais article body without the next-story bleedthrough' do
+  it 'extracts the O Pais article body generically without next-story bleedthrough' do
     expect_fixture_article(
       url: 'https://opais.co.mz/dia-dos-herois-nyusi-convida-mocambicanos-a-reflectirem-sobre-a-necessidade-da-paz',
       fixture_path: File.expand_path('../fixtures/opais_article.html', __dir__),

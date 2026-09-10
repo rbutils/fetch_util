@@ -3,8 +3,7 @@
     "meta[name='generator'][content*='Jekyll' i]",
     "[class*='hugo-' i]",
     "link[href*='/hugo-theme']",
-    "script[src*='/hugo-theme']",
-    "body[class*='post-template']"
+    "script[src*='/hugo-theme']"
   ];
 
   function staticSsgDomDetected() {
