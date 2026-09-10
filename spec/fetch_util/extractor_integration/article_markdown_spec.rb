@@ -520,6 +520,43 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers content-level Open Graph locale over contradictory page-shell language" do
+    html = <<~HTML
+      <html lang="en-US">
+        <head>
+          <title>Biblioteka e lagjes</title>
+          <meta property="og:locale" content="sq_AL">
+        </head>
+        <body>
+          <nav>#{Array.new(40) { |index| "<a href='https://example.test/topic/#{index}'>Topic #{index}</a>" }.join}</nav>
+          <main>
+            <article>
+              <h1>Biblioteka e lagjes</h1>
+              <p>Biblioteka e lagjes hapi dyert për banorët dhe studentët.</p>
+              <p>Vullnetarët mblodhën libra dhe përgatitën sallat për lexuesit.</p>
+              <p>Programi përfshin takime javore me autorë dhe studiues.</p>
+              <p>Fëmijët mund të marrin pjesë në aktivitete krijuese pas mësimit.</p>
+              <p>Prindërit mirëpritën hapësirën e re kulturore në komunitet.</p>
+              <p>Stafi njoftoi se shërbimi do të zgjerohet gjatë verës.</p>
+              <p>Biblioteka do të qëndrojë e hapur çdo ditë deri në mbrëmje.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/kulture/biblioteka", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["language"]).to eq("sq")
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Biblioteka e lagjes hapi dyert")
+      expect(payload["markdown"]).not_to include("https://example.test/topic/")
+      expect(payload["warnings"]).not_to include("truncated_content")
+      expect(payload["suspect"]).to be(false)
+    end
+  end
+
   it "falls back to text language detection when metadata is absent" do
     html = <<~HTML
       <html>

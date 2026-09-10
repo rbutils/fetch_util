@@ -59,8 +59,8 @@ function languageFromText() {
 }
 
 function documentLanguage() {
-  return normalizeLanguageCode(document.documentElement && document.documentElement.getAttribute("lang")) ||
+  return normalizeLanguageCode(metadataValue("og:locale", "property")) ||
+    normalizeLanguageCode(document.documentElement && document.documentElement.getAttribute("lang")) ||
     normalizeLanguageCode(metadataValue("Content-Language", "http-equiv")) ||
-    normalizeLanguageCode(metadataValue("og:locale", "property")) ||
     languageFromText();
 }
