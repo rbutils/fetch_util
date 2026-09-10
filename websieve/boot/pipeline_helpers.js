@@ -6,6 +6,7 @@ function sanitizeByline(raw) {
   text = text.split(/[\n\t]/)[0];
   text = normalizeText(text);
   if (/^(devam(ın)?ı okuyun|read more|leer más|weiterlesen|lire la suite|leggi di più|czytaj dalej|tümünü gör|اقرأ المزيد|ادامه مطلب|המשך לקרוא|مزید پڑھیں)$/i.test(text)) return null;
+  if (/^(?:[1-9]|[12]\d|3[01])\s+[^\d\s,]{3,}\s+(?:19|20)\d{2}(?:\s*,?\s*(?:[01]?\d|2[0-3]):[0-5]\d)?$/i.test(text)) return null;
   text = text.replace(/\s*@[\w.-]+.*$/i, "").replace(/\s*\d+\s*(takipçi|followers?|متابع|دنبال‌کننده|עוקבים|فالوور).*$/i, "");
   text = normalizeText(text);
   if (!text || text.length < 2) return null;

@@ -363,6 +363,41 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not expose a localized publication date as the byline" do
+    html = <<~HTML
+      <html lang="pl">
+        <head>
+          <title>Regional rail plans move forward</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": "Regional rail plans move forward",
+              "datePublished": "2026-06-24T17:42:00+02:00"
+            }
+          </script>
+        </head>
+        <body>
+          <main><article>
+            <h1>Regional rail plans move forward</h1>
+            <div class="article-author">24 czerwca 2026, 17:42</div>
+            <p>Regional planners approved the next stage of work on the railway linking several growing communities.</p>
+            <p>The proposal preserves existing local stops while adding direct services for longer journeys.</p>
+            <p>Public consultation will continue before engineers finalize the construction schedule.</p>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.pl/transport/regional-rail", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["byline"]).to be_nil
+      expect(payload["publishedTime"]).to eq("2026-06-24T17:42:00+02:00")
+      expect(payload["markdown"]).to include("24 czerwca 2026, 17:42")
+    end
+  end
+
   it "prefers a structured author over a reader-mode byline polluted by a publication time" do
     html = <<~HTML
       <html>
