@@ -230,7 +230,7 @@
       var links = el.querySelectorAll("a[href]").length;
       var text = normalizeText(el.textContent || "");
       // Only strip if it has multiple links and no heavy content children
-      if (links >= 3 && !el.querySelector("article, main, [role='main'], pre, blockquote, table")) {
+      if (links >= 3 && !el.querySelector("article, main, [role='main'], p, pre, blockquote, table")) {
         el.remove();
       } else if (links >= 3 && text.length < 1200) {
         // Even with content children, strip if it's small and link-dense

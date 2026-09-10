@@ -181,7 +181,10 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
                   <p>Introduction prose describes how multiple sclerosis pathogenesis is shaped by immune signaling, barrier tissues, and environmental cues.</p>
                 </div>
                 <div id="section2" class="section toc-section"><a id="sec002" name="sec002" data-toc="sec002" class="link-target" title="Results"></a><h2>Results</h2>
-                  <p>Results prose reports that T cell-specific receptor loss changes disease recovery, gut metabolites, and lymphocyte viability.</p>
+                  <p>Results prose reports that T cell-specific receptor loss changes disease recovery, gut metabolites, and lymphocyte viability in <a href="/plosbiology/article?id=10.1371/journal.pbio.3001001">cohort one</a>, <a href="/plosbiology/article?id=10.1371/journal.pbio.3001002">cohort two</a>, and <a href="/plosbiology/article?id=10.1371/journal.pbio.3001003">cohort three</a>.</p>
+                  <div class="section toc-section"><a data-toc="sec002.1" class="link-target" title="Microbial response"></a><h3>Microbial response</h3>
+                    <p>Linked subsection prose preserves the owned analysis and its <a href="/plosbiology/article?id=10.1371/journal.pbio.3001004">primary assay</a>, <a href="/plosbiology/article?id=10.1371/journal.pbio.3001005">replication assay</a>, and <a href="/plosbiology/article?id=10.1371/journal.pbio.3001006">supporting assay</a>.</p>
+                  </div>
                 </div>
                 <div id="section9" class="section toc-section"><a id="sec009" name="sec009" data-toc="sec009" class="link-target" title="Discussion"></a><h2>Discussion</h2>
                   <p>Discussion prose explains that the gut microenvironment can sustain autoimmunity through metabolites that tune T cell fitness.</p>
@@ -205,6 +208,8 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       expect(markdown).to include('multiple sclerosis pathogenesis')
       expect(markdown).to include('## Results')
       expect(markdown).to include('gut metabolites')
+      expect(markdown).to include('### Microbial response')
+      expect(markdown).to include('[primary assay](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3001004)')
       expect(markdown).to include('## Discussion')
       expect(markdown).to include('sustain autoimmunity')
       expect(markdown).not_to include('Article metrics')
