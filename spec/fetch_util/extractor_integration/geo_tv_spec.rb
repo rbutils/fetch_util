@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Geo TV extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Geo TV AMP article bodies without stale content warnings' do
+  it 'extracts Geo TV AMP article bodies generically without navigation chrome' do
     expect_fixture_article(
       url: 'https://www.geo.tv/amp/292521',
       fixture_path: File.expand_path('../../fixtures/geo_tv_article.html', __dir__),

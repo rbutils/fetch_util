@@ -255,7 +255,6 @@ profiles/news/europe/eastern/index_hr.js
 profiles/news/europe/eastern/serbia/danas.js
 profiles/news/europe/eastern/serbia/kurir.js
 profiles/news/middle_east/almasryalyoum.js
-profiles/news/asia/south/pakistan/geo_tv.js
 profiles/news/asia/south/kalerkantho.js
 profiles/news/asia/central/azerbaijan/trend.js
 profiles/news/asia/south/pakistan/jang.js
