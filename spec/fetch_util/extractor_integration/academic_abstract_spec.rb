@@ -216,6 +216,63 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
+  it 'preserves owned bibliography records in generic scholarly articles' do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Resilient agent retrieval</title>
+          <meta name="citation_title" content="Resilient agent retrieval">
+          <meta name="citation_doi" content="10.1234/retrieval.2026">
+        </head>
+        <body>
+          <section role="doc-abstract">
+            <h2>Abstract</h2>
+            <p>This study evaluates resilient retrieval methods for agents across changing scholarly pages while preserving complete visible evidence and stable source ownership.</p>
+          </section>
+          <section id="sec_introduction">
+            <h2>Introduction</h2>
+            <p>Reliable extraction depends on retaining substantive local records while rejecting unrelated page controls. Scholarly pages challenge this boundary because their citations, source lists, figures, and notes are often rendered beside export tools and recommendation panels.</p>
+            <p>A useful agent-facing representation must preserve the evidence needed to evaluate an argument. It should keep complete claims, locally owned metadata, and safe destinations in document order without turning citation controls or global navigation into article content.</p>
+            <p>We therefore evaluate ownership before cleanup and distinguish bibliographic records from the nearby interface used to download or reformat them. This distinction is semantic rather than presentational and remains stable across publisher themes.</p>
+          </section>
+          <section id="sec_results">
+            <h2>Results</h2>
+            <p>The evaluated method preserved each visible article section, citation record, and safe destination in its original order. It rejected the detached toolbar while keeping source titles and identifiers that readers use to verify the reported findings.</p>
+            <p>Comparisons used one immutable document for both extraction paths, preventing rotating markup from changing the result. The retained bibliography remained attached to the article and no unrelated recommendations were promoted into independent records.</p>
+            <p>These results show that bounded ownership and precise noise selectors can improve fidelity without site-specific caps. Complete local references are content, while export buttons and account prompts remain disposable interface elements.</p>
+          </section>
+          <section role="doc-bibliography">
+            <h2>References</h2>
+            <ol>
+              <li role="doc-biblioentry">
+                Source One. Complete retrieval evidence.
+                <a class="citation-reference" href="https://doi.org/10.1234/source.one">https://doi.org/10.1234/source.one</a>
+              </li>
+              <li role="doc-biblioentry">
+                Source Two. Stable ownership boundaries.
+                <a href="https://example.org/source-two">Publisher record</a>
+              </li>
+            </ol>
+          </section>
+          <div class="citation-tools">Export citation</div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://research.example/articles/resilient-retrieval', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['hostAware']).to be(true)
+      expect_content_type(payload, 'article')
+      expect(payload['title']).to eq('Resilient agent retrieval')
+      expect(payload['markdown']).to include('References')
+      expect(payload['markdown']).to include('https://doi.org/10.1234/source.one')
+      expect(payload['markdown']).to include('[Publisher record](https://example.org/source-two)')
+      expect(payload['markdown']).not_to include('Export citation')
+      expect(payload['warnings']).not_to include('short_extraction')
+    end
+  end
+
   it 'extracts HighWire article bodies from abstract and bodymatter sections' do
     html = <<~HTML
       <html>

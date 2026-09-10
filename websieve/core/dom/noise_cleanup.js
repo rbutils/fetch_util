@@ -162,6 +162,8 @@
 
   function stripRelatedSectionsByHeading(root) {
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
+      if (heading.closest("[role='doc-bibliography']")) return;
+
       var text = normalizeText(heading.textContent || "").trim();
       if (!text || !RELATED_SECTION_HEADING_PATTERN.test(text)) return;
 
