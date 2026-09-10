@@ -88,7 +88,11 @@ function markdownStartsWithTitle(markdown, title) {
   }).filter(Boolean);
   return candidates.some(function(line) {
     var lineLower = normalizeText(line).toLowerCase();
-    return lineLower === titleLower || lineLower.indexOf(titleLower) === 0;
+    if (lineLower === titleLower) return true;
+    if (lineLower.indexOf(titleLower) !== 0) return false;
+
+    var suffix = normalizeText(line.slice(title.length));
+    return suffix.length <= 120 && /^(?:-|\||:|\u2013|\u2014)\s+\S/.test(suffix);
   });
 }
 

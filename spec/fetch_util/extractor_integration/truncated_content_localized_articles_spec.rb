@@ -107,4 +107,26 @@ RSpec.describe 'FetchUtil extractor integration - truncated_content localized ar
       end
     end
   end
+
+  it 'prepends a heading when the first body paragraph starts with the title' do
+    title = 'ஹார்முஸ் நீரிணையில் 3 வர்த்தக கப்பல்கள் தாக்கப்பட்டன'
+    html = <<~HTML
+      <!doctype html>
+      <html lang="ta">
+        <head><title>#{title}</title></head>
+        <body>
+          <h1 class="post-header">#{title}</h1>
+          <div class="post-description">
+            <p>#{title} என்பதால் அதிகாரிகள் விரிவான பாதுகாப்பு அறிக்கை வெளியிட்டனர்.</p>
+            <p>கடல் வழித்தடத்தில் கண்காணிப்பு நடவடிக்கைகள் தொடர்ந்து வலுப்படுத்தப்பட்டுள்ளன.</p>
+            <p>வர்த்தக கப்பல்கள் பாதுகாப்பாகச் செல்ல அனைத்து துறைகளும் ஒருங்கிணைந்து செயல்படுகின்றன.</p>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.dinakaran.com/news/example/', html) do |payload|
+      expect(payload['markdown']).to start_with("# #{title}\n\n#{title} என்பதால்")
+    end
+  end
 end
