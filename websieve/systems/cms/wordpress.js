@@ -139,6 +139,8 @@
         ".wp-block-post-content",
         "article[id^='post-'] .entry-content",
         "article[id^='post-'] .post-content",
+        "article .post-description",
+        ".post-description",
         "article .entry-content",
         "article .post-content",
         ".entry-content",

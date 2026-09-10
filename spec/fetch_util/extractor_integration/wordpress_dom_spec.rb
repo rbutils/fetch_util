@@ -48,4 +48,40 @@ RSpec.describe 'FetchUtil WordPress DOM extractor integration' do
       expect(payload['suspect']).to be(false)
     end
   end
+
+  it 'prefers a post description over related entry-content cards' do
+    html = <<~HTML
+      <html lang="en">
+        <head>
+          <title>WordPress Post Description Sample</title>
+          <meta name="generator" content="WordPress 6.6">
+        </head>
+        <body>
+          <article>
+            <h1 class="entry-title">WordPress Post Description Sample</h1>
+            <aside class="related-posts">
+              <div class="entry-content">
+                This is a long related-news card that must not replace the article body. It contains enough repeated summary
+                text to look substantial to a first-match selector, but it remains a recommendation rather than this page's
+                owned article content. Agents should not receive this card as the primary record for the current page.
+              </div>
+            </aside>
+            <div class="post-description">
+              <p>The first article paragraph explains the primary event with enough detail for an agent to understand it.</p>
+              <p>The second article paragraph preserves the material context, consequences, and next steps from the publisher.</p>
+              <p>The final article paragraph records the source's conclusion without unrelated recommendations or navigation.</p>
+            </div>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://example-blog.test/2026/07/post-description-sample/', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include('The first article paragraph explains the primary event')
+      expect(payload['markdown']).to include('The final article paragraph records the source')
+      expect(payload['markdown']).not_to include('long related-news card')
+      expect_warnings(payload, exclude: %w[short_extraction truncated_content empty_extraction])
+    end
+  end
 end

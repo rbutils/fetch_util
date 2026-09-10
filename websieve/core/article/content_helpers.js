@@ -32,6 +32,8 @@
     "article[id^='post-'] .entry-content",
     "article[id^='post-'] .post-content",
     "article[id^='post-'] [itemprop='articleBody']",
+    "article .post-description",
+    ".post-description",
     ".entry-content",
     ".post-content",
     "[itemprop='articleBody']"
