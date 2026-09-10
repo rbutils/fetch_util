@@ -140,10 +140,14 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
     end
     sozcu_source = File.read(File.join(project_root, "websieve", "profiles", "news", "middle_east", "turkey", "sozcu.js"))
+    faz_source = File.read(File.join(project_root, "websieve", "profiles", "news", "europe", "western", "germany", "faz.js"))
 
     expect(registrations).to eq(1)
     expect(sozcu_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
     expect(sozcu_source).not_to include("sozcuContent", "registerHostAwareProfile")
+    expect(faz_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
+    expect(faz_source).to include("registerHostAwareProfile(/(^|\\.)faz\\.net$/, fazArticleContent);")
+    expect(faz_source).not_to include("fazContent")
   end
 
   it "keeps warning policy delegates ordered before the entrypoint" do

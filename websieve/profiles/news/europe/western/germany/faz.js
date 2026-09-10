@@ -1,8 +1,3 @@
-  function fazContent(metadata) {
-    if (!hostMatches(/(^|\.)faz\.net$/)) return null;
-    return fazHomepageContent(metadata) || fazArticleContent(metadata);
-  }
-
   function fazHomepageContent(metadata) {
     return newsHomepageListContent(metadata, fazHomepageListConfig());
   }
@@ -75,4 +70,4 @@
   }
 
   registerNewsHomepageListProfile(/(^|\.)faz\.net$/, fazHomepageListConfig);
-  registerHostAwareProfile(true, fazContent);
+  registerHostAwareProfile(/(^|\.)faz\.net$/, fazArticleContent);
