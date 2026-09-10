@@ -703,7 +703,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/global/xinhua.js
                                 profiles/news/middle_east/walla.js
                                 profiles/news/asia/east/chosun.js
-                                profiles/news/asia/south/india/dinakaran.js
                                 profiles/news/europe/southern/spain/20minutos.js
                                 profiles/news/asia/east/nhk.js
                                 profiles/news/europe/southern/protothema.js

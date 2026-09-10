@@ -40,7 +40,7 @@ RSpec.describe 'FetchUtil extractor integration - truncated_content localized ar
 
   cases = [
     [
-      'Dinakaran',
+      'Dinakaran generic extraction',
       'https://www.dinakaran.com/news/straitofhormuz-commercialships-iran-usa/',
       'ஹார்முஸ் நீரிணையில் 3 வர்த்தக கப்பல்கள் தாக்கப்பட்டதைக் கண்டித்து',
       'ta',

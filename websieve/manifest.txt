@@ -239,7 +239,6 @@ profiles/news/europe/southern/opais.js
 profiles/news/middle_east/walla.js
 profiles/news/global/france24.js
 profiles/news/asia/east/chosun.js
-profiles/news/asia/south/india/dinakaran.js
 profiles/news/europe/southern/spain/20minutos.js
 profiles/news/asia/east/nhk.js
 profiles/news/europe/southern/protothema.js
