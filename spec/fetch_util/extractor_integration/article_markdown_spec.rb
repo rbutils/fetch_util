@@ -398,6 +398,40 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "uses structured authors when author metadata is a URL" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Regional rail plans move forward</title>
+          <meta property="article:author" content="https://example.test/authors/jordan-lee">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": "Regional rail plans move forward",
+              "author": { "@type": "Person", "name": "Jordan Lee" }
+            }
+          </script>
+        </head>
+        <body>
+          <main><article>
+            <h1>Regional rail plans move forward</h1>
+            <p>Regional planners approved the next stage of work on the railway linking several growing communities.</p>
+            <p>The proposal preserves existing local stops while adding direct services for longer journeys.</p>
+            <p>Public consultation will continue before engineers finalize the construction schedule.</p>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/transport/regional-rail", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["byline"]).to eq("Jordan Lee")
+      expect(payload["byline"]).not_to include("https://")
+    end
+  end
+
   it "prefers a structured author over a reader-mode byline polluted by a publication time" do
     html = <<~HTML
       <html>

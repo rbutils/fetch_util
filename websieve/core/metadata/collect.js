@@ -19,12 +19,21 @@ function collectMetadata() {
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;
   var schemaAuthor = entityName(schemaArticle && schemaArticle.author);
+  var byline = [
+    metadataValue("author", "name"),
+    metadataValue("article:author", "property"),
+    metadataValue("parsely-author", "name"),
+    schemaAuthor,
+    visibleByline()
+  ].map(function(value) {
+    return sanitizeByline(value);
+  }).find(Boolean) || null;
   var schemaPublishedTime = entityText(schemaArticle && schemaArticle.datePublished);
   var schemaEventTime = schemaEvent && typeof eventDateText === "function" ? eventDateText(schemaEvent.startDate, schemaEvent.endDate) : null;
 
   return {
     title: metadataValue("og:title", "property") || document.title || firstText(["main h1", "article h1", "h1"]),
-    byline: metadataValue("author", "name") || metadataValue("article:author", "property") || metadataValue("parsely-author", "name") || schemaAuthor || visibleByline(),
+    byline: byline,
     excerpt: metadataValue("description", "name") || metadataValue("og:description", "property"),
     siteName: metadataValue("og:site_name", "property") || location.hostname,
     publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || visiblePublishedTime(),
