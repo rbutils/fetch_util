@@ -363,6 +363,41 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers a structured author over a reader-mode byline polluted by a publication time" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Harbor safety rules take effect</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": "Harbor safety rules take effect",
+              "author": { "@type": "Person", "name": "Suresh Rao" }
+            }
+          </script>
+        </head>
+        <body>
+          <main><article>
+            <h1>Harbor safety rules take effect</h1>
+            <div class="byline">07:34 AM Jul 08, 2026 IST<span aria-label="Book an island tour now">Book an island tour now</span></div>
+            <p>Harbor authorities introduced updated navigation rules for every commercial vessel using the busy coastal route.</p>
+            <p>The guidance explains how crews should report hazards, coordinate arrival times, and respond to emergency notices.</p>
+            <p>Officials will review the measures with shipping companies after the first month and publish any necessary revisions.</p>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/news/harbor-safety", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["readerMode"]).to be(true)
+      expect(payload["byline"]).to eq("Suresh Rao")
+      expect(payload["markdown"]).to include("respond to emergency notices")
+    end
+  end
+
   it "ignores hidden dates and bylines while preserving restored metadata" do
     html = <<~HTML
       <html>

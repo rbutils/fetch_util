@@ -1,7 +1,10 @@
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content);
-  var byline = sanitizeByline(content.byline || metadata.byline || visibleByline());
+  var contentByline = sanitizeByline(content.byline);
+  var metadataByline = sanitizeByline(metadata.byline);
+  if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
+  var byline = contentByline || metadataByline || sanitizeByline(visibleByline());
   var cleanedHtml = sanitizedHtml(content.html);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var markdown = cleanupMarkdownNoise(content.markdown || markdownFor(cleanedHtml || content.html));
