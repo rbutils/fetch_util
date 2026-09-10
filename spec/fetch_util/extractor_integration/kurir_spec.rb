@@ -8,6 +8,8 @@ RSpec.describe 'FetchUtil Kurir article extraction' do
       url: 'https://www.kurir.rs/techvision/vesti/10040514/kako-prepoznati-i-ukloniti-laznu-ekstenziju-iz-chrome-a',
       fixture_path: File.expand_path('../../fixtures/kurir_article.html', __dir__),
       includes: [
+        'SKANDAL NA CHROME WEB PRODAVNICI',
+        '![Kurir ilustracija](https://kurir.rs/example.jpg)',
         'U slučaju da imate instaliranu Perplexity AI ekstenziju',
         'Prevaru su otkrili bezbednosni stručnjaci iz Majkrosoftovog tima za pretnje'
       ],

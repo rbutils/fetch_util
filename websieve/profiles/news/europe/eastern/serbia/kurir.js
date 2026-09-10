@@ -9,8 +9,9 @@
       return (metadata && metadata.byline) || firstText([".article-header-author-prefix", ".article-header-date-published", "[rel='author']"]);
     },
     removalSelectors: [
-      ".article-header",
-      ".article-big-image",
+      ".breadcrumbs-wrap",
+      ".article-title",
+      ".article-header-author-share",
       ".article-divider",
       ".card-engagement-bar-wrap",
       ".card-share-wrap",
