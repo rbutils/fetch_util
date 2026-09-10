@@ -17,7 +17,10 @@ RSpec.describe 'FetchUtil Civil.ge extractor integration' do
         'According to RFE/RL’s Georgian Service',
         '[SSSG](https://civil.ge/archives/tag/sssg)'
       ],
-      excludes: ['Home / News / Security', 'Facebook X LinkedIn Print', 'URL Copied', 'Duplicate article metadata', 'MFA’s Newly Created Diplomatic Academy', 'Read Next'],
+      excludes: [
+        'Home / News / Security', 'Facebook X LinkedIn Print', 'URL Copied',
+        'Duplicate article metadata', 'MFA’s Newly Created Diplomatic Academy', 'Read Next'
+      ],
       warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
