@@ -9,10 +9,15 @@ RSpec.describe 'FetchUtil Civil.ge extractor integration' do
       url: 'https://civil.ge/archives/743770',
       fixture_path: File.expand_path('../../fixtures/civil_ge_article.html', __dir__),
       includes: [
+        'Giorgi Bakhuashvili, Deputy Head of SSSG. Photo: MIA',
+        '[News](https://civil.ge/archives/category/news)',
+        '[Civil.ge](https://civil.ge/archives/author/wpadmin',
+        '1 minute read',
         'Giorgi Bakhuashvili, who reportedly served as a personal bodyguard',
-        'According to RFE/RL’s Georgian Service'
+        'According to RFE/RL’s Georgian Service',
+        '[SSSG](https://civil.ge/archives/tag/sssg)'
       ],
-      excludes: ['MFA’s Newly Created Diplomatic Academy', 'Read Next'],
+      excludes: ['Home / News / Security', 'Facebook X LinkedIn Print', 'URL Copied', 'Duplicate article metadata', 'MFA’s Newly Created Diplomatic Academy', 'Read Next'],
       warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
     )
   end
