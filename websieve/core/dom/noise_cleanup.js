@@ -232,7 +232,7 @@
       var links = el.querySelectorAll("a[href]").length;
       var text = normalizeText(el.textContent || "");
       // Only strip if it has multiple links and no heavy content children
-      if (links >= 3 && (el.matches("[class*='sidebar'], [class*='left-rail'], [class*='right-rail']") ||
+      if (links >= 3 && (el.matches("[class*='left-rail'], [class*='right-rail']") ||
           !el.querySelector("article, main, [role='main'], p, pre, blockquote, table"))) {
         el.remove();
       } else if (links >= 3 && text.length < 1200) {
