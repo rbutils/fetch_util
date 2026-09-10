@@ -8,12 +8,19 @@
 
     var root = document.createElement("article");
     var header = document.querySelector(".article--header, .article_header, header.metadata--article");
-    if (header) root.appendChild(safeDeepClone(header, document));
+    if (header) {
+      root.appendChild(safeDeepClone(header, document));
+    } else if (body.matches("section.art_content")) {
+      var articleSection = body.closest(".bottom_section");
+      var articleOwner = articleSection && articleSection.parentElement;
+      var topSection = articleOwner && articleOwner.querySelector(":scope > .top_section");
+      if (topSection) root.appendChild(safeDeepClone(topSection, document));
+    }
     root.appendChild(safeDeepClone(body, document));
 
     return profileArticleContent(metadata, root, {
-      title: firstText(["h1.metadata--title", ".article_title", ".title", "h1"]) || metadata.title,
-      byline: firstText([".metadata--author", ".article--author", "[class*='author' i]", "[rel='author']"]) || metadata.byline,
+      title: firstText(["h1.metadata--title", ".article_title", ".article-title-wrapper h1", "h1"]) || metadata.title,
+      byline: firstText([".metadata--author", ".article--author", "[rel='author']"]) || metadata.byline,
       minTextLength: 220,
       cloneRoot: false,
       extra: function() {
@@ -42,7 +49,8 @@
           "[class*='recommend' i]",
           "[class*='related' i]",
           "[class*='advert' i]",
-          "[id*='advert' i]"
+          "[id*='advert' i]",
+          ".top_section button"
         ].join(", "));
 
         cleanRoot.querySelectorAll("p, div, span, a, h1, h2").forEach(function(el) {
