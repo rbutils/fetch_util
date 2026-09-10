@@ -467,6 +467,42 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "skips a reader-mode author-section label for complete visible authors" do
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Wetland restoration methods compared</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "ScholarlyArticle",
+              "headline": "Wetland restoration methods compared",
+              "author": { "@type": "Person", "name": "Lydia Teboul" }
+            }
+          </script>
+        </head>
+        <body>
+          <main><article>
+            <h1>Wetland restoration methods compared</h1>
+            <div class="byline">Author information</div>
+            <div class="article-author-list">Lydia Teboul, Yann Hérault, Sara Wells</div>
+            <p>Researchers compared restoration methods across wetlands with different soils, climates, and land-use histories.</p>
+            <p>The study measured vegetation recovery, water retention, and habitat quality throughout the observation period.</p>
+            <p>Results identify practical methods that local conservation teams can adapt while preserving ecological context.</p>
+          </article></main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.test/research/wetland-restoration", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["readerMode"]).to be(true)
+      expect(payload["byline"]).to eq("Lydia Teboul, Yann Hérault, Sara Wells")
+      expect(payload["byline"]).not_to eq("Author information")
+    end
+  end
+
   it "ignores hidden dates and bylines while preserving restored metadata" do
     html = <<~HTML
       <html>

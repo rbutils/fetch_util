@@ -47,7 +47,7 @@ function visibleMetadataRoots() {
   return roots.length ? roots : [document];
 }
 
-function firstScopedText(roots, selectors, attr) {
+function firstScopedText(roots, selectors, attr, rejectedValue) {
   for (var r = 0; r < roots.length; r += 1) {
     for (var i = 0; i < selectors.length; i += 1) {
       var nodes = roots[r].querySelectorAll(selectors[i]);
@@ -57,6 +57,7 @@ function firstScopedText(roots, selectors, attr) {
 
         var value = attr ? node.getAttribute(attr) : node.textContent;
         value = normalizeText(value);
+        if (rejectedValue && rejectedValue.test(value)) continue;
         if (value) return value;
       }
     }
@@ -82,7 +83,7 @@ function visibleByline() {
     "[class*='writer' i]",
     "[class*='reporter' i]",
     "[data-testid*='author' i]"
-  ]);
+  ], null, /^(?:author information|authors? and affiliations?)$/i);
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
 }
