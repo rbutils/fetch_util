@@ -249,7 +249,6 @@ systems/cms/ghost.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/asia/south/india/hindustantimes.js
-profiles/news/europe/central/derstandard.js
 profiles/news/europe/central/blick.js
 profiles/news/asia/central/azerbaijan/oxu.js
 profiles/news/europe/southern/top_channel.js

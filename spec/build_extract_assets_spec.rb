@@ -713,7 +713,6 @@ RSpec.describe "extract asset bundle" do
                                 systems/cms/mediawiki.js
                                 systems/cms/wordpress.js
                                 profiles/news/asia/south/india/hindustantimes.js
-                                profiles/news/europe/central/derstandard.js
                                 profiles/news/asia/central/azerbaijan/oxu.js
                                 profiles/news/europe/eastern/index_hr.js
                                 profiles/news/europe/eastern/serbia/danas.js

@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration for Der Standard articles' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Der Standard article bodies without consent-list false positives' do
+  it 'extracts Der Standard article bodies generically without consent-list false positives' do
     expect_fixture_article(
       url: 'https://www.derstandard.at/story/3000000298956/die-ukraine-droht-den-krieg-zu-verlieren-wie-konnte-es-so-weit-kommen',
       fixture_path: File.expand_path('../../fixtures/derstandard_article.html', __dir__),
