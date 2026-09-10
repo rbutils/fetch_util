@@ -9,6 +9,9 @@ RSpec.describe 'FetchUtil extractor integration - DOM-based docs/article engines
       fixture_path: File.expand_path('../../fixtures/ghost_article.html', __dir__),
       includes: [
         'How to set up your Ghost publication',
+        'Resources',
+        '2 min read',
+        'A complete introduction to configuring your publication.',
         'Start publishing with Ghost in a few practical steps.'
       ],
       excludes: ['Published with Ghost', 'Sign in', 'Get Started'],

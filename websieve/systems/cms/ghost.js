@@ -6,7 +6,7 @@
     if (!ghostDomDetected()) return null;
 
     return wordpressArticleContent(metadata, {
-      bodySelectors: [".gh-article-body", ".post-content", ".article-content", ".gh-article"],
+      bodySelectors: [".gh-article", ".gh-article-body", ".post-content", ".article-content"],
       titleSelectors: [".gh-article-title", "h1"],
       minBodyTextLength: 180,
       removalSelectors: [
@@ -21,12 +21,7 @@
         "[class*='comment' i]",
         "[class*='newsletter' i]",
         "[class*='advert' i]"
-      ],
-      rewriteRoot: function(root) {
-        root.querySelectorAll("header, footer, time, nav").forEach(function(el) {
-          el.remove();
-        });
-      }
+      ]
     });
   }
 
