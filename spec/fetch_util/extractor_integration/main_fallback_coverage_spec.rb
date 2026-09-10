@@ -18,7 +18,8 @@ RSpec.describe FetchUtil::Extractor do
       "<p><a href='/communications'>Explore communication services</a></p>"
   end
 
-  def main_fallback_selection(primary, fallback, main_root: true, url: "https://practice.example/", page_html: nil, primary_flags: {})
+  def main_fallback_selection(primary, fallback, main_root: true, url: "https://practice.example/", page_html: nil,
+                              primary_flags: {}, metadata: nil)
     root = File.expand_path("../../..", __dir__)
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true)
                  .reject { |line| line.empty? || line.start_with?("#") }
@@ -41,7 +42,7 @@ RSpec.describe FetchUtil::Extractor do
         var originalFallback = fallbackContent;
         fallbackContent = function() { return fallback; };
         var selected;
-        try { selected = enrichMainArticleContent(chosen); }
+        try { selected = enrichMainArticleContent(chosen, input.metadata); }
         finally { fallbackContent = originalFallback; }
         var selectedRoot = document.createElement("div");
         selectedRoot.innerHTML = selected.html;
@@ -55,7 +56,7 @@ RSpec.describe FetchUtil::Extractor do
     JS
     with_url_page(url, page_html || "<main>#{primary}</main>") do |page|
       page.add_script_tag(content: source)
-      input = { primary: primary, fallback: fallback, mainRoot: main_root, primaryFlags: primary_flags }
+      input = { primary: primary, fallback: fallback, mainRoot: main_root, primaryFlags: primary_flags, metadata: metadata }
       JSON.parse(page.evaluate("window.__mainFallbackSelection(#{JSON.generate(input)})"))
     end
   end
@@ -132,6 +133,49 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.values_at("expanded", "producerMain")).to eq([false, false])
     wiki = "<main><div id='mw-content-text'><div class='mw-parser-output'>#{primary}</div></div></main>"
     expect(main_fallback_selection(primary, fallback, page_html: wiki).fetch("expanded")).to be(false)
+  end
+
+  it "supplements an exact visible article lead and its attached figure without header controls" do
+    lead = "A verified local summary introduces the report with material context that the selected article body does not repeat."
+    page_html = <<~HTML
+      <main>
+        <header class="article-header">
+          <button>Share article</button>
+          <p class="article-header__lead">#{lead}</p>
+          <figure><img src="/lead.jpg" alt="Evidence at the scene"><figcaption>Local evidence caption.</figcaption></figure>
+        </header>
+        <section class="article-body">#{main_fallback_primary}</section>
+      </main>
+    HTML
+    result = main_fallback_selection(
+      main_fallback_primary,
+      main_fallback_primary,
+      url: "https://practice.example/articles/report",
+      page_html: page_html,
+      metadata: { excerpt: lead }
+    )
+
+    expect(result.fetch("html")).to include(lead, "Evidence at the scene", "Local evidence caption.", "Primary paragraph 3")
+    expect(result.fetch("html")).not_to include("Share article")
+  end
+
+  it "does not supplement an unconfirmed or separately owned lead" do
+    lead = "A metadata summary must have exact visible ownership before it can supplement a selected article body."
+    separate = "<article><header class='article-header'><p>#{lead}</p></header></article>" \
+               "<main><section>#{main_fallback_primary}</section></main>"
+    unconfirmed = "<main><header class='article-header'><p>Different visible summary.</p></header>" \
+                  "<section>#{main_fallback_primary}</section></main>"
+
+    [separate, unconfirmed].each do |page_html|
+      result = main_fallback_selection(
+        main_fallback_primary,
+        main_fallback_primary,
+        url: "https://practice.example/articles/report",
+        page_html: page_html,
+        metadata: { excerpt: lead }
+      )
+      expect(result.fetch("html")).not_to include(lead)
+    end
   end
 
   it "does not enrich a different selected content contract" do

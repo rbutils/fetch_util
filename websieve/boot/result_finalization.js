@@ -1,6 +1,6 @@
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
-  content = enrichMainArticleContent(content);
+  content = enrichMainArticleContent(content, metadata);
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;

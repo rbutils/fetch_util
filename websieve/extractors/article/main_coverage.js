@@ -71,9 +71,65 @@
     return additionalLinks.size >= 2;
   }
 
-  function enrichMainArticleContent(content) {
+  function supplementAttachedArticleLead(content, metadata) {
+    var excerpt = normalizeText(metadata && metadata.excerpt);
+    var contentText = normalizeText(content.textContent || "");
+    if (excerpt.length < 80 || contentText.indexOf(excerpt) >= 0) return content;
+
+    var primaryRoot = document.createElement("div");
+    primaryRoot.innerHTML = content.html || "";
+    var primaryParagraph = Array.prototype.find.call(primaryRoot.querySelectorAll("p"), function(paragraph) {
+      return normalizeText(paragraph.textContent || "").length >= 80;
+    });
+    var primaryText = normalizeText(primaryParagraph && primaryParagraph.textContent);
+    if (!primaryText) return content;
+
+    var sourceParagraphs = Array.prototype.filter.call(document.querySelectorAll("p"), function(paragraph) {
+      return normalizeText(paragraph.textContent || "") === primaryText &&
+        !elementSubtreeHidden(paragraph) &&
+        !paragraph.closest("nav, header, footer, aside, menu, [role='navigation'], [role='complementary'], [role='menu'], [role='toolbar'], [role='contentinfo']");
+    });
+    var leads = Array.prototype.filter.call(document.querySelectorAll("p, [itemprop='description']"), function(node) {
+      return normalizeText(node.textContent || "") === excerpt &&
+        !elementSubtreeHidden(node) &&
+        !node.closest("nav, footer, aside, menu, [role='navigation'], [role='complementary'], [role='menu'], [role='toolbar'], [role='contentinfo']");
+    });
+    var pair;
+    leads.some(function(lead) {
+      return sourceParagraphs.some(function(paragraph) {
+        var owner = lead.closest("article, main, [role='main']");
+        if (!owner || owner !== paragraph.closest("article, main, [role='main']")) return false;
+        if (!(lead.compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+        pair = { lead: lead, paragraph: paragraph, owner: owner };
+        return true;
+      });
+    });
+    if (!pair) return content;
+
+    var contextRoot = pair.lead.parentElement && pair.lead.parentElement.closest("header, [class*='header' i], [class*='intro' i], [class*='article-head' i]");
+    if (!contextRoot || !pair.owner.contains(contextRoot) || contextRoot.contains(pair.paragraph)) return content;
+
+    var context = document.createElement("div");
+    context.appendChild(cleanClone(visibilityPrunedClone(pair.lead, document)));
+    var figure = contextRoot.querySelector("figure");
+    if (figure && !elementSubtreeHidden(figure) &&
+        (pair.lead.compareDocumentPosition(figure) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+        (figure.compareDocumentPosition(pair.paragraph) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+      context.appendChild(cleanClone(visibilityPrunedClone(figure, document)));
+    }
+    if (!normalizeText(context.textContent || "")) return content;
+
+    return Object.assign({}, content, {
+      html: context.innerHTML + (content.html || ""),
+      textContent: normalizeText(context.textContent + " " + contentText)
+    });
+  }
+
+  function enrichMainArticleContent(content, metadata) {
     if (!content || !content.readerMode || content.contentType !== "article" || content.markdown ||
-        content.hostAware || content.docsLike || content.legalProvision || !homepageRootPath()) return content;
+        content.hostAware || content.docsLike || content.legalProvision) return content;
+    content = supplementAttachedArticleLead(content, metadata);
+    if (!homepageRootPath()) return content;
     var mediaWikiLike = document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");
     if (mediaWikiLike && normalizeText(content.textContent || "").length >= 800) return content;
 
