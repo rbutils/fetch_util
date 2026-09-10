@@ -244,7 +244,6 @@ profiles/news/europe/southern/spain/20minutos.js
 profiles/news/asia/east/nhk.js
 profiles/news/europe/southern/protothema.js
 systems/cms/joomla.js
-systems/cms/drupal.js
 systems/cms/blogger.js
 systems/cms/static_ssg.js
 systems/cms/ghost.js

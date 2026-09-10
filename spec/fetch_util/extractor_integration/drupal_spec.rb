@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Drupal extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Drupal article bodies from DOM signals and removes views and comment chrome' do
+  it 'extracts Drupal article bodies generically without views and comment chrome' do
     expect_fixture_article(
       url: 'https://www.drupal.org/docs/develop',
       fixture_path: File.expand_path('../fixtures/drupal_article.html', __dir__),
