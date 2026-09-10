@@ -1,7 +1,9 @@
   function jangArticleContent(metadata) {
     if (!hostMatches(/(^|\.)jang\.com\.pk$/)) return null;
 
-    return jangLiveblogStoryContent(metadata) || jangDetailArticleContent(metadata);
+    if (/^\/liveblog\//i.test(location.pathname || "")) return jangLiveblogStoryContent(metadata);
+    if (!/^\/news\/\d+/i.test(location.pathname || "")) return null;
+    return jangDetailArticleContent(metadata);
   }
 
   function jangDetailArticleContent(metadata) {
@@ -45,7 +47,7 @@
       }
     }
 
-    return document.querySelector("#liveBlogStorySection .listpost > li[id^='story']");
+    return null;
   }
 
   function jangCleanArticleRoot(root) {
