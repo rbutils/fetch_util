@@ -21,13 +21,21 @@
     if (!documentation.size) return null;
 
     var root = cleanClone(visibilityPrunedClone(document.body, document));
+    root.querySelectorAll("div, section").forEach(function(node) {
+      if (!listNavigationNode(node)) return;
+      var labels = node.cloneNode(true);
+      labels.querySelectorAll("a, img, svg").forEach(function(link) { link.remove(); });
+      if (!normalizeText(labels.textContent)) node.remove();
+    });
     var heading = root.querySelector("h1, h2");
-    var prose = Array.prototype.map.call(root.querySelectorAll("p"), function(paragraph) {
-      return paragraph.closest("nav, footer, aside") ? "" : normalizeText(paragraph.textContent);
+    var prose = Array.prototype.map.call(root.querySelectorAll("p, li, dd, dt, div"), function(paragraph) {
+      if (paragraph.closest("nav, footer, aside, [role='navigation']")) return "";
+      if (paragraph.tagName === "DIV" && !paragraphLikeDiv(paragraph)) return "";
+      return normalizeText(paragraph.textContent);
     }).join(" ");
     var softwareIdentity = /\b(?:programming language|compiler|runtime|framework|librar(?:y|ies)|database|web server|static[- ](?:web)?sites?|javascript|typescript|ruby|python|open.source|developer tool)\b/i;
     var title = normalizeText([metadata && metadata.title, document.title, heading && heading.textContent].join(" "));
-    if (!repositories.size && !(documentation.size >= 2 && softwareIdentity.test(title))) return null;
+    if (!repositories.size && documentation.size < 2) return null;
     if (!softwareIdentity.test(title + " " + prose)) return null;
     if (prose.length < 80) return null;
 

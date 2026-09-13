@@ -49,6 +49,42 @@ RSpec.describe FetchUtil::Extractor do
     end
   end
 
+  it 'recognizes software descriptions in plain lists and inline-only layout blocks' do
+    html = <<~HTML
+      <html><head><title>The toolkit projects</title></head><body>
+      <div id="nav"><ul><li><a href="/install">Installation</a></li><li><a href="/tutorial">Tutorial</a></li></ul></div>
+      <div>This is the common project page for the following tools.</div>
+      <ul><li><a href="/compiler">Compiler</a> — a compiler for the application language.</li>
+      <li><a href="/coroutines">Coroutines</a> — an extension for native concurrent execution.</li>
+      <li><a href="/assembler">Assembler</a> — a dynamic assembler for code generation engines.</li></ul>
+      <div>The runtime supports existing applications and works with the tools above.</div>
+      </body></html>
+    HTML
+    extract_from_url('https://toolkit.example.test/', html) do |result|
+      expect(result.fetch('html')).to include('data-fetchutil-page-overview')
+      expect(result.fetch('markdown')).to include(
+        'common project page', 'a compiler for the application language',
+        'native concurrent execution', 'dynamic assembler', 'supports existing applications'
+      )
+      expect(result.fetch('markdown')).not_to include('/install)', '/tutorial)')
+    end
+  end
+
+  it 'preserves owned project features introduced by a top-level heading' do
+    html = project_overview(<<~HTML)
+      <div class="promo"><h1>Build with the hosted tools</h1>
+      <div>Use the application framework with a shared workspace.</div>
+      <div><span>Connect your data</span><span>Pull data from the project database and local files.</span></div>
+      <a href="https://hosted.example.test/">Open the workspace</a></div>
+    HTML
+    extract_from_url('https://toolkit.example.test/', html) do |result|
+      expect(result.fetch('markdown')).to include(
+        'Build with the hosted tools', 'Connect your data',
+        'Pull data from the project database', 'https://hosted.example.test/'
+      )
+    end
+  end
+
   it 'does not treat an incidental repository link on a news page as project documentation' do
     html = project_overview('<main><h2>City headlines</h2><p>Reports from the city council.</p></main>')
     html = html.gsub('Toolkit developer framework', 'City headlines')

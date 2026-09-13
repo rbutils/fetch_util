@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Recognize software overview prose in lists and inline layout blocks, preserving owned feature sections across heading levels.
 - Require badge-specific evidence before removing short linked images, preserving named editor and project resources.
 - Preserve resource destinations when linked cards contain block-formatted labels.
 - Preserve page-owned preformatted examples during generic homepage and index-list arbitration, keeping instructional prose and code together while retaining real linked-record feeds.
