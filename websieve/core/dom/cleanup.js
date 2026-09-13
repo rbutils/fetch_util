@@ -82,10 +82,12 @@
     });
 
     root.querySelectorAll("p, div, span, li, td").forEach(function(el) {
+      if (codeContentNode(el)) return;
       if (looksLikeInlineJS(el.textContent) && !el.querySelector("p, h1, h2, h3, h4, h5, h6, ul, ol, table, blockquote, pre, article")) el.remove();
     });
 
     root.querySelectorAll("p, div, span, li, td").forEach(function(el) {
+      if (codeContentNode(el)) return;
       if (looksLikeDebugData(el.textContent) && !el.querySelector("p, h1, h2, h3, h4, h5, h6, ul, ol, table, blockquote, pre, article")) el.remove();
     });
 

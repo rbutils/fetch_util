@@ -65,5 +65,5 @@
     if (!node || node.nodeType !== 1) return false;
     if (node.closest("button, [role='button'], [role='tab'], [role='menuitem'], [role='toolbar']")) return false;
 
-    return !!(node.closest("pre, code, kbd, samp") || node.querySelector("pre, code, kbd, samp"));
+    return !!(node.closest("pre, code, kbd, samp, tt") || node.querySelector("pre, code, kbd, samp, tt"));
   }

@@ -74,4 +74,26 @@ RSpec.describe FetchUtil::Extractor do
       expect(markdown).not_to include('Copy to clipboard', 'View source')
     end
   end
+
+  it 'preserves explanatory prose and lists containing explicitly formatted inline examples' do
+    html = code_cleanup_page(<<~HTML)
+      <p>For example, make an event dispatcher with <tt>var dispatcher = _.clone(Events)</tt>
+         to coordinate callbacks across the application.</p>
+      <ul>
+        <li><strong>CommonJS</strong> <code>var _ = require('underscore');</code></li>
+        <li><strong>Modular import</strong> <code>var map = require('underscore/cjs/map.js');</code></li>
+      </ul>
+      <p>The diagnostic prints <samp>cache key: current-session-configuration</samp> for inspection.</p>
+      <div>var leakedTracking = new Date(); window.dataLayer.push(leakedTracking);</div>
+      <div>debug info: internal cache key: unformatted-runtime-state</div>
+    HTML
+
+    extract_from_url('https://manual.example.test/commands', html, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('make an event dispatcher', 'var dispatcher = _.clone(Events)')
+      expect(markdown).to include("var _ = require('underscore');", "var map = require('underscore/cjs/map.js');")
+      expect(markdown).to include('The diagnostic prints', 'cache key: current-session-configuration')
+      expect(markdown).not_to include('leakedTracking', 'unformatted-runtime-state')
+    end
+  end
 end

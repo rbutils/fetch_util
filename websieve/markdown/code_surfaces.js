@@ -24,6 +24,10 @@
   }
 
   function normalizeCodeSurfaces(root) {
+    root.querySelectorAll("tt").forEach(function(node) {
+      node.replaceWith(normalizedCodeElement(codeSurfaceText(node)));
+    });
+
     // Editors render each materialized line separately. Measurements, cursors and
     // hidden source buffers are not additional examples or missing viewport lines.
     root.querySelectorAll(".CodeMirror .CodeMirror-measure, .CodeMirror .CodeMirror-gutters, .CodeMirror .CodeMirror-cursors").forEach(function(node) {
