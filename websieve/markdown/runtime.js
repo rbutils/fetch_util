@@ -83,6 +83,18 @@
       }
     });
 
+    service.addRule("blockLabelLinks", {
+      filter: function(node) {
+        return node.nodeName === "A" && node.querySelector("div, p") &&
+          !node.querySelector("pre, table, ul, ol, h1, h2, h3, h4, h5, h6");
+      },
+      replacement: function(content, node) {
+        // Markdown link labels cannot contain the blank lines introduced by block children.
+        var label = content.trim().replace(/\s*\n+\s*/g, " ");
+        return markdownLink(label, node.getAttribute("href"));
+      }
+    });
+
     // Strip inline-styled elements that Turndown would otherwise pass through as raw HTML
     service.addRule("stripStyledInlineElements", {
       filter: function(node) {
