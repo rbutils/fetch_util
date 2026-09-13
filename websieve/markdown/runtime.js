@@ -97,7 +97,7 @@
 
     service.addRule("headingCardLinks", {
       filter: function(node) {
-        return node.nodeName === "A" && node.querySelector("h1, h2, h3, h4, h5, h6") &&
+        return node.nodeName === "A" && !node.closest("li") && node.querySelector("h1, h2, h3, h4, h5, h6") &&
           !node.querySelector("pre, table, ul, ol");
       },
       replacement: function(content, node) {

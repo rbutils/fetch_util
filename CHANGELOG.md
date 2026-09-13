@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve compact image-led list records when converting standalone heading-based resource cards.
 - Keep pure documentation-link indexes distinct from software project overviews by requiring locally owned descriptive prose.
 - Preserve locally owned software release versions and release-note links embedded in project footers.
 - Keep heading-based resource cards linked while preserving their heading levels, paragraphs, and images.
