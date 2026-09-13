@@ -95,6 +95,34 @@ RSpec.describe FetchUtil::Extractor do
     end
   end
 
+  it 'preserves locally owned release versions and notes from project footers' do
+    html = project_overview(<<~HTML)
+      <main><h2>Build applications</h2><p>The framework works with your existing code and deployment tools.</p></main>
+      <footer><div class="footer-releasenotes">The latest release is 4.14.8, released on August 30, 2026.
+        See <a href="/release-notes/">release notes</a> for details.</div>
+        <p>Copyright and unrelated footer content.</p><a href="/privacy">Privacy Policy</a>
+        <div hidden>Release 9.0.0 <a href="/draft-notes/">release notes</a></div></footer>
+    HTML
+    extract_from_url('https://toolkit.example.test/', html) do |result|
+      markdown = result.fetch('markdown')
+      expect(markdown).to include('4.14.8', 'August 30, 2026', '[release notes](https://toolkit.example.test/release-notes/)')
+      expect(markdown.index('Build applications')).to be < markdown.index('4.14.8')
+      expect(markdown).not_to include('Copyright', 'Privacy Policy', '9.0.0', '/draft-notes/')
+    end
+  end
+
+  it 'does not promote bare changelog navigation or unrelated versioned footer text' do
+    html = project_overview(<<~HTML)
+      <footer><div>Copyright toolkit version 2.0.0 <a href="/release-notes/">Release notes</a></div>
+        <p><a href="/changelog/">Changelog</a></p>
+        <div>Release 3.0.0 <a href="javascript:alert(1)">Release notes</a></div>
+        <div>Release 4.0.0 <a href="/releases/">Release notes</a><a href="/privacy">Privacy Policy</a></div></footer>
+    HTML
+    extract_from_url('https://toolkit.example.test/', html) do |result|
+      expect(result.fetch('markdown')).not_to include('2.0.0', '3.0.0', '4.0.0', '/changelog/', 'Privacy Policy')
+    end
+  end
+
   it 'keeps deep article routes out of homepage ownership' do
     html = project_overview('<main><h2>Building a framework</h2><p>This article describes the design.</p></main>')
     extract_from_url('https://toolkit.example.test/blog/designing-a-framework', html) do |result|

@@ -20,7 +20,9 @@
     });
     if (!documentation.size) return null;
 
-    var root = cleanClone(visibilityPrunedClone(document.body, document));
+    var root = visibilityPrunedClone(document.body, document);
+    preserveProjectReleaseNotes(root);
+    root = cleanClone(root);
     root.querySelectorAll("div, section").forEach(function(node) {
       if (!listNavigationNode(node)) return;
       var labels = node.cloneNode(true);
@@ -70,4 +72,46 @@
       readerMode: false,
       docsLike: true
     };
+  }
+
+  function projectReleaseNotesLink(link) {
+    var href = materializedHttpUrl(link.getAttribute("href"));
+    if (!href) return false;
+    return /\b(?:release notes?|changelog)\b/i.test(normalizeText(link.textContent)) ||
+      /\/(?:release[-_]notes|changelog|releases\/tag)(?:[/._-]|$)/i.test(new URL(href).pathname);
+  }
+
+  function preserveProjectReleaseNotes(root) {
+    root.querySelectorAll("footer, [role='contentinfo']").forEach(function(footer) {
+      var records = [];
+      footer.querySelectorAll("a[href]").forEach(function(link) {
+        if (!projectReleaseNotesLink(link)) return;
+        var owner = link.parentElement;
+        while (owner && owner !== footer) {
+          var text = normalizeText(owner.textContent);
+          var version = /\bv?\d+\.\d+(?:\.\d+)?\b/.test(text);
+          var release = /\b(?:release[ds]?|version)\b/i.test(text);
+          var linksOwned = Array.prototype.every.call(owner.querySelectorAll("a[href]"), function(reference) {
+            return projectReleaseNotesLink(reference) ||
+              (materializedHttpUrl(reference.getAttribute("href")) && /^v?\d+\.\d+(?:\.\d+)?$/i.test(normalizeText(reference.textContent)));
+          });
+          if (owner.matches("p, div, section, li") && version && release && linksOwned &&
+              !/copyright|©|privacy policy|all rights reserved/i.test(text) && !owner.querySelector("nav, form, button, input")) {
+            if (!records.some(function(record) { return record.contains(owner); })) {
+              records = records.filter(function(record) { return !owner.contains(record); });
+              records.push(owner);
+            }
+            break;
+          }
+          owner = owner.parentElement;
+        }
+      });
+      var replacement = document.createDocumentFragment();
+      records.forEach(function(record) {
+        var section = document.createElement("section");
+        while (record.firstChild) section.appendChild(record.firstChild);
+        replacement.appendChild(section);
+      });
+      footer.replaceWith(replacement);
+    });
   }
