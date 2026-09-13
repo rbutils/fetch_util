@@ -1,4 +1,4 @@
-  function mainFallbackPreservesArticle(primaryRoot, fallbackRoot) {
+  function articleMaterialPreserved(primaryRoot, fallbackRoot) {
     if (!normalizeText(primaryRoot.textContent || "")) return false;
 
     var fallbackUnits = [];
@@ -54,6 +54,20 @@
       }
       return false;
     })) return false;
+
+    var primaryCode = Array.prototype.map.call(primaryRoot.querySelectorAll("pre"), function(pre) { return articleCodeText(pre.textContent); });
+    var fallbackCode = Array.prototype.map.call(fallbackRoot.querySelectorAll("pre"), function(pre) { return articleCodeText(pre.textContent); });
+    var codePosition = 0;
+    return primaryCode.every(function(example) {
+      while (codePosition < fallbackCode.length) {
+        if (fallbackCode[codePosition++] === example) return true;
+      }
+      return false;
+    });
+  }
+
+  function mainFallbackPreservesArticle(primaryRoot, fallbackRoot) {
+    if (!articleMaterialPreserved(primaryRoot, fallbackRoot)) return false;
 
     var primaryLinks = new Set(Array.prototype.map.call(primaryRoot.querySelectorAll("a[href]"), function(link) {
       return materializedHttpUrl(link.getAttribute("href"));

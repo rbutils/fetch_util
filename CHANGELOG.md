@@ -5,6 +5,7 @@
 ### Fixed
 
 - Preserve page-owned preformatted examples during generic homepage and index-list arbitration, keeping instructional prose and code together while retaining real linked-record feeds.
+- Recover short commands and omitted instructional context from a visibility-cleaned fallback when it preserves the selected article's ordered text, resources, and exact code, retaining its metadata and reader-mode provenance.
 
 ## v0.6.2 - 2026-09-10
 

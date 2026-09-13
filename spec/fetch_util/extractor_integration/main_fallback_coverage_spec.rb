@@ -19,7 +19,7 @@ RSpec.describe FetchUtil::Extractor do
   end
 
   def main_fallback_selection(primary, fallback, main_root: true, url: "https://practice.example/", page_html: nil,
-                              primary_flags: {}, metadata: nil)
+                              primary_flags: {}, metadata: nil, code_root: false)
     root = File.expand_path("../../..", __dir__)
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true)
                  .reject { |line| line.empty? || line.start_with?("#") }
@@ -34,7 +34,8 @@ RSpec.describe FetchUtil::Extractor do
         var primary = {html: input.primary, textContent: normalizeText(primaryRoot.textContent), readerMode: true, contentType: "article",
           title: "Readability title", byline: "Primary author", excerpt: "Original summary", publishedTime: "2026-09-01"};
         Object.assign(primary, input.primaryFlags);
-        var fallback = {html: input.fallback, textContent: normalizeText(fallbackRoot.textContent), readerMode: false, contentType: "article", mainContentRoot: input.mainRoot};
+        var fallback = {html: input.fallback, textContent: normalizeText(fallbackRoot.textContent), readerMode: false,
+          contentType: "article", mainContentRoot: input.mainRoot, instructionalContentRoot: input.codeRoot};
         var primaryBefore = JSON.stringify(primary), fallbackBefore = JSON.stringify(fallback);
         var chosen = preferFallbackContent(primary, fallback);
         var dominantBefore = dominantIndexListPage(chosen);
@@ -56,7 +57,7 @@ RSpec.describe FetchUtil::Extractor do
     JS
     with_url_page(url, page_html || "<main>#{primary}</main>") do |page|
       page.add_script_tag(content: source)
-      input = { primary: primary, fallback: fallback, mainRoot: main_root, primaryFlags: primary_flags, metadata: metadata }
+      input = { primary: primary, fallback: fallback, mainRoot: main_root, primaryFlags: primary_flags, metadata: metadata, codeRoot: code_root }
       JSON.parse(page.evaluate("window.__mainFallbackSelection(#{JSON.generate(input)})"))
     end
   end
@@ -183,6 +184,48 @@ RSpec.describe FetchUtil::Extractor do
              { legalProvision: true }, { markdown: "Already rendered specialized content" }]
     flags.each do |primary_flags|
       result = main_fallback_selection(main_fallback_primary, main_fallback_primary + main_fallback_additions, primary_flags: primary_flags)
+      expect(result.fetch("expanded")).to be(false)
+    end
+  end
+
+  it "recovers omitted instructional examples without new links or semantic main markup" do
+    primary = "#{main_fallback_primary}<pre>if ready:\n  run()\nfinish()</pre>"
+    fallback = "#{primary}<p>Inspect the available options.</p><pre>tool --help</pre>"
+    result = main_fallback_selection(primary, fallback, main_root: false, code_root: true, url: "https://practice.example/tutorial")
+
+    expect(result.values_at("expanded", "readerMode", "inputsUnchanged")).to eq([true, true, true])
+    expect(result.fetch("metadata")).to eq(["Readability title", "Primary author", "Original summary", "2026-09-01"])
+    expect(main_fallback_selection(primary, fallback, main_root: false).fetch("expanded")).to be(false)
+  end
+
+  it "requires exact ordered primary code as well as complete prose and resources before recovery" do
+    primary = "#{main_fallback_primary}<pre>if ready:\n  run()\nfinish()</pre><pre>done()</pre>"
+    additions = "<pre>tool --help</pre>"
+    alternatives = [primary.sub("  run()", "run()"), primary.sub("if ready:", "if not_ready:"),
+                    "#{primary.sub("<pre>done()</pre>", "")}<p>done()</p>",
+                    primary.sub("href='/existing'", "href='/different'"),
+                    primary.sub(%r{<p>Primary paragraph 2.*?</p>}, "")]
+    alternatives.each do |alternative|
+      result = main_fallback_selection(primary, alternative + additions, code_root: true)
+      expect(result.values_at("expanded", "inputsUnchanged")).to eq([false, true])
+    end
+  end
+
+  it "preserves every additional instructional example in DOM order" do
+    primary = "#{main_fallback_primary}<pre>initial_command()</pre>"
+    commands = Array.new(125) { |index| "<pre>command_#{index}()</pre>" }.join
+    result = main_fallback_selection(primary, primary + commands, main_root: false, code_root: true)
+
+    expect(result.fetch("expanded")).to be(true)
+    expect(result.fetch("html").scan(%r{<pre>command_(\d+)\(\)</pre>}).flatten).to eq((0...125).map(&:to_s))
+  end
+
+  it "does not replace specialized or already rendered content with an instructional fallback" do
+    primary = "#{main_fallback_primary}<pre>initial_command()</pre>"
+    fallback = "#{primary}<pre>tool --help</pre>"
+    [{ readerMode: false }, { contentType: "list" }, { hostAware: true }, { docsLike: true },
+     { legalProvision: true }, { markdown: "Already rendered content" }].each do |primary_flags|
+      result = main_fallback_selection(primary, fallback, main_root: false, code_root: true, primary_flags: primary_flags)
       expect(result.fetch("expanded")).to be(false)
     end
   end

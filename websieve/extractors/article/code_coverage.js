@@ -56,3 +56,22 @@
     if (listCandidateLosesCodeBlocks(document.body, candidate)) candidate.provisionalPortal = true;
     return candidate;
   }
+
+  function instructionalArticleRoot(source, clone) {
+    if (!source.matches("main, article, section, div, [role='main']") ||
+        source.closest("nav, header, footer, aside, form, [role='navigation'], [role='complementary']")) return false;
+    if (!clone.querySelector("h1, h2, h3") || !clone.querySelector("p")) return false;
+    return articleBodyCodeBlocks(clone).length >= 2;
+  }
+
+  function instructionalFallbackContent(primary, fallback, primaryRoot, fallbackRoot) {
+    if (!fallback.instructionalContentRoot || primary.contentType !== "article" ||
+        primary.hostAware || primary.docsLike || primary.legalProvision || primary.markdown) return null;
+
+    var primaryExamples = articleBodyCodeBlocks(primaryRoot);
+    var fallbackExamples = articleBodyCodeBlocks(fallbackRoot);
+    if (fallbackExamples.length <= primaryExamples.length || !articleMaterialPreserved(primaryRoot, fallbackRoot)) return null;
+
+    // Preserve the selected article's metadata and provenance while restoring its examples.
+    return Object.assign({}, primary, { html: fallback.html, textContent: fallback.textContent });
+  }

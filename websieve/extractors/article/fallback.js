@@ -102,6 +102,7 @@
       readerMode: false,
       mainContentRoot: homepageRootPath() && (node.matches("main, [role='main']") ||
         (node.matches("article") && genericListPageContainer(node))),
+      instructionalContentRoot: instructionalArticleRoot(node, clone),
       contentType: "article"
     };
   }
@@ -181,6 +182,8 @@
 
     if (!fallbackText) return primary;
     if (fallback.legalProvision) return fallback;
+    var instructional = instructionalFallbackContent(primary, fallback, primaryRoot, fallbackRoot);
+    if (instructional) return instructional;
     if (primaryText.length < 4000 &&
         fallbackText.length >= Math.max(1800, primaryText.length * (fallbackContainsPrimary ? 2.5 : 3)) &&
         fallbackParagraphs >= Math.max(8, primaryParagraphs + 5) &&
