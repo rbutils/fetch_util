@@ -51,4 +51,34 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('markdown')).to include('![Editor logo](https://images.example.test/editor.svg)')
     expect(result.fetch('markdown')).not_to include('javascript:', 'user:secret', 'Hidden integration')
   end
+
+  it 'links a whole article card through its heading while preserving paragraphs and images' do
+    html = block_anchor_page(<<~HTML)
+      <a href="https://charts.example.test/plot?source=guide&amp;campaign=examples">
+        <article><h2>Powering <em>quick charts</em></h2>
+        <p>This higher-level interface provides chart primitives built on the core library.</p>
+        <p>Try the plotting library</p><img src="/plot.svg" alt="Chart preview"></article>
+      </a>
+      <a href="/workspace"><section><h3>Collaborative workspace</h3>
+        <p>Build shared applications with the rest of your team.</p></section></a>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/cards', html, reader_mode: false) { |payload| payload }
+    markdown = result.fetch('markdown')
+    expect(markdown).to include('## [Powering _quick charts_](https://charts.example.test/plot?source=guide&campaign=examples)')
+    expect(markdown).to include('### [Collaborative workspace](https://guide.example.test/workspace)')
+    expect(markdown).to include("core library.\n\nTry the plotting library", '![Chart preview](https://guide.example.test/plot.svg)')
+  end
+
+  it 'preserves heading card labels while rejecting hidden and unsafe destinations' do
+    html = block_anchor_page(<<~HTML)
+      <a href="javascript:alert(1)"><h2>Untrusted chart integration</h2><p>Visible instructions remain available.</p></a>
+      <a href="https://user:secret@charts.example.test/private"><h3>Private chart integration</h3></a>
+      <a href="/hidden" hidden><h2>Hidden chart integration</h2></a>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/card-labels', html, reader_mode: false) { |payload| payload }
+    expect(result.fetch('markdown')).to include('Untrusted chart integration', 'Visible instructions remain available.')
+    expect(result.fetch('markdown')).not_to include('javascript:', 'user:secret', 'Hidden chart integration')
+  end
 end

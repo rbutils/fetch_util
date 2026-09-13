@@ -95,6 +95,20 @@
       }
     });
 
+    service.addRule("headingCardLinks", {
+      filter: function(node) {
+        return node.nodeName === "A" && node.querySelector("h1, h2, h3, h4, h5, h6") &&
+          !node.querySelector("pre, table, ul, ol");
+      },
+      replacement: function(content, node) {
+        // Associate the destination with the card's heading without flattening its body.
+        var body = content.trim().replace(/^(#{1,6}[ \t]+)([^\n]+)/m, function(_match, prefix, label) {
+          return prefix + markdownLink(label, node.getAttribute("href"));
+        });
+        return "\n\n" + body + "\n\n";
+      }
+    });
+
     // Strip inline-styled elements that Turndown would otherwise pass through as raw HTML
     service.addRule("stripStyledInlineElements", {
       filter: function(node) {

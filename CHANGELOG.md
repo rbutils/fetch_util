@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep heading-based resource cards linked while preserving their heading levels, paragraphs, and images.
 - Recognize software overview prose in lists and inline layout blocks, preserving owned feature sections across heading levels.
 - Require badge-specific evidence before removing short linked images, preserving named editor and project resources.
 - Preserve resource destinations when linked cards contain block-formatted labels.
