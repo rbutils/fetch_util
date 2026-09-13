@@ -26,8 +26,12 @@
     var altText = normalizeText(Array.prototype.map.call(node.querySelectorAll("img[alt]"), function(img) {
       return img.getAttribute("alt") || "";
     }).join(" ")).toLowerCase();
+    var badgeImage = Array.prototype.some.call(node.querySelectorAll("img"), function(img) {
+      var src = img.getAttribute("src") || img.getAttribute("data-src") || "";
+      return /(?:shields\.io\/|\/badge(?:s)?[/.?_-]|\/badge\.svg(?:[?#]|$))/i.test(src);
+    });
 
-    return imgs >= 1 && links >= 1 && (text.length <= 24 || /\b(status|badge|build|coverage|workflow|ci)\b/.test(altText));
+    return imgs >= 1 && links >= 1 && (badgeImage || /\b(status|badge|coverage|workflow|ci)\b|\bbuild[\s_-]+(?:passing|failing)\b/.test(altText));
   }
 
   function looksLikeInlineJS(text) {
