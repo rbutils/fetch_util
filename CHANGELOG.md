@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve accessible names and destinations on icon-only resource links while retaining ordinary control cleanup.
 - Preserve named download artifacts and supporting HTTP links in ordinary Markdown tables.
 - Preserve prose and list instructions containing formatted inline code, including legacy typewriter examples, during JavaScript and debug-noise cleanup.
 - Preserve compact image-led list records when converting standalone heading-based resource cards.

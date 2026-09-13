@@ -3,6 +3,7 @@
 
     var root = document.createElement("div");
     root.innerHTML = html;
+    preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
     cleanupAgentRoot(root);
     normalizeCodeBlocks(root);
@@ -139,6 +140,20 @@
     var text = normalizeText(node.textContent);
     if (!text || text.length < 20) return false;
     return !node.querySelector("div, p, table, ul, ol, h1, h2, h3, h4, h5, h6, pre, blockquote, article, section");
+  }
+
+  function preserveAccessibleLinkLabels(root) {
+    root.querySelectorAll("a[aria-label][href]").forEach(function(link) {
+      var label = normalizeText(link.getAttribute("aria-label"));
+      if (!label || !materializedHttpUrl(link.getAttribute("href"))) return;
+      var visible = link.cloneNode(true);
+      visible.querySelectorAll("svg, [aria-hidden='true']").forEach(function(node) { node.remove(); });
+      if (normalizeText(visible.textContent)) return;
+      if (Array.prototype.some.call(visible.querySelectorAll("img[alt]"), function(image) {
+        return !!normalizeText(image.getAttribute("alt"));
+      })) return;
+      link.appendChild(document.createTextNode(label));
+    });
   }
 
   function preserveInlineProse(root) {

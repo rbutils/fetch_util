@@ -81,4 +81,22 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('markdown')).to include('Untrusted chart integration', 'Visible instructions remain available.')
     expect(result.fetch('markdown')).not_to include('javascript:', 'user:secret', 'Hidden chart integration')
   end
+
+  it 'preserves accessible names on icon-only resources without replacing visible labels' do
+    html = block_anchor_page(<<~HTML)
+      <a href="https://tools.example.test/prompt?q=integration" aria-label="Open integration prompt">
+        <span aria-hidden="true"><svg><path d="M0 0h10v10z"></path></svg></span>
+      </a>
+      <a href="/manual" aria-label="Open the full manual">Read the manual</a>
+      <a href="/print" aria-label="Print"><svg></svg></a>
+      <a href="/hidden" aria-label="Hidden tool" hidden><svg></svg></a>
+      <a href="javascript:alert(1)" aria-label="Untrusted tool"><svg></svg></a>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/icon-links', html, reader_mode: false) { |payload| payload }
+    markdown = result.fetch('markdown')
+    expect(markdown).to include('[Open integration prompt](https://tools.example.test/prompt?q=integration)')
+    expect(markdown).to include('[Read the manual](https://guide.example.test/manual)')
+    expect(markdown).not_to include('Open the full manual', '[Print]', 'Hidden tool', 'javascript:', 'Untrusted tool')
+  end
 end
