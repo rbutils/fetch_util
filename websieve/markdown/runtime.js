@@ -39,6 +39,15 @@
       }
     });
 
+    service.addRule("blockCodeWrappers", {
+      filter: function(node) {
+        return node.nodeName === "CODE" && node.querySelector("pre");
+      },
+      replacement: function(content) {
+        return "\n\n" + content.trim() + "\n\n";
+      }
+    });
+
     service.addRule("images", {
       filter: function(node) {
         return node.nodeName === "IMG";

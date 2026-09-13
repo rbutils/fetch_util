@@ -78,4 +78,16 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('markdown')).to include("// expected output\nshare(advert);\nview();")
     expect(result.fetch('markdown')).not_to include('Copy', 'Share')
   end
+
+  it 'keeps preformatted samples fenced inside an inline code wrapper' do
+    example = "let answer = 42\nif answer > 0:\n  echo answer"
+    html = code_surface_page(<<~HTML)
+      <code class="sample"><figure class="highlight"><pre>#{example}</pre></figure></code>
+      <p>Use the inline expression <code>print(value)</code> when reporting the result.</p>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/examples', html, reader_mode: false) { |payload| payload }
+    expect(result.fetch('markdown')).to include(example, '`print(value)`')
+    expect(result.fetch('markdown').scan(/^```/).length).to eq(2)
+  end
 end

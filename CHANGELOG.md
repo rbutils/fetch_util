@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve fenced samples inside inline-code wrappers instead of flattening their lines.
 - Preserve qualified software download and documentation groups despite header, sidebar, or call-to-action presentation classes.
 - Keep text links valid when decorative icons are wrapped in block-level figures.
 - Preserve accessible names and destinations on icon-only resource links while retaining ordinary control cleanup.
