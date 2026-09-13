@@ -1115,7 +1115,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "cleans duplicated ASP.NET data-table labels and footnote markers" do
+  it "cleans duplicated ASP.NET data-table labels while preserving footnote links" do
     html = <<~HTML
       <html>
         <head><title>Convention declarations</title></head>
@@ -1159,16 +1159,17 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    with_url_page("https://treaties.un.org/pages/ViewDetails.aspx?src=TREATY&mtdsg_no=IV-9&chapter=4", html) do |page|
+    url = "https://treaties.un.org/pages/ViewDetails.aspx?src=TREATY&mtdsg_no=IV-9&chapter=4"
+    with_url_page(url, html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
       markdown = payload["markdown"]
 
-      expect(markdown).to include("Austria 15 Declaration:")
-      expect(markdown).to include("Bangladesh 17, 18 Declaration:")
+      expect(markdown).to include("Austria [15](#{url}#15) Declaration:")
+      expect(markdown).to include("Bangladesh [17](#{url}#17), [18](#{url}#18) Declaration:")
       expect(markdown).to include("Bahamas (The) Reservations:")
-      expect(markdown).not_to include("Austria 15 Austria15")
-      expect(markdown).not_to include("Bangladesh 17, 18 Bangladesh17,18")
-      expect(markdown).not_to include("Bahamas (The) Bahamas (The)")
+      expect(markdown.scan("Austria").length).to eq(2)
+      expect(markdown.scan("Bangladesh").length).to eq(1)
+      expect(markdown.scan("Bahamas (The)").length).to eq(1)
     end
   end
 
