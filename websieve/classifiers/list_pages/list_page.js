@@ -128,6 +128,7 @@
         (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime() || ""))) return null;
 
     var extracted = listContent(metadata, { portalRoot: true });
+    if (content && listCandidateLosesArticleMaterial(content, extracted)) return null;
     return extracted.portalRootEvidence ? extracted : null;
   }
 

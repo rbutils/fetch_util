@@ -45,6 +45,7 @@ classifiers/challenges/consent_walls.js
 classifiers/challenges/interstitial_pages.js
 classifiers/challenges/index.js
 classifiers/list_pages/context.js
+extractors/article/code_coverage.js
 classifiers/list_pages/dominance.js
 classifiers/list_pages/search_category.js
 classifiers/list_pages/table_grid.js

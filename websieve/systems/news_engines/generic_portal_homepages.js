@@ -242,7 +242,7 @@
   function genericPortalHomepageContent(metadata) {
     if (homepageRootPath()) {
       var sectioned = listContent(metadata, { portalRoot: true });
-      if (sectioned.portalRootEvidence) return sectioned;
+      if (sectioned.portalRootEvidence) return codeAwareHomepageList(sectioned);
     }
 
     var leadRoot = genericHomepageLeadRoot(metadata, { minItems: 4 });
@@ -278,5 +278,5 @@
     result.listSourceNode = leadRoot.root;
     result.listSourceItems = supplemented ? supplemented.items : leadRoot.items;
     if (leadRoot.provisional) result.provisionalPortal = true;
-    return result;
+    return codeAwareHomepageList(result);
   }

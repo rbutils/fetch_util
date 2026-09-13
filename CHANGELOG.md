@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Preserve page-owned preformatted examples during generic homepage and index-list arbitration, keeping instructional prose and code together while retaining real linked-record feeds.
+
 ## v0.6.2 - 2026-09-10
 
 ### Changed

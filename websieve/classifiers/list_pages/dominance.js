@@ -18,6 +18,7 @@
 
     var root = document.createElement("div");
     root.innerHTML = content.html || "";
+    if (listCandidateLosesCodeBlocks(root, candidate)) return true;
     var seen = Object.create(null);
     var paragraphs = [];
     var substantialParagraphs = 0;
