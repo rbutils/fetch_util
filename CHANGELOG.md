@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve named download artifacts and supporting HTTP links in ordinary Markdown tables.
 - Preserve prose and list instructions containing formatted inline code, including legacy typewriter examples, during JavaScript and debug-noise cleanup.
 - Preserve compact image-led list records when converting standalone heading-based resource cards.
 - Keep pure documentation-link indexes distinct from software project overviews by requiring locally owned descriptive prose.

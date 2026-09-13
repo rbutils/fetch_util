@@ -31,8 +31,13 @@
     return clone;
   }
 
-  function tableCellText(cell) {
+  function tableCellMarkdown(cell) {
     var clone = removeDuplicatedLeadingCellBlocks(cell);
+    clone.querySelectorAll("a[href]").forEach(function(link) {
+      var href = materializedHttpUrl(link.getAttribute("href"));
+      var label = normalizeText(link.textContent || link.getAttribute("aria-label"));
+      if (href && label) link.replaceWith(document.createTextNode(markdownLink(label, href.replace(/\|/g, "%7C"))));
+    });
     var parts = [];
     Array.prototype.forEach.call(clone.childNodes, function(child) {
       var text = normalizeText(child.textContent);
@@ -157,7 +162,7 @@
 
     var rows = Array.prototype.map.call(table.querySelectorAll("tr"), function(row) {
       return Array.prototype.map.call(row.querySelectorAll("th, td"), function(cell) {
-        return escapeTableCell(tableCellText(cell));
+        return escapeTableCell(tableCellMarkdown(cell));
       });
     }).filter(function(row) {
       return row.length > 0;
