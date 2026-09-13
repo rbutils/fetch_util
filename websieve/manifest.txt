@@ -116,6 +116,7 @@ systems/docs/generic/core_frameworks.js
 systems/docs/generic/modern_frameworks.js
 systems/docs/generic/api_engines.js
 systems/docs/generic/sphinx.js
+systems/docs/generic/software_projects.js
 systems/docs/generic/index.js
 systems/docs/hosted/frameworks.js
 systems/docs/hosted/stripe.js

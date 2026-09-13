@@ -134,6 +134,7 @@
     root.querySelectorAll("aside, section, div, figure, picture").forEach(function(el) {
       if (el.matches("main, article, [role='main']")) return;
       if (el.querySelector("article, main, [role='main']")) return;
+      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h2, h3, pre")) return;
 
       var text = normalizeText(el.textContent || "");
       var textLower = text.toLowerCase();
@@ -162,6 +163,7 @@
 
   function stripRelatedSectionsByHeading(root) {
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
+      if (heading.closest("[data-fetchutil-page-overview]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
 
       var text = normalizeText(heading.textContent || "").trim();
@@ -198,6 +200,7 @@
     });
 
     root.querySelectorAll("div, section, aside").forEach(function(block) {
+      if (block.closest("[data-fetchutil-page-overview]")) return;
       if (!block.closest("article, main, [role='main']")) return;
 
       var text = normalizeText(block.textContent || "").trim();

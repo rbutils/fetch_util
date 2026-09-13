@@ -5,6 +5,7 @@
   registerGlassdoorProfiles();
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
+  registerHostAwareProfile(true, softwareProjectHomepageContent);
   registerNewsHomepageProfiles();
   registerWpHomepageProfile();
   registerOnetHomepageProfile();

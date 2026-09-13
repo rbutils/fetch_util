@@ -9,6 +9,7 @@
 - Preserve syntax-highlighted identifiers and literal code text during shared UI/docs cleanup, including `print`, `copy`, and `help`, while still removing actual copy and print controls.
 - Keep sectioned directories in list mode when their complete page-owned descriptions are rendered after classification; restrict the new late-portal protection to code coverage.
 - Preserve complete materialized code-editor examples, block-based line breaks, and highlighted code before article cleanup, without collapsing multiple examples into the first code block.
+- Extract evidenced software-project homepages as complete documentation overviews, preserving feature prose, examples, releases, and resource lists together instead of reducing them to unrelated links.
 
 ## v0.6.2 - 2026-09-10
 
