@@ -86,7 +86,7 @@
 
     service.addRule("blockLabelLinks", {
       filter: function(node) {
-        return node.nodeName === "A" && node.querySelector("div, p") &&
+        return node.nodeName === "A" && node.querySelector("div, p, figure") &&
           !node.querySelector("pre, table, ul, ol, h1, h2, h3, h4, h5, h6");
       },
       replacement: function(content, node) {

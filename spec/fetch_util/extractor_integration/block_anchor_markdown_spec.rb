@@ -99,4 +99,15 @@ RSpec.describe FetchUtil::Extractor do
     expect(markdown).to include('[Read the manual](https://guide.example.test/manual)')
     expect(markdown).not_to include('Open the full manual', '[Print]', 'Hidden tool', 'javascript:', 'Untrusted tool')
   end
+
+  it 'keeps text links valid when a block-level figure contains their decorative icon' do
+    html = block_anchor_page(<<~HTML)
+      <a href="/report"><span>Read the report</span>
+        <figure><span aria-hidden="true"><svg><path d="M0 0h10v10z"></path></svg></span></figure>
+      </a>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/report-link', html, reader_mode: false) { |payload| payload }
+    expect(result.fetch('markdown')).to include('[Read the report](https://guide.example.test/report)')
+  end
 end

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep text links valid when decorative icons are wrapped in block-level figures.
 - Preserve accessible names and destinations on icon-only resource links while retaining ordinary control cleanup.
 - Preserve named download artifacts and supporting HTTP links in ordinary Markdown tables.
 - Preserve prose and list instructions containing formatted inline code, including legacy typewriter examples, during JavaScript and debug-noise cleanup.
