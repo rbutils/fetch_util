@@ -5,6 +5,7 @@
       var comments = visibleCommentMarkup(document);
       var clone = safeReadableDocumentClone();
       pruneHiddenClone(document.documentElement, clone.documentElement);
+      normalizeCodeSurfaces(clone);
       if (commentOnlyRoot(clone)) return null;
       prepareInlineArticleProse(clone);
       cleanupCookieChrome(clone);

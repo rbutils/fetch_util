@@ -61,6 +61,8 @@
     if (!source.matches("main, article, section, div, [role='main']") ||
         source.closest("nav, header, footer, aside, form, [role='navigation'], [role='complementary']")) return false;
     if (!clone.querySelector("h1, h2, h3") || !clone.querySelector("p")) return false;
+    var editor = clone.querySelector(".CodeMirror-code pre, .cm-content pre");
+    if (editor && articleCodeText(editor.textContent).includes("\n")) return true;
     return articleBodyCodeBlocks(clone).length >= 2;
   }
 

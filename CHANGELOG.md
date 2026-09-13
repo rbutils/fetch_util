@@ -8,6 +8,7 @@
 - Recover short commands and omitted instructional context from a visibility-cleaned fallback when it preserves the selected article's ordered text, resources, and exact code, retaining its metadata and reader-mode provenance.
 - Preserve syntax-highlighted identifiers and literal code text during shared UI/docs cleanup, including `print`, `copy`, and `help`, while still removing actual copy and print controls.
 - Keep sectioned directories in list mode when their complete page-owned descriptions are rendered after classification; restrict the new late-portal protection to code coverage.
+- Preserve complete materialized code-editor examples, block-based line breaks, and highlighted code before article cleanup, without collapsing multiple examples into the first code block.
 
 ## v0.6.2 - 2026-09-10
 

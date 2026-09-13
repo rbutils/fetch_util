@@ -92,6 +92,7 @@
   }
 
   function normalizeCodeBlocks(root) {
+    normalizeCodeSurfaces(root);
     removeNodesByText(root, "button, a, span, div", /^(copy|copy to clipboard)$/i);
     root.querySelectorAll("button.copybutton, [aria-label*='copy' i], [title*='copy to clipboard' i]").forEach(function(el) {
       el.remove();
@@ -107,6 +108,7 @@
     });
 
     root.querySelectorAll("div.highlight, div[class*='CodeBlock'], div[class*='codeBlock'], div[class*='code-sample'], div[class*='CodeSample'], div[class*='snippet'], div.redoc-json, div[class*='redoc-json']").forEach(function(el) {
+      if (el.querySelectorAll("pre").length > 1) return;
       var pre = el.querySelector("pre");
       var text = cleanCodeText((pre || el).innerText || (pre || el).textContent);
       if (!text) return;

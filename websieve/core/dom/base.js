@@ -181,6 +181,7 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
+    normalizeCodeSurfaces(clone);
     if (preserveSelector) {
       clone.querySelectorAll(preserveSelector).forEach(function(el) {
         el.setAttribute("data-fetchutil-preserve", "true");
