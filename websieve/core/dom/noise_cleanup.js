@@ -72,15 +72,15 @@
   function stripUIWidgets(root) {
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
-      if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60) el.remove();
-      if (playerControlText(text) && textLength(el) < 80) el.remove();
+      if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el)) el.remove();
+      if (playerControlText(text) && textLength(el) < 80 && !codeContentNode(el)) el.remove();
     });
 
     // Strip social media join/follow CTAs
     root.querySelectorAll("a, button, div, p, span, li").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       if (textLength(el) > 200) return;
-      if (SOCIAL_APP_PROMO_TEXT_PATTERN.test(text)) el.remove();
+      if (SOCIAL_APP_PROMO_TEXT_PATTERN.test(text) && !codeContentNode(el)) el.remove();
     });
 
     // Strip app download / subscription promo containers
@@ -118,8 +118,8 @@
     root.querySelectorAll("a, button, div, span").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       var title = (el.getAttribute("title") || "").toLowerCase();
-      if (/^(zoom in|zoom out|show in full screen|layers|leaflet|maplibre)$/.test(text) && textLength(el) < 40) el.remove();
-      else if (/^(zoom in|zoom out)$/.test(title) && textLength(el) < 10) el.remove();
+      if (/^(zoom in|zoom out|show in full screen|layers|leaflet|maplibre)$/.test(text) && textLength(el) < 40 && !codeContentNode(el)) el.remove();
+      else if (/^(zoom in|zoom out)$/.test(title) && textLength(el) < 10 && !codeContentNode(el)) el.remove();
     });
     // Strip map container elements (Leaflet, MapLibre, etc.)
     root.querySelectorAll("[class*='leaflet-'], [class*='maplibre-'], [class*='map-container'], [class*='kartographer']").forEach(function(el) {

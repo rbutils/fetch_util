@@ -4,8 +4,6 @@
 
   function cleanCodeText(text) {
     return String(text || "")
-      .replace(/^Copy(?: to clipboard)?\s*/i, "")
-      .replace(/\u00b6/g, "")
       .replace(/\r\n?/g, "\n")
       .replace(/^\n+|\n+$/g, "");
   }

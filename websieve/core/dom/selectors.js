@@ -60,3 +60,10 @@
 
     return node.querySelectorAll("a[href], li, tr").length >= 3;
   }
+
+  function codeContentNode(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (node.closest("button, [role='button'], [role='tab'], [role='menuitem'], [role='toolbar']")) return false;
+
+    return !!(node.closest("pre, code, kbd, samp") || node.querySelector("pre, code, kbd, samp"));
+  }

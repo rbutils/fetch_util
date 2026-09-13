@@ -1,7 +1,7 @@
 function removeNodesByText(root, selector, pattern) {
   root.querySelectorAll(selector).forEach(function(el) {
     var text = normalizeText(el.textContent);
-    if (text && pattern.test(text)) el.remove();
+    if (text && pattern.test(text) && !codeContentNode(el)) el.remove();
   });
 }
 
@@ -62,6 +62,7 @@ function stripDocsTextNodePattern(root, pattern) {
 
   while (walker.nextNode()) nodes.push(walker.currentNode);
   nodes.forEach(function(node) {
+    if (node.parentElement.closest("pre, code, kbd, samp") && codeContentNode(node.parentElement)) return;
     var updated = node.nodeValue.replace(pattern, " ");
     if (updated !== node.nodeValue) node.nodeValue = updated;
   });
