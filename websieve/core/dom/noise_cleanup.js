@@ -125,8 +125,13 @@
       if (/^(zoom in|zoom out|show in full screen|layers|leaflet|maplibre)$/.test(text) && textLength(el) < 40 && !codeContentNode(el)) el.remove();
       else if (/^(zoom in|zoom out)$/.test(title) && textLength(el) < 10 && !codeContentNode(el)) el.remove();
     });
-    // Strip map container elements (Leaflet, MapLibre, etc.)
-    root.querySelectorAll("[class*='leaflet-'], [class*='maplibre-'], [class*='map-container'], [class*='kartographer']").forEach(function(el) {
+    // Match map-library containers, not substrings in leaflet cards or roadmap sections.
+    var mapContainerSelector = [
+      ".leaflet-container, .leaflet-pane, .leaflet-control, .leaflet-top, .leaflet-bottom",
+      ".maplibregl-map, .maplibregl-canvas-container, .maplibregl-control-container, .maplibre-map",
+      ".map-container, .mw-kartographer-container, .kartographer-container"
+    ].join(", ");
+    root.querySelectorAll(mapContainerSelector).forEach(function(el) {
       // Only strip if it doesn't contain substantial text content
       if (textLength(el) < 200) el.remove();
     });
