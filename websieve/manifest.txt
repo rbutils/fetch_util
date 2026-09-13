@@ -29,9 +29,7 @@ core/simple_article_profile.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/titles.js
 core/docs_cleanup/engines.js
-core/markdown_cleanup/fences.js
 core/markdown_cleanup/duplicates.js
-core/markdown_cleanup.js
 markdown/code_helpers.js
 markdown/code_surfaces.js
 markdown/tables.js
@@ -39,6 +37,8 @@ markdown/materialization_inline.js
 markdown/materialization_containers.js
 markdown/materialization_blocks.js
 markdown/materialization.js
+core/markdown_cleanup/fences.js
+core/markdown_cleanup.js
 markdown/runtime.js
 classifiers/challenges/challenge_pages.js
 classifiers/challenges/meta_walls.js

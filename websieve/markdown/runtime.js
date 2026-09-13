@@ -136,12 +136,13 @@
       }
     });
 
-    var md = service.turndown(root).replace(/\n{3,}/g, "\n\n").trim();
+    var protectedMarkdown = protectMarkdownFences(service.turndown(root));
+    var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();
     // Strip residual raw HTML tags outside of code blocks
     md = md.replace(/(```[\s\S]*?```|`[^`\n]+`)|<\/?[a-z][^>]*>/gi, function(match, codeBlock) {
       return codeBlock ? codeBlock : "";
     });
-    return md.replace(/\n{3,}/g, "\n\n").trim();
+    return restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
   }
 
   function paragraphLikeDiv(node) {

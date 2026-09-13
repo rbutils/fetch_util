@@ -90,4 +90,25 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('markdown')).to include(example, '`print(value)`')
     expect(result.fetch('markdown').scan(/^```/).length).to eq(2)
   end
+
+  it 'preserves repeated blank lines and literal markup inside a longer code fence' do
+    example = "payload = \"\"\"first\n\n\n\n<literal>\n```\nlast\"\"\"\nprint(payload)"
+    escaped = example.gsub('<', '&lt;').gsub('>', '&gt;')
+    html = code_surface_page("<pre><code data-language='python'>#{escaped}</code></pre>")
+
+    result = extract_from_url('https://guide.example.test/literals', html, reader_mode: false) { |payload| payload }
+    expect(result.fetch('markdown')).to include(example)
+    expect(result.fetch('markdown').scan(/^`{4}/).length).to eq(2)
+  end
+
+  it 'preserves blank lines inside list and blockquote code samples' do
+    example = "const value = `first\n\n\n\nlast`;"
+    html = code_surface_page(<<~HTML)
+      <ol><li>Apply this configuration.<pre><code>#{example}</code></pre></li></ol>
+      <blockquote><pre><code>#{example}</code></pre></blockquote>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/nested', html, reader_mode: false) { |payload| payload }
+    expect(result.fetch('markdown').scan(/first\n[ \t>]*\n[ \t>]*\n[ \t>]*\n[ \t>]*last/).length).to eq(2)
+  end
 end

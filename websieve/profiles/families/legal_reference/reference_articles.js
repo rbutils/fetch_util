@@ -9,7 +9,7 @@
     clone.insertBefore(heading, clone.firstChild);
     cleanupAgentRoot(clone);
 
-    var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML)).replace(/\n{3,}/g, "\n\n").trim();
+    var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML));
     var text = normalizeText(markdown || clone.textContent || "");
     if (text.length < 200) return null;
 

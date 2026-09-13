@@ -77,7 +77,7 @@
       siteName: metadata.siteName || location.hostname,
       publishedTime: metadata.publishedTime || null,
       minTextLength: 400,
-      postProcessMarkdown: function(markdown) { return markdown.replace(/\n{3,}/g, "\n\n").trim(); },
+      postProcessMarkdown: compactMarkdownSpacing,
       rewriteRoot: function(clone) {
         clone.querySelectorAll("script, style, form, nav, .noprint, #toc, table").forEach(function(el) { el.remove(); });
         clone.querySelectorAll("a[href*='index.html#'], a[href*='index.htm#']").forEach(function(link) {
