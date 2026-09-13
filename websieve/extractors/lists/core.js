@@ -48,6 +48,15 @@
       };
     }
     if (flatCoverage) items = flatCoverage.items;
+    if (flatCoverage && !flatCoverage.markdown) {
+      var flatDescriptions = listDescriptionParts(root, items, {
+        includeInlineProse: true, preserveTextLengths: true,
+        pageTitles: pageTitles, preserveUnrepresentedText: true
+      });
+      flatCoverage.markdown = sectionedListMarkdownWithDescriptions({
+        regions: [{ node: root, label: "", cards: items }]
+      }, flatDescriptions);
+    }
 
     var itemMarkdown = flatCoverage ? sameRootFlatListMarkdown(items, flatCoverage.headings) : listMarkdown(items);
     var markdown = descText ? descText + (itemMarkdown ? "\n\n" + itemMarkdown : "") : itemMarkdown;

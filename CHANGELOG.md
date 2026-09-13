@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve sparse section headings and unlinked notices when complete flat records supplement a partial sectioned list.
 - Match actual map-library containers during cleanup, preserving unrelated leaflet cards and roadmap sections.
 - Preserve code-local blank lines and literal markup through Markdown normalization, including longer and nested fences.
 - Preserve fenced samples inside inline-code wrappers instead of flattening their lines.
