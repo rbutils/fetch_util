@@ -138,7 +138,7 @@
     root.querySelectorAll("aside, section, div, figure, picture").forEach(function(el) {
       if (el.matches("main, article, [role='main']")) return;
       if (el.querySelector("article, main, [role='main']")) return;
-      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h1, h2, h3, h4, h5, h6, pre")) return;
+      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
 
       var text = normalizeText(el.textContent || "");
       var textLower = text.toLowerCase();
@@ -229,6 +229,7 @@
 
     // Strip generic sidebar/toc/rail/menu containers by class pattern when link-dense.
     root.querySelectorAll("[class*='sidebar'], [class*='side-nav'], [class*='sidenav'], [class*='left-rail'], [class*='right-rail'], [class*='article-drawer'], [class*='toc-drawer'], [class*='table-of-contents'], [class*='mobile-menu'], [class*='mobile-nav'], [class*='hamburger-menu'], [class*='toc']").forEach(function(el) {
+      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("[data-fetchutil-project-reference]")) return;
       if (homepageRootPath() && el.parentNode && el.matches("[class*='sidebar'], [class*='left-rail'], [class*='right-rail']") &&
           !el.closest("nav, header, footer, aside, [role='navigation'], [role='menu'], [role='menubar'], [role='complementary']") &&
           genericListChromeOwnsCollection(el)) {

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve qualified software download and documentation groups despite header, sidebar, or call-to-action presentation classes.
 - Keep text links valid when decorative icons are wrapped in block-level figures.
 - Preserve accessible names and destinations on icon-only resource links while retaining ordinary control cleanup.
 - Preserve named download artifacts and supporting HTTP links in ordinary Markdown tables.

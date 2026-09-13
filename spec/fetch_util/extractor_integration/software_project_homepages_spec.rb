@@ -6,6 +6,31 @@ require_relative '../../support/extractor_integration_helpers'
 RSpec.describe FetchUtil::Extractor do
   include_context 'extractor integration helpers'
 
+  it 'keeps project download and documentation actions without retaining navigation or unrelated CTAs' do
+    html = <<~HTML
+      <html><head><title>Toolkit compiler</title></head><body><main>
+        <h1>Toolkit compiler</h1>
+        <p>Toolkit is an open source compiler and runtime for building reliable applications.
+           Download the release and consult the documentation before starting your project.</p>
+        <div class="page-header__actions"><a href="https://github.com/example/toolkit/archive/1.0.zip">Download 1.0</a>
+          <a href="https://github.com/example/toolkit">View on GitHub</a></div>
+        <div class="cta-buttons"><a href="/documentation/1.0/">Documentation</a><a href="/changes">Changes</a></div>
+        <div class="rightsidebar"><h2>Project references</h2><ul>
+          <li><a href="/quickstart">Getting started</a></li><li><a href="/language">Language reference</a></li>
+          <li><a href="/api">API reference</a></li></ul></div>
+        <div class="nav"><a href="/navigation-docs">Documentation menu</a></div>
+        <div class="cta-ad"><a href="/subscription">Subscribe</a></div>
+      </main></body></html>
+    HTML
+
+    result = extract_from_url('https://toolkit.example.test/', html) { |payload| payload }
+    expect(result.fetch('markdown')).to include('https://github.com/example/toolkit/archive/1.0.zip')
+    expect(result.fetch('markdown')).to include('[Documentation](https://toolkit.example.test/documentation/1.0/)')
+    expect(result.fetch('markdown')).to include('[Changes](https://toolkit.example.test/changes)')
+    expect(result.fetch('markdown')).to include('/quickstart', '/language', '/api')
+    expect(result.fetch('markdown')).not_to include('/navigation-docs', '/subscription')
+  end
+
   def project_overview(body, repository: 'https://github.com/team/toolkit')
     <<~HTML
       <html><head><title>Toolkit developer framework</title></head><body>

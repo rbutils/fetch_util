@@ -24,7 +24,8 @@
     preserveProjectReleaseNotes(root);
     root = cleanClone(root);
     root.querySelectorAll("div, section").forEach(function(node) {
-      if (!listNavigationNode(node)) return;
+      var attrs = [node.id, node.className].join(" ");
+      if (!/(?:^|[-_\s])(?:nav(?:igation|bar)?|menu|menubar|breadcrumbs?|toc)(?:$|[-_\s])/i.test(attrs)) return;
       var labels = node.cloneNode(true);
       labels.querySelectorAll("a, img, svg").forEach(function(link) { link.remove(); });
       if (!normalizeText(labels.textContent)) node.remove();
@@ -60,6 +61,11 @@
     var article = document.createElement("article");
     article.setAttribute("data-fetchutil-page-overview", "true");
     while (root.firstChild) article.appendChild(root.firstChild);
+    article.querySelectorAll("a[href]").forEach(function(link) {
+      var label = normalizeText(link.textContent || link.getAttribute("aria-label"));
+      if (/^(?:documentation|docs|download|install(?:ation)?|get(?:ting)? started|changes?|changelog|release(?: notes)?|source(?: code)?|view on (?:github|gitlab))\b/i.test(label) &&
+          materializedHttpUrl(link.getAttribute("href"))) link.setAttribute("data-fetchutil-project-reference", "true");
+    });
     cleanupAgentRoot(article);
     if (normalizeText(article.textContent).length < 80) return null;
 
