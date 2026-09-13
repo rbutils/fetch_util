@@ -96,20 +96,13 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
   end
 
   it 'does not append a generic panel delta to a specialized portal result' do
-    specialized = <<~HTML
-      <section class="wp-section-grid">
-        <h2><a class="wp-section-title-link" href="/news">Latest reports</a></h2>
-        <a class="wp-teaser-tile" href="/special/1">Specialized report one</a>
-        <a class="wp-teaser-tile" href="/special/2">Specialized report two</a>
-        <a class="wp-teaser-tile" href="/special/3">Specialized report three</a>
-      </section>
-    HTML
-    html = controlled_panel_fixture.sub('<h1>Travel destination directory</h1>', specialized)
+    specialized = fixture_contents(File.expand_path('../../fixtures/fidelity_onet_homepage.html', __dir__))
+    html = specialized + controlled_panel_fixture
 
-    with_url_page('https://wp.pl/', html) do |page|
+    with_url_page('https://onet.pl/', html) do |page|
       markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page).fetch('markdown')
 
-      expect(markdown).to include('Specialized report one')
+      expect(markdown).to include('Latarnie dostały własny harmonogram')
       expect(record_numbers(markdown)).to be_empty
     end
   end

@@ -233,7 +233,6 @@ profiles/social/networks/bluesky.js
 profiles/news/europe/western/germany/zeit.js
 profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
-profiles/news/europe/central/poland/wp.js
 profiles/news/europe/central/poland/onet.js
 profiles/register.js
 profiles/news/global/xinhua.js

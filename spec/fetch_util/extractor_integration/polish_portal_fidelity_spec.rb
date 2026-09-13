@@ -20,10 +20,11 @@ RSpec.describe 'Polish portal homepage fidelity' do
         'Księgarnia wymienia', 'Ogrodnik rozdaje', 'Plan ciszy', 'Lista rzeczy',
         'Jak przechować miętę'
       ]
-      expect(wp_titles.sum { |title| result['markdown'].scan(title).length }).to eq(20)
+      expect(wp_titles.reject { |title| result['markdown'].scan(title).length == 1 }).to be_empty
       expect(result['markdown']).to include('Krótka ścieżka łączy dwa spokojne zakątki.')
       expect(result['markdown']).to include('## Okazje na dziś', '## Kartki z sąsiedztwa', '## Porady z podwórka')
-      expect(result['markdown']).not_to include('Jak przechować miętę przez noc wersja mobilna', 'Porada bez odnośnika', 'Narzędzia')
+      expect(result['markdown']).to include('## Porada bez odnośnika')
+      expect(result['markdown']).not_to include('Jak przechować miętę przez noc wersja mobilna', 'Narzędzia')
       expect(result['markdown']).not_to include('FID:chrome-ad', 'FID:chrome-sidebar', 'FID:chrome-footer')
       expect(result['markdown'].scan(%r{https?://[^)]+/wp/advice-01}).length).to eq(1)
       expect(result['markdown'].index('Ruch na świeżym powietrzu')).to be < result['markdown'].index('Pracownie i handel')
@@ -104,15 +105,35 @@ RSpec.describe 'Polish portal homepage fidelity' do
     end
   end
 
-  it 'keeps www roots with their site-specific homepage owners' do
+  it 'keeps www homepage content with the generic or retained owner' do
     [
-      ['https://www.wp.pl/', 'fidelity_wp_homepage'],
-      ['https://www.onet.pl/', 'fidelity_onet_homepage']
-    ].each do |url, fixture_name|
+      ['https://www.wp.pl/', 'fidelity_wp_homepage', false],
+      ['https://www.onet.pl/', 'fidelity_onet_homepage', true]
+    ].each do |url, fixture_name, host_aware|
       extract_from_url(url, fixture(fixture_name), reader_mode: false) do |payload|
         expect(payload['contentType']).to eq('list')
-        expect(payload['hostAware']).to eq(true)
+        expect(payload['hostAware']).to eq(host_aware)
       end
+    end
+  end
+
+  it 'keeps the WP lead grid even when it has no named section heading' do
+    lead = <<~HTML
+      <div class="wp-section-grid">
+        <a class="wp-teaser-tile" href="/lead-first"><h3>Reporters follow the morning developments</h3></a>
+        <a class="wp-teaser-regular" href="/lead-second"><h3>Residents describe the overnight changes</h3></a>
+      </div>
+    HTML
+    html = fixture('fidelity_wp_homepage').sub('<div class="wp-section-grid">', "#{lead}<div class=\"wp-section-grid\">")
+
+    extract_from_url('https://www.wp.pl/', html, reader_mode: false) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['hostAware']).to eq(false)
+      expect(payload['markdown']).to include(
+        '[Reporters follow the morning developments](https://www.wp.pl/lead-first)',
+        '[Residents describe the overnight changes](https://www.wp.pl/lead-second)'
+      )
+      expect(payload['markdown'].index('Reporters follow')).to be < payload['markdown'].index('Ruch na świeżym powietrzu')
     end
   end
 
