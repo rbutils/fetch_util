@@ -33,6 +33,9 @@
     var prose = Array.prototype.map.call(root.querySelectorAll("p, li, dd, dt, div"), function(paragraph) {
       if (paragraph.closest("nav, footer, aside, [role='navigation']")) return "";
       if (paragraph.tagName === "DIV" && !paragraphLikeDiv(paragraph)) return "";
+      var owned = paragraph.cloneNode(true);
+      owned.querySelectorAll("a, img, svg").forEach(function(link) { link.remove(); });
+      if (!normalizeText(owned.textContent)) return "";
       return normalizeText(paragraph.textContent);
     }).join(" ");
     var softwareIdentity = /\b(?:programming language|compiler|runtime|framework|librar(?:y|ies)|database|web server|static[- ](?:web)?sites?|javascript|typescript|ruby|python|open.source|developer tool)\b/i;
