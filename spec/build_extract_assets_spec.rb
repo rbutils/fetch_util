@@ -197,8 +197,10 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
-    expect(list_source).to include("var listMarkdown = function(items)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField")
-    expect(list_source.index("function cardField")).to be < list_source.index("var listMarkdown = function(items)")
+    expect(list_source).to include(
+      "var listMarkdown = function(items, primaryUrls)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField"
+    )
+    expect(list_source.index("function cardField")).to be < list_source.index("var listMarkdown = function(items, primaryUrls)")
     list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
       File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length
     end
@@ -222,7 +224,7 @@ RSpec.describe "extract asset bundle" do
 
   it "defines list helpers before the parser-sensitive renderer snapshot" do
     list_source = File.read(File.join(project_root, "websieve", "markdown", "lists.js"))
-    renderer_index = list_source.index("var listMarkdown = function(items)")
+    renderer_index = list_source.index("var listMarkdown = function(items, primaryUrls)")
 
     expect(list_source.index("function listSupplementalDetail")).to be < renderer_index
     expect(list_source.index("function cardField")).to be < renderer_index
