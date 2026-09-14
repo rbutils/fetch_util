@@ -49,6 +49,27 @@ RSpec.describe FetchUtil::Extractor, 'horizontal content clipping' do
     end
   end
 
+  it 'keeps visible children of a translated track whose own box is outside the clip' do
+    with_url_page('https://bulletin.example/', clipping_page) do |page|
+      page.evaluate(<<~JS)
+        (() => {
+          const track = document.querySelector('.track');
+          track.style.width = '360px';
+          track.style.transform = 'translateX(-600px)';
+        })()
+      JS
+      expect(page.evaluate(<<~JS)).to be(true)
+        document.querySelector('.track').getBoundingClientRect().right <=
+          document.querySelector('.carousel').getBoundingClientRect().left
+      JS
+      before = page.evaluate('document.body.outerHTML')
+      markdown = extract_payload(page).fetch('markdown')
+      expect(markdown).to include('https://bulletin.example/feature/third')
+      expect(markdown).not_to include('/feature/first', '/feature/second')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
   it 'preserves overflowing code tokens but excludes an entirely clipped code panel' do
     extra = <<~HTML
       <section><h2>Reading the data</h2><div style='width: 120px; overflow-x: hidden'>

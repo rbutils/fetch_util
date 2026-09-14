@@ -112,7 +112,12 @@
     var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
     if (exactPreservedRoot) clipBounds = null;
     else if (!checkedParent) clipBounds = ancestorHorizontalClipBounds(source);
-    if (horizontallyClippedElement(source, style, clipBounds)) {
+    var sourceChildren = composedDomChildren(source);
+    var clipped = horizontallyClippedElement(source, style, clipBounds);
+    var overflowingChildren = clipped && style.overflowX === "visible" &&
+      !source.matches("pre, code, kbd, samp, .CodeMirror, .cm-editor") &&
+      sourceChildren.some(function(child) { return child.nodeType === 1; });
+    if (clipped && !overflowingChildren) {
       clone.remove();
       return;
     }
@@ -133,17 +138,22 @@
 
     var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
     var childClipBounds = horizontalClipBounds(source, style, clipBounds);
-    var sourceChildren = composedDomChildren(source);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
       var childClone = cloneChildren[index];
       if (!childClone) return;
-      if (visibilityHidden && child.nodeType !== 1) {
+      if ((visibilityHidden || overflowingChildren) && child.nodeType !== 1) {
         childClone.remove();
         return;
       }
       pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones, childClipBounds);
     });
+
+    if (overflowingChildren && !clone.children.length) {
+      clone.remove();
+      if (sourceClones) sourceClones.delete(source);
+      return;
+    }
 
     if (visibilityHidden) {
       clone.style.setProperty("visibility", "visible", "important");

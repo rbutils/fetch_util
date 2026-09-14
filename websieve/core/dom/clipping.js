@@ -18,7 +18,7 @@
   }
 
   function horizontallyClippedElement(node, style, bounds) {
-    if (!bounds || !node || !node.isConnected || !style || /^(inline|contents)$/.test(style.display)) return false;
+    if (!bounds || !node || !node.isConnected || !style || style.display === "contents") return false;
     var rect = node.getBoundingClientRect();
     if (!rect.width || (rect.right > bounds.left && rect.left < bounds.right)) return false;
     // Long code lines remain complete; their enclosing off-screen panel can still be excluded.
