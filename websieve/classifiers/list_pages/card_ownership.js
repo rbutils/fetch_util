@@ -4,6 +4,7 @@
   }
 
   function genericListPresentationCardNode(node) {
+    if (genericListAlignmentOnlyCard(node)) return true;
     if (genericListActionAnchor(node)) return true;
     // A wrapper inside the record's own anchor does not own a separate destination.
     var enclosingLink = node && node.closest && node.closest("a[href]");

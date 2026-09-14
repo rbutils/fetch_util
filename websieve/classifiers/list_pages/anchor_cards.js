@@ -1,3 +1,14 @@
+  function genericListAlignmentOnlyCard(node) {
+    if (!node || !node.matches || node.matches("a[href], tr, article, li, .post, .entry, .product, .product-tile, [itemtype$='/Product']")) return false;
+    var classes = Array.from(node.classList || []);
+    var recordClasses = classes.filter(function(name) {
+      return !/(?:^|:)(?:(?:justify|place)-)?items-(?:(?:start|end|center)(?:-safe)?|baseline|stretch|normal|\[[^\]]+\])$/i.test(name);
+    });
+    return recordClasses.length < classes.length && !recordClasses.some(function(name) {
+      return /card|story|teaser|item|result|news|headline/i.test(name);
+    }) && !node.matches(genericListLinkedMediaRowSelector());
+  }
+
   function genericListActionAnchor(node) {
     var explicitAction = node && Array.prototype.some.call(node.classList || [], function(name) {
       return /^(?:card|story|teaser|result|news)[-_](?:cta|action)(?:[-_].*)?$/i.test(name);
