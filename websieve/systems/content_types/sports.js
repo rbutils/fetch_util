@@ -260,15 +260,15 @@
     if (!evidence) return content;
 
     var details = sportsDetails(evidence);
-    var original = cleanupMarkdownNoise(content.markdown || content.textContent || "").trim();
+    var original = contentBodyMarkdown(content);
     var normalizedOriginal = normalizeText(original);
     var sections = [];
     var title = content.title || metadata.title || document.title;
 
-    if (title && !markdownStartsWithTitle(original, title)) sections.push("# " + title);
     if (details.length && details.some(function(detail) { return normalizedOriginal.indexOf(normalizeText(detail)) === -1; })) {
-      sections.push(details.map(function(detail) { return "- " + detail; }).join("\n"));
+      original = contentMarkdownWithDetails(original, title, details.map(function(detail) { return "- " + detail; }).join("\n"));
     }
+    if (title && !markdownStartsWithTitle(original, title)) sections.push("# " + title);
     sections.push(original);
     (evidence.tables || []).forEach(function(tableMarkdown) {
       if (normalizeText(sections.join("\n\n")).indexOf(normalizeText(tableMarkdown)) === -1) sections.push(tableMarkdown);

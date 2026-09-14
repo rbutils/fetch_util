@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve article headings, links and block structure when enriching sports, property and product content with structured details.
 - Preserve visible children of translated overflow-visible containers instead of clipping an entire carousel by its track's border box.
 - Use word segmentation for non-space-delimited headlines so meaningful Chinese, Thai and related-script collections are not mistaken for navigation.
 - Keep visible topic and category destinations as local list context when they are not already represented by a record or description.

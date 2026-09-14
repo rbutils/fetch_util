@@ -15,11 +15,13 @@
     if (content.price) details.push("Price: " + content.price);
     if (content.availability) details.push("Availability: " + content.availability);
     if (content.sku) details.push("SKU: " + content.sku);
-    if (details.length && normalizeText(content.markdown || content.textContent || "").indexOf(details[0]) === -1) {
-      var title = content.title || (metadata && metadata.title) || document.title;
-      var body = normalizeText(content.markdown || content.textContent || "");
-      content.markdown = ["# " + title, details.map(function(detail) { return "- " + detail; }).join("\n"), body].filter(Boolean).join("\n\n");
-      content.textContent = normalizeText(content.markdown);
+    if (details.length) {
+      var body = contentBodyMarkdown(content);
+      if (normalizeText(body).indexOf(details[0]) === -1) {
+        var title = content.title || (metadata && metadata.title) || document.title;
+        content.markdown = contentMarkdownWithDetails(body, title, details.map(function(detail) { return "- " + detail; }).join("\n"));
+        content.textContent = normalizeText(content.markdown);
+      }
     }
 
     return content;

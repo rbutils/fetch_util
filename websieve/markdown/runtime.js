@@ -1,3 +1,20 @@
+  function contentBodyMarkdown(content) {
+    var markdown = content.markdown;
+    if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html));
+    return cleanupMarkdownNoise(markdown || content.textContent || "").trim();
+  }
+
+  function contentMarkdownWithDetails(body, title, details) {
+    var heading = title ? "# " + title : "";
+    var lines = body.split("\n");
+    var firstHeading = lines[0].match(/^#{1,6}[ \t]+(.+)$/);
+    if (firstHeading && normalizeText(firstHeading[1]) === normalizeText(title)) {
+      heading = lines.shift();
+      body = lines.join("\n").trim();
+    }
+    return [heading, details, body].filter(Boolean).join("\n\n");
+  }
+
   function markdownFor(html) {
     if (typeof TurndownService !== "function") return html;
 

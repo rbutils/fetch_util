@@ -208,10 +208,11 @@
     if (content.bathrooms !== null && content.bathrooms !== undefined) details.push("Bathrooms: " + content.bathrooms);
     if (content.areaSqft !== null && content.areaSqft !== undefined) details.push("Area: " + content.areaSqft + " sqft");
 
-    var body = cleanupMarkdownNoise(content.markdown || content.textContent || "");
+    var body = contentBodyMarkdown(content);
     var detailMarkdown = details.map(function(detail) { return "- " + detail; }).join("\n");
     if (details.length && body.indexOf(details[0]) === -1) {
-      content.markdown = ["# " + (content.title || metadata.title || document.title), detailMarkdown, body].filter(Boolean).join("\n\n");
+      var title = content.title || metadata.title || document.title;
+      content.markdown = contentMarkdownWithDetails(body, title, detailMarkdown);
       content.textContent = normalizeText(content.markdown);
     }
 
