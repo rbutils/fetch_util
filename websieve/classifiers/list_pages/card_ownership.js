@@ -24,6 +24,8 @@
         (requireBoundary !== false && (!card.parentElement || !genericListCardBoundary(card))) ||
         (requireBoundary === false && (genericListPageContainer(card) || !!card.closest("nav, header, footer, aside, menu, [role='navigation'], [role='menu']")))) return null;
 
+    var overlayLink = genericListOverlayCardLink(card);
+    if (overlayLink) return overlayLink;
     var titleSelector = "h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4";
     var titleNode = card.querySelector(titleSelector);
     var firstAnchor = titleNode && (titleNode.matches("a[href]") ? titleNode : titleNode.closest("a[href]"));

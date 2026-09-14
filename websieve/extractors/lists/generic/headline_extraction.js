@@ -21,7 +21,7 @@
       if (!candidate) return;
       if (candidate.groupLabel == null && candidate.card && genericListCardBoundary(candidate.card)) {
         var nested = candidate.card.querySelectorAll(genericListCardSelector());
-        if (Array.prototype.some.call(nested, function(card) {
+        if (genericListStructuredCardLink(candidate.card) !== link && Array.prototype.some.call(nested, function(card) {
           return genericListNestedCard(card) && genericListNestedCardReplaces(candidate.card, card);
         })) return;
         var primary = sectionCardCandidate(candidate.card, { listContext: sectionContext });
