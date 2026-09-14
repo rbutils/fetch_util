@@ -155,6 +155,10 @@
     });
     root.querySelectorAll("section, div, aside, form, ul, ol").forEach(function(el) {
       if (!listChromeNode(el)) return;
+      if (listOwnedHeadingContainer(el)) {
+        el.replaceWith.apply(el, Array.from(el.childNodes));
+        return;
+      }
       var recordRoots = genericListChromeOwnedRecordRoots(el);
       if (recordRoots.length && el.parentNode) {
         recordRoots.forEach(function(recordRoot) {
@@ -256,10 +260,11 @@
     if (!items) return closestGenericListCard(node);
 
     var text = normalizeText(node.textContent || "");
+    var heading = /^H[1-6]$/.test(node.tagName || "");
     var represented = text && items.find(function(item, index) {
       var values = itemValues[index];
       return values.some(function(value) {
-        return value === text || value.indexOf(text) >= 0;
+        return value === text || (!heading && value.indexOf(text) >= 0);
       }) && listDescriptionReferencesRepresented(node, values, primaryReferences);
     });
     var recordCard;

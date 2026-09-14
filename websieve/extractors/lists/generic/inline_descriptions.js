@@ -35,7 +35,9 @@
   }
 
   function listMarkdownWithInlineDescriptions(extraction) {
-    var descriptions = listDescriptionParts(extraction.root, extraction.items, { includeInlineProse: true });
+    var descriptions = listDescriptionParts(extraction.root, extraction.items, {
+      includeInlineProse: true, preserveUnrepresentedText: true
+    });
     var wrappedRecords = extraction.items.some(function(item) { return genericListWrappedAnchorCard(item.card); });
     if (!wrappedRecords && !descriptions.some(function(part) { return part.node.tagName === "DIV"; })) return "";
 

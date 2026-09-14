@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve locally owned collection headings through header cleanup and render selected list context in source order with consistent record-reference ownership.
 - Keep document-level layout state distinct from navigation when extracting cloned pages, preserving records beneath header or sidebar presentation classes.
 - Match abbreviated consent-vendor namespaces as class or id tokens, preserving ordinary sticky layouts and CSS-variable references during cookie cleanup.
 - Extract visible open-component content and rendered slots through shared DOM cloning, preserving nested stories, article text and references without exposing hidden or unassigned content.

@@ -205,6 +205,13 @@
 
     var sequence = 0;
     var blocks = [];
+    var primaryUrls = new Set();
+    sectioned.regions.forEach(function(region) {
+      region.cards.forEach(function(item) {
+        var url = materializedHttpUrl(item.url || "");
+        if (url) primaryUrls.add(listCanonicalKey(url));
+      });
+    });
     sectioned.regions.forEach(function(region, regionIndex) {
       if (region.label) {
         blocks.push({
@@ -218,7 +225,7 @@
       region.cards.forEach(function(item) {
         blocks.push({
           node: item.sourceNode || item.card || region.node,
-          markdown: listMarkdown([item]),
+          markdown: listMarkdown([item], primaryUrls),
           kind: "item",
           regionIndex: regionIndex,
           sequence: sequence++

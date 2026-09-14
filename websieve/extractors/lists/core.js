@@ -122,8 +122,11 @@
     var best = bestListExtraction(metadata, pageTitles, options);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
-      best.descText = listDescriptionMarkdown(best.root, best.items);
-      best.markdown = listMarkdownWithDescription(best.descText, best.items);
+      var descriptions = listDescriptionParts(best.root, best.items, { preserveUnrepresentedText: true });
+      best.descText = descriptions.map(function(part) { return part.markdown; }).join("\n\n");
+      best.markdown = sectionedListMarkdownWithDescriptions({
+        regions: [{ node: best.root, label: "", cards: best.items }]
+      }, descriptions) || listMarkdown(best.items);
     }
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");

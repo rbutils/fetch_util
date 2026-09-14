@@ -192,8 +192,8 @@ function listItemContextValues(item, primaryUrls) {
   });
 }
 
-var listMarkdown = function(items) {
-  var primaryUrls = new Set(items.map(function(item) {
+var listMarkdown = function(items, primaryUrls) {
+  primaryUrls = primaryUrls || new Set(items.map(function(item) {
     var url = materializedHttpUrl(item.url || "");
     return url && listCanonicalKey(url);
   }).filter(Boolean));
