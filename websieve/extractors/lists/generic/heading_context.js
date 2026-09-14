@@ -27,3 +27,31 @@
     });
     return destinations.size >= 2;
   }
+
+  function listLinkedSectionHeading(node, root, items, primaryUrls) {
+    if (!items || !items.length || node.closest("a[href], nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar']")) return false;
+    var links = Array.from(node.querySelectorAll("a[href]"));
+    var destinations = new Set();
+    if (links.length < 2 || !links.every(function(link) {
+      var text = normalizeText(link.textContent);
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      if (!text || !url || primaryUrls.has(listCanonicalKey(url)) || url.split("#")[0] === location.href.split("#")[0]) return false;
+      if (genericListControlText(text) || looksLikeFooterLink(text, url)) return false;
+      destinations.add(url);
+      return true;
+    }) || destinations.size < 2) return false;
+
+    var remainder = node.cloneNode(true);
+    remainder.querySelectorAll("a[href]").forEach(function(link) { link.remove(); });
+    if (normalizeText(remainder.textContent).replace(/[\s\-–—|/·•&+,;:]+/g, "")) return false;
+
+    for (var owner = node.parentElement; owner && !owner.matches("html, body"); owner = owner.parentElement) {
+      var records = items.filter(function(item) {
+        var source = item.sourceNode || item.card;
+        return source && owner.contains(source) && !node.contains(source);
+      });
+      if (records.length >= 2) return true;
+      if (owner === root || owner.matches("article, section, aside")) break;
+    }
+    return false;
+  }

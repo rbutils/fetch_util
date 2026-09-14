@@ -73,4 +73,43 @@ RSpec.describe 'List section heading context' do
       expect(markdown).to include('## Illustrated reports', 'Northern district photo report', 'Southern district photo report')
     end
   end
+
+  it 'preserves short linked category labels and destinations above their selected collection' do
+    records = (1..6).map do |number|
+      "<a class='card' href='/report/#{number}'><h3>Regional investigation number #{number}</h3>" \
+        '<p>Reporters explain the findings and what they mean for local residents.</p></a>'
+    end.join
+    html = '<html><body><h1>Regional bulletin</h1><main><section><div>' \
+           '<h2><a href="/cars">Cars</a> - <a href="/tech">Tech</a> - <a href="/gear">Gear</a></h2>' \
+           "</div>#{records}</section>" \
+           '<nav><h2><a href="/next">Next</a> - <a href="/back">Back</a></h2></nav>' \
+           '</main></body></html>'
+
+    with_url_page('https://bulletin.example/', html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+      heading = '## [Cars](https://bulletin.example/cars) - [Tech](https://bulletin.example/tech) - ' \
+                '[Gear](https://bulletin.example/gear)'
+      expect(markdown).to include(heading)
+      expect(markdown.index(heading)).to be < markdown.index('/report/1')
+      expect(markdown).not_to include('/next)', '/back)')
+    end
+  end
+
+  it 'does not promote unowned, unsafe or primary-record link groups into section headings' do
+    records = (1..6).map do |number|
+      "<a class='card' href='/report/#{number}'><h3>Regional investigation number #{number}</h3>" \
+        '<p>Reporters explain the evidence and the next steps for local residents.</p></a>'
+    end.join
+    html = '<html><body><h1>Regional bulletin</h1>' \
+           '<div><h2><a href="/a">A</a> / <a href="/b">B</a></h2></div>' \
+           '<section><h2><a href="/cars">Cars</a> / <a href="https://user:secret@example.org/">Gear</a></h2>' \
+           '<h2><a href="/report/1">Lead</a> / <a href="/tech">Tech</a></h2>' \
+           "#{records}</section></body></html>"
+
+    with_url_page('https://bulletin.example/', html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+      expect(markdown).to include('Regional investigation number 6')
+      expect(markdown).not_to include('## [A]', '## [Cars]', '## [Lead]', 'user:secret')
+    end
+  end
 end

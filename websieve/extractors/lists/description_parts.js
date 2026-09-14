@@ -32,19 +32,22 @@
       }
       var text = normalizeText(el.textContent);
       var heading = /^H[1-6]$/.test(el.tagName);
+      var linkedSectionHeading = heading && listLinkedSectionHeading(el, root, items, primaryUrls);
       var pageHeading = heading && !el.closest("a[href]") && !el.querySelector("a[href]");
       var weatherOwner = pageHeading && el.closest("[class*='weather' i], [id*='weather' i]");
       if (weatherOwner && weatherModuleText(weatherOwner.textContent)) pageHeading = false;
       // Linked record titles keep their existing admission, not page-label treatment.
       if (heading && !pageHeading && !/^H[1-3]$/.test(el.tagName)) return;
       if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
-      if (!(hasItems && (pageHeading || inlineProse)) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
+      if (!(hasItems && (pageHeading || linkedSectionHeading || inlineProse)) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;
-      if (links <= 1 || (links / words) < 0.3) {
+      if (linkedSectionHeading || links <= 1 || (links / words) < 0.3) {
         var prefix = heading ? "## " : "";
-        if (!heading && links) {
+        if (linkedSectionHeading) {
+          text = markdownFor(el.innerHTML).trim();
+        } else if (!heading && links) {
           var description = el.cloneNode(true);
           description.querySelectorAll("a[href]").forEach(function(link) {
             link.replaceWith(document.createTextNode(markdownLink(normalizeText(link.textContent), link.getAttribute("href"))));
