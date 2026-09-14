@@ -37,7 +37,8 @@
     if (substantialParagraphs < 3 || paragraphChars < 1200) return false;
 
     var articleText = normalizeText(content.textContent || content.markdown || "");
-    var candidateMarkdown = candidate.markdown || candidate.textContent || "";
+    var candidateMarkdown = candidate.listArbitrationMarkdown == null ?
+      candidate.markdown || candidate.textContent || "" : candidate.listArbitrationMarkdown;
     var candidateText = normalizeText(candidateMarkdown
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
       .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1")
@@ -55,7 +56,8 @@
     if (!content || !candidate || content.contentType !== "article" || candidate.contentType !== "list") return false;
 
     var articleText = normalizeText(content.textContent || content.markdown || "");
-    var candidateMarkdown = candidate.markdown || candidate.textContent || "";
+    var candidateMarkdown = candidate.listArbitrationMarkdown == null ?
+      candidate.markdown || candidate.textContent || "" : candidate.listArbitrationMarkdown;
     var candidateText = normalizeText(candidateMarkdown
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
       .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1")

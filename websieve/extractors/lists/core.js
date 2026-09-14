@@ -155,6 +155,7 @@
       } : null
     });
     result.listExtraction = best;
+    result.listArbitrationMarkdown = rankedMarkdown;
     if (best.sectionMarkdownWithDescription) result.sectionMarkdownWithDescription = best.sectionMarkdownWithDescription;
     return result;
   }
