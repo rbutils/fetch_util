@@ -7,6 +7,7 @@
     var clone = safeDeepClone(node, document);
     if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
     pruneHiddenClone(node, clone, preservedRoots);
+    unwrapListCardHeaders(clone);
     preserveHomepageListAsides(clone);
     return cleanClone(clone, "[data-fetchutil-editorial-aside]");
   }

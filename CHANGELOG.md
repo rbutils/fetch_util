@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve primary story headings inside card-owned headers while retaining site navigation cleanup.
 - Preserve short linked category headings and their destinations when they own an extracted collection.
 - Preserve proved homepage editorial columns through list cleanup, keeping visible headline collections and their local context despite sidebar presentation.
 - Preserve locally owned collection headings through header cleanup and render selected list context in source order with consistent record-reference ownership.
