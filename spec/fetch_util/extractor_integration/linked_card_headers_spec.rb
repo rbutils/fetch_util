@@ -57,4 +57,22 @@ RSpec.describe FetchUtil::Extractor, 'card-owned headings' do
       expect(markdown).not_to include('fallback.jpg')
     end
   end
+
+  it 'preserves named title fields inside owned headers without requiring heading tags' do
+    records = (1..6).map do |number|
+      tag = number.odd? ? 'div' : 'span'
+      "<article class='news'><a class='news__link' href='/named/#{number}'>" \
+        "<header><time>2026-09-14</time><span class='news__category'>Region #{number}</span>" \
+        "<#{tag} class='news__title'>Named regional investigation number #{number}</#{tag}></header></a></article>"
+    end.join
+    html = '<html><body><header><a href="/navigation"><div class="news__title">Publisher navigation shortcut</div></a></header>' \
+           "<main><h1>Regional investigations</h1>#{records}</main></body></html>"
+    with_url_page('https://publisher.example/', html) do |page|
+      markdown = described_class.new.extract(page).fetch('markdown')
+      (1..6).each do |number|
+        expect(markdown).to include("[Named regional investigation number #{number}](https://publisher.example/named/#{number})")
+      end
+      expect(markdown).not_to include('Publisher navigation shortcut', '/navigation)')
+    end
+  end
 end

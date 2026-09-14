@@ -62,6 +62,18 @@
     return false;
   }
 
+  function listCardHeaderTitles(root) {
+    var titles = Array.from(root.querySelectorAll("h1, h2, h3, h4, [role='heading'], [itemprop~='headline'], [class*='title' i], [class*='headline' i]")).filter(function(node) {
+      if (node.matches("h1, h2, h3, h4, [role='heading'], [itemprop~='headline']")) return true;
+      var hints = (node.getAttribute("class") || "").replace(/([a-z\d])([A-Z])/g, "$1 $2");
+      var text = normalizeText(node.textContent);
+      return /(?:^|[\s_-])(?:title|headline)(?:$|[\s_-])/i.test(hints) && text.length >= minimumListTitleLength(text);
+    });
+    return titles.filter(function(node) {
+      return !titles.some(function(other) { return other !== node && node.contains(other); });
+    });
+  }
+
   function unwrapListOwnedHeaders(root) {
     root.querySelectorAll("header").forEach(function(header) {
       if (header.matches("[role='banner'], [role='navigation'], [role='menu'], [role='toolbar']")) return;
@@ -71,11 +83,11 @@
       }
       var card = header.closest("article, li") || closestGenericListCard(header.parentElement);
       if (!card || card.contains(header) === false || card.closest("header, nav, footer, menu, [role='navigation'], [role='banner']")) return;
-      var headings = header.querySelectorAll("h1, h2, h3, h4");
+      var headings = listCardHeaderTitles(header);
       if (headings.length !== 1 || !normalizeText(headings[0].textContent)) return;
       var link = genericListStructuredCardLink(card);
       if (!link && card.matches("article, li") && !genericListPageContainer(card)) {
-        var ownedHeadings = Array.from(card.querySelectorAll("h1, h2, h3, h4")).filter(function(heading) {
+        var ownedHeadings = listCardHeaderTitles(card).filter(function(heading) {
           return heading.closest("article, li") === card;
         });
         if (ownedHeadings.length === 1) link = headings[0].closest("a[href]") || headings[0].querySelector("a[href]");
