@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Use word segmentation for non-space-delimited headlines so meaningful Chinese, Thai and related-script collections are not mistaken for navigation.
 - Keep visible topic and category destinations as local list context when they are not already represented by a record or description.
 - Preserve named title fields in record-owned headers even when publishers use divs or spans instead of heading tags.
 - Exclude fully clipped horizontal carousel content while preserving partially visible cards, scrollable collections and complete code examples.

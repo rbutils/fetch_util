@@ -15,6 +15,15 @@
   var PROMO_MEDIA_PATTERN = new RegExp("(?:\\/|[-_])(" + NOISE_PROMO_MEDIA_TERMS + ")(?:\\/|[-_.?]|$)", "i");
   var RELATED_SECTION_HEADING_PATTERN = noiseExactTextPattern(NOISE_RELATED_HEADING_TERMS, "i");
   var INLINE_CONSENT_PROMPT_PATTERN = noiseExactTextPattern(NOISE_INLINE_CONSENT_PROMPT_SOURCES, "i");
+  var navigationWordSegmenter = null;
+
+  function navigationWordCount(text) {
+    var words = text.split(/\s+/).length;
+    if (!/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}]/u.test(text) || typeof Intl === "undefined" || !Intl.Segmenter) return words;
+    if (!navigationWordSegmenter) navigationWordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+    var segments = Array.from(navigationWordSegmenter.segment(text)).filter(function(part) { return part.isWordLike; });
+    return Math.max(words, segments.length);
+  }
 
   function isBadgeNode(node) {
     if (!node) return false;
@@ -251,7 +260,7 @@
         el.remove();
       } else if (links >= 3 && text.length < 1200) {
         // Even with content children, strip if it's small and link-dense
-        var words = text.split(/\s+/).length;
+        var words = navigationWordCount(text);
         if (words > 0 && (links / words) > 0.3) el.remove();
       }
     });
@@ -260,8 +269,9 @@
       if (el.closest("article, main, [role='main']") && el.matches("article *, main *, [role='main'] *")) return;
       var text = normalizeText(el.textContent || "");
       var links = el.querySelectorAll("a[href]").length;
-      var words = text.split(/\s+/).length;
-      if (links >= 6 && words > 0 && (links / words) > 0.5 && text.length < 600 && !el.querySelector("article, main, [role='main'], p, h1, h2, h3, blockquote, pre, table")) {
+      if (links >= 6 && text.length < 600 && !el.querySelector("article, main, [role='main'], p, h1, h2, h3, blockquote, pre, table")) {
+        var words = navigationWordCount(text);
+        if (!words || (links / words) <= 0.5) return;
         var group = genericListLinkGroup(el.querySelector("a[href]"));
         if (group && el.contains(group.card)) return;
         el.remove();
