@@ -1,5 +1,5 @@
   global.FetchUtilExtract = {
-    extract: function(options) {
+    extract: withComposedDomRead(function(options) {
       mwananchiPrePageTextCleanup();
       var metadata = collectMetadata();
       var focalArticleRoute = articleRouteFocalContent();
@@ -226,5 +226,5 @@
       hiddenMainArticle.warningReasons = (hiddenMainArticle.warningReasons || []).concat(result.warnings || []);
       var hiddenMainResult = finalizeExtractResult(hiddenMainArticle, metadata, pageText, signals, medicalArticle);
       return hiddenSubstantiveMainFinalResultSafe(result, hiddenMainResult) ? hiddenMainResult : result;
-    }
+    })
   };

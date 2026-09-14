@@ -57,8 +57,7 @@
     var searchUrl = /\/(?:search|results?)(?:\.html?)?$/i.test(path) || /(?:^|[?&])(?:q|query|search|searchtext|keyword|k|text)=/.test(query);
     if (!searchUrl) return false;
 
-    var root = document.createElement("div");
-    root.innerHTML = (content && content.html) || document.body.innerHTML;
+    var root = pageContentProbe(content);
     var text = normalizeText([root.textContent || "", markdown || "", document.title || ""].join(" "));
     var countText = text.replace(/[*_`]+/g, "");
     var resultCountText = /\bresults?\s*\d+\s*[-–]\s*\d+\s*(?:of|sur|von|de)\s*\d+\b/i.test(countText) || /\b\d+\s+results?\b/i.test(countText);

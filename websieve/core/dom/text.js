@@ -121,9 +121,10 @@
       !READABLE_TEXT_COOKIE_MARKERS.test(rendered) ||
       !cookieNoticeText(rendered)
     );
-    if (renderedLooksReadable) return rendered;
+    var composed = nodeHasOpenShadowContent(document.body);
+    if (renderedLooksReadable && !composed) return rendered;
 
-    var clone = safeDeepClone(document.body, document);
+    var clone = composed ? visibilityPrunedClone(document.body, document) : safeDeepClone(document.body, document);
     clone.querySelectorAll("script, style, noscript, template, iframe").forEach(function(el) {
       el.remove();
     });

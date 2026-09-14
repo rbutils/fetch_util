@@ -22,13 +22,23 @@
     ownerDoc = ownerDoc || document;
     if (!node) return null;
     if (node.nodeType === 3) return ownerDoc.createTextNode(node.textContent || "");
+    if (node.nodeType === 8) return ownerDoc.createComment(node.textContent || "");
+    if (node.nodeType === 11) {
+      var fragment = ownerDoc.createDocumentFragment();
+      composedDomChildren(node).forEach(function(child) {
+        var childClone = cloneIntoDocument(child, ownerDoc);
+        if (childClone) fragment.appendChild(childClone);
+      });
+      return fragment;
+    }
     if (node.nodeType !== 1) return null;
 
     var tag = (node.tagName || "").toLowerCase();
     var cloneTag = tag && !/-/.test(tag) ? tag : "div";
     var clone;
     try {
-      clone = ownerDoc.createElement(cloneTag || "div");
+      clone = node.namespaceURI && node.namespaceURI !== "http://www.w3.org/1999/xhtml" ?
+        ownerDoc.createElementNS(node.namespaceURI, node.localName) : ownerDoc.createElement(cloneTag || "div");
     } catch (e) {
       clone = ownerDoc.createElement("div");
     }
@@ -36,11 +46,12 @@
     Array.prototype.forEach.call(node.attributes || [], function(attr) {
       if (!attr || !attr.name || /^on/i.test(attr.name)) return;
       try {
-        clone.setAttribute(attr.name, attr.value);
+        if (attr.namespaceURI) clone.setAttributeNS(attr.namespaceURI, attr.name, attr.value);
+        else clone.setAttribute(attr.name, attr.value);
       } catch (e) {}
     });
 
-    Array.prototype.forEach.call(node.childNodes || [], function(child) {
+    composedDomChildren(node).forEach(function(child) {
       var childClone = cloneIntoDocument(child, ownerDoc);
       if (childClone) clone.appendChild(childClone);
     });
@@ -50,6 +61,10 @@
 
   function safeDeepClone(node, ownerDoc) {
     try {
+      if (nodeHasOpenShadowContent(node)) {
+        var inertDoc = ownerDoc && !ownerDoc.defaultView ? ownerDoc : document.implementation.createHTMLDocument("");
+        return cloneIntoDocument(node, inertDoc);
+      }
       return node.cloneNode(true);
     } catch (e) {
       return cloneIntoDocument(node, ownerDoc);
@@ -57,12 +72,13 @@
   }
 
   function elementSubtreeHiddenWithin(node, boundary) {
-    var current = node;
+    var current = node && node.nodeType === 11 && node.host ? node.host : node;
     while (current && current !== boundary && current.nodeType === 1) {
+      if (current.parentElement && current.parentElement.shadowRoot && !current.assignedSlot) return true;
       var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
       if (current.hidden) return true;
       if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0 && !deferredRevealContentNode(current, style)))) return true;
-      current = current.parentElement;
+      current = composedDomParent(current);
     }
     return false;
   }
@@ -87,7 +103,7 @@
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
     var preservedRoot = exactPreservedRoot ? source : preservingRoot;
     // Recursion reaches a child only after its parent's subtree visibility passed.
-    var boundary = checkedParent ? source.parentElement : preservedRoot;
+    var boundary = checkedParent ? composedDomParent(source) : preservedRoot;
     var subtreeHidden = elementSubtreeHiddenWithin(source, boundary || null);
     if (source.nodeType === 1 && !exactPreservedRoot && subtreeHidden) {
       clone.remove();
@@ -110,7 +126,7 @@
 
     var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
     var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
-    var sourceChildren = Array.prototype.slice.call(source.childNodes || []);
+    var sourceChildren = composedDomChildren(source);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
       var childClone = cloneChildren[index];
@@ -151,6 +167,11 @@
 
   function safeReadableDocumentClone() {
     try {
+      if (nodeHasOpenShadowContent(document.documentElement)) {
+        var composed = document.cloneNode(false);
+        composed.appendChild(cloneIntoDocument(document.documentElement, composed));
+        return composed;
+      }
       return document.cloneNode(true);
     } catch (e) {}
 

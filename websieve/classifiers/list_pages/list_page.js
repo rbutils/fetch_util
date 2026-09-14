@@ -62,14 +62,12 @@
         (signals.cards >= 4 && signals.headlineLinks >= 4 && signals.headings >= 3 && signals.text.length <= 36000);
     }
 
-    var pageRoot = document.createElement("div");
-    pageRoot.innerHTML = document.body.innerHTML;
+    var pageRoot = pageContentProbe();
     var pageSignals = listSignals(pageRoot);
 
     if (homepageLike(pageSignals)) return true;
 
-    var root = document.createElement("div");
-    root.innerHTML = content && content.html ? content.html : document.body.innerHTML;
+    var root = pageContentProbe(content);
     return homepageLike(listSignals(root));
   }
 
@@ -79,8 +77,7 @@
     if (linkedTableIndexPage()) return true;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
-    var root = document.createElement("div");
-    root.innerHTML = (content && content.html) || document.body.innerHTML;
+    var root = pageContentProbe(content);
     var materializedLinks = materializedListLinks(root);
     var links = materializedLinks.length;
     var cards = root.querySelectorAll("article, li, section, [class*='card' i], [class*='item' i], [class*='story' i], [class*='product' i], [class*='tile' i], [class*='job' i], [data-testid*='card' i], [data-testid*='product' i], [data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-url*='/remote-jobs/']").length;
@@ -99,8 +96,7 @@
       return total + normalizeText(link.textContent || link.getAttribute("aria-label") || "").length;
     }, 0);
     var linkDensity = text.length > 0 ? linkText / text.length : 0;
-    var pageRoot = document.createElement("div");
-    pageRoot.innerHTML = document.body.innerHTML;
+    var pageRoot = pageContentProbe();
     var articleFeedLinks = Math.max(sectionFeedArticleLinks(root), sectionFeedArticleLinks(pageRoot));
 
     if (legalJudgmentArticleContent(root, text) || legalStatuteArticleContent(root, text)) return false;
