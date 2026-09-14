@@ -3,23 +3,6 @@
     return includeLinkedLayouts === false ? selector : selector + ", " + genericListAnchorCardSelector() + ", " + genericListLinkedMediaRowSelector();
   }
 
-  function genericListPresentationCardNode(node) {
-    if (genericListAlignmentOnlyCard(node)) return true;
-    if (genericListActionAnchor(node)) return true;
-    // A wrapper inside the record's own anchor does not own a separate destination.
-    var enclosingLink = node && node.closest && node.closest("a[href]");
-    if (enclosingLink && enclosingLink !== node && !node.querySelector("a[href]")) return true;
-    if (node && node.matches && !node.matches("a[href], article, li, tr, .post, .entry, .product, .product-tile, [itemtype$='/Product']") &&
-        !node.querySelector("a[href]")) return true;
-    var classes = ((node && node.getAttribute && node.getAttribute("class")) || "").split(/\s+/);
-    return classes.some(function(name) {
-      return /^(?:card|story|teaser|result|news|headline)[-_]+(?:body|content|meta(?:data)?|header|footer|details?)(?:[-_].*)?$/i.test(name) ||
-        /^(?:Card|Story|Teaser|Result|News|Headline)(?:Body|Content|Meta(?:data)?|Header|Footer|Details?)(?:[-_A-Z].*)?$/.test(name) ||
-        /styles__(?:(?:Card|Story|Teaser|Result|News|Headline)(?:Body|Content|Meta(?:data)?|Header|Footer|Details?|Title|Headline|Heading|Image|Media|Thumbnail)|(?:Title|Headline|Heading|Meta(?:data)?|Image|Media|Thumbnail|Kicker|Eyebrow))(?:[-_A-Z].*)?$/.test(name) ||
-        /^item[-_]+meta(?:data)?(?:[-_].*)?$/i.test(name);
-    });
-  }
-
   function genericListStructuredCardLink(card, requireBoundary) {
     if (!card ||
         (requireBoundary !== false && (!card.parentElement || !genericListCardBoundary(card))) ||
