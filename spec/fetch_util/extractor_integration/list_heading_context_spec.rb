@@ -112,4 +112,20 @@ RSpec.describe 'List section heading context' do
       expect(markdown).not_to include('## [A]', '## [Cars]', '## [Lead]', 'user:secret')
     end
   end
+
+  it 'keeps a section-owned header and destination while removing its navigation controls' do
+    records = (1..6).map do |number|
+      "<article><a href='/story/#{number}'><img src='/#{number}.jpg'><h3>Local sporting investigation #{number}</h3></a></article>"
+    end.join
+    html = '<html><body><header><h1>Publisher navigation</h1></header><main><h1>Regional bulletin</h1><section>' \
+           '<header><h2><a href="/sport">Sport</a></h2><nav><a href="/menu">Navigation options</a></nav></header>' \
+           "#{records}</section></main></body></html>"
+    with_url_page('https://bulletin.example/', html) do |page|
+      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+      heading = '## [Sport](https://bulletin.example/sport)'
+      expect(markdown).to include(heading, 'Local sporting investigation 6')
+      expect(markdown.index(heading)).to be < markdown.index('/story/1')
+      expect(markdown).not_to include('Publisher navigation', 'Navigation options', '/menu)')
+    end
+  end
 end
