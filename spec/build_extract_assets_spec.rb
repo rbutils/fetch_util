@@ -419,6 +419,8 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     ownership_path = "classifiers/list_pages/card_ownership.js"
+    presentation_path = "classifiers/list_pages/anchor_cards.js"
+    presentation_source = File.read(File.join(source_root, presentation_path))
     renderer_path = "markdown/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     card_evidence_path = "extractors/lists/generic/card_evidence.js"
@@ -429,12 +431,14 @@ RSpec.describe "extract asset bundle" do
     end
 
     expect(sources.values.join.scan(/function\s+genericListCardSelector\s*\(/).length).to eq(1)
+    expect(manifest.index(presentation_path)).to be < manifest.index(ownership_path)
+    expect(presentation_source).to include("function genericListPresentationCardNode", "function genericListAlignmentOnlyCard")
+    expect(sources.fetch(ownership_path)).not_to include("function genericListPresentationCardNode")
     [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].each do |consumer_path|
       expect(manifest.index(ownership_path)).to be < manifest.index(consumer_path)
     end
     expect(sources.fetch(ownership_path)).to include(
       "function genericListCardBoundary",
-      "function genericListPresentationCardNode",
       "function closestGenericListCard",
       "function genericListFieldBoundary",
       "function closestGenericListFieldCard",
