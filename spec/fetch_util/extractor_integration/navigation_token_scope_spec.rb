@@ -52,4 +52,21 @@ RSpec.describe "FetchUtil navigation token scope" do
       expect(page.evaluate("checkNavigationItems()")).to eq((0...125).map { |index| "Independent news headline #{index}" })
     end
   end
+
+  it "retains cloned document records when global layout state mentions navigation" do
+    titles = (1..12).map { |index| "Independent regional dispatch #{index}" }
+    records = titles.each_with_index.map do |title, index|
+      "<a href='/report/#{index}'><h2>#{title}</h2><p>Verified details of this local report.</p></a>"
+    end.join
+    html = "<html class='navigation-open'><body class='header-static header-big sidebar-visible'>#{records}" \
+           "<nav><a href='/menu'>Main navigation links</a></nav>" \
+           "<div role='navigation'><a href='/topics'>All available topics</a></div></body></html>"
+
+    with_url_page("https://research.example/", html) do |page|
+      page.add_script_tag(content: navigation_source)
+      expect(page.evaluate("checkNavigation(document.body)")).to be(false)
+      expect(page.evaluate("checkNavigation(document.documentElement)")).to be(false)
+      expect(page.evaluate("checkNavigationItems()")).to eq(titles)
+    end
+  end
 end

@@ -25,6 +25,7 @@
   function listChromeOrNavigationNode(node, includeSocial) {
     if (!node || node.nodeType !== 1) return false;
     if (node.matches("nav, header, footer, menu, [role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']")) return true;
+    if (node.matches("html, body")) return false;
 
     var ariaLabel = node.getAttribute("aria-label");
     if (ariaLabel && node.matches("a[href]")) {
