@@ -111,4 +111,20 @@ RSpec.describe FetchUtil::Extractor, "homepage editorial columns" do
       expect(destinations).to eq((1..125).map { |number| "https://bulletin.example/reports/side-#{number}" })
     end
   end
+
+  it 'recognizes an editorial column split into sibling one-story asides' do
+    panels = (1..4).map do |number|
+      "<aside><article><h3><a href='/broadcast/#{number}'>Regional news broadcast number #{number}</a></h3>" \
+        "<p>Verified reporting from the local newsroom number #{number}.</p></article></aside>"
+    end.join
+    sidebar = "<div class='column'>#{panels}<aside hidden><h3><a href='/inactive'>Inactive broadcast headline</a></h3></aside></div>"
+
+    with_url_page('https://bulletin.example/', editorial_homepage(sidebar)) do |page|
+      markdown = described_class.new.extract(page).fetch('markdown')
+      expect(markdown.scan(%r{https://bulletin\.example/broadcast/\d+})).to eq(
+        (1..4).map { |number| "https://bulletin.example/broadcast/#{number}" }
+      )
+      expect(markdown).not_to include('Inactive broadcast headline')
+    end
+  end
 end

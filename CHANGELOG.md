@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Recognize editorial columns split across sibling one-story asides without admitting hidden or unowned panels.
 - Preserve explicit card headings when their lazy media remains hidden.
 - Preserve section-owned header labels and links while removing their navigation controls.
 - Preserve named overlay destinations that match a visible card headline without confusing nested follow-up stories with the primary record.
