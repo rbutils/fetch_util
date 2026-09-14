@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve explicit card headings when their lazy media remains hidden.
 - Preserve section-owned header labels and links while removing their navigation controls.
 - Preserve named overlay destinations that match a visible card headline without confusing nested follow-up stories with the primary record.
 - Preserve primary story headings inside card-owned headers while retaining site navigation cleanup.

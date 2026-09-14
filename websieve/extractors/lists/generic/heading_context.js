@@ -71,12 +71,18 @@
       }
       var card = header.closest("article, li") || closestGenericListCard(header.parentElement);
       if (!card || card.contains(header) === false || card.closest("header, nav, footer, menu, [role='navigation'], [role='banner']")) return;
+      var headings = header.querySelectorAll("h1, h2, h3, h4");
+      if (headings.length !== 1 || !normalizeText(headings[0].textContent)) return;
       var link = genericListStructuredCardLink(card);
+      if (!link && card.matches("article, li") && !genericListPageContainer(card)) {
+        var ownedHeadings = Array.from(card.querySelectorAll("h1, h2, h3, h4")).filter(function(heading) {
+          return heading.closest("article, li") === card;
+        });
+        if (ownedHeadings.length === 1) link = headings[0].closest("a[href]") || headings[0].querySelector("a[href]");
+      }
       if (!link || !(header.contains(link) || link.contains(header))) return;
       var url = materializedHttpUrl(link.getAttribute("href"));
       if (!url || url.split("#")[0] === location.href.split("#")[0]) return;
-      var headings = header.querySelectorAll("h1, h2, h3, h4");
-      if (headings.length !== 1 || !normalizeText(headings[0].textContent)) return;
       header.replaceWith.apply(header, Array.from(header.childNodes));
     });
   }

@@ -41,4 +41,20 @@ RSpec.describe FetchUtil::Extractor, 'card-owned headings' do
       expect(described_class.new.extract(page).fetch('markdown')).not_to include('Navigation shortcut', '/menu/')
     end
   end
+
+  it 'keeps explicit card headings when their lazy images have not become visible' do
+    records = (1..6).map do |number|
+      "<article><a class='news__link' href='/broadcast/#{number}'><img style='opacity:0' src='/#{number}.jpg'>" \
+        '<noscript><img src="/fallback.jpg"></noscript>' \
+        "<header><h2>Regional broadcast report number #{number}</h2></header></a></article>"
+    end.join
+    html = "<html><body><main><h1>Community broadcasts</h1>#{records}</main></body></html>"
+    with_url_page('https://publisher.example/', html) do |page|
+      markdown = described_class.new.extract(page).fetch('markdown')
+      (1..6).each do |number|
+        expect(markdown).to include("[Regional broadcast report number #{number}](https://publisher.example/broadcast/#{number})")
+      end
+      expect(markdown).not_to include('fallback.jpg')
+    end
+  end
 end
