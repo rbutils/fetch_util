@@ -34,12 +34,53 @@
     return true;
   }
 
+  function listUnrepresentedMetadataReferences(extraction, descriptions) {
+    var links = Array.from(extraction.root.querySelectorAll("a[href]")).filter(function(link) {
+      if (link.closest("nav, header, footer, form, menu, dialog, [role='navigation'], [role='menu'], [role='toolbar'], [aria-modal='true']")) return false;
+      var text = normalizeText(link.textContent);
+      var namedField = Array.from(link.classList || []).some(function(name) {
+        return /^(?:card|story|teaser|result|news|headline)[-_]+(?:tags?|topics?|categor(?:y|ies))(?:[-_]|$)/i.test(name) ||
+          /^(?:Card|Story|Teaser|Result|News|Headline)(?:Tags?|Topics?|Categor(?:y|ies))(?:[-_]|$)/.test(name);
+      }) && !link.querySelector("h1, h2, h3, h4") && Array.from(link.querySelectorAll("p")).every(function(paragraph) {
+        return normalizeText(paragraph.textContent) === text;
+      });
+      return text && (namedField || link.matches("[rel~='tag'], [itemprop~='keywords'], [itemprop~='about']") || /^(?:topics?|categor(?:y|ies)|tags?)\s*:\s*\S/i.test(text));
+    });
+    if (!links.length) return [];
+    var primaryUrls = new Set(extraction.items.map(function(item) {
+      var url = materializedHttpUrl(item.url || "");
+      return url && listCanonicalKey(url);
+    }).filter(Boolean));
+    var rendered = extraction.items.map(function(item) {
+      return { node: item.card || item.sourceNode, markdown: listMarkdown([item], primaryUrls) };
+    }).concat(descriptions);
+    return links.map(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      var text = normalizeText(link.textContent);
+      if (!url || primaryUrls.has(listCanonicalKey(url)) || genericListControlText(text) || looksLikeFooterLink(text, url)) return null;
+      var destination = markdownLink("", url).replace(/^\[\]/, "]");
+      if (rendered.some(function(part) {
+        return part.node && part.node.contains(link) && part.markdown.indexOf(destination) !== -1;
+      })) return null;
+      return { node: link, markdown: markdownLink(text, url), metadataReference: true };
+    }).filter(Boolean);
+  }
+
+  function listMarkdownWithMetadataReferences(extraction) {
+    if (!extraction.renderedSections) return "";
+    var descriptions = extraction.renderedDescriptions || [];
+    var references = listUnrepresentedMetadataReferences(extraction, descriptions);
+    if (!references.length) return "";
+    return sectionedListMarkdownWithDescriptions(extraction.renderedSections, descriptions.concat(references));
+  }
+
   function listMarkdownWithInlineDescriptions(extraction) {
     var descriptions = listDescriptionParts(extraction.root, extraction.items, {
       includeInlineProse: true, preserveUnrepresentedText: true
     });
+    descriptions = descriptions.concat(listUnrepresentedMetadataReferences(extraction, descriptions));
     var wrappedRecords = extraction.items.some(function(item) { return genericListWrappedAnchorCard(item.card); });
-    if (!wrappedRecords && !descriptions.some(function(part) { return part.node.tagName === "DIV"; })) return "";
+    if (!wrappedRecords && !descriptions.some(function(part) { return part.metadataReference || part.node.tagName === "DIV"; })) return "";
 
     var links = Array.prototype.slice.call(extraction.root.querySelectorAll("a[href]"));
     var cards = extraction.items.map(function(item) {

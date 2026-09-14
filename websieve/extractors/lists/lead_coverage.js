@@ -218,8 +218,7 @@
       includeInlineProse: true, preserveTextLengths: true,
       pageTitles: pageTitles, preserveUnrepresentedText: true
     }).filter(function(part) { return !localParagraphs.has(part.node); });
-    return { items: items, headings: headings,
-      markdown: sectionedListMarkdownWithDescriptions({
-        regions: [{ node: root, label: "", cards: items }]
-      }, descriptions) || sameRootFlatListMarkdown(items, headings) };
+    var renderedSections = { regions: [{ node: root, label: "", cards: items }] };
+    return { items: items, headings: headings, renderedSections: renderedSections, renderedDescriptions: descriptions,
+      markdown: sectionedListMarkdownWithDescriptions(renderedSections, descriptions) || sameRootFlatListMarkdown(items, headings) };
   }

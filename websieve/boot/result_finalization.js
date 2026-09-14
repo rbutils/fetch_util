@@ -138,8 +138,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     content.textContent = markdown;
   }
   var listExtraction = content.listExtraction;
-  if (content.contentType === "list" && listExtraction && !listExtraction.sectionCount && content.markdown === listExtraction.markdown) {
-    var inlineDescriptionMarkdown = listMarkdownWithInlineDescriptions(listExtraction);
+  if (content.contentType === "list" && listExtraction && content.markdown === listExtraction.markdown) {
+    var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
+      listMarkdownWithInlineDescriptions(listExtraction);
     if (inlineDescriptionMarkdown) {
       markdown = materializedMarkdown(cleanupMarkdownNoise(inlineDescriptionMarkdown));
       content.textContent = markdown;

@@ -41,6 +41,8 @@
         items: sectioned.items,
         descText: "",
         sectionMarkdownWithDescription: sectionMarkdownWithDescription,
+        renderedSections: sectioned,
+        renderedDescriptions: sectionDescriptionParts,
         markdown: sectioned.markdown,
         score: sectioned.score,
         sectionCount: sectioned.regions.length,
@@ -53,9 +55,11 @@
         includeInlineProse: true, preserveTextLengths: true,
         pageTitles: pageTitles, preserveUnrepresentedText: true
       });
-      flatCoverage.markdown = sectionedListMarkdownWithDescriptions({
+      flatCoverage.renderedSections = {
         regions: [{ node: root, label: "", cards: items }]
-      }, flatDescriptions);
+      };
+      flatCoverage.renderedDescriptions = flatDescriptions;
+      flatCoverage.markdown = sectionedListMarkdownWithDescriptions(flatCoverage.renderedSections, flatDescriptions);
     }
 
     var itemMarkdown = flatCoverage ? sameRootFlatListMarkdown(items, flatCoverage.headings) : listMarkdown(items);
@@ -74,6 +78,8 @@
       items: items,
       descText: descText,
       markdown: markdown,
+      renderedSections: flatCoverage && flatCoverage.renderedSections,
+      renderedDescriptions: flatCoverage && flatCoverage.renderedDescriptions,
       score: flatCoverage ? sectioned.score :
         itemQuality + (items.length * 80) + Math.min(descText.length, 4000),
       sectionCount: flatCoverage ? sectioned.regions.length : 0,
@@ -124,9 +130,11 @@
     if (!best.sectionCount) {
       var descriptions = listDescriptionParts(best.root, best.items, { preserveUnrepresentedText: true });
       best.descText = descriptions.map(function(part) { return part.markdown; }).join("\n\n");
-      best.markdown = sectionedListMarkdownWithDescriptions({
+      best.renderedSections = {
         regions: [{ node: best.root, label: "", cards: best.items }]
-      }, descriptions) || listMarkdown(best.items);
+      };
+      best.renderedDescriptions = descriptions;
+      best.markdown = sectionedListMarkdownWithDescriptions(best.renderedSections, descriptions) || listMarkdown(best.items);
     }
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");

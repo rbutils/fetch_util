@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep visible topic and category destinations as local list context when they are not already represented by a record or description.
 - Preserve named title fields in record-owned headers even when publishers use divs or spans instead of heading tags.
 - Exclude fully clipped horizontal carousel content while preserving partially visible cards, scrollable collections and complete code examples.
 - Keep mixed image-backed and plain sibling headlines local to their own records rather than repeating the surrounding collection as detail.
