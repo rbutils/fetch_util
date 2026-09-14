@@ -172,6 +172,26 @@
     return peers.length >= 2 || genericListWrappedAnchorCard(link);
   }
 
+  function genericListMixedAnchorCollection(link) {
+    var parent = link && link.parentElement;
+    if (!parent || !link.matches("a[href]") || listChromeNode(parent) || listChromeAncestor(link)) return false;
+    var children = Array.from(parent.children).filter(function(node) {
+      if (node.matches("script, style, template") || elementSubtreeHidden(node)) return false;
+      return !node.matches("div, span") || node.children.length || normalizeText(node.textContent) ||
+        node.hasAttribute("role") || node.hasAttribute("aria-label") || node.hasAttribute("title");
+    });
+    if (children.length < 2 || children.indexOf(link) < 0 || children.some(function(node) {
+      return !node.matches("a[href]") || node.querySelector("a[href]") ||
+        !materializedHttpUrl(node.getAttribute("href")) || !normalizeText(node.textContent);
+    })) return false;
+    if (Array.from(parent.childNodes).some(function(node) {
+      return node.nodeType === 3 && normalizeText(node.textContent);
+    })) return false;
+    var destinations = new Set(children.map(function(node) { return materializedHttpUrl(node.getAttribute("href")); }));
+    var rich = children.filter(function(node) { return genericListAnchorRecordEvidence(node); });
+    return destinations.size >= 2 && rich.length > 0 && rich.length < children.length;
+  }
+
   function genericListDirectAnchorTitle(link, container) {
     if (!genericListDirectAnchorCard(link, container === link ? link.parentElement : container)) return "";
     var titleNode = link.querySelector("[class*='title' i], [class$='-name' i]");

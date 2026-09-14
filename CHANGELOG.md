@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep mixed image-backed and plain sibling headlines local to their own records rather than repeating the surrounding collection as detail.
 - Keep alignment-only layout wrappers distinct from story cards, preserving independent headlines and local record ownership.
 - Keep article/list arbitration independent of added list presentation context, preserving substantive articles beside smaller directories.
 - Recognize editorial columns split across sibling one-story asides without admitting hidden or unowned panels.
