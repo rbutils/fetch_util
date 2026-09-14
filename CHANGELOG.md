@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Exclude fully clipped horizontal carousel content while preserving partially visible cards, scrollable collections and complete code examples.
 - Keep mixed image-backed and plain sibling headlines local to their own records rather than repeating the surrounding collection as detail.
 - Keep alignment-only layout wrappers distinct from story cards, preserving independent headlines and local record ownership.
 - Keep article/list arbitration independent of added list presentation context, preserving substantive articles beside smaller directories.

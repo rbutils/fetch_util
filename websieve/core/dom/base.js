@@ -98,7 +98,7 @@
     return elementVisuallyHiddenWithin(node, null);
   }
 
-  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones) {
+  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones, clipBounds) {
     if (!source || !clone) return;
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
     var preservedRoot = exactPreservedRoot ? source : preservingRoot;
@@ -106,6 +106,13 @@
     var boundary = checkedParent ? composedDomParent(source) : preservedRoot;
     var subtreeHidden = elementSubtreeHiddenWithin(source, boundary || null);
     if (source.nodeType === 1 && !exactPreservedRoot && subtreeHidden) {
+      clone.remove();
+      return;
+    }
+    var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
+    if (exactPreservedRoot) clipBounds = null;
+    else if (!checkedParent) clipBounds = ancestorHorizontalClipBounds(source);
+    if (horizontallyClippedElement(source, style, clipBounds)) {
       clone.remove();
       return;
     }
@@ -124,8 +131,8 @@
       clone.setAttribute("data-fetchutil-controlled-list-panel", "true");
     }
 
-    var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
     var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
+    var childClipBounds = horizontalClipBounds(source, style, clipBounds);
     var sourceChildren = composedDomChildren(source);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
@@ -135,7 +142,7 @@
         childClone.remove();
         return;
       }
-      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones);
+      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones, childClipBounds);
     });
 
     if (visibilityHidden) {

@@ -23,6 +23,7 @@ core/dom/noise_cleanup.js
 core/dom/materialization.js
 core/dom/deferred_reveals.js
 core/dom/composed.js
+core/dom/clipping.js
 core/dom/base.js
 core/dom/cleanup.js
 core/article/content_helpers.js
