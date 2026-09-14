@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Match abbreviated consent-vendor namespaces as class or id tokens, preserving ordinary sticky layouts and CSS-variable references during cookie cleanup.
 - Extract visible open-component content and rendered slots through shared DOM cloning, preserving nested stories, article text and references without exposing hidden or unassigned content.
 - Use shared extraction for WP homepages, preserving untitled lead grids and complete section context instead of the narrower host profile.
 - Preserve sparse section headings and unlinked notices when complete flat records supplement a partial sectioned list.

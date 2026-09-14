@@ -8,7 +8,11 @@
       node.getAttribute("data-testid")
     ].join(" ")).toLowerCase();
     var text = normalizeText(node.textContent || "");
-    var vendorContainer = /(onetrust|ot-sdk|\bot-[\w-]*|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|cky-|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs) ||
+    // Abbreviated vendor namespaces must be actual tokens, not fragments of layout classes.
+    var vendorNamespace = [node.getAttribute("id") || ""].concat(Array.from(node.classList || [])).some(function(token) {
+      return /^(?:ot|cky)-[\w-]+$/i.test(token);
+    });
+    var vendorContainer = vendorNamespace || /(onetrust|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs) ||
       node.getAttribute("data-nosnippet") === "true";
 
     if (vendorContainer) return true;

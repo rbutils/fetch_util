@@ -65,4 +65,38 @@ RSpec.describe 'Cookie notice ownership' do
     expect(result['cleaned']).to include('Public information', 'Service hours and locations.')
     expect(result['cleaned']).not_to include('Privacy Policy', 'Cookie Settings')
   end
+
+  it 'preserves layout tokens and attributes that merely contain abbreviated vendor names' do
+    result = cookie_ownership(<<~HTML)
+      <main><h1>Regional dispatches</h1>
+        <div class="sticky-top" data-probe><p>Harbour dispatch.</p></div>
+        <div class="sticky top-[--column-sticky-top]" data-probe><p>Valley dispatch.</p></div>
+        <div class="min-h-[--ot-sdk-content]" data-probe><p>Mountain dispatch.</p></div>
+        <section class="top-[--ot-scroll-top]" data-probe><p>Forest dispatch.</p></section>
+        <div id="city-cky-plan" aria-label="Guide to ot-controls" data-testid="card-cky-text" data-probe>
+          <p>Island dispatch.</p>
+        </div>
+      </main>
+    HTML
+
+    expect(result['notices']).to eq([false, false, false, false, false])
+    expect(result['cleaned']).to include(
+      'Harbour dispatch.', 'Valley dispatch.', 'Mountain dispatch.', 'Forest dispatch.', 'Island dispatch.'
+    )
+  end
+
+  it 'recognizes abbreviated vendor class and id tokens without requiring notice prose' do
+    result = cookie_ownership(<<~HTML)
+      <main><h1>Public service information</h1><p>Visit the local office.</p></main>
+      <div class="panel CKY-CONSENT-CONTAINER" data-probe>Vendor panel alpha</div>
+      <div class="cky-overlay" data-probe>Vendor panel beta</div>
+      <div id="ot-pc-content" data-probe>Vendor panel gamma</div>
+      <div class="panel ot-sdk-container" data-probe>Vendor panel delta</div>
+    HTML
+
+    expect(result['body']).to be(false)
+    expect(result['notices']).to eq([true, true, true, true])
+    expect(result['cleaned']).to include('Public service information', 'Visit the local office.')
+    expect(result['cleaned']).not_to include('Vendor panel')
+  end
 end
