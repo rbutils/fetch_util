@@ -18,8 +18,8 @@
     var fallbackItems = extractFallbackHeadlineItems(root, items.__fetchUtilSupportingLinks);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
-      items = fallbackItems;
-      itemQuality = fallbackQuality;
+      items = fallbackWithEditorialAsideItems(items, fallbackItems);
+      itemQuality = listItemsQualityScore(items);
     }
 
     var flatCoverage = sameRootFlatSectionCoverage(sectioned, items) ||
@@ -63,8 +63,8 @@
     if (flatCoverage && flatCoverage.markdown) markdown = flatCoverage.markdown;
     if (!flatCoverage && normalizeText(markdown).length < 120 &&
         (fallbackItems.length > items.length || fallbackQuality > itemQuality)) {
-      items = fallbackItems;
-      itemQuality = fallbackQuality;
+      items = fallbackWithEditorialAsideItems(items, fallbackItems);
+      itemQuality = listItemsQualityScore(items);
       markdown = listMarkdownWithDescription(descText, items);
     }
 

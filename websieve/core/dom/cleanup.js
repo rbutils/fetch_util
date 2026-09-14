@@ -17,7 +17,7 @@
 
     // Strip related-article containers by class/id patterns
     root.querySelectorAll(RELATED_CONTAINER_SELECTOR).forEach(function(el) {
-      if (el.closest("[data-fetchutil-page-overview]")) return;
+      if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       el.remove();
     });
 
@@ -27,7 +27,7 @@
     stripRelatedSectionsByHeading(root);
 
     root.querySelectorAll("section, div, aside, form, table, ul").forEach(function(el) {
-      if (el.closest("[data-fetchutil-page-overview]")) return;
+      if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (utilitySectionNode(el)) el.remove();
     });
 

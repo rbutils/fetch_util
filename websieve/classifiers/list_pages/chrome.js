@@ -39,6 +39,7 @@
       ariaLabel,
       node.getAttribute("data-testid")
     ].join(" ")).replace(/([a-z\d])([A-Z])/g, "$1 $2").toLowerCase();
+    attrs = listEditorialAsideHints(node, attrs);
 
     if (!attrs) return false;
     if (/(news|headline|story|article|post|feed|stream|content|result|listing|archive|topic|thread|discussion|feature)/.test(attrs)) return false;

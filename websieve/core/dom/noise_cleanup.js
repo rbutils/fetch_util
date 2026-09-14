@@ -172,7 +172,7 @@
 
   function stripRelatedSectionsByHeading(root) {
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
-      if (heading.closest("[data-fetchutil-page-overview]")) return;
+      if (heading.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
 
       var text = normalizeText(heading.textContent || "").trim();
@@ -209,7 +209,7 @@
     });
 
     root.querySelectorAll("div, section, aside").forEach(function(block) {
-      if (block.closest("[data-fetchutil-page-overview]")) return;
+      if (block.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (!block.closest("article, main, [role='main']")) return;
 
       var text = normalizeText(block.textContent || "").trim();
@@ -223,6 +223,7 @@
   function stripNavigationLeaks(root) {
     // ARIA roles: navigation, menubar, menu, toolbar, complementary (sidebar), banner (header), contentinfo (footer)
     root.querySelectorAll("[role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='complementary'], [role='banner'], [role='contentinfo'], [aria-label*='navigation' i], [aria-label*='menu' i], [aria-label*='breadcrumb' i], [aria-label*='sidebar' i]").forEach(function(el) {
+      if (el.matches("aside[data-fetchutil-editorial-aside]")) return;
       el.remove();
     });
 
