@@ -339,9 +339,12 @@ RSpec.describe 'content fidelity contracts' do
         expect(figure_line).to include("FID:figure-summary-#{index}")
         expect(figure_line).not_to include("FID:figure-summary-#{index == 6 ? 5 : index + 1}")
       end
-      expect(result['markdown']).not_to include(
-        'FID:figure-malformed-promo', 'FID:figure-malformed-summary', 'FID:figure-view-all-action'
+      expect(result['markdown']).to include(
+        '[FID:figure-malformed-promo](https://fidelity.test/media/promo) FID:figure-malformed-summary'
       )
+      expect(lines.join).not_to include('FID:figure-malformed-promo', 'FID:figure-malformed-summary')
+      expect(result['markdown'].scan('FID:figure-malformed-summary').length).to eq(1)
+      expect(result['markdown']).not_to include('FID:figure-view-all-action')
     end
   end
 
