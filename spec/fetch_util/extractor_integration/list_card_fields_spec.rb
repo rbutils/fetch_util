@@ -222,12 +222,12 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     end
   end
 
-  it "deduplicates short lower-level headings already owned by a section, page, or item" do
+  it "deduplicates owned headings while preserving an independent identical heading" do
     html = <<~HTML
       <html><head><title>Learning collections</title></head><body><main>
         <h4>Workshops</h4><h5>Learning collections</h5><h6>Explore cartography workshops</h6>
         <h4>Help</h4>
-        <div class="story-card"><a href="/learn/maps">Explore cartography workshops</a></div>
+        <div class="story-card"><h6>Explore cartography workshops</h6><a href="/learn/maps">Explore cartography workshops</a></div>
       </main></body></html>
     HTML
     with_url_page("https://learning.example/collections", html) do |page|
@@ -243,7 +243,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         })()
       JAVASCRIPT
 
-      expect(description).to eq("## Help")
+      expect(description).to eq("## Explore cartography workshops\n\n## Help")
     end
   end
 
