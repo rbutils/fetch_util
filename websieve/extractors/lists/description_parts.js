@@ -1,4 +1,4 @@
-  function listDescriptionCardNode(node, items, options, itemValues, primaryReferences) {
+  function listDescriptionCardNode(node, items, options, itemValues, primaryReferences, primaryUrls) {
     if (!items) return closestGenericListCard(node);
 
     var heading = /^H[1-6]$/.test(node.tagName || "");
@@ -10,7 +10,7 @@
       var values = itemValues[index];
       return values.some(function(value) {
         return value === text || (!heading && value.indexOf(text) >= 0);
-      }) && listDescriptionReferencesRepresented(node, values, primaryReferences);
+      }) && listDescriptionReferencesRepresented(node, values, primaryReferences, primaryUrls);
     });
     var recordCard;
     var sectionLabels;
@@ -42,7 +42,7 @@
     return listDescriptionDuplicateCard(node, items);
   }
 
-  function listDescriptionRecordHeading(node, text, primaryReferences) {
+  function listDescriptionRecordHeading(node, text, primaryReferences, primaryUrls) {
     if (!/^H[1-6]$/.test(node.tagName || "") || !closestGenericListFieldCard(node)) return "";
     var links = [];
     var ancestor = node.closest("a[href]");
@@ -53,7 +53,9 @@
     var destinations = links.map(function(link) {
       return materializedHttpUrl(link.getAttribute("href"));
     }).filter(Boolean).filter(function(url, index, urls) { return urls.indexOf(url) === index; });
-    if (destinations.length !== 1 || !primaryReferences.has(destinations[0])) return "";
+    if (destinations.length !== 1 ||
+        (!primaryReferences.has(destinations[0]) &&
+         !(primaryUrls && primaryUrls.has(listCanonicalKey(destinations[0]))))) return "";
     if (text.length < minimumListTitleLength(text) || genericListControlText(text) || looksLikeFooterLink(text, destinations[0])) return "";
     return "- " + markdownLink(text, destinations[0]);
   }
@@ -82,10 +84,10 @@
       var inlineProse = el.tagName === "DIV";
       if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (quote && listCardNodeHidden(el)) return;
-      if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences)) return;
+      if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences, primaryUrls)) return;
       var heading = /^H[1-6]$/.test(el.tagName);
       var text = heading ? listHeadingText(el) : normalizeText(el.textContent);
-      var recordHeading = listDescriptionRecordHeading(el, text, primaryReferences);
+      var recordHeading = listDescriptionRecordHeading(el, text, primaryReferences, primaryUrls);
       if (recordHeading) {
         descParts.push({ node: el, markdown: recordHeading });
         return;

@@ -22,6 +22,7 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     source << <<~JAVASCRIPT
       window.FetchUtilSectionCoverageTest = {
         supplementalCoverage: supplementalSameRootSectionCoverage,
+        recordHeading: listDescriptionRecordHeading,
         normalizeText: normalizeText,
         canonicalKey: listCanonicalKey
       };
@@ -94,6 +95,121 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
         '- [Alternate visible angle on newsroom story 2](https://newsroom.example/stories/2)'
       )
       expect(payload['markdown']).not_to include('## Alternate visible angle on newsroom story 2')
+    end
+  end
+
+  it 'keeps a distinct tracking alias linked while suppressing an exact-title duplicate' do
+    html = <<~HTML
+      <html><head><title>Tracking alias newsroom</title></head><body><main>
+        <h1>Tracking alias newsroom</h1>
+        <section><h2>Local desk</h2>
+          <article><h3><a href="/stories/shared?utm_source=lead">Original public account of the shared story</a></h3></article>
+          #{section_heading_record(2)}
+        </section>
+        <section><h2>Culture desk</h2>#{section_heading_record(3)}#{section_heading_record(4)}</section>
+        <section>
+          <article><h3><a href="/stories/shared?utm_medium=rail">Alternate visible angle on the shared story</a></h3></article>
+          <article><h3><a href="/stories/shared?utm_campaign=duplicate">Original public account of the shared story</a></h3></article>
+        </section>
+        <ul>
+          <li><a href="/stories/5">Independent newsroom story 5</a></li>
+          <li><a href="/stories/6">Independent newsroom story 6</a></li>
+          <li><a href="/stories/7">Independent newsroom story 7</a></li>
+          <li><a href="/stories/8">Independent newsroom story 8</a></li>
+          <li><a href="/stories/9">Independent newsroom story 9</a></li>
+        </ul>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://newsroom.example/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page, reader_mode: false)
+      markdown = payload['markdown']
+      ordered_titles = [
+        'Original public account of the shared story',
+        'Independent newsroom story 2',
+        'Independent newsroom story 3',
+        'Independent newsroom story 4',
+        'Alternate visible angle on the shared story',
+        'Independent newsroom story 5',
+        'Independent newsroom story 6',
+        'Independent newsroom story 7',
+        'Independent newsroom story 8',
+        'Independent newsroom story 9'
+      ]
+
+      expect(markdown).to include(
+        '- [Alternate visible angle on the shared story](https://newsroom.example/stories/shared?utm_medium=rail)'
+      )
+      expect(markdown).not_to include('## Alternate visible angle on the shared story')
+      expect(markdown.scan('Original public account of the shared story').length).to eq(1)
+      expect(markdown).not_to include('utm_campaign=duplicate')
+      expect(markdown.scan(/^## .+$/)).to eq(['## Local desk', '## Culture desk'])
+      expect(ordered_titles.map { |title| markdown.index(title) }).to eq(
+        ordered_titles.map { |title| markdown.index(title) }.sort
+      )
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'bounds canonical record-heading aliases to safe represented destinations' do
+    html = <<~HTML
+      <html><head><title>Record heading boundaries</title></head><body><main>
+        <article><h3 id="exact"><a href="/stories/shared">Exact represented story</a></h3></article>
+        <article><h3 id="fragment"><a href="/stories/shared#discussion">Fragment story angle</a></h3></article>
+        <article><h3 id="query"><a href="/stories/shared?edition=two">Distinct query story angle</a></h3></article>
+        <article><h3 id="credential"><a href="https://reader:secret@newsroom.example/private">Credential story</a></h3></article>
+        <article><h3 id="unsafe"><a href="javascript:alert('unsafe')">Unsafe story</a></h3></article>
+        <article><h3 id="absent"><a href="/stories/absent">Absent story angle</a></h3></article>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://newsroom.example/', html) do |page|
+      inject_section_coverage_test_api(page)
+      results = page.evaluate(<<~JAVASCRIPT)
+        (function() {
+          var api = window.FetchUtilSectionCoverageTest;
+          var heading = function(id, references, urls) {
+            var node = document.getElementById(id);
+            return api.recordHeading(node, api.normalizeText(node.textContent), references, urls);
+          };
+          return {
+            exact: heading("exact", new Set(["https://newsroom.example/stories/shared"])),
+            missingOptionalSet: heading("fragment", new Set()),
+            fragment: heading(
+              "fragment",
+              new Set(),
+              new Set([api.canonicalKey("https://newsroom.example/stories/shared")])
+            ),
+            distinctQuery: heading(
+              "query",
+              new Set(),
+              new Set([api.canonicalKey("https://newsroom.example/stories/shared?edition=one")])
+            ),
+            credential: heading(
+              "credential",
+              new Set(),
+              new Set([api.canonicalKey("https://newsroom.example/private")])
+            ),
+            unsafe: heading(
+              "unsafe",
+              new Set(),
+              new Set([api.canonicalKey("https://newsroom.example/unsafe")])
+            ),
+            absent: heading("absent", new Set(), new Set())
+          };
+        })()
+      JAVASCRIPT
+
+      expect(results).to eq(
+        'exact' => '- [Exact represented story](https://newsroom.example/stories/shared)',
+        'missingOptionalSet' => '',
+        'fragment' => '- [Fragment story angle](https://newsroom.example/stories/shared#discussion)',
+        'distinctQuery' => '',
+        'credential' => '',
+        'unsafe' => '',
+        'absent' => ''
+      )
     end
   end
 

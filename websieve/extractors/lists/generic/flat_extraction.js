@@ -248,12 +248,13 @@
     });
   }
 
-  function listDescriptionReferencesRepresented(node, values, primaryReferences) {
+  function listDescriptionReferencesRepresented(node, values, primaryReferences, primaryUrls) {
     return Array.prototype.every.call(node.querySelectorAll("a[href]"), function(link) {
       if (listCardNodeHidden(link)) return true;
       var url = materializedHttpUrl(link.getAttribute("href"));
       if (!url) return true;
       if (primaryReferences && primaryReferences.has(url)) return true;
+      if (primaryUrls && primaryUrls.has(listCanonicalKey(url))) return true;
       return values.some(function(value) { return value.indexOf(url) >= 0; });
     });
   }
