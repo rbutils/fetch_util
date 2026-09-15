@@ -240,7 +240,6 @@ profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/news/europe/central/poland/onet.js
 profiles/register.js
 profiles/news/global/xinhua.js
-profiles/news/asia/central/avesta.js
 profiles/news/middle_east/walla.js
 profiles/news/asia/east/chosun.js
 profiles/news/europe/southern/spain/20minutos.js

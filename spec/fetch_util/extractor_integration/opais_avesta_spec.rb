@@ -30,4 +30,20 @@ RSpec.describe 'FetchUtil O Pais and Avesta extractor integration' do
       warning_excludes: %w[empty_extraction short_extraction truncated_content url_content_mismatch consent_interstitial]
     )
   end
+
+  it 'keeps a shared CMS article title separate from an earlier branded news card' do
+    html = fixture_contents(File.expand_path('../fixtures/avesta_article.html', __dir__))
+    html = html.sub('<h3>', '<h3 class="jeg_post_title">')
+    title = 'Avesta.tj запускает англоязычную версию сайта с поддержкой ИИ: новости будущего — уже сегодня'
+
+    %w[avesta.tj news.example].each do |host|
+      extract_from_url("https://#{host}/2025/05/12/english-service/", html) do |payload|
+        expect_content_type(payload, 'article')
+        expect(payload.fetch('title')).to eq(title)
+        expect(payload.fetch('markdown')).to start_with("# #{title}")
+        expect(payload.fetch('markdown')).to include('Информационное агентство Avesta.tj сегодня')
+        expect(payload.fetch('markdown')).not_to include('Таджикистан планирует построить новые международные линии связи')
+      end
+    end
+  end
 end
