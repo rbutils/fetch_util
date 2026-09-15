@@ -5,6 +5,7 @@
   function genericListLinkedMediaRow(node) {
     function destination(row) {
       if (!row || !row.matches(genericListLinkedMediaRowSelector()) || elementSubtreeHidden(row) ||
+          listExplicitAdvertisementOwner(row) ||
           row.closest("nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) return null;
       var columns = Array.from(row.children).filter(function(child) { return !elementSubtreeHidden(child); });
       if (columns.length !== 2 || !columns.every(function(column) { return column.matches("[class*='col-']"); })) return null;

@@ -105,7 +105,7 @@
     attrs = listEditorialAsideHints(node, attrs);
     var text = normalizeText(node.textContent || "").slice(0, 280);
 
-    return /(sidebar|side-bar|rail|utility|complementary|secondary|trending|popular|most-read|mostread|video|videos|photo|photos|gallery|galleries|web.?stor|newsletter|subscribe|social|share|follow|language|edition|top[_-]?nav|secondary-navbar|first-level-menu|second-level-menu|header-menu|side-nav|top-trending|wdt-trending|recommended|related|login|signup|register|account|forum[_-]?stats|online[_-]?users|who[_-]?is[_-]?online|board[_-]?stats|members[_-]?online|active[_-]?users|forum[_-]?rules|quick[_-]?reply|new[_-]?thread|moderator[_-]?panel|subforum[_-]?list)/.test(attrs) || listNoiseText(text);
+    return listExplicitAdvertisementNode(node) || /(sidebar|side-bar|rail|utility|complementary|secondary|trending|popular|most-read|mostread|video|videos|photo|photos|gallery|galleries|web.?stor|newsletter|subscribe|social|share|follow|language|edition|top[_-]?nav|secondary-navbar|first-level-menu|second-level-menu|header-menu|side-nav|top-trending|wdt-trending|recommended|related|login|signup|register|account|forum[_-]?stats|online[_-]?users|who[_-]?is[_-]?online|board[_-]?stats|members[_-]?online|active[_-]?users|forum[_-]?rules|quick[_-]?reply|new[_-]?thread|moderator[_-]?panel|subforum[_-]?list)/.test(attrs) || listNoiseText(text);
   }
 
   function listContextMatchInfo(text, url, detail, context) {
@@ -162,6 +162,7 @@
 
   function listLinkCandidate(link, container, context, retainUnsafeLink) {
     if (!link) return null;
+    if (listExplicitAdvertisementOwner(link)) return null;
 
     var href = link.getAttribute("href");
     var headings = Array.prototype.slice.call(link.querySelectorAll("h1, h2, h3, h4"));

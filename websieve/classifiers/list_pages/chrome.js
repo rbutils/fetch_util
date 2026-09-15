@@ -22,6 +22,22 @@
     return listAncestorOfType(link, listNavigationNode);
   }
 
+  function listExplicitAdvertisementNode(node) {
+    if (!node || node.nodeType !== 1 || node.matches("main, body, html")) return false;
+    return [node.getAttribute("id")].concat(Array.from(node.classList || [])).some(function(name) {
+      return /^(?:ad|ads|advert|advertisement)(?:[-_](?:banner|card|container|module|slot|unit|wrapper))?$/i.test(name || "");
+    });
+  }
+
+  function listExplicitAdvertisementOwner(node) {
+    var current = node;
+    while (current && !current.matches("main, body, html")) {
+      if (listExplicitAdvertisementNode(current)) return current;
+      current = composedDomParent(current);
+    }
+    return null;
+  }
+
   function listChromeOrNavigationNode(node, includeSocial) {
     if (!node || node.nodeType !== 1) return false;
     if (node.matches("nav, header, footer, menu, [role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']")) return true;

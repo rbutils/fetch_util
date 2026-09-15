@@ -10,6 +10,7 @@ RSpec.describe "FetchUtil linked media row ownership" do
                  .map { |path| File.read(File.join(root, "websieve", path)) }.join("\n")
     source.sub("})(window);", <<~JAVASCRIPT)
       global.rowBoundary = genericListCardBoundary;
+      global.linkedRow = genericListLinkedMediaRow;
       global.rowItems = function() {
         return extractListItems(cleanupListRoot(visibleListClone(document.body))).map(function(item) {
           return { title: item.text, owner: item.card.id, markdown: listMarkdown([item]),
@@ -57,15 +58,17 @@ RSpec.describe "FetchUtil linked media row ownership" do
             first.replace("src='https://research.example/image-0.png'", "src='javascript:alert(1)'") + second,
             first.replace("id='record-0'", "id='record-0' hidden") + second,
             '<nav>' + first + second + '</nav>',
-            '<div class="row" id="grid"><div class="col-6">' + first + '</div><div class="col-6">' + second + '</div></div>'
+            '<div class="row" id="grid"><div class="col-6">' + first + '</div><div class="col-6">' + second + '</div></div>',
+            first.replace("class='row'", "class='row ad-slot'") + second
           ];
           return cases.map((html, index) => {
             root.innerHTML = html;
-            return rowBoundary(root.querySelector(index === 6 ? '#grid' : '#record-0'));
+            var boundary = index === 7 ? linkedRow : rowBoundary;
+            return boundary(root.querySelector(index === 6 ? '#grid' : '#record-0'));
           });
         })()
       JAVASCRIPT
-      expect(result).to eq([true, false, false, false, false, false, false])
+      expect(result).to eq([true, false, false, false, false, false, false, false])
     end
   end
 end

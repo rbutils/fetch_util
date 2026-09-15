@@ -422,6 +422,7 @@ RSpec.describe "extract asset bundle" do
     presentation_path = "classifiers/list_pages/anchor_cards.js"
     presentation_source = File.read(File.join(source_root, presentation_path))
     linked_media_path = "classifiers/list_pages/linked_media_rows.js"
+    chrome_path = "classifiers/list_pages/chrome.js"
     renderer_path = "markdown/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     card_evidence_path = "extractors/lists/generic/card_evidence.js"
@@ -439,6 +440,13 @@ RSpec.describe "extract asset bundle" do
     expect(presentation_source).to include("function genericListPresentationCardNode", "function genericListAlignmentOnlyCard")
     expect(presentation_source).not_to include("function genericListLinkedMediaRow")
     expect(File.read(File.join(source_root, linked_media_path))).to include("function genericListLinkedMediaRow")
+    expect(manifest.index(chrome_path)).to be < manifest.index(dominance_path)
+    expect(File.read(File.join(source_root, chrome_path))).to include(
+      "function listExplicitAdvertisementNode",
+      "function listExplicitAdvertisementOwner"
+    )
+    expect(File.read(File.join(source_root, linked_media_path))).to include("listExplicitAdvertisementOwner(row)")
+    expect(sources.fetch(dominance_path)).to include("listExplicitAdvertisementOwner(link)")
     expect(sources.fetch(ownership_path)).not_to include("function genericListPresentationCardNode")
     [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].each do |consumer_path|
       expect(manifest.index(ownership_path)).to be < manifest.index(consumer_path)
