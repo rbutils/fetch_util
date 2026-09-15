@@ -1,3 +1,47 @@
+  function listDescriptionCardNode(node, items, options, itemValues, primaryReferences) {
+    if (!items) return closestGenericListCard(node);
+
+    var text = normalizeText(node.textContent || "");
+    var heading = /^H[1-6]$/.test(node.tagName || "");
+    var unlinkedHeading = heading && !node.closest("a[href]") && !node.querySelector("a[href]");
+    var headingOwner = unlinkedHeading && closestGenericListFieldCard(node);
+    var represented = text && items.find(function(item, index) {
+      if (unlinkedHeading && (!headingOwner || item.card !== headingOwner)) return false;
+      var values = itemValues[index];
+      return values.some(function(value) {
+        return value === text || (!heading && value.indexOf(text) >= 0);
+      }) && listDescriptionReferencesRepresented(node, values, primaryReferences);
+    });
+    var recordCard;
+    var sectionLabels;
+
+    if (represented) {
+      if (represented.card) return represented.card;
+      if (options && options.suppressRepresentedText) return node;
+    }
+
+    if (options && options.excludeRecordCards) {
+      recordCard = closestGenericListCard(node);
+      if (recordCard && (recordCard !== node || listDescriptionRecordClass(node))) return recordCard;
+    }
+
+    if (options && options.sectionLabels && heading) {
+      sectionLabels = options.sectionLabels.map(function(label) {
+        return normalizeText(label).toLowerCase();
+      });
+      if (sectionLabels.indexOf(text.toLowerCase()) !== -1) return node;
+      if (itemValues.some(function(values, index) {
+        if (unlinkedHeading && (!headingOwner || items[index].card !== headingOwner)) return false;
+        return values.some(function(value) {
+          return value.length >= 12 && text.indexOf(value) !== -1;
+        });
+      })) return node;
+    }
+
+    if (options && options.preserveUnrepresentedText) return null;
+    return listDescriptionDuplicateCard(node, items);
+  }
+
   function listDescriptionParts(root, items, options) {
     var descParts = [];
     var hasItems = items && items.length > 0;
