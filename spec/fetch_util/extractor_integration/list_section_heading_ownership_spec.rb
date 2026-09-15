@@ -79,6 +79,41 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     end
   end
 
+  it 'keeps a named linked collection title out of a broad record owner' do
+    stories = (1..10).map do |number|
+      <<~HTML
+        <article class="StandardCard_standardCard__fixture">
+          <h3><a href="/stories/#{number}">Independent collection report #{number}</a></h3>
+          <p>Local summary for report #{number}.</p>
+        </article>
+      HTML
+    end
+    html = <<~HTML
+      <html><head><title>Collection boundary newsroom</title></head><body><main>
+        <h1>Collection boundary newsroom</h1>
+        <div class="PageGroup_left__fixture">
+          <section class="StandardLeftFeed_StandardLeftFeedContainer__fixture">
+            <div class="StandardLeftFeed_StandardLeftFeedItems__fixture">#{stories.first(4).join}</div>
+          </section>
+          <section class="StandardLeftFeed_StandardLeftFeedContainer__fixture">
+            <div class="StandardLeftFeed_StandardLeftFeedItems__fixture">#{stories[4..7].join}</div>
+          </section>
+          <h2 class="SectionTitle_title__fixture">
+            <a class="SectionTitle_titleText__fixture" href="/tools/training">Training desk</a>
+          </h2>
+          <div class="GamesWidget_containerBottom__fixture">#{stories.last(2).join}</div>
+        </div>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('## [Training desk](https://newsroom.example/tools/training)')
+      expect(payload['markdown']).not_to include('- [Training desk]', 'Training desk - Independent collection report')
+      expect((1..10).map { |number| payload['markdown'].index("/stories/#{number}") }).to all(be_a(Integer))
+    end
+  end
+
   it 'keeps one-link semantic cards independent from a broader feed owner' do
     sparse_records = (2..10).map do |number|
       metadata = if number == 2

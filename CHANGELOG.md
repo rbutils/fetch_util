@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep linked collection headings out of broad record owners when multiple independent semantic records prove the collection boundary.
 - Exclude list records owned by explicit advertisement tokens without treating ordinary substring lookalikes as ads.
 - Preserve an unambiguous local author when duplicate card layouts represent the same story.
 - Keep authors on homepage story cards out of page-level bylines while retaining a focal homepage article's author.

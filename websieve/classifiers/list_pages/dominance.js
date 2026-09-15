@@ -160,6 +160,27 @@
     return score;
   }
 
+  function genericLinkedCollectionHeading(link, card) {
+    if (!homepageRootPath() || !link || !card || !card.contains(link)) return false;
+    var heading = link.closest("h1, h2, h3");
+    if (!heading || heading.closest("article, li, tr") ||
+        heading.closest("nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar']")) return false;
+    var links = Array.from(heading.querySelectorAll("a[href]"));
+    var url = links.length === 1 && materializedHttpUrl(link.getAttribute("href"));
+    if (!url || links[0] !== link || url.split("#")[0] === location.href.split("#")[0]) return false;
+
+    var hints = [heading.id, heading.className, link.id, link.className].join(" ").replace(/([a-z\d])([A-Z])/g, "$1 $2");
+    if (!/(?:^|[\s_-])(?:section|category|topic|desk|collection|widget)(?:$|[\s_-])/i.test(hints) ||
+        !/(?:^|[\s_-])(?:title|heading)(?:$|[\s_-])/i.test(hints)) return false;
+
+    var records = Array.from(card.querySelectorAll("article, li, tr")).filter(function(record) {
+      if (record.parentElement && record.parentElement.closest("article, li, tr")) return false;
+      if (record.closest("nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar']")) return false;
+      return !listCardNodeHidden(record) && !!genericListPrimaryHeadingLink(record);
+    });
+    return records.length >= 2;
+  }
+
   function listLinkCandidate(link, container, context, retainUnsafeLink) {
     if (!link) return null;
     if (listExplicitAdvertisementOwner(link)) return null;
@@ -197,6 +218,7 @@
     if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
     var card = listCardRoot(link, container, group, context.figureCollections);
+    if (genericLinkedCollectionHeading(link, card)) return null;
     if (genericListSupportingCard(link, card, context.supportingCards)) {
       context.supportingLinks.add(link);
       return null;
