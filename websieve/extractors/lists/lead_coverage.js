@@ -91,17 +91,31 @@
     return Object.keys(destinations).length;
   }
 
+  function sameRootSectionHeadingItem(item, regions) {
+    var source = item && (item.sourceNode || item.card);
+    if (!source) return false;
+    return regions.some(function(region) {
+      if (!region.headingNode || normalizeText(item.text || "") !== normalizeText(region.label)) return false;
+      return region.headingNode.contains(source) || source.contains(region.headingNode);
+    });
+  }
+
   function sameRootFlatSectionCoverage(sectioned, flatItems) {
-    if (!sectioned || sectioned.items.length * 2 >= flatItems.length) return null;
+    if (!sectioned) return null;
+    var contentItems = flatItems.filter(function(item) {
+      return !sameRootSectionHeadingItem(item, sectioned.regions);
+    });
+    if (sectioned.items.length * 2 >= contentItems.length) return null;
 
     var sectionDestinations = sameRootCanonicalDestinations(sectioned.items);
-    var flatDestinations = sameRootCanonicalDestinations(flatItems);
+    var flatDestinations = sameRootCanonicalDestinations(contentItems);
     if (!sectionDestinations.length || sectionDestinations.length * 2 >= flatDestinations.length) return null;
 
-    var flatKeys = flatItems.map(sameRootListRecordKey);
+    var flatKeys = contentItems.map(sameRootListRecordKey);
     var cursor = 0;
     var replacements = {};
     var headings = {};
+    var headingParts = [];
     var complete = sectioned.regions.every(function(region) {
       var firstIndex = null;
       var regionComplete = region.cards.every(function(item) {
@@ -115,15 +129,16 @@
       });
       if (regionComplete && region.label && firstIndex !== null) {
         if (!headings[firstIndex]) headings[firstIndex] = [];
-        headings[firstIndex].push(region.label);
+        headings[firstIndex].push(sectionRegionMarkdown(region));
+        headingParts.push({ node: region.headingNode || region.node, markdown: "## " + sectionRegionMarkdown(region) });
       }
       return regionComplete;
     });
     if (!complete) return null;
 
-    var unmatchedCount = flatItems.length - Object.keys(replacements).length;
+    var unmatchedCount = contentItems.length - Object.keys(replacements).length;
     var unmatchedCards = [];
-    flatItems.forEach(function(item, index) {
+    contentItems.forEach(function(item, index) {
       if (replacements[index] || !item.card) return;
       var owner = unmatchedCards.find(function(entry) { return entry.card === item.card; });
       if (owner) owner.count += 1;
@@ -135,8 +150,9 @@
     if (unmatchedCards.some(function(entry) { return entry.count * 2 >= unmatchedCount; })) return null;
 
     return {
-      items: flatItems.map(function(item, index) { return replacements[index] || item; }),
-      headings: headings
+      items: contentItems.map(function(item, index) { return replacements[index] || item; }),
+      headings: headings,
+      headingParts: headingParts
     };
   }
 
@@ -164,6 +180,7 @@
     var representedPositions = new Set(sectioned.items.map(sourcePosition));
     var additions = [];
     flatItems.concat(fallbackItems).forEach(function(item) {
+      if (sameRootSectionHeadingItem(item, sectioned.regions)) return;
       if (!materializedHttpUrl(item.url) || represented.has(key(item))) return;
       var position = sourcePosition(item);
       if (position >= 0 && representedPositions.has(position)) return;
@@ -207,18 +224,24 @@
     entries.sort(function(a, b) { return a.position - b.position; });
     var items = entries.map(function(entry) { return entry.item; });
     var headings = {};
+    var headingParts = [];
     sectioned.regions.forEach(function(region) {
       var index = items.findIndex(function(item) { return key(item) === key(region.cards[0]); });
       if (region.label && index >= 0) {
         if (!headings[index]) headings[index] = [];
-        headings[index].push(region.label);
+        headings[index].push(sectionRegionMarkdown(region));
+        headingParts.push({ node: region.headingNode || region.node, markdown: "## " + sectionRegionMarkdown(region) });
       }
     });
     var descriptions = listDescriptionParts(root, items, {
       includeInlineProse: true, preserveTextLengths: true,
-      pageTitles: pageTitles, preserveUnrepresentedText: true
+      pageTitles: pageTitles, preserveUnrepresentedText: true,
+      sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
+      suppressRepresentedText: true
     }).filter(function(part) { return !localParagraphs.has(part.node); });
+    descriptions = headingParts.concat(descriptions);
     var renderedSections = { regions: [{ node: root, label: "", cards: items }] };
-    return { items: items, headings: headings, renderedSections: renderedSections, renderedDescriptions: descriptions,
+    return { items: items, headings: headings, headingParts: headingParts,
+      renderedSections: renderedSections, renderedDescriptions: descriptions,
       markdown: sectionedListMarkdownWithDescriptions(renderedSections, descriptions) || sameRootFlatListMarkdown(items, headings) };
   }

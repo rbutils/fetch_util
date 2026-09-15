@@ -53,8 +53,11 @@
     if (flatCoverage && !flatCoverage.markdown) {
       var flatDescriptions = listDescriptionParts(root, items, {
         includeInlineProse: true, preserveTextLengths: true,
-        pageTitles: pageTitles, preserveUnrepresentedText: true
+        pageTitles: pageTitles, preserveUnrepresentedText: true,
+        sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
+        suppressRepresentedText: true
       });
+      flatDescriptions = (flatCoverage.headingParts || []).concat(flatDescriptions);
       flatCoverage.renderedSections = {
         regions: [{ node: root, label: "", cards: items }]
       };

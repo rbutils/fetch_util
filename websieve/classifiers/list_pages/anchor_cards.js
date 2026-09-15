@@ -76,6 +76,38 @@
   }
 
   function genericListSupportingCard(link, candidateCard, cache) {
+    function semanticSiblingRecord(card, primary) {
+      if (!card.matches("article, li") || !card.parentElement || listCardNodeHidden(card)) return false;
+      function primaryHeadingLink(record) {
+        var links = Array.from(record.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4")).map(function(node) {
+          return node.matches("a[href]") ? node : node.closest("a[href]");
+        }).filter(function(node, index, all) { return node && all.indexOf(node) === index; });
+        return links.length === 1 && genericListAnchorRecordEvidence(links[0]) ? links[0] : null;
+      }
+      function soleSemanticRecord(branch) {
+        var records = branch.matches("article, li") ? [branch] : Array.from(branch.querySelectorAll("article, li")).filter(function(record) {
+          var owner = record.parentElement && record.parentElement.closest("article, li");
+          return !owner || !branch.contains(owner);
+        });
+        return records.length === 1 ? records[0] : null;
+      }
+      if (primaryHeadingLink(card) !== primary) return false;
+      var branch = card;
+      var parent = branch.parentElement;
+      while (parent && !parent.matches("main, body, html, nav, header, footer, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) {
+        var hasPeer = Array.from(parent.children).some(function(peer) {
+          if (peer === branch || !peer.matches) return false;
+          var record = soleSemanticRecord(peer);
+          return !!(record && !listCardNodeHidden(record) && primaryHeadingLink(record));
+        });
+        if (hasPeer) return true;
+        if (parent.matches("section, aside, [role='region'], [role='complementary']") || soleSemanticRecord(parent) !== card) break;
+        branch = parent;
+        parent = branch.parentElement;
+      }
+      return false;
+    }
+
     function structuredCardLink(card, requireBoundary) {
       if (!cache) return genericListStructuredCardLink(card, requireBoundary);
       var cached = cache.get(card) || {};
@@ -87,6 +119,7 @@
     }
 
     if (!link || !candidateCard || !candidateCard.contains(link) || link === candidateCard) return null;
+    if (semanticSiblingRecord(candidateCard, link)) return null;
     var section = link.closest("section");
     if (section && candidateCard.contains(section) && structuredCardLink(section, false) === link) return null;
     var candidateBoundary = candidateCard.parentElement && genericListCardBoundary(candidateCard);

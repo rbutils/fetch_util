@@ -42,6 +42,22 @@
     return listDescriptionDuplicateCard(node, items);
   }
 
+  function listDescriptionRecordHeading(node, text, primaryReferences) {
+    if (!/^H[1-6]$/.test(node.tagName || "") || !closestGenericListFieldCard(node)) return "";
+    var links = [];
+    var ancestor = node.closest("a[href]");
+    if (ancestor) links.push(ancestor);
+    Array.prototype.forEach.call(node.querySelectorAll("a[href]"), function(link) {
+      if (links.indexOf(link) === -1) links.push(link);
+    });
+    var destinations = links.map(function(link) {
+      return materializedHttpUrl(link.getAttribute("href"));
+    }).filter(Boolean).filter(function(url, index, urls) { return urls.indexOf(url) === index; });
+    if (destinations.length !== 1 || !primaryReferences.has(destinations[0])) return "";
+    if (text.length < minimumListTitleLength(text) || genericListControlText(text) || looksLikeFooterLink(text, destinations[0])) return "";
+    return "- " + markdownLink(text, destinations[0]);
+  }
+
   function listDescriptionParts(root, items, options) {
     var descParts = [];
     var hasItems = items && items.length > 0;
@@ -67,6 +83,13 @@
       if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (quote && listCardNodeHidden(el)) return;
       if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences)) return;
+      var text = normalizeText(el.textContent);
+      var heading = /^H[1-6]$/.test(el.tagName);
+      var recordHeading = listDescriptionRecordHeading(el, text, primaryReferences);
+      if (recordHeading) {
+        descParts.push({ node: el, markdown: recordHeading });
+        return;
+      }
       if (quote) {
         var quotation = el.cloneNode(true);
         pruneListCardVisibility(el, quotation);
@@ -74,8 +97,6 @@
         if (quoteMarkdown) descParts.push({ node: el, markdown: quoteMarkdown });
         return;
       }
-      var text = normalizeText(el.textContent);
-      var heading = /^H[1-6]$/.test(el.tagName);
       var linkedSectionHeading = heading && listLinkedSectionHeading(el, root, items, primaryUrls);
       var pageHeading = heading && !el.closest("a[href]") && !el.querySelector("a[href]");
       var weatherOwner = pageHeading && el.closest("[class*='weather' i], [id*='weather' i]");

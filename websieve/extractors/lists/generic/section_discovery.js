@@ -1,9 +1,33 @@
+  function sectionHeadingNode(region, options) {
+    if (options && options.headingBuilder) return null;
+    return region.querySelector((options && options.headingSelector) || "h1, h2, h3, h4");
+  }
+
   function sectionHeading(region, options) {
     if (options && options.headingBuilder) return options.headingBuilder(region);
-    var heading = region.querySelector((options && options.headingSelector) || "h1, h2, h3, h4");
+    var heading = sectionHeadingNode(region, options);
     var label = normalizeText(heading && heading.textContent);
     if (!label || label.length > 90 || rejectedHomepageLeadText(label, "")) return "";
     return label;
+  }
+
+  function sectionHeadingOwnedByRecord(region, options) {
+    var heading = sectionHeadingNode(region, options);
+    return !!(heading && closestGenericListFieldCard(heading));
+  }
+
+  function sectionRegionMarkdown(region) {
+    var heading = region.headingNode;
+    var links = heading ? Array.from(heading.querySelectorAll("a[href]")) : [];
+    var ancestor = heading && heading.closest("a[href]");
+    if (ancestor && region.node.contains(ancestor)) links.unshift(ancestor);
+    links = links.filter(function(link, index, all) { return all.indexOf(link) === index; });
+    var matching = links.filter(function(link) {
+      var text = normalizeText(link.innerText || link.textContent || "");
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      return text === region.label && url && !genericListControlText(text) && !looksLikeFooterLink(text, url);
+    });
+    return matching.length === 1 ? markdownLink(region.label, matching[0].getAttribute("href")) : region.label;
   }
 
   function sectionRegionLabel(region, options) {
@@ -14,14 +38,15 @@
 
   function nestedSectionHeadingOwner(region, options) {
     if (options && options.headingBuilder) return null;
-    var heading = region.querySelector((options && options.headingSelector) || "h1, h2, h3, h4");
+    var heading = sectionHeadingNode(region, options);
     var regionSelector = (options && options.regionSelector) || "section, [role='region'], main > div, main > article";
     var owner = heading && heading.closest && heading.closest(regionSelector);
     return owner && owner !== region && region.contains(owner) ? owner : null;
   }
 
   function sectionRegionViable(region, options) {
-    if ((!options.skipEditorialGuard && !editorialSectionRegion(region)) ||
+    if (sectionHeadingOwnedByRecord(region, options) ||
+        (!options.skipEditorialGuard && !editorialSectionRegion(region)) ||
         (options.regionFilter && !options.regionFilter(region))) return false;
     if (options.allowEmptyRegions) return true;
     return sectionCards(region, options).some(function(card) {
@@ -139,6 +164,7 @@
     });
 
     candidates.forEach(function(region) {
+      if (sectionHeadingOwnedByRecord(region, options)) return;
       var label = sectionRegionLabel(region, options);
       var unlabelled = !label && genericUnlabelledSectionRegion(region, root, options);
       if ((!label && !unlabelled) || seen.some(function(existing) { return existing.contains(region); })) return;
@@ -170,7 +196,7 @@
         label: label,
         cards: cards,
         node: region,
-        headingNode: !options.headingBuilder && region.querySelector(options.headingSelector || "h1, h2, h3, h4")
+        headingNode: sectionHeadingNode(region, options)
       });
     });
 
@@ -189,7 +215,7 @@
     if (materializedListItemCount(items) < 2) return null;
     var markdown = regions.map(function(region) {
       var cards = listMarkdown(region.cards);
-      return region.label ? "## " + region.label + "\n\n" + cards : cards;
+      return region.label ? "## " + sectionRegionMarkdown(region) + "\n\n" + cards : cards;
     }).join("\n\n");
 
     return {
@@ -216,7 +242,7 @@
       if (region.label) {
         blocks.push({
           node: region.headingNode || region.node,
-          markdown: "## " + region.label,
+          markdown: "## " + sectionRegionMarkdown(region),
           kind: "heading",
           regionIndex: regionIndex,
           sequence: sequence++
