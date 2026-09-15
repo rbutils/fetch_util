@@ -4,7 +4,7 @@ require "support/extractor_integration_helpers"
 RSpec.describe FetchUtil::Extractor do
   include_context "extractor integration helpers"
 
-  def shared_context_records(html, url: "https://publisher.example/")
+  def shared_context_records(html, url: "https://publisher.example/", root_selector: "main")
     root = File.expand_path("../../..", __dir__)
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true)
                  .reject { |line| line.empty? || line.start_with?("#") }
@@ -12,12 +12,13 @@ RSpec.describe FetchUtil::Extractor do
     outro = File.read(File.join(root, "websieve/99_outro.js"))
     source = source.delete_suffix(outro) + <<~JS + outro
       window.__sharedContextRecords = function () {
-        var root = visibleListClone(document.querySelector("main"));
+        var root = visibleListClone(document.querySelector(#{root_selector.to_json}));
         cleanupListRoot(root);
         var items = extractListItems(root, ["Material collection"]);
         var content = listContent({title: "Material collection"});
         return JSON.stringify({
           records: items.map(function(item) { return {url: item.url, markdown: listMarkdown([item]), owner: item.card.className}; }),
+          containerAuthor: cardField(root, ".author, .byline, [rel='author'], [itemprop='author']"),
           markdown: content && content.markdown
         });
       };
@@ -105,5 +106,33 @@ RSpec.describe FetchUtil::Extractor do
     record = shared_context_records("<main>#{article}</main>", url: "https://publisher.example/features/current")
              .fetch("records").first
     expect(record.fetch("owner")).to eq("feature-card")
+  end
+
+  it "does not attribute a neighboring article's author to a collection link" do
+    stories = Array.new(3) do |index|
+      <<~HTML
+        <article><h3><a href="/story/#{index}">Independent premium report #{index}</a></h3>
+          <p>Local reporting and analysis for this individual story #{index}.</p>
+          <span class="author">Independent reporter #{index}</span>
+        </article>
+      HTML
+    end.join
+    result = shared_context_records(<<~HTML, root_selector: ".left-column")
+      <main><h1>Material collection</h1><div class="left-column">
+        <h2>Premium reports</h2>#{stories}
+        <h2><a href="/games">Mind training collection</a></h2>
+        <article><h3><a href="/game/words">Daily independent word puzzle</a></h3></article>
+        <article><h3><a href="/game/numbers">Daily independent number puzzle</a></h3></article>
+      </div></main>
+    HTML
+    records = result.fetch("records")
+    expect(result.fetch("containerAuthor")).to eq("")
+    games = result.fetch("markdown").lines.find { |line| line.include?("https://publisher.example/games") }
+    expect(games).not_to be_nil
+    expect(games).not_to include("Independent reporter")
+    3.times do |index|
+      story = records.find { |record| record.fetch("url") == "https://publisher.example/story/#{index}" }
+      expect(story.fetch("markdown")).to include("Independent reporter #{index}")
+    end
   end
 end

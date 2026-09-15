@@ -80,9 +80,15 @@
   function cardOwnedNodes(card, selector) {
     var nodes = Array.prototype.filter.call(card.querySelectorAll(selector), function(node) { return !listCardNodeHidden(node); });
     if (card.matches && card.matches("tr")) return nodes;
-    if (!genericListFieldBoundary(card)) return nodes;
+    var boundary = genericListFieldBoundary(card);
     return nodes.filter(function(node) {
-      return closestGenericListFieldCard(node) === card;
+      if (boundary) return closestGenericListFieldCard(node) === card;
+      var owner = node.closest(genericListCardSelector());
+      while (owner && owner !== card && card.contains(owner)) {
+        if (genericListFieldBoundary(owner)) return false;
+        owner = owner.parentElement && owner.parentElement.closest(genericListCardSelector());
+      }
+      return true;
     });
   }
 
