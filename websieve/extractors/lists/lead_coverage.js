@@ -223,6 +223,7 @@
     if (entries.some(function(entry) { return entry.position < 0; })) return null;
     entries.sort(function(a, b) { return a.position - b.position; });
     var items = entries.map(function(entry) { return entry.item; });
+    mergeDuplicateRecordAuthorContext(root, items);
     var headings = {};
     var headingParts = [];
     sectioned.regions.forEach(function(region) {

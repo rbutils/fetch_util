@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve an unambiguous local author when duplicate card layouts represent the same story.
 - Keep authors on homepage story cards out of page-level bylines while retaining a focal homepage article's author.
 - Do not infer liveblog format from repeated timestamps on a root homepage list without explicit liveblog evidence.
 - Preserve Markdown block boundaries when removing empty image and link placeholders.

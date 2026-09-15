@@ -13,6 +13,7 @@
     var sectioned = sectionedListExtraction(root);
 
     var items = extractListItems(root);
+    mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
     var descText = listDescriptionMarkdown(root);
     var fallbackItems = extractFallbackHeadlineItems(root, items.__fetchUtilSupportingLinks);
@@ -50,6 +51,7 @@
       };
     }
     if (flatCoverage) items = flatCoverage.items;
+    if (flatCoverage) mergeDuplicateRecordAuthorContext(root, items);
     if (flatCoverage && !flatCoverage.markdown) {
       var flatDescriptions = listDescriptionParts(root, items, {
         includeInlineProse: true, preserveTextLengths: true,

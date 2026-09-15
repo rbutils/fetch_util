@@ -78,6 +78,7 @@ extractors/glossary/detection.js
 extractors/glossary/extraction.js
 extractors/lists/relabeling.js
 extractors/lists/generic/card_evidence.js
+extractors/lists/generic/duplicate_record_metadata.js
 extractors/lists/generic/inline_descriptions.js
 extractors/lists/generic/headline_extraction.js
 extractors/lists/generic/nested_coverage.js

@@ -425,9 +425,11 @@ RSpec.describe "extract asset bundle" do
     renderer_path = "markdown/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     card_evidence_path = "extractors/lists/generic/card_evidence.js"
+    duplicate_metadata_path = "extractors/lists/generic/duplicate_record_metadata.js"
     flat_extraction_path = "extractors/lists/generic/flat_extraction.js"
     section_discovery_path = "extractors/lists/generic/section_discovery.js"
-    sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].to_h do |path|
+    sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, duplicate_metadata_path,
+               flat_extraction_path, section_discovery_path].to_h do |path|
       [path, File.read(File.join(source_root, path))]
     end
 
@@ -459,6 +461,11 @@ RSpec.describe "extract asset bundle" do
       'card.matches("tr")',
       "genericListNestedCardReplaces(card, nested)"
     )
+    expect(manifest.index(card_evidence_path)).to be < manifest.index(duplicate_metadata_path)
+    [flat_extraction_path, section_discovery_path, "extractors/lists/core.js", "extractors/lists/lead_coverage.js"].each do |consumer_path|
+      expect(manifest.index(duplicate_metadata_path)).to be < manifest.index(consumer_path)
+    end
+    expect(sources.fetch(duplicate_metadata_path)).to include("function mergeDuplicateRecordAuthorContext")
     expect(sources.fetch(flat_extraction_path)).to include("closestGenericListCard(node)")
     expect(sources.fetch(section_discovery_path)).to include(
       "customSelector || genericListCardSelector()",

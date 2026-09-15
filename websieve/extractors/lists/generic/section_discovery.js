@@ -213,6 +213,7 @@
       region.cards.forEach(function(card) { items.push(card); });
     });
     if (materializedListItemCount(items) < 2) return null;
+    mergeDuplicateRecordAuthorContext(root, items);
     var markdown = regions.map(function(region) {
       var cards = listMarkdown(region.cards);
       return region.label ? "## " + sectionRegionMarkdown(region) + "\n\n" + cards : cards;
