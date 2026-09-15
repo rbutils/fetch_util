@@ -226,6 +226,7 @@
       });
     }
     cleanupCookieChrome(clone);
+    stripArticleWidgets(clone);
     preserveMeaningfulButtons(clone);
     // Preserve ReDoc endpoint bars before removing buttons.
     // These have: <button><span class="http-verb get">get</span><span>/path</span></button>

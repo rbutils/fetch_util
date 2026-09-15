@@ -83,6 +83,7 @@
   }
 
   function stripUIWidgets(root) {
+    stripArticleWidgets(root);
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el)) el.remove();

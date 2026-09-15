@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Remove empty article-owned recommendation and comment loaders and short support-action widgets while retaining substantive discussions, explanations and citations.
 - Prefer a selected article's own heading when the metadata title differs only by a verified publication-name suffix.
 - Handle HighWire-style abstract and bodymatter articles through the shared scholarly engines, preserving their body, title and citation resources without a duplicate publisher registration.
 - Use shared CMS extraction for Avesta articles so an unrelated news-card heading cannot replace the requested article title.
