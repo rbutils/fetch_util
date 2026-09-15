@@ -19,6 +19,17 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var originalPrimaryTitle = normalizeText((content.title || metadata.title || "").replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var siteTitle = normalizeText(content.siteName || metadata.siteName || "");
   var primaryTitle = originalPrimaryTitle;
+  if (content.contentType === "article" || content.contentType === "medical") {
+    primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
+    if (primaryTitle !== originalPrimaryTitle) {
+      var removedBrandedHeading = false;
+      markdown = markdown.replace(/^#{1,6}[ \t]+([^\n]+)\n?/gm, function(line, heading) {
+        if (removedBrandedHeading || normalizeText(heading) !== originalPrimaryTitle) return line;
+        removedBrandedHeading = true;
+        return "";
+      });
+    }
+  }
   if ((content.contentType === "article" || content.contentType === "medical") && normalizeText(markdown) && siteTitle && primaryTitle.toLowerCase() === siteTitle.toLowerCase()) {
     markdown.split("\n").slice(0, 12).some(function(line) {
       var match = normalizeText(line).match(/^#+\s+(.*)/);

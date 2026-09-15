@@ -96,6 +96,23 @@ function markdownStartsWithTitle(markdown, title) {
   });
 }
 
+function articleTitleFromOwnedHeading(html, title, siteName) {
+  if (!html || !title || !siteName) return title;
+  var brand = function(value) { return normalizeText(value).replace(/^www\./i, "").toLowerCase(); };
+  var titleParts = title.split(/\s+(?:-|\||\u2013|\u2014)\s+/);
+  if (titleParts.length < 2 || brand(titleParts[titleParts.length - 1]) !== brand(siteName)) return title;
+  var root = document.implementation.createHTMLDocument("").createElement("div");
+  root.innerHTML = html;
+  var headings = root.querySelectorAll("h1");
+  if (headings.length !== 1) return title;
+  var heading = normalizeText(headings[0].textContent || "");
+  if (!heading || title.toLowerCase().indexOf(heading.toLowerCase()) !== 0) return title;
+  var suffix = normalizeText(title.slice(heading.length));
+  var match = suffix.match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
+  if (!match) return title;
+  return brand(match[1]) === brand(siteName) ? heading : title;
+}
+
 function compactReferenceText(text) {
   return normalizeText(text || "")
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")
