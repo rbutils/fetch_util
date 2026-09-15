@@ -1,6 +1,6 @@
   function duplicateRecordAuthors(card, authorSelector) {
     var nodes = cardOwnedNodes(card, authorSelector).filter(function(node) {
-      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node) &&
+      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node) && !duplicateRecordExcludedOwner(node, card) &&
         node.closest("article, li, tr") === card;
     });
     return nodes.filter(function(node) {
@@ -17,7 +17,12 @@
       }).filter(Boolean).filter(function(value, index, values) {
         return values.indexOf(value) === index;
       }).sort();
-      return { markdown: markdown, identity: markdown.toLowerCase() + "\u0000" + destinations.join("\u0000") };
+      return {
+        markdown: markdown,
+        text: normalizeText(node.textContent).toLowerCase(),
+        destinations: destinations.join("\u0000"),
+        identity: markdown.toLowerCase() + "\u0000" + destinations.join("\u0000")
+      };
     }).filter(Boolean).filter(function(author, index, authors) {
       return authors.findIndex(function(other) { return other.identity === author.identity; }) === index;
     });
@@ -38,8 +43,18 @@
     });
   }
 
+  function duplicateRecordExcludedOwner(node, recordCard) {
+    if (listCardNodeHidden(node) || listExplicitAdvertisementOwner(node)) return true;
+    var owner = node.closest("nav, header, footer, menu, form, [role='navigation'], [role='menu'], [role='toolbar']");
+    if (!owner) return false;
+    var role = (owner.getAttribute("role") || "").toLowerCase();
+    return !(recordCard && recordCard.contains(owner) && owner.matches("header, footer") &&
+      role !== "navigation" && role !== "menu" && role !== "toolbar" &&
+      owner.closest("article, li, tr") === recordCard);
+  }
+
   function duplicateRecordCandidate(card, authorSelector) {
-    if (listCardNodeHidden(card) || card.closest("nav, header, footer, menu, form, [role='navigation'], [role='menu'], [role='toolbar']")) return null;
+    if (duplicateRecordExcludedOwner(card)) return null;
     if (card.parentElement && card.parentElement.closest("article, li, tr")) return null;
 
     var titleRecords = duplicateRecordTitleNodes(card).map(function(title) {
@@ -72,6 +87,15 @@
     };
   }
 
+  function duplicateRecordAuthorMarkdown(authors) {
+    var texts = Array.from(new Set(authors.map(function(author) { return author.text; }).filter(Boolean)));
+    if (texts.length !== 1) return "";
+    var linked = authors.filter(function(author) { return author.destinations; });
+    var destinations = Array.from(new Set(linked.map(function(author) { return author.destinations; })));
+    if (destinations.length > 1) return "";
+    return (linked[0] || authors[0] || {}).markdown || "";
+  }
+
   function mergeDuplicateRecordAuthorContext(root, items) {
     if (!root || !root.querySelectorAll || !items || !items.length) return;
     var authorSelector = "[rel~='author'], [itemprop~='author'], [data-author], [class*='author' i], [class*='byline' i]";
@@ -86,9 +110,12 @@
 
     items.forEach(function(item) {
       var key = item && item.url && listCanonicalKey(item.url);
-      if (!key || item.author || !candidatesByUrl[key]) return;
+      var recordCard = item && item.sourceNode && item.sourceNode.closest && item.sourceNode.closest("article, li, tr");
+      if (!key || item.author || !item.sourceNode || duplicateRecordExcludedOwner(item.sourceNode, recordCard) ||
+          !candidatesByUrl[key]) return;
       var candidates = candidatesByUrl[key].filter(function(candidate) {
-        return candidate.card !== item.card && (!item.sourceNode || !candidate.card.contains(item.sourceNode));
+        if (!candidate.card.contains(item.sourceNode)) return true;
+        return item.sourceNode.closest && item.sourceNode.closest("article, li, tr") === candidate.card;
       });
       var title = normalizeText(item.text || "").toLowerCase();
       var matching = candidates.filter(function(candidate) { return candidate.title === title; });
@@ -98,6 +125,7 @@
       }, []).filter(function(author, index, values) {
         return values.findIndex(function(other) { return other.identity === author.identity; }) === index;
       });
-      if (authors.length === 1) item.author = authors[0].markdown;
+      var author = duplicateRecordAuthorMarkdown(authors);
+      if (author) item.author = author;
     });
   }

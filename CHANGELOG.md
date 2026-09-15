@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep a story author owned by the selected nearest semantic list record even when its inner link is chosen as the record card.
 - Remove structurally proved dropdown actions from list section headings without deleting material change-related titles or selected values.
 - Keep linked collection headings out of broad record owners when multiple independent semantic records prove the collection boundary.
 - Exclude list records owned by explicit advertisement tokens without treating ordinary substring lookalikes as ads.
