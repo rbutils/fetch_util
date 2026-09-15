@@ -47,6 +47,24 @@ function visibleMetadataRoots() {
   return roots.length ? roots : [document];
 }
 
+function visibleBylineRoots() {
+  var roots = visibleMetadataRoots();
+  var path = location.pathname || "/";
+  if (path !== "/" && !/^\/index\.(?:html?|php|aspx?)$/i.test(path)) return roots;
+
+  var focal = [];
+  document.querySelectorAll("[itemprop='articleBody'], article[role='main']").forEach(function(node) {
+    var root = node.closest("article, [role='main'], main") || node;
+    if (focal.indexOf(root) === -1 && textLength(root) >= 80) focal.push(root);
+  });
+  if (focal.length) return focal;
+
+  var articles = roots.filter(function(root) {
+    return root.matches && root.matches("article") && !(root.parentElement && root.parentElement.closest("article"));
+  });
+  return articles.length >= 2 ? [] : roots;
+}
+
 function firstScopedText(roots, selectors, attr, rejectedValue) {
   for (var r = 0; r < roots.length; r += 1) {
     for (var i = 0; i < selectors.length; i += 1) {
@@ -67,7 +85,7 @@ function firstScopedText(roots, selectors, attr, rejectedValue) {
 }
 
 function visibleByline() {
-  var value = firstScopedText(visibleMetadataRoots(), [
+  var value = firstScopedText(visibleBylineRoots(), [
     "[rel='author']",
     "[itemprop='author'] [itemprop='name']",
     "[itemprop='author']",
