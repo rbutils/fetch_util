@@ -82,6 +82,7 @@
     if (card.matches && card.matches("tr")) return nodes;
     var boundary = genericListFieldBoundary(card);
     return nodes.filter(function(node) {
+      if (genericListRecordMetadataOwner(node) === card) return true;
       if (boundary) return closestGenericListFieldCard(node) === card;
       var owner = node.closest(genericListCardSelector());
       while (owner && owner !== card && card.contains(owner)) {

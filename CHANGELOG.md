@@ -6,6 +6,7 @@
 
 - Preserve Markdown block boundaries when removing empty image and link placeholders.
 - Preserve linked and unlinked collection headings through complete flat-list coverage, while keeping peer-proven one-link semantic cards as records instead of promoting their titles to section labels.
+- Keep explicit article bylines attached to their local stories even when author-link classes resemble cards, while preserving author-directory records and excluding comment authors.
 - Preserve unlinked collection headings when unrelated record metadata repeats the same label, using local heading ownership rather than global text equality.
 - Handle Glassdoor-style community landing pages through shared extraction, preserving the visible summary without leaking collapsed directory panels.
 - Exclude content inside zero-sized explicitly clipping panels while preserving visible overflow, scrollable collections and controlled-panel visibility contracts.

@@ -146,9 +146,10 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
-function cardField(card, selector, primaryUrl, allowReference) {
+function cardField(card, selector, primaryUrl, allowReference, fieldFilter) {
   if (!card || !card.querySelector) return "";
-  var node = cardOwnedNodes(card, selector)[0];
+  var nodes = cardOwnedNodes(card, selector);
+  var node = fieldFilter ? nodes.filter(fieldFilter)[0] : nodes[0];
   if (!node) return "";
   var nodeUrl = node.matches && node.matches("a[href]") && materializedHttpUrl(node.getAttribute("href"));
   if (nodeUrl && primaryUrl && listCanonicalKey(nodeUrl) === listCanonicalKey(primaryUrl)) {
@@ -177,7 +178,9 @@ function listItemContextValues(item, primaryUrls) {
   var contextValues = [
     item.category,
     item.summary,
-    cardField(card, "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]", item.url) || item.author,
+    cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
+      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
+    }) || item.author,
     cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
     cardField(card, "[class*='score' i], [data-score], [data-karma]", item.url) || item.score,
     cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false) || item.replyCount,

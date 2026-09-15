@@ -75,15 +75,69 @@
     return null;
   }
 
+  function genericListPrimaryHeadingLink(record) {
+    if (!record || !record.querySelectorAll) return null;
+    var links = Array.from(record.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4")).map(function(node) {
+      return node.matches("a[href]") ? node : node.closest("a[href]");
+    }).filter(function(node, index, all) { return node && all.indexOf(node) === index; });
+    return links.length === 1 && genericListAnchorRecordEvidence(links[0]) ? links[0] : null;
+  }
+
+  function genericListAuthorMetadataNode(node) {
+    if (!node || !node.matches) return false;
+    if (node.matches("[rel~='author'], [itemprop~='author'], [data-author]")) return true;
+    return Array.prototype.some.call(node.classList || [], function(className) {
+      return /(?:^|[-_])(?:author(?:item|link|name)?|byline)(?:$|[-_])/i.test(className);
+    });
+  }
+
+  function genericListAuthorMetadataLink(link) {
+    return !!(link && link.matches && link.matches("a[href]") && genericListAuthorMetadataNode(link));
+  }
+
+  function genericListInteractionOwner(node) {
+    function interactionNode(candidate) {
+      var names = [candidate.id || ""].concat(Array.from(candidate.classList || []));
+      return names.some(function(name) {
+        var normalized = String(name).replace(/([a-z])([A-Z])/g, "$1-$2");
+        return /(?:^|[-_])(?:comment(?:s|ers?)?|repl(?:y|ies))(?:$|[-_](?:thread|author|container|list|item|body|section|panel)(?:$|[-_]))/i.test(normalized);
+      });
+    }
+    var current = node;
+    while (current && current.matches && !current.matches("body, html, nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) {
+      if (interactionNode(current)) return current;
+      if (current !== node && current.matches("article, li, .post, .entry, [itemtype$='/Article'], [itemtype$='/NewsArticle']")) return null;
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  function genericListRecordMetadataCard(link) {
+    if (!genericListAuthorMetadataLink(link)) return null;
+    var current = link.parentElement;
+    while (current && !current.matches("body, html, nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) {
+      if (current.matches("article, li, .post, .entry, [itemtype$='/Article'], [itemtype$='/NewsArticle']")) {
+        return listCardNodeHidden(current) ? null : current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  function genericListRecordMetadataOwner(link) {
+    var record = genericListRecordMetadataCard(link);
+    if (!record) return null;
+    var headings = Array.prototype.filter.call(record.querySelectorAll("h1, h2, h3, h4"), function(heading) {
+      return normalizeText(heading.textContent || "");
+    });
+    if (headings.length !== 1) return null;
+    var primary = genericListPrimaryHeadingLink(record);
+    return primary && primary !== link ? record : null;
+  }
+
   function genericListSupportingCard(link, candidateCard, cache) {
     function semanticSiblingRecord(card, primary) {
       if (!card.matches("article, li") || !card.parentElement || listCardNodeHidden(card)) return false;
-      function primaryHeadingLink(record) {
-        var links = Array.from(record.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4")).map(function(node) {
-          return node.matches("a[href]") ? node : node.closest("a[href]");
-        }).filter(function(node, index, all) { return node && all.indexOf(node) === index; });
-        return links.length === 1 && genericListAnchorRecordEvidence(links[0]) ? links[0] : null;
-      }
       function soleSemanticRecord(branch) {
         var records = branch.matches("article, li") ? [branch] : Array.from(branch.querySelectorAll("article, li")).filter(function(record) {
           var owner = record.parentElement && record.parentElement.closest("article, li");
@@ -91,14 +145,14 @@
         });
         return records.length === 1 ? records[0] : null;
       }
-      if (primaryHeadingLink(card) !== primary) return false;
+      if (genericListPrimaryHeadingLink(card) !== primary) return false;
       var branch = card;
       var parent = branch.parentElement;
       while (parent && !parent.matches("main, body, html, nav, header, footer, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) {
         var hasPeer = Array.from(parent.children).some(function(peer) {
           if (peer === branch || !peer.matches) return false;
           var record = soleSemanticRecord(peer);
-          return !!(record && !listCardNodeHidden(record) && primaryHeadingLink(record));
+          return !!(record && !listCardNodeHidden(record) && genericListPrimaryHeadingLink(record));
         });
         if (hasPeer) return true;
         if (parent.matches("section, aside, [role='region'], [role='complementary']") || soleSemanticRecord(parent) !== card) break;
@@ -118,6 +172,15 @@
       return cached[key];
     }
 
+    if (genericListAuthorMetadataLink(link)) {
+      var interactionOwner = genericListInteractionOwner(link);
+      if (interactionOwner) return interactionOwner;
+      var metadataOwner = genericListRecordMetadataOwner(link);
+      if (metadataOwner) return metadataOwner;
+      var metadataCard = genericListRecordMetadataCard(link);
+      var metadataPrimary = metadataCard && (genericListPrimaryHeadingLink(metadataCard) || structuredCardLink(metadataCard, false));
+      if (metadataCard && metadataPrimary !== link) return metadataCard;
+    }
     if (!link || !candidateCard || !candidateCard.contains(link) || link === candidateCard) return null;
     if (semanticSiblingRecord(candidateCard, link)) return null;
     var section = link.closest("section");

@@ -84,9 +84,35 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
       metadata = if number == 2
                    ''
                  else
+                   controls = if number == 3
+                                <<~HTML
+                                  <div class="comment-thread">
+                                    <a class="comment-author" href="/commenter-3">Commenter</a>
+                                  </div>
+                                  <div class="commenter">
+                                    <a rel="author" href="/nested-commenter-3">Nested commenter</a>
+                                  </div>
+                                  <a class="authoring-layout" href="/guide-3">Guide</a>
+                                HTML
+                              else
+                                ''
+                              end
+                   author_attributes = case number
+                                       when 4
+                                         'class="commentary-card" data-author'
+                                       when 5
+                                         'class="AuthorItem_authorLink__fixture"'
+                                       when 3
+                                         'class="AuthorItem_authorLink__fixture reply-policy" rel="author"'
+                                       else
+                                         'class="AuthorItem_authorLink__fixture" rel="author"'
+                                       end
                    <<~HTML
                      <span class="story-category">Desk #{number}</span>
-                     <a rel="author" href="/reporters/#{number}">Reporter #{number}</a>
+                     #{controls}
+                     <a #{author_attributes} href="/reporters/#{number}">
+                       Reporter Person #{number}
+                     </a>
                    HTML
                  end
       <<~HTML
@@ -118,6 +144,17 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
           #{section_heading_record(13)}
           #{section_heading_record(14)}
         </section>
+        <section>
+          <h2>Contributors</h2>
+          <article class="profile-card">
+            <h3>
+              <a class="AuthorItem_authorLink__fixture" rel="author" href="/contributors/editor">
+                Profile of Editor Name
+              </a>
+            </h3>
+            <p>Independent contributor profile.</p>
+          </article>
+        </section>
       </main></body></html>
     HTML
 
@@ -129,7 +166,25 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
         )
       end
       expect(payload['markdown']).not_to include('## Independent newsroom story 2')
-      expect(payload['markdown']).not_to match(/^- \[Reporter \d+\]/)
+      expect(payload['markdown']).not_to match(/^- \[Reporter Person \d+\]/)
+      expect(payload['markdown']).to match(
+        %r{^- \[Independent newsroom story 3\].*\[Reporter Person 3\]\(https://newsroom\.example/reporters/3\)}
+      )
+      story_line = payload['markdown'].lines.find { |line| line.include?('/stories/3') }
+      expect(payload['markdown']).not_to include('[Commenter](https://newsroom.example/commenter-3)')
+      expect(payload['markdown']).not_to include('[Nested commenter](https://newsroom.example/nested-commenter-3)')
+      expect(story_line).to include('[Guide](https://newsroom.example/guide-3)')
+      expect(story_line.index('[Reporter Person 3]')).to be < story_line.index('[Guide]')
+      expect(payload['markdown']).to match(
+        %r{^- \[Independent newsroom story 4\].*\[Reporter Person 4\]\(https://newsroom\.example/reporters/4\)}
+      )
+      expect(payload['markdown']).to match(
+        %r{^- \[Independent newsroom story 5\].*\[Reporter Person 5\]\(https://newsroom\.example/reporters/5\)}
+      )
+      expect(payload['markdown']).to include(
+        '- [Profile of Editor Name](https://newsroom.example/contributors/editor)'
+      )
+      expect(payload['markdown']).to include('Independent contributor profile.')
       positions = (1..14).map { |number| payload['markdown'].index("/stories/#{number}") }
       expect(positions).to eq(positions.sort)
     end
