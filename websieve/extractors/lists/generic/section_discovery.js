@@ -6,7 +6,7 @@
   function sectionHeading(region, options) {
     if (options && options.headingBuilder) return options.headingBuilder(region);
     var heading = sectionHeadingNode(region, options);
-    var label = normalizeText(heading && heading.textContent);
+    var label = listHeadingText(heading);
     if (!label || label.length > 90 || rejectedHomepageLeadText(label, "")) return "";
     return label;
   }
@@ -23,7 +23,7 @@
     if (ancestor && region.node.contains(ancestor)) links.unshift(ancestor);
     links = links.filter(function(link, index, all) { return all.indexOf(link) === index; });
     var matching = links.filter(function(link) {
-      var text = normalizeText(link.innerText || link.textContent || "");
+      var text = listHeadingText(link);
       var url = materializedHttpUrl(link.getAttribute("href"));
       return text === region.label && url && !genericListControlText(text) && !looksLikeFooterLink(text, url);
     });

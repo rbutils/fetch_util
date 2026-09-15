@@ -1,8 +1,8 @@
   function listDescriptionCardNode(node, items, options, itemValues, primaryReferences) {
     if (!items) return closestGenericListCard(node);
 
-    var text = normalizeText(node.textContent || "");
     var heading = /^H[1-6]$/.test(node.tagName || "");
+    var text = heading ? listHeadingText(node) : normalizeText(node.textContent || "");
     var unlinkedHeading = heading && !node.closest("a[href]") && !node.querySelector("a[href]");
     var headingOwner = unlinkedHeading && closestGenericListFieldCard(node);
     var represented = text && items.find(function(item, index) {
@@ -83,8 +83,8 @@
       if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (quote && listCardNodeHidden(el)) return;
       if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences)) return;
-      var text = normalizeText(el.textContent);
       var heading = /^H[1-6]$/.test(el.tagName);
+      var text = heading ? listHeadingText(el) : normalizeText(el.textContent);
       var recordHeading = listDescriptionRecordHeading(el, text, primaryReferences);
       if (recordHeading) {
         descParts.push({ node: el, markdown: recordHeading });

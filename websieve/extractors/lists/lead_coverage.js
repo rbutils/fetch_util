@@ -95,8 +95,9 @@
     var source = item && (item.sourceNode || item.card);
     if (!source) return false;
     return regions.some(function(region) {
-      if (!region.headingNode || normalizeText(item.text || "") !== normalizeText(region.label)) return false;
-      return region.headingNode.contains(source) || source.contains(region.headingNode);
+      if (!region.headingNode) return false;
+      if (region.headingNode.contains(source)) return true;
+      return source.contains(region.headingNode) && normalizeText(item.text || "") === normalizeText(region.label);
     });
   }
 

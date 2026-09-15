@@ -6,6 +6,47 @@
     return cjkLikeText(text) ? 4 : 8;
   }
 
+  function listHeadingActionText(text) {
+    return /^(?:change|zmie[ńn])$/i.test(normalizeText(text || ""));
+  }
+
+  function listHeadingActionControl(node, heading, sectionBoundary) {
+    if (!node || node.closest("pre, code, kbd, samp, tt") || !listHeadingActionText(node.textContent)) return false;
+    var selectedState = "[aria-selected], [aria-current], [data-selected], [data-value], [value], [role='option'], [role='combobox']";
+    if (node.matches(selectedState) || node.querySelector(selectedState)) return false;
+    for (var owner = node.parentElement; owner; owner = owner.parentElement) {
+      if (owner.matches(selectedState)) return false;
+      if (owner === heading) break;
+    }
+    var semanticControl = node.matches("button, [role='button']");
+    if (!semanticControl && !node.matches("span, div")) return false;
+
+    var hints = [node.id || "", node.className || ""].join(" ").replace(/([a-z\d])([A-Z])/g, "$1 $2");
+    var dropdown = /(?:^|[\s_-])dropdown(?:$|[\s_-])/i.test(hints);
+    var action = /(?:^|[\s_-])(?:action|control|switch|toggle|trigger)(?:$|[\s_-])/i.test(hints);
+    var selector = /(?:^|[\s_-])select(?:$|[\s_-])/i.test(hints);
+    var selectorImperative = /^zmie[ńn]$/i.test(normalizeText(node.textContent));
+    if (!semanticControl && (!sectionBoundary || !dropdown || (!action && (!selector || !selectorImperative)))) return false;
+
+    return Array.from(heading.querySelectorAll("*")).some(function(sibling) {
+      if (sibling === node || sibling.contains(node) || node.contains(sibling)) return false;
+      if (!(sibling.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      var siblingHints = [sibling.id || "", sibling.className || ""].join(" ").replace(/([a-z\d])([A-Z])/g, "$1 $2");
+      var titleHint = /(?:^|[\s_-])(?:heading|headline|label|name|title)(?:$|[\s_-])/i.test(siblingHints);
+      return !!normalizeText(sibling.textContent) && (semanticControl || titleHint);
+    });
+  }
+
+  function listHeadingText(heading) {
+    if (!heading) return "";
+    var sectionBoundary = !!heading.closest("[data-section]");
+    var clone = heading.cloneNode(true);
+    clone.querySelectorAll("button, a, span, div, [role='button'], [role='combobox']").forEach(function(node) {
+      if (listHeadingActionControl(node, clone, sectionBoundary)) node.remove();
+    });
+    return normalizeText(clone.textContent) || normalizeText(heading.textContent);
+  }
+
   function likelyListPath() {
     var path = (location.pathname || "").toLowerCase();
     var segments = path.split("/").filter(Boolean);
