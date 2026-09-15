@@ -78,6 +78,7 @@
       var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
       if (current.hidden) return true;
       if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0 && !deferredRevealContentNode(current, style)))) return true;
+      if (collapsedOverflowNode(current, style)) return true;
       current = composedDomParent(current);
     }
     return false;

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Exclude content inside zero-sized explicitly clipping panels while preserving visible overflow, scrollable collections and controlled-panel visibility contracts.
 - Keep nested article authors and other record fields out of an enclosing collection link's metadata while retaining the fields on their actual stories.
 - Use shared article extraction for Index.hr, retaining the full article's headings, metadata, images and citations while removing only proved empty interface widgets.
 - Remove empty article-owned recommendation and comment loaders and short support-action widgets while retaining substantive discussions, explanations and citations.
