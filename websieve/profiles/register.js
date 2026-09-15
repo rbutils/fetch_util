@@ -2,7 +2,6 @@
   registerPinterestSearchProfile();
   registerTikTokProfile();
   registerEbaySearchProfile();
-  registerGlassdoorProfiles();
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerHostAwareProfile(true, softwareProjectHomepageContent);

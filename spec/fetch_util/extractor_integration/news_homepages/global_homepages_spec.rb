@@ -113,7 +113,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts glassdoor homepages into compact summaries" do
+  it "extracts community homepage copy through shared content rules" do
     html = <<~HTML
       <html>
         <head>
@@ -129,17 +129,23 @@ RSpec.describe 'FetchUtil extractor integration' do
             <p>Join your work community</p>
             <p>Find and apply to jobs</p>
             <p>Search company reviews</p>
+            <div style="height: 0; overflow: hidden"><h2>Hidden salary directory</h2>
+              <a href="/hidden-salary">Unexpanded salary destination</a>
+            </div>
           </main>
         </body>
       </html>
     HTML
 
-    with_url_page("https://www.glassdoor.com/index.htm", html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
+    %w[https://www.glassdoor.com/index.htm https://community.example/index.htm].each do |url|
+      with_url_page(url, html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# You deserve a job that loves you back")
-      expect(payload["markdown"]).to include("Streamline your research and get better job matches")
-      expect(payload["markdown"]).to include("- Join your work community")
+        expect(payload["markdown"]).to include("# You deserve a job that loves you back")
+        expect(payload["markdown"]).to include("Streamline your research and get better job matches")
+        expect(payload["markdown"]).to include("Join your work community", "Find and apply to jobs", "Search company reviews")
+        expect(payload["markdown"]).not_to include("Hidden salary directory", "/hidden-salary")
+      end
     end
   end
 

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Handle Glassdoor-style community landing pages through shared extraction, preserving the visible summary without leaking collapsed directory panels.
 - Exclude content inside zero-sized explicitly clipping panels while preserving visible overflow, scrollable collections and controlled-panel visibility contracts.
 - Keep nested article authors and other record fields out of an enclosing collection link's metadata while retaining the fields on their actual stories.
 - Use shared article extraction for Index.hr, retaining the full article's headings, metadata, images and citations while removing only proved empty interface widgets.

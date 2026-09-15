@@ -544,7 +544,6 @@ RSpec.describe "extract asset bundle" do
                           registerPinterestSearchProfile
                           registerTikTokProfile
                           registerEbaySearchProfile
-                          registerGlassdoorProfiles
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
