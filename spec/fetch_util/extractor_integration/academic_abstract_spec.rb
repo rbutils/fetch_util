@@ -301,19 +301,22 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       </html>
     HTML
 
-    extract_from_url('https://www.pnas.org/doi/10.1073/pnas.2314021121', html) do |payload|
-      markdown = payload['markdown']
+    %w[www.pnas.org journal.example].each do |host|
+      extract_from_url("https://#{host}/doi/10.1073/pnas.2314021121", html) do |payload|
+        markdown = payload['markdown']
 
-      expect(payload['contentType']).to eq('article')
-      expect(payload['hostAware']).to eq(true)
-      expect(markdown).to include('# Can Generative AI improve social science?')
-      expect(markdown).to include('## Abstract')
-      expect(markdown).to include('## What is Generative AI?')
-      expect(markdown).to include('simulation-based research')
-      expect(markdown).to include('## Limitations and Possible Dangers')
-      expect(markdown).not_to include('Total Views')
-      expect(markdown).not_to include('Reference list chrome')
-      expect(markdown).not_to include('Share on social media')
+        expect(payload['contentType']).to eq('article')
+        expect(payload['hostAware']).to eq(true)
+        expect(payload['title']).to eq('Can Generative AI improve social science?')
+        expect(markdown).to include('# Can Generative AI improve social science?')
+        expect(markdown).to include('## Abstract')
+        expect(markdown).to include('## What is Generative AI?')
+        expect(markdown).to include('simulation-based research')
+        expect(markdown).to include('## Limitations and Possible Dangers')
+        expect(markdown).not_to include('Total Views')
+        expect(markdown).not_to include('Reference list chrome')
+        expect(markdown).not_to include('Share on social media')
+      end
     end
   end
 

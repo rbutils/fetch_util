@@ -166,17 +166,6 @@
   }
 
   var SCHOLARLY_ARTICLE_CONFIGS = {
-    highwire: {
-      abstractSelectors: ["#abstract[role='doc-abstract']", "section[role='doc-abstract']#abstract", "section[property='abstract']"],
-      bodySelectors: ["#bodymatter[property='articleBody']", "section[property='articleBody'][typeof='Text']"],
-      signatureSelectors: ["meta[name='citation_publisher']", "meta[name='citation_journal_title']", "meta[property='og:site_name']"],
-      signaturePattern: /\b(PNAS|Proceedings of the National Academy|HighWire|citation_doi)\b/i,
-      allowCitationDoiSignature: true,
-      minBodyTextLength: 500,
-      titleSelectors: [".citation__title", ".article-header h1", "h1[property='name']", "h1", "meta[name='citation_title']"],
-      titleCleanup: /\s*\|\s*PNAS\s*$/i,
-      minTextLength: 600
-    },
     elsevier: {
       abstractSelectors: ["#abstracts[data-extent='frontmatter']"],
       bodySelectors: ["#bodymatter[property='articleBody']", "section[property='articleBody'][data-extent='bodymatter']"],

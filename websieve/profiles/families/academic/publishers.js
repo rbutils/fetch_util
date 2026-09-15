@@ -91,8 +91,6 @@
     });
   }
 
-  function highwireArticleContent(metadata) { return configuredScholarlyArticleContent(metadata, SCHOLARLY_ARTICLE_CONFIGS.highwire); }
-
   function elsevierArticleContent(metadata) { return configuredScholarlyArticleContent(metadata, SCHOLARLY_ARTICLE_CONFIGS.elsevier); }
 
   function ieeeXploreArticleContent(metadata) {
@@ -149,7 +147,6 @@
   }
 
   function registerAcademicPublisherProfiles() {
-    registerHostAwareProfile(true, highwireArticleContent);
     registerHostAwareProfile(true, acsAbstractArticleContent);
     registerHostAwareProfile(true, plosStyleArticleContent);
     registerHostAwareProfile(true, elsevierArticleContent);

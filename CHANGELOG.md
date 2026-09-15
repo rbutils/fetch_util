@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Handle HighWire-style abstract and bodymatter articles through the shared scholarly engines, preserving their body, title and citation resources without a duplicate publisher registration.
 - Use shared CMS extraction for Avesta articles so an unrelated news-card heading cannot replace the requested article title.
 - Handle Hatena-style blog entries through the shared article engine, preserving owned content and metadata without a dedicated hostname profile.
 - Preserve article headings, links and block structure when enriching sports, property and product content with structured details.
