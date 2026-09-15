@@ -597,7 +597,7 @@ RSpec.describe "extract asset bundle" do
                           registerQuoraProfiles
                         ])
     expect(register_source).to include(
-      "registerHostAwareProfile(true, hatenaBlogContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
+      "registerAcademicPreprintProfiles();\n  registerHostAwareProfile(true, scientificRecordContent);"
     )
     expected_search_manifest = %w[
       profiles/social/search.js

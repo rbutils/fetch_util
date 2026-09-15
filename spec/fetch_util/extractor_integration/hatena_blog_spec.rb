@@ -39,15 +39,17 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    extract_from_url("https://blog.hatenablog.com/entry/2026/07/06/120000", html) do |payload|
-      expect_content_type(payload, "article")
-      expect(payload["markdown"]).to include("# 今週のはてなブログランキング〔2026年7月第1週〕")
-      expect(payload["markdown"]).to include("はてなブログ独自の集計による人気記事のランキング")
-      expect(payload["markdown"]).to include("ClaudeCodeとObsidianで設計・作業メモを残す")
-      expect(payload["markdown"]).not_to include("詳しく見る")
-      expect(payload["markdown"]).not_to include("You might also like")
-      expect_warnings(payload, exclude: %w[short_extraction empty_extraction url_content_mismatch consent_interstitial])
-      expect(payload["suspect"]).to be(false)
+    %w[blog.hatenablog.com journal.example].each do |host|
+      extract_from_url("https://#{host}/entry/2026/07/06/120000", html) do |payload|
+        expect_content_type(payload, "article")
+        expect(payload["markdown"]).to include("# 今週のはてなブログランキング〔2026年7月第1週〕")
+        expect(payload["markdown"]).to include("はてなブログ独自の集計による人気記事のランキング")
+        expect(payload["markdown"]).to include("ClaudeCodeとObsidianで設計・作業メモを残す")
+        expect(payload["markdown"]).not_to include("詳しく見る", "You might also like")
+        expect(payload["publishedTime"]).to eq("2026-07-06T12:00:00+09:00")
+        expect_warnings(payload, exclude: %w[short_extraction empty_extraction url_content_mismatch consent_interstitial])
+        expect(payload["suspect"]).to be(false)
+      end
     end
   end
 end

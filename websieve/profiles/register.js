@@ -12,7 +12,6 @@
   registerBookingProfiles();
   registerAcademicPublisherProfiles();
   registerAcademicPreprintProfiles();
-  registerHostAwareProfile(true, hatenaBlogContent);
   registerHostAwareProfile(true, scientificRecordContent);
   registerCsdnProfiles();
   registerSubstackProfiles();

@@ -142,7 +142,6 @@ profiles/news/news_homepages.js
 profiles/families/academic/core.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
-profiles/publishing/hatena_blog.js
 profiles/families/scientific_records/iucn.js
 profiles/families/scientific_records/ensembl.js
 profiles/families/scientific_records/ncbi_gene.js
