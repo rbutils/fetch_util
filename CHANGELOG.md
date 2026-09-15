@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve a locally authored visible headline when a sectioned homepage also links the same story under a different title.
 - Keep a story author owned by the selected nearest semantic list record even when its inner link is chosen as the record card.
 - Remove structurally proved dropdown actions from list section headings without deleting material change-related titles or selected values.
 - Keep linked collection headings out of broad record owners when multiple independent semantic records prove the collection boundary.

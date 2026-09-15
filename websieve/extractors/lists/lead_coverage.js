@@ -80,6 +80,11 @@
     return Object.keys(destinations);
   }
 
+  function sameRootSupplementalAliasKey(item) {
+    var url = materializedHttpUrl(item && item.url);
+    return JSON.stringify([url && listCanonicalKey(url) || "", normalizeText(item && item.text || "").toLowerCase()]);
+  }
+
   function sameRootHeadingDestinationCount(card) {
     if (!card || !card.querySelectorAll) return 0;
     var destinations = {};
@@ -178,14 +183,19 @@
       return nodes.indexOf(node);
     };
     var represented = new Set(sectioned.items.map(key));
+    var representedAliases = new Set(sectioned.items.map(sameRootSupplementalAliasKey));
     var representedPositions = new Set(sectioned.items.map(sourcePosition));
     var additions = [];
     flatItems.concat(fallbackItems).forEach(function(item) {
       if (sameRootSectionHeadingItem(item, sectioned.regions)) return;
-      if (!materializedHttpUrl(item.url) || represented.has(key(item))) return;
+      var itemKey = key(item);
+      var aliasKey = sameRootSupplementalAliasKey(item);
+      var authoredAlias = !!item.author && represented.has(itemKey) && !representedAliases.has(aliasKey);
+      if (!materializedHttpUrl(item.url) || (!authoredAlias && represented.has(itemKey))) return;
       var position = sourcePosition(item);
       if (position >= 0 && representedPositions.has(position)) return;
-      represented.add(key(item));
+      represented.add(itemKey);
+      representedAliases.add(aliasKey);
       representedPositions.add(position);
       additions.push(item);
     });
@@ -228,7 +238,10 @@
     var headings = {};
     var headingParts = [];
     sectioned.regions.forEach(function(region) {
-      var index = items.findIndex(function(item) { return key(item) === key(region.cards[0]); });
+      var regionPosition = sourcePosition(region.cards[0]);
+      var index = items.findIndex(function(item) {
+        return item === region.cards[0] || (regionPosition >= 0 && sourcePosition(item) === regionPosition);
+      });
       if (region.label && index >= 0) {
         if (!headings[index]) headings[index] = [];
         headings[index].push(sectionRegionMarkdown(region));

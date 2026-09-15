@@ -17,6 +17,7 @@
     var itemQuality = listItemsQualityScore(items);
     var descText = listDescriptionMarkdown(root);
     var fallbackItems = extractFallbackHeadlineItems(root, items.__fetchUtilSupportingLinks);
+    mergeDuplicateRecordAuthorContext(root, fallbackItems);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
       items = fallbackWithEditorialAsideItems(items, fallbackItems);

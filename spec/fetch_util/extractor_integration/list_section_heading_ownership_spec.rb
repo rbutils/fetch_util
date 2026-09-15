@@ -12,6 +12,24 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     HTML
   end
 
+  def inject_section_coverage_test_api(page)
+    source_root = File.expand_path('../../../websieve', __dir__)
+    entries = File.readlines(File.join(source_root, 'manifest.txt'), chomp: true)
+                  .map(&:strip)
+                  .reject { |entry| entry.empty? || entry.start_with?('#') }
+    outro = entries.pop
+    source = entries.map { |entry| File.read(File.join(source_root, entry)) }
+    source << <<~JAVASCRIPT
+      window.FetchUtilSectionCoverageTest = {
+        supplementalCoverage: supplementalSameRootSectionCoverage,
+        normalizeText: normalizeText,
+        canonicalKey: listCanonicalKey
+      };
+    JAVASCRIPT
+    source << File.read(File.join(source_root, outro))
+    page.evaluate("#{source.join("\n")}\ntrue")
+  end
+
   it 'keeps collection headings through flat coverage without promoting record titles' do
     extra_records = (6..11).map do |number|
       "<li><a href=\"/stories/#{number}\">Independent newsroom story #{number}</a></li>"
@@ -76,6 +94,110 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
         '- [Alternate visible angle on newsroom story 2](https://newsroom.example/stories/2)'
       )
       expect(payload['markdown']).not_to include('## Alternate visible angle on newsroom story 2')
+    end
+  end
+
+  it 'supplements a section alias with its distinct authored lead record' do
+    lead_records = (1..4).map do |number|
+      if number == 1
+        <<~HTML
+          <article>
+            <h3><a href="/stories/shared">Full authored account of the shared public story</a></h3>
+            <a rel="author" href="/reporters/lead">Lead Reporter</a>
+          </article>
+        HTML
+      else
+        section_heading_record("lead-#{number}")
+      end
+    end.join
+    local_records = (1..4).map do |number|
+      if number == 1
+        <<~HTML
+          <article>
+            <h3><a href="/stories/shared">Short section angle on the shared story</a></h3>
+          </article>
+        HTML
+      else
+        section_heading_record("local-#{number}")
+      end
+    end.join
+    culture_records = (1..4).map { |number| section_heading_record("culture-#{number}") }.join
+    html = <<~HTML
+      <html><head><title>Supplemented newsroom</title></head><body><main>
+        <h1>Supplemented newsroom</h1>
+        <div class="lead-grid">#{lead_records}</div>
+        <section><h2>Local desk</h2>#{local_records}</section>
+        <section><h2>Culture desk</h2>#{culture_records}</section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
+      markdown = payload['markdown']
+      full_record = '- [Full authored account of the shared public story](https://newsroom.example/stories/shared)'
+      section_alias = '- [Short section angle on the shared story](https://newsroom.example/stories/shared)'
+
+      expect(payload['contentType']).to eq('list')
+      expect(markdown).to include(full_record, section_alias)
+      expect(markdown.scan('](https://newsroom.example/reporters/lead)').length).to eq(1)
+      expect(markdown.index(full_record)).to be < markdown.index('## Local desk')
+      expect(markdown.index('## Local desk')).to be < markdown.index(section_alias)
+    end
+  end
+
+  it 'places a section heading at its own alias when an earlier record shares the canonical URL' do
+    html = <<~HTML
+      <html><head><title>Alias placement newsroom</title></head><body><main>
+        <article id="lead"><h3><a href="/stories/shared">Full authored account</a></h3></article>
+        <section id="desk">
+          <h2 id="desk-heading">Local desk</h2>
+          <article id="alias"><h3><a href="/stories/shared">Short section angle</a></h3></article>
+          <article id="other"><h3><a href="/stories/other">Other local report</a></h3></article>
+        </section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://newsroom.example/', html) do |page|
+      inject_section_coverage_test_api(page)
+      placement = page.evaluate(<<~JAVASCRIPT)
+        (function() {
+          var api = window.FetchUtilSectionCoverageTest;
+          var root = document.querySelector("main");
+          var item = function(id, author) {
+            var card = document.getElementById(id);
+            var link = card.querySelector("a[href]");
+            return {
+              text: api.normalizeText(link.textContent),
+              url: link.href,
+              dedupeKey: api.canonicalKey(link.href),
+              card: card,
+              sourceNode: link,
+              author: author || null
+            };
+          };
+          var lead = item("lead", "[Lead Reporter](https://newsroom.example/reporters/lead)");
+          var alias = item("alias");
+          var other = item("other");
+          var region = {
+            node: document.getElementById("desk"),
+            headingNode: document.getElementById("desk-heading"),
+            label: "Local desk",
+            cards: [alias, other]
+          };
+          var result = api.supplementalCoverage(
+            { items: [alias, other], regions: [region] },
+            [lead, alias, other],
+            [],
+            root,
+            []
+          );
+          return {
+            aliasIndex: result.items.indexOf(alias),
+            headingIndexes: Object.keys(result.headings).map(Number)
+          };
+        })()
+      JAVASCRIPT
+
+      expect(placement['headingIndexes']).to eq([placement['aliasIndex']])
     end
   end
 
