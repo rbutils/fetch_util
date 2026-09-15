@@ -421,6 +421,7 @@ RSpec.describe "extract asset bundle" do
     ownership_path = "classifiers/list_pages/card_ownership.js"
     presentation_path = "classifiers/list_pages/anchor_cards.js"
     presentation_source = File.read(File.join(source_root, presentation_path))
+    linked_media_path = "classifiers/list_pages/linked_media_rows.js"
     renderer_path = "markdown/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     card_evidence_path = "extractors/lists/generic/card_evidence.js"
@@ -431,8 +432,11 @@ RSpec.describe "extract asset bundle" do
     end
 
     expect(sources.values.join.scan(/function\s+genericListCardSelector\s*\(/).length).to eq(1)
+    expect(manifest.index(linked_media_path)).to be < manifest.index(presentation_path)
     expect(manifest.index(presentation_path)).to be < manifest.index(ownership_path)
     expect(presentation_source).to include("function genericListPresentationCardNode", "function genericListAlignmentOnlyCard")
+    expect(presentation_source).not_to include("function genericListLinkedMediaRow")
+    expect(File.read(File.join(source_root, linked_media_path))).to include("function genericListLinkedMediaRow")
     expect(sources.fetch(ownership_path)).not_to include("function genericListPresentationCardNode")
     [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].each do |consumer_path|
       expect(manifest.index(ownership_path)).to be < manifest.index(consumer_path)
@@ -461,6 +465,19 @@ RSpec.describe "extract asset bundle" do
       "allCards.filter(genericListCardBoundary)",
       "genericListNestedCardReplaces(card, nested)"
     )
+  end
+
+  it "loads generic list section rendering before section discovery" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    rendering_path = "extractors/lists/generic/section_rendering.js"
+    discovery_path = "extractors/lists/generic/section_discovery.js"
+    rendering_source = File.read(File.join(source_root, rendering_path))
+    discovery_source = File.read(File.join(source_root, discovery_path))
+
+    expect(manifest.index(rendering_path)).to be < manifest.index(discovery_path)
+    expect(rendering_source).to include("function sectionedListMarkdownWithDescriptions")
+    expect(discovery_source).not_to include("function sectionedListMarkdownWithDescriptions")
   end
 
   it "keeps MediaWiki extraction in its canonical CMS owner" do
