@@ -93,8 +93,8 @@
       // Strip "Stay organized with collections" Devsite chrome
       .replace(/Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, "")
       // Strip empty markdown links [](url) that are anchor-ID placeholders
-      .replace(/!\[]\([^)]+\)\s*/g, "")
-      .replace(/\[]\([^)]+\)\s*/g, "")
+      .replace(/!\[]\([^)]+\)[^\S\r\n\u2028\u2029]*/g, "")
+      .replace(/\[]\([^)]+\)[^\S\r\n\u2028\u2029]*/g, "")
       // Strip oversized inline data images, which are usually error-page artwork or placeholders.
       .replace(/!\[[^\]]*\]\(data:image\/(?:png|gif|jpe?g|webp);base64,[A-Za-z0-9+/=]{500,}\)\s*/gi, "")
       // Card grids can place image-only media before headings inside list items.
