@@ -137,7 +137,9 @@
 
     // 5. Multi-topic heuristic: page contains multiple distinct timestamped entries or update blocks
     // Count headings and timestamps only after related/sidebar/list/feed widgets are removed.
-    if (formatView.root) {
+    var timestampedHomepageList = content && content.contentType === "list" && homepageRootPath();
+    // Repeated timestamps are normal homepage metadata; they do not establish a liveblog without an explicit signal.
+    if (formatView.root && !timestampedHomepageList) {
       var headings = formatView.root.querySelectorAll("h2, h3");
       var timeElements = formatView.root.querySelectorAll("time, [datetime]");
 
@@ -157,7 +159,7 @@
     // 6. Markdown-level heuristic: many H2/H3 with timestamps interspersed
     // Require higher thresholds to avoid false positives on regular articles
     // with a single publication timestamp (e.g. "Stand: 04:07 Uhr")
-    if (formatMarkdown) {
+    if (formatMarkdown && !timestampedHomepageList) {
       var h2Count = (formatMarkdown.match(/^##\s+/gm) || []).length;
       var timestampCount = (formatMarkdown.match(/\b\d{1,2}[:.]\d{2}\s*(?:Uhr|AM|PM|CET|CEST|UTC|GMT|[A-Z]{2,4}T)?\b/gm) || []).length;
       if (h2Count >= 6 && timestampCount >= 6) return "liveblog";

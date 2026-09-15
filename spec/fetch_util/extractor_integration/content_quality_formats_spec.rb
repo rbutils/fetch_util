@@ -553,6 +553,55 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not infer liveblog from timestamps on a root homepage list" do
+    cards = (1..8).map do |i|
+      <<~CARD
+        <article>
+          <h3><a href="/news/#{i}">Independent report #{i}</a></h3>
+          <time datetime="2026-04-10T#{format("%02d", 8 + i)}:00:00">#{8 + i}:00 CET</time>
+        </article>
+      CARD
+    end
+    html = <<~HTML
+      <html><head><title>Independent newsroom</title></head><body><main>
+        <h1>Independent newsroom</h1>
+        <section><h2>National reports</h2>#{cards.first(4).join}</section>
+        <section><h2>International reports</h2>#{cards.last(4).join}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://www.example.com/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).not_to eq("liveblog")
+    end
+  end
+
+  it "keeps explicit liveblog schema authoritative on a root homepage list" do
+    cards = (1..8).map do |i|
+      <<~CARD
+        <article>
+          <h3><a href="/updates/#{i}">Live update #{i}</a></h3>
+          <time datetime="2026-04-10T#{format("%02d", 8 + i)}:00:00">#{8 + i}:00 CET</time>
+          <p>Verified development #{i} in a continuing public event.</p>
+        </article>
+      CARD
+    end.join
+    html = <<~HTML
+      <html><head><title>Public event updates</title>
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"LiveBlogPosting","headline":"Public event updates"}</script>
+      </head><body><main><h1>Public event updates</h1>#{cards}</main></body></html>
+    HTML
+
+    with_url_page("https://www.example.com/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).to eq("liveblog")
+    end
+  end
+
   it "still flags liveblog for a genuine liveblog page with many timestamped entries" do
     entries = (1..10).map do |i|
       <<~ENTRY
