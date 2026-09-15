@@ -12,12 +12,14 @@ RSpec.describe 'Owned article titles' do
       <h2>Supporting evidence</h2><p>The investigators also published a <a href="/data">public dataset</a> so others can reproduce the analysis. These independent records remain important when interpreting the observations.</p></article>
       </body></html>
     HTML
-    with_url_page('https://journal.example/reports/borders', html) do |page|
-      result = FetchUtil::Extractor.new(reader_mode: false).extract(page)
-      expect(result['title']).to eq('Research across borders')
-      expect(result['markdown']).to start_with('# Research across borders')
-      expect(result['markdown']).not_to include(' - Journal.example')
-      expect(result['markdown']).to include('[public dataset](https://journal.example/data)')
+    [false, true].each do |reader_mode|
+      with_url_page('https://journal.example/reports/borders', html) do |page|
+        result = FetchUtil::Extractor.new(reader_mode: reader_mode).extract(page)
+        expect(result['title']).to eq('Research across borders')
+        expect(result['markdown']).to start_with('# Research across borders')
+        expect(result['markdown']).not_to include(' - Journal.example')
+        expect(result['markdown']).to include('[public dataset](https://journal.example/data)')
+      end
     end
   end
 
