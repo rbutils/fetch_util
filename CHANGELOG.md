@@ -12,6 +12,7 @@
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
+- Prefer a substantially more informative metadata author name to an opaque short reader-mode handle while preserving meaningful visible bylines and mononyms.
 - Remove short, structurally identified article audio-control bars without discarding media, transcripts, episode metadata, or podcast/catalog content.
 - Recover one unambiguous visible article lead and its immediately attached image when Readability selects the later body from the same article owner.
 - Recognize localized author-profile destinations as focal article bylines without borrowing authors from related sidebars.

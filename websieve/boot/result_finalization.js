@@ -1,8 +1,67 @@
+function readerBylineInitials(value) {
+  var initials = [];
+  normalizeText(value || "").split(/\s+/).filter(Boolean).forEach(function(word, index) {
+    word.split(/['’\-‐-―]+/u).filter(Boolean).forEach(function(part) {
+      if (index > 0 && /\p{Ll}/u.test(part) && !/\p{Lu}/u.test(part)) return;
+      var initial = Array.from(part).find(function(character) { return /[\p{L}\p{N}]/u.test(character); });
+      if (initial) initials.push(initial.toLocaleLowerCase());
+    });
+  });
+  return initials.join("");
+}
+
+function readerBylineSourceOwner(content) {
+  var selected = document.createElement("div");
+  selected.innerHTML = content.html || "";
+  var sourceParagraphs = Array.from(document.querySelectorAll("article p")).filter(function(paragraph) {
+    return !elementSubtreeHidden(paragraph);
+  });
+  var owners = [];
+  var ambiguous = Array.from(selected.querySelectorAll("p")).some(function(paragraph) {
+    var text = normalizeText(paragraph.textContent || "");
+    if (text.length < 80) return false;
+    var matches = sourceParagraphs.filter(function(source) {
+      return normalizeText(source.textContent || "") === text;
+    });
+    if (matches.length > 1) return true;
+    if (matches.length === 1) owners.push(matches[0].closest("article"));
+    return false;
+  });
+  var uniqueOwners = new Set(owners.filter(Boolean));
+  return !ambiguous && owners.length >= 2 && uniqueOwners.size === 1 ? owners[0] : null;
+}
+
+function readerBylineHasExpandedAuthorLink(content, metadataByline) {
+  var contentName = normalizeText(content.byline || "");
+  var metadataName = normalizeText(metadataByline || "");
+  if (!contentName || !metadataName || contentName.toLowerCase() === metadataName.toLowerCase()) return false;
+
+  var compactContentName = contentName.replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
+  var metadataWords = metadataName.split(/\s+/).filter(Boolean);
+  if (!compactContentName || metadataWords.length < 2 || metadataWords.length > 8) return false;
+  if (compactContentName !== readerBylineInitials(metadataName)) return false;
+
+  var root = readerBylineSourceOwner(content);
+  if (!root) return false;
+  return Array.prototype.some.call(root.querySelectorAll("a[rel~='author'][href][title]"), function(link) {
+    if (elementVisuallyHidden(link) || link.closest("nav, footer, aside")) return false;
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    if (!url || new URL(url).origin !== location.origin) return false;
+    var owner = link.parentElement;
+    while (owner && owner !== root) {
+      if (relatedMetadataOwner(owner)) return false;
+      owner = owner.parentElement;
+    }
+    return sanitizeByline(link.textContent) === contentName && sanitizeByline(link.getAttribute("title")) === metadataName;
+  });
+}
+
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
+  if (content.readerMode && readerBylineHasExpandedAuthorLink(content, metadataByline)) contentByline = null;
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
   var byline = contentByline || metadataByline || sanitizeByline(visibleByline());
   var cleanedHtml = sanitizedHtml(content.html);
