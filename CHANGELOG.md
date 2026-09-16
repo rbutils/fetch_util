@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
 - Keep a materially different visible story alias linked when only tracking parameters distinguish it from an already selected destination.

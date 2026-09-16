@@ -38,6 +38,18 @@
     return null;
   }
 
+  function listNamedSectionLinksNode(node) {
+    return [node.id, node.getAttribute("class"), node.getAttribute("data-testid")].some(function(value) {
+      return String(value || "").split(/\s+/).some(function(token) {
+        var normalized = token.replace(/([a-z\d])([A-Z])/g, "$1-$2").toLowerCase();
+        var parts = normalized.split("__");
+        if (parts.length > 2) return false;
+        if (!/^named[-_]section[-_]links?(?:[_-]+(?:items?|list|menu|more|nav|title|wrapper|named[-_]section[-_]links?))?$/.test(parts[0])) return false;
+        return parts.length === 1 || !/^(?:article|card|content|record|story)(?:[-_]|$)/.test(parts[1]);
+      });
+    });
+  }
+
   function listChromeOrNavigationNode(node, includeSocial) {
     if (!node || node.nodeType !== 1) return false;
     if (node.matches("nav, header, footer, menu, [role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']")) return true;
@@ -64,7 +76,8 @@
       var primaryLink = card && genericListStructuredCardLink(card);
       if (primaryLink && node.contains(primaryLink)) return false;
     }
-    var navigation = /nav(?:igation|bar|menu|links?|items?|list|container)?(?:$|[\s_-])|(?:^|[\s_-])pager(?:$|[\s_-])/.test(attrs);
+    var navigation = listNamedSectionLinksNode(node) ||
+      /nav(?:igation|bar|menu|links?|items?|list|container)?(?:$|[\s_-])|(?:^|[\s_-])pager(?:$|[\s_-])/.test(attrs);
     if (includeSocial) return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer|utility|meta|social|share|follow|account|login|signup|register)/.test(attrs);
     return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer)/.test(attrs);
   }
