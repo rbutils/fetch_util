@@ -44,4 +44,27 @@ RSpec.describe 'FetchUtil homepage visible metadata' do
       expect(payload['byline']).to eq('Homepage Essayist')
     end
   end
+
+  it 'does not promote localized author-profile links from a multi-story homepage' do
+    cards = (1..4).map do |number|
+      <<~HTML
+        <article>
+          <h2><a href="/stories/#{number}">Independent homepage report #{number}</a></h2>
+          <a href="/autoren/reporter-#{number}">Reporter #{number}</a>
+          <p>Locally owned summary for independent homepage report #{number}.</p>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Independent newsroom</title></head><body><main>
+        <h1>Independent newsroom</h1>
+        #{cards}
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
+      expect(payload['contentType']).to eq('list')
+      expect(payload['byline']).to be_nil
+    end
+  end
 end

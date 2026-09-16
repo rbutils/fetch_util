@@ -363,6 +363,93 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "uses localized author-profile destinations as scoped bylines" do
+    html = <<~HTML
+      <html lang="de">
+        <head><title>Stadt eröffnet neues Kulturzentrum</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Stadt eröffnet neues Kulturzentrum</h1>
+              <a href="/autoren/blick-newsdesk">Blick Newsdesk</a>
+              <p>Das neue Kulturzentrum bietet Räume für Konzerte, Ausstellungen und Workshops in mehreren Stadtteilen.</p>
+              <p>Lokale Vereine haben das Programm gemeinsam mit Schulen und Kulturschaffenden entwickelt.</p>
+              <p>Die ersten Veranstaltungen beginnen nach der offiziellen Eröffnung am kommenden Wochenende.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.ch/story/kulturzentrum", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["byline"]).to eq("Blick Newsdesk")
+    end
+  end
+
+  it "uses localized author destinations inside nested credit metadata" do
+    html = <<~HTML
+      <html lang="fr"><head><title>La ville ouvre un nouveau centre culturel</title></head><body>
+        <article>
+          <h1>La ville ouvre un nouveau centre culturel</h1>
+          <div class="article-credit"><span><a href="/auteur/marie-dupont">Marie Dupont</a></span></div>
+          <p>Le nouveau centre propose des concerts, des expositions et des ateliers pour plusieurs quartiers de la ville.</p>
+          <p>Les associations locales ont préparé le programme avec les écoles et les artistes de la région.</p>
+          <p>Les premières manifestations commenceront après l'ouverture officielle prévue le week-end prochain.</p>
+        </article>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.fr/culture/nouveau-centre", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["byline"]).to eq("Marie Dupont")
+    end
+  end
+
+  it "does not use in-body, related, directory, or broad-main author links as bylines" do
+    article_html = <<~HTML
+      <html><head><title>Regional museum opens new archive</title></head><body><main>
+        <article>
+          <h1>Regional museum opens new archive</h1>
+          <div class="article-credit"><a href="/authors/archive/index">Authors directory</a></div>
+          <p>The regional museum has opened an archive with records from local cultural institutions and community groups.</p>
+          <p>Read the <a href="/author/historian">historian profile</a> for background about the collection.</p>
+          <section class="relatedStories"><div class="article-credit"><a href="/authors/related-reporter">Related Reporter</a></div></section>
+          <section class="more-stories_related_stories"><article>
+            <a href="/author/nested-related-reporter">Nested Related Reporter</a>
+            <h2>Related analysis</h2>
+            <p>#{"Related reporting must not supply page metadata. " * 12}</p>
+            <p>#{"This nested article remains independent of the focal story. " * 12}</p>
+            <p>#{"Its own author belongs only to the related story. " * 12}</p>
+          </article></section>
+          <a href="/author/editor%2Farchive">Encoded author archive</a>
+          <a href="/author/%00control">Control author slug</a>
+          <p>The archive will remain open to researchers and residents throughout the coming year.</p>
+        </article>
+      </main></body></html>
+    HTML
+    main_html = <<~HTML
+      <html><head><title>Community reporting archive</title></head><body><main>
+        <h1>Community reporting archive</h1>
+        <a href="/author/editor-profile">Unowned author profile</a>
+        <p>This archive presents substantial reporting about community projects, public records, and local history.</p>
+        <p>Residents can browse the published reports and supporting material without creating an account.</p>
+        <p>Each report includes background, sources, and updates from the responsible public institutions.</p>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.com/reports/archive", article_html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload["byline"]).to be_nil
+    end
+    with_url_page("https://example.com/archive", main_html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload["byline"]).to be_nil
+    end
+  end
+
   it "does not expose a localized publication date as the byline" do
     html = <<~HTML
       <html lang="pl">

@@ -8,6 +8,7 @@
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
+- Recognize localized author-profile destinations as focal article bylines without borrowing authors from related sidebars.
 - Handle Onet's homepage through shared list extraction while preserving visible sections, stories, aliases, authors, and ordering.
 - Keep a materially different visible story alias linked when only tracking parameters distinguish it from an already selected destination.
 - Preserve a locally authored visible headline when a sectioned homepage also links the same story under a different title.

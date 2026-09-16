@@ -84,8 +84,88 @@ function firstScopedText(roots, selectors, attr, rejectedValue) {
   return null;
 }
 
+function localizedAuthorProfilePath(href) {
+  try {
+    var url = new URL(href, location.href);
+    if (url.origin !== location.origin || url.username || url.password) return false;
+
+    var segments = url.pathname.split("/").filter(Boolean).map(function(segment) {
+      return decodeURIComponent(segment).toLowerCase();
+    });
+    var authorRoutes = ["author", "authors", "autoren", "autor", "autores", "auteur"];
+    var routeIndex = segments.findIndex(function(segment) {
+      return authorRoutes.indexOf(segment) !== -1;
+    });
+    if (routeIndex !== segments.length - 2) return false;
+
+    var slug = segments[segments.length - 1];
+    if (/[\u0000-\u001f\u007f/\\]/.test(slug)) return false;
+    return !/^(?:archive|directory|index|login|register|search|signin|topics?)$/.test(slug);
+  } catch (e) {
+    return false;
+  }
+}
+
+function visibleMetadataOwnerText(node) {
+  return [
+    node.getAttribute("id"),
+    node.getAttribute("class"),
+    node.getAttribute("itemprop"),
+    node.getAttribute("data-testid"),
+    node.getAttribute("aria-label")
+  ].join(" ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .toLowerCase();
+}
+
+function relatedMetadataOwner(node) {
+  if (!node || node.nodeType !== 1) return false;
+  var attrs = visibleMetadataOwnerText(node);
+  return /\b(?:related|recommended|recommendations?|trending|popular)\b|\bmore\s+stories\b/.test(attrs);
+}
+
+function localizedAuthorLinkContext(node, root) {
+  if (!node || elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return false;
+  if (!localizedAuthorProfilePath(node.getAttribute("href") || "")) return false;
+
+  var parent = node.parentElement;
+  if (!parent) return false;
+  var directArticleChild = parent === root && root.matches("article");
+  var metadataOwner = false;
+  var ancestor = parent;
+  while (ancestor && ancestor !== root) {
+    var attrs = visibleMetadataOwnerText(ancestor);
+    if (relatedMetadataOwner(ancestor)) return false;
+    if (/\b(?:author|byline|credit|contributor|reporter|writer|metadata|meta)\b/.test(attrs)) metadataOwner = true;
+    ancestor = ancestor.parentElement;
+  }
+
+  ancestor = root;
+  while (ancestor && ancestor !== document.body) {
+    if (relatedMetadataOwner(ancestor)) return false;
+    ancestor = ancestor.parentElement;
+  }
+
+  return directArticleChild || metadataOwner;
+}
+
+function visibleLocalizedAuthor(roots) {
+  for (var r = 0; r < roots.length; r += 1) {
+    var links = roots[r].querySelectorAll("a[href]");
+    for (var i = 0; i < links.length; i += 1) {
+      if (!localizedAuthorLinkContext(links[i], roots[r])) continue;
+      var value = normalizeText(links[i].textContent || "");
+      if (value) return value;
+    }
+  }
+
+  return null;
+}
+
 function visibleByline() {
-  var value = firstScopedText(visibleBylineRoots(), [
+  var roots = visibleBylineRoots();
+  var value = firstScopedText(roots, [
     "[rel='author']",
     "[itemprop='author'] [itemprop='name']",
     "[itemprop='author']",
@@ -102,6 +182,7 @@ function visibleByline() {
     "[class*='reporter' i]",
     "[data-testid*='author' i]"
   ], null, /^(?:author information|authors? and affiliations?)$/i);
+  if (!value) value = visibleLocalizedAuthor(roots);
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
 }
