@@ -706,6 +706,13 @@ RSpec.describe "extract asset bundle" do
       ).length
     end
     expect(retired_kaler_kantho_symbols).to eq(0)
+    blick_path = "profiles/news/europe/central/blick.js"
+    expect(manifest).not_to include(blick_path)
+    expect(File).not_to exist(File.join(source_root, blick_path))
+    retired_blick_selectors = source_files.sum do |path|
+      File.read(path).scan(/(?:Body__StyledContainer|containerPiano1|CMPPlaceholder__Wrapper)/).length
+    end
+    expect(retired_blick_selectors).to eq(0)
 
     ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
     expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
