@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove short terminal exact article-flow-note widgets only after a substantial article body, while preserving linked, attributed, repeated, nonterminal, or structurally substantive editorial notes.
 - Handle Zeit articles through shared reader extraction while preserving the visible body, complete author identity, author destination, headings, warnings, and source DOM.
 
 - Preserve a verified focal article's safe author-profile destination when reader mode expands an opaque author handle to its full structured name.

@@ -139,12 +139,56 @@
     return textLength < 280;
   }
 
+  function articleFlowNoteHasTrailingMaterial(note, owner, materialSelector) {
+    var current = note;
+    while (current && current !== owner) {
+      var sibling = current.nextSibling;
+      while (sibling) {
+        if (sibling.nodeType === 3 && normalizeText(sibling.nodeValue || "")) return true;
+        if (sibling.nodeType === 1 && !/^(script|style|template)$/i.test(sibling.tagName || "") &&
+            (normalizeText(sibling.textContent || "") || sibling.matches(materialSelector) || sibling.querySelector(materialSelector))) return true;
+        sibling = sibling.nextSibling;
+      }
+      current = current.parentNode;
+    }
+    return false;
+  }
+
+  function cleanupGenericArticleFlowNote(root) {
+    var notes = Array.prototype.slice.call(root.querySelectorAll("[class~='article-flow-note' i]"));
+    if (notes.length !== 1) return;
+
+    var note = notes[0];
+    var text = normalizeText(note.textContent || "");
+    var materialSelector = "a, p, h1, h2, h3, h4, h5, h6, li, ol, ul, dl, table, blockquote, figure, pre, code, img, picture, video, audio, iframe, object, embed, canvas, svg, math, details, summary, form, button, input, textarea, select, option, label, output";
+    if (!text || text.length > 100) return;
+    if (note.attributes.length !== 1 || note.attributes[0].name !== "class") return;
+    if (note.matches(materialSelector) || note.querySelector(materialSelector)) return;
+
+    var owner = note.closest("article, main, section, [itemprop~='articleBody' i]");
+    if (!owner) return;
+    var nestedOwnerSelector = owner.matches("article, [itemprop~='articleBody' i]") ?
+      "article, [itemprop~='articleBody' i]" :
+      "article, main, section, [itemprop~='articleBody' i]";
+    if (owner.querySelector(nestedOwnerSelector)) return;
+    var bodyText = Array.prototype.slice.call(owner.querySelectorAll("p")).map(function(paragraph) {
+      return paragraph.compareDocumentPosition(note) & 4 ? normalizeText(paragraph.textContent || "") : "";
+    }).filter(function(paragraph) {
+      return paragraph.length >= 40;
+    });
+    if (bodyText.length < 2 || bodyText.join(" ").length < 250) return;
+    if (articleFlowNoteHasTrailingMaterial(note, owner, materialSelector)) return;
+
+    note.remove();
+  }
+
   function cleanupGenericArticleRoot(root) {
     if (!root || !root.querySelectorAll) return root;
 
     root.querySelectorAll("[class~='ads' i]").forEach(function(node) {
       if (genericArticleAdFurniture(node)) node.remove();
     });
+    cleanupGenericArticleFlowNote(root);
     removeAll(root, "#comments, #respond, .comments-area, .comment-list, .comments-section, .post-comments, .disqus-comment-count, [class*='comment-respond'], [class*='comentario' i], [class*='comentarios' i], [class*='commentaire' i], [class*='komentar' i], [class*='komentarze' i], [class*='yorum' i], .sharedaddy, .share, .share-links, .share-buttons, .social-sharing, .social-buttons, [class*='share' i], [id*='share' i], [class*='compartir' i], [class*='partager' i], [class*='teilen' i], [class*='paylas' i], [class*='paylaş' i], [class*='related' i], [id*='related' i], [class*='recommend' i], [id*='recommend' i], [class*='relacionad' i], [class*='relacionados' i], [class*='recomendad' i], [class*='recomendados' i], [class*='similares' i], [class*='newsletter' i], [id*='newsletter' i], [class*='subscribe' i], [id*='subscribe' i], [class*='advert' i], [id*='advert' i], [class*='promo' i], [id*='promo' i], [class*='adslot' i], [id*='adslot' i], [data-ad], [data-ads]");
     stripNavigationLeaks(root);
     stripRelatedSectionsByHeading(root);
