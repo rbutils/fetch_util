@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Handle Protothema articles through shared reader extraction while preserving the complete visible body, lead media, metadata, warnings, and source DOM.
 - Remove short terminal exact article-flow-note widgets only after a substantial article body, while preserving linked, attributed, repeated, nonterminal, or structurally substantive editorial notes.
 - Handle Zeit articles through shared reader extraction while preserving the visible body, complete author identity, author destination, headings, warnings, and source DOM.
 

@@ -701,6 +701,13 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/(?:zeitArticleContent|registerZeitProfiles)/).length
     end
     expect(retired_zeit_symbols).to eq(0)
+    protothema_path = "profiles/news/europe/southern/protothema.js"
+    expect(manifest).not_to include(protothema_path)
+    expect(File).not_to exist(File.join(source_root, protothema_path))
+    retired_protothema_symbols = source_files.sum do |path|
+      File.read(path).scan(/protothemaArticleContent/).length
+    end
+    expect(retired_protothema_symbols).to eq(0)
     kaler_kantho_path = "profiles/news/asia/south/kalerkantho.js"
     expect(manifest).not_to include(kaler_kantho_path)
     expect(File).not_to exist(File.join(source_root, kaler_kantho_path))
@@ -771,7 +778,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/asia/east/chosun.js
                                 profiles/news/europe/southern/spain/20minutos.js
                                 profiles/news/asia/east/nhk.js
-                                profiles/news/europe/southern/protothema.js
                                 systems/cms/joomla.js
                                 systems/cms/blogger.js
                                 systems/cms/static_ssg.js

@@ -248,7 +248,6 @@ profiles/news/middle_east/walla.js
 profiles/news/asia/east/chosun.js
 profiles/news/europe/southern/spain/20minutos.js
 profiles/news/asia/east/nhk.js
-profiles/news/europe/southern/protothema.js
 systems/cms/joomla.js
 systems/cms/blogger.js
 systems/cms/static_ssg.js
