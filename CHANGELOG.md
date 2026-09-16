@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve a verified focal article's safe author-profile destination when reader mode expands an opaque author handle to its full structured name.
+
 - Remove short browser-capability fallback messages from proved article audio-player components while preserving labels, transcripts, media, controls, and explanatory prose.
 
 - Expand very short Readability excerpts from substantial parsed article bodies instead of returning isolated disclaimers as summaries.
