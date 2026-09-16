@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove bounded external-content consent placeholders through exact component markers while preserving substantive reporting and real embedded media.
 - Prefer one title-owned nested article over a broader localized story rail only when the wrapper's remaining material is fully proved to be repeated linked records, using parent-chain indexes rather than pairwise fallback-candidate scans.
 - Remove exact `ads` class-token furniture from generic article clones while preserving substantive editorial prose and semantic article owners.
 - Handle Kaler Kantho articles through shared article extraction while preserving their body, classification, warnings, and source DOM.

@@ -1,3 +1,21 @@
+  function externalConsentPlaceholderNode(node) {
+    if (!node || node.nodeType !== 1) return false;
+
+    var tokens = [node.getAttribute("id") || "", node.getAttribute("data-testid") || ""].concat(Array.from(node.classList || []));
+    var placeholder = tokens.some(function(token) {
+      var marker = token.toLowerCase().replace(/[^a-z0-9]+/g, "");
+      return /^cmpplaceholder(?:|(?:wrapper|root|container|content)(?:sc)?[a-z0-9]*)$/.test(marker) ||
+        /^(?:(?:external|thirdparty)(?:content|embed|embedded|iframe)?|(?:embed|embedded|oembed|iframe)(?:content)?)(?:consent|privacy)placeholder$/.test(marker);
+    });
+    if (!placeholder) return false;
+
+    var text = normalizeText(node.textContent || "");
+    var substantive = "article, main, table, figure, pre, code, iframe, video, audio, picture, img, object, embed, blockquote, ul, ol, dl, h1, h2, h3, h4, h5, h6";
+    if (node.matches(substantive) || node.querySelector(substantive)) return false;
+    if (text.length > 800 || node.querySelectorAll("p").length > 1) return false;
+    return true;
+  }
+
   function cookieChromeNode(node) {
     if (!node || node.nodeType !== 1) return false;
 
@@ -15,7 +33,7 @@
     var vendorContainer = vendorNamespace || /(onetrust|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs) ||
       node.getAttribute("data-nosnippet") === "true";
 
-    if (vendorContainer) return true;
+    if (vendorContainer || externalConsentPlaceholderNode(node)) return true;
     if (!text) return false;
     var attrCookieMatch = /(cookie|consent|privacy|gdpr|ccpa)/.test(attrs);
     if (attrCookieMatch && cookieNoticeText(text)) return true;
