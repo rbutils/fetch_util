@@ -127,9 +127,24 @@
     }).join("");
   }
 
+  function genericArticleAdFurniture(node) {
+    if (!node || !node.matches) return false;
+    var semanticRoot = "article, main, [role~='main' i], [itemprop~='articleBody' i]";
+    if (node.matches(semanticRoot) || node.querySelector(semanticRoot)) return false;
+
+    var materialSelector = "p, a[href], h1, h2, h3, h4, h5, h6, li, dl, table, blockquote, figure, pre, code, img, picture, video, audio";
+    if (node.matches(materialSelector) || node.querySelector(materialSelector)) return false;
+
+    var textLength = normalizeText(node.textContent || "").length;
+    return textLength < 280;
+  }
+
   function cleanupGenericArticleRoot(root) {
     if (!root || !root.querySelectorAll) return root;
 
+    root.querySelectorAll("[class~='ads' i]").forEach(function(node) {
+      if (genericArticleAdFurniture(node)) node.remove();
+    });
     removeAll(root, "#comments, #respond, .comments-area, .comment-list, .comments-section, .post-comments, .disqus-comment-count, [class*='comment-respond'], [class*='comentario' i], [class*='comentarios' i], [class*='commentaire' i], [class*='komentar' i], [class*='komentarze' i], [class*='yorum' i], .sharedaddy, .share, .share-links, .share-buttons, .social-sharing, .social-buttons, [class*='share' i], [id*='share' i], [class*='compartir' i], [class*='partager' i], [class*='teilen' i], [class*='paylas' i], [class*='paylaş' i], [class*='related' i], [id*='related' i], [class*='recommend' i], [id*='recommend' i], [class*='relacionad' i], [class*='relacionados' i], [class*='recomendad' i], [class*='recomendados' i], [class*='similares' i], [class*='newsletter' i], [id*='newsletter' i], [class*='subscribe' i], [id*='subscribe' i], [class*='advert' i], [id*='advert' i], [class*='promo' i], [id*='promo' i], [class*='adslot' i], [id*='adslot' i], [data-ad], [data-ads]");
     stripNavigationLeaks(root);
     stripRelatedSectionsByHeading(root);

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove exact `ads` class-token furniture from generic article clones while preserving substantive editorial prose and semantic article owners.
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
