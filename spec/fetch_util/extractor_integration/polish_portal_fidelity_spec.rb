@@ -35,13 +35,14 @@ RSpec.describe 'Polish portal homepage fidelity' do
     end
   end
 
-  it 'preserves Onet named sections and each accepted card in DOM order' do
+  it 'preserves Onet sections and cards through shared extraction' do
     with_url_page('https://onet.pl/', fixture('fidelity_onet_homepage')) do |page|
       result = extract_payload(page, reader_mode: false)
 
       expect(result['contentType']).to eq('list')
       expect(result['warnings']).not_to include('multi_topic_page')
       expect(result['suspect']).to eq(false)
+      expect(result['hostAware']).to eq(false)
       onet_titles = [
         'Latarnie dostały', 'Biblioteka otwiera', 'Targ wraca', 'Biegacze wybierają',
         'Młodzi szachiści', 'Sobotni turniej', 'Piekarnia testuje', 'Rzemieślnicy wymieniają',
@@ -61,23 +62,26 @@ RSpec.describe 'Polish portal homepage fidelity' do
 
       expected_regions = [
         'NAJLEPSZE W PREMIUM', 'WIADOMOŚCI', 'SPORT', 'BIZNES', 'OFERTY',
-        'TECHNOLOGIE GRY', 'NAJLEPSZE PREMIUM:'
+        'TECHNOLOGIE GRY', 'NAJLEPSZE PREMIUM:', 'FID:visible-small-section'
       ]
       expected_cards = %w[
         premium-01 premium-02?edition=morning news-01 news-02 sport-01 business-01
-        offers-01 offers-02?edition=evening tech-01 tech-02 premium-03
+        offers-01 offers-02?edition=evening tech-01 tech-02 premium-03 card-only
       ]
 
       expect(result['contentType']).to eq('list')
+      expect(result['contentFormat']).to be_nil
+      expect(result['hostAware']).to eq(false)
       actual_regions = result['markdown'].lines.grep(/^## /).map { |line| line.delete_prefix('## ').strip }
       card_urls = result['markdown'].scan(%r{\]\((https?://[^)]+)\)}).flatten
       actual_cards = card_urls.map { |url| url.sub(%r{\Ahttps?://[^/]+}, '').split('/').last }
       expect(actual_regions).to eq(expected_regions)
+      expect(result['markdown']).not_to include('## FID:onet-card-only')
       expect(actual_cards).to eq(expected_cards)
       expect(card_urls.grep(/premium-02\?edition=morning/).length).to eq(1)
       expect(card_urls.grep(/offers-02\?edition=evening/).length).to eq(1)
       expect(result['markdown']).not_to include(
-        'FID:card-heading-is-not-a-region', 'FID:utility-ad', 'FID:utility-footer',
+        'FID:utility-ad', 'FID:utility-footer',
         'FID:onet-premium-01 mobile'
       )
       expect(card_urls.tally.values).to all(eq(1))
@@ -89,9 +93,9 @@ RSpec.describe 'Polish portal homepage fidelity' do
       result = extract_payload(page, reader_mode: false)
 
       expect(result['contentType']).to eq('list')
+      expect(result['hostAware']).to eq(false)
       expect(result['warnings']).not_to include('multi_topic_page')
       expect(result['suspect']).to eq(false)
-      expect(result['markdown']).to include('## More from Onet')
       expect(result['markdown']).to include(
         'BIZNES',
         'https://www.onet.pl/informacje/tu-stolica/schorowani-mieszkancy-czekaja-gigantyczne-kolejki-do-waznej-instytucji/glczdww,30bc1058'
@@ -99,16 +103,23 @@ RSpec.describe 'Polish portal homepage fidelity' do
       expect(result['markdown'].scan(/FID:onet-continuation-\d+/)).to eq(
         %w[FID:onet-continuation-01 FID:onet-continuation-02 FID:onet-continuation-03]
       )
-      expect(result['markdown']).not_to include('FID:onet-continuation-utility', 'FID:onet-continuation-ad')
-      expect(result['markdown'].scan(%r{/onet/continuation-duplicate}).length).to eq(1)
-      expect(result['markdown'].index('FID:onet-business-01')).to be < result['markdown'].index('## More from Onet')
+      expect(result['markdown']).not_to include(
+        'FID:onet-continuation-utility', 'FID:onet-continuation-ad',
+        'FID:onet-continuation-ad-slot', 'FID:onet-continuation-sponsored'
+      )
+      expect(result['markdown'].scan('FID:onet-continuation-duplicate').length).to eq(1)
+      expect(result['markdown']).to include(
+        '- [FID:onet-business-01](https://onet.pl/onet/continuation-duplicate?utm_source=named)'
+      )
+      expect(result['markdown'].scan(%r{/onet/continuation-duplicate}).length).to eq(2)
+      expect(result['markdown'].index('FID:onet-business-01')).to be < result['markdown'].index('FID:onet-continuation-01')
     end
   end
 
   it 'keeps www homepage content with the generic or retained owner' do
     [
       ['https://www.wp.pl/', 'fidelity_wp_homepage', false],
-      ['https://www.onet.pl/', 'fidelity_onet_homepage', true]
+      ['https://www.onet.pl/', 'fidelity_onet_homepage', false]
     ].each do |url, fixture_name, host_aware|
       extract_from_url(url, fixture(fixture_name), reader_mode: false) do |payload|
         expect(payload['contentType']).to eq('list')
@@ -150,7 +161,7 @@ RSpec.describe 'Polish portal homepage fidelity' do
     end
   end
 
-  it 'keeps the Onet root owner ahead of article-shaped markup' do
+  it 'keeps shared Onet homepage extraction ahead of article-shaped markup' do
     html = fixture('fidelity_onet_homepage').sub(
       '</body>',
       '<article><h1>Article-shaped root noise</h1><p>Not a route.</p></article></body>'
@@ -158,7 +169,7 @@ RSpec.describe 'Polish portal homepage fidelity' do
 
     extract_from_url('https://onet.pl/', html, reader_mode: false) do |payload|
       expect(payload['contentType']).to eq('list')
-      expect(payload['hostAware']).to eq(true)
+      expect(payload['hostAware']).to eq(false)
       expect(payload['markdown']).not_to include('Article-shaped root noise')
     end
   end

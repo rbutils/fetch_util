@@ -579,7 +579,6 @@ RSpec.describe "extract asset bundle" do
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
-                          registerOnetHomepageProfile
                           registerZeitProfiles
                           registerBookingProfiles
                           registerAcademicPublisherProfiles
@@ -675,26 +674,27 @@ RSpec.describe "extract asset bundle" do
     wp_path = "profiles/news/europe/central/poland/wp.js"
     onet_path = "profiles/news/europe/central/poland/onet.js"
     expect(manifest).not_to include(wp_path)
-    expect(manifest.index(onet_path)).to be < register_index
+    expect(manifest).not_to include(onet_path)
     expect(File).not_to exist(File.join(source_root, wp_path))
-    expect(File).to exist(File.join(source_root, onet_path))
+    expect(File).not_to exist(File.join(source_root, onet_path))
     expect(File).not_to exist(File.join(source_root, "profiles/news/europe/central/poland/wp_onet.js"))
     expect(File).not_to exist(File.join(source_root, "systems/news_engines/polish_portal_descriptors.js"))
     expect(manifest).not_to include("profiles/news/europe/central/poland/wp_onet.js")
     expect(manifest).not_to include("systems/news_engines/polish_portal_descriptors.js")
     expect(register_source).to include(
-      "registerNewsHomepageProfiles();\n  registerOnetHomepageProfile();\n  registerZeitProfiles();"
+      "registerNewsHomepageProfiles();\n  registerZeitProfiles();"
     )
-    onet_source = File.read(File.join(source_root, onet_path))
-    expect(onet_source).to include("function onetHomepageContent", "function registerOnetHomepageProfile")
-    expect(onet_source).to include("function onetRegionHeading", "function onetUtilityRegion", "function onetUtilityLabel")
-    expect(onet_source).to include("function onetContinuationRegions", "function onetContinuationCard")
-    expect(onet_source).not_to include("wpHomepageContent", "polishPortal")
     source_files = Dir[File.join(source_root, "**", "*.js")]
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
     expect(combined_symbols).to eq(0)
+    retired_onet_symbols = source_files.sum do |path|
+      File.read(path).scan(
+        /(?:onetHomepageContent|onetHomepageDescriptor|registerOnetHomepageProfile|onetRegionHeading|onetContinuationRegions|onetContinuationCard|onetUtilityRegion|onetUtilityLabel)/
+      ).length
+    end
+    expect(retired_onet_symbols).to eq(0)
 
     ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
     expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)

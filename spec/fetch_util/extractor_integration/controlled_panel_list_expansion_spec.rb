@@ -96,13 +96,36 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
   end
 
   it 'does not append a generic panel delta to a specialized portal result' do
-    specialized = fixture_contents(File.expand_path('../../fixtures/fidelity_onet_homepage.html', __dir__))
+    specialized = <<~HTML
+      <main>
+        <h1>Financial Times</h1>
+        #{(1..4).map do |number|
+          title = "Markets desk publishes substantive report number #{number}"
+          title = "Opinion content. #{title}" if number == 1
+          <<~CARD
+            <article>
+              <a href="/content/story-#{number}">
+                <h2>#{title}</h2>
+              </a>
+            </article>
+          CARD
+        end.join}
+        <article><a href="/outside/story">Outside link generic extraction would admit</a></article>
+      </main>
+    HTML
     html = specialized + controlled_panel_fixture
 
-    with_url_page('https://onet.pl/', html) do |page|
-      markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page).fetch('markdown')
+    with_url_page('https://www.ft.com/', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload.fetch('markdown')
 
-      expect(markdown).to include('Latarnie dostały własny harmonogram')
+      expect(markdown).to include(
+        '- [Markets desk publishes substantive report number 1](https://www.ft.com/content/story-1)'
+      )
+      expect(markdown).not_to include(
+        '- [Opinion content. Markets desk publishes substantive report number 1]',
+        'Outside link generic extraction would admit'
+      )
       expect(record_numbers(markdown)).to be_empty
     end
   end
