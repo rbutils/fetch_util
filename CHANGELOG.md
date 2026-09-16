@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Handle Zeit articles through shared reader extraction while preserving the visible body, complete author identity, author destination, headings, warnings, and source DOM.
+
 - Preserve a verified focal article's safe author-profile destination when reader mode expands an opaque author handle to its full structured name.
 
 - Remove short browser-capability fallback messages from proved article audio-player components while preserving labels, transcripts, media, controls, and explanatory prose.

@@ -240,7 +240,6 @@ profiles/social/networks/meta/threads.js
 profiles/social/networks/twitter.js
 profiles/social/professional/linkedin.js
 profiles/social/networks/bluesky.js
-profiles/news/europe/western/germany/zeit.js
 profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js

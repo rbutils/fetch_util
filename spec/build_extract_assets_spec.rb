@@ -579,7 +579,6 @@ RSpec.describe "extract asset bundle" do
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
-                          registerZeitProfiles
                           registerBookingProfiles
                           registerAcademicPublisherProfiles
                           registerAcademicPreprintProfiles
@@ -681,9 +680,7 @@ RSpec.describe "extract asset bundle" do
     expect(File).not_to exist(File.join(source_root, "systems/news_engines/polish_portal_descriptors.js"))
     expect(manifest).not_to include("profiles/news/europe/central/poland/wp_onet.js")
     expect(manifest).not_to include("systems/news_engines/polish_portal_descriptors.js")
-    expect(register_source).to include(
-      "registerNewsHomepageProfiles();\n  registerZeitProfiles();"
-    )
+    expect(register_source).to include("registerNewsHomepageProfiles();\n  registerBookingProfiles();")
     source_files = Dir[File.join(source_root, "**", "*.js")]
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
@@ -697,6 +694,13 @@ RSpec.describe "extract asset bundle" do
     )
     retired_onet_symbols = source_files.sum { |path| File.read(path).scan(retired_onet_pattern).length }
     expect(retired_onet_symbols).to eq(0)
+    zeit_path = "profiles/news/europe/western/germany/zeit.js"
+    expect(manifest).not_to include(zeit_path)
+    expect(File).not_to exist(File.join(source_root, zeit_path))
+    retired_zeit_symbols = source_files.sum do |path|
+      File.read(path).scan(/(?:zeitArticleContent|registerZeitProfiles)/).length
+    end
+    expect(retired_zeit_symbols).to eq(0)
     kaler_kantho_path = "profiles/news/asia/south/kalerkantho.js"
     expect(manifest).not_to include(kaler_kantho_path)
     expect(File).not_to exist(File.join(source_root, kaler_kantho_path))

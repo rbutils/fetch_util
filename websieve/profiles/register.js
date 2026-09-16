@@ -6,7 +6,6 @@
   registerMediaCommerceLeadProfiles();
   registerHostAwareProfile(true, softwareProjectHomepageContent);
   registerNewsHomepageProfiles();
-  registerZeitProfiles();
   registerBookingProfiles();
   registerAcademicPublisherProfiles();
   registerAcademicPreprintProfiles();
