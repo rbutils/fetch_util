@@ -11,6 +11,7 @@
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
+- Recover one unambiguous visible article lead and its immediately attached image when Readability selects the later body from the same article owner.
 - Recognize localized author-profile destinations as focal article bylines without borrowing authors from related sidebars.
 - Handle Onet's homepage through shared list extraction while preserving visible sections, stories, aliases, authors, and ordering.
 - Keep a materially different visible story alias linked when only tracking parameters distinguish it from an already selected destination.

@@ -69,6 +69,8 @@ classifiers/warnings/access.js
 classifiers/warnings/content_integrity.js
 classifiers/warnings/index.js
 extractors/article/roots.js
+extractors/article/intro_order.js
+extractors/article/intro_coverage.js
 extractors/article/main_coverage.js
 extractors/article/focal_ownership.js
 extractors/article/fallback.js
