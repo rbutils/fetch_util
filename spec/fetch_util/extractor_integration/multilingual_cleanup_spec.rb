@@ -153,6 +153,135 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
   end
 
   describe "related article block removal" do
+    it "removes only short exact-token most-read furniture" do
+      html = <<~HTML
+        <html>
+          <head><script id="source-data" type="application/json">{"preserve":true}</script></head>
+          <body>
+            <main>
+              <article>
+                <h1>Recommendation Cleanup Boundaries</h1>
+                <p>The first article paragraph establishes the primary report and its relevant background for readers.</p>
+                <p>The second article paragraph explains the evidence, consequences, and next steps in complete prose.</p>
+                <p>The third article paragraph closes the report without depending on any recommendation furniture.</p>
+                <div class="most-read">Archive</div>
+                <div class="MOST_READ">Most read</div>
+                <span class="mostread">Archive</span>
+                <div class="most-reader"><p>Most-reader is a similarly named project whose narrative remains material.</p></div>
+                <div class="almost-read">Almost-read is a similarly named exact-token control.</div>
+                <div class="most-read">Election results remain visible.</div>
+                <div class="most-read">Mostread remains visible.</div>
+                <div class="most-read"><h2>Election dashboard</h2><time>2026-09-16</time></div>
+                <p>Inline reference: <a class="most-read" href="/linked-story">Linked story remains material.</a></p>
+                <ul class="most_read"><li>Listed story remains material.</li></ul>
+                <section class="most-read"><p>Most-read analysis is substantive editorial prose, not a short recommendation label.</p></section>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_page(html) do |page|
+        document_without_scripts = <<~JS
+          (() => {
+            const clone = document.documentElement.cloneNode(true);
+            clone.querySelectorAll("head script:not(#source-data)").forEach((script) => script.remove());
+            return clone.outerHTML;
+          })()
+        JS
+        source = page.evaluate(document_without_scripts)
+        payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+        expect(payload["markdown"]).to include("The first article paragraph")
+        expect(payload["markdown"]).to include("similarly named project")
+        expect(payload["markdown"]).to include("similarly named exact-token control")
+        expect(payload["markdown"]).to include("Election results remain visible")
+        expect(payload["markdown"]).to include("Mostread remains visible")
+        expect(payload["markdown"]).to include("Election dashboard")
+        expect(payload["markdown"]).to include("2026-09-16")
+        expect(payload["markdown"]).to include("Linked story remains material")
+        expect(payload["markdown"]).to include("Listed story remains material")
+        expect(payload["markdown"]).to include("substantive editorial prose")
+        expect(payload["markdown"]).not_to include("Archive")
+        expect(payload["markdown"]).not_to include("Most read")
+        expect(page.evaluate(document_without_scripts)).to eq(source)
+      end
+    end
+
+    it "preserves exact recommendation labels on non-container elements" do
+      html = <<~HTML
+        <html>
+          <head><script id="source-data" type="application/json">{"preserve":true}</script></head>
+          <body>
+            <main>
+              <article>
+                <h1>Recommendation Element Boundaries</h1>
+                <p>The first paragraph establishes a complete focal report before the labelled elements.</p>
+                <p>The second paragraph provides substantive evidence and enough context for normal extraction.</p>
+                <p>The third paragraph closes the report while the exact recommendation labels stay material.</p>
+                <h2 class="most-read">Archive</h2>
+                <p class="most_read">Most read</p>
+                <a class="mostread" href="https://example.test/archive-label">Archive</a>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_page(html) do |page|
+        document_without_scripts = <<~JS
+          (() => {
+            const clone = document.documentElement.cloneNode(true);
+            clone.querySelectorAll("head script:not(#source-data)").forEach((script) => script.remove());
+            return clone.outerHTML;
+          })()
+        JS
+        source = page.evaluate(document_without_scripts)
+        payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+        expect(payload["html"]).to include('<h2 class="most-read">Archive</h2>')
+        expect(payload["html"]).to include('<p class="most_read">Most read</p>')
+        expect(payload["html"]).to include('class="mostread" href="https://example.test/archive-label"')
+        expect(page.evaluate(document_without_scripts)).to eq(source)
+      end
+    end
+
+    it "preserves most-read semantic owners and intentional overview records" do
+      html = <<~HTML
+        <html>
+          <body>
+            <main>
+              <article>
+                <h1>Most-read Ownership Boundaries</h1>
+                <p>The primary article keeps its substantive opening paragraph and local evidence.</p>
+                <p>A second paragraph establishes enough article context for normal extraction.</p>
+                <p>The final paragraph closes the focal report before the retained controls.</p>
+                <article class="most-read">
+                  <h2>Most-read investigative report</h2>
+                  <p>This semantic article remains because the token describes the story itself.</p>
+                </article>
+                <div data-fetchutil-page-overview>
+                  <div class="most-read"><a href="/overview-story">Overview story</a></div>
+                </div>
+                <div data-fetchutil-editorial-aside>
+                  <div class="most-read"><a href="/editor-story">Editor's selected story</a></div>
+                </div>
+              </article>
+            </main>
+          </body>
+        </html>
+      HTML
+
+      with_page(html) do |page|
+        payload = FetchUtil::Extractor.new.extract(page)
+
+        expect(payload["markdown"]).to include("Most-read investigative report")
+        expect(payload["markdown"]).to include("token describes the story itself")
+        expect(payload["markdown"]).to include("Overview story")
+        expect(payload["markdown"]).to include("Editor's selected story")
+      end
+    end
+
     it "removes related-posts sections by class" do
       html = <<~HTML
         <html>

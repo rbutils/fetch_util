@@ -3,6 +3,8 @@
   var COMMON_INSTITUTIONAL_CHROME_SELECTOR = COMMON_CHROME_SELECTOR + ", .breadcrumb, .site-header, .site-footer, .region-sidebar";
   var COMMON_RECORD_CHROME_SELECTOR = COMMON_CHROME_SELECTOR + ", .report-tools, .sidebar-nav, .tool-bar";
   var RELATED_CONTAINER_SELECTOR = "[class*='related-posts'], [class*='related_posts'], [id*='related-posts'], [id*='related_posts'], .yarpp-related, [class*='recommended-posts'], [class*='more-stories'], [class*='also-like'], [class*='you-may-also'], .jp-relatedposts, [class*='more-from'], [class*='more_from'], [class*='latest-news'], [class*='latest_news'], [class*='trending'], [class*='popular-posts'], [class*='popular_posts'], [class*='related-articles'], [class*='related_articles'], [id*='related-articles'], [id*='related_articles'], [class*='related-links'], [class*='related_links'], [class*='further-reading'], [class*='further_reading']";
+  var SHORT_RECOMMENDATION_FURNITURE_SELECTOR = "[class~='most-read' i], [class~='most_read' i], [class~='mostread' i]";
+  var SHORT_RECOMMENDATION_LABEL_PATTERN = noiseExactTextPattern(["archive", "most\\s+read"], "i");
   var ACCOUNT_ACTION_TEXT_PATTERN = noiseExactTextPattern(NOISE_ACCOUNT_ACTION_TERMS, "i");
   var AD_LABEL_TEXT_PATTERN = noiseLeadingTextPattern(NOISE_AD_LABEL_TERMS, "i");
   var UI_ACTION_TEXT_PATTERN = /^(like|dislike|share|save|bookmark|pin it|tweet|follow us|subscribe|subscribe now|sign up|view all|show more comments?|load more|report|flag|print|copy link|copy url|edit|delete|reply|retweet|repost|reblog|thanks for your feedback!?)$/;
@@ -69,6 +71,18 @@
       if (/^data:image\/(svg\+xml|png|gif|jpeg);base64,/.test(src) && src.length < 300) img.remove();
     });
     return root;
+  }
+
+  function stripShortRecommendationFurniture(root) {
+    root.querySelectorAll(SHORT_RECOMMENDATION_FURNITURE_SELECTOR).forEach(function(el) {
+      if (!el.matches("div, span")) return;
+      if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
+
+      var text = normalizeText(el.textContent || "");
+      if (!text || text.length > 120 || el.children.length) return;
+      if (!SHORT_RECOMMENDATION_LABEL_PATTERN.test(text)) return;
+      el.remove();
+    });
   }
 
   function resolveLazyImages(root) {

@@ -15,6 +15,8 @@
       el.remove();
     });
 
+    stripShortRecommendationFurniture(root);
+
     // Strip related-article containers by class/id patterns
     root.querySelectorAll(RELATED_CONTAINER_SELECTOR).forEach(function(el) {
       if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;

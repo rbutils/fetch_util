@@ -1,5 +1,7 @@
 # Changelog
 
+- Remove only short exact-token `most-read` recommendation furniture from cleaned article clones while preserving substantive or semantic owners, similarly named content, intentional page overviews, and the source DOM.
+
 ## Unreleased
 
 - Handle Protothema articles through shared reader extraction while preserving the complete visible body, lead media, metadata, warnings, and source DOM.
