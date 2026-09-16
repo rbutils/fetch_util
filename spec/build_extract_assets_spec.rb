@@ -724,6 +724,15 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/(?:Body__StyledContainer|containerPiano1|CMPPlaceholder__Wrapper)/).length
     end
     expect(retired_blick_selectors).to eq(0)
+    trend_path = "profiles/news/asia/central/azerbaijan/trend.js"
+    expect(manifest).not_to include(trend_path)
+    expect(File).not_to exist(File.join(source_root, trend_path))
+    retired_trend_symbols = source_files.sum do |path|
+      File.read(path).scan(/(?:trendArticleContent|trendArticlePage|trendBaseSlugKeywords)/).length
+    end
+    expect(retired_trend_symbols).to eq(0)
+    wordpress_source = File.read(File.join(source_root, "systems/cms/wordpress.js"))
+    expect(wordpress_source).not_to include("trend\\.az")
 
     ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
     expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
@@ -787,7 +796,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/asia/central/azerbaijan/oxu.js
                                 profiles/news/europe/eastern/serbia/danas.js
                                 profiles/news/middle_east/almasryalyoum.js
-                                profiles/news/asia/central/azerbaijan/trend.js
                                 profiles/news/asia/south/pakistan/jang.js
                                 profiles/news/middle_east/skynewsarabia.js
                                 profiles/news/middle_east/turkey/milliyet_live.js

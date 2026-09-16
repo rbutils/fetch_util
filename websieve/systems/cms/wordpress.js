@@ -104,7 +104,7 @@
     }
   ];
 
-  var WORDPRESS_DEDICATED_PROFILE_HOSTS = /(^|\.)(daryo\.uz|hatena\.blog|trend\.az)$/;
+  var WORDPRESS_DEDICATED_PROFILE_HOSTS = /(^|\.)(daryo\.uz|hatena\.blog)$/;
 
   function wordpressSiteProfileConfig() {
     var host = location.hostname || "";
