@@ -4,12 +4,17 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
   var readerAuthor = content.readerMode ? readerBylineSourceAuthorLink(content, metadataByline) : null;
+  var readerTextByline = content.readerMode && !readerAuthor ? readerTextBylineSource(content, metadataByline) : null;
   var expandsByline = readerBylineCanExpand(content, readerAuthor);
   if (expandsByline) {
     contentByline = null;
   }
   if (readerAuthor && (expandsByline || !contentByline || contentByline.toLowerCase() === metadataByline.toLowerCase())) {
     content = supplementReaderBylineLink(content, readerAuthor);
+  }
+  if (readerTextByline) {
+    content = supplementReaderTextByline(content, readerTextByline);
+    contentByline = null;
   }
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
   var byline = contentByline || metadataByline || sanitizeByline(visibleByline());
