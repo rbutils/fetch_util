@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove explicit article comment forms and zero-count continuation controls while preserving material comments, replies, and nonempty discussion links.
 - Handle Trend articles through shared WordPress or generic article extraction without host-specific slug-warning suppression.
 - Handle Protothema articles through shared reader extraction while preserving the complete visible body, lead media, metadata, warnings, and source DOM.
 - Remove short terminal exact article-flow-note widgets only after a substantial article body, while preserving linked, attributed, repeated, nonterminal, or structurally substantive editorial notes.

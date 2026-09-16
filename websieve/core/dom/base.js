@@ -228,6 +228,12 @@
     }
     cleanupCookieChrome(clone);
     stripArticleWidgets(clone);
+    if (stripEmptyCommentUi(clone)) return document.createElement("div");
+    if (clone.matches("form[class~='comment-form' i], form[id='comment-form-div' i]")) {
+      var commentContent = document.createElement("div");
+      while (clone.firstChild) commentContent.appendChild(clone.firstChild);
+      clone = commentContent;
+    }
     preserveMeaningfulButtons(clone);
     // Preserve ReDoc endpoint bars before removing buttons.
     // These have: <button><span class="http-verb get">get</span><span>/path</span></button>

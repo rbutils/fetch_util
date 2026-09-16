@@ -6,6 +6,123 @@
     return root;
   }
 
+  function cleanupMatchesIncludingRoot(root, selector) {
+    var matches = Array.from(root.querySelectorAll(selector));
+    if (root.matches && root.matches(selector)) matches.unshift(root);
+    return matches;
+  }
+
+  function removeCleanupNode(root, node) {
+    if (node === root) {
+      Array.from(root.attributes || []).forEach(function(attribute) { root.removeAttribute(attribute.name); });
+      while (root.firstChild) root.firstChild.remove();
+      return true;
+    } else {
+      node.remove();
+    }
+    return false;
+  }
+
+  function markedCommentContentSelector() {
+    return [
+      "[itemprop~='comment' i]", "[data-comment-id]", "[class~='comment' i]", "[class~='reply' i]",
+      "[class~='comment-body' i]", "[class~='comment-content' i]", "[class~='reply-body' i]",
+      "[class~='reply-content' i]", "[class~='comment-text' i]", "[class~='reply-text' i]", "article", "blockquote"
+    ].join(", ");
+  }
+
+  function hasMarkedCommentContent(node) {
+    var selector = markedCommentContentSelector();
+    return node.matches(selector) || !!node.querySelector(selector);
+  }
+
+  function hasMaterialCommentContent(node) {
+    var probe = node.cloneNode(true);
+    probe.querySelectorAll("label, legend, input, textarea, select, option, button").forEach(function(ui) { ui.remove(); });
+    if (normalizeText(probe.textContent || "")) return true;
+    return !!probe.querySelector("img[src], img[srcset], img[data-src], img[data-original], img[data-original-src], img[data-lazy-src], img[data-srcset], img[data-lazy-srcset], source[src], source[srcset], source[data-src], source[data-original-src], source[data-srcset], source[data-lazy-src], source[data-lazy-srcset], video[src], video[poster], audio[src], object[data], embed[src]");
+  }
+
+  function stripCommentFormControls(form) {
+    form.querySelectorAll("label, legend, input, textarea, select, option, button").forEach(function(control) { control.remove(); });
+  }
+
+  function preserveMaterialCommentForm(root, form) {
+    stripCommentFormControls(form);
+    if (form === root || !form.parentNode) return;
+    while (form.firstChild) form.parentNode.insertBefore(form.firstChild, form);
+    form.remove();
+  }
+
+  function commentContinuationDestinationSupportsLabel(control, label) {
+    if (!control.matches("a[href]")) return false;
+    var destination;
+    try {
+      var rawHref = control.getAttribute("href");
+      if (/\\|%(?:2f|5c)/i.test(rawHref)) return false;
+      var baseUrl = /^https?:$/.test(window.location.protocol) ? window.location.href : "https://fetchutil.invalid/";
+      var parsed = new URL(rawHref, baseUrl);
+      if (!/^https?:$/.test(parsed.protocol) || parsed.username || parsed.password) return false;
+      if (parsed.origin !== new URL(baseUrl).origin) return false;
+      destination = decodeURIComponent(parsed.pathname).toLowerCase();
+    } catch (_) {
+      return false;
+    }
+    var routePattern = /^(?:comments?|komentari?|repl(?:y|ies)|discussion|responses?|odgovori?)$/i;
+    var labelPattern = /(?:^|\s)(?:comments?|komentari?|repl(?:y|ies)|discussion|responses?|odgovori?)(?=\s|$)/i;
+    var routeMatches = destination.split("/").some(function(segment) { return routePattern.test(segment); });
+    return routeMatches && labelPattern.test(normalizeText(label));
+  }
+
+  function hasCommentContinuationResidual(node, control) {
+    if (node === control) return false;
+    var probe = node.cloneNode(true);
+    var probeControl = probe.querySelector("a, button");
+    if (probeControl) probeControl.remove();
+    return hasMaterialCommentContent(probe);
+  }
+
+  function stripEmptyCommentUi(root) {
+    var removedRoot = false;
+    cleanupMatchesIncludingRoot(root, "[class~='more-comments-button' i]").forEach(function(node) {
+      var controls = Array.from(node.querySelectorAll("a, button"));
+      if (node.matches("a, button")) controls.unshift(node);
+      if (controls.length !== 1) return;
+      if (hasCommentContinuationResidual(node, controls[0])) return;
+      if (hasMarkedCommentContent(controls[0])) return;
+      var text = normalizeText(node.textContent || "");
+      var controlText = normalizeText(controls[0].textContent || "");
+      if (!text || text !== controlText || text.length > 120 || !/\(\s*0\s*\)$/.test(text)) return;
+      var label = text.replace(/\(\s*0\s*\)$/, "").trim();
+      if (label.split(/\s+/).length > 8 || /[.!?](?:\s|$)/.test(label)) return;
+      if (!commentContinuationDestinationSupportsLabel(controls[0], label)) return;
+      removedRoot = removeCleanupNode(root, node) || removedRoot;
+    });
+
+    var formSelector = "[class~='comment-form' i], [id='comment-form-div' i]";
+    cleanupMatchesIncludingRoot(root, formSelector).forEach(function(node) {
+      if (hasMaterialCommentContent(node)) {
+        if (node.matches("form")) {
+          preserveMaterialCommentForm(root, node);
+        } else {
+          node.querySelectorAll("form").forEach(function(form) {
+            if (hasMaterialCommentContent(form)) {
+              preserveMaterialCommentForm(root, form);
+            } else {
+              form.remove();
+            }
+          });
+          stripCommentFormControls(node);
+        }
+        return;
+      }
+      var formUi = node.matches("form") || node.querySelector("form, label, legend, textarea, input, select, button");
+      var emptyWrapper = !normalizeText(node.textContent || "") && !node.querySelector("*");
+      if (formUi || emptyWrapper) removedRoot = removeCleanupNode(root, node) || removedRoot;
+    });
+    return removedRoot;
+  }
+
   function cleanupAgentRoot(root) {
     cleanupCookieChrome(root);
     stripInlineConsentPrompts(root);
@@ -14,6 +131,7 @@
     root.querySelectorAll("#comments, #respond, .comments-area, .comment-list, .comments-section, #disqus_thread, .disqus-comment-count, [class*='comment-respond'], .wp-block-comments, .post-comments").forEach(function(el) {
       el.remove();
     });
+    stripEmptyCommentUi(root);
 
     stripShortRecommendationFurniture(root);
 
