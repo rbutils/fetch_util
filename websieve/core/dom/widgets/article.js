@@ -36,10 +36,39 @@ function articleAudioControlNode(node) {
   return /(?:^|[^\d:])(?:\d{1,2}:[0-5]\d:[0-5]\d|\d{1,3}:[0-5]\d)(?![\d:])/.test(text);
 }
 
+function articleAudioFallbackNode(node) {
+  if (!node || !node.matches || !node.closest("article, [itemprop~='articleBody' i]")) return false;
+
+  var componentMarker = [
+    node.getAttribute("id"),
+    node.getAttribute("class"),
+    node.getAttribute("data-component"),
+    node.getAttribute("data-testid"),
+    node.getAttribute("data-role"),
+    node.getAttribute("role")
+  ].filter(Boolean).some(function(value) {
+    return String(value).split(/\s+/).some(function(part) {
+      var normalized = part.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join(" ");
+      return normalized === "audio player" || normalized === "article audio player";
+    });
+  });
+  if (!componentMarker) return false;
+  if (String(node.localName || "").indexOf("-") !== -1) return false;
+
+  var materialSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, a[href], ul, ol, dl, table, blockquote, figure, figcaption, pre, code, kbd, samp, label, details, summary, address, cite, time, [itemprop], img, picture, video, audio, iframe, object, embed, svg, canvas, math, button, input, select, textarea, output";
+  if (node.matches(materialSelector) || node.querySelector(materialSelector)) return false;
+
+  var text = normalizeText(node.textContent);
+  if (!text || text.length > 240 || node.children.length) return false;
+  var englishFallback = /^(?:(?:your|this|the|our)\s+)?browser\s+(?:does\s+not|doesn['’]t|cannot|can['’]t|is\s+unable\s+to)\s+(?:support|play|reproduce)(?:\s+(?:the\s+)?(?:audio|sound|media)(?:\s+(?:element|file|playback|content|document))?)?[.!]?$/i;
+  var germanFallback = /^(?:(?:ihr|dieser|der|ein|mein|dein)\s+)?browser\s+(?:(?:kann|k[oö]nnen)\s+(?:dieses?\s+)?(?:audio|tondokument|audiodokument|medium)?\s*(?:nicht|kein(?:e|en)?)\s+(?:wiedergeben|abspielen|unterst[uü]tzen)|unterst[uü]tzt\s+(?:die\s+)?(?:audio|tondokument|wiedergabe)\s+(?:nicht|kein(?:e|en)?))[.!]?$/i;
+  return englishFallback.test(text) || germanFallback.test(text);
+}
+
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
-    if (articleAudioControlNode(node)) node.remove();
+    if (articleAudioControlNode(node) || articleAudioFallbackNode(node)) node.remove();
   });
 
   root.querySelectorAll(".article-call-to-action, .article-cta, [data-role='article-call-to-action']").forEach(function(node) {

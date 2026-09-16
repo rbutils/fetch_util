@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove short browser-capability fallback messages from proved article audio-player components while preserving labels, transcripts, media, controls, and explanatory prose.
+
 - Expand very short Readability excerpts from substantial parsed article bodies instead of returning isolated disclaimers as summaries.
 - Remove bounded external-content consent placeholders through exact component markers while preserving substantive reporting and real embedded media.
 - Prefer one title-owned nested article over a broader localized story rail only when the wrapper's remaining material is fully proved to be repeated linked records, using parent-chain indexes rather than pairwise fallback-candidate scans.

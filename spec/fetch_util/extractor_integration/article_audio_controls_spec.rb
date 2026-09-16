@@ -117,15 +117,60 @@ RSpec.describe "generic article audio-control cleanup" do
     expect(cleaned).to include("long-control", "Substantive article text")
   end
 
+  it "removes plain browser fallback messages from exact audio players" do
+    widgets = <<~HTML
+      <div class="audio-player">Ihr Browser kann dieses Tondokument nicht wiedergeben.</div>
+      <div data-component="article-audio-player">Your browser does not support audio playback.</div>
+    HTML
+
+    cleaned = cleaned_article_widgets(article_with_audio_widgets(widgets))
+    expect(cleaned).not_to include("Tondokument", "does not support audio")
+    expect(cleaned).to include("Public investigation", "Article paragraph 3")
+  end
+
+  it "preserves durationless labels, transcripts, media, and browser prose" do
+    widgets = <<~HTML
+      <div class="audio-player">Listen to this investigation</div>
+      <div class="audio-player">This browser audio investigation does not misrepresent sources.</div>
+      <div class="audio-player">Your browser does not support audio playback. The transcript explains the accessibility impact.</div>
+      <span class="audio-player">Ihr Browser kann dieses Tondokument nicht wiedergeben. Das Interview wird unten vollständig transkribiert.</span>
+      <div class="not-audio-player">Your browser does not support audio playback.</div>
+      <div class="audio-player-description">Your browser does not support audio playback.</div>
+      <div class="audio-player"><a href="/transcript">Read the browser audio transcript</a></div>
+      <div class="audio-player"><audio controls src="/investigation.mp3"></audio></div>
+      <p class="audio-player">This browser audio investigation explains accessibility in detail.</p>
+      <div class="audio-player"><button>Play this browser audio report</button></div>
+    HTML
+
+    cleaned = cleaned_article_widgets(article_with_audio_widgets(widgets))
+    expect(cleaned).to include(
+      "Listen to this investigation",
+      "does not misrepresent sources",
+      "transcript explains the accessibility impact",
+      "vollständig transkribiert",
+      "not-audio-player",
+      "audio-player-description",
+      "Read the browser audio transcript",
+      "investigation.mp3",
+      "explains accessibility",
+      "Play this browser audio report"
+    )
+  end
+
   it "does not remove similarly named components outside an article" do
     html = <<~HTML
       <main>
         <h1>Podcast catalog</h1>
         <div class="audio-player-controls">Catalog duration 08:15</div>
+        <div class="audio-player">Your browser does not support audio playback.</div>
         <p>This catalog introduction remains visible outside a focal article owner.</p>
       </main>
     HTML
 
-    expect(cleaned_article_widgets(html)).to include("Catalog duration 08:15", "catalog introduction")
+    expect(cleaned_article_widgets(html)).to include(
+      "Catalog duration 08:15",
+      "Your browser does not support audio playback",
+      "catalog introduction"
+    )
   end
 end
