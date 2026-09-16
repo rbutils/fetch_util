@@ -689,12 +689,23 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
     expect(combined_symbols).to eq(0)
-    retired_onet_symbols = source_files.sum do |path|
+    retired_onet_pattern = Regexp.union(
+      %w[
+        onetHomepageContent onetHomepageDescriptor registerOnetHomepageProfile onetRegionHeading
+        onetContinuationRegions onetContinuationCard onetUtilityRegion onetUtilityLabel
+      ]
+    )
+    retired_onet_symbols = source_files.sum { |path| File.read(path).scan(retired_onet_pattern).length }
+    expect(retired_onet_symbols).to eq(0)
+    kaler_kantho_path = "profiles/news/asia/south/kalerkantho.js"
+    expect(manifest).not_to include(kaler_kantho_path)
+    expect(File).not_to exist(File.join(source_root, kaler_kantho_path))
+    retired_kaler_kantho_symbols = source_files.sum do |path|
       File.read(path).scan(
-        /(?:onetHomepageContent|onetHomepageDescriptor|registerOnetHomepageProfile|onetRegionHeading|onetContinuationRegions|onetContinuationCard|onetUtilityRegion|onetUtilityLabel)/
+        /(?:kalerKanthoArticleContent|kalerKanthoArticlePage|kalerKanthoArticleBody|kalerKanthoUsefulArticleNode)/
       ).length
     end
-    expect(retired_onet_symbols).to eq(0)
+    expect(retired_kaler_kantho_symbols).to eq(0)
 
     ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
     expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
@@ -760,7 +771,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/news/europe/eastern/serbia/danas.js
                                 profiles/news/europe/eastern/serbia/kurir.js
                                 profiles/news/middle_east/almasryalyoum.js
-                                profiles/news/asia/south/kalerkantho.js
                                 profiles/news/asia/central/azerbaijan/trend.js
                                 profiles/news/asia/south/pakistan/jang.js
                                 profiles/news/middle_east/skynewsarabia.js
