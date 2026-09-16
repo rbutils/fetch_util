@@ -1,3 +1,32 @@
+  function readabilityExcerptIsVisibleLead(article, excerpt) {
+    if (!article || !article.content) return false;
+
+    var template = document.createElement("template");
+    template.innerHTML = article.content;
+    return Array.from(template.content.querySelectorAll("p")).some(function(paragraph) {
+      if (normalizeText(paragraph.textContent || "") !== excerpt) return false;
+
+      var range = document.createRange();
+      range.setStart(template.content, 0);
+      range.setEndBefore(paragraph);
+      var prefix = normalizeText(range.toString());
+      return Array.from(prefix).length < 40 && !/\p{Sentence_Terminal}/u.test(prefix);
+    });
+  }
+
+  function readabilityArticleExcerpt(article) {
+    var excerpt = normalizeText((article && article.excerpt) || "");
+    if (!excerpt) return (article && article.excerpt) || null;
+
+    var text = normalizeText((article && article.textContent) || "");
+    var excerptCharacters = Array.from(excerpt);
+    var textCharacters = Array.from(text);
+    if (excerptCharacters.length >= 80 || textCharacters.length < 400) return article.excerpt;
+
+    if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
+    return textCharacters.slice(0, 280).join("");
+  }
+
   function readabilityContent() {
     if (typeof Readability !== "function") return null;
 
@@ -20,7 +49,7 @@
       return {
         title: article.title || null,
         byline: article.byline || null,
-        excerpt: article.excerpt || null,
+        excerpt: readabilityArticleExcerpt(article),
         siteName: article.siteName || null,
         publishedTime: article.publishedTime || null,
         html: article.content,
