@@ -138,6 +138,8 @@
     // 5. Multi-topic heuristic: page contains multiple distinct timestamped entries or update blocks
     // Count headings and timestamps only after related/sidebar/list/feed widgets are removed.
     var timestampedHomepageList = content && content.contentType === "list" && homepageRootPath();
+    var credibleRootHomepageList = timestampedHomepageList &&
+      (content.portalRootEvidence || homepageHasEditorialSections(document));
     // Repeated timestamps are normal homepage metadata; they do not establish a liveblog without an explicit signal.
     if (formatView.root && !timestampedHomepageList) {
       var headings = formatView.root.querySelectorAll("h2, h3");
@@ -169,7 +171,7 @@
     // Pages with many short items each linking out (e.g. daily flash-news compilations,
     // weekly newsletters, aggregated briefing hubs). Distinct from "briefing" which
     // matches specific title patterns — this catches structural layout patterns.
-    if (formatMarkdown && content && content.html) {
+    if (formatMarkdown && content && content.html && !credibleRootHomepageList) {
       var mdLines = formatMarkdown.split("\n").filter(function(l) { return l.trim().length > 0; });
       var mdLinks = (formatMarkdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
       var mdHeadings = (formatMarkdown.match(/^#{1,3}\s+/gm) || []).length;

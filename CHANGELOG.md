@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Keep multi-section or otherwise proved portal root lists distinct from newsletter or digest formats.
 - Handle Hindustan Times articles through shared reader extraction while preserving their visible byline and publication time.
 - Preserve a verified visible focal-article byline when generic reader extraction omits its unlinked source node.
 - Remove explicit article comment forms and zero-count continuation controls while preserving material comments, replies, and nonempty discussion links.

@@ -578,6 +578,56 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not infer newsletter from a root homepage list" do
+    cards = (1..8).map do |i|
+      <<~CARD
+        <article>
+          <h3><a href="/news/#{i}">Independent report #{i}</a></h3>
+          <p>Concise summary for independent report #{i}.</p>
+        </article>
+      CARD
+    end
+    html = <<~HTML
+      <html><head><title>Independent newsroom</title></head><body><main>
+        <h1>Independent newsroom</h1>
+        <section><h2>National reports</h2>#{cards.first(4).join}</section>
+        <section><h2>International reports</h2>#{cards.last(4).join}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://www.example.com/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).to be_nil
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "still detects a single-section root digest as newsletter format" do
+    cards = (1..7).map do |i|
+      <<~CARD
+        <article>
+          <h3><a href="/digest/#{i}">Digest report #{i}</a></h3>
+          <p>Brief digest summary #{i} with a compact update.</p>
+        </article>
+      CARD
+    end.join
+    html = <<~HTML
+      <html><head><title>Reader digest</title></head><body><main>
+        <section><h2>Weekly reader digest</h2>#{cards}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://www.example.com/", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+    end
+  end
+
   it "keeps explicit liveblog schema authoritative on a root homepage list" do
     cards = (1..8).map do |i|
       <<~CARD
