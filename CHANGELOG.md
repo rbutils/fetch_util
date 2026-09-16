@@ -8,6 +8,7 @@
 - Remove exact `ads` class-token furniture from generic article clones while preserving substantive editorial prose and semantic article owners.
 - Handle Kaler Kantho articles through shared article extraction while preserving their body, classification, warnings, and source DOM.
 - Handle Blick articles and live tickers through shared article extraction while preserving summaries, updates, authors, warnings, and source DOM.
+- Handle Kurir articles through shared reader extraction while preserving the visible headline, lead media, standfirst, body, and metadata.
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
