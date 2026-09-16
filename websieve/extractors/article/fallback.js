@@ -50,6 +50,29 @@
     return text + (paragraphs * 70) + (headings * 30) + bonus + ratioBonus - densityPenalty - utilityPenalty;
   }
 
+  function fallbackContainedArticleRecords(records) {
+    var recordsByVisibleNode = new Map();
+    var recordsByNode = new Map();
+    var containedByNode = new Map();
+    records.forEach(function(record) {
+      recordsByVisibleNode.set(record.visibleNode, record);
+      recordsByNode.set(record.node, record);
+    });
+
+    records.forEach(function(record) {
+      var parent = record.node.parentElement;
+      while (parent) {
+        if (recordsByNode.has(parent)) {
+          if (!containedByNode.has(parent)) containedByNode.set(parent, []);
+          containedByNode.get(parent).push(record);
+        }
+        parent = parent.parentElement;
+      }
+    });
+
+    return { recordsByVisibleNode: recordsByVisibleNode, containedByNode: containedByNode };
+  }
+
   function fallbackContent() {
     if (commentOnlyRoot(document.body) && !fallbackFocalArticleRoot(document.body)) return nonArticleContent();
     var legalProvision = legalProvisionContent();
@@ -66,18 +89,39 @@
 
     var sourceClones = new WeakMap();
     var visibleBody = visibilityPrunedClone(document.body, document, sourceClones);
-    var best = Array.from(candidates).reduce(function(current, node) {
+    var records = Array.from(candidates).map(function(node) {
       var visibleNode;
       if (document.body.contains(node)) {
         visibleNode = sourceClones.get(node);
-        if (!visibleNode || !visibleBody.contains(visibleNode)) return current;
+        if (!visibleNode || !visibleBody.contains(visibleNode)) return null;
       } else {
         visibleNode = visibilityPrunedClone(node, document);
       }
       var scoringNode = cleanClone(visibleNode);
       cleanupGenericArticleRoot(scoringNode);
-      var score = scoreNode(scoringNode);
-      if (!current || score > current.score) return { node: node, score: score };
+      return { node: node, visibleNode: visibleNode, score: scoreNode(scoringNode) };
+    }).filter(Boolean);
+
+    var dominated = new Set();
+    var containment = fallbackContainedArticleRecords(records);
+    records.forEach(function(wrapper) {
+      if (!document.body.contains(wrapper.node)) return;
+      var contained = containment.containedByNode.get(wrapper.node);
+      if (!contained) return;
+      var focalVisibleNode = broadMixedArticleFocal(wrapper.visibleNode);
+      if (!focalVisibleNode) return;
+      var focal = containment.recordsByVisibleNode.get(focalVisibleNode);
+      if (!focal) return;
+
+      contained.forEach(function(record) {
+        if (record !== focal) dominated.add(record);
+      });
+      dominated.add(wrapper);
+    });
+
+    var best = records.reduce(function(current, record) {
+      if (dominated.has(record)) return current;
+      if (!current || record.score > current.score) return record;
       return current;
     }, null);
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Prefer one title-owned nested article over a broader localized story rail only when the wrapper's remaining material is fully proved to be repeated linked records, using parent-chain indexes rather than pairwise fallback-candidate scans.
 - Remove exact `ads` class-token furniture from generic article clones while preserving substantive editorial prose and semantic article owners.
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed

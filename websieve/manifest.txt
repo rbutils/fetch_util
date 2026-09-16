@@ -70,6 +70,7 @@ classifiers/warnings/content_integrity.js
 classifiers/warnings/index.js
 extractors/article/roots.js
 extractors/article/main_coverage.js
+extractors/article/focal_ownership.js
 extractors/article/fallback.js
 extractors/article/readability.js
 extractors/article/hidden_substantive_main.js
