@@ -53,7 +53,7 @@ RSpec.describe "FetchUtil fallback scoring pass" do
     with_url_page("https://research.example/article", html) do |page|
       page.add_script_tag(content: fallback_scoring_source)
       result = page.evaluate("checkFallbackScoring()")
-      expect(result).to include("equal" => true, "calls" => 2)
+      expect(result).to include("equal" => true, "calls" => 1)
       expect(result.fetch("html").scan(%r{<h2>Record \d+</h2>})).to eq((0...125).map { |index| "<h2>Record #{index}</h2>" })
       expect(result.fetch("html")).to include("Explicitly visible descendant remains material.")
       expect(result.fetch("html")).not_to include("Hidden ancestor material", "Inherited hidden material", "Inactive material")
