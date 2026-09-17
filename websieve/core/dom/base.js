@@ -61,7 +61,7 @@
 
   function safeDeepClone(node, ownerDoc) {
     try {
-      if (nodeHasOpenShadowContent(node)) {
+      if (nodeHasShadowContent(node)) {
         var inertDoc = ownerDoc && !ownerDoc.defaultView ? ownerDoc : document.implementation.createHTMLDocument("");
         return cloneIntoDocument(node, inertDoc);
       }
@@ -185,7 +185,7 @@
 
   function safeReadableDocumentClone() {
     try {
-      if (nodeHasOpenShadowContent(document.documentElement)) {
+      if (nodeHasShadowContent(document.documentElement)) {
         var composed = document.cloneNode(false);
         composed.appendChild(cloneIntoDocument(document.documentElement, composed));
         return composed;

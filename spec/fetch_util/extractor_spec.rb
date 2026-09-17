@@ -53,8 +53,85 @@ RSpec.describe FetchUtil::Extractor do
     described_class.new.extract(page)
 
     expect(page).to have_received(:add_script_tag).exactly(2).times
-    expect(page).to have_received(:evaluate).with(/__fetchUtilPrivateApi\.extract\(\{"reader_mode":true\}\)/)
+    expect(page).to have_received(:evaluate).with(/__fetchUtilPrivateApi\.extract\(\{"reader_mode":true,/)
+    expect(page).to have_received(:evaluate).with(/"shadow_root_token":"[a-f0-9]{64}"/)
+    expect(page).to have_received(:evaluate).with(/"shadow_root_reader_property":"__fetchUtilClosedShadowRootReaderV1_[a-f0-9]{32}"/)
     expect(page).not_to have_received(:evaluate).with(/window\.FetchUtilExtract\.extract/)
+  end
+
+  it 'registers parser-created closed roots through CDP before extraction' do
+    commands = []
+    document = {
+      'root' => {
+        'backendNodeId' => 1,
+        'children' => [{
+          'backendNodeId' => 2,
+          'shadowRoots' => [{ 'backendNodeId' => 3, 'shadowRootType' => 'closed' }]
+        }]
+      }
+    }
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Closed content' })
+    allow(page).to receive(:command) do |method, **parameters|
+      commands << [method, parameters]
+      case method
+      when 'DOM.getDocument' then document
+      when 'DOM.resolveNode'
+        { 'object' => { 'objectId' => "object-#{parameters.fetch(:backendNodeId)}" } }
+      when 'Runtime.callFunctionOn' then { 'result' => { 'value' => true } }
+      when 'Runtime.releaseObject' then {}
+      end
+    end
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Closed content')
+
+    expect(commands.map(&:first)).to eq([
+                                          'DOM.getDocument', 'DOM.resolveNode', 'DOM.resolveNode',
+                                          'Runtime.callFunctionOn', 'Runtime.releaseObject', 'Runtime.releaseObject'
+                                        ])
+    registration = commands.find { |method, _parameters| method == 'Runtime.callFunctionOn' }.last
+    expect(registration.fetch(:arguments)).to include(
+      { value: FetchUtil::Browser::SHADOW_ROOT_READER_PROPERTY },
+      { value: FetchUtil::Browser::SHADOW_ROOT_ACCESS_TOKEN }
+    )
+  end
+
+  it 'continues extraction when the pierced CDP document is unavailable' do
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Ordinary content' })
+    allow(page).to receive(:command).with('DOM.getDocument', depth: -1, pierce: true)
+                                    .and_raise(Ferrum::TimeoutError, 'timed out')
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Ordinary content')
+  end
+
+  it 'releases every resolved CDP object when registration fails' do
+    released = []
+    document = {
+      'root' => {
+        'backendNodeId' => 1,
+        'children' => [{
+          'backendNodeId' => 2,
+          'shadowRoots' => [{ 'backendNodeId' => 3, 'shadowRootType' => 'closed' }]
+        }]
+      }
+    }
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Fallback content' })
+    allow(page).to receive(:command) do |method, **parameters|
+      case method
+      when 'DOM.getDocument' then document
+      when 'DOM.resolveNode'
+        { 'object' => { 'objectId' => "object-#{parameters.fetch(:backendNodeId)}" } }
+      when 'Runtime.callFunctionOn' then raise Ferrum::BrowserError, 'stale node'
+      when 'Runtime.releaseObject'
+        released << parameters.fetch(:objectId)
+        raise Ferrum::BrowserError, 'release failed' if released.one?
+      end
+    end
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Fallback content')
+    expect(released).to eq(%w[object-2 object-3])
   end
 
   it 'raises when extraction payload is missing' do

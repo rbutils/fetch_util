@@ -5,8 +5,10 @@ module FetchUtil
     module Navigation
       autoload :HeadersAndReadiness, "fetch_util/browser/navigation/headers_and_readiness"
       autoload :NavigatorPatch, "fetch_util/browser/navigation/navigator_patch"
+      autoload :ShadowRootPatch, "fetch_util/browser/navigation/shadow_root_patch"
 
       include HeadersAndReadiness
+      include ShadowRootPatch
       include NavigatorPatch
     end
   end

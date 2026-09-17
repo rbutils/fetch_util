@@ -53,6 +53,18 @@ RSpec.describe FetchUtil::Browser do
     expect(script).to include('Google Chrome')
   end
 
+  it 'records shadow roots before page scripts can close them' do
+    script = browser_without_idle.send(:navigator_patch)
+
+    expect(script).to include(
+      FetchUtil::Browser::SHADOW_ROOT_READER_PROPERTY,
+      'Object.getOwnPropertyDescriptor(Element.prototype, "attachShadow")',
+      'candidateToken !== shadowRootToken',
+      'readShadowRoot(shadowRootToken, "set", thisArg, root)'
+    )
+    expect(script).not_to include('window[shadowRootsKey]')
+  end
+
   it 'owns one immutable browser identity for headers and navigator data' do
     user_agent = +'Mozilla/5.0 Chrome/123.4.5.6'
     accept_language = +'en-US,en;q=0.9'

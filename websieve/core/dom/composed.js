@@ -1,4 +1,17 @@
   var composedDomReadContext = null;
+  var composedDomShadowToken = null;
+  var composedDomShadowReaderProperty = null;
+
+  function composedDomShadowRoot(node) {
+    if (!node) return null;
+    if (node.shadowRoot) return node.shadowRoot;
+    try {
+      var reader = composedDomShadowReaderProperty && window[composedDomShadowReaderProperty];
+      return typeof reader === "function" ? reader(composedDomShadowToken, "get", node) || null : null;
+    } catch (_error) {
+      return null;
+    }
+  }
 
   function composedDomParent(node) {
     if (!node) return null;
@@ -6,7 +19,8 @@
   }
 
   function composedDomChildren(node) {
-    if (node && node.shadowRoot) return Array.prototype.slice.call(node.shadowRoot.childNodes);
+    var shadowRoot = composedDomShadowRoot(node);
+    if (shadowRoot) return Array.prototype.slice.call(shadowRoot.childNodes);
     if (node && node.tagName === "SLOT" && node.getRootNode().host) {
       var assigned = node.assignedNodes();
       if (assigned.length) return Array.prototype.slice.call(assigned);
@@ -14,14 +28,14 @@
     return Array.prototype.slice.call((node && node.childNodes) || []);
   }
 
-  function nodeHasOpenShadowContent(node) {
+  function nodeHasShadowContent(node) {
     if (!node) return false;
-    if (node.shadowRoot || (node.nodeType === 11 && node.host)) return true;
+    if (composedDomShadowRoot(node) || (node.nodeType === 11 && node.host)) return true;
     if (composedDomReadContext && (node === document || (node.isConnected && node.ownerDocument === document))) {
       return composedDomReadContext.has(node);
     }
     return !!(node.querySelectorAll && Array.prototype.some.call(node.querySelectorAll("*"), function(child) {
-      return !!child.shadowRoot;
+      return !!composedDomShadowRoot(child);
     }));
   }
 
@@ -29,7 +43,7 @@
     var root = document.createElement("div");
     if (content && content.html) {
       root.innerHTML = content.html;
-    } else if (nodeHasOpenShadowContent(document.body)) {
+    } else if (nodeHasShadowContent(document.body)) {
       var clone = visibilityPrunedClone(document.body, document);
       while (clone.firstChild) root.appendChild(clone.firstChild);
     } else {
@@ -41,12 +55,17 @@
   function withComposedDomRead(extract) {
     return function(options) {
       var previous = composedDomReadContext;
+      var previousToken = composedDomShadowToken;
+      var previousReaderProperty = composedDomShadowReaderProperty;
       var context = new WeakSet();
+      composedDomShadowToken = options && options.shadow_root_token;
+      composedDomShadowReaderProperty = options && options.shadow_root_reader_property;
       var roots = [document];
       for (var index = 0; index < roots.length; index += 1) {
         Array.prototype.forEach.call(roots[index].querySelectorAll("*"), function(node) {
-          if (!node.shadowRoot) return;
-          roots.push(node.shadowRoot);
+          var shadowRoot = composedDomShadowRoot(node);
+          if (!shadowRoot) return;
+          roots.push(shadowRoot);
           context.add(document);
           for (var parent = node; parent; parent = composedDomParent(parent)) context.add(parent);
         });
@@ -56,6 +75,8 @@
         return extract(options);
       } finally {
         composedDomReadContext = previous;
+        composedDomShadowToken = previousToken;
+        composedDomShadowReaderProperty = previousReaderProperty;
       }
     };
   }

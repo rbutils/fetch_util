@@ -17,6 +17,8 @@ module FetchUtil
             Object.defineProperty(navigator, "languages", { get: () => #{languages_json} });
             Object.defineProperty(navigator, "platform", { get: () => "Linux x86_64" });
 
+            #{shadow_root_patch}
+
             Object.defineProperty(navigator, "plugins", {
               get: () => {
                 const p = { 0: { name: "PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format" },

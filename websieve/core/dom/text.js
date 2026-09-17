@@ -121,7 +121,7 @@
       !READABLE_TEXT_COOKIE_MARKERS.test(rendered) ||
       !cookieNoticeText(rendered)
     );
-    var composed = nodeHasOpenShadowContent(document.body);
+    var composed = nodeHasShadowContent(document.body);
     if (renderedLooksReadable && !composed) return rendered;
 
     var clone = composed ? visibilityPrunedClone(document.body, document) : safeDeepClone(document.body, document);

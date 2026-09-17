@@ -68,6 +68,7 @@ module FetchUtil
       original_timeout = page.timeout if timeout_supported
       page.timeout = [original_timeout.to_f, 60].max if timeout_supported
 
+      register_cdp_closed_shadow_roots(page)
       inject_vendor_assets(page)
       page.evaluate(extraction_call)
     rescue Ferrum::TimeoutError
@@ -87,9 +88,76 @@ module FetchUtil
       nil
     end
 
+    def register_cdp_closed_shadow_roots(page)
+      return unless page.respond_to?(:command)
+
+      document = page.command("DOM.getDocument", depth: -1, pierce: true).fetch("root")
+      shadow_root_pairs(document).each do |host, root|
+        register_cdp_closed_shadow_root(page, host, root)
+      end
+    rescue Ferrum::Error
+      nil
+    end
+
+    def shadow_root_pairs(document)
+      pairs = []
+      pending = [document]
+      until pending.empty?
+        node = pending.pop
+        shadows = Array(node["shadowRoots"])
+        shadows.each { |root| pairs << [node, root] if root["shadowRootType"] == "closed" }
+        pending.concat(Array(node["children"]), shadows)
+      end
+      pairs
+    end
+
+    def register_cdp_closed_shadow_root(page, host, root)
+      object_ids = []
+      [host, root].each do |node|
+        object_ids << page.command(
+          "DOM.resolveNode",
+          backendNodeId: node.fetch("backendNodeId")
+        ).dig("object", "objectId")
+      end
+      return unless object_ids.all?
+
+      page.command(
+        "Runtime.callFunctionOn",
+        objectId: object_ids.first,
+        functionDeclaration: closed_shadow_registration_function,
+        arguments: [
+          { objectId: object_ids.last },
+          { value: Browser::SHADOW_ROOT_READER_PROPERTY },
+          { value: Browser::SHADOW_ROOT_ACCESS_TOKEN }
+        ],
+        returnByValue: true
+      )
+    rescue Ferrum::Error
+      nil
+    ensure
+      Array(object_ids).compact.each do |object_id|
+        page.command("Runtime.releaseObject", objectId: object_id)
+      rescue Ferrum::Error
+        nil
+      end
+    end
+
+    def closed_shadow_registration_function
+      <<~JAVASCRIPT
+        function(root, property, token) {
+          const reader = window[property];
+          return typeof reader === "function" && reader(token, "set", this, root) === true;
+        }
+      JAVASCRIPT
+    end
+
     def extraction_call
       @extraction_call ||= begin
-        options = JSON.generate(reader_mode: @reader_mode)
+        options = JSON.generate(
+          reader_mode: @reader_mode,
+          shadow_root_token: Browser::SHADOW_ROOT_ACCESS_TOKEN,
+          shadow_root_reader_property: Browser::SHADOW_ROOT_READER_PROPERTY
+        )
         <<~JAVASCRIPT
           (() => {
             let __fetchUtilPrivateApi = null;

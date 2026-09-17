@@ -2,6 +2,7 @@
 
 require "ferrum"
 require "json"
+require "securerandom"
 require "uri"
 
 module FetchUtil
@@ -31,6 +32,8 @@ module FetchUtil
     DEFAULT_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " \
                          "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
+    SHADOW_ROOT_ACCESS_TOKEN = SecureRandom.hex(32).freeze
+    SHADOW_ROOT_READER_PROPERTY = "__fetchUtilClosedShadowRootReaderV1_#{SecureRandom.hex(16)}".freeze
     SOCIAL_LOGIN_PHASE_WAIT = 0.3
     POST_CONSENT_IDLE_TIMEOUT = 3.0
     CONTENT_READY_MIN_LENGTH = 200

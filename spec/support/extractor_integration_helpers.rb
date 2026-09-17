@@ -68,13 +68,18 @@ RSpec.shared_context 'extractor integration helpers' do
     RSpec.configuration.instance_variable_get(:@fetch_util_extractor_browser) ||
       RSpec.configuration.instance_variable_set(
         :@fetch_util_extractor_browser,
-        Ferrum::Browser.new(
-          headless: true,
-          browser_path: path,
-          timeout: 10,
-          window_size: [1280, 900],
-          browser_options: { 'no-sandbox': nil }
-        )
+        begin
+          browser = Ferrum::Browser.new(
+            headless: true,
+            browser_path: path,
+            timeout: 10,
+            window_size: [1280, 900],
+            browser_options: { 'no-sandbox': nil }
+          )
+          runtime = FetchUtil::Browser.new(browser_path: path, viewport: { width: 1280, height: 900 })
+          browser.evaluate_on_new_document(runtime.send(:navigator_patch))
+          browser
+        end
       )
   end
 
