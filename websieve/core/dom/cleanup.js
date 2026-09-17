@@ -236,5 +236,6 @@
     var root = document.createElement("div");
     root.innerHTML = html;
     cleanupAgentRoot(root);
+    stripTerminalArticleCollectionMarkers(root);
     return root.innerHTML;
   }

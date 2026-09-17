@@ -1,5 +1,6 @@
   global.FetchUtilExtract = {
     extract: withComposedDomRead(function(options) {
+      resetTerminalArticleCollectionMarker();
       mwananchiPrePageTextCleanup();
       var metadata = collectMetadata();
       var focalArticleRoute = articleRouteFocalContent();

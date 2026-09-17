@@ -22,6 +22,7 @@ core/dom/selectors.js
 core/dom/cookie_chrome.js
 core/dom/widgets/article.js
 core/dom/noise_cleanup.js
+core/dom/article_collections.js
 core/dom/materialization.js
 core/dom/deferred_reveals.js
 core/dom/composed.js

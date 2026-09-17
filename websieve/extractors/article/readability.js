@@ -38,6 +38,7 @@
       if (commentOnlyRoot(clone)) return null;
       prepareInlineArticleProse(clone);
       cleanupCookieChrome(clone);
+      markTerminalArticleLinkCollections(clone);
       var mediaWikiLike = !!document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output, .mw-parser-output");
       if (!mediaWikiLike) cleanupAgentRoot(clone);
       cleanupGenericArticleRoot(clone);

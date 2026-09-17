@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove exact terminal `news-box` link collections during final article rendering only when a multilingual recommendation heading and substantial focal prose prove related-news ownership, while preserving source-owned prose, resources, structured content, nested articles, and nonterminal sections.
 - Keep multi-section or otherwise proved portal root lists distinct from newsletter or digest formats.
 - Handle Hindustan Times articles through shared reader extraction while preserving their visible byline and publication time.
 - Preserve a verified visible focal-article byline when generic reader extraction omits its unlinked source node.
