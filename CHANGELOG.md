@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Invoke the browser extraction bundle through a private evaluated API so page-owned compatibility globals cannot intercept extraction options.
 - Remove only bounded imperative prompts from exact article audio-player components while preserving episode titles, transcripts, media, controls, and source DOM.
 - Apply proved terminal article-recommendation cleanup to shared fallback extraction when reader mode is disabled.
 - Preserve a visible focal article's exact localized author-profile destination when reader mode keeps the author name but omits its locally owned link.

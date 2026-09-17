@@ -1,4 +1,4 @@
-  global.FetchUtilExtract = {
+  var fetchUtilExtractApi = {
     extract: withComposedDomRead(function(options) {
       resetTerminalArticleCollectionMarker();
       mwananchiPrePageTextCleanup();
@@ -229,3 +229,9 @@
       return hiddenSubstantiveMainFinalResultSafe(result, hiddenMainResult) ? hiddenMainResult : result;
     })
   };
+
+  if (typeof deliverExtractApi === "function") {
+    deliverExtractApi(fetchUtilExtractApi);
+  } else {
+    global.FetchUtilExtract = fetchUtilExtractApi;
+  }

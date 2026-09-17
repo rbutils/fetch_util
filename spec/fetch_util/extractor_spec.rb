@@ -13,7 +13,12 @@ RSpec.describe FetchUtil::Extractor do
       FileUtils.mkdir_p(File.join(asset_root, 'vendor'))
       File.write(File.join(asset_root, 'vendor/readability.js'), 'window.Readability = true;', mode: 'w')
       File.write(File.join(asset_root, 'vendor/turndown.js'), 'window.TurndownService = true;', mode: 'w')
-      File.write(File.join(asset_root, 'extract.js'), 'window.FetchUtilExtract = true;', mode: 'w')
+      File.write(
+        File.join(asset_root, 'extract.js'),
+        '(function(deliver) { deliver({ extract: function(options) { return options; } }); })' \
+        '("fetch-util:standalone-api:v1");',
+        mode: 'w'
+      )
 
       yield asset_root
     end
@@ -47,8 +52,9 @@ RSpec.describe FetchUtil::Extractor do
 
     described_class.new.extract(page)
 
-    expect(page).to have_received(:add_script_tag).exactly(3).times
-    expect(page).to have_received(:evaluate).with(/window\.FetchUtilExtract\.extract/)
+    expect(page).to have_received(:add_script_tag).exactly(2).times
+    expect(page).to have_received(:evaluate).with(/__fetchUtilPrivateApi\.extract\(\{"reader_mode":true\}\)/)
+    expect(page).not_to have_received(:evaluate).with(/window\.FetchUtilExtract\.extract/)
   end
 
   it 'raises when extraction payload is missing' do
@@ -106,7 +112,7 @@ RSpec.describe FetchUtil::Extractor do
       case script
       when 'window.stop && window.stop()'
         true
-      when /window\.FetchUtilExtract\.extract/
+      when /__fetchUtilPrivateApi\.extract/
         { 'markdown' => 'Hello' }
       else
         true
@@ -127,7 +133,7 @@ RSpec.describe FetchUtil::Extractor do
     with_asset_root do |asset_root|
       allow(page).to receive(:add_script_tag).and_raise(Ferrum::TimeoutError)
       allow(page).to receive(:evaluate) do |script|
-        script.match?(/window\.FetchUtilExtract\.extract/) ? { 'markdown' => 'Hello' } : true
+        script.match?(/__fetchUtilPrivateApi\.extract/) ? { 'markdown' => 'Hello' } : true
       end
       allow(JSON).to receive(:generate).and_call_original
       allow(File).to receive(:read).and_call_original
@@ -147,7 +153,7 @@ RSpec.describe FetchUtil::Extractor do
       asset_root.replace('/missing/assets')
       allow(page).to receive(:add_script_tag).and_raise(Ferrum::TimeoutError)
       allow(page).to receive(:evaluate) do |script|
-        script.match?(/window\.FetchUtilExtract\.extract/) ? { 'markdown' => 'Hello' } : true
+        script.match?(/__fetchUtilPrivateApi\.extract/) ? { 'markdown' => 'Hello' } : true
       end
 
       expect(extractor.extract(page)).to include('markdown' => 'Hello')

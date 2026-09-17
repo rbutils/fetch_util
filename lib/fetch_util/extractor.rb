@@ -5,6 +5,9 @@ require "json"
 module FetchUtil
   class Extractor
     INLINE_ASSET_PATHS = %w[vendor/readability.js vendor/turndown.js extract.js].freeze
+    VENDOR_ASSET_PATHS = INLINE_ASSET_PATHS.first(2).freeze
+    VENDOR_GLOBAL_NAMES = %w[Readability TurndownService].freeze
+    PRIVATE_DELIVERY_SENTINEL = '"fetch-util:standalone-api:v1"'
     @asset_cache = {}
     @cache_mutex = Mutex.new
 
@@ -22,6 +25,7 @@ module FetchUtil
       @reader_mode = reader_mode
       @asset_root = (asset_root || File.join(__dir__, "assets")).dup.freeze
       @extraction_call = nil
+      @private_asset_script = nil
     end
 
     def extract(page)
@@ -36,14 +40,26 @@ module FetchUtil
     private
 
     def inject_assets(page)
-      page.add_script_tag(path: asset_path("vendor/readability.js"))
-      page.add_script_tag(path: asset_path("vendor/turndown.js"))
-      page.add_script_tag(path: asset_path("extract.js"))
+      INLINE_ASSET_PATHS.each do |relative_path|
+        page.add_script_tag(path: asset_path(relative_path))
+      end
     end
 
-    def inject_assets_inline(page)
-      inline_asset_scripts.each do |script|
-        page.evaluate("#{script}\ntrue")
+    def inject_vendor_assets(page)
+      VENDOR_ASSET_PATHS.each do |relative_path|
+        page.add_script_tag(path: asset_path(relative_path))
+      end
+    end
+
+    def inject_vendor_assets_inline(page)
+      inline_asset_scripts.first(2).zip(VENDOR_GLOBAL_NAMES).each do |script, global_name|
+        page.evaluate(<<~JAVASCRIPT)
+          (() => {
+            #{script}
+            window.#{global_name} = #{global_name};
+            return true;
+          })()
+        JAVASCRIPT
       end
     end
 
@@ -52,14 +68,14 @@ module FetchUtil
       original_timeout = page.timeout if timeout_supported
       page.timeout = [original_timeout.to_f, 60].max if timeout_supported
 
-      inject_assets(page)
+      inject_vendor_assets(page)
       page.evaluate(extraction_call)
     rescue Ferrum::TimeoutError
       begin
         page.evaluate("window.stop && window.stop()")
       rescue Ferrum::Error
       end
-      inject_assets_inline(page)
+      inject_vendor_assets_inline(page)
       page.evaluate(extraction_call)
     ensure
       restore_page_timeout(page, original_timeout) if timeout_supported
@@ -72,7 +88,29 @@ module FetchUtil
     end
 
     def extraction_call
-      @extraction_call ||= "window.FetchUtilExtract.extract(#{JSON.generate(reader_mode: @reader_mode)})"
+      @extraction_call ||= begin
+        options = JSON.generate(reader_mode: @reader_mode)
+        <<~JAVASCRIPT
+          (() => {
+            let __fetchUtilPrivateApi = null;
+            const __fetchUtilDeliverExtractApi = api => { __fetchUtilPrivateApi = api; };
+            #{private_asset_script}
+            if (!__fetchUtilPrivateApi || typeof __fetchUtilPrivateApi.extract !== "function") return null;
+            return __fetchUtilPrivateApi.extract(#{options});
+          })()
+        JAVASCRIPT
+      end
+    end
+
+    def private_asset_script
+      @private_asset_script ||= begin
+        source = inline_asset_scripts.last
+        marker_index = source.index(PRIVATE_DELIVERY_SENTINEL)
+        duplicate_index = source.index(PRIVATE_DELIVERY_SENTINEL, marker_index.to_i + PRIVATE_DELIVERY_SENTINEL.length)
+        raise ExtractionError, "Private extraction delivery sentinel is missing or duplicated" if marker_index.nil? || duplicate_index
+
+        source.sub(PRIVATE_DELIVERY_SENTINEL, "__fetchUtilDeliverExtractApi").freeze
+      end
     end
 
     def inline_asset_scripts
