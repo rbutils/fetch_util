@@ -53,8 +53,9 @@ function readerBylineSourceAuthorLink(content, metadataByline) {
   }
   var links = [];
   var ambiguousIdentity = false;
-  Array.prototype.forEach.call(root.querySelectorAll("a[rel~='author'][href][title]"), function(link) {
+  Array.prototype.forEach.call(root.querySelectorAll("a[href]"), function(link) {
     if (elementVisuallyHidden(link) || link.closest("nav, footer, aside")) return false;
+    if (link.closest("[hidden], [aria-hidden='true']")) return false;
     if (link.closest("article") !== root) return null;
     if (!(link.compareDocumentPosition(context.firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
     var owner = link.parentElement;
@@ -65,7 +66,11 @@ function readerBylineSourceAuthorLink(content, metadataByline) {
     var sourceName = sanitizeByline(link.textContent);
     var compactSourceName = sourceName.replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
     var sameName = sourceName.toLowerCase() === metadataName.toLowerCase();
-    if (sanitizeByline(link.getAttribute("title")) !== metadataName || (!sameName && compactSourceName !== initials)) return null;
+    var titledIdentity = link.matches("[rel~='author'][title]") &&
+      sanitizeByline(link.getAttribute("title")) === metadataName &&
+      (sameName || compactSourceName === initials);
+    var localizedIdentity = sameName && localizedAuthorMetadataOwner(link, root) && localizedAuthorLinkContext(link, root);
+    if (!titledIdentity && !localizedIdentity) return null;
     var url = materializedHttpUrl(link.getAttribute("href"));
     if (!url || new URL(url).origin !== location.origin) {
       ambiguousIdentity = true;
@@ -126,10 +131,24 @@ function readerBylineHtmlHidden(link, root) {
   return false;
 }
 
+function readerBylineHtmlContentArticles(root) {
+  return Array.prototype.filter.call(root.querySelectorAll("article"), function(article) {
+    for (var owner = article; owner && owner !== root; owner = owner.parentElement) {
+      if (relatedMetadataOwner(owner)) return false;
+    }
+    return true;
+  });
+}
+
 function readerBylineHtmlHasAuthor(root, author) {
   var names = [author.name].concat(author.sourceNames || []).map(function(name) { return normalizeText(name).toLowerCase(); });
-  return Array.prototype.some.call(root.querySelectorAll("a[rel~='author'][href]"), function(link) {
+  var contentArticles = readerBylineHtmlContentArticles(root);
+  var contentArticle = contentArticles.length === 1 ? contentArticles[0] : null;
+  return Array.prototype.some.call(root.querySelectorAll("a[href]"), function(link) {
     if (readerBylineHtmlHidden(link, root) || link.closest("nav, footer, aside")) return false;
+    var linkArticle = link.closest("article");
+    if (contentArticles.length > 1 && linkArticle) return false;
+    if (contentArticle && linkArticle !== contentArticle) return false;
     for (var owner = link.parentElement; owner; owner = owner.parentElement) {
       if (relatedMetadataOwner(owner)) return false;
       if (owner === root) break;

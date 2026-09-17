@@ -92,7 +92,7 @@ function localizedAuthorProfilePath(href) {
     var segments = url.pathname.split("/").filter(Boolean).map(function(segment) {
       return decodeURIComponent(segment).toLowerCase();
     });
-    var authorRoutes = ["author", "authors", "autoren", "autor", "autores", "auteur"];
+    var authorRoutes = ["author", "authors", "autoren", "autor", "autores", "autori", "auteur"];
     var routeIndex = segments.findIndex(function(segment) {
       return authorRoutes.indexOf(segment) !== -1;
     });
@@ -125,6 +125,15 @@ function relatedMetadataOwner(node) {
   return /\b(?:related|recommended|recommendations?|trending|popular)\b|\bmore\s+stories\b/.test(attrs);
 }
 
+function localizedAuthorMetadataOwner(node, root) {
+  for (var owner = node && node.parentElement; owner && owner !== root; owner = owner.parentElement) {
+    if (relatedMetadataOwner(owner)) return false;
+    var attrs = visibleMetadataOwnerText(owner);
+    if (/\b(?:author|byline|credit|contributor|reporter|writer)\b/.test(attrs)) return true;
+  }
+  return false;
+}
+
 function localizedAuthorLinkContext(node, root) {
   if (!node || elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return false;
   if (!localizedAuthorProfilePath(node.getAttribute("href") || "")) return false;
@@ -132,12 +141,10 @@ function localizedAuthorLinkContext(node, root) {
   var parent = node.parentElement;
   if (!parent) return false;
   var directArticleChild = parent === root && root.matches("article");
-  var metadataOwner = false;
+  var metadataOwner = localizedAuthorMetadataOwner(node, root);
   var ancestor = parent;
   while (ancestor && ancestor !== root) {
-    var attrs = visibleMetadataOwnerText(ancestor);
     if (relatedMetadataOwner(ancestor)) return false;
-    if (/\b(?:author|byline|credit|contributor|reporter|writer|metadata|meta)\b/.test(attrs)) metadataOwner = true;
     ancestor = ancestor.parentElement;
   }
 

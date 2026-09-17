@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve a visible focal article's exact localized author-profile destination when reader mode keeps the author name but omits its locally owned link.
 - Remove exact terminal `news-box` link collections during final article rendering only when a multilingual recommendation heading and substantial focal prose prove related-news ownership, while preserving source-owned prose, resources, structured content, nested articles, and nonterminal sections.
 - Keep multi-section or otherwise proved portal root lists distinct from newsletter or digest formats.
 - Handle Hindustan Times articles through shared reader extraction while preserving their visible byline and publication time.

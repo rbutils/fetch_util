@@ -101,6 +101,23 @@ RSpec.describe 'reader byline priority' do
     end
   end
 
+  it 'preserves an exact locally owned author destination omitted by reader mode' do
+    html = fixture_contents(File.expand_path('../../fixtures/blic_article.html', __dir__))
+           .gsub('Teodora Boskovski', 'Alice Brown')
+           .sub('/autori/teodora-boskovski', '/autori/alice-brown')
+
+    with_url_page('https://example.de/culture/local-author', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect(payload).to include('byline' => 'Alice Brown', 'readerMode' => true)
+      expect(payload['markdown']).to include('[Alice Brown](https://example.de/autori/alice-brown)')
+      expect(payload['markdown'].scan('https://example.de/autori/alice-brown').length).to eq(1)
+      expect(payload['html']).to include('href="https://example.de/autori/alice-brown" rel="author"')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'preserves meaningful visible bylines and mononyms' do
     meaningful = reader_byline_article(metadata_author: 'Structured Reporter Name', visible_author: 'News Desk')
     mononym = reader_byline_article(metadata_author: 'Cher', visible_author: 'AB')
@@ -234,6 +251,48 @@ RSpec.describe 'reader byline priority' do
     expect(source_reader_author(late, content, metadata_name)).to be_nil
   end
 
+  it 'requires exact local author ownership for unmarked localized links' do
+    metadata_name = 'Alice Brown'
+    paragraph_one = 'The selected report contains independently verified details about its subject and public impact for every participating community.'
+    paragraph_two = 'A second substantial paragraph establishes the same focal article without relying on unrelated author metadata or nearby modules.'
+    content = {
+      'html' => "<p>#{paragraph_one}</p><p>#{paragraph_two}</p>",
+      'textContent' => "#{paragraph_one} #{paragraph_two}",
+      'byline' => metadata_name
+    }
+    article = lambda do |author_markup|
+      <<~HTML
+        <main><article><h1>Selected report</h1>
+          #{author_markup}
+          <p>#{paragraph_one}</p><p>#{paragraph_two}</p>
+        </article></main>
+      HTML
+    end
+
+    valid = '<div class="article-author"><a href="/autori/alice-brown">Alice Brown</a></div>'
+    expect(source_reader_author(article.call(valid), content, metadata_name)).to include(
+      'name' => metadata_name,
+      'url' => 'https://example.de/autori/alice-brown'
+    )
+
+    controls = {
+      'missing metadata owner' => '<div><a href="/autori/alice-brown">Alice Brown</a></div>',
+      'body prose link' => '<p>Read more from <a href="/autori/alice-brown">Alice Brown</a> in the complete archive.</p>',
+      'name mismatch' => '<div class="article-author"><a href="/autori/alice-brown">Alicia Brown</a></div>',
+      'related owner' => '<div class="related article-author"><a href="/autori/alice-brown">Alice Brown</a></div>',
+      'nested article' => '<div class="article-author"><article><a href="/autori/alice-brown">Alice Brown</a></article></div>',
+      'hidden link' => '<div class="article-author"><a hidden href="/autori/alice-brown">Alice Brown</a></div>',
+      'aria-hidden link' => '<div class="article-author"><a aria-hidden="true" href="/autori/alice-brown">Alice Brown</a></div>',
+      'cross-origin link' => '<div class="article-author"><a href="https://authors.example.net/autori/alice-brown">Alice Brown</a></div>',
+      'credential link' => '<div class="article-author"><a href="https://user:secret@example.de/autori/alice-brown">Alice Brown</a></div>',
+      'missing slug' => '<div class="article-author"><a href="/autori">Alice Brown</a></div>',
+      'directory slug' => '<div class="article-author"><a href="/autori/directory">Alice Brown</a></div>'
+    }
+    controls.each do |label, markup|
+      expect(source_reader_author(article.call(markup), content, metadata_name)).to be_nil, label
+    end
+  end
+
   it 'expands initials across a lowercase particle joined to a surname' do
     html = reader_byline_article(metadata_author: "Jean d'Arc", visible_author: 'JA')
 
@@ -294,6 +353,15 @@ RSpec.describe 'reader byline priority' do
 
     expect(rendered_reader_author?(related_html, { 'name' => 'Alice Brown', 'url' => url })).to be(false)
     expect(rendered_reader_author?(related_html + retained_html, { 'name' => 'Alice Brown', 'url' => url })).to be(true)
+    expect(rendered_reader_author?("<p><a href=\"#{url}\">Alice Brown</a></p>", { 'name' => 'Alice Brown', 'url' => url })).to be(true)
+
+    nested_related = "<article><h1>Original article</h1><p>#{body}</p>" \
+                     "<article class=\"related\"><a href=\"#{url}\">Alice Brown</a></article></article>"
+    nested_result = supplemented_reader_byline(
+      { 'html' => nested_related, 'markdown' => "# Original article\n\n#{body}", 'textContent' => body },
+      { 'name' => 'Alice Brown', 'url' => url }
+    )
+    expect(nested_result.dig('result', 'html').scan(url).length).to eq(2)
 
     result = supplemented_reader_byline(
       {
