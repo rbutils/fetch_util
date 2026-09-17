@@ -77,8 +77,129 @@ function articleAudioPromptNode(node) {
   return /^(?:(?:listen(?:\s+to)?|play|slu[sš]aj)\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)|read\s+(?:(?:(?:this|the)\s+)?(?:article|story|news|report|vest)\s+aloud|(?:it\s+)?aloud\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)))[.!]?$/i.test(text);
 }
 
+function articlePlaceholderOwner(node, context) {
+  var path = [];
+  var current = node;
+  var owner = null;
+  while (current && current.nodeType === 1) {
+    if (context && context.owners.has(current)) {
+      owner = context.owners.get(current);
+      break;
+    }
+    path.push(current);
+    if (current.tagName === "ARTICLE") {
+      owner = current;
+      break;
+    }
+    var itemprop = String(current.getAttribute("itemprop") || "").toLowerCase().split(/\s+/);
+    if (itemprop.indexOf("articlebody") !== -1) {
+      owner = current;
+      break;
+    }
+    current = current.parentElement;
+  }
+  if (context) path.forEach(function(ancestor) { context.owners.set(ancestor, owner); });
+  return owner;
+}
+
+function articlePlaceholderSourceNode(node, context) {
+  if (!node || !context) return null;
+  var anchors = [node].concat(Array.from(node.querySelectorAll("[id]"))).filter(function(child) {
+    return !!String(child.getAttribute("id") || "");
+  });
+  if (!anchors.length || anchors.some(function(anchor) {
+    var sources = context.sourcesById.get(anchor.getAttribute("id")) || [];
+    return sources.length !== 1;
+  })) return null;
+
+  for (var i = 0; i < anchors.length; i += 1) {
+    var cloneAnchor = anchors[i];
+    var source = context.sourcesById.get(cloneAnchor.getAttribute("id"))[0];
+    var clone = cloneAnchor;
+    while (clone && clone !== node && source) {
+      clone = clone.parentElement;
+      source = source.parentElement;
+    }
+    if (clone !== node || !source || source === node || !source.isConnected) continue;
+    if (!source.isEqualNode(node)) continue;
+    if ([source].concat(Array.from(source.querySelectorAll("*"))).some(function(child) {
+      return !!composedDomShadowRoot(child) || String(child.localName || "").indexOf("-") !== -1;
+    })) continue;
+    return source;
+  }
+  return null;
+}
+
+function articlePlaceholderHasGeneratedVisual(source) {
+  var view = source && source.ownerDocument && source.ownerDocument.defaultView;
+  if (!source || !view || !view.getComputedStyle) return true;
+
+  return [source].concat(Array.from(source.querySelectorAll("div, span"))).some(function(child) {
+    try {
+      if (normalizeText(child.innerText || "") || child.shadowRoot) return true;
+      var rect = child.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) return true;
+      var style = view.getComputedStyle(child);
+      if (style && [style.backgroundImage, style.maskImage, style.borderImageSource, style.listStyleImage].some(function(value) {
+        return value && value !== "none";
+      })) return true;
+      if (style && [style.boxShadow, style.filter].some(function(value) {
+        return value && value !== "none";
+      })) return true;
+      if (style && style.outlineStyle && style.outlineStyle !== "none" && parseFloat(style.outlineWidth || "0") > 0) return true;
+      return ["::before", "::after", "::marker"].some(function(pseudo) {
+        var pseudoStyle = view.getComputedStyle(child, pseudo);
+        var content = pseudoStyle && String(pseudoStyle.content || "");
+        return !!(content && content !== "none" && content !== "normal");
+      });
+    } catch (_error) {
+      return true;
+    }
+  });
+}
+
+function articlePlaceholderReferenced(node, context) {
+  if (context.uncertain) return true;
+  return [node].concat(Array.from(node.querySelectorAll("[id]"))).some(function(child) {
+    var id = String(child.getAttribute("id") || "");
+    return !!id && context.referencedIds.has(id);
+  });
+}
+
+function articleEmptyAdPlaceholderNode(node, context) {
+  if (!node || !node.matches || !node.matches("[data-placeholder-caption]")) return false;
+  if (context.nestedPlaceholders.has(node) || !articlePlaceholderOwner(node, context)) return false;
+  if (!/^(?:div|span)$/i.test(String(node.localName || ""))) return false;
+  if (String(node.localName || "").indexOf("-") !== -1 || normalizeText(node.textContent || "")) return false;
+
+  var descendants = [node].concat(Array.from(node.querySelectorAll("*")));
+  if (node.querySelector("[data-placeholder-caption]")) return false;
+  if (descendants.some(function(child) {
+    if (!/^(?:div|span)$/i.test(String(child.localName || ""))) return true;
+    return Array.from(child.attributes || []).some(function(attribute) {
+      return !/^(?:id|class|data-placeholder-caption)$/i.test(attribute.name);
+    });
+  })) return false;
+  var source = articlePlaceholderSourceNode(node, context);
+  if (!source || articlePlaceholderHasGeneratedVisual(source) || articlePlaceholderReferenced(node, context)) return false;
+
+  return descendants.some(function(child) {
+    return articleAdStructureTokens(child).some(function(token) {
+      return /^(?:ad|ads|advert|advertisement)$/.test(token);
+    });
+  });
+}
+
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
+  var placeholders = Array.from(root.querySelectorAll("[data-placeholder-caption]"));
+  if (root.matches && root.matches("[data-placeholder-caption]")) placeholders.unshift(root);
+  var placeholderContext = placeholders.length ? articlePlaceholderContext(document) : null;
+  if (placeholderContext) placeholderContext.nestedPlaceholders = articleNestedPlaceholderNodes(root);
+  placeholders.forEach(function(node) {
+    if (articleEmptyAdPlaceholderNode(node, placeholderContext)) node.remove();
+  });
+
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
     if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node)) node.remove();
   });

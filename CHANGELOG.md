@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove only structurally empty article ad placeholders while preserving referenced, styled, shadow-owned, nested, or otherwise material content and the source DOM.
 - Record scripted and declarative shadow roots so generic composed-DOM extraction preserves visible closed-component content without mutating source DOM.
 - Invoke the browser extraction bundle through a private evaluated API so page-owned compatibility globals cannot intercept extraction options.
 - Remove only bounded imperative prompts from exact article audio-player components while preserving episode titles, transcripts, media, controls, and source DOM.
