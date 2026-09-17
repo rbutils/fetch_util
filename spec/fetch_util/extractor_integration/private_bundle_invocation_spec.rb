@@ -23,6 +23,16 @@ RSpec.describe FetchUtil::Extractor, 'private bundle invocation' do
     HTML
   end
 
+  it 'retains the standalone trailer used by direct probe instrumentation' do
+    root = File.expand_path('../../..', __dir__)
+    entries = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject do |entry|
+      entry.empty? || entry.start_with?('#')
+    end
+    source = entries.map { |entry| File.read(File.join(root, 'websieve', entry)) }.join("\n")
+
+    expect(source.rstrip).to end_with('})(window);')
+  end
+
   it 'does not publish extraction options through a page-owned global API' do
     with_url_page('https://bulletin.example/private', hostile_global_html) do |page|
       before = page.evaluate('document.body.outerHTML')
