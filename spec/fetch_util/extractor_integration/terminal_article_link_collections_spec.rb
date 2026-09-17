@@ -6,7 +6,7 @@ require 'support/extractor_integration_helpers'
 RSpec.describe 'terminal article link collection cleanup', :extractor_integration do
   include_context 'extractor integration helpers'
 
-  def extract_with_dom_observation(page)
+  def extract_with_dom_observation(page, reader_mode: true)
     source_body = page.evaluate('document.body.outerHTML')
     extractor_for(true).__send__(:inject_assets, page)
     before = page.evaluate('document.documentElement.outerHTML')
@@ -41,7 +41,7 @@ RSpec.describe 'terminal article link collection cleanup', :extractor_integratio
       };
       let payload;
       try {
-        payload = window.FetchUtilExtract.extract({reader_mode: true});
+        payload = window.FetchUtilExtract.extract({reader_mode: #{reader_mode}});
       } finally {
         Element.prototype.setAttribute = originalSetAttribute;
         Element.prototype.remove = originalRemove;
@@ -93,6 +93,35 @@ RSpec.describe 'terminal article link collection cleanup', :extractor_integratio
       expect(payload.fetch('html')).not_to include('data-fetchutil-terminal-article-links')
       expect(marked_markers).to include(a_string_matching(/\A[0-9a-f]{32}\z/))
       expect(removed_markers).to include(a_string_matching(/\A[0-9a-f]{32}\z/))
+      expect(mutations).to eq([])
+      expect(after).to eq(before)
+      expect(final_body).to eq(source_body)
+    end
+  end
+
+  it 'applies the same terminal collection proof when reader mode is disabled' do
+    html = <<~HTML
+      <html><body><main><article>
+        <h1>Fallback transport report</h1>
+        #{body}
+        <section class="news-box"><h2>Latest news</h2>
+          <a href="/news/fallback-related">Fallback related story</a>
+        </section>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://example.test/news/fallback-transport-report', html) do |page|
+      payload, mutations, before, after, removed_markers,
+        source_body, final_body, marked_markers = extract_with_dom_observation(page, reader_mode: false)
+
+      expect(payload).to include('contentType' => 'article', 'readerMode' => false, 'hostAware' => false)
+      expect(payload.fetch('markdown')).to include('The final paragraph closes the report')
+      expect(payload.fetch('markdown')).not_to include('Latest news', 'Fallback related story')
+      expect(payload.fetch('html')).not_to include('/news/fallback-related', 'data-fetchutil-terminal-article-links')
+      expect(payload.fetch('textContent')).not_to include('Fallback related story')
+      expect(marked_markers).to include(a_string_matching(/\A[0-9a-f]{32}\z/))
+      expect(removed_markers).to include(a_string_matching(/\A[0-9a-f]{32}\z/))
+      expect(removed_markers & marked_markers).not_to be_empty
       expect(mutations).to eq([])
       expect(after).to eq(before)
       expect(final_body).to eq(source_body)

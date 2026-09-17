@@ -125,8 +125,12 @@
       return current;
     }, null);
 
-    var node = best && best.score > -Infinity ? best.node : document.body;
-    var clone = cleanClone(visibilityPrunedClone(node, document));
+    var selected = best && best.score > -Infinity ? best : null;
+    var node = selected ? selected.node : document.body;
+    var visibleNode = selected ? selected.visibleNode : visibleBody;
+    var markedVisibleNode = safeDeepClone(visibleNode, document);
+    markTerminalArticleLinkCollections(markedVisibleNode);
+    var clone = cleanClone(markedVisibleNode);
     var comments = fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "";
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
