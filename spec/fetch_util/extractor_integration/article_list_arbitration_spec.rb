@@ -115,7 +115,7 @@ RSpec.describe 'FetchUtil article/list arbitration' do
   end
 
   def extract_with_readability_root(page, root_expression)
-    extract_payload(page)
+    extractor_for(true).__send__(:inject_assets, page)
     page.evaluate <<~JS
       (() => {
         const NarrowReadability = function() {};
