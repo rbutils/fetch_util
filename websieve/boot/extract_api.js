@@ -86,7 +86,7 @@
           content = interstitial;
         } else if (interstitial && interstitialType === "consent_wall") {
           // Try real extraction — consent wall may have been dismissed
-          var realContent = readableOrFallbackContent(options);
+          var realContent = readableOrFallbackContent(options, metadata);
           var realText = normalizeText((realContent && realContent.markdown) || (realContent && realContent.textContent) || "").toLowerCase();
           // Use real content if it's substantial and not consent-dominated
           if (realContent && realText.length > 500 && !consentWallDominates(realText)) {
@@ -112,7 +112,7 @@
         content = pressReleaseContent(metadata);
       }
       if (!content) {
-        content = readableOrFallbackContent(options);
+        content = readableOrFallbackContent(options, metadata);
       }
       if (provisionalHomepageContent) provisionalHomepageAlternative = content;
 

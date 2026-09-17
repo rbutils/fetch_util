@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve collected site metadata in shared fallback article extraction instead of replacing it with the request hostname.
 - Remove only structurally empty article ad placeholders while preserving referenced, styled, shadow-owned, nested, or otherwise material content and the source DOM.
 - Record scripted and declarative shadow roots so generic composed-DOM extraction preserves visible closed-component content without mutating source DOM.
 - Invoke the browser extraction bundle through a private evaluated API so page-owned compatibility globals cannot intercept extraction options.

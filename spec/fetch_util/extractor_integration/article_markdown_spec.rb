@@ -3,6 +3,53 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
+  it "preserves collected site metadata in fallback article extraction" do
+    body = ("Detailed reporting preserves the publication identity while explaining the public record. " * 8).strip
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Fallback metadata report</title>
+          <meta property="og:site_name" content="Reports Journal">
+        </head>
+        <body><main><article><h1>Fallback metadata report</h1><p>#{body}</p></article></main></body>
+      </html>
+    HTML
+
+    source_snapshot = lambda do |page|
+      page.evaluate(<<~JS)
+        (() => {
+          const head = document.head.cloneNode(true);
+          head.querySelectorAll("script").forEach((node) => node.remove());
+          return {
+            htmlAttributes: Array.from(document.documentElement.attributes).map((attribute) => [attribute.name, attribute.value]),
+            head: head.innerHTML,
+            body: document.body.outerHTML
+          };
+        })()
+      JS
+    end
+
+    with_url_page("https://reports.example/story", html) do |page|
+      before = source_snapshot.call(page)
+      payload = extract_payload(page, reader_mode: false)
+
+      expect(payload).to include(
+        "siteName" => "Reports Journal",
+        "contentType" => "article",
+        "readerMode" => false
+      )
+      expect(payload.fetch("markdown")).to include("Detailed reporting preserves the publication identity")
+      expect(source_snapshot.call(page)).to eq(before)
+    end
+
+    without_site_name = html.sub('<meta property="og:site_name" content="Reports Journal">', '')
+    with_url_page("https://reports.example/story", without_site_name) do |page|
+      before = source_snapshot.call(page)
+      expect(extract_payload(page, reader_mode: false)).to include("siteName" => "reports.example")
+      expect(source_snapshot.call(page)).to eq(before)
+    end
+  end
+
   it "converts tables into markdown instead of raw html" do
     html = <<~HTML
       <html>

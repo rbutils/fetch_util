@@ -14,10 +14,10 @@ function sanitizeByline(raw) {
   return text;
 }
 
-function readableOrFallbackContent(options) {
+function readableOrFallbackContent(options, metadata) {
   var content = options && options.reader_mode !== false ? readabilityContent() : null;
-  if (content) content = preferFallbackContent(content, fallbackContent());
-  if (!content) content = fallbackContent();
+  if (content) content = preferFallbackContent(content, fallbackContent(metadata));
+  if (!content) content = fallbackContent(metadata);
   return content;
 }
 

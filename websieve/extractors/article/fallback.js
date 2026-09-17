@@ -73,7 +73,7 @@
     return { recordsByVisibleNode: recordsByVisibleNode, containedByNode: containedByNode };
   }
 
-  function fallbackContent() {
+  function fallbackContent(metadata) {
     if (commentOnlyRoot(document.body) && !fallbackFocalArticleRoot(document.body)) return nonArticleContent();
     var legalProvision = legalProvisionContent();
     if (legalProvision) return legalProvision;
@@ -143,7 +143,7 @@
       title: document.title,
       byline: null,
       excerpt: text.slice(0, 280) || null,
-      siteName: location.hostname,
+      siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,
       html: clone.innerHTML,
       textContent: text,
