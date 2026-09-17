@@ -65,10 +65,22 @@ function articleAudioFallbackNode(node) {
   return englishFallback.test(text) || germanFallback.test(text);
 }
 
+function articleAudioPromptNode(node) {
+  if (!node || !node.matches || !node.closest("article, [itemprop~='articleBody' i]")) return false;
+  if (!node.matches("[class~='audio-player' i], [id='audio-player' i], [data-component='audio-player' i], [data-testid='audio-player' i], [data-role='audio-player' i]")) return false;
+  if (String(node.localName || "").indexOf("-") !== -1 || node.children.length !== 1) return false;
+
+  var title = node.firstElementChild;
+  if (!title || !title.matches("[class~='audio-player--title' i], [data-role='audio-player-title' i]") || title.children.length) return false;
+  var text = normalizeText(title.textContent || "");
+  if (!text || text.length > 80) return false;
+  return /^(?:(?:listen(?:\s+to)?|play|slu[sš]aj)\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)|read\s+(?:(?:(?:this|the)\s+)?(?:article|story|news|report|vest)\s+aloud|(?:it\s+)?aloud\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)))[.!]?$/i.test(text);
+}
+
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
-    if (articleAudioControlNode(node) || articleAudioFallbackNode(node)) node.remove();
+    if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node)) node.remove();
   });
 
   root.querySelectorAll(".article-call-to-action, .article-cta, [data-role='article-call-to-action']").forEach(function(node) {

@@ -128,9 +128,32 @@ RSpec.describe "generic article audio-control cleanup" do
     expect(cleaned).to include("Public investigation", "Article paragraph 3")
   end
 
+  it "removes bounded article audio prompts in fallback extraction" do
+    widgets = <<~HTML
+      <div class="audio-player"><div class="audio-player--title">Slušaj vest</div></div>
+      <div data-component="audio-player"><div data-role="audio-player-title">Listen to this article</div></div>
+      <div data-testid="audio-player"><div class="audio-player--title">Read this story aloud</div></div>
+      <div id="audio-player"><div class="audio-player--title">Listen to the report</div></div>
+    HTML
+    html = article_with_audio_widgets(widgets)
+
+    with_url_page("https://news.example.test/fallback-audio-prompt", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page, reader_mode: false)
+
+      expect(payload).to include("contentType" => "article", "readerMode" => false)
+      expect(payload.fetch("markdown")).to include("Public investigation", "Article paragraph 3")
+      expect(payload.fetch("markdown")).not_to include(
+        "Slušaj vest", "Listen to this article", "Read this story aloud", "Listen to the report"
+      )
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
   it "preserves durationless labels, transcripts, media, and browser prose" do
     widgets = <<~HTML
       <div class="audio-player">Listen to this investigation</div>
+      <div class="audio-player">Listen to this article</div>
       <div class="audio-player">This browser audio investigation does not misrepresent sources.</div>
       <div class="audio-player">Your browser does not support audio playback. The transcript explains the accessibility impact.</div>
       <span class="audio-player">Ihr Browser kann dieses Tondokument nicht wiedergeben. Das Interview wird unten vollständig transkribiert.</span>
@@ -140,11 +163,18 @@ RSpec.describe "generic article audio-control cleanup" do
       <div class="audio-player"><audio controls src="/investigation.mp3"></audio></div>
       <p class="audio-player">This browser audio investigation explains accessibility in detail.</p>
       <div class="audio-player"><button>Play this browser audio report</button></div>
+      <div class="audio-player"><div class="audio-player--title">Episode 47: Public investigation</div></div>
+      <div class="audio-player"><div class="audio-player--title"><span>Listen to this report</span></div></div>
+      <div class="audio-player-shell"><div class="audio-player--title">Listen to this article</div></div>
+      <div data-component="audio-player-shell"><div class="audio-player--title">Play this story</div></div>
+      <div data-testid="news-audio-player"><div class="audio-player--title">Read news aloud</div></div>
+      <div class="audio-player"><div class="audio-player--title">Listen to this news</div><button>Play</button></div>
     HTML
 
     cleaned = cleaned_article_widgets(article_with_audio_widgets(widgets))
     expect(cleaned).to include(
       "Listen to this investigation",
+      "Listen to this article",
       "does not misrepresent sources",
       "transcript explains the accessibility impact",
       "vollständig transkribiert",
@@ -153,7 +183,13 @@ RSpec.describe "generic article audio-control cleanup" do
       "Read the browser audio transcript",
       "investigation.mp3",
       "explains accessibility",
-      "Play this browser audio report"
+      "Play this browser audio report",
+      "Episode 47: Public investigation",
+      "Listen to this report",
+      "audio-player-shell",
+      "Play this story",
+      "Read news aloud",
+      "Listen to this news"
     )
   end
 
@@ -163,6 +199,7 @@ RSpec.describe "generic article audio-control cleanup" do
         <h1>Podcast catalog</h1>
         <div class="audio-player-controls">Catalog duration 08:15</div>
         <div class="audio-player">Your browser does not support audio playback.</div>
+        <div class="audio-player"><div class="audio-player--title">Listen to this article</div></div>
         <p>This catalog introduction remains visible outside a focal article owner.</p>
       </main>
     HTML
@@ -170,6 +207,7 @@ RSpec.describe "generic article audio-control cleanup" do
     expect(cleaned_article_widgets(html)).to include(
       "Catalog duration 08:15",
       "Your browser does not support audio playback",
+      "Listen to this article",
       "catalog introduction"
     )
   end

@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove only bounded imperative prompts from exact article audio-player components while preserving episode titles, transcripts, media, controls, and source DOM.
 - Apply proved terminal article-recommendation cleanup to shared fallback extraction when reader mode is disabled.
 - Preserve a visible focal article's exact localized author-profile destination when reader mode keeps the author name but omits its locally owned link.
 - Remove exact terminal `news-box` link collections during final article rendering only when a multilingual recommendation heading and substantial focal prose prove related-news ownership, while preserving source-owned prose, resources, structured content, nested articles, and nonterminal sections.
