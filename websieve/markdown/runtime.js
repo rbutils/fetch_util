@@ -25,6 +25,7 @@
     cleanupAgentRoot(root);
     normalizeCodeBlocks(root);
     unwrapWrapperDivs(root);
+    separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root);
 
     var service = new TurndownService({
@@ -181,6 +182,65 @@
       })) return;
       link.appendChild(document.createTextNode(label));
     });
+  }
+
+  function separateAdjacentInlineLinks(root) {
+    root.querySelectorAll("a + a").forEach(function(link) {
+      var previous = link.previousSibling;
+      if (!previous || previous.nodeType !== Node.ELEMENT_NODE || previous.nodeName !== "A") return;
+      if (link.closest("pre, code, kbd, samp") || previous.closest("pre, code, kbd, samp")) return;
+      if (!adjacentLinkGroupOwnsSpacing(previous, link)) return;
+      var previousLabel = inlineLinkLabel(previous);
+      var linkLabel = inlineLinkLabel(link);
+      if (!previousLabel || !linkLabel) return;
+      if (adjacentTagControlLabel(previousLabel) || adjacentTagControlLabel(linkLabel)) return;
+      if (/^["'“”‘’\-–—,.;:!?…)\]}，．。、；：！？）》】」』]/u.test(linkLabel) || /[(\[{“‘«‹（《【「『]$/u.test(previousLabel)) return;
+      link.parentNode.insertBefore(document.createTextNode(" "), link);
+    });
+  }
+
+  function adjacentLinkGroupOwnsSpacing(previous, link) {
+    var htmlNamespace = "http://www.w3.org/1999/xhtml";
+    if (previous.namespaceURI !== htmlNamespace || link.namespaceURI !== htmlNamespace) return false;
+    if (previous.parentElement !== link.parentElement) return false;
+    if (previous.matches("[rel~='tag' i]") && link.matches("[rel~='tag' i]")) return true;
+
+    if (tagSpacingEvidence(link.parentElement)) return true;
+    return tagSpacingEvidence(previous) && tagSpacingEvidence(link);
+  }
+
+  function tagSpacingEvidence(node) {
+    var evidence = ["class", "id", "data-component", "data-testid"].flatMap(function(attribute) {
+      return String(node.getAttribute(attribute) || "").trim().split(/\s+/).filter(Boolean);
+    });
+    return evidence.some(function(value) {
+      return /^(?:tags?|topics?|categories?|chips?|pills?|tag-list|taglist|tag-cloud|tagcloud|topic-list|topiclist|category-list|category-links|chip-list|chiplist|pill-list|pilllist|article-tags|post-tags|entry-tags|content-tags|story-tags)$/i.test(value);
+    });
+  }
+
+  function adjacentTagControlLabel(label) {
+    var normalized = normalizeText(label).replace(/[.!?…,:;，．。、；：！？]+$/u, "").trim();
+    return /^(?:home|menu|search|sign in|log in|login|register|subscribe|newsletter|learn more|read more|view all|see all|show more|more|next|previous|back|continue|open|close)$/i.test(normalized);
+  }
+
+  function inlineLinkLabel(link) {
+    for (var owner = link; owner; owner = owner.parentElement) {
+      if (owner.matches("[hidden], [aria-hidden='true']")) return "";
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(owner.getAttribute("style") || "")) return "";
+    }
+    var visible = link.cloneNode(true);
+    visible.querySelectorAll("script, style, template, [hidden], [aria-hidden='true']").forEach(function(node) {
+      node.remove();
+    });
+    visible.querySelectorAll("[style]").forEach(function(node) {
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(node.getAttribute("style") || "")) node.remove();
+    });
+    var text = normalizeText(visible.textContent);
+    if (text) return text;
+    var image = Array.prototype.find.call(visible.querySelectorAll("img[alt]"), function(candidate) {
+      return !!normalizeText(candidate.getAttribute("alt"));
+    });
+    return image ? normalizeText(image.getAttribute("alt")) : "";
   }
 
   function preserveInlineProse(root) {
