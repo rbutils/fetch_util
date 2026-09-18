@@ -197,8 +197,8 @@
         var cardRoot = homepageCardRoot(link);
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
-        container = leadDetailRoot(link, container, title);
-        var detailRoot = visibilityPrunedClone(container, document);
+        var recordRoot = leadDetailRoot(link, container, title);
+        var detailRoot = visibilityPrunedClone(recordRoot, document);
         Array.prototype.slice.call(detailRoot.querySelectorAll("h1, h2, h3, h4, a[href]")).forEach(function(node) {
           var text = normalizeText(node.textContent || "");
           if (text === title || leadActionText(text)) node.remove();
@@ -206,7 +206,9 @@
         var detail = searchItemDetail(detailRoot, title);
 
         seen[canonicalUrl] = true;
-        items.push({ text: title, url: url, detail: detail });
+        var item = { text: title, url: url, detail: detail, card: recordRoot, sourceNode: link };
+        addCardContext(item, recordRoot);
+        items.push(item);
       });
 
       var text = normalizeText(root.textContent || "");
