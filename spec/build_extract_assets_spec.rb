@@ -435,9 +435,10 @@ RSpec.describe "extract asset bundle" do
     card_evidence_path = "extractors/lists/generic/card_evidence.js"
     duplicate_metadata_path = "extractors/lists/generic/duplicate_record_metadata.js"
     flat_extraction_path = "extractors/lists/generic/flat_extraction.js"
+    record_fallback_path = "extractors/lists/generic/record_section_fallback.js"
     section_discovery_path = "extractors/lists/generic/section_discovery.js"
     sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, duplicate_metadata_path,
-               flat_extraction_path, section_discovery_path].to_h do |path|
+               flat_extraction_path, record_fallback_path, section_discovery_path].to_h do |path|
       [path, File.read(File.join(source_root, path))]
     end
 
@@ -455,7 +456,8 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, linked_media_path))).to include("listExplicitAdvertisementOwner(row)")
     expect(sources.fetch(dominance_path)).to include("listExplicitAdvertisementOwner(link)")
     expect(sources.fetch(ownership_path)).not_to include("function genericListPresentationCardNode")
-    [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, section_discovery_path].each do |consumer_path|
+    [renderer_path, dominance_path, card_evidence_path, flat_extraction_path, record_fallback_path,
+     section_discovery_path].each do |consumer_path|
       expect(manifest.index(ownership_path)).to be < manifest.index(consumer_path)
     end
     expect(sources.fetch(ownership_path)).to include(
@@ -489,17 +491,32 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
-  it "loads generic list section rendering before section discovery" do
+  it "loads generic list section helpers before section discovery" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     rendering_path = "extractors/lists/generic/section_rendering.js"
+    fallback_path = "extractors/lists/generic/record_section_fallback.js"
     discovery_path = "extractors/lists/generic/section_discovery.js"
     rendering_source = File.read(File.join(source_root, rendering_path))
+    fallback_source = File.read(File.join(source_root, fallback_path))
     discovery_source = File.read(File.join(source_root, discovery_path))
 
     expect(manifest.index(rendering_path)).to be < manifest.index(discovery_path)
+    expect(manifest.index(fallback_path)).to be < manifest.index(discovery_path)
     expect(rendering_source).to include("function sectionedListMarkdownWithDescriptions")
+    expect(fallback_source).to include(
+      "function sectionHeadingLinks",
+      "function sectionRecordDestination",
+      "function simpleRecordCollection",
+      "function sectionRecordCollectionFallback"
+    )
     expect(discovery_source).not_to include("function sectionedListMarkdownWithDescriptions")
+    expect(discovery_source).not_to include(
+      "function sectionHeadingLinks",
+      "function sectionRecordDestination",
+      "function simpleRecordCollection",
+      "function sectionRecordCollectionFallback"
+    )
   end
 
   it "keeps MediaWiki extraction in its canonical CMS owner" do

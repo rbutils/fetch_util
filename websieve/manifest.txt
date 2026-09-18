@@ -93,6 +93,7 @@ extractors/lists/description_parts.js
 extractors/lists/generic/flat_extraction.js
 extractors/lists/generic/heading_context.js
 extractors/lists/generic/section_rendering.js
+extractors/lists/generic/record_section_fallback.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/card_visibility.js
 extractors/lists/core.js
