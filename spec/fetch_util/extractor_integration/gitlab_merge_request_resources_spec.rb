@@ -223,7 +223,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
       'https://forge.example/gitlab/group/project/-/merge_requests/42/reports/codequality/detail' => fixture
     }.each do |url, html|
       extract_from_url(url, html, reader_mode: false) do |payload|
-        expect(payload['siteName']).not_to eq('GitLab')
+        expect(payload['hostAware']).not_to be(true)
       end
     end
   end
