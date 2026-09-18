@@ -14,6 +14,20 @@ function sanitizeByline(raw) {
   return text;
 }
 
+function bylineWithoutPublishedTime(raw, publishedTime, knownByline) {
+  var text = sanitizeByline(raw);
+  var date = normalizeText(publishedTime || "");
+  var known = sanitizeByline(knownByline);
+  if (!text || !date) return text;
+  if (known && text === normalizeText(known + " " + date)) return known;
+  if ((date.match(/\d+/g) || []).length < 2) return text;
+
+  var suffix = date.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*");
+  var prefix = normalizeText(text.replace(new RegExp("\\s*" + suffix + "$", "i"), ""));
+  if (prefix === text) return text;
+  return prefix ? sanitizeByline(prefix) : null;
+}
+
 function readableOrFallbackContent(options, metadata) {
   var content = options && options.reader_mode !== false ? readabilityContent() : null;
   if (content) content = preferFallbackContent(content, fallbackContent(metadata));

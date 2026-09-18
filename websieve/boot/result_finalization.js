@@ -4,6 +4,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = contentWithoutTerminalArticleLinkCollections(content);
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
+  var displayedPublishedTime = visiblePublishedTime();
+  contentByline = bylineWithoutPublishedTime(contentByline, displayedPublishedTime, metadataByline);
+  metadataByline = bylineWithoutPublishedTime(metadataByline, displayedPublishedTime);
   var readerAuthor = content.readerMode ? readerBylineSourceAuthorLink(content, metadataByline) : null;
   var readerTextByline = content.readerMode && !readerAuthor ? readerTextBylineSource(content, metadataByline) : null;
   var expandsByline = readerBylineCanExpand(content, readerAuthor);
@@ -18,7 +21,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     contentByline = null;
   }
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
-  var byline = contentByline || metadataByline || sanitizeByline(visibleByline());
+  var visibleBylineValue = bylineWithoutPublishedTime(visibleByline(), displayedPublishedTime, metadataByline || contentByline);
+  var byline = contentByline || metadataByline || visibleBylineValue;
   var cleanedHtml = sanitizedHtml(content.html);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var markdown = cleanupMarkdownNoise(content.markdown || markdownFor(cleanedHtml || content.html));

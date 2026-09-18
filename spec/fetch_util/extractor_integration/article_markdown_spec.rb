@@ -517,6 +517,83 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not combine a site identity with an adjacent localized publication date" do
+    body = 4.times.map do |index|
+      "<p>Retrospective paragraph #{index + 1} explains the historical event with enough substantive article context for reader extraction.</p>"
+    end.join
+    html = <<~HTML
+      <html lang="et"><head>
+        <title>Täna ajaloos meenutatakse Tartu sündmusi</title>
+        <meta property="og:site_name" content="teadus.postimees.ee">
+        <meta property="article:published_time" content="2017-07-08T08:00:26+03:00">
+      </head><body><main><article>
+        <h1>Täna ajaloos meenutatakse Tartu sündmusi</h1>
+        <div class="authors">
+          <div class="authors__row"><span itemprop="author"><span itemprop="name">teadus.postimees.ee</span></span></div>
+          <div class="article__dates"><span itemprop="datePublished">8. juuli 2026, 06:00</span></div>
+        </div>
+        #{body}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://teadus.postimees.ee/4170789/history", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to eq("teadus.postimees.ee")
+      expect(payload["publishedTime"]).to eq("2017-07-08T08:00:26+03:00")
+      expect(payload["markdown"]).not_to include("teadus.postimees.ee8. juuli")
+    end
+  end
+
+  it "keeps a person byline separate from an adjacent localized publication date" do
+    body = 4.times.map do |index|
+      "<p>Community report paragraph #{index + 1} contains substantive article prose for reader extraction and ownership checks.</p>"
+    end.join
+    html = <<~HTML
+      <html lang="et"><head>
+        <title>Community report documents the regional program</title>
+        <meta property="article:published_time" content="2026-07-08T06:00:00+03:00">
+      </head><body><main><article>
+        <h1>Community report documents the regional program</h1>
+        <div class="authors">
+          <div class="authors__row"><span itemprop="author"><span itemprop="name">Mari Reporter</span></span></div>
+          <div class="article__dates"><span itemprop="datePublished">8. juuli 2026, 06:00</span></div>
+        </div>
+        #{body}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.ee/news/community-report", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to eq("Mari Reporter")
+      expect(payload["publishedTime"]).to eq("2026-07-08T06:00:00+03:00")
+    end
+  end
+
+  it "does not treat a year-like author suffix as a complete publication date" do
+    body = 4.times.map do |index|
+      "<p>Annual report paragraph #{index + 1} contains substantive prose about the organization and its regional public program.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Annual organization report</title></head><body><main><article>
+        <h1>Annual organization report</h1>
+        <div class="authors">
+          <span itemprop="author"><span itemprop="name">Community Studio 2026</span></span>
+          <span itemprop="datePublished">2026</span>
+        </div>
+        #{body}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/reports/annual", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to eq("Community Studio 2026")
+      expect(payload["publishedTime"]).to eq("2026")
+    end
+  end
+
   it "uses localized author-profile destinations as scoped bylines" do
     html = <<~HTML
       <html lang="de">

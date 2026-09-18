@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Keep localized publication dates separate from person or site-identity bylines.
 - Preserve title-owned media resources while stripping generic portal record actions and duplicate title fields.
 - Separate each generic portal record's visibility-pruned supplemental card from its metadata owner so discarded action controls stay removed without losing prose, media, captions, authors, or dates.
 - Preserve visible semantic record collections as lists when some record destinations are intentionally inert, without exposing unsafe links or weakening ordinary record-heading ownership.
