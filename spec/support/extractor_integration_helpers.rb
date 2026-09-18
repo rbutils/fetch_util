@@ -155,6 +155,10 @@ RSpec.shared_context 'extractor integration helpers' do
     extract(page, reader_mode: reader_mode)
   end
 
+  def inject_standalone_extractor(page, reader_mode: true)
+    extractor_for(reader_mode).__send__(:inject_assets, page)
+  end
+
   def extractor_for(reader_mode)
     extractors = RSpec.configuration.instance_variable_get(:@fetch_util_extractors) ||
                  RSpec.configuration.instance_variable_set(:@fetch_util_extractors, {})

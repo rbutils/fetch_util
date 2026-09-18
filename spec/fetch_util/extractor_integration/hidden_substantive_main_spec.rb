@@ -96,7 +96,7 @@ RSpec.describe 'FetchUtil extractor integration - hidden substantive main conten
   end
 
   def extract_with_narrow_reader(page, root_expression: "document.querySelector('#reader-copy')")
-    extract_payload(page)
+    inject_standalone_extractor(page)
     page.evaluate <<~JS
       (() => {
         const NarrowReadability = function() {};

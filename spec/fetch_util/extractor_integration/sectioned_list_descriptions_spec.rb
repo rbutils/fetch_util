@@ -60,7 +60,7 @@ RSpec.describe "Sectioned list descriptions" do
   end
 
   def extract_with_readability_root(page, selector)
-    extract_payload(page)
+    inject_standalone_extractor(page)
     page.evaluate(<<~JS)
       (() => {
         const NarrowReadability = function() {};

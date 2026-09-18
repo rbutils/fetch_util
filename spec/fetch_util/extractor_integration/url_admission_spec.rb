@@ -22,7 +22,7 @@ RSpec.describe 'FetchUtil URL admission boundaries' do
     JS
 
     with_url_page(url, page_html) do |page|
-      extract_payload(page, reader_mode: false)
+      inject_standalone_extractor(page, reader_mode: false)
       return page.evaluate(<<~JS)
         (function () {
           window.registerHostAwareProfile(/producer\.example$/, function () {

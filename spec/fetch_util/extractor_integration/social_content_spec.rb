@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil social result contract' do
   include_context 'extractor integration helpers'
 
   def synthetic_social_payload(page, javascript)
-    extract_payload(page, reader_mode: false)
+    inject_standalone_extractor(page, reader_mode: false)
     page.evaluate("(function() { #{javascript}\nreturn window.FetchUtilExtract.extract({ reader_mode: false }); })()")
   end
 

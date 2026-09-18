@@ -7,7 +7,7 @@ RSpec.describe 'FetchUtil public URL materialization' do
     page_html = '<html><head><title>URL materialization</title></head><body><main>Visible page content</main></body></html>'
 
     with_url_page('https://materialization.example/result', page_html) do |page|
-      extract_payload(page, reader_mode: false)
+      inject_standalone_extractor(page, reader_mode: false)
       return page.evaluate(<<~JS)
         (function () {
           window.registerHostAwareProfile(/materialization\.example$/, function () {
