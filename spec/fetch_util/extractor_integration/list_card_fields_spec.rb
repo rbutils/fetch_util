@@ -60,6 +60,52 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     end
   end
 
+  it "renders a direct record's byline and date once" do
+    records = 4.times.map do |index|
+      <<~HTML
+        <li class="story-row">
+          <a class="copy-container" href="/stories/#{index + 1}">
+            <b class="title">Feature story number #{index + 1}</b>
+            <span class="byline-note">Reporter profile note #{index + 1}</span>
+            <span class="comment-byline">Commenter #{index + 1}</span>
+            <b class="byline">By Shared Desk</b>
+            <b class="time">September 1, 2026 | 4:00pm</b>
+            <span class="timeline">Background timeline note #{index + 1}</span>
+          </a>
+        </li>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Feature stories</title></head><body><main><ul>#{records}</ul></main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const context = FetchUtilListFieldsTest.context();
+          const items = Array.from(document.querySelectorAll('.story-row')).map(card =>
+            FetchUtilListFieldsTest.candidate(card.querySelector('a'), card, context));
+          return {
+            markdown: FetchUtilListFieldsTest.render(items)
+          };
+        })()
+      JAVASCRIPT
+
+      4.times do |index|
+        line = "- [Feature story number #{index + 1}](https://features.example/stories/#{index + 1}) - " \
+               "By Shared Desk - September 1, 2026 | 4:00pm - " \
+               "Reporter profile note #{index + 1} Background timeline note #{index + 1}"
+        expect(result["markdown"].lines.map(&:strip)).to include(line)
+        expect(result["markdown"].scan("Reporter profile note #{index + 1}").length).to eq(1)
+        expect(result["markdown"].scan("Background timeline note #{index + 1}").length).to eq(1)
+        expect(result["markdown"]).not_to include("Commenter #{index + 1}")
+      end
+      expect(result["markdown"].scan("By Shared Desk").length).to eq(4)
+      expect(result["markdown"].scan("September 1, 2026 | 4:00pm").length).to eq(4)
+    end
+  end
+
   it "keeps the focal inner record when removing an earlier wrapper field" do
     html = <<~HTML
       <html><head><title>Learning collections</title></head><body><main>
@@ -69,6 +115,8 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
             <h2><a href="/learn/maps">Learn maps</a></h2>
             <p>Choose projections and build detailed interactive maps for your community.</p>
             <p>Compare historical maps with current land use before publishing your results.</p>
+            <span class="byline">By Cartography Desk</span>
+            <span class="time">September 8, 2026 | 4:00pm</span>
           </div>
           <div class="story-card">Unrelated sibling notes must not replace the selected record.</div>
         </div>
@@ -96,6 +144,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         "Compare historical maps with current land use before publishing your results."
       )
       expect(result["markdown"]).not_to include("Unrelated sibling notes")
+      expect(result["markdown"]).to include("By Cartography Desk", "September 8, 2026 | 4:00pm")
     end
   end
 

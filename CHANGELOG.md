@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Render list-card bylines and exact time fields once when those fields also appear in raw card detail.
 - Keep localized publication dates separate from person or site-identity bylines.
 - Preserve title-owned media resources while stripping generic portal record actions and duplicate title fields.
 - Separate each generic portal record's visibility-pruned supplemental card from its metadata owner so discarded action controls stay removed without losing prose, media, captions, authors, or dates.

@@ -87,7 +87,9 @@
     if (!node || !node.matches) return false;
     if (node.matches("[rel~='author'], [itemprop~='author'], [data-author]")) return true;
     return Array.prototype.some.call(node.classList || [], function(className) {
-      return /(?:^|[-_])(?:author(?:item|link|name)?|byline)(?:$|[-_])/i.test(className);
+      var normalized = className.replace(/([a-z\d])([A-Z])/g, "$1-$2");
+      if (/(?:^|[-_])author(?:item|link|name)?(?:$|[-_])/i.test(normalized)) return true;
+      return /(?:^|[-_])byline(?:$|[-_](?:authors?|names?|links?|credits?|meta|text|label|row|block|wrapper|container|date|info)(?:$|[-_]))/i.test(normalized);
     });
   }
 
@@ -100,7 +102,7 @@
       var names = [candidate.id || ""].concat(Array.from(candidate.classList || []));
       return names.some(function(name) {
         var normalized = String(name).replace(/([a-z])([A-Z])/g, "$1-$2");
-        return /(?:^|[-_])(?:comment(?:s|ers?)?|repl(?:y|ies))(?:$|[-_](?:thread|author|container|list|item|body|section|panel)(?:$|[-_]))/i.test(normalized);
+        return /(?:^|[-_])(?:comment(?:s|ers?)?|repl(?:y|ies))(?:$|[-_](?:thread|author|byline|container|list|item|body|section|panel)(?:$|[-_]))/i.test(normalized);
       });
     }
     var current = node;

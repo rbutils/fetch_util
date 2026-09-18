@@ -34,8 +34,9 @@ function listClonedCardNode(card, clone, node) {
   }, clone);
 }
 
-function listClonedCardFields(card, clone, selector) {
+function listClonedCardFields(card, clone, selector, fieldFilter) {
   var fields = cardOwnedNodes(card, selector);
+  if (fieldFilter) fields = fields.filter(fieldFilter);
   var selectedValue = fields[0] && normalizeText(
     fields[0].getAttribute("datetime") || fields[0].getAttribute("content") || fields[0].textContent || ""
   );
@@ -120,23 +121,30 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
     return nested !== item.contentCard && !nested.contains(item.contentCard) &&
       !item.contentCard.contains(nested) && genericListPresentationCardNode(nested);
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean) : [];
+  var authorFieldSelector = "[rel='author'], [itemprop='author'], [class*='author' i], [class*='byline' i], [data-author]";
   var selectedFields = [
     "[class*='category'], [class*='eyebrow'], [class*='kicker']",
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
-    "[rel='author'], [itemprop='author'], [class*='author' i], [data-author]",
-    "time, [datetime], [class*='timestamp' i], [class*='date' i]",
+    authorFieldSelector,
+    "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]",
     "[class*='score' i], [data-score], [data-karma]",
     ".reply, .replies, .comment, .comments, [class*='reply'], [class*='replie'], [class*='comment']",
     "[class*='community' i], [class*='subreddit' i], [data-community]",
     "figcaption"
   ].reduce(function(fields, selector) {
-    return fields.concat(listClonedCardFields(card, clone, selector));
+    var filter = selector === authorFieldSelector ? function(node) {
+      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
+    } : null;
+    return fields.concat(listClonedCardFields(card, clone, selector, filter));
   }, (item.titleHeadings || []).map(function(heading) {
     return listClonedCardNode(card, clone, heading);
   }));
   pruneListCardVisibility(card, clone);
   selectedFields.forEach(function(field) {
     if (field && field.remove) field.remove();
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll(authorFieldSelector), function(node) {
+    if (genericListAuthorMetadataNode(node) && genericListInteractionOwner(node)) node.remove();
   });
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
     if (nested === contentCard || (!genericListFieldBoundary(nested) &&
@@ -186,9 +194,11 @@ function listItemContextValues(item, primaryUrls) {
     cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
     }) || item.author,
-    cardField(card, "time, [datetime], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
+    cardField(card, "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
     cardField(card, "[class*='score' i], [data-score], [data-karma]", item.url) || item.score,
-    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false) || item.replyCount,
+    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false, function(node) {
+      return !genericListAuthorMetadataNode(node);
+    }) || item.replyCount,
     cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]", item.url) || item.community,
     item.image,
     item.caption
