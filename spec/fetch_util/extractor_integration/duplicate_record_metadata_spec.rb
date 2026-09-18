@@ -191,11 +191,13 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
         })()
       JAVASCRIPT
 
-      expect(authors).to eq([
-        '', '', '', '', '',
-        '[Partner Reporter](https://newsroom.example/authors/partner)',
-        '', ''
-      ])
+      expect(authors).to eq(
+        [
+          '', '', '', '', '',
+          '[Partner Reporter](https://newsroom.example/authors/partner)',
+          '', ''
+        ]
+      )
     end
   end
 
@@ -273,12 +275,14 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
         })()
       JAVASCRIPT
 
-      expect(authors).to eq([
-        '[Casey Reporter](https://newsroom.example/authors/casey)',
-        '', '',
-        '[Library Reporter](https://newsroom.example/authors/library)',
-        ''
-      ])
+      expect(authors).to eq(
+        [
+          '[Casey Reporter](https://newsroom.example/authors/casey)',
+          '', '',
+          '[Library Reporter](https://newsroom.example/authors/library)',
+          ''
+        ]
+      )
     end
   end
 end
