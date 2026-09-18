@@ -61,6 +61,7 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
   it 'removes explicit comment forms and zero-count continuation controls from article clones' do
     comment_ui = <<~HTML
       <div id="comment-form-div" class="comment-form">
+        <h3>Komentari</h3>
         <form><label>Name</label><input><textarea></textarea><button>Post</button></form>
       </div>
       <form class="comment-form">
@@ -70,7 +71,7 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     HTML
 
     extract_comment_cleanup(comment_ui) do |payload, after, before|
-      expect(payload.fetch('markdown')).not_to include('Comments', 'Other comments', 'Name', 'Post')
+      expect(payload.fetch('markdown')).not_to include('Komentari', 'Other comments', 'Name', 'Post')
       expect(payload.fetch('markdown')).not_to include('button-owned.png', 'Button-owned helper media')
       expect(payload.fetch('markdown')).to include('Verified report paragraph 1')
       expect(payload.fetch('readerMode')).to be(false)
@@ -135,6 +136,11 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
         <div>Arbitrary unmarked correction text remains material.</div>
         <label>Layout reply</label><textarea></textarea><button>Post layout reply</button>
       </section>
+      <section class="comment-form">
+        <h2>Comments</h2>
+        <article itemprop="comment"><p>A published comment with a prompt-named heading remains material.</p></article>
+        <form><textarea></textarea><button>Post another comment</button></form>
+      </section>
     HTML
 
     extract_comment_cleanup(controls) do |payload, after, before|
@@ -154,6 +160,8 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
       expect(markdown).to include('An unmarked direct correction remains material.')
       expect(markdown).to include('An unmarked nested correction remains material.')
       expect(markdown).to include('Arbitrary unmarked correction text remains material.')
+      expect(markdown).to include('Comments')
+      expect(markdown).to include('A published comment with a prompt-named heading remains material.')
       expect(markdown).not_to include('Post reply')
       expect(markdown).not_to include('Post another reply', 'Reply again')
       expect(markdown).not_to include('Post nested form reply', 'Nested form reply')
@@ -245,6 +253,17 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     heading_form = clean_comment_ui_root(<<~HTML)
       <form class="comment-form"><h2>Important correction</h2><textarea></textarea></form>
     HTML
+    prompt_heading_form = clean_comment_ui_root(<<~HTML)
+      <div id="comment-form-div"><h2>Leave a reply</h2><form><textarea></textarea></form></div>
+    HTML
+    normalized_prompt_forms = [
+      '<div class="comment-form"><h2>  LEAVE   A REPLY </h2><form><textarea></textarea></form></div>',
+      '<div class="comment-form"><h2>Deixe um comentário</h2><form><textarea></textarea></form></div>',
+      '<div class="comment-form"><h2><span>Комментарии</span></h2><form><textarea></textarea></form></div>'
+    ].map { |html| clean_comment_ui_root(html) }
+    similarly_named_owner = clean_comment_ui_root(<<~HTML)
+      <div class="comment-form-wrapper" id="comment-form-div-preview"><h2>Leave a reply</h2></div>
+    HTML
     media_form = clean_comment_ui_root(<<~HTML)
       <form class="comment-form"><img src="https://reports.example/evidence.png" alt="Evidence"><textarea></textarea></form>
     HTML
@@ -310,6 +329,10 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     expect(heading_form.fetch('clone')).to include('<h2>Important correction</h2>')
     expect(heading_form.fetch('clone')).not_to include('<form', '<textarea')
     expect(heading_form.fetch('sourceUnchanged')).to be(true)
+    expect(prompt_heading_form).to eq('clone' => '<div></div>', 'sourceUnchanged' => true)
+    expect(normalized_prompt_forms).to all(eq('clone' => '<div></div>', 'sourceUnchanged' => true))
+    expect(similarly_named_owner.fetch('clone')).to include('Leave a reply')
+    expect(similarly_named_owner.fetch('sourceUnchanged')).to be(true)
     expect(media_form.fetch('clone')).to include('https://reports.example/evidence.png')
     expect(media_form.fetch('clone')).not_to include('<form', '<textarea')
     expect(media_form.fetch('sourceUnchanged')).to be(true)

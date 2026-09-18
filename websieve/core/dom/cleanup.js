@@ -36,9 +36,23 @@
     return node.matches(selector) || !!node.querySelector(selector);
   }
 
+  var EMPTY_COMMENT_FORM_HEADING_PATTERN = /^(?:comments?|leave (?:a )?(?:comment|reply)|add (?:a )?comment|join the discussion|komentari?|ostavi komentar|dodaj komentar|коментари|остави коментар|комментарии|оставить комментарий|komentarze|dodaj komentarz|zostaw komentarz|kommentare|kommentar schreiben|comentarios|deja (?:un )?comentario|comentários|deixe (?:um )?comentário|commentaires|laisser (?:un )?commentaire|commenti|lascia (?:un )?commento)$/i;
+
+  function emptyCommentFormHeading(heading) {
+    if (heading.closest(markedCommentContentSelector())) return false;
+    var text = normalizeText(heading.textContent || "");
+    if (text.normalize) text = text.normalize("NFC");
+    return EMPTY_COMMENT_FORM_HEADING_PATTERN.test(text);
+  }
+
   function hasMaterialCommentContent(node) {
     var probe = node.cloneNode(true);
     probe.querySelectorAll("label, legend, input, textarea, select, option, button").forEach(function(ui) { ui.remove(); });
+    if (node.matches("[class~='comment-form' i], [id='comment-form-div' i]")) {
+      probe.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(function(heading) {
+        if (emptyCommentFormHeading(heading)) heading.remove();
+      });
+    }
     if (normalizeText(probe.textContent || "")) return true;
     return !!probe.querySelector("img[src], img[srcset], img[data-src], img[data-original], img[data-original-src], img[data-lazy-src], img[data-srcset], img[data-lazy-srcset], source[src], source[srcset], source[data-src], source[data-original-src], source[data-srcset], source[data-lazy-src], source[data-lazy-srcset], video[src], video[poster], audio[src], object[data], embed[src]");
   }

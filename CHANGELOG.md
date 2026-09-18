@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove heading-only generic reply prompts from empty comment forms while preserving corrections, published comments, media, and source DOM.
 - Build fallback article excerpts from the first substantial cleaned body paragraph instead of title, byline, related, or control chrome.
 - Retire the Blic profile after shared article, author, metadata, homepage-list, recommendation, audio, and empty-ad handling preserve or improve its visible output.
 - Preserve collected site metadata in shared fallback article extraction instead of replacing it with the request hostname.
