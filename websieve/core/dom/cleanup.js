@@ -166,6 +166,7 @@
     });
 
     stripPromoAdModules(root);
+    stripPublisherCtaNotes(root);
 
     root.querySelectorAll('a[href^="#"]').forEach(function(el) {
       var text = normalizeText(el.textContent);

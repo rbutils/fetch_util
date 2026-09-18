@@ -415,6 +415,13 @@ RSpec.describe "extract asset bundle" do
     expect(list_source).not_to include("function pruneHiddenListClone")
   end
 
+  it "loads publisher CTA cleanup before its shared consumer" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+
+    expect(manifest.index("core/dom/publisher_cta.js")).to be < manifest.index("core/dom/cleanup.js")
+  end
+
   it "loads the shared generic list card boundary before its consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
