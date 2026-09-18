@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Retire the dedicated Danas article profile after shared WordPress extraction preserves the complete article, media, cited references, category tags, metadata, and clean source DOM.
 - Preserve separation between directly adjacent visible tag, topic, and chip labels so compact link groups do not collapse into one Markdown token.
 - Remove short publisher follow/subscribe notes only when exact reusable owner and sentence-level action evidence prove CTA furniture.
 - Remove heading-only generic reply prompts from empty comment forms while preserving corrections, published comments, media, and source DOM.

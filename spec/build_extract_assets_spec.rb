@@ -800,7 +800,6 @@ RSpec.describe "extract asset bundle" do
                                 systems/cms/ghost.js
                                 systems/cms/wordpress.js
                                 profiles/news/asia/central/azerbaijan/oxu.js
-                                profiles/news/europe/eastern/serbia/danas.js
                                 profiles/news/middle_east/almasryalyoum.js
                                 profiles/news/asia/south/pakistan/jang.js
                                 profiles/news/middle_east/skynewsarabia.js
