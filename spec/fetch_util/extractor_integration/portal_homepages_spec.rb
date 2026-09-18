@@ -287,29 +287,104 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
   end
 
   it 'uses local headings for generic portal action links' do
+    many_title_images = (1..12).map do |index|
+      %(<img src="/series-#{index}.jpg" alt="Series image #{index}">)
+    end.join
     html = <<~HTML
       <html><head><title>Daily Portal latest headlines</title></head><body><main>
         <h1>Latest public reports</h1>
         <div class="stories">
-          <div class="newsitem"><h2><a href="/first">First action-linked public report</a></h2><time>Today</time><p>First report summary remains visible.</p><a href="javascript:openStory()">Read More</a></div>
+          <div class="newsitem"><h2><a href="/first"><img src="/first.jpg" alt="First report image"><picture><source src="/picture-source.jpg" data-src="/picture-data.jpg" data-lazy-src="/picture-lazy.jpg" srcset="/first-wide.jpg 2x" data-srcset="/picture-data-wide.jpg 3x" data-lazy-srcset="/picture-lazy-wide.jpg 4x"><source src="/hidden-source.jpg" hidden><source src="/inline-hidden-source.jpg" style="display: none !important"><source src="javascript:hiddenSource()"><img data-src="/first-detail.jpg" alt="First report detail"></picture><img srcset="/first-small.jpg 1x, /first-large.jpg 2x" width="160" height="90"><img src="/hidden-title.jpg" alt="Hidden title image" width="160" height="90" hidden><img src="/layered-src.jpg" data-src="/layered-data.jpg" data-lazy-src="/layered-lazy.jpg" srcset="/layered-set.jpg 1x" data-srcset="/layered-data-set.jpg 2x" data-lazy-srcset="/layered-lazy-set.jpg 3x" alt="Layered report image">#{many_title_images}<video aria-label="First report video" src="/first.mp4" data-src="/first-data.mp4" data-lazy-src="/first-lazy.mp4" poster="/first-poster.jpg" data-poster="/first-data-poster.jpg"><source src="/first.webm" data-src="/first-data.webm" data-lazy-src="/first-lazy.webm" type="video/webm"><source src="/hidden-video.webm" hidden><source src="javascript:hiddenVideo()"></video><svg aria-label="First report vector"><image href="/first-vector.png"></image><image href="javascript:hiddenVector()" xlink:href="/safe-xlink-vector.png" aria-label="Safe xlink vector"></image><image href="/hidden-vector.png" hidden></image></svg>First action-linked public report</a></h2><time>Today</time><p>First report summary remains visible.</p><p>Additional public context remains visible.</p><figcaption>First report caption</figcaption><a href="javascript:openStory()">Read More</a></div>
           <div class="newsitem"><h2 style="visibility: hidden">Hidden responsive title</h2><h2 style="visibility: hidden"><span style="visibility: visible">Second action-linked public report</span></h2><time>Yesterday</time><p>Second report summary remains visible.</p><a href="/second">Read More</a><a href="/hidden" style="visibility: hidden">Read More</a></div>
           <div class="newsitem"><h2>Third action-linked public report</h2><p>Third report summary remains visible.</p><a href="/third">Read More</a></div>
           <div class="newsitem"><h2>Fourth action-linked public report</h2><p>Fourth report summary remains visible.</p><a href="/fourth">Read More</a></div>
-          <div class="newsitem"><div class="action"><h3 style="display: none">Hidden action heading</h3><a href="/fifth"><span style="display: none">Hidden action text</span>Read More</a></div><h2><a href="/fifth"><span style="display: none">Hidden heading text</span>Fifth action-linked public report</a></h2><p>Fifth report summary remains visible.</p></div>
+          <div class="newsitem"><div class="action"><h3 style="display: none">Hidden action heading</h3><a href="/fifth"><span style="display: none">Hidden action text</span>Read More</a></div><h2><a href="/fifth"><span style="display: none">Hidden heading text</span>Fifth action-linked public report</a></h2><p>Fifth report summary remains visible.</p><p>Additional fifth context cites <a href="/first#source">first report source</a>.</p></div>
         </div>
       </main></body></html>
     HTML
 
     with_url_page('https://portal.example/', html) do |page|
-      markdown = FetchUtil::Extractor.new.extract(page).fetch('markdown')
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload.fetch('markdown')
 
-      expect(markdown).to include('[First action-linked public report](https://portal.example/first)')
-      expect(markdown).to include('First report summary remains visible.', 'Second report summary remains visible.')
-      expect(markdown).to include('Fifth report summary remains visible.')
-      expect(markdown.scan('First action-linked public report').length).to eq(1)
-      expect(markdown.scan('First report summary remains visible.').length).to eq(1)
+      expected_records = {
+        'First' => 'first', 'Second' => 'second', 'Third' => 'third',
+        'Fourth' => 'fourth', 'Fifth' => 'fifth'
+      }
+      expected_records.each do |ordinal, slug|
+        expected_link = "[#{ordinal} action-linked public report](https://portal.example/#{slug})"
+        expect(markdown.scan(expected_link).length).to eq(1)
+        expect(markdown.scan("#{ordinal} report summary remains visible.").length).to eq(1)
+      end
+      record_positions = expected_records.map do |ordinal, slug|
+        markdown.index("[#{ordinal} action-linked public report](https://portal.example/#{slug})")
+      end
+      expect(record_positions).not_to include(nil)
+      expect(record_positions).to eq(record_positions.sort)
+      expect(markdown.scan('Additional public context remains visible.').length).to eq(1)
+      media_order = [
+        '![First report image](https://portal.example/first.jpg)',
+        '![First report detail](https://portal.example/picture-source.jpg)',
+        '![First report detail](https://portal.example/picture-data.jpg)',
+        '![First report detail](https://portal.example/picture-lazy.jpg)',
+        '![First report detail](https://portal.example/first-wide.jpg)',
+        '![First report detail](https://portal.example/picture-data-wide.jpg)',
+        '![First report detail](https://portal.example/picture-lazy-wide.jpg)',
+        '![First report detail](https://portal.example/first-detail.jpg)',
+        '![First action-linked public report](https://portal.example/first-small.jpg)',
+        '![First action-linked public report](https://portal.example/first-large.jpg)',
+        '![Layered report image](https://portal.example/layered-src.jpg)',
+        '![Layered report image](https://portal.example/layered-data.jpg)',
+        '![Layered report image](https://portal.example/layered-lazy.jpg)',
+        '![Layered report image](https://portal.example/layered-set.jpg)',
+        '![Layered report image](https://portal.example/layered-data-set.jpg)',
+        '![Layered report image](https://portal.example/layered-lazy-set.jpg)',
+        *(1..12).map { |index| "![Series image #{index}](https://portal.example/series-#{index}.jpg)" },
+        '![First report video](https://portal.example/first-poster.jpg)',
+        '![First report video](https://portal.example/first-data-poster.jpg)',
+        '[First report video](https://portal.example/first.mp4)',
+        '[First report video](https://portal.example/first-data.mp4)',
+        '[First report video](https://portal.example/first-lazy.mp4)',
+        '[First report video](https://portal.example/first.webm)',
+        '[First report video](https://portal.example/first-data.webm)',
+        '[First report video](https://portal.example/first-lazy.webm)',
+        '![First report vector](https://portal.example/first-vector.png)',
+        '![Safe xlink vector](https://portal.example/safe-xlink-vector.png)'
+      ]
+      media_positions = media_order.map do |resource|
+        expect(markdown.scan(resource).length).to eq(1), resource
+        markdown.index(resource)
+      end
+      expect(media_positions).not_to include(nil)
+      expect(media_positions).to eq(media_positions.sort)
+      expect(markdown).not_to include('hidden-title.jpg', 'hidden-source.jpg', 'inline-hidden-source.jpg', 'hidden-video.webm', 'hidden-vector.png')
+      expect(markdown).not_to include('hiddenSource', 'hiddenVideo', 'hiddenVector')
+      expect(markdown.scan('First report caption').length).to eq(1)
+      expect(markdown).to include('Additional fifth context cites [first report source](https://portal.example/first#source).')
+      expect(markdown.scan('Today').length).to eq(1)
+      expect(markdown.scan('Yesterday').length).to eq(1)
+      detail_order = [
+        '[First action-linked public report](https://portal.example/first)',
+        'First report summary remains visible.',
+        'Today',
+        media_order.first,
+        media_order.last,
+        'First report caption',
+        'Additional public context remains visible.',
+        '[Second action-linked public report](https://portal.example/second)',
+        'Second report summary remains visible.',
+        'Yesterday',
+        '[Fifth action-linked public report](https://portal.example/fifth)',
+        'Fifth report summary remains visible.',
+        '[first report source](https://portal.example/first#source)'
+      ].map { |fragment| markdown.index(fragment) }
+      expect(detail_order).not_to include(nil)
+      expect(detail_order).to eq(detail_order.sort)
       expect(markdown).not_to include('Read More')
       expect(markdown).not_to include('openStory', '/hidden', 'Hidden responsive title')
+      expect(JSON.generate(payload)).not_to match(/"(?:card|sourceNode|supplementalCard|supplementalSourceClones|listSourceItems|listSourceNode)"\s*:/)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

@@ -389,14 +389,18 @@ RSpec.describe "extract asset bundle" do
     expect(sources.values.join.scan(/function\s+genericHomepageLeadRoot\s*\(/).length).to eq(1)
     expect(sources.values.join.scan(/function\s+registerGenericPortalHomepageProfiles\s*\(/).length).to eq(1)
     expect(manifest.index("profiles/news/mwananchi.js")).to be < manifest.index("boot/pipeline_helpers.js")
+    expect(manifest.index("systems/news_engines/portal_lead_records.js")).to be < manifest.index("systems/news_engines/generic_portal_homepages.js")
     expect(manifest.index("systems/news_engines/generic_portal_homepages.js")).to be < manifest.index("profiles/news/news_homepages.js")
 
     pipeline = sources.fetch("boot/pipeline_helpers.js")
     extract_api = sources.fetch("boot/extract_api.js")
+    portal_leads = sources.fetch("systems/news_engines/portal_lead_records.js")
     generic_portal = sources.fetch("systems/news_engines/generic_portal_homepages.js")
     news_homepages = sources.fetch("profiles/news/news_homepages.js")
     expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
     expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
+    expect(portal_leads).to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
+    expect(generic_portal).not_to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
   end

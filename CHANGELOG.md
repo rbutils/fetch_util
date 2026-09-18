@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Preserve title-owned media resources while stripping generic portal record actions and duplicate title fields.
+- Separate each generic portal record's visibility-pruned supplemental card from its metadata owner so discarded action controls stay removed without losing prose, media, captions, authors, or dates.
 - Preserve visible semantic record collections as lists when some record destinations are intentionally inert, without exposing unsafe links or weakening ordinary record-heading ownership.
 - Preserve structured metadata from each generic portal lead's proved local record instead of flattening it into residual text.
 - Preserve exact visible page-owned prose from a broader list root when generic portal lead extraction narrows to a nested main owner.

@@ -86,6 +86,11 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   var supportingLinks = new WeakSet();
   var descriptionOwner = listDescriptionOwnerCard(item);
   var ownerProse = descriptionOwner ? cardOwnedNodes(descriptionOwner, "p, blockquote") : [];
+  if (card !== item.card && item.supplementalSourceClones) {
+    ownerProse = ownerProse.map(function(node) {
+      return item.supplementalSourceClones.get(node);
+    }).filter(function(node) { return node && card.contains(node); });
+  }
   Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) {
     var url = materializedHttpUrl(link.getAttribute("href"));
     var prose = link.closest("p, blockquote");
@@ -188,7 +193,7 @@ function listItemContextValues(item, primaryUrls) {
     item.image,
     item.caption
   ];
-  var supplementalDetail = listSupplementalDetail(item, contextValues, card, primaryUrls);
+  var supplementalDetail = listSupplementalDetail(item, contextValues, item.supplementalCard || card, primaryUrls);
   if (supplementalDetail) contextValues.push(supplementalDetail);
   return contextValues.filter(Boolean).filter(function(value, index, values) {
     return values.indexOf(value) === index;

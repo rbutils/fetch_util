@@ -38,60 +38,6 @@
     var metadataPortalIntent = portalIntentPattern.test(titleIntentText) || descriptionPortalIntentTerms.length >= 2;
     var portalIntent = portalIntentPattern.test(intentText);
 
-    function leadActionText(text) {
-      return /^(?:read|learn|see) more$/i.test(normalizeText(text || ""));
-    }
-
-    function leadVisibleClone(node) {
-      if (!node || elementSubtreeHidden(node)) return null;
-      var clone = visibilityPrunedClone(node, document);
-      var text = normalizeText(clone.textContent || "");
-      var media = clone.querySelector("img[src], picture source[srcset], video[src], svg");
-      return text || media ? clone : null;
-    }
-
-    function leadCardNode(link) {
-      return link.closest("article, li, [class*='card'], [class*='tile'], [class*='item'], [class*='listing'], [class*='result'], [class*='destination'], [class*='route'], [class*='story']");
-    }
-
-    function leadActionHeading(link) {
-      if (!materializedHttpUrl(link.getAttribute("href") || "")) return "";
-      var card = leadCardNode(link);
-      if (!card) return "";
-
-      var destinations = {};
-      Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(candidate) {
-        if (!leadVisibleClone(candidate)) return;
-        var href = candidate.getAttribute("href") || "";
-        var url = materializedHttpUrl(href);
-        if (url) destinations[homepageCanonicalUrl(url)] = true;
-      });
-      if (Object.keys(destinations).length !== 1) return "";
-
-      var title = "";
-      Array.prototype.some.call(card.querySelectorAll("h1, h2, h3, h4"), function(heading) {
-        var visibleHeading = leadVisibleClone(heading);
-        title = normalizeText((visibleHeading && visibleHeading.textContent) || "");
-        return !!title;
-      });
-      return title;
-    }
-
-    function leadTitle(link) {
-      if (!link || elementSubtreeHidden(link)) return "";
-      if (link.closest("header, nav, footer, aside, form, [role='navigation'], [role='banner'], [role='contentinfo']")) return "";
-
-      var href = link.getAttribute("href") || "";
-      var visibleLink = visibilityPrunedClone(link, document);
-      var titleNode = visibleLink && visibleLink.querySelector("h1, h2, h3, h4");
-      var accessibleTitle = elementVisuallyHidden(link) ? "" : link.getAttribute("aria-label");
-      var title = normalizeText((titleNode && titleNode.textContent) || (visibleLink && visibleLink.textContent) || accessibleTitle || "");
-      if (leadActionText(title)) title = leadActionHeading(link);
-      if (rejectedHomepageLeadText(title, href)) return "";
-      if (title.length < 12 && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(title)) return "";
-      return title;
-    }
-
     function leadDetailRoot(link, boundary, selectedTitle) {
       var href = link.getAttribute("href") || "";
       var url = materializedHttpUrl(href);
@@ -198,16 +144,41 @@
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
         var recordRoot = leadDetailRoot(link, container, title);
-        var detailRoot = visibilityPrunedClone(recordRoot, document);
+        var supplementalSourceClones = new WeakMap();
+        var detailRoot = visibilityPrunedClone(recordRoot, document, supplementalSourceClones);
+        var titleMediaMarkdown = "";
+        var titleFieldSources = new WeakMap();
+        Array.prototype.forEach.call(recordRoot.querySelectorAll("h1, h2, h3, h4, a[href]"), function(source) {
+          var clone = supplementalSourceClones.get(source);
+          if (clone) titleFieldSources.set(clone, source);
+        });
         Array.prototype.slice.call(detailRoot.querySelectorAll("h1, h2, h3, h4, a[href]")).forEach(function(node) {
           var text = normalizeText(node.textContent || "");
-          if (text === title || leadActionText(text)) node.remove();
+          if (text === title) {
+            titleMediaMarkdown = preserveHomepageLeadTitleMedia(
+              node,
+              titleFieldSources.get(node),
+              supplementalSourceClones
+            ) || titleMediaMarkdown;
+            node.remove();
+          } else if (leadActionText(text)) {
+            node.remove();
+          }
         });
         var detail = searchItemDetail(detailRoot, title);
 
         seen[canonicalUrl] = true;
-        var item = { text: title, url: url, detail: detail, card: recordRoot, sourceNode: link };
+        var item = {
+          text: title,
+          url: url,
+          detail: detail,
+          card: recordRoot,
+          supplementalCard: detailRoot,
+          supplementalSourceClones: supplementalSourceClones,
+          sourceNode: link
+        };
         addCardContext(item, recordRoot);
+        if (titleMediaMarkdown) item.image = titleMediaMarkdown;
         items.push(item);
       });
 
