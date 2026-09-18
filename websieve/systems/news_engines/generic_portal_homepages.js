@@ -234,7 +234,19 @@
   function homepageLeadAncestorDescription(lead, content, metadata) {
     var extraction = content && content.listExtraction;
     var description = extraction && extraction.ancestorDescription;
-    if (!lead || !description || extraction.ancestorDescriptionSourceNode !== lead.root) return "";
+    var source = extraction && extraction.ancestorDescriptionSourceNode;
+    if (!lead || !lead.root || !description || !source) return "";
+    if (source !== lead.root) {
+      if (source !== document.body || !source.contains(lead.root) || /[\[\]]|https?:\/\//i.test(description)) return "";
+      var text = normalizeText(description);
+      var matches = Array.from(lead.root.querySelectorAll("p")).filter(function(paragraph) {
+        if (elementSubtreeHidden(paragraph) || normalizeText(paragraph.textContent) !== text) return false;
+        if (paragraph.closest("article, li, tr, figure, dl, nav, aside, header, footer, form, [role='article'], [role='listitem'], [role='navigation'], [role='complementary']")) return false;
+        return paragraph.parentElement === lead.root ||
+          (paragraph.parentElement.tagName === "SECTION" && paragraph.parentElement.parentElement === lead.root);
+      });
+      if (matches.length !== 1) return "";
+    }
     if (normalizeText(description) === normalizeText((metadata && metadata.excerpt) || "")) return "";
     return description;
   }

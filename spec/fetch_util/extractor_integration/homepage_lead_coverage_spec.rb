@@ -79,23 +79,39 @@ RSpec.describe FetchUtil::Extractor do
   end
 
   it "retains a distinct visible description from the exact lead ancestor" do
-    with_url_page("https://services.example/", "<html><body><main></main><section></section></body></html>") do |page|
+    html = "<html><body><p>Ambient body prose.</p><div id='wrapper'><main><section>" \
+           "<p>Visible lead-root prose.</p><p hidden>Hidden lead-root prose.</p>" \
+           "<div class='card'><p>Generic card detail.</p><section><p>Nested card section detail.</p></section></div>" \
+           "</section></main></div><section></section></body></html>"
+    with_url_page("https://services.example/", html) do |page|
       page.add_script_tag(content: lead_coverage_source)
       result = page.evaluate(<<~JS)
         (() => {
           const leadRoot = document.body;
-          const otherRoot = document.querySelector('section');
+          const otherRoot = document.querySelector('body > section');
+          const mainRoot = document.querySelector('main');
+          const wrapper = document.querySelector('#wrapper');
           const description = '[Research organization](https://services.example/about) supports discovery.';
           const content = { listExtraction: { ancestorDescription: description,
             ancestorDescriptionSourceNode: leadRoot } };
+          const nested = (source, text) => ({ listExtraction: { ancestorDescription: text,
+            ancestorDescriptionSourceNode: source } });
           return [
             __leadAncestorDescription({ root: leadRoot }, content, { excerpt: 'A metadata summary.' }),
             __leadAncestorDescription({ root: otherRoot }, content, { excerpt: 'A metadata summary.' }),
-            __leadAncestorDescription({ root: leadRoot }, content, { excerpt: description })
+            __leadAncestorDescription({ root: leadRoot }, content, { excerpt: description }),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, 'Visible lead-root prose.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, 'Ambient body prose.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, 'Hidden lead-root prose.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, 'Generic card detail.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, 'Nested card section detail.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(wrapper, 'Visible lead-root prose.'), {}),
+            __leadAncestorDescription({ root: mainRoot }, nested(leadRoot, '[Visible lead-root prose.][ref]'), {})
           ];
         })()
       JS
-      expected = ["[Research organization](https://services.example/about) supports discovery.", "", ""]
+      expected = ["[Research organization](https://services.example/about) supports discovery.", "", "",
+                  "Visible lead-root prose.", "", "", "", "", "", ""]
       expect(result).to eq(expected)
     end
   end
