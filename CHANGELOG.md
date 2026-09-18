@@ -5,6 +5,7 @@
 ## Unreleased
 
 - Build fallback article excerpts from the first substantial cleaned body paragraph instead of title, byline, related, or control chrome.
+- Retire the Blic profile after shared article, author, metadata, homepage-list, recommendation, audio, and empty-ad handling preserve or improve its visible output.
 - Preserve collected site metadata in shared fallback article extraction instead of replacing it with the request hostname.
 - Remove only structurally empty article ad placeholders while preserving referenced, styled, shadow-owned, nested, or otherwise material content and the source DOM.
 - Record scripted and declarative shadow roots so generic composed-DOM extraction preserves visible closed-component content without mutating source DOM.
