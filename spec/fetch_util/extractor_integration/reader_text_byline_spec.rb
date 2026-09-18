@@ -24,6 +24,10 @@ RSpec.describe 'reader text byline preservation' do
     HTML
   end
 
+  def extract_with_overridden_readability(page)
+    page.evaluate(extractor_for(true).send(:extraction_call))
+  end
+
   it 'preserves one verified visible byline omitted by reader mode' do
     path = File.expand_path('../../fixtures/hindustantimes_article.html', __dir__)
 
@@ -180,7 +184,7 @@ RSpec.describe 'reader text byline preservation' do
         }
       JS
 
-      payload = page.evaluate('window.FetchUtilExtract.extract({ reader_mode: true })')
+      payload = extract_with_overridden_readability(page)
       expect(payload['html'].scan('By Alice Brown').length).to eq(1)
       expect(payload['html']).not_to include('data-fetchutil-reader-byline')
       expect(payload['markdown'].scan('By Alice Brown').length).to eq(1)
@@ -217,7 +221,7 @@ RSpec.describe 'reader text byline preservation' do
         }
       JS
 
-      payload = page.evaluate('window.FetchUtilExtract.extract({ reader_mode: true })')
+      payload = extract_with_overridden_readability(page)
       expect(payload['textContent'].scan('By Alice Brown').length).to eq(1)
 
       page.evaluate(<<~JS)
@@ -227,7 +231,7 @@ RSpec.describe 'reader text byline preservation' do
           window.Readability = function() { this.parse = () => parsed; };
         }
       JS
-      reordered_payload = page.evaluate('window.FetchUtilExtract.extract({ reader_mode: true })')
+      reordered_payload = extract_with_overridden_readability(page)
       expect(reordered_payload['textContent'].scan('By Alice Brown').length).to eq(1)
     end
   end
@@ -259,7 +263,7 @@ RSpec.describe 'reader text byline preservation' do
         }
       JS
 
-      payload = page.evaluate('window.FetchUtilExtract.extract({ reader_mode: true })')
+      payload = extract_with_overridden_readability(page)
       expect(payload['html'].scan('By Alice Brown').length).to eq(1)
       expect(payload['markdown']).to start_with("# Regional culture program expands\n\nBy Alice Brown")
       expect(payload['textContent'].scan('By Alice Brown').length).to eq(1)
