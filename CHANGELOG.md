@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve every substantive card in a proved reader-mode article carousel when normal visibility extraction already retained an exact source prefix.
 - Preserve every unique safe record from explicit continuous news tickers on not-found pages without relaxing normal visibility clipping.
 
 - Keep nested homepage authors attached to their story while separating them from the story's declared title.

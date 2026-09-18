@@ -145,6 +145,7 @@
     var selectedContent = content;
     content = supplementAttachedArticleLead(content, metadata);
     content = supplementOwnedArticleIntro(content, selectedContent);
+    content = supplementOwnedArticleCarousels(content);
     if (!homepageRootPath()) return content;
     var mediaWikiLike = document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");
     if (mediaWikiLike && normalizeText(content.textContent || "").length >= 800) return content;
