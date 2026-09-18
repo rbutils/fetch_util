@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Keep nested homepage authors attached to their story while separating them from the story's declared title.
 - Render list-card bylines and exact time fields once when those fields also appear in raw card detail.
 - Keep localized publication dates separate from person or site-identity bylines.
 - Preserve title-owned media resources while stripping generic portal record actions and duplicate title fields.

@@ -11,7 +11,8 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     source.sub(
       "})(window);",
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
-      "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone }; })(window);"
+      "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone, " \
+      "ownedTitle: genericListOwnedAnchorTitle }; })(window);"
     )
   end
 
@@ -103,6 +104,161 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       end
       expect(result["markdown"].scan("By Shared Desk").length).to eq(4)
       expect(result["markdown"].scan("September 1, 2026 | 4:00pm").length).to eq(4)
+    end
+  end
+
+  it "separates a declared record title from its nested author metadata" do
+    html = <<~HTML
+      <html><head><title>Front page</title></head><body><main><section>
+        <div class="column"><article class="story-card">
+          <a href="/stories/owned" title="A precise source-owned headline">
+            <figure><img src="/owned.jpg" alt="Owned story image"></figure>
+            <h3><span class="card__title">A precise source-owned headline</span>
+              <span data-href="/authors/ada" class="card__author-link anchor-js">
+                <span class="card__author-label">By </span>Ada Reporter
+              </span>
+            </h3>
+          </a>
+          <div class="related-reference"><a href="/stories/related">A precise source-owned headline</a></div>
+        </article></div>
+        <div class="column"><article class="story-card">
+          <a href="/stories/context" title="A second declared headline">
+            <h3><span class="card__title">A second declared headline</span>
+              <span class="editorial-context">Analysis desk context</span>
+            </h3>
+          </a>
+        </article></div>
+      </section></main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const before = document.body.innerHTML;
+          const context = FetchUtilListFieldsTest.context();
+          const cards = Array.from(document.querySelectorAll('article'));
+          const items = cards.map(card => FetchUtilListFieldsTest.candidate(card.querySelector('a'), card, context));
+          return {
+            texts: items.map(item => item.text),
+            displayTexts: items.map(item => item.displayText || ''),
+            markdown: FetchUtilListFieldsTest.render(items),
+            unchanged: before === document.body.innerHTML
+          };
+        })()
+      JAVASCRIPT
+
+      expected_texts = [
+        "A precise source-owned headline By Ada Reporter",
+        "A second declared headline Analysis desk context"
+      ]
+      expect(result["texts"]).to eq(expected_texts)
+      expect(result["displayTexts"]).to eq(["A precise source-owned headline", ""])
+      expect(result["markdown"]).to include(
+        "[A precise source-owned headline](https://features.example/stories/owned) - By Ada Reporter",
+        "[A precise source-owned headline](https://features.example/stories/related)",
+        "[A second declared headline Analysis desk context](https://features.example/stories/context)"
+      )
+      expect(result["markdown"].scan("A precise source-owned headline").length).to eq(2)
+      expect(result["markdown"].scan("Ada Reporter").length).to eq(1)
+      expect(result["unchanged"]).to be(true)
+    end
+  end
+
+  it "rejects ambiguous, hidden, interactive, or unsafe title-author splits" do
+    records = <<~HTML
+      <article data-case="valid"><a href="/valid" title="Valid headline"><h3>
+        <span class="card__title">Valid headline</span>
+        <span data-href="/authors/valid" class="card__author-link anchor-js">By Valid Author</span>
+      </h3></a></article>
+      <article data-case="interaction"><a href="/interaction" title="Interaction headline"><h3>
+        <span class="card__title">Interaction headline</span>
+        <span class="comment-byline">By Comment Author</span>
+      </h3></a></article>
+      <article data-case="hidden"><a href="/hidden" title="Hidden headline"><h3>
+        <span class="card__title">Hidden headline</span>
+        <span class="card__author-link" hidden>By Hidden Author</span>
+      </h3></a></article>
+      <article data-case="nested-interaction"><a href="/nested-interaction" title="Nested interaction"><h3>
+        <span class="card__title">Nested interaction</span>
+        <span class="card__author-link">By Desk <span class="comment-author">Commenter</span></span>
+      </h3></a></article>
+      <article data-case="nested-hidden"><a href="/nested-hidden" title="Nested hidden"><h3>
+        <span class="card__title">Nested hidden</span>
+        <span class="card__author-link">By Desk <span hidden>Hidden contributor</span></span>
+      </h3></a></article>
+      <article data-case="authors"><a href="/authors" title="Many authors headline"><h3>
+        <span class="card__title">Many authors headline</span>
+        <span class="card__author-link">By First Author</span><span class="byline">By Second Author</span>
+      </h3></a></article>
+      <article data-case="titles"><a href="/titles" title="First title"><h3>
+        <span class="card__title">First title</span><span class="feature-title">Second title</span>
+        <span class="card__author-link">By Title Author</span>
+      </h3></a></article>
+      <article data-case="mismatch"><a href="/mismatch" title="Different declared title"><h3>
+        <span class="card__title">Visible title</span><span class="card__author-link">By Mismatch Author</span>
+      </h3></a></article>
+      <article data-case="headings"><a href="/headings" title="Two headings"><h3>
+        <span class="card__title">Two headings</span><span class="card__author-link">By Heading Author</span>
+      </h3><h4>Additional context</h4></a></article>
+      <article data-case="unsafe"><a href="javascript:openStory()" title="Unsafe headline"><h3>
+        <span class="card__title">Unsafe headline</span><span class="card__author-link">By Unsafe Author</span>
+      </h3></a></article>
+    HTML
+    html = "<html><head><title>Records</title></head><body><main>#{records}</main></body></html>"
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      titles = page.evaluate(<<~JAVASCRIPT)
+        Object.fromEntries(Array.from(document.querySelectorAll('article')).map(record => [
+          record.dataset.case,
+          FetchUtilListFieldsTest.ownedTitle(record.querySelector('a'))
+        ]))
+      JAVASCRIPT
+
+      expect(titles).to eq(
+        "valid" => "Valid headline",
+        "interaction" => "",
+        "hidden" => "",
+        "nested-interaction" => "",
+        "nested-hidden" => "",
+        "authors" => "",
+        "titles" => "",
+        "mismatch" => "",
+        "headings" => "",
+        "unsafe" => ""
+      )
+    end
+  end
+
+  it "preserves a same-label related heading with a different destination" do
+    html = <<~HTML
+      <html><head><title>Records</title></head><body><main>
+        <article class="story-card">
+          <a href="/primary">Primary headline</a>
+          <h4><a href="/related">Related heading</a></h4>
+        </article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      markdown = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const card = document.querySelector('article');
+          return FetchUtilListFieldsTest.render([{
+            card,
+            text: 'Primary headline',
+            displayText: 'Related heading',
+            url: '/primary'
+          }]);
+        })()
+      JAVASCRIPT
+
+      expect(markdown).to include(
+        "[Related heading](https://features.example/primary)",
+        "[Related heading](https://features.example/related)"
+      )
     end
   end
 

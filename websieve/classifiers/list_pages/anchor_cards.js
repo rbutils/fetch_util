@@ -289,10 +289,3 @@
     var rich = children.filter(function(node) { return genericListAnchorRecordEvidence(node); });
     return destinations.size >= 2 && rich.length > 0 && rich.length < children.length;
   }
-
-  function genericListDirectAnchorTitle(link, container) {
-    if (!genericListDirectAnchorCard(link, container === link ? link.parentElement : container)) return "";
-    var titleNode = link.querySelector("[class*='title' i], [class$='-name' i]");
-    var title = normalizeText((titleNode && titleNode.textContent) || link.getAttribute("title") || "");
-    return title.length >= Math.min(6, minimumListTitleLength(title)) && title.length <= 220 ? title : "";
-  }

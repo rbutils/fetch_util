@@ -151,8 +151,22 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
         nestedMetadataCards.indexOf(nested) === -1 && siblingPresentationCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
   });
+  var itemTitles = [item.text, item.displayText].map(normalizeText).filter(Boolean);
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
-    if (normalizeText(node.textContent || "") === normalizeText(item.text || "")) node.remove();
+    if (itemTitles.indexOf(normalizeText(node.textContent || "")) < 0) return;
+    var linkedOwners = node.matches("a[href]") ? [node] : Array.from(node.querySelectorAll("a[href]"));
+    if (!linkedOwners.length) {
+      var linkedAncestor = node.closest("a[href]");
+      if (linkedAncestor) linkedOwners.push(linkedAncestor);
+    }
+    var itemUrl = materializedHttpUrl(item.url || "");
+    if (linkedOwners.length && itemUrl && linkedOwners.some(function(linkedOwner) {
+      var ownerUrl = materializedHttpUrl(linkedOwner.getAttribute("href"));
+      return !ownerUrl || listCanonicalKey(ownerUrl) !== listCanonicalKey(itemUrl);
+    })) {
+      return;
+    }
+    node.remove();
   });
   pruneGenericListControls(clone);
   var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url, supportingLinks));
@@ -216,7 +230,7 @@ var listMarkdown = function(items, primaryUrls) {
     return url && listCanonicalKey(url);
   }).filter(Boolean));
   return items.map(function(item) {
-    var line = "- " + markdownLink(item.text, item.url);
+    var line = "- " + markdownLink(item.displayText || item.text, item.url);
     var context = listItemContextValues(item, primaryUrls).join(" - ");
     if (context) line += " - " + context;
     return line;
