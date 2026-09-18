@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Preserve every unique safe record from explicit continuous news tickers on not-found pages without relaxing normal visibility clipping.
+
 - Keep nested homepage authors attached to their story while separating them from the story's declared title.
 - Render list-card bylines and exact time fields once when those fields also appear in raw card detail.
 - Keep localized publication dates separate from person or site-identity bylines.

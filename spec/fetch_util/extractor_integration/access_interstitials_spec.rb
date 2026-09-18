@@ -3,6 +3,29 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
+  def not_found_context_test_source
+    root = File.expand_path('../../..', __dir__)
+    source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true)
+                 .reject { |line| line.empty? || line.start_with?('#') }
+                 .map { |path| File.read(File.join(root, 'websieve', path)) }.join("\n")
+    source.sub(
+      '})(window);',
+      [
+        'global.__continuousTickerUnavailableNode = continuousTickerUnavailableNode;',
+        'global.__continuousTickerRootUnavailable = continuousTickerRootUnavailable;',
+        'global.__continuousTickerToken = continuousTickerToken;',
+        'global.__collectContinuousTickerRecords = collectContinuousTickerRecords;',
+        'global.__continuousTickerRecordKey = continuousTickerRecordKey;',
+        'global.__insertMissingTickerRecordLines = insertMissingTickerRecordLines;',
+        'global.__supplementNotFoundTickerHtml = supplementNotFoundTickerHtml;',
+        'global.__supplementNotFoundTickerRecordsForTest = function(content) {',
+        '  return supplementNotFoundTickerRecords(content, collectMetadata(), pageReadableText());',
+        '};',
+        '})(window);'
+      ].join(' ')
+    )
+  end
+
   it "flags meta cookie and login-required pages and summarizes metadata" do
     html = <<~HTML
       <html>
@@ -399,6 +422,281 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["markdown"]).to include("Page Not Found")
       expect(payload["warnings"]).to include("not_found_interstitial")
+    end
+  end
+
+  it "preserves every safe unique record from explicit continuous tickers on not-found pages" do
+    records = (1..25).map do |number|
+      "<a style='display:inline-block;width:220px' href='/updates/#{number}'>Public update headline #{number}</a>"
+    end.join
+    html = <<~HTML
+      <html><head><title>404 - Story not found</title><style>
+        .ticker-window { width: 320px; overflow-x: hidden; }
+        .react-marquee-box { display: flex; width: 12000px; }
+        .ticker-prefix, .ticker-track { display: flex; flex: none; }
+        .ticker-prefix { width: 440px; }
+        .ticker-track { width: 10000px; }
+      </style></head><body>
+        <main><h1>Story not found</h1><p>The requested story is no longer available.</p></main>
+        <section data-breaking-news='true' class='ticker-window'>
+          <h2>Live public updates</h2>
+          <div class='react-marquee-box'>
+            <div class='ticker-prefix'>
+              <a style='display:inline-block;width:220px' href='/updates/1'>Public update headline 1</a>
+              <a style='display:inline-block;width:220px' href='/updates/2'>Public update headline 2</a>
+            </div>
+            <div class='ticker-track'>#{records}#{records}</div>
+          </div>
+          <a href='javascript:openStory()'>Unsafe public update action</a>
+          <a href='https://user:secret@private.example/record'>Credential update action</a>
+          <a href='data:text/plain,unsafe'>Data update action</a>
+          <div hidden><a href='/hidden'>Hidden ticker update</a></div>
+          <div class='carousel'><a href='/inactive'>Inactive carousel update</a></div>
+        </section>
+        <section data-breaking-news='true' hidden>
+          <a href='/hidden-root/1'>Hidden root update one</a>
+          <a href='/hidden-root/2'>Hidden root update two</a>
+          <a href='/hidden-root/3'>Hidden root update three</a>
+        </section>
+        <div inert>
+          <section data-breaking-news='true'>
+            <a href='/hidden-ancestor/1'>Hidden ancestor update one</a>
+            <a href='/hidden-ancestor/2'>Hidden ancestor update two</a>
+            <a href='/hidden-ancestor/3'>Hidden ancestor update three</a>
+          </section>
+        </div>
+      </body></html>
+    HTML
+
+    with_url_page("https://publisher.example/missing-story", html) do |page|
+      before = page.evaluate("document.body.outerHTML")
+      page.add_script_tag(content: not_found_context_test_source)
+      payload = page.evaluate(<<~JAVASCRIPT)
+        (function() {
+          var represented = [1, 2];
+          var links = represented.map(function(number) {
+            return '<li><a href="https://publisher.example/updates/' + number + '">' +
+              'Public update headline ' + number + '</a></li>';
+          }).join('');
+          var markdown = represented.map(function(number) {
+            return '- [Public update headline ' + number + ']' +
+              '(https://publisher.example/updates/' + number + ')';
+          }).join(String.fromCharCode(10)) + String.fromCharCode(10) + String.fromCharCode(10) +
+            '## 404 - Story not found' + String.fromCharCode(10) + String.fromCharCode(10) +
+            'The requested story is no longer available.';
+          return window.__supplementNotFoundTickerRecordsForTest({
+            html: '<ul>' + links + '</ul><h2>404 - Story not found</h2>' +
+              '<p>The requested story is no longer available.</p>',
+            markdown: markdown,
+            textContent: markdown
+          });
+        })()
+      JAVASCRIPT
+
+      expect(payload["markdown"]).to include("requested story is no longer available")
+      (1..25).each do |number|
+        expect(payload["markdown"].scan("https://publisher.example/updates/#{number})").length).to eq(1)
+        expect(payload["html"].scan(%(href="https://publisher.example/updates/#{number}")).length).to eq(1)
+      end
+      expect(payload["markdown"]).not_to include("javascript:", "private.example", "data:text", "/hidden", "/inactive")
+      expect(page.evaluate("document.body.outerHTML")).to eq(before)
+    end
+  end
+
+  it "rejects hidden, inactive, unsafe, and control-only ticker records at the classifier boundary" do
+    records = (1..3).map do |number|
+      hidden = number == 1 ? "<span hidden>Hidden label text</span>" : ""
+      "<a href='/safe/#{number}'>Safe public update #{number}#{hidden}</a>"
+    end.join
+    large_records = (1..150).map do |number|
+      "<a href='/large/#{number}'>Large public update #{number}</a>"
+    end.join
+    html = <<~HTML
+      <main>
+        <section id='safe' role='marquee'>
+          #{records}
+          <a href='https://user:secret@private.example/update'>Private update</a>
+          <a href='/hidden-label'><span hidden>Hidden label only</span></a>
+          <a href='/aria-hidden-label'><span aria-hidden='true'>ARIA-hidden label only</span></a>
+        </section>
+        <section id='uppercase-marquee' role='MARQUEE presentation'>#{records}</section>
+        <section id='swiper' class='swiper-slide'>#{records}</section>
+        <section id='carousel' class='carousel-container'>#{records}</section>
+        <section id='tab' role='tab'>#{records}</section>
+        <section id='tablist' role='tablist'>#{records}</section>
+        <section id='uppercase-tab' role='TAB presentation'>#{records}</section>
+        <section id='panel' role='tabpanel'>#{records}</section>
+        <section id='closed' data-state='closed'>#{records}</section>
+        <section id='unselected' aria-selected='false'>#{records}</section>
+        <section id='display-none' style='display:none'>#{records}</section>
+        <div inert><section id='hidden-ancestor'>#{records}</section></div>
+        <section id='controls'>
+          <a href='/subscribe'>Subscribe</a><a href='/newsletter'>Newsletter</a><a href='/register'>Register</a>
+        </section>
+        <section id='static-news' data-breaking-news='true'>#{records}</section>
+        <section id='static-ticker' class='ticker'>#{records}</section>
+        <section id='static-data-ticker' data-ticker>#{records}</section>
+        <section id='static-react-marquee' class='react-marquee-box'>#{records}</section>
+        <section id='large' class='react-marquee-box'>#{large_records}#{large_records}</section>
+      </main>
+    HTML
+
+    with_url_page("https://publisher.example/missing-story", html) do |page|
+      page.add_script_tag(content: not_found_context_test_source)
+      decisions = page.evaluate(<<~JAVASCRIPT)
+        ({
+          safe: window.__collectContinuousTickerRecords(document.querySelector('#safe')).map(function(record) {
+            return { url: record.url, text: record.text };
+          }),
+          uppercaseMarquee: window.__collectContinuousTickerRecords(document.querySelector('#uppercase-marquee')).length,
+          swiper: window.__continuousTickerUnavailableNode(document.querySelector('#swiper')),
+          carousel: window.__continuousTickerUnavailableNode(document.querySelector('#carousel')),
+          tab: window.__continuousTickerUnavailableNode(document.querySelector('#tab')),
+          tablist: window.__continuousTickerUnavailableNode(document.querySelector('#tablist')),
+          uppercaseTab: window.__continuousTickerUnavailableNode(document.querySelector('#uppercase-tab')),
+          panel: window.__continuousTickerUnavailableNode(document.querySelector('#panel')),
+          closed: window.__continuousTickerUnavailableNode(document.querySelector('#closed')),
+          unselected: window.__continuousTickerUnavailableNode(document.querySelector('#unselected')),
+          displayNone: window.__continuousTickerUnavailableNode(document.querySelector('#display-none')),
+          hiddenAncestor: window.__continuousTickerRootUnavailable(document.querySelector('#hidden-ancestor')),
+          controls: window.__collectContinuousTickerRecords(document.querySelector('#controls')),
+          staticNews: window.__continuousTickerToken(document.querySelector('#static-news')),
+          staticTicker: window.__continuousTickerToken(document.querySelector('#static-ticker')),
+          staticDataTicker: window.__collectContinuousTickerRecords(document.querySelector('#static-data-ticker')),
+          staticReactMarquee: window.__collectContinuousTickerRecords(document.querySelector('#static-react-marquee')),
+          large: window.__collectContinuousTickerRecords(document.querySelector('#large')).length,
+          prefix: (function() {
+            var records = [1, 2, 3, 4, 5].map(function(number) {
+              var text = 'Public update ' + number;
+              var url = 'https://publisher.example/updates/' + number;
+              return { text: text, url: url, key: window.__continuousTickerRecordKey(text, url) };
+            });
+            var markdown = '## Updates\\n\\n- [Public update 1](https://publisher.example/updates/1)\\n' +
+              '- [Public update 2](https://publisher.example/updates/2)\\n\\n## 404\\n\\nMissing page';
+            return window.__insertMissingTickerRecordLines(markdown, records, records.slice(2));
+          })(),
+          split: (function() {
+            var records = [1, 2, 3, 4, 5].map(function(number) {
+              var text = 'Public update ' + number;
+              var url = 'https://publisher.example/updates/' + number;
+              return { text: text, url: url, key: window.__continuousTickerRecordKey(text, url) };
+            });
+            var markdown = [
+              '- [Public update 1](https://publisher.example/updates/1)',
+              '',
+              '## 404',
+              '',
+              '- [Public update 2](https://publisher.example/updates/2)'
+            ].join(String.fromCharCode(10));
+            return {
+              before: markdown,
+              after: window.__insertMissingTickerRecordLines(markdown, records, records.slice(2))
+            };
+          })(),
+          noPrefix: (function() {
+            var records = [1, 2, 3].map(function(number) {
+              var text = 'Public update ' + number;
+              var url = 'https://publisher.example/updates/' + number;
+              return { text: text, url: url, key: window.__continuousTickerRecordKey(text, url) };
+            });
+            var markdown = '## 404' + String.fromCharCode(10) + String.fromCharCode(10) + 'Missing page';
+            return {
+              before: markdown,
+              after: window.__insertMissingTickerRecordLines(markdown, records, records)
+            };
+          })(),
+          htmlBoundaries: (function() {
+            var records = [1, 2, 3].map(function(number) {
+              var text = 'Public update ' + number;
+              var url = 'https://publisher.example/updates/' + number;
+              return { text: text, url: url, key: window.__continuousTickerRecordKey(text, url) };
+            });
+            var represented = new Set(records.slice(0, 2).map(function(record) { return record.key; }));
+            var supplement = function(html) {
+              var repaired = window.__supplementNotFoundTickerHtml(html, records, represented, records.slice(2));
+              if (!repaired) return { html: repaired, nested: null };
+              var container = document.createElement('div');
+              container.innerHTML = repaired;
+              var link = container.querySelector('a[href="https://publisher.example/updates/3"]');
+              return { html: repaired, nested: !!(link && link.parentElement.closest('a')) };
+            };
+            return {
+              anchorWrap: supplement('<a href="/updates/1"><article>Public update 1</article></a>' +
+                '<a href="/updates/2">Public update 2</a>'),
+              articleWrap: supplement('<article><a href="/updates/1">Public update 1</a></article>' +
+                '<article><a href="/updates/2">Public update 2</a></article>'),
+              duplicate: supplement('<a href="/updates/1">Public update 1</a>' +
+                '<a href="/updates/2">Public update 2</a>' +
+                '<a href="/updates/1">Public update 1</a>'),
+              noncontiguous: supplement('<a href="/updates/1">Public update 1</a>' +
+                '<a href="/other">Other reference</a>' +
+                '<a href="/updates/2">Public update 2</a>'),
+              splitByHeading: supplement('<p><a href="/updates/1">Public update 1</a></p>' +
+                '<h2>404 unavailable</h2>' +
+                '<p><a href="/updates/2">Public update 2</a></p>'),
+              splitByProse: supplement('<p><a href="/updates/1">Public update 1</a></p>' +
+                '<p>Other page context</p>' +
+                '<p><a href="/updates/2">Public update 2</a></p>')
+            };
+          })()
+        })
+      JAVASCRIPT
+
+      expect(decisions.fetch("safe")).to eq((1..3).map do |number|
+        { "url" => "https://publisher.example/safe/#{number}", "text" => "Safe public update #{number}" }
+      end)
+      expect(decisions.fetch("uppercaseMarquee")).to eq(3)
+      expect(decisions.values_at("swiper", "carousel", "tab", "tablist", "uppercaseTab", "panel", "closed", "unselected", "displayNone", "hiddenAncestor"))
+        .to all(be(true))
+      expect(decisions.fetch("controls")).to eq([])
+      expect(decisions.fetch("staticNews")).to be(false)
+      expect(decisions.fetch("staticTicker")).to be(false)
+      expect(decisions.fetch("staticDataTicker")).to eq([])
+      expect(decisions.fetch("staticReactMarquee")).to eq([])
+      expect(decisions.fetch("large")).to eq(150)
+      prefix = decisions.fetch("prefix")
+      (1..5).each do |number|
+        expect(prefix.scan("https://publisher.example/updates/#{number}").length).to eq(1)
+      end
+      expect(prefix.lines.grep(/^- \[/).map(&:strip)).to eq((1..5).map do |number|
+        "- [Public update #{number}](https://publisher.example/updates/#{number})"
+      end)
+      expect(prefix.index("/updates/5")).to be < prefix.index("## 404")
+      expect(decisions.dig("split", "after")).to eq(decisions.dig("split", "before"))
+      expect(decisions.dig("noPrefix", "after")).to eq(decisions.dig("noPrefix", "before"))
+      expect(decisions.dig("htmlBoundaries", "duplicate", "html")).to be_nil
+      expect(decisions.dig("htmlBoundaries", "noncontiguous", "html")).to be_nil
+      expect(decisions.dig("htmlBoundaries", "splitByHeading", "html")).to be_nil
+      expect(decisions.dig("htmlBoundaries", "splitByProse", "html")).to be_nil
+      %w[anchorWrap articleWrap].each do |shape|
+        repaired = decisions.dig("htmlBoundaries", shape, "html")
+        expect(repaired.scan('href="https://publisher.example/updates/3"').length).to eq(1)
+        expect(decisions.dig("htmlBoundaries", shape, "nested")).to be(false)
+      end
+    end
+  end
+
+  it "does not supplement continuous ticker records on ordinary article pages" do
+    records = (1..8).map do |number|
+      "<a href='/updates/#{number}'>Unrelated site ticker headline #{number}</a>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Detailed public infrastructure report</title></head><body>
+        <main><article><h1>Detailed public infrastructure report</h1>
+          <p>This report explains the completed infrastructure project and its effects on communities across the region.</p>
+          <p>Engineers documented the construction work, safety checks, environmental review, and public consultation in detail.</p>
+          <p>The final project remains available to residents and visitors throughout the year.</p>
+        </article></main>
+        <aside data-breaking-news='true'>#{records}</aside>
+      </body></html>
+    HTML
+
+    with_url_page("https://publisher.example/reports/infrastructure", html) do |page|
+      before = page.evaluate("document.body.outerHTML")
+      payload = extract_payload(page)
+      expect_content_type(payload, "article")
+      expect(payload["markdown"]).not_to include("/updates/8")
+      expect(page.evaluate("document.body.outerHTML")).to eq(before)
     end
   end
 

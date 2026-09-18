@@ -1,6 +1,7 @@
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
+  content = supplementNotFoundTickerRecords(content, metadata, pageText);
   content = contentWithoutTerminalArticleLinkCollections(content);
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
