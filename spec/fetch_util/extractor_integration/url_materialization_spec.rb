@@ -407,13 +407,63 @@ RSpec.describe 'FetchUtil public URL materialization' do
     unsafe_cards = 6.times.map do |index|
       %(<article><h2><a href="javascript:action#{index}()">Unsafe archive record #{index + 1}</a></h2><p>Shared archive detail</p></article>)
     end.join
-    html = "<html><head><title>Record archive</title></head><body><main><h1>Record archive</h1>#{safe_cards}#{unsafe_cards}</main></body></html>"
+    hidden_card = '<article hidden><h2><a href="javascript:hiddenAction()">Hidden archive record</a></h2></article>'
+    html = "<html><head><title>Record archive</title></head><body><main><h1>Record archive</h1>#{safe_cards}#{unsafe_cards}#{hidden_card}</main></body></html>"
 
     with_url_page('https://archive.example/records', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = extract_payload(page)
       expect(payload['contentType']).to eq('list')
-      expect(payload['markdown'].scan(/^## (?:Safe|Unsafe) archive record \d$/).length).to eq(8)
-      expect(payload['markdown']).not_to include('javascript:action', 'nullaction')
+      expected = [
+        '## [Safe archive record 1](https://archive.example/safe/0)',
+        '## [Safe archive record 2](https://archive.example/safe/1)',
+        *6.times.map { |index| "## Unsafe archive record #{index + 1}" }
+      ]
+      expect(payload['markdown'].lines.grep(/^## /).map(&:strip)).to eq(expected)
+      expect(payload['markdown']).not_to include('javascript:', 'nullaction', 'Hidden archive record')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'does not establish inert record collections from ambiguous destinations or nested articles' do
+    safe = 2.times.map { |index| %(<article><h2><a href="/safe/#{index}">Safe record #{index + 1}</a></h2></article>) }.join
+    inert = '<article><h2><a href="javascript:action()">Inert destination</a></h2></article>'
+    context = 'Independent archive context. ' * 8
+    boundaries = {
+      'empty destination' => %(<article><h2><a href="">Empty destination</a></h2></article>#{inert}),
+      'credential destination' =>
+        %(<article><h2><a href="https://user:secret@archive.example/private">Credential destination</a></h2></article>#{inert}),
+      'nested article' => '<article><h2><a href="javascript:action()">Inert destination</a></h2><article><h3>Nested article</h3></article></article>',
+      'hidden inert qualifier' => '<article hidden><h2><a href="javascript:action()">Hidden inert destination</a></h2></article>',
+      'hidden record link' => '<article><h2><a hidden href="javascript:action()">Hidden inert destination</a></h2></article>',
+      'additional section heading' => "#{inert}<h2>Other archive section</h2>",
+      'non-record sibling' => '<article><h2><a href="javascript:action()">Inert destination</a></h2></article><blockquote>Independent quoted context</blockquote>',
+      'direct parent text' => "#{inert}Independent archive context.",
+      'substantial page prose' => "#{inert}<p>#{context}</p>"
+    }
+
+    boundaries.each do |name, boundary|
+      html = "<html><head><title>Record archive</title></head><body><main><h1>Record archive</h1>#{safe}#{boundary}</main></body></html>"
+      with_url_page("https://archive.example/records?case=#{name.tr(" ", "-")}", html) do |page|
+        before = page.evaluate('document.body.innerHTML')
+        payload = extract_payload(page)
+        expect(payload['contentType']).to eq('article'), name
+        expect(payload['markdown']).not_to include('user:secret@', 'javascript:')
+        expect(page.evaluate('document.body.innerHTML')).to eq(before)
+      end
+    end
+  end
+
+  it 'leaves all-safe semantic records under ordinary record ownership' do
+    cards = 3.times.map do |index|
+      %(<article><h2><a href="/story/#{index}">Safe story #{index + 1}</a></h2><p>Story detail #{index + 1}</p></article>)
+    end.join
+    html = "<html><head><title>Story archive</title></head><body><main><h1>Story archive</h1>#{cards}</main></body></html>"
+
+    with_url_page('https://archive.example/stories', html) do |page|
+      payload = extract_payload(page)
+      expect(payload['markdown']).to include(*3.times.map { |index| "[Safe story #{index + 1}](https://archive.example/story/#{index})" })
+      expect(payload['markdown']).not_to match(/^## Safe story/m)
     end
   end
 

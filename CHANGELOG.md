@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve visible semantic record collections as lists when some record destinations are intentionally inert, without exposing unsafe links or weakening ordinary record-heading ownership.
 - Preserve structured metadata from each generic portal lead's proved local record instead of flattening it into residual text.
 - Preserve exact visible page-owned prose from a broader list root when generic portal lead extraction narrows to a nested main owner.
 - Retire the dedicated Danas article profile after shared WordPress extraction preserves the complete article, media, cited references, category tags, metadata, and clean source DOM.
