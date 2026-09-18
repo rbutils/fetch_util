@@ -50,6 +50,113 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "uses the first substantial cleaned body paragraph as the fallback excerpt" do
+    opening = "The verified opening paragraph cites Jane Doe as a source and explains the public record, the " \
+      "decisions made by local officials, and the evidence available to residents without repeating page chrome."
+    continuation = "The second paragraph preserves the remaining testimony, dates, and practical context needed " \
+      "to understand how the reported changes affect the surrounding community."
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Fallback excerpt report</title>
+          <meta name="description" content="Promotional metadata that is not visible in the article body.">
+        </head>
+        <body>
+          <main>
+            <article class="privacy">
+              <h1>Fallback excerpt report</h1>
+              <p class="article-author"><a rel="author" href="/authors/verified-reporter">Verified Reporter writes this report for the journal.</a></p>
+              <header><p>An unlabelled publication header contains enough text to look substantial but does not own the report body or its evidence.</p></header>
+              <div class="siteHeader"><p>Site header notices contain lengthy account and subscription information that should not become an article excerpt.</p></div>
+              <div itemprop="author"><p>A semantic author biography contains enough background information to exceed the paragraph threshold but is not body prose.</p></div>
+              <div class="navigation"><p>A navigation summary contains enough explanatory text to exceed the paragraph threshold but is not body prose.</p></div>
+              <address><p>A semantic contact block contains a long biography and publication address that must not become the report excerpt.</p></address>
+              <div class="masthead"><p>Publication branding and membership information contains enough text to exceed the threshold but is not report prose.</p></div>
+              <div role="search"><p>A search panel explains its filters and archive scope with enough text to exceed the threshold but is not report prose.</p></div>
+              <section class="recommended-stories"><p>A recommended story summary contains enough text to exceed the threshold but belongs to another report.</p></section>
+              <div class="cookie-notice" data-nosnippet="true"><p>#{opening}</p></div>
+              <aside class="related"><p>Related coverage provides a long but separate summary that must not become the article excerpt. Related coverage provides more context.</p></aside>
+              <p>Short standfirst.</p>
+              <p>The verified opening paragraph cites <a rel="author" href="/authors/jane-doe">Jane Doe</a> as a source and explains the public record, the decisions made by local officials, and the evidence available to residents without repeating page chrome.</p>
+              <p>#{continuation}</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://reports.example/fallback-excerpt", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page, reader_mode: false)
+
+      expect(payload.fetch("excerpt")).to eq(opening.strip[0, 280])
+      expect(payload.fetch("excerpt")).not_to include("Fallback excerpt report", "Verified Reporter", "Related coverage", "Promotional metadata")
+      expect(payload.fetch("markdown")).to include(
+        "[Jane Doe](https://reports.example/authors/jane-doe)",
+        continuation.strip
+      )
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
+  it "preserves non-Latin body leads and the prior fallback when no paragraph qualifies" do
+    non_latin_lead = "這段經過核實的開場內容說明公共紀錄、地方官員作出的決定，以及居民可以查閱的證據，並保留理解這份報告所需的日期、背景和實際影響。" * 2
+    with_url_page("https://reports.example/non-latin-excerpt", <<~HTML) do |page|
+      <main><article><h1>公共紀錄報告</h1><p>#{"😀" * 79}</p><div itemprop="description"><p>#{non_latin_lead}</p></div></article></main>
+    HTML
+      expect(extract_payload(page, reader_mode: false).fetch("excerpt")).to eq(non_latin_lead[0, 280])
+    end
+
+    legacy_text = "Legacy fallback text remains available when the cleaned article has no substantial paragraph. " * 5
+    with_url_page("https://reports.example/legacy-excerpt", <<~HTML) do |page|
+      <main><article><h1>Legacy fallback title</h1><div>#{legacy_text}</div><p>Short body.</p></article></main>
+    HTML
+      payload = extract_payload(page, reader_mode: false)
+      expect(payload.fetch("excerpt")).to start_with("Legacy fallback titleLegacy fallback text")
+      expect(payload.fetch("excerpt").length).to eq(280)
+    end
+
+    with_url_page("https://reports.example/astral-fallback", <<~HTML) do |page|
+      <main><article><h1>Astral fallback</h1><div>#{"😀" * 300}</div></article></main>
+    HTML
+      excerpt = extract_payload(page, reader_mode: false).fetch("excerpt")
+      expect(excerpt.each_char.count).to eq(280)
+      expect(excerpt).to end_with("😀")
+    end
+  end
+
+  it "accepts explicit article header leads but rejects unlabelled header prose" do
+    lead = "This explicit standfirst explains the verified findings, their public impact, and the evidence readers need before the detailed report begins."
+    with_url_page("https://reports.example/header-lead", <<~HTML) do |page|
+      <main>
+        <article>
+          <header>
+            <h1>Header lead report</h1>
+            <p>An unlabelled publication line contains enough words to exceed the threshold but has no lead ownership.</p>
+            <div class="article-standfirst"><p>#{lead}</p></div>
+          </header>
+          <p>The detailed body continues with enough verified evidence and context to qualify as substantial article prose.</p>
+        </article>
+      </main>
+    HTML
+      expect(extract_payload(page, reader_mode: false).fetch("excerpt")).to eq(lead)
+    end
+
+    with_url_page("https://reports.example/header-owned-lead", <<~HTML) do |page|
+      <main>
+        <article>
+          <header class="article-standfirst">
+            <h1>Header-owned lead report</h1>
+            <p>#{lead}</p>
+          </header>
+          <p>The detailed body continues with enough verified evidence and context to qualify as substantial article prose.</p>
+        </article>
+      </main>
+    HTML
+      expect(extract_payload(page, reader_mode: false).fetch("excerpt")).to eq(lead)
+    end
+  end
+
   it "converts tables into markdown instead of raw html" do
     html = <<~HTML
       <html>

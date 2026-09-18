@@ -75,6 +75,7 @@ extractors/article/intro_order.js
 extractors/article/intro_coverage.js
 extractors/article/main_coverage.js
 extractors/article/focal_ownership.js
+extractors/article/fallback_excerpt.js
 extractors/article/fallback.js
 extractors/article/readability.js
 extractors/article/hidden_substantive_main.js
