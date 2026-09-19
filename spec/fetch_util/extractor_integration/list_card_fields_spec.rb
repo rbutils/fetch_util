@@ -13,7 +13,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
       "sectionCard: sectionCardCandidate, " \
       "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone, " \
-      "ownedTitle: genericListOwnedAnchorTitle }; })(window);"
+      "ownedTitle: genericListOwnedAnchorTitle, metadata: listCompactMetadataRow }; })(window);"
     )
   end
 
@@ -255,6 +255,161 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       end
       expect(result["markdown"].scan("By Shared Desk").length).to eq(4)
       expect(result["markdown"].scan("September 1, 2026 | 4:00pm").length).to eq(4)
+    end
+  end
+
+  it "keeps a compact metadata row in source order without duplicating its fields" do
+    html = <<~HTML
+      <html><head><title>Regional reports</title></head><body><main>
+        <a class="story-card" href="/reports/cavergno">
+          <span class="regional-desk">Regional desk</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="section-title">VALLEMAGGIA</span>
+            <div><div class="time"><i class="clock"></i><span>1 ora</span></div> <i class="fa-comment"></i> <span class="score">4</span></div>
+          </div>
+          <h3>Search continues near Cavergno</h3>
+          <p>Police and rescue teams continue coordinated searches throughout the surrounding region.</p>
+        </a>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://reports.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const card = document.querySelector('.story-card');
+          const item = FetchUtilListFieldsTest.sectionCard(card, {
+            directCard: true,
+            listContext: FetchUtilListFieldsTest.context()
+          });
+          return {
+            metadata: FetchUtilListFieldsTest.metadata(card, item),
+            markdown: FetchUtilListFieldsTest.render([item])
+          };
+        })()
+      JAVASCRIPT
+
+      expect(result.dig("metadata", "text")).to eq("VALLEMAGGIA 1 ora 4")
+      expect(result["markdown"]).to include(
+        "[Search continues near Cavergno](https://reports.example/reports/cavergno)",
+        "Regional desk",
+        "VALLEMAGGIA 1 ora 4",
+        "Police and rescue teams continue coordinated searches throughout the surrounding region."
+      )
+      expect(result["markdown"].index("Regional desk")).to be < result["markdown"].index("VALLEMAGGIA")
+      expect(result["markdown"].index("VALLEMAGGIA")).to be < result["markdown"].index("Police and rescue")
+      expect(result["markdown"].scan("VALLEMAGGIA")).to eq(["VALLEMAGGIA"])
+      expect(result["markdown"].scan("1 ora")).to eq(["1 ora"])
+      expect(result["markdown"].scan(/\b4\b/)).to eq(["4"])
+    end
+  end
+
+  it "does not group ambiguous metadata rows" do
+    additions = {
+      linked_label: '<a href="/regions/north">NORTH</a>',
+      author: '<span class="byline">By Regional Desk</span>',
+      control: '<button type="button">Change region</button>',
+      custom_element: '<region-status>Current</region-status>',
+      paragraph: '<p>Current regional status</p>',
+      role: '<span role="status">Current</span>',
+      comment: '<span class="comment-count">5 comments</span>',
+      semantic: '<details><summary>Current</summary></details>',
+      accessible: '<span aria-label="Current regional status"></span>',
+      navigation: '<nav><span>Current</span></nav>',
+      busy: '<span aria-busy="true">Current</span>',
+      event: '<span onclick="showStatus()">Current</span>',
+      direct_text: 'Unrelated status note',
+      nested_prose: '<span>Unrelated status note</span>',
+      named_nested_prose: '<span class="section-title"><span>Unrelated status note</span></span>'
+    }
+    cards = additions.map do |id, addition|
+      <<~HTML
+        <a class="story-card" id="#{id}" href="/reports/#{id}">
+          <div class="metadata-row"><span class="section-title">REGION</span><div class="time">1 ora</div>#{addition}</div>
+          <h3>Regional report #{id}</h3>
+          <p>Substantive reporting remains available for this regional record and its readers.</p>
+        </a>
+      HTML
+    end.join
+    cards << <<~HTML
+      <a class="story-card" id="after_title" href="/reports/after-title">
+        <h3>Regional report after title</h3>
+        <div class="metadata-row"><span>REGION</span><div class="time">1 ora</div></div>
+        <p>Substantive reporting remains available for this regional record and its readers.</p>
+      </a>
+      <a class="story-card" id="duplicate_time" href="/reports/duplicate-time">
+        <div class="metadata-row"><span>REGION</span><div class="time">1 ora</div><time>2 hours</time></div>
+        <h3>Regional report duplicate time</h3>
+        <p>Substantive reporting remains available for this regional record and its readers.</p>
+      </a>
+      <a class="story-card" id="intervening_content" href="/reports/intervening-content">
+        <div class="metadata-row"><span>REGION</span><span class="time">1 ora</span></div>
+        <span>Unrelated status</span>
+        <h3>Regional report intervening content</h3>
+      </a>
+      <div class="story-card" id="owner_role">
+        <div class="metadata-row" role="status"><span>REGION</span><span class="time">1 ora</span></div>
+        <h3><a href="/reports/owner-role">Regional report owner role</a></h3>
+      </div>
+      <div class="story-card" id="owner_custom">
+        <region-status><span>REGION</span><span class="time">1 ora</span></region-status>
+        <h3><a href="/reports/owner-custom">Regional report owner custom</a></h3>
+      </div>
+      <div class="story-card" id="owner_control">
+        <button type="button"><span>REGION</span><span class="time">1 ora</span></button>
+        <h3><a href="/reports/owner-control">Regional report owner control</a></h3>
+      </div>
+      <div class="story-card" id="owner_semantic">
+        <section><span>REGION</span><span class="time">1 ora</span></section>
+        <h3><a href="/reports/owner-semantic">Regional report owner semantic</a></h3>
+      </div>
+      <div class="story-card" id="owner_accessible">
+        <div aria-label="Current regional status"><span>REGION</span><span class="time">1 ora</span></div>
+        <h3><a href="/reports/owner-accessible">Regional report owner accessible</a></h3>
+      </div>
+      <div class="story-card" id="owner_busy">
+        <div aria-busy="true"><span>REGION</span><span class="time">1 ora</span></div>
+        <h3><a href="/reports/owner-busy">Regional report owner busy</a></h3>
+      </div>
+    HTML
+
+    with_url_page("https://reports.example/", "<html><body><main>#{cards}</main></body></html>") do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => Array.from(document.querySelectorAll('.story-card')).map(card => {
+          const heading = card.querySelector('h3');
+          if (!heading) return [card.id, false];
+          const item = { text: heading.textContent.trim(), displayText: '' };
+          return [card.id, !!FetchUtilListFieldsTest.metadata(card, item)];
+        }))()
+      JAVASCRIPT
+
+      expect(result.to_h).to eq(
+        "linked_label" => false,
+        "author" => false,
+        "control" => false,
+        "custom_element" => false,
+        "paragraph" => false,
+        "role" => false,
+        "comment" => false,
+        "semantic" => false,
+        "accessible" => false,
+        "navigation" => false,
+        "busy" => false,
+        "event" => false,
+        "direct_text" => false,
+        "nested_prose" => false,
+        "named_nested_prose" => false,
+        "after_title" => false,
+        "duplicate_time" => false,
+        "intervening_content" => false,
+        "owner_role" => false,
+        "owner_custom" => false,
+        "owner_control" => false,
+        "owner_semantic" => false,
+        "owner_accessible" => false,
+        "owner_busy" => false
+      )
     end
   end
 

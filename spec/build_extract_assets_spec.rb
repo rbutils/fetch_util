@@ -197,15 +197,23 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     aliases_path = "markdown/list_aliases.js"
+    metadata_path = "markdown/list_metadata.js"
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
     alias_source = File.read(File.join(source_root, aliases_path))
+    metadata_source = File.read(File.join(source_root, metadata_path))
     expect(list_source).to include(
-      "var listMarkdown = function(items, primaryUrls)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField"
+      "var listMarkdown = function(items, primaryUrls)", "item.author", "item.score", "item.replyCount", "item.community"
     )
     expect(alias_source).to include("function listTrackingAliasKey", "function listExactPrimaryAliasDetail")
+    expect(metadata_source).to include(
+      "function listCompactMetadataRow", "function listCompactMetadataRepresents", "function listCompactMetadataContains",
+      "function listCompactMetadataFollowingField", "function cardField"
+    )
     expect(list_source).not_to include("function listTrackingAliasKey")
+    expect(list_source).not_to include("function listCompactMetadataRow")
+    expect(list_source).not_to include("function cardField")
     expect(manifest.index(aliases_path)).to be < manifest.index("markdown/lists.js")
-    expect(list_source.index("function cardField")).to be < list_source.index("var listMarkdown = function(items, primaryUrls)")
+    expect(manifest.index(metadata_path)).to be < manifest.index("markdown/lists.js")
     list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
       File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length
     end
@@ -228,11 +236,15 @@ RSpec.describe "extract asset bundle" do
   end
 
   it "defines list helpers before the parser-sensitive renderer snapshot" do
+    manifest = File.readlines(File.join(project_root, "websieve", "manifest.txt"), chomp: true)
+    metadata_path = "markdown/list_metadata.js"
+    metadata_source = File.read(File.join(project_root, "websieve", metadata_path))
     list_source = File.read(File.join(project_root, "websieve", "markdown", "lists.js"))
     renderer_index = list_source.index("var listMarkdown = function(items, primaryUrls)")
 
     expect(list_source.index("function listSupplementalDetail")).to be < renderer_index
-    expect(list_source.index("function cardField")).to be < renderer_index
+    expect(metadata_source).to include("function cardField")
+    expect(manifest.index(metadata_path)).to be < manifest.index("markdown/lists.js")
   end
 
   it "loads browsable inventories and GitHub thread primitives before their consumers" do

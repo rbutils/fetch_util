@@ -109,6 +109,11 @@ function listSupplementalHeadingReference(link, item, card) {
 function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
+  var compactMetadata = listCompactMetadataRow(card, item);
+  var compactMetadataClone = compactMetadata && listClonedCardNode(card, clone, compactMetadata.node);
+  var compactSummarySelector = "[class*='summary'], [class*='description'], [class*='excerpt'], p";
+  var compactSummary = listCompactMetadataFollowingField(card, compactMetadata, compactSummarySelector, item.summary);
+  var compactSummaryClone = compactSummary && listClonedCardNode(card, clone, compactSummary);
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
   var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
@@ -168,7 +173,9 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
     } : null;
     return fields.concat(listClonedCardFields(card, clone, selector, filter));
-  }, (item.titleHeadings || []).concat(item.contextHeadingNode || []).map(function(heading) {
+  }, []).filter(function(field) {
+    return !(compactMetadataClone && compactMetadataClone.contains(field)) && field !== compactSummaryClone;
+  }).concat((item.titleHeadings || []).concat(item.contextHeadingNode || []).map(function(heading) {
     return listClonedCardNode(card, clone, heading);
   }));
   pruneListCardVisibility(card, clone);
@@ -205,23 +212,6 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
-function cardField(card, selector, primaryUrl, allowReference, fieldFilter) {
-  if (!card || !card.querySelector) return "";
-  var nodes = cardOwnedNodes(card, selector);
-  var node = fieldFilter ? nodes.filter(fieldFilter)[0] : nodes[0];
-  if (!node) return "";
-  var nodeUrl = node.matches && node.matches("a[href]") && materializedHttpUrl(node.getAttribute("href"));
-  if (nodeUrl && primaryUrl && listCanonicalKey(nodeUrl) === listCanonicalKey(primaryUrl)) {
-    return normalizeText(node.textContent || node.getAttribute("aria-label") || "");
-  }
-  var value = node.hasAttribute("datetime") || node.hasAttribute("content") ?
-    normalizeText(node.getAttribute("datetime") || node.getAttribute("content") || "") :
-    (allowReference === false ? normalizeText(node.textContent) : listTextWithReferences(node));
-  if (!value) return "";
-  if (/^(comment|comments|reply|replies|score|points|likes?)$/i.test(value)) return "";
-  return value;
-}
-
 function listItemContextValues(item, primaryUrls) {
    if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
@@ -234,15 +224,28 @@ function listItemContextValues(item, primaryUrls) {
     return [item.tableReferenceDetail];
   }
 
+  var compactMetadata = listCompactMetadataRow(card, item);
+  var timeSelector = "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]";
+  var scoreSelector = "[class*='score' i], [data-score], [data-karma]";
+  var timeNode = card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null;
+  var scoreNode = card && card.querySelector ? cardOwnedNodes(card, scoreSelector)[0] : null;
+  var compactSummary = listCompactMetadataFollowingField(
+    card,
+    compactMetadata,
+    "[class*='summary'], [class*='description'], [class*='excerpt'], p",
+    item.summary
+  );
+  var timeValue = cardField(card, timeSelector, item.url) || item.time;
+  var scoreValue = cardField(card, scoreSelector, item.url) || item.score;
   var contextValues = [
-    item.category,
+    listCompactMetadataRepresents(compactMetadata, item.category) ? "" : item.category,
     item.contextHeading,
-    item.summary,
+    compactSummary ? "" : item.summary,
     cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
     }) || item.author,
-    cardField(card, "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]", item.url) || item.time,
-    cardField(card, "[class*='score' i], [data-score], [data-karma]", item.url) || item.score,
+    listCompactMetadataContains(compactMetadata, timeNode) ? "" : timeValue,
+    listCompactMetadataContains(compactMetadata, scoreNode) ? "" : scoreValue,
     cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false, function(node) {
       return !genericListAuthorMetadataNode(node);
     }) || item.replyCount,
