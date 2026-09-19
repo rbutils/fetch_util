@@ -81,7 +81,7 @@ RSpec.describe 'metadata byline ownership' do
   end
 
   it 'prefers either article-specific author metadata form over generic site authorship' do
-    ['name', 'property'].each do |attribute|
+    %w[name property].each do |attribute|
       html = list_page(global_byline: 'Reports Journal').sub(
         '<meta name="author" content="Reports Journal">',
         %(<meta name="author" content="Reports Journal"><meta #{attribute}="article:author" content="Alice Brown">)
@@ -94,7 +94,7 @@ RSpec.describe 'metadata byline ownership' do
   end
 
   it 'ignores relative article-author profile paths in favor of the visible human byline' do
-    ['name', 'property'].each do |attribute|
+    %w[name property].each do |attribute|
       html = <<~HTML
         <html><head>
           <title>Regional report</title>
