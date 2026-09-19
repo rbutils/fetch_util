@@ -540,7 +540,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = extract(page)
 
       expect(payload["byline"]).to be_nil
-      expect(payload["publishedTime"]).to eq("2017-07-08T08:00:26+03:00")
+      expect(payload["publishedTime"]).to eq("8. juuli 2026, 06:00")
       expect(payload["markdown"]).not_to include("teadus.postimees.ee8. juuli")
     end
   end
@@ -552,7 +552,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     html = <<~HTML
       <html lang="et"><head>
         <title>Community report documents the regional program</title>
-        <meta property="article:published_time" content="2026-07-08T06:00:00+03:00">
+        <meta property="article:published_time" content="2019-07-08T06:00:00+03:00">
       </head><body><main><article>
         <h1>Community report documents the regional program</h1>
         <div class="authors">
@@ -567,7 +567,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = extract(page)
 
       expect(payload["byline"]).to eq("Mari Reporter")
-      expect(payload["publishedTime"]).to eq("2026-07-08T06:00:00+03:00")
+      expect(payload["publishedTime"]).to eq("2019-07-08T06:00:00+03:00")
     end
   end
 

@@ -28,6 +28,14 @@ function bylineWithoutPublishedTime(raw, publishedTime, knownByline) {
   return prefix ? sanitizeByline(prefix) : null;
 }
 
+function bylineContainsPublishedTime(raw, publishedTime) {
+  var text = sanitizeByline(raw);
+  var date = normalizeText(publishedTime || "");
+  if (!text || !date || (date.match(/\d+/g) || []).length < 2) return false;
+  var suffix = date.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*");
+  return new RegExp(suffix + "$", "i").test(text);
+}
+
 function bylineWithoutHostIdentity(raw) {
   var text = sanitizeByline(raw);
   if (!text) return null;

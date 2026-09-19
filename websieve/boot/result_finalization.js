@@ -92,6 +92,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
   var displayedPublishedTime = visiblePublishedTime();
+  var visibleBylineRaw = visibleByline();
+  var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {
+    return bylineContainsPublishedTime(value, displayedPublishedTime);
+  });
   contentByline = bylineWithoutHostIdentity(
     bylineWithoutPublishedTime(contentByline, displayedPublishedTime, metadataByline)
   );
@@ -113,7 +117,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   }
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
   var visibleBylineValue = bylineWithoutHostIdentity(
-    bylineWithoutPublishedTime(visibleByline(), displayedPublishedTime, metadataByline || contentByline)
+    bylineWithoutPublishedTime(visibleBylineRaw, displayedPublishedTime, metadataByline || contentByline)
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
   var cleanedHtml = sanitizedHtml(content.html);
@@ -291,12 +295,14 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var socialFields = content.contentType === "social" ? content : {};
   byline = listPageByline(byline, metadata, content, markdown);
 
+  var publishedTime = content.contentType === "list" ? (content.publishedTime || null) : (content.publishedTime || metadata.publishedTime);
+  if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;
   var result = {
     title: primaryTitle || normalizeText(metadata.title),
     byline: byline,
     excerpt: content.excerpt || metadata.excerpt,
     siteName: content.siteName || metadata.siteName,
-    publishedTime: content.contentType === "list" ? (content.publishedTime || null) : (content.publishedTime || metadata.publishedTime),
+    publishedTime: publishedTime,
     canonicalUrl: metadata.canonicalUrl,
     language: metadata.language,
     name: content.name || null,
