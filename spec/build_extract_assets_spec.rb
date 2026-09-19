@@ -257,6 +257,20 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(supplemental_path)).to be < manifest.index("markdown/lists.js")
   end
 
+  it "loads list byline finalization before result finalization" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    byline_path = "boot/list_byline.js"
+    finalization_path = "boot/result_finalization.js"
+    byline_source = File.read(File.join(source_root, byline_path))
+    finalization_source = File.read(File.join(source_root, finalization_path))
+
+    expect(manifest.index(byline_path)).to be < manifest.index(finalization_path)
+    expect(byline_source).to include("function listPageBylineSourceOwnership", "function listPageByline")
+    expect(finalization_source).not_to include("function listPageBylineSourceOwnership")
+    expect(finalization_source).to include("byline = listPageByline(byline, metadata, content, markdown)")
+  end
+
   it "loads browsable inventories and GitHub thread primitives before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
