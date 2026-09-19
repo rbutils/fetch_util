@@ -11,6 +11,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     source.sub(
       "})(window);",
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
+      "sectionCard: sectionCardCandidate, " \
       "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone, " \
       "ownedTitle: genericListOwnedAnchorTitle }; })(window);"
     )
@@ -58,6 +59,155 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         expect(markdown).to include("[Learn maps](https://learning.example/learn/maps)")
         expect(markdown).not_to include("September 6, 2026")
       end
+    end
+  end
+
+  it "keeps a card-owned heading before its description and trailing action" do
+    html = <<~HTML
+      <html><head><title>Platform capabilities</title></head><body><main>
+        <div class="one-text-block">
+          <i class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32px" height="23px" style="opacity: 1 !important; transform: none !important;"><image x="0px" y="0px" width="32px" height="23px" xlink:href="data:img/png;base64,AAAA" style="opacity: 1 !important; transform: none !important;"></image></svg></i>
+          <h3>Cutting-Edge Technologies</h3>
+          <p>Expand your hosting platform with modern extensions and integrations built for reliable administration.</p>
+          <a href="/features/technology">See the list</a>
+        </div>
+      </main></body></html>
+    HTML
+    with_url_page("https://platform.example/features", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const before = document.body.innerHTML;
+          const card = document.querySelector('.one-text-block');
+          const item = FetchUtilListFieldsTest.sectionCard(card, {
+            listContext: FetchUtilListFieldsTest.context()
+          });
+          return {
+            before,
+            after: document.body.innerHTML,
+            markdown: FetchUtilListFieldsTest.render([item])
+          };
+        })()
+      JAVASCRIPT
+
+      expect(result["after"]).to eq(result["before"])
+      expect(result["markdown"]).to eq(
+        "- [See the list](https://platform.example/features/technology) - " \
+        "Cutting-Edge Technologies - Expand your hosting platform with modern extensions " \
+        "and integrations built for reliable administration."
+      )
+      expect(result["markdown"].scan("Cutting-Edge Technologies")).to eq(["Cutting-Edge Technologies"])
+    end
+  end
+
+  it "does not reorder ambiguous card context" do
+    variants = {
+      extra_link: '<a href="/other">Other destination</a>',
+      extra_heading: '<h4>Secondary heading</h4>',
+      button: '<button type="button">Change view</button>',
+      nested_record: '<article><p>Independent nested record with enough prose to remain separate.</p></article>',
+      role_control: '<div role="SWITCH presentation">Toggle mode</div>',
+      custom_control: '<x-mode-toggle>Toggle mode</x-mode-toggle>',
+      structured_content: '<figure><figcaption>Independent supporting figure</figcaption></figure>',
+      meaningful_svg: '<svg><text>Independent chart label</text></svg>',
+      semantic_svg: '<svg><image href="data:img/png;base64,AAAA"></image><path d="M0 0h10v10z"></path></svg>',
+      executable_svg: '<svg onpointerenter="return false"><image href="data:img/png;base64,AAAA"></image></svg>',
+      labelled_svg: '<svg role="img" aria-label="Meaningful icon"><image href="data:img/png;base64,AAAA"></image></svg>',
+      external_paint: '<svg fill="url(https://evil.example/paint.svg#fill)"><image href="data:img/png;base64,AAAA"></image></svg>',
+      conflicting_refs: '<svg><image href="data:image/png;base64,AAAA" xlink:href="https://evil.example/image.png"></image></svg>',
+      nested_svg_data: '<svg><image href="data:image/svg+xml,&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;&lt;script&gt;run()&lt;/script&gt;&lt;/svg&gt;"></image></svg>',
+      quoted_style: '<svg style="transform: none; opacity: \'1; fill: red\'"><image href="data:img/png;base64,AAAA"></image></svg>',
+      data_uri_style: '<svg style="transform: data:image/svg+xml; opacity: 1"><image href="data:img/png;base64,AAAA"></image></svg>',
+      camelcase_event: '<svg onClick="return false"><image href="data:img/png;base64,AAAA"></image></svg>',
+      html_image_element: '<svg></svg>',
+      script_content: '<script type="application/json">{"record":"other"}</script>',
+      style_content: '<style>.other { display: block; }</style>',
+      iframe_content: '<iframe src="/embedded-record"></iframe>',
+      template_content: '<template><p>Deferred independent record</p></template>',
+      noscript_content: '<noscript>Fallback independent record</noscript>'
+    }
+    cards = variants.map do |name, addition|
+      <<~HTML
+        <div class="one-text-block" id="#{name}">
+          <h3>#{name.to_s.tr("_", " ").capitalize}</h3>
+          <p>Expand this hosting platform with modern extensions and reliable administrative integrations.</p>
+          #{addition}
+          <a href="/features/#{name}">See the list</a>
+        </div>
+      HTML
+    end.join
+    cards << <<~HTML
+      <div class="one-text-block" id="description_after_action">
+        <h3>Description after action</h3>
+        <a href="/features/description-after">See the list</a>
+        <p>Expand this hosting platform with modern extensions and reliable administrative integrations.</p>
+      </div>
+    HTML
+    cards << <<~HTML
+      <div class="one-text-block" id="short_text_after_action">
+        <h3>Short text after action</h3>
+        <p>Expand this hosting platform with modern extensions and reliable administrative integrations.</p>
+        <a href="/features/short-after">See the list</a>
+        <p>Updated daily.</p>
+      </div>
+      <div class="one-text-block" id="inline_action">
+        <h3>Inline action</h3>
+        <p>Expand this hosting platform with modern extensions and reliable administrative integrations. <a href="/features/inline">See the list</a></p>
+      </div>
+      <div class="one-text-block" id="div_text_after_action">
+        <h3>Div text after action</h3>
+        <p>Expand this hosting platform with modern extensions and reliable administrative integrations.</p>
+        <a href="/features/div-after">See the list</a>
+        <div>Updated daily.</div>
+      </div>
+    HTML
+    html = "<html><head><title>Platform capabilities</title></head><body><main>#{cards}</main></body></html>"
+
+    with_url_page("https://platform.example/features", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const htmlImage = document.createElement('image');
+          htmlImage.setAttribute('href', 'data:image/png;base64,AAAA');
+          document.querySelector('#html_image_element svg').append(htmlImage);
+          return Array.from(document.querySelectorAll('.one-text-block')).map(card => {
+          const item = FetchUtilListFieldsTest.sectionCard(card, {
+            listContext: FetchUtilListFieldsTest.context()
+          });
+          return { id: card.id, hasContextHeading: !!(item && item.contextHeading) };
+          });
+        })()
+      JAVASCRIPT
+
+      expect(result.to_h { |row| [row["id"], row["hasContextHeading"]] }).to eq(
+        "extra_link" => false,
+        "extra_heading" => false,
+        "button" => false,
+        "nested_record" => false,
+        "role_control" => false,
+        "custom_control" => false,
+        "structured_content" => false,
+        "meaningful_svg" => false,
+        "semantic_svg" => false,
+        "executable_svg" => false,
+        "labelled_svg" => false,
+        "external_paint" => false,
+        "conflicting_refs" => false,
+        "nested_svg_data" => false,
+        "quoted_style" => false,
+        "data_uri_style" => false,
+        "camelcase_event" => false,
+        "html_image_element" => false,
+        "script_content" => false,
+        "style_content" => false,
+        "iframe_content" => false,
+        "template_content" => false,
+        "noscript_content" => false,
+        "description_after_action" => false,
+        "short_text_after_action" => false,
+        "inline_action" => false,
+        "div_text_after_action" => false
+      )
     end
   end
 

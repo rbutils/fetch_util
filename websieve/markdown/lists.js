@@ -136,7 +136,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
     } : null;
     return fields.concat(listClonedCardFields(card, clone, selector, filter));
-  }, (item.titleHeadings || []).map(function(heading) {
+  }, (item.titleHeadings || []).concat(item.contextHeadingNode || []).map(function(heading) {
     return listClonedCardNode(card, clone, heading);
   }));
   pruneListCardVisibility(card, clone);
@@ -204,6 +204,7 @@ function listItemContextValues(item, primaryUrls) {
 
   var contextValues = [
     item.category,
+    item.contextHeading,
     item.summary,
     cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);

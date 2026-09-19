@@ -238,6 +238,15 @@
   }
 
   function addCardContext(candidate, card) {
+    var contextHeading = genericListCardContextHeading(card, candidate.sourceNode);
+    var existingHeadings = candidate.titleHeadings || [];
+    if (contextHeading && !existingHeadings.some(function(heading) {
+      return heading === contextHeading.node ||
+        normalizeText(heading.textContent || "") === contextHeading.text;
+    })) {
+      candidate.contextHeading = contextHeading.text;
+      candidate.contextHeadingNode = contextHeading.node;
+    }
     candidate.summary = completeCardText(card, "[class*='summary'], [class*='description'], [class*='excerpt'], p");
     candidate.category = completeCardText(card, "[class*='category'], [class*='eyebrow'], [class*='kicker']");
 

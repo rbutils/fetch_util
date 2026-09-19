@@ -49,6 +49,152 @@
     return title;
   }
 
+  function genericListCardMaterialAfter(card, link) {
+    var passedLink = false;
+    var material = false;
+    var resourceSelector = "img, picture, svg, video, audio, canvas, object, iframe, table, pre, code";
+
+    function visit(node) {
+      if (material) return;
+      if (node === link) {
+        passedLink = true;
+        return;
+      }
+      if (passedLink && node.nodeType === 3) {
+        material = !!normalizeText(node.textContent || "");
+        return;
+      }
+      if (node.nodeType !== 1 || listCardNodeHidden(node)) return;
+      if (passedLink && (normalizeText(node.textContent || "") || node.matches(resourceSelector))) {
+        material = true;
+        return;
+      }
+      composedDomChildren(node).forEach(visit);
+    }
+
+    visit(card);
+    return material;
+  }
+
+  function genericListInertSvgStyle(value) {
+    var source = String(value || "").trim();
+    if (!source || /["'\\()]|\b(?:url|expression)\b|javascript:|@import/i.test(source)) return false;
+    var declarations = source.split(";");
+    if (!declarations[declarations.length - 1].trim()) declarations.pop();
+    if (!declarations.length || declarations.some(function(declaration) { return !declaration.trim(); })) return false;
+    return declarations.every(function(declaration) {
+      return /^opacity\s*:\s*(?:0(?:\.\d+)?|1(?:\.0+)?)(?:\s*!important)?$/i.test(declaration.trim()) ||
+        /^transform\s*:\s*none(?:\s*!important)?$/i.test(declaration.trim());
+    });
+  }
+
+  function genericListInertSvgPaint(value) {
+    return /^(?:none|currentcolor|context-fill|context-stroke|#[0-9a-f]{3,8})$/i.test(
+      String(value || "").trim()
+    );
+  }
+
+  function genericListInertSvgAttribute(node, attribute) {
+    var name = String(attribute.name || "").toLowerCase();
+    var tag = String(node.localName || "").toLowerCase();
+    var shared = ["x", "y", "width", "height", "opacity", "preserveaspectratio"];
+    if (/^on/i.test(String(attribute.name || ""))) return false;
+    if (name === "style" && (tag === "svg" || tag === "image")) {
+      return genericListInertSvgStyle(attribute.value);
+    }
+    if ((name === "fill" || name === "stroke") && tag === "svg") {
+      return genericListInertSvgPaint(attribute.value);
+    }
+    if (tag === "image") return ["href", "xlink:href"].concat(shared).indexOf(name) !== -1;
+    if (tag !== "svg") return false;
+    return ["xmlns", "xmlns:xlink", "viewbox"].concat(shared).indexOf(name) !== -1;
+  }
+
+  function genericListInertSvgImageHref(image) {
+    var references = Array.prototype.filter.call(image.attributes || [], function(attribute) {
+      var name = String(attribute.name || "").toLowerCase();
+      return name === "href" || name === "xlink:href";
+    }).map(function(attribute) { return String(attribute.value || ""); });
+    return references.length > 0 && references.every(function(url) {
+      return /^data:(?:image|img)\/(?:avif|bmp|gif|jpe?g|png|webp)(?:[;,])/i.test(url);
+    });
+  }
+
+  function genericListInertImageSvg(svg, heading) {
+    if (!heading || !(svg.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+        normalizeText(svg.textContent || "")) return false;
+    var nodes = [svg].concat(Array.prototype.slice.call(svg.querySelectorAll("*")));
+    if (nodes.some(function(node) {
+      return Array.prototype.some.call(node.attributes || [], function(attribute) {
+        return !genericListInertSvgAttribute(node, attribute);
+      });
+    })) return false;
+    var children = nodes.slice(1);
+    if (!children.length || children.some(function(node) {
+      return String(node.localName || "").toLowerCase() !== "image" ||
+        node.namespaceURI !== "http://www.w3.org/2000/svg";
+    })) return false;
+    return children.every(genericListInertSvgImageHref);
+  }
+
+  function genericListCardContextHeading(card, link) {
+    if (!card || !link || !card.contains(link) ||
+        !materializedHttpUrl(link.getAttribute("href")) || genericListInteractionOwner(card)) return null;
+    if (card.querySelector([
+      "button", "form", "input", "select", "textarea", "summary",
+      "[role='button']", "[role='menuitem']", "[role='tab']",
+      "[contenteditable]:not([contenteditable='false'])"
+    ].join(", "))) return null;
+    if (Array.prototype.some.call(card.querySelectorAll("[role]"), function(node) {
+      var tokens = normalizeText(node.getAttribute("role") || "").toLowerCase().split(/\s+/);
+      return tokens.some(function(token) {
+        return [
+          "button", "checkbox", "combobox", "listbox", "menuitem", "option",
+          "radio", "slider", "spinbutton", "switch", "tab", "treeitem"
+        ].indexOf(token) !== -1;
+      });
+    })) return null;
+    if (Array.prototype.some.call(card.querySelectorAll("*"), function(node) {
+      return String(node.localName || "").indexOf("-") !== -1;
+    })) return null;
+
+    var links = cardOwnedNodes(card, "a[href]").filter(function(candidate) {
+      return !listCardNodeHidden(candidate);
+    });
+    var headings = cardOwnedNodes(card, "h1, h2, h3, h4").filter(function(heading) {
+      return !listCardNodeHidden(heading) && !heading.querySelector("a[href]");
+    });
+    var heading = headings[0];
+    var decorativeSvgs = cardOwnedNodes(card, "svg").filter(function(svg) {
+      return genericListInertImageSvg(svg, heading);
+    });
+    var paragraphs = cardOwnedNodes(card, "p").filter(function(paragraph) {
+      return !listCardNodeHidden(paragraph) && normalizeText(paragraph.textContent || "");
+    });
+    if (links.length !== 1 || links[0] !== link || headings.length !== 1 ||
+        !paragraphs.some(function(paragraph) {
+          return normalizeText(paragraph.textContent || "").length >= 40;
+        }) || card.querySelector([
+          "article", "aside", "section", "li", "tr", "table", "fieldset", "details",
+          "figure", "blockquote", "ul", "ol", "dl", "pre", "code",
+          "img", "picture", "video", "audio", "canvas", "iframe",
+          "script", "style", "template", "noscript"
+        ].join(", "))) return null;
+    if (cardOwnedNodes(card, "svg").length !== decorativeSvgs.length) return null;
+
+    var headingText = normalizeText(heading.textContent || "");
+    var headingBeforeLink = !!(heading.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING);
+    var paragraphsBetween = paragraphs.every(function(paragraph) {
+      if (paragraph.contains(link)) return false;
+      return !!(heading.compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+        !!(paragraph.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    if (!headingBeforeLink || !paragraphsBetween || genericListCardMaterialAfter(card, link) ||
+        headingText.length < 3 || headingText.length > 160) return null;
+
+    return { text: headingText, node: heading };
+  }
+
   function genericLinkedCollectionHeading(link, card) {
     if (!homepageRootPath() || !link || !card || !card.contains(link)) return false;
     var heading = link.closest("h1, h2, h3");
