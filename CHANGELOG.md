@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Remove an accidental host-only diagnostic trap, keep generic carousel supplements out of profile-owned homepage lists, and recover proved carousel records whose titles are separate from short action links.
 - Preserve complete media-backed record inventories from explicitly controlled ARIA carousels while leaving uncontrolled hidden slides excluded.
 - Preserve source-owned local heading destinations when the same URLs also identify other list records.
 - Preserve a uniquely owned heading before its description when a structured card ends with a trailing action link.

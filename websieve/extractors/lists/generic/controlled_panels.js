@@ -214,6 +214,7 @@
 
   function listMarkdownWithControlledPanels(content, metadata, currentMarkdown) {
     if (!content || content.contentType !== "list") return null;
+    if (content.hostAware || content.docsLike || content.legalProvision || content.profileListOwner) return null;
     var pageTitles = [metadata.title, document.title];
     var ordinary = content.listExtraction;
     if (!ordinary && content.listSourceNode && content.listSourceItems) {
@@ -223,34 +224,26 @@
     var sourceNode = ordinary ? ordinary.sourceNode : (content.listSourceNode || document.body);
     var preservedRoots = controlledListPanelRoots(sourceNode);
     if (!preservedRoots.length) return null;
+    var directCarouselItems = controlledListCarouselItems(sourceNode);
     if (!ordinary) ordinary = buildListExtraction(sourceNode, pageTitles);
     var expanded = buildListExtraction(sourceNode, pageTitles, { preservedRoots: preservedRoots });
-    if (/(^|\.)jio\.com$/.test(location.hostname)) {
-      throw new Error("JIO_LIST_DEBUG " + JSON.stringify({
-        sourceTag: sourceNode.tagName,
-        sourceClass: normalizeText(sourceNode.className),
-        bodyRoots: controlledListCarouselRoots(document.body).length,
-        sourceRoots: preservedRoots.length,
-        ordinaryItems: ordinary.items.length,
-        ordinaryMaterialized: materializedListItemCount(ordinary.items),
-        expandedItems: expanded.items.length,
-        expandedMaterialized: materializedListItemCount(expanded.items),
-        additions: controlledListPanelAdditions(expanded.items, ordinary.items)
-      }));
-    }
     var additions;
     if (materializedListItemCount(ordinary.items) >= 3) {
       additions = controlledListPanelAdditions(expanded.items, ordinary.items);
       if (!additions) return null;
     } else {
       var representedText = normalizeText(currentMarkdown || content.markdown || content.textContent || "");
-      additions = expanded.items.filter(function(item) {
+      additions = directCarouselItems.filter(function(item) {
+        return representedText.indexOf(normalizeText(item.text || "")) === -1;
+      });
+      if (!additions.length) additions = expanded.items.filter(function(item) {
         return item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']") &&
           representedText.indexOf(normalizeText(item.text || "")) === -1;
       });
     }
     additions = additions.filter(function(item) {
-      return item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']");
+      return item.controlledRoot ? preservedRoots.indexOf(item.controlledRoot) !== -1 :
+        (item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']"));
     });
     if (materializedListItemCount(additions) < 3) return null;
 

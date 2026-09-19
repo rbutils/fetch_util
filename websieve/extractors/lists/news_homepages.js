@@ -64,6 +64,7 @@
       siteName: (metadata && metadata.siteName) || config.siteName || location.hostname,
       items: items
     });
+    result.profileListOwner = true;
     if (config.hostAware) result.hostAware = true;
     if (config.statusPage) result.statusPage = true;
     return result;

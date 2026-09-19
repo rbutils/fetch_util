@@ -60,18 +60,22 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
   end
 
   def record_numbers(markdown)
-    markdown.scan(%r{\]\(https://travel\.example/records/(\d+)\)}).flatten.map(&:to_i)
+    markdown.scan(%r{\]\(https://[^/]+/records/(\d+)\)}).flatten.map(&:to_i)
   end
 
-  def controlled_carousel_fixture(total: 10, controls: true, duplicate_url: false, boundary_disabled: false, both_disabled: false)
+  def controlled_carousel_fixture(total: 10, controls: true, duplicate_url: false, unsafe_url: false,
+                                  invalid_sequence: false,
+                                  boundary_disabled: false, both_disabled: false)
     slides = (1..total).map do |number|
       destination = duplicate_url && number == total ? 1 : number
+      href = unsafe_url && number == total ? 'javascript:alert(1)' : "/records/#{destination}"
       hidden = number > 4 ? ' aria-hidden="true" style="display: none"' : ''
+      label = invalid_sequence && number == total ? "Hidden promotion 99 of #{total}" : "Slide #{number} of #{total}"
       <<~HTML
-        <div role="group" aria-roledescription="slide" aria-label="Slide #{number} of #{total}"#{hidden}>
+        <div role="group" aria-roledescription="slide" aria-label="#{label}"#{hidden}>
           <article class="destination-card">
             <img src="/images/#{number}.jpg" alt="Destination #{number}">
-            <h3><a href="/records/#{destination}">Destination record #{number} with local guidance</a></h3>
+            <h3><a href="#{href}">Destination record #{number} with local guidance</a></h3>
             <p>Practical route details for destination record #{number}.</p>
           </article>
         </div>
@@ -96,6 +100,36 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
     HTML
   end
 
+  def action_link_carousel_fixture
+    page_sections = (1..8).map do |number|
+      "<section><h2>Independent public service heading #{number} with useful context</h2></section>"
+    end.join
+    slides = (1..10).map do |number|
+      hidden = number > 4 ? ' aria-hidden="true" style="display: none"' : ''
+      <<~HTML
+        <div class="carousel-slide" role="group" aria-roledescription="slide" aria-label="Slide #{number} of 10"#{hidden}>
+          <div class="image-with-text-card">
+            <img src="/images/story-#{number}.jpg" alt="Story #{number}">
+            <div><h3>Controlled carousel story #{number} with substantive local context</h3></div>
+          </div>
+          <div><a href="/records/#{number}">Go</a></div>
+        </div>
+      HTML
+    end.join
+    <<~HTML
+      <html><head><title>Public service overview</title></head><body><main>
+        <h1>Public service overview</h1>
+        #{page_sections}
+        <section class="carousel-shell">
+          <div role="region" aria-label="Carousel"><div class="carousel-track">#{slides}</div></div>
+          <button aria-label="Previous slide">Previous</button>
+          <button aria-label="Next slide">Next</button>
+        </section>
+        <section hidden><h3>Hidden unrelated record</h3><a href="/records/999">Go</a></section>
+      </main></body></html>
+    HTML
+  end
+
   it 'appends every inactive panel record after preserving the selected list' do
     with_url_page('https://travel.example/', controlled_panel_fixture) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
@@ -116,7 +150,7 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
   it 'appends every uniquely owned record from an explicitly controlled carousel' do
     html = controlled_carousel_fixture(boundary_disabled: true)
 
-    with_url_page('https://travel.example/', html) do |page|
+    with_url_page('https://www.jio.com/', html) do |page|
       source = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
@@ -126,11 +160,29 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
     end
   end
 
+  it 'recovers missing records whose controlled slide keeps its title separate from a short action link' do
+    with_url_page('https://directory.example/', action_link_carousel_fixture) do |page|
+      source = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload.fetch('markdown')
+
+      expect(payload.fetch('contentType')).to eq('list')
+      expect(record_numbers(markdown)).to eq((5..10).to_a)
+      (1..10).each do |number|
+        expect(markdown.scan("Controlled carousel story #{number} with substantive local context").length).to eq(1)
+      end
+      expect(markdown).not_to include('/records/999', 'Hidden unrelated record')
+      expect(page.evaluate('document.body.innerHTML')).to eq(source)
+    end
+  end
+
   it 'does not expose uncontrolled, undersized, or duplicate carousel inventories' do
     fixtures = [
       controlled_carousel_fixture(controls: false),
       controlled_carousel_fixture(total: 3),
       controlled_carousel_fixture(duplicate_url: true),
+      controlled_carousel_fixture(unsafe_url: true),
+      controlled_carousel_fixture(invalid_sequence: true),
       controlled_carousel_fixture(both_disabled: true)
     ]
 
