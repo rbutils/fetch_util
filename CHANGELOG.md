@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Do not promote a byline owned by one list record into page-level metadata when the page does not independently declare it.
 - Omit repeated action labels from list-card supplemental text when the same-label destination is already represented by a peer record.
 - Fail fast on ambiguous trailing-action cards before running ownership scans across large list collections.
 - Preserve compact card metadata rows in source order instead of extracting their timestamps ahead of adjacent local labels.
