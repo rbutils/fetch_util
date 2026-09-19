@@ -193,11 +193,11 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
         nestedMetadataCards.indexOf(nested) === -1 && siblingPresentationCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
   });
-  var itemTitles = [item.text, item.displayText].map(normalizeText).filter(Boolean);
+  var representedValues = [item.text, item.displayText].concat(contextValues || []).map(normalizeText).filter(Boolean);
   var itemUrl = materializedHttpUrl(item.url || "");
   var itemKey = itemUrl && listCanonicalKey(itemUrl);
-  Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
-    if (itemTitles.indexOf(normalizeText(node.textContent || "")) < 0) return;
+  Array.prototype.forEach.call(clone.querySelectorAll("a, span, p, div, h1, h2, h3, h4, h5, h6, [class*='title' i]"), function(node) {
+    if (representedValues.indexOf(normalizeText(node.textContent || "")) < 0) return;
     var linkedOwners = node.matches("a[href]") ? [node] : Array.from(node.querySelectorAll("a[href]"));
     if (!linkedOwners.length) {
       var linkedAncestor = node.closest("a[href]");
@@ -216,7 +216,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
   });
   pruneGenericListControls(clone);
   var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url, supportingLinks));
-  return supplemental === normalizeText(item.text || "") ? "" : supplemental;
+  return representedValues.indexOf(supplemental) >= 0 ? "" : supplemental;
 }
 
 function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
@@ -278,7 +278,9 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
       });
     }
   }
-  return contextValues.filter(Boolean).filter(function(value, index, values) {
+  return contextValues.filter(function(value) {
+    return value && !listEmptyRepresentedReference(value, primaryUrls);
+  }).filter(function(value, index, values) {
     return values.indexOf(value) === index;
   });
 }

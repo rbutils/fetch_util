@@ -692,6 +692,61 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     end
   end
 
+  it "does not repeat represented context or empty references from supplemental card text" do
+    html = <<~HTML
+      <html><head><title>Garden journals</title></head><body><main>
+        <article data-represented>
+          <a href="/stories/ginger">Ginger syrup guide</a>
+          <a href="/journals/home">Home baking journal</a>
+        </article>
+        <article data-unrepresented>
+          <a href="/journals/garden">Garden journal</a>
+          <a href="/topics/seedlings">Seedling guide</a>
+        </article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://journals.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const before = document.documentElement.outerHTML;
+          const represented = document.querySelector('[data-represented]');
+          const representedMarkdown = FetchUtilListFieldsTest.render([
+            {card: represented, text: 'Ginger syrup guide', url: '/stories/ginger'},
+            {
+              card: represented, text: 'Home baking journal', url: '/journals/home',
+              summary: 'Ginger syrup guide',
+              image: '[](https://journals.example/stories/ginger)'
+            }
+          ]);
+          const unrepresented = document.querySelector('[data-unrepresented]');
+          const unrepresentedMarkdown = FetchUtilListFieldsTest.render([{
+            card: unrepresented, text: 'Garden journal', url: '/journals/garden',
+            summary: 'Seedling guide',
+            image: '[](https://cdn.journals.example/seedlings.jpg)'
+          }]);
+          return {
+            representedMarkdown,
+            unrepresentedMarkdown,
+            unchanged: document.documentElement.outerHTML === before
+          };
+        })()
+      JAVASCRIPT
+
+      expect(result.fetch("unchanged")).to be(true)
+      represented_line = result.fetch("representedMarkdown").lines.last
+      expect(represented_line.scan("Ginger syrup guide")).to eq(["Ginger syrup guide"])
+      expect(represented_line).not_to include("[](")
+      expect(represented_line).not_to match(/\s-\s*$/)
+      expect(result.fetch("unrepresentedMarkdown")).to include(
+        "Seedling guide",
+        "[Seedling guide](https://journals.example/topics/seedlings)",
+        "[](https://cdn.journals.example/seedlings.jpg)"
+      )
+    end
+  end
+
   it "preserves unsafe labels and mixed unrepresented owners without a primary URL set" do
     html = <<~HTML
       <html><head><title>Products</title></head><body><main>

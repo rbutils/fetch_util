@@ -25,6 +25,13 @@ function listExactPrimaryAliasDetail(value, item) {
     destination === primary);
 }
 
+function listEmptyRepresentedReference(value, primaryUrls) {
+  var match = String(value || "").trim().match(/^!?\[\]\((https?:\/\/(?:\\.|[^\)\s])+)\)$/);
+  if (!match || !primaryUrls) return false;
+  var destination = materializedHttpUrl(match[1].replace(/\\([()])/g, "$1"));
+  return !!(destination && primaryUrls.has(listCanonicalKey(destination)));
+}
+
 function listPrimaryRecordKey(url, title) {
   var destination = materializedHttpUrl(url || "");
   var label = normalizeText(title || "");
