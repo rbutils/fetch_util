@@ -201,6 +201,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     markdown = materializedMarkdown(cleanupMarkdownNoise(searchToolsMarkdown));
     content.textContent = markdown;
   }
+  markdown = stripStructuredCardFieldMarkers(markdown);
+  content.textContent = stripStructuredCardFieldMarkers(content.textContent);
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;

@@ -24,6 +24,7 @@
     preserveInlineProse(root);
     cleanupAgentRoot(root);
     normalizeCodeBlocks(root);
+    preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root);
@@ -108,6 +109,15 @@
         var text = normalizeText(content);
         if (!text) return "";
         return "\n\n" + content.trim() + "\n\n";
+      }
+    });
+
+    service.addRule("structuredCardField", {
+      filter: function(node) {
+        return node.nodeType === 1 && node.hasAttribute("data-fetch-util-structured-card-field");
+      },
+      replacement: function(content) {
+        return "\n\n" + STRUCTURED_CARD_FIELD_MARKER + content.trim() + "\n\n";
       }
     });
 

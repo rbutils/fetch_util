@@ -52,6 +52,110 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('markdown')).not_to include('javascript:', 'user:secret', 'Hidden integration')
   end
 
+  it 'keeps repeated article-card fields separate while linking their owned titles' do
+    cards = 4.times.map do |index|
+      <<~HTML
+        <div class="field__item">
+          <article class="media-card">
+            <a href="/news/story-#{index}" title="Story #{index} details">
+              <div class="media"><img src="/images/story-#{index}.jpg" alt="Story #{index} preview"></div>
+              <div class="wrapper">
+                <p class="section-text" data-fetch-util-structured-card-field="page-authored">Research</p>
+                <div class="card__title">Complete research story #{index}</div>
+                <span class="field field--name-created field--label-hidden"><time datetime="2026-09-#{index + 10}">#{index + 10} September 2026</time></span>
+              </div>
+            </a>
+          </article>
+        </div>
+      HTML
+    end.join
+    html = block_anchor_page("<section><h2>Latest research</h2><div class='cards'>#{cards}</div></section>")
+
+    result = nil
+    with_url_page('https://guide.example.test/research', html) do |page|
+      source_html = page.evaluate('document.body.innerHTML')
+      result = extract_payload(page, reader_mode: false)
+      expect(page.evaluate('document.body.innerHTML')).to eq(source_html)
+    end
+    markdown = result.fetch('markdown')
+
+    4.times do |index|
+      image = "![Story #{index} preview](https://guide.example.test/images/story-#{index}.jpg)"
+      title = "[Complete research story #{index}](https://guide.example.test/news/story-#{index} \"Story #{index} details\")"
+      date = "#{index + 10} September 2026"
+      expect(markdown).to include(image, title, date)
+      expect(markdown.index(image)).to be < markdown.index(title)
+      expect(markdown.index(title)).to be < markdown.index(date)
+      expect(markdown.scan("https://guide.example.test/news/story-#{index}").length).to eq(1)
+    end
+    expect(markdown.scan(/^Research$/).length).to eq(4)
+    expect(markdown).not_to include("\uE000fetch-util-card-field:", 'data-fetch-util-structured-card-field')
+    expect(result.fetch('textContent')).not_to include("\uE000fetch-util-card-field:")
+  end
+
+  it 'leaves ambiguous and incomplete block-label links on the established compact path' do
+    html = block_anchor_page(<<~HTML)
+      <div class="cards">
+        <article><a href="/ambiguous"><img src="/ambiguous.jpg" alt="Ambiguous preview">
+          <p class="section-text">Research</p><div class="title">First title field</div>
+          <div class="headline">Second title field</div><time>10 September 2026</time></a></article>
+        <article><a href="/incomplete"><img src="/incomplete.jpg" alt="Incomplete preview">
+          <div class="title">Incomplete card title</div><time>11 September 2026</time></a></article>
+      </div>
+    HTML
+
+    result = extract_from_url('https://guide.example.test/ambiguous-cards', html, reader_mode: false) { |payload| payload }
+    markdown = result.fetch('markdown')
+
+    expect(markdown).to include(
+      '[![Ambiguous preview](https://guide.example.test/ambiguous.jpg) Research First title field Second title field 10 September 2026](https://guide.example.test/ambiguous)',
+      '[![Incomplete preview](https://guide.example.test/incomplete.jpg) Incomplete card title 11 September 2026](https://guide.example.test/incomplete)'
+    )
+  end
+
+  it 'preserves every repeated structured card without a presentation cap' do
+    cards = 125.times.map do |index|
+      <<~HTML
+        <div class="field__item"><article><a href="/reports/#{index}">
+          <img src="/reports/#{index}.jpg" alt="Report #{index}">
+          <p class="section-text">Research</p>
+          <div class="card__title">Complete research report #{index}</div>
+          <time>#{index + 1} September 2026</time>
+        </a></article></div>
+      HTML
+    end.join
+    html = "<main><section><h2>Research reports</h2><div class='cards'>#{cards}</div></section></main>"
+
+    with_url_page('https://guide.example.test/reports', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject do |line|
+        line.empty? || line.start_with?('#')
+      end.map { |path| File.read(File.join(root, 'websieve', path)) }.join("\n")
+      source = source.sub('})(window);', <<~JS)
+        global.structuredCardProbe = function() {
+          const source = document.querySelector('main');
+          const root = source.cloneNode(true);
+          preserveStructuredCardLinks(root);
+          return {
+            outerLinks: root.querySelectorAll('article > a[href]').length,
+            titleLinks: Array.from(root.querySelectorAll('article .card__title > a[href]')).map(function(link) {
+              return link.href;
+            }),
+            sourceOuterLinks: source.querySelectorAll('article > a[href]').length,
+            sourceTitleLinks: source.querySelectorAll('article .card__title > a[href]').length
+          };
+        };
+        })(window);
+      JS
+      page.add_script_tag(content: source)
+
+      result = page.evaluate('structuredCardProbe()')
+      expect(result.fetch('outerLinks')).to eq(0)
+      expect(result.fetch('titleLinks')).to eq(125.times.map { |index| "https://guide.example.test/reports/#{index}" })
+      expect(result).to include('sourceOuterLinks' => 125, 'sourceTitleLinks' => 0)
+    end
+  end
+
   it 'links a whole article card through its heading while preserving paragraphs and images' do
     html = block_anchor_page(<<~HTML)
       <a href="https://charts.example.test/plot?source=guide&amp;campaign=examples">

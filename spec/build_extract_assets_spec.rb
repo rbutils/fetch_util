@@ -257,6 +257,23 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(supplemental_path)).to be < manifest.index("markdown/lists.js")
   end
 
+  it "loads structured card-link shaping before the Markdown runtime" do
+    manifest = File.readlines(File.join(project_root, "websieve", "manifest.txt"), chomp: true)
+    helper = "markdown/card_links.js"
+    runtime = "markdown/runtime.js"
+    helper_source = File.read(File.join(project_root, "websieve", helper))
+
+    expect(manifest.count(helper)).to eq(1)
+    expect(manifest.index(helper)).to be < manifest.index(runtime)
+    expect(helper_source).to include(
+      "function preserveStructuredCardLinks", "function structuredCardOwnerLinkCounts"
+    )
+    expect(helper_source).not_to include('owner.querySelectorAll("article > a[href]")')
+    expect(File.read(File.join(project_root, "websieve", runtime))).to include(
+      "preserveStructuredCardLinks(root);"
+    )
+  end
+
   it "loads list byline finalization before result finalization" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

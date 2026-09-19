@@ -49,6 +49,7 @@ markdown/materialization_inline.js
 markdown/materialization_containers.js
 markdown/materialization_blocks.js
 markdown/materialization.js
+markdown/card_links.js
 core/markdown_cleanup/fences.js
 core/markdown_cleanup/duplicates.js
 core/markdown_cleanup.js
