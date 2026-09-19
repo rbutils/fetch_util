@@ -46,7 +46,7 @@ function bylineWithoutHostIdentity(raw, namedAuthorByline) {
 }
 
 function readableOrFallbackContent(options, metadata) {
-  var content = options && options.reader_mode !== false ? readabilityContent() : null;
+  var content = options && options.reader_mode !== false ? readabilityContent(metadata) : null;
   if (content) content = preferFallbackContent(content, fallbackContent(metadata));
   if (!content) content = fallbackContent(metadata);
   return content;

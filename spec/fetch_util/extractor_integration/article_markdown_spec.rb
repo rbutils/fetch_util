@@ -157,6 +157,210 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers a visible metadata summary over a flattened short reader excerpt" do
+    description = "Diabetes is a long-lasting health condition that affects how the body turns food into energy."
+    body = "#{description} This overview explains prevention, diagnosis, treatment, and community support. " * 5
+    html = <<~HTML
+      <html><head>
+        <title>About diabetes</title>
+        <meta name="description" content="#{description}">
+      </head><body><main><article>
+        <h1>About diabetes</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <h2>For Everyone</h2>
+        <p>#{body}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/about-diabetes", html) do |page|
+      payload = extract_payload(page, reader_mode: true)
+
+      expect(payload["excerpt"]).to eq(description)
+      expect(payload["excerpt"]).not_to end_with("bod")
+    end
+  end
+
+  it "expands a short reader excerpt from one substantive body block" do
+    lead = ("The health overview explains prevention, diagnosis, treatment, and community support for people living with chronic conditions. " * 4).strip
+    html = <<~HTML
+      <html><head><title>Community health overview</title></head><body><main><article>
+        <h1>Community health overview</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <h2>For Everyone</h2>
+        <p>#{lead}</p>
+        <p>Additional guidance explains how residents can find local services and evidence-based care.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/community-overview", html) do |page|
+      excerpt = extract_payload(page, reader_mode: true).fetch("excerpt")
+
+      expect(excerpt).to start_with("The health overview explains prevention")
+      expect(excerpt.length).to be <= 280
+      expect(lead).to start_with(excerpt)
+      expect(excerpt).to end_with(/[.!?]/)
+    end
+  end
+
+  it "prefers an explicit article summary list over later body sections" do
+    first = "Diabetes is a chronic condition that affects how the body turns food into energy."
+    second = "There are three main types of diabetes, and each type requires appropriate care."
+    html = <<~HTML
+      <html><head><title>Diabetes basics</title></head><body><main><article>
+        <h1>Diabetes basics</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <section data-section="diabetes_page_summary"><h2>Key points</h2><ul><li>#{first}</li><li>#{second}</li></ul></section>
+        <section><h2>Overview</h2><p>The later overview explains insulin, blood sugar, prevention, treatment, and long-term care in detail.</p></section>
+        <p>#{"Additional guidance explains prevention, diagnosis, treatment, and community services in detail. " * 5}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/diabetes-basics", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page, reader_mode: true)
+
+      expect(payload.fetch("excerpt")).to eq("#{first} #{second}")
+      expect(payload.fetch("html")).not_to include("data-fetchutil-excerpt-")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
+  it "does not promote metadata found only in related or caption content" do
+    description = "Related material repeats this metadata summary."
+    body = "The owned report explains prevention, diagnosis, treatment, and community support in one complete paragraph."
+    html = <<~HTML
+      <html><head><title>Owned health report</title><meta name="description" content="#{description}"></head>
+      <body><main><article><h1>Owned health report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <aside class="related"><p>#{description}</p></aside>
+        <figure><figcaption><p>#{description}</p></figcaption></figure>
+        <div id="related-promotion"><p>#{description}</p></div>
+        <div data-component="recommendedContent"><p>#{description}</p></div>
+        <p>Intro: #{description} Extra.</p>
+        <p>#{body}</p>
+        <p>#{"Additional evidence explains prevention, diagnosis, treatment, and community services in detail. " * 5}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/owned-report", html) do |page|
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq(body)
+    end
+  end
+
+  it "does not derive an excerpt from body prose without article ownership" do
+    body = ("A generic widget explains unrelated account alerts, preferences, and promotional choices. " * 5).strip
+    html = <<~HTML
+      <html><head><title>Account information</title></head><body>
+        <h1>Account information</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <div><p>#{body}</p></div>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.test/account/information", html) do |page|
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq("Jan. 2, 2026, visit link for details.")
+    end
+  end
+
+  it "does not derive an excerpt from an unowned widget inside an article" do
+    widget = ("A generic widget explains unrelated account alerts, preferences, and promotional choices. " * 5).strip
+    body = ("The owned report explains prevention, diagnosis, treatment, and community support. " * 5).strip
+    html = <<~HTML
+      <html><head><title>Owned report</title></head><body><main><article>
+        <h1>Owned report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <div><p>#{widget}</p></div>
+        <p>#{body}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/reports/owned", html) do |page|
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to start_with("The owned report explains")
+    end
+  end
+
+  it "ignores explicit summary containers hidden by attributes or inline styles" do
+    hidden = "Hidden summary text must not become the public article excerpt."
+    body = "The visible report explains prevention, diagnosis, treatment, and community support in one complete paragraph."
+    html = <<~HTML
+      <html><head><title>Visible health report</title><style>.css-hidden-summary { display: none }</style></head><body><main><article>
+        <h1>Visible health report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <section data-section="summary" hidden><p>#{hidden}</p></section>
+        <section data-section="summary" aria-hidden="true"><p>#{hidden}</p></section>
+        <section data-section="summary" style="display: none"><p>#{hidden}</p></section>
+        <section data-section="summary" class="css-hidden-summary"><p>#{hidden}</p></section>
+        <nav data-section="summary"><p>#{hidden}</p></nav>
+        <header data-section="summary"><p>#{hidden}</p></header>
+        <footer data-section="summary"><p>#{hidden}</p></footer>
+        <form data-section="summary"><p>#{hidden}</p></form>
+        <section data-section="summary" role="complementary"><p>#{hidden}</p></section>
+        <section data-section="summary" inert><p>#{hidden}</p></section>
+        <section data-section="summary" style="visibility: hidden"><p>#{hidden}</p></section>
+        <section data-section="summary" style="opacity: 0"><p>#{hidden}</p></section>
+        <p>#{body}</p>
+        <p>#{"Additional evidence explains prevention, diagnosis, treatment, and community services in detail. " * 5}</p>
+        <section data-section="global_summary"><p>#{hidden} #{hidden}</p></section>
+        <div class="related"><p data-fetchutil-excerpt-source="page-authored">#{hidden} #{hidden}</p></div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/visible-report", html) do |page|
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq(body)
+    end
+  end
+
+  it "keeps grapheme clusters intact when bounding a long body excerpt" do
+    sentence = "Families 👨‍👩‍👧‍👦 receive coordinated prevention, diagnosis, treatment, and community support. "
+    html = <<~HTML
+      <html><head><title>Family care report</title></head><body><main><article>
+        <h1>Family care report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <p>#{sentence * 5}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/family-care", html) do |page|
+      excerpt = extract_payload(page, reader_mode: true).fetch("excerpt")
+
+      expect(excerpt.scan(/\X/).length).to be <= 280
+      expect(excerpt).to end_with("support.")
+      expect(excerpt).not_to end_with("\u200D")
+      expect(sentence * 5).to start_with(excerpt)
+    end
+  end
+
+  it "retains the short reader excerpt when no bounded sentence or token exists" do
+    html = <<~HTML
+      <html><head><title>Identifier report</title></head><body><main><article>
+        <h1>Identifier report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <section data-section="summary"><p>#{"a" * 400}</p></section>
+        <p>#{"a" * 400}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/identifier-report", html) do |page|
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq("Jan. 2, 2026, visit link for details.")
+    end
+  end
+
+  it "does not truncate long excerpts when grapheme segmentation is unavailable" do
+    html = <<~HTML
+      <html><head><title>Fallback report</title></head><body><main><article>
+        <h1>Fallback report</h1>
+        <p class="published-date">Jan. 2, 2026, visit link for details.</p>
+        <p>#{"Family care 👨‍👩‍👧‍👦 remains coordinated across services. " * 10}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/health/fallback-report", html) do |page|
+      page.evaluate("Object.defineProperty(Intl, 'Segmenter', {value: undefined, configurable: true})")
+
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq("Jan. 2, 2026, visit link for details.")
+    end
+  end
+
   it "converts tables into markdown instead of raw html" do
     html = <<~HTML
       <html>

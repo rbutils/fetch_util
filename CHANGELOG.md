@@ -5,6 +5,7 @@
 ## Unreleased
 
 - Prefer an explicitly named author field over sibling contact controls when collecting visible article bylines.
+- Keep source-visible article summaries intact instead of expanding short reader excerpts into truncated flattened text.
 
 - Preserve a visible localized publication date when it was embedded in a rejected date-only byline instead of falling back to stale structured metadata.
 - Prefer article-specific author metadata over generic site-level author declarations.
