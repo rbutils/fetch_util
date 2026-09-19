@@ -27,6 +27,7 @@ RSpec.describe FetchUtil::Extractor do
     outro = File.read(File.join(root, "websieve/99_outro.js"))
     source = source.delete_suffix(outro) + <<~JS + outro
       window.__mainFallbackSelection = function(input) {
+        var documentBefore = document.documentElement.outerHTML;
         var primaryRoot = document.createElement("div");
         var fallbackRoot = document.createElement("div");
         primaryRoot.innerHTML = input.primary;
@@ -47,11 +48,20 @@ RSpec.describe FetchUtil::Extractor do
         finally { fallbackContent = originalFallback; }
         var selectedRoot = document.createElement("div");
         selectedRoot.innerHTML = selected.html;
+        var resources = [];
+        selectedRoot.querySelectorAll("a, img, source, video").forEach(function(node) {
+          ["href", "src", "poster"].forEach(function(attribute) {
+            var value = node.getAttribute(attribute);
+            if (value) resources.push(value);
+          });
+        });
         return JSON.stringify({expanded: selected.html === input.fallback, html: selected.html, readerMode: selected.readerMode,
           dominantBefore: dominantBefore, dominantAfter: dominantIndexListPage(selected),
           metadata: [selected.title, selected.byline, selected.excerpt, selected.publishedTime],
           inputsUnchanged: JSON.stringify(primary) === primaryBefore && JSON.stringify(fallback) === fallbackBefore,
+          documentUnchanged: document.documentElement.outerHTML === documentBefore,
           urls: Array.prototype.map.call(selectedRoot.querySelectorAll("a[href]"), function(link) { return link.getAttribute("href"); }),
+          resources: resources,
           coverage: mainFallbackPreservesArticle(primaryRoot, fallbackRoot), producerMain: producerMain});
       };
     JS
@@ -218,6 +228,157 @@ RSpec.describe FetchUtil::Extractor do
 
     expect(result.fetch("expanded")).to be(true)
     expect(result.fetch("html").scan(%r{<pre>command_(\d+)\(\)</pre>}).flatten).to eq((0...125).map(&:to_s))
+  end
+
+  it "preserves omitted resources from the uniquely owned article in source order" do
+    primary = "#{main_fallback_primary}<video poster='/video/poster.jpg'>" \
+      "<source src='/video/report.mp4' type='video/mp4'></video>" \
+      "<img src='/existing-empty-alt.jpg' alt=''><a href='/existing-empty-anchor'></a>"
+    assets = <<~HTML
+      <section class="additional-asset">
+        <h3>Figure evidence</h3>
+        <div class="asset-viewer-inline">
+          <a href="/download/figure.jpg">Download asset</a>
+          <a href="/iiif/figure.jpg"><img src="/preview/figure.jpg" alt="Figure evidence"></a>
+          <a href="/existing">Existing service details</a>
+          <a href="/existing-empty-alt.jpg">Existing image download</a>
+          <a href="/existing-empty-anchor">Recovered empty anchor resource</a>
+        </div>
+        <div class="asset-viewer-inline asset-viewer-inline--supplement visuallyhidden" data-variant="supplement">
+          <a class="asset-viewer-inline__download_all_link" href="/download/supplement.jpg" download>
+            <span class="visuallyhidden">Download asset</span>
+          </a>
+          <a class="asset-viewer-inline__open_link" href="/iiif/supplement.jpg">
+            <span class="visuallyhidden">Open asset</span>
+          </a>
+        </div>
+      </section>
+      <section class="additional-asset" style="visibility: hidden">
+        <a href="/download/toggleable-data.csv">Download toggleable data</a>
+      </section>
+      <section>
+        <h3>Experiment video</h3>
+        <div class="video-container">
+          <video poster="/video/poster.jpg">
+            <source src="/video/report.mp4" type="video/mp4">
+            <source src="/video/report.webm" type="video/webm">
+            <source src="/video/report.ogv" type="video/ogg">
+          </video>
+          <a href="/video/transcript.txt">Download transcript</a>
+        </div>
+      </section>
+    HTML
+    page = "<article>#{primary}#{assets}</article>"
+    result = main_fallback_selection(
+      primary,
+      primary,
+      url: "https://practice.example/articles/report",
+      page_html: page
+    )
+
+    expect(result.fetch("html")).to include("Article resources", "Figure evidence", "Experiment video")
+    expect(result.fetch("resources")).to include(
+      "https://practice.example/download/figure.jpg",
+      "https://practice.example/iiif/figure.jpg",
+      "https://practice.example/download/supplement.jpg",
+      "https://practice.example/iiif/supplement.jpg",
+      "https://practice.example/download/toggleable-data.csv",
+      "/video/poster.jpg",
+      "/video/report.mp4",
+      "https://practice.example/video/report.webm",
+      "https://practice.example/video/report.ogv",
+      "https://practice.example/video/transcript.txt"
+    )
+    expect(result.fetch("resources").grep(%r{/video/})).to eq(
+      ["/video/poster.jpg", "/video/report.mp4"] +
+        %w[report.webm report.ogv transcript.txt].map { |name| "https://practice.example/video/#{name}" }
+    )
+    expect(result.fetch("html").scan("/video/poster.jpg").length).to eq(1)
+    expect(result.fetch("html").scan("/video/report.mp4").length).to eq(1)
+    expect(result.fetch("html").scan("/existing-empty-alt.jpg").length).to eq(1)
+    expect(result.fetch("html").scan("/existing-empty-anchor").length).to eq(2)
+    expect(result.fetch("html")).to include("Recovered empty anchor resource")
+    expect(result.fetch("urls").grep(/existing/)).to eq(
+      ["/existing", "/existing-empty-anchor", "https://practice.example/existing-empty-anchor"]
+    )
+    expect(result.values_at("inputsUnchanged", "documentUnchanged")).to eq([true, true])
+
+    fallback_result = main_fallback_selection(
+      primary,
+      primary,
+      url: "https://practice.example/articles/report",
+      page_html: page,
+      primary_flags: { readerMode: false }
+    )
+    expect(fallback_result.fetch("resources")).to include("https://practice.example/video/report.webm")
+  end
+
+  it "preserves every uniquely owned article resource without a presentation cap" do
+    assets = Array.new(137) do |index|
+      "<section class='additional-asset'><div class='asset-viewer-inline'>" \
+        "<a href='/asset/#{index}'>Download asset #{index}</a></div></section>"
+    end.join
+    page = "<article>#{main_fallback_primary}#{assets}</article>"
+    result = main_fallback_selection(
+      main_fallback_primary,
+      main_fallback_primary,
+      url: "https://practice.example/articles/report",
+      page_html: page
+    )
+
+    expect(result.fetch("urls").grep(%r{/asset/})).to eq(
+      Array.new(137) { |index| "https://practice.example/asset/#{index}" }
+    )
+  end
+
+  it "rejects hidden, unrelated, unsafe and ambiguously owned article resources" do
+    rejected = [
+      "<section class='additional-asset' hidden><a href='/hidden'>Hidden asset</a></section>",
+      "<section class='additional-asset' inert><a href='/inert'>Inert asset</a></section>",
+      "<section class='additional-asset' aria-hidden='true'><a href='/aria-hidden'>ARIA hidden asset</a></section>",
+      "<section class='additional-asset' style='display: none'><a href='/display-none'>Display hidden asset</a></section>",
+      "<details><section class='additional-asset'><a href='/closed-details'>Closed details asset</a></section></details>",
+      "<aside><section class='additional-asset'><a href='/related'>Related asset</a></section></aside>",
+      "<section class='related additional-asset'><a href='/recommendation'>Recommended asset</a></section>",
+      "<section><video poster='/bare-poster.jpg'><source src='/bare-video.mp4' type='video/mp4'></video></section>",
+      "<section class='additional-asset'><a href='javascript:alert(1)'>Unsafe asset</a></section>",
+      "<section class='additional-asset'><a href='https://user:secret@practice.example/private'>Private asset</a></section>"
+    ].join
+    competing = "<article>#{main_fallback_primary}<section class='additional-asset'><a href='/other'>Other article asset</a></section></article>"
+    page = "<article>#{main_fallback_primary}#{rejected}</article>#{competing}"
+    result = main_fallback_selection(
+      main_fallback_primary,
+      main_fallback_primary,
+      url: "https://practice.example/articles/report",
+      page_html: page
+    )
+
+    expect(result.fetch("html")).not_to include("Article resources", "/hidden", "/inert", "/aria-hidden",
+                                                "/display-none", "/closed-details", "/bare-poster", "/bare-video",
+                                                "/related", "/recommendation", "/other", "user:secret")
+  end
+
+  it "rejects hard-hidden descendants inside a visible article resource container" do
+    assets = <<~HTML
+      <section class="additional-asset">
+        <a href="/resource/visible">Visible asset</a>
+        <a href="/resource/display-none" style="display: none">Display hidden asset</a>
+        <div hidden><a href="/resource/hidden-owner">Hidden owner asset</a></div>
+        <details><a href="/resource/closed-details">Closed details asset</a></details>
+        <video class="article-video" style="display: none" poster="/resource/hidden-poster.jpg">
+          <source src="/resource/hidden-video.mp4" type="video/mp4">
+        </video>
+      </section>
+    HTML
+    page = "<article>#{main_fallback_primary}#{assets}</article>"
+    result = main_fallback_selection(
+      main_fallback_primary,
+      main_fallback_primary,
+      url: "https://practice.example/articles/report",
+      page_html: page
+    )
+
+    expect(result.fetch("resources").grep(%r{/resource/})).to eq(["https://practice.example/resource/visible"])
   end
 
   it "does not replace specialized or already rendered content with an instructional fallback" do

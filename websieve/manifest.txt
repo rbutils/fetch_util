@@ -80,6 +80,7 @@ extractors/article/roots.js
 extractors/article/intro_order.js
 extractors/article/intro_coverage.js
 extractors/article/carousel_coverage.js
+extractors/article/resources.js
 extractors/article/main_coverage.js
 extractors/article/focal_ownership.js
 extractors/article/fallback_excerpt.js

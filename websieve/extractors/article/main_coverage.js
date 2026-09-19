@@ -140,8 +140,10 @@
   }
 
   function enrichMainArticleContent(content, metadata) {
-    if (!content || !content.readerMode || content.contentType !== "article" || content.markdown ||
+    if (!content || content.contentType !== "article" || content.markdown ||
         content.hostAware || content.docsLike || content.legalProvision) return content;
+    content = supplementOwnedArticleResources(content);
+    if (!content.readerMode) return content;
     var selectedContent = content;
     content = supplementAttachedArticleLead(content, metadata);
     content = supplementOwnedArticleIntro(content, selectedContent);

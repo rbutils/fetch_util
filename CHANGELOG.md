@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve safe article-owned supplemental asset and video destinations that reader mode omits.
 - Prefer an explicitly named author field over sibling contact controls when collecting visible article bylines.
 - Keep source-visible article summaries intact instead of expanding short reader excerpts into truncated flattened text.
 
