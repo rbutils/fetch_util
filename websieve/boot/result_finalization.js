@@ -7,15 +7,19 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var metadataByline = sanitizeByline(metadata.byline);
   var displayedPublishedTime = visiblePublishedTime();
   var visibleBylineRaw = visibleByline();
+  var namedAuthorByline = visibleNamedAuthorByline();
   var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {
     return bylineContainsPublishedTime(value, displayedPublishedTime);
   });
   contentByline = bylineWithoutHostIdentity(
-    bylineWithoutPublishedTime(contentByline, displayedPublishedTime, metadataByline)
+    bylineWithoutPublishedTime(contentByline, displayedPublishedTime, metadataByline),
+    namedAuthorByline
   );
   metadataByline = bylineWithoutHostIdentity(
-    bylineWithoutPublishedTime(metadataByline, displayedPublishedTime)
+    bylineWithoutPublishedTime(metadataByline, displayedPublishedTime),
+    namedAuthorByline
   );
+  contentByline = bylineWithoutSiblingActions(contentByline, metadataByline);
   var readerAuthor = content.readerMode ? readerBylineSourceAuthorLink(content, metadataByline) : null;
   var readerTextByline = content.readerMode && !readerAuthor ? readerTextBylineSource(content, metadataByline) : null;
   var expandsByline = readerBylineCanExpand(content, readerAuthor);
@@ -31,7 +35,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   }
   if (content.readerMode && metadataByline && /^\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?\b/i.test(contentByline || "")) contentByline = null;
   var visibleBylineValue = bylineWithoutHostIdentity(
-    bylineWithoutPublishedTime(visibleBylineRaw, displayedPublishedTime, metadataByline || contentByline)
+    bylineWithoutPublishedTime(visibleBylineRaw, displayedPublishedTime, metadataByline || contentByline),
+    namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
   var cleanedHtml = sanitizedHtml(content.html);

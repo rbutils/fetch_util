@@ -36,9 +36,10 @@ function bylineContainsPublishedTime(raw, publishedTime) {
   return new RegExp(suffix + "$", "i").test(text);
 }
 
-function bylineWithoutHostIdentity(raw) {
+function bylineWithoutHostIdentity(raw, namedAuthorByline) {
   var text = sanitizeByline(raw);
   if (!text) return null;
+  if (namedAuthorByline && text.toLowerCase() === normalizeText(namedAuthorByline).toLowerCase()) return text;
   var value = text.toLowerCase().replace(/^www\./, "");
   var hostname = normalizeText(location.hostname || "").toLowerCase().replace(/^www\./, "");
   return hostname && value === hostname ? null : text;

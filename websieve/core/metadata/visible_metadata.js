@@ -170,6 +170,46 @@ function visibleLocalizedAuthor(roots) {
   return null;
 }
 
+function visibleNamedAuthorByline() {
+  var values = [];
+  visibleBylineRoots().forEach(function(root) {
+    root.querySelectorAll("[class*='author-name' i]").forEach(function(node) {
+      if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return;
+      var value = normalizeText(node.textContent || "");
+      if (value && values.indexOf(value) === -1) values.push(value);
+    });
+  });
+  return values.length === 1 ? values[0] : null;
+}
+
+function bylineWithoutSiblingActions(contentByline, metadataByline) {
+  var contentValue = normalizeText(contentByline || "");
+  var metadataValue = normalizeText(metadataByline || "");
+  if (!contentValue || !metadataValue || contentValue === metadataValue) return contentByline;
+
+  var roots = visibleBylineRoots();
+  for (var index = 0; index < roots.length; index += 1) {
+    var fields = Array.prototype.filter.call(roots[index].querySelectorAll("[class*='author-name' i]"), function(node) {
+      return !elementVisuallyHidden(node) && !node.closest("nav, footer, aside") && normalizeText(node.textContent || "") === metadataValue;
+    });
+    if (fields.length !== 1) continue;
+
+    var owner = fields[0].closest("[class*='author-meta' i], [class*='byline' i], [itemprop='author']");
+    if (!owner || normalizeText(owner.textContent || "") !== contentValue) continue;
+
+    var clone = owner.cloneNode(true);
+    var cloneFields = clone.querySelectorAll("[class*='author-name' i]");
+    if (cloneFields.length !== 1) continue;
+    cloneFields[0].remove();
+    clone.querySelectorAll("a[href^='mailto:' i], button, [role='button'], [class*='email' i], [class*='contact' i], [class*='action' i], [class*='share' i]").forEach(function(node) {
+      node.remove();
+    });
+    if (!normalizeText(clone.textContent || "")) return metadataByline;
+  }
+
+  return contentByline;
+}
+
 function visibleByline() {
   var roots = visibleBylineRoots();
   var value = firstScopedText(roots, [
@@ -177,6 +217,7 @@ function visibleByline() {
     "[itemprop='author'] [itemprop='name']",
     "[itemprop='author']",
     "[class*='byline' i]",
+    "[class*='author-name' i]",
     "[class*='author' i]",
     "[class*='autor' i]",
     "[class*='auteur' i]",

@@ -517,6 +517,74 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "uses an author-name field without sibling contact controls" do
+    html = <<~HTML
+      <html><head><title>Regional reporting update</title></head><body><main><article>
+        <h1>Regional reporting update</h1>
+        <div class="author-meta">
+          <a class="author-name" href="/authors/regional-desk">Regional Desk</a>
+          <a class="author-email-link" href="mailto:desk@example.test">
+            <span class="screen-reader-text">Send an email</span>
+          </a>
+        </div>
+        <p>The regional desk published a substantive report about public infrastructure and community services.</p>
+        <p>The article contains enough independently owned prose to exercise normal article extraction behavior.</p>
+        <p>Sibling contact controls remain interface actions rather than part of the author's displayed name.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/news/regional-update", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to eq("Regional Desk")
+      expect(payload["byline"]).not_to include("Send an email")
+    end
+  end
+
+  it "does not collapse multiple named authors to the first field" do
+    html = <<~HTML
+      <html><head><title>Joint reporting update</title></head><body><main><article>
+        <h1>Joint reporting update</h1>
+        <div class="author-meta">
+          <a class="author-name" href="/authors/alice-brown">Alice Brown</a>
+          <a class="author-name" href="/authors/bob-jones">Bob Jones</a>
+          <a class="author-email-link" href="mailto:desk@example.test">Send an email</a>
+        </div>
+        <p>The reporting team published a substantive analysis of regional infrastructure and public services.</p>
+        <p>The article contains enough independently owned prose to exercise normal article extraction behavior.</p>
+        <p>Multiple named contributors must not be reduced to only the first visible author field.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://example.test/news/joint-update", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to include("Alice Brown")
+      expect(payload["byline"]).to include("Bob Jones")
+    end
+  end
+
+  it "preserves a hostname when it is the explicit author-name field" do
+    html = <<~HTML
+      <html><head><title>Source-owned newsroom update</title></head><body><main><article>
+        <h1>Source-owned newsroom update</h1>
+        <div class="author-meta">
+          <a class="author-name" href="/authors/newsroom">news.example.test</a>
+          <a class="author-email-link" href="mailto:desk@example.test">Send an email</a>
+        </div>
+        <p>The newsroom published a substantive report about infrastructure and public community services.</p>
+        <p>The article contains enough independently owned prose to exercise normal article extraction behavior.</p>
+        <p>The hostname is explicitly presented as the author rather than inferred only from site metadata.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://news.example.test/news/source-update", html) do |page|
+      payload = extract(page)
+
+      expect(payload["byline"]).to eq("news.example.test")
+    end
+  end
+
   it "does not combine a site identity with an adjacent localized publication date" do
     body = 4.times.map do |index|
       "<p>Retrospective paragraph #{index + 1} explains the historical event with enough substantive article context for reader extraction.</p>"

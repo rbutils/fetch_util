@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Prefer an explicitly named author field over sibling contact controls when collecting visible article bylines.
+
 - Preserve a visible localized publication date when it was embedded in a rejected date-only byline instead of falling back to stale structured metadata.
 - Prefer article-specific author metadata over generic site-level author declarations.
 - Ignore relative author-profile paths in metadata so a visible human byline can win.
