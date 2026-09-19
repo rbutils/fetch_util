@@ -211,9 +211,9 @@
     return card;
   }
 
-  function listDescriptionItemValues(item, primaryUrls) {
+  function listDescriptionItemValues(item, primaryUrls, primaryRecordKeys) {
     if (!item) return [];
-    var values = [item.text].concat(listItemContextValues(item, primaryUrls));
+    var values = [item.text].concat(listItemContextValues(item, primaryUrls, primaryRecordKeys));
     var ownerCard = listDescriptionOwnerCard(item);
     if (ownerCard) {
       var rendered = values.join("\n");

@@ -13,6 +13,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
       "sectionCard: sectionCardCandidate, " \
       "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone, " \
+      "supplemental: listSupplementalDetail, " \
       "ownedTitle: genericListOwnedAnchorTitle, metadata: listCompactMetadataRow, " \
       "contextHeading: genericListCardContextHeading }; })(window);"
     )
@@ -613,6 +614,114 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         "[Related heading](https://features.example/primary)",
         "[Related heading](https://features.example/related)"
       )
+    end
+  end
+
+  it "omits same-label supplemental links represented by peer records" do
+    html = <<~HTML
+      <html><head><title>Products</title></head><body><main>
+        <article class="story-card" data-primary>
+          <a href="/primary">Learn More &gt;</a>
+          <p>Primary product description with enough local detail to remain useful.</p>
+          <h4><a href="/related?utm_source=embedded">Learn More &gt;</a></h4>
+          <h4><a href="/support">Learn More &gt;</a></h4>
+        </article>
+        <article class="story-card" data-related><a href="/related?utm_medium=peer">Learn More &gt;</a></article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const original = document.querySelector('main').outerHTML;
+          const primary = document.querySelector('[data-primary]');
+          const related = document.querySelector('[data-related]');
+          const markdown = FetchUtilListFieldsTest.render([
+            {card: primary, text: 'Learn More >', url: '/primary'},
+            {card: related, text: 'Learn More >', url: '/related'}
+          ]);
+          return {markdown, unchanged: document.querySelector('main').outerHTML === original};
+        })()
+      JAVASCRIPT
+      markdown = result.fetch("markdown")
+
+      expect(result.fetch("unchanged")).to be(true)
+      expect(markdown.scan("Learn More >").length).to eq(3)
+      expect(markdown).to include(
+        "[Learn More >](https://features.example/primary)",
+        "[Learn More >](https://features.example/related)",
+        "[Learn More >](https://features.example/support)"
+      )
+    end
+  end
+
+  it "preserves same-label links represented under a different primary title" do
+    html = <<~HTML
+      <html><head><title>Products</title></head><body><main>
+        <article class="story-card" data-primary>
+          <a href="/primary">Learn More &gt;</a>
+          <p>Primary product description with enough local detail to remain useful.</p>
+          <h4><a href="/catalog">Learn More &gt;</a></h4>
+        </article>
+        <article class="story-card" data-related><a href="/catalog">Feature Catalog</a></article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const original = document.querySelector('main').outerHTML;
+          const primary = document.querySelector('[data-primary]');
+          const related = document.querySelector('[data-related]');
+          const markdown = FetchUtilListFieldsTest.render([
+            {card: primary, text: 'Learn More >', url: '/primary'},
+            {card: related, text: 'Feature Catalog', url: '/catalog'}
+          ]);
+          return {markdown, unchanged: document.querySelector('main').outerHTML === original};
+        })()
+      JAVASCRIPT
+      markdown = result.fetch("markdown")
+
+      expect(result.fetch("unchanged")).to be(true)
+      expect(markdown).to include(
+        "[Learn More >](https://features.example/catalog)",
+        "[Feature Catalog](https://features.example/catalog)"
+      )
+    end
+  end
+
+  it "preserves unsafe labels and mixed unrepresented owners without a primary URL set" do
+    html = <<~HTML
+      <html><head><title>Products</title></head><body><main>
+        <article class="story-card">
+          <a href="/primary">Learn More &gt;</a>
+          <h4><a href="/peer?utm_source=embedded">Learn</a><a href="/support"> More &gt;</a></h4>
+          <a href="javascript:openProduct()">Learn More &gt;</a>
+        </article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://features.example/", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const card = document.querySelector('article');
+          const original = card.outerHTML;
+          const supplemental = FetchUtilListFieldsTest.supplemental({
+            card, text: 'Learn More >', url: '/primary'
+          }, [], card);
+          return {supplemental, unchanged: card.outerHTML === original};
+        })()
+      JAVASCRIPT
+
+      expect(result.fetch("unchanged")).to be(true)
+      expect(result.fetch("supplemental")).to include(
+        "Learn More >",
+        "[More >](https://features.example/support)"
+      )
+      expect(result.fetch("supplemental")).not_to include("javascript:")
     end
   end
 

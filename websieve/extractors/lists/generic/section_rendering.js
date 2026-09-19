@@ -10,6 +10,9 @@
         if (url) primaryUrls.add(listCanonicalKey(url));
       });
     });
+    var primaryRecordKeys = listPrimaryRecordKeys(sectioned.regions.reduce(function(items, region) {
+      return items.concat(region.cards);
+    }, []));
     sectioned.regions.forEach(function(region, regionIndex) {
       if (region.label) {
         blocks.push({
@@ -23,7 +26,7 @@
       region.cards.forEach(function(item) {
         blocks.push({
           node: item.sourceNode || item.card || region.node,
-          markdown: listMarkdown([item], primaryUrls),
+          markdown: listMarkdown([item], primaryUrls, primaryRecordKeys),
           kind: "item",
           regionIndex: regionIndex,
           sequence: sequence++

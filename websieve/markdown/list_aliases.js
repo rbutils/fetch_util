@@ -24,3 +24,15 @@ function listExactPrimaryAliasDetail(value, item) {
     normalizeText(match[1]) === normalizeText(item.displayText || item.text || "") &&
     destination === primary);
 }
+
+function listPrimaryRecordKey(url, title) {
+  var destination = materializedHttpUrl(url || "");
+  var label = normalizeText(title || "");
+  return destination && label ? JSON.stringify([listCanonicalKey(destination), label]) : "";
+}
+
+function listPrimaryRecordKeys(items) {
+  return new Set((items || []).map(function(item) {
+    return listPrimaryRecordKey(item.url, item.displayText || item.text);
+  }).filter(Boolean));
+}

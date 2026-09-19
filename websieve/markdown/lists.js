@@ -106,7 +106,7 @@ function listSupplementalHeadingReference(link, item, card) {
   return /^[\s»›>\/|·:;,.–—-]*$/.test(clone.textContent || "");
 }
 
-function listSupplementalDetail(item, contextValues, card, primaryUrls) {
+function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryRecordKeys) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
   var compactMetadata = listCompactMetadataRow(card, item);
@@ -130,12 +130,15 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   }
   Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) {
     var url = materializedHttpUrl(link.getAttribute("href"));
+    var representedPrimary = primaryRecordKeys ?
+      primaryRecordKeys.has(listPrimaryRecordKey(url, link.textContent)) :
+      primaryUrls && primaryUrls.has(listCanonicalKey(url));
     var prose = link.closest("p, blockquote");
     var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&
       normalizeText(prose.textContent || "").length >= 30;
     var ownedHeadingReference = listSupplementalHeadingReference(link, item, card);
     if (!url || (!ownedProseReference && !ownedHeadingReference && (listSupplementalInteractionLink(link) ||
-        (primaryUrls && primaryUrls.has(listCanonicalKey(url)))))) return;
+        representedPrimary))) return;
     var clonedLink = listClonedCardNode(card, clone, link);
     if (clonedLink) supportingLinks.add(clonedLink);
   });
@@ -191,6 +194,8 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();
   });
   var itemTitles = [item.text, item.displayText].map(normalizeText).filter(Boolean);
+  var itemUrl = materializedHttpUrl(item.url || "");
+  var itemKey = itemUrl && listCanonicalKey(itemUrl);
   Array.prototype.forEach.call(clone.querySelectorAll("a, h1, h2, h3, h4, [class*='title' i]"), function(node) {
     if (itemTitles.indexOf(normalizeText(node.textContent || "")) < 0) return;
     var linkedOwners = node.matches("a[href]") ? [node] : Array.from(node.querySelectorAll("a[href]"));
@@ -198,10 +203,12 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
       var linkedAncestor = node.closest("a[href]");
       if (linkedAncestor) linkedOwners.push(linkedAncestor);
     }
-    var itemUrl = materializedHttpUrl(item.url || "");
     if (linkedOwners.length && itemUrl && linkedOwners.some(function(linkedOwner) {
       var ownerUrl = materializedHttpUrl(linkedOwner.getAttribute("href"));
-      return !ownerUrl || listCanonicalKey(ownerUrl) !== listCanonicalKey(itemUrl);
+      if (!ownerUrl) return true;
+      var ownerKey = listCanonicalKey(ownerUrl);
+      if (ownerKey === itemKey) return false;
+      return !primaryRecordKeys || !primaryRecordKeys.has(listPrimaryRecordKey(ownerUrl, node.textContent));
     })) {
       return;
     }
@@ -212,7 +219,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   return supplemental === normalizeText(item.text || "") ? "" : supplemental;
 }
 
-function listItemContextValues(item, primaryUrls) {
+function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
    if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
@@ -255,7 +262,7 @@ function listItemContextValues(item, primaryUrls) {
   ];
   var detailCard = item.supplementalCard || card;
   var supplementalDetail = listExactPrimaryAliasDetail(item.detail, item) ? "" :
-    listSupplementalDetail(item, contextValues, detailCard, primaryUrls);
+    listSupplementalDetail(item, contextValues, detailCard, primaryUrls, primaryRecordKeys);
   if (listExactPrimaryAliasDetail(supplementalDetail, item)) supplementalDetail = "";
   if (supplementalDetail) contextValues.push(supplementalDetail);
   if (item.contextHeading && item.summary) {
@@ -276,14 +283,15 @@ function listItemContextValues(item, primaryUrls) {
   });
 }
 
-var listMarkdown = function(items, primaryUrls) {
+var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
   primaryUrls = primaryUrls || new Set(items.map(function(item) {
     var url = materializedHttpUrl(item.url || "");
     return url && listCanonicalKey(url);
   }).filter(Boolean));
+  primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(items);
   return items.map(function(item) {
     var line = "- " + markdownLink(item.displayText || item.text, item.url);
-    var context = listItemContextValues(item, primaryUrls).join(" - ");
+    var context = listItemContextValues(item, primaryUrls, primaryRecordKeys).join(" - ");
     if (context) line += " - " + context;
     return line;
   }).join("\n");

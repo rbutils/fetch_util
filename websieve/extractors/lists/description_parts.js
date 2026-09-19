@@ -68,11 +68,12 @@
       var url = materializedHttpUrl(item.url || "");
       return url && listCanonicalKey(url);
     }).filter(Boolean));
+    var primaryRecordKeys = listPrimaryRecordKeys(items);
     var primaryReferences = new Set((items || []).map(function(item) {
       return materializedHttpUrl(item.url || "");
     }).filter(Boolean));
     var itemValues = items && items.map(function(item) {
-      return listDescriptionItemValues(item, primaryUrls);
+      return listDescriptionItemValues(item, primaryUrls, primaryRecordKeys);
     });
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();

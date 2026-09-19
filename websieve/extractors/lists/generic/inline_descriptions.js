@@ -51,8 +51,9 @@
       var url = materializedHttpUrl(item.url || "");
       return url && listCanonicalKey(url);
     }).filter(Boolean));
+    var primaryRecordKeys = listPrimaryRecordKeys(extraction.items);
     var rendered = extraction.items.map(function(item) {
-      return { node: item.card || item.sourceNode, markdown: listMarkdown([item], primaryUrls) };
+      return { node: item.card || item.sourceNode, markdown: listMarkdown([item], primaryUrls, primaryRecordKeys) };
     }).concat(descriptions);
     return links.map(function(link) {
       var url = materializedHttpUrl(link.getAttribute("href"));
