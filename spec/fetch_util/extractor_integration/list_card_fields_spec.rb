@@ -82,6 +82,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
           const item = FetchUtilListFieldsTest.sectionCard(card, {
             listContext: FetchUtilListFieldsTest.context()
           });
+          item.detail = 'Cutting-Edge Technologies';
           return {
             before,
             after: document.body.innerHTML,
@@ -93,7 +94,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       expect(result["after"]).to eq(result["before"])
       expect(result["markdown"]).to eq(
         "- [See the list](https://platform.example/features/technology) - " \
-        "Cutting-Edge Technologies - Expand your hosting platform with modern extensions " \
+        "Cutting-Edge Technologies Expand your hosting platform with modern extensions " \
         "and integrations built for reliable administration."
       )
       expect(result["markdown"].scan("Cutting-Edge Technologies")).to eq(["Cutting-Edge Technologies"])

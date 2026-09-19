@@ -252,6 +252,19 @@ function listItemContextValues(item, primaryUrls) {
   ];
   var supplementalDetail = listSupplementalDetail(item, contextValues, item.supplementalCard || card, primaryUrls);
   if (supplementalDetail) contextValues.push(supplementalDetail);
+  if (item.contextHeading && item.summary) {
+    var contextHeadingIndex = contextValues.indexOf(item.contextHeading);
+    var summaryIndex = contextValues.indexOf(item.summary);
+    if (contextHeadingIndex !== -1 && summaryIndex !== -1 && contextHeadingIndex !== summaryIndex) {
+      contextValues[contextHeadingIndex] = normalizeText(item.contextHeading + " " + item.summary);
+      contextValues[summaryIndex] = "";
+      contextValues.forEach(function(value, index) {
+        if (index !== contextHeadingIndex && normalizeText(value) === normalizeText(item.contextHeading)) {
+          contextValues[index] = "";
+        }
+      });
+    }
+  }
   return contextValues.filter(Boolean).filter(function(value, index, values) {
     return values.indexOf(value) === index;
   });
