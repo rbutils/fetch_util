@@ -12,6 +12,7 @@ classifiers/list_pages/card_ownership.js
 extractors/lists/generic/editorial_asides.js
 classifiers/list_pages/chrome.js
 classifiers/list_pages/link_groups.js
+markdown/list_aliases.js
 markdown/lists.js
 markdown/inventory.js
 core/metadata/content_results.js

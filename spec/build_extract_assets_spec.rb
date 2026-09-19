@@ -196,10 +196,15 @@ RSpec.describe "extract asset bundle" do
   it "places shared list rendering and glossary scoring before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    aliases_path = "markdown/list_aliases.js"
     list_source = File.read(File.join(source_root, "markdown/lists.js"))
+    alias_source = File.read(File.join(source_root, aliases_path))
     expect(list_source).to include(
       "var listMarkdown = function(items, primaryUrls)", "item.author", "item.score", "item.replyCount", "item.community", "function cardField"
     )
+    expect(alias_source).to include("function listTrackingAliasKey", "function listExactPrimaryAliasDetail")
+    expect(list_source).not_to include("function listTrackingAliasKey")
+    expect(manifest.index(aliases_path)).to be < manifest.index("markdown/lists.js")
     expect(list_source.index("function cardField")).to be < list_source.index("var listMarkdown = function(items, primaryUrls)")
     list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
       File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length

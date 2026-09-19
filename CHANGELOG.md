@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Suppress a supplemental tracking alias only when its canonical record is already represented under the same visible label, while retaining distinct-label references to shared destinations.
 - Keep a proved trailing-action card heading adjacent to its description without adding presentation punctuation absent from the source.
 - Exclude an exact page hostname from article bylines while preserving human and organization author names.
 - Remove an accidental host-only diagnostic trap, keep generic carousel supplements out of profile-owned homepage lists, and recover proved carousel records whose titles are separate from short action links.

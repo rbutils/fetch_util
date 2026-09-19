@@ -250,7 +250,10 @@ function listItemContextValues(item, primaryUrls) {
     item.image,
     item.caption
   ];
-  var supplementalDetail = listSupplementalDetail(item, contextValues, item.supplementalCard || card, primaryUrls);
+  var detailCard = item.supplementalCard || card;
+  var supplementalDetail = listExactPrimaryAliasDetail(item.detail, item) ? "" :
+    listSupplementalDetail(item, contextValues, detailCard, primaryUrls);
+  if (listExactPrimaryAliasDetail(supplementalDetail, item)) supplementalDetail = "";
   if (supplementalDetail) contextValues.push(supplementalDetail);
   if (item.contextHeading && item.summary) {
     var contextHeadingIndex = contextValues.indexOf(item.contextHeading);

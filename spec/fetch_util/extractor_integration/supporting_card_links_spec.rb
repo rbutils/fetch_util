@@ -14,8 +14,11 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
                                             "global.supportingDescriptionValues = listDescriptionItemValues; " \
                                             "global.supportingDescription = listDescriptionMarkdown; " \
                                             "global.supportingSupplemental = listSupplementalDetail; " \
+                                            "global.supportingContextValues = listItemContextValues; " \
                                            "global.supportingText = listTextWithReferences; " \
-                                           "global.supportingMarkdown = listMarkdown; })(window);")
+                                           "global.supportingMarkdown = listMarkdown; " \
+                                           "global.supportingTrackingAliasKey = listTrackingAliasKey; " \
+                                           "global.supportingExactPrimaryAliasDetail = listExactPrimaryAliasDetail; })(window);")
       page.add_script_tag(content: source)
       page.evaluate(<<~JS)
         (() => {
@@ -45,6 +48,23 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
             card: headingFixture, sourceNode: headingPrimary};
           const headingPrimaryUrls = headingFixture && new Set(Array.from(headingFixture.querySelectorAll('a[href]'),
             link => link.href));
+          const aliasItem = {
+            text: 'Archive record', url: 'https://articles.example/archive?utm_medium=primary',
+            detail: '[Archive record](https://articles.example/archive?utm_source=duplicate)'
+          };
+          const distinctAliasItem = Object.assign({}, aliasItem, {
+            detail: '[Archive coverage](https://articles.example/archive?utm_source=angle)'
+          });
+          const distinctQueryItem = Object.assign({}, aliasItem, {
+            url: 'https://articles.example/archive?page=1&utm_medium=primary',
+            detail: '[Archive record](https://articles.example/archive?page=2&utm_source=duplicate)'
+          });
+          const duplicateAliasCard = document.createElement('a');
+          duplicateAliasCard.href = 'https://articles.example/archive?utm_source=duplicate';
+          duplicateAliasCard.textContent = 'Archive record';
+          const distinctAliasCard = duplicateAliasCard.cloneNode(true);
+          distinctAliasCard.href = 'https://articles.example/archive?utm_source=angle';
+          distinctAliasCard.textContent = 'Archive coverage';
           const authorReference = main.querySelector('.author a[href]');
           const unsafeReference = document.createElement('a');
           unsafeReference.href = 'https://fixture-user:fixture-secret@example.net/private';
@@ -77,6 +97,15 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
                    supplemental: supplementalItem && supportingSupplemental(supplementalItem, [], supplementalCard),
                    headingSupplemental: headingItem && supportingSupplemental(headingItem, [], headingFixture,
                      headingPrimaryUrls),
+                   duplicateAliasContext: supportingContextValues(aliasItem, new Set()),
+                   distinctAliasContext: supportingContextValues(distinctAliasItem, new Set()),
+                   distinctQueryContext: supportingContextValues(distinctQueryItem, new Set()),
+                   unsafeAliasKey: supportingTrackingAliasKey('https://user:secret@articles.example/archive?utm_source=duplicate'),
+                   malformedAliasMatch: supportingExactPrimaryAliasDetail('[Archive record](not a URL)', aliasItem),
+                   unsafeAliasMatch: supportingExactPrimaryAliasDetail(
+                     '[Archive record](https://user:secret@articles.example/archive?utm_source=duplicate)', aliasItem),
+                   duplicateAliasCard: supportingSupplemental(aliasItem, [], duplicateAliasCard),
+                   distinctAliasCard: supportingSupplemental(aliasItem, [], distinctAliasCard),
                    unchanged: main.outerHTML === original};
         })()
       JS
@@ -146,6 +175,18 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     expect(result.fetch("headingSupplemental")).to eq(
       "[Category](https://articles.example/category) » » [Archive record](https://articles.example/archive)"
     )
+    expect(result.fetch("duplicateAliasContext")).to eq([])
+    expect(result.fetch("distinctAliasContext")).to eq(
+      ["[Archive coverage](https://articles.example/archive?utm_source=angle)"]
+    )
+    expect(result.fetch("distinctQueryContext")).to eq(
+      ["[Archive record](https://articles.example/archive?page=2&utm_source=duplicate)"]
+    )
+    expect(result.fetch("unsafeAliasKey")).to eq("")
+    expect(result.fetch("malformedAliasMatch")).to be(false)
+    expect(result.fetch("unsafeAliasMatch")).to be(false)
+    expect(result.fetch("duplicateAliasCard")).to eq("")
+    expect(result.fetch("distinctAliasCard")).to eq("Archive coverage")
     expect(result.fetch("unchanged")).to be(true)
   end
 
