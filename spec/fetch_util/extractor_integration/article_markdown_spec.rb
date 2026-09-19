@@ -539,7 +539,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://teadus.postimees.ee/4170789/history", html) do |page|
       payload = extract(page)
 
-      expect(payload["byline"]).to eq("teadus.postimees.ee")
+      expect(payload["byline"]).to be_nil
       expect(payload["publishedTime"]).to eq("2017-07-08T08:00:26+03:00")
       expect(payload["markdown"]).not_to include("teadus.postimees.ee8. juuli")
     end

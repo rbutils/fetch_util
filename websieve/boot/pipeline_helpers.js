@@ -28,6 +28,14 @@ function bylineWithoutPublishedTime(raw, publishedTime, knownByline) {
   return prefix ? sanitizeByline(prefix) : null;
 }
 
+function bylineWithoutHostIdentity(raw) {
+  var text = sanitizeByline(raw);
+  if (!text) return null;
+  var value = text.toLowerCase().replace(/^www\./, "");
+  var hostname = normalizeText(location.hostname || "").toLowerCase().replace(/^www\./, "");
+  return hostname && value === hostname ? null : text;
+}
+
 function readableOrFallbackContent(options, metadata) {
   var content = options && options.reader_mode !== false ? readabilityContent() : null;
   if (content) content = preferFallbackContent(content, fallbackContent(metadata));

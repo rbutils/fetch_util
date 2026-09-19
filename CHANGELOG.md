@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Exclude an exact page hostname from article bylines while preserving human and organization author names.
 - Remove an accidental host-only diagnostic trap, keep generic carousel supplements out of profile-owned homepage lists, and recover proved carousel records whose titles are separate from short action links.
 - Preserve complete media-backed record inventories from explicitly controlled ARIA carousels while leaving uncontrolled hidden slides excluded.
 - Preserve source-owned local heading destinations when the same URLs also identify other list records.
