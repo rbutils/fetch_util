@@ -176,7 +176,12 @@
        content = applyMedicalContentType(content, metadata);
 
        var portalRootContent = crediblePortalRootListContent(metadata, content);
-       if (portalRootContent) content = portalRootContent;
+       var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);
+       if (ownedDetailArticle) {
+         content = ownedDetailArticle;
+       } else if (portalRootContent) {
+         content = portalRootContent;
+       }
 
        if (provisionalHomepageContent && provisionalHomepageAlternative) {
          if (!listCandidateLosesArticleMaterial(provisionalHomepageAlternative, provisionalHomepageContent)) {
@@ -207,7 +212,8 @@
       } else if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) && !strongArticle) {
         indexListCandidate = listContent(metadata);
       }
-      if (indexListCandidate && !listCandidateLosesArticleMaterial(content, indexListCandidate)) content = indexListCandidate;
+      if (indexListCandidate && !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
+          !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
@@ -220,9 +226,9 @@
       var staleOpacityList = staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
-      var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);
-      var result = finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
-      if (!hiddenMainArticle || result.contentType !== "article") return result;
+       var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);
+       var result = finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
+       if (!hiddenMainArticle || result.contentType !== "article") return result;
 
       hiddenMainArticle.warningReasons = (hiddenMainArticle.warningReasons || []).concat(result.warnings || []);
       var hiddenMainResult = finalizeExtractResult(hiddenMainArticle, metadata, pageText, signals, medicalArticle);

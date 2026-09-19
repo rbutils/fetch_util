@@ -643,6 +643,24 @@ RSpec.describe "extract asset bundle" do
     expect(oversized).to eq([])
   end
 
+  it "loads structured detail arbitration before late list dominance" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    detail_path = "classifiers/list_pages/detail_articles.js"
+    dominance_path = "classifiers/list_pages/dominance.js"
+    boot_path = "boot/extract_api.js"
+
+    expect(manifest.index(detail_path)).to be < manifest.index(dominance_path)
+    expect(manifest.index(detail_path)).to be < manifest.index(boot_path)
+    expect(File.read(File.join(source_root, detail_path))).to include(
+      "function selectedArticleHasExplicitDetailOwnership",
+      "function lateListHasIndependentRoot"
+    )
+    expect(File.read(File.join(source_root, boot_path))).to include(
+      "selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)"
+    )
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

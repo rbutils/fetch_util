@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Keep a substantial structured detail article when late list detection sees only distributed portal rails, while preserving independent directories and list routes.
 - Preserve safe article-owned supplemental asset and video destinations that reader mode omits.
 - Prefer an explicitly named author field over sibling contact controls when collecting visible article bylines.
 - Keep source-visible article summaries intact instead of expanding short reader excerpts into truncated flattened text.

@@ -60,6 +60,7 @@ classifiers/challenges/interstitial_pages.js
 classifiers/challenges/not_found_context.js
 classifiers/challenges/index.js
 classifiers/list_pages/context.js
+classifiers/list_pages/detail_articles.js
 extractors/article/code_coverage.js
 classifiers/list_pages/dominance.js
 classifiers/list_pages/search_category.js

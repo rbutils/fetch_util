@@ -993,6 +993,163 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps a structured detail article ahead of distributed portal rails" do
+    rails = 2.times.map do |section|
+      cards = 5.times.map do |index|
+        number = (section * 5) + index + 1
+        %(<article><h2><a href="/latest/#{number}">Latest story #{number} carries a distinct report</a></h2></article>)
+      end.join
+      %(<section class="portal-rail"><h2>Portal rail #{section + 1}</h2>#{cards}</section>)
+    end.join
+    body = 3.times.map do |index|
+      <<~HTML
+        <p>
+          Primary report paragraph #{index + 1} contains substantial independently owned reporting
+          about the event, its causes, and the response from local officials.
+        </p>
+      HTML
+    end.join
+
+    html = <<~HTML
+      <html><head>
+        <title>Primary report</title>
+        <link rel="canonical" href="https://example.com/news/primary-report">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://example.com/news/primary-report","headline":"Primary report"}</script>
+      </head><body>
+        <main><article class="main-article"><h1>Primary report</h1>#{body}</article></main>
+        #{rails}
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/news/primary-report", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("Primary report paragraph 1", "Primary report paragraph 3")
+      expect(payload["markdown"]).not_to include("Latest story 10")
+    end
+  end
+
+  it "uses a structured standfirst to own a paragraphless detail article" do
+    cards = 10.times.map do |index|
+      number = index + 1
+      detail = [
+        "This independent portal record has enough local reporting detail to establish the surrounding root",
+        "as a substantial multi-section homepage collection without borrowing any prose from the focal report."
+      ].join(" ")
+      <<~HTML
+        <div class="news-card"><a href="/latest/#{number}">
+          <img src="/latest/#{number}.jpg" alt="Portal story #{number} preview">
+          <h2>Portal story #{number} has an independent destination</h2>
+          <p>#{detail}</p>
+          <time datetime="2026-09-#{10 + number}">#{10 + number} September 2026</time>
+        </a></div>
+      HTML
+    end
+    standfirst = "The confirmed report describes the overnight event, its measured impact, and the response from local officials"
+
+    html = <<~HTML
+      <html><head>
+        <title>Paragraphless primary report</title>
+        <link rel="canonical" href="https://example.com/ellada/paragraphless-report">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://example.com/ellada/paragraphless-report","headline":"Paragraphless primary report","description":"#{standfirst} | Local news"}</script>
+      </head><body>
+        <main class="mainSection">
+          <h1>Paragraphless primary report</h1>
+          <div class="articleContainer">
+            <h3>#{standfirst}</h3>
+            <div class="articleContainer__main">
+              <div class="cnt">The first substantial passage contains independently reported facts about the event and its immediate consequences.<br><br>The second substantial passage explains the official response and the next steps announced for affected residents.<br><br>The final substantial passage records the verified timeline and the remaining questions for investigators.</div>
+              <div class="articleContainer__mainLeft"><div class="leftArticles"><section><h2>Related analysis</h2>#{cards.first(5).join}</section></div></div>
+              <div class="rightArticles"><section><h2>Regional investigations</h2>#{cards.last(5).join}</section></div>
+            </div>
+          </div>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/ellada/paragraphless-report", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include("first substantial passage", "final substantial passage")
+      expect(payload["markdown"]).not_to include("Portal story 10")
+    end
+  end
+
+  it "keeps an independently owned directory ahead of structured detail metadata" do
+    cards = 10.times.map do |index|
+      %(<article><h2><a href="/directory/#{index + 1}">Directory record #{index + 1} with a distinct destination</a></h2></article>)
+    end.join
+    body = 3.times.map do |index|
+      %(<p>Introductory article paragraph #{index + 1} is substantial enough to resemble a detail article without owning the directory records below.</p>)
+    end.join
+
+    html = <<~HTML
+      <html><head>
+        <title>Directory introduction</title>
+        <link rel="canonical" href="https://example.com/news/directory-introduction?q=updates">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://example.com/news/directory-introduction?q=updates","headline":"Directory introduction"}</script>
+      </head><body><main>
+        <article class="main-article"><h1>Directory introduction</h1>#{body}</article>
+        <section class="directory"><h2>Complete directory</h2>#{cards}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.com/news/directory-introduction?q=updates", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("Directory record 1", "Directory record 10")
+    end
+  end
+
+  it "does not use structured article metadata to override archive routes" do
+    cards = 10.times.map do |index|
+      %(<article><h2><a href="/archive/#{index + 1}">Archived record #{index + 1} with a distinct destination</a></h2></article>)
+    end.join
+    html = <<~HTML
+      <html><head>
+        <title>Archive overview</title>
+        <link rel="canonical" href="https://example.com/archive">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://example.com/archive","headline":"Archive overview"}</script>
+      </head><body><main>
+        <section><h1>Archive overview</h1><p>This introduction is substantial but the route and complete collection identify an archive rather than one detail report.</p><p>The archive retains every record below for browsing and comparison.</p><p>Readers can use the complete collection without treating this introduction as the sole article.</p></section>
+        <section class="archive">#{cards}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.com/archive", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("Archived record 1", "Archived record 10")
+    end
+  end
+
+  it "does not preserve a short structured article over a material list" do
+    cards = 10.times.map do |index|
+      %(<article><h2><a href="/updates/#{index + 1}">Update #{index + 1} with a distinct destination</a></h2></article>)
+    end.join
+    html = <<~HTML
+      <html><head>
+        <title>Brief introduction</title>
+        <link rel="canonical" href="https://example.com/news/brief-introduction?q=updates">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://example.com/news/brief-introduction?q=updates","headline":"Brief introduction"}</script>
+      </head><body><main>
+        <section><h1>Brief introduction</h1><p>A short introduction.</p></section>
+        <section class="portal-rail">#{cards}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.com/news/brief-introduction?q=updates", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("Update 1", "Update 10")
+    end
+  end
+
   it "cleans malformed markdown from image-led card grids" do
     html = <<~HTML
       <html>
