@@ -80,6 +80,17 @@ RSpec.describe 'metadata byline ownership' do
     end
   end
 
+  it 'prefers article-specific author metadata over generic site authorship' do
+    html = list_page(global_byline: 'Reports Journal').sub(
+      '<meta name="author" content="Reports Journal">',
+      '<meta name="author" content="Reports Journal"><meta name="article:author" content="Alice Brown">'
+    )
+
+    extract_from_url('https://example.test/reports/', html) do |payload|
+      expect(payload).to include('contentType' => 'list', 'byline' => 'Alice Brown')
+    end
+  end
+
   it 'preserves a byline independently rendered for the whole list page' do
     html = list_page.sub('Alice Brown', 'Regional Desk').sub(
       '<h1>Regional reports</h1>',

@@ -5,6 +5,7 @@
 ## Unreleased
 
 - Preserve a visible localized publication date when it was embedded in a rejected date-only byline instead of falling back to stale structured metadata.
+- Prefer article-specific author metadata over generic site-level author declarations.
 
 - Do not promote a byline owned by one list record into page-level metadata when the page does not independently declare it.
 - Omit repeated action labels from list-card supplemental text when the same-label destination is already represented by a peer record.

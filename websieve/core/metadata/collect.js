@@ -20,10 +20,11 @@ function collectMetadata() {
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;
   var schemaAuthor = entityName(schemaArticle && schemaArticle.author);
   var declaredByline = [
-    metadataValue("author", "name"),
+    metadataValue("article:author", "name"),
     metadataValue("article:author", "property"),
     metadataValue("parsely-author", "name"),
-    schemaAuthor
+    schemaAuthor,
+    metadataValue("author", "name")
   ].map(function(value) {
     return sanitizeByline(value);
   }).find(Boolean) || null;
