@@ -93,6 +93,26 @@ RSpec.describe 'metadata byline ownership' do
     end
   end
 
+  it 'ignores relative article-author profile paths in favor of the visible human byline' do
+    ['name', 'property'].each do |attribute|
+      html = <<~HTML
+        <html><head>
+          <title>Regional report</title>
+          <meta #{attribute}="article:author" content="/authors/alice-brown">
+        </head><body><main><article>
+          <h1>Regional report</h1>
+          <p class="author">Alice Brown</p>
+          <p>This article contains a substantial opening paragraph about regional institutions and their plans for the coming year.</p>
+          <p>A second substantial paragraph provides further context and confirms that this page is one article rather than a collection.</p>
+        </article></main></body></html>
+      HTML
+
+      extract_from_url('https://example.test/reports/one', html) do |payload|
+        expect(payload).to include('contentType' => 'article', 'byline' => 'Alice Brown')
+      end
+    end
+  end
+
   it 'preserves a byline independently rendered for the whole list page' do
     html = list_page.sub('Alice Brown', 'Regional Desk').sub(
       '<h1>Regional reports</h1>',

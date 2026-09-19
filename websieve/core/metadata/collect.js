@@ -14,6 +14,12 @@ function materializedMetadataValue(name, attr) {
   return null;
 }
 
+function declaredBylineValue(value) {
+  var byline = sanitizeByline(value);
+  if (!byline || /^(?:\/|\.{1,2}\/)/.test(byline)) return null;
+  return byline;
+}
+
 function collectMetadata() {
   var canonicalUrl = materializedCanonicalUrl();
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
@@ -25,9 +31,7 @@ function collectMetadata() {
     metadataValue("parsely-author", "name"),
     schemaAuthor,
     metadataValue("author", "name")
-  ].map(function(value) {
-    return sanitizeByline(value);
-  }).find(Boolean) || null;
+  ].map(declaredBylineValue).find(Boolean) || null;
   var byline = declaredByline || sanitizeByline(visibleByline()) || null;
   var schemaPublishedTime = entityText(schemaArticle && schemaArticle.datePublished);
   var schemaEventTime = schemaEvent && typeof eventDateText === "function" ? eventDateText(schemaEvent.startDate, schemaEvent.endDate) : null;
