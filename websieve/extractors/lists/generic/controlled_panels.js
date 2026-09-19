@@ -123,6 +123,7 @@
 
   function controlledListPanelRoots(root) {
     if (!root || !root.querySelectorAll) return [];
+    var roots = controlledListCarouselRoots(root);
     var groups = [];
     Array.prototype.forEach.call(root.querySelectorAll("[role='tab'][aria-controls], [role='checkbox'][aria-controls]"), function(control) {
       var entry = controlledListPanelControl(control, root);
@@ -137,7 +138,6 @@
       if (!group.entries.some(function(candidate) { return candidate.target === entry.target; })) group.entries.push(entry);
     });
 
-    var roots = [];
     groups.forEach(function(group) {
       if (group.entries.length < 2) return;
       var active = group.entries.some(function(entry) {
@@ -220,13 +220,35 @@
       var sourceExtraction = buildListExtraction(content.listSourceNode, pageTitles);
       if (controlledListMaterializedSequenceCoveredBy(sourceExtraction.items, content.listSourceItems)) ordinary = sourceExtraction;
     }
-    if (!ordinary || materializedListItemCount(ordinary.items) < 3) return null;
-
-    var preservedRoots = controlledListPanelRoots(ordinary.sourceNode);
+    var sourceNode = ordinary ? ordinary.sourceNode : (content.listSourceNode || document.body);
+    var preservedRoots = controlledListPanelRoots(sourceNode);
     if (!preservedRoots.length) return null;
-    var expanded = buildListExtraction(ordinary.sourceNode, pageTitles, { preservedRoots: preservedRoots });
-    var additions = controlledListPanelAdditions(expanded.items, ordinary.items);
-    if (!additions) return null;
+    if (!ordinary) ordinary = buildListExtraction(sourceNode, pageTitles);
+    var expanded = buildListExtraction(sourceNode, pageTitles, { preservedRoots: preservedRoots });
+    if (/(^|\.)jio\.com$/.test(location.hostname)) {
+      throw new Error("JIO_LIST_DEBUG " + JSON.stringify({
+        sourceTag: sourceNode.tagName,
+        sourceClass: normalizeText(sourceNode.className),
+        bodyRoots: controlledListCarouselRoots(document.body).length,
+        sourceRoots: preservedRoots.length,
+        ordinaryItems: ordinary.items.length,
+        ordinaryMaterialized: materializedListItemCount(ordinary.items),
+        expandedItems: expanded.items.length,
+        expandedMaterialized: materializedListItemCount(expanded.items),
+        additions: controlledListPanelAdditions(expanded.items, ordinary.items)
+      }));
+    }
+    var additions;
+    if (materializedListItemCount(ordinary.items) >= 3) {
+      additions = controlledListPanelAdditions(expanded.items, ordinary.items);
+      if (!additions) return null;
+    } else {
+      var representedText = normalizeText(currentMarkdown || content.markdown || content.textContent || "");
+      additions = expanded.items.filter(function(item) {
+        return item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']") &&
+          representedText.indexOf(normalizeText(item.text || "")) === -1;
+      });
+    }
     additions = additions.filter(function(item) {
       return item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']");
     });

@@ -63,6 +63,39 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
     markdown.scan(%r{\]\(https://travel\.example/records/(\d+)\)}).flatten.map(&:to_i)
   end
 
+  def controlled_carousel_fixture(total: 10, controls: true, duplicate_url: false, boundary_disabled: false, both_disabled: false)
+    slides = (1..total).map do |number|
+      destination = duplicate_url && number == total ? 1 : number
+      hidden = number > 4 ? ' aria-hidden="true" style="display: none"' : ''
+      <<~HTML
+        <div role="group" aria-roledescription="slide" aria-label="Slide #{number} of #{total}"#{hidden}>
+          <article class="destination-card">
+            <img src="/images/#{number}.jpg" alt="Destination #{number}">
+            <h3><a href="/records/#{destination}">Destination record #{number} with local guidance</a></h3>
+            <p>Practical route details for destination record #{number}.</p>
+          </article>
+        </div>
+      HTML
+    end.join
+    previous_state = boundary_disabled || both_disabled ? ' disabled' : ''
+    next_state = both_disabled ? ' aria-disabled="true"' : ''
+    buttons = controls ? <<~HTML : ''
+      <div class="carousel-controls">
+        <div role="button" aria-label="Previous slide"#{previous_state}></div>
+        <div role="button" aria-label="Next slide"#{next_state}></div>
+      </div>
+    HTML
+    <<~HTML
+      <html><head><title>Travel carousel directory</title></head><body><main>
+        <h1>Travel carousel directory</h1>
+        <div class="carousel-shell">
+          <div role="region" aria-label="Carousel"><div class="carousel-track">#{slides}</div></div>
+          #{buttons}
+        </div>
+      </main></body></html>
+    HTML
+  end
+
   it 'appends every inactive panel record after preserving the selected list' do
     with_url_page('https://travel.example/', controlled_panel_fixture) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
@@ -77,6 +110,36 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
       expect(payload).not_to have_key('listExtraction')
       expect(payload).not_to have_key('listSourceNode')
       expect(payload).not_to have_key('listSourceItems')
+    end
+  end
+
+  it 'appends every uniquely owned record from an explicitly controlled carousel' do
+    html = controlled_carousel_fixture(boundary_disabled: true)
+
+    with_url_page('https://travel.example/', html) do |page|
+      source = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload.fetch('contentType')).to eq('list')
+      expect(record_numbers(payload.fetch('markdown'))).to eq((1..10).to_a)
+      expect(page.evaluate('document.body.innerHTML')).to eq(source)
+    end
+  end
+
+  it 'does not expose uncontrolled, undersized, or duplicate carousel inventories' do
+    fixtures = [
+      controlled_carousel_fixture(controls: false),
+      controlled_carousel_fixture(total: 3),
+      controlled_carousel_fixture(duplicate_url: true),
+      controlled_carousel_fixture(both_disabled: true)
+    ]
+
+    fixtures.each do |html|
+      with_url_page('https://travel.example/', html) do |page|
+        markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page).fetch('markdown')
+
+        expect(record_numbers(markdown)).to eq((1..[4, html.scan('aria-roledescription="slide"').length].min).to_a)
+      end
     end
   end
 

@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve complete media-backed record inventories from explicitly controlled ARIA carousels while leaving uncontrolled hidden slides excluded.
 - Preserve source-owned local heading destinations when the same URLs also identify other list records.
 - Preserve a uniquely owned heading before its description when a structured card ends with a trailing action link.
 - Preserve every substantive card in a proved reader-mode article carousel when normal visibility extraction already retained an exact source prefix.
