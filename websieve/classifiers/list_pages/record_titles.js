@@ -139,13 +139,30 @@
 
   function genericListCardContextHeading(card, link) {
     if (!card || !link || !card.contains(link) ||
-        !materializedHttpUrl(link.getAttribute("href")) || genericListInteractionOwner(card)) return null;
-    if (card.querySelector([
+        !materializedHttpUrl(link.getAttribute("href"))) return null;
+
+    var directElements = Array.from(card.children || []);
+    var directHeadings = directElements.filter(function(node) {
+      return /^H[1-4]$/.test(node.tagName || "");
+    });
+    var directParagraphs = directElements.filter(function(node) {
+      return node.tagName === "P" && normalizeText(node.textContent || "");
+    });
+    if (link.parentElement !== card || directHeadings.length !== 1 || !directParagraphs.length ||
+        directElements.some(function(node) {
+          return !/^(?:A|H[1-4]|I|P|SVG)$/.test(node.tagName || "");
+        }) || Array.prototype.some.call(card.childNodes || [], function(node) {
+          return node.nodeType === 3 && !!normalizeText(node.textContent || "");
+        }) || genericListInteractionOwner(card)) return null;
+
+    // Build one descendant inventory only after the cheap direct-child shape proof.
+    var descendants = Array.from(card.querySelectorAll("*"));
+    if (descendants.some(function(node) { return node.matches([
       "button", "form", "input", "select", "textarea", "summary",
       "[role='button']", "[role='menuitem']", "[role='tab']",
       "[contenteditable]:not([contenteditable='false'])"
-    ].join(", "))) return null;
-    if (Array.prototype.some.call(card.querySelectorAll("[role]"), function(node) {
+    ].join(", ")); })) return null;
+    if (descendants.filter(function(node) { return node.hasAttribute("role"); }).some(function(node) {
       var tokens = normalizeText(node.getAttribute("role") || "").toLowerCase().split(/\s+/);
       return tokens.some(function(token) {
         return [
@@ -154,33 +171,37 @@
         ].indexOf(token) !== -1;
       });
     })) return null;
-    if (Array.prototype.some.call(card.querySelectorAll("*"), function(node) {
+    if (descendants.some(function(node) {
       return String(node.localName || "").indexOf("-") !== -1;
     })) return null;
 
-    var links = cardOwnedNodes(card, "a[href]").filter(function(candidate) {
+    var allLinks = descendants.filter(function(node) { return node.matches("a[href]"); });
+    var links = allLinks.filter(function(candidate) {
       return !listCardNodeHidden(candidate);
     });
-    var headings = cardOwnedNodes(card, "h1, h2, h3, h4").filter(function(heading) {
-      return !listCardNodeHidden(heading) && !heading.querySelector("a[href]");
+    var headings = directHeadings.filter(function(heading) {
+      return !listCardNodeHidden(heading) && !allLinks.some(function(anchor) { return heading.contains(anchor); });
     });
     var heading = headings[0];
-    var decorativeSvgs = cardOwnedNodes(card, "svg").filter(function(svg) {
+    var svgNodes = descendants.filter(function(node) { return node.tagName === "svg"; });
+    var decorativeSvgs = svgNodes.filter(function(svg) {
       return genericListInertImageSvg(svg, heading);
     });
-    var paragraphs = cardOwnedNodes(card, "p").filter(function(paragraph) {
+    var paragraphs = directParagraphs.filter(function(paragraph) {
       return !listCardNodeHidden(paragraph) && normalizeText(paragraph.textContent || "");
     });
     if (links.length !== 1 || links[0] !== link || headings.length !== 1 ||
+        descendants.filter(function(node) { return /^H[1-4]$/.test(node.tagName || ""); }).length !== headings.length ||
+        descendants.filter(function(node) { return node.tagName === "P"; }).length !== paragraphs.length ||
         !paragraphs.some(function(paragraph) {
           return normalizeText(paragraph.textContent || "").length >= 40;
-        }) || card.querySelector([
+        }) || descendants.some(function(node) { return node.matches([
           "article", "aside", "section", "li", "tr", "table", "fieldset", "details",
           "figure", "blockquote", "ul", "ol", "dl", "pre", "code",
           "img", "picture", "video", "audio", "canvas", "iframe",
           "script", "style", "template", "noscript"
-        ].join(", "))) return null;
-    if (cardOwnedNodes(card, "svg").length !== decorativeSvgs.length) return null;
+        ].join(", ")); })) return null;
+    if (svgNodes.length !== decorativeSvgs.length) return null;
 
     var headingText = normalizeText(heading.textContent || "");
     var headingBeforeLink = !!(heading.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING);

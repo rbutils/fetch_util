@@ -13,7 +13,8 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       "global.FetchUtilListFieldsTest = { render: listMarkdown, candidate: listLinkCandidate, " \
       "sectionCard: sectionCardCandidate, " \
       "context: listPageContext, description: listDescriptionMarkdown, clone: visibleListClone, " \
-      "ownedTitle: genericListOwnedAnchorTitle, metadata: listCompactMetadataRow }; })(window);"
+      "ownedTitle: genericListOwnedAnchorTitle, metadata: listCompactMetadataRow, " \
+      "contextHeading: genericListCardContextHeading }; })(window);"
     )
   end
 
@@ -101,6 +102,51 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
     end
   end
 
+  it "scans descendants once only after the trailing-card shape is proved" do
+    html = <<~HTML
+      <html><head><title>Platform capabilities</title></head><body><main>
+        <div id="strict-card">
+          <h3><span>Reliable automation</span></h3>
+          <p><span>Automate hosting administration with dependable tools and complete operational guidance.</span></p>
+          <a href="/features/automation"><span>See the list</span></a>
+        </div>
+        <div id="broad-wrapper">
+          <div><span>Nested presentation content</span></div>
+          <h3>Broad wrapper</h3>
+          <p>Automate hosting administration with dependable tools and complete operational guidance.</p>
+          <a href="/features/broad">See the list</a>
+        </div>
+      </main></body></html>
+    HTML
+    with_url_page("https://platform.example/features", html) do |page|
+      page.add_script_tag(content: list_card_fields_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          function inspect(id) {
+            const card = document.querySelector(id);
+            const link = card.querySelector(':scope > a[href]');
+            const original = card.querySelectorAll.bind(card);
+            let scans = 0;
+            card.querySelectorAll = function(...args) {
+              scans += 1;
+              return original(...args);
+            };
+            return {
+              heading: FetchUtilListFieldsTest.contextHeading(card, link)?.text || null,
+              scans
+            };
+          }
+          return { strict: inspect('#strict-card'), broad: inspect('#broad-wrapper') };
+        })()
+      JAVASCRIPT
+
+      expect(result).to eq(
+        "strict" => { "heading" => "Reliable automation", "scans" => 1 },
+        "broad" => { "heading" => nil, "scans" => 0 }
+      )
+    end
+  end
+
   it "does not reorder ambiguous card context" do
     variants = {
       extra_link: '<a href="/other">Other destination</a>',
@@ -109,6 +155,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       nested_record: '<article><p>Independent nested record with enough prose to remain separate.</p></article>',
       role_control: '<div role="SWITCH presentation">Toggle mode</div>',
       custom_control: '<x-mode-toggle>Toggle mode</x-mode-toggle>',
+      presentation_wrapper: '<div><span>Nested presentation content</span></div>',
       structured_content: '<figure><figcaption>Independent supporting figure</figcaption></figure>',
       meaningful_svg: '<svg><text>Independent chart label</text></svg>',
       semantic_svg: '<svg><image href="data:img/png;base64,AAAA"></image><path d="M0 0h10v10z"></path></svg>',
@@ -187,6 +234,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         "nested_record" => false,
         "role_control" => false,
         "custom_control" => false,
+        "presentation_wrapper" => false,
         "structured_content" => false,
         "meaningful_svg" => false,
         "semantic_svg" => false,

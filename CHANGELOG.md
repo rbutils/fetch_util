@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Fail fast on ambiguous trailing-action cards before running ownership scans across large list collections.
 - Preserve compact card metadata rows in source order instead of extracting their timestamps ahead of adjacent local labels.
 - Suppress a supplemental tracking alias only when its canonical record is already represented under the same visible label, while retaining distinct-label references to shared destinations.
 - Keep a proved trailing-action card heading adjacent to its description without adding presentation punctuation absent from the source.
