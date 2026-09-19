@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve source-owned local heading destinations when the same URLs also identify other list records.
 - Preserve a uniquely owned heading before its description when a structured card ends with a trailing action link.
 - Preserve every substantive card in a proved reader-mode article carousel when normal visibility extraction already retained an exact source prefix.
 - Preserve every unique safe record from explicit continuous news tickers on not-found pages without relaxing normal visibility clipping.

@@ -75,6 +75,37 @@ function listSupplementalInteractionLink(link) {
   return !!owner || /\/(?:comments?|comentarios?|replies)(?:\/|$)/i.test(url);
 }
 
+function listSupplementalNavigationOwner(node) {
+  var owner = node;
+  while (owner) {
+    if (owner.matches && owner.matches("nav, header, footer, aside")) return true;
+    var roles = normalizeText(owner.getAttribute && owner.getAttribute("role") || "").toLowerCase().split(/\s+/);
+    if (roles.some(function(role) { return ["navigation", "menu", "menubar"].indexOf(role) >= 0; })) return true;
+    owner = owner.parentElement;
+  }
+  return false;
+}
+
+function listSupplementalHeadingReference(link, item, card) {
+  if (!link || !item || !item.sourceNode || !card || !card.contains ||
+      !card.contains(item.sourceNode)) return false;
+  var heading = link.closest("h1, h2, h3, h4");
+  if (!heading || !card.contains(heading) || !heading.contains(item.sourceNode) ||
+      listSupplementalNavigationOwner(heading)) return false;
+  var links = Array.prototype.filter.call(heading.querySelectorAll("a[href]"), function(anchor) {
+    return !listCardNodeHidden(anchor);
+  });
+  if (links.length < 2 || links.length > 5 || links.indexOf(link) === -1 ||
+      links.indexOf(item.sourceNode) === -1) return false;
+  if (!links.every(function(anchor) {
+    var url = materializedHttpUrl(anchor.getAttribute("href"));
+    return url && new URL(url).origin === location.origin;
+  })) return false;
+  var clone = heading.cloneNode(true);
+  clone.querySelectorAll("a[href]").forEach(function(anchor) { anchor.remove(); });
+  return /^[\s»›>\/|·:;,.–—-]*$/.test(clone.textContent || "");
+}
+
 function listSupplementalDetail(item, contextValues, card, primaryUrls) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var clone = card.cloneNode(true);
@@ -97,7 +128,8 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls) {
     var prose = link.closest("p, blockquote");
     var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&
       normalizeText(prose.textContent || "").length >= 30;
-    if (!url || (!ownedProseReference && (listSupplementalInteractionLink(link) ||
+    var ownedHeadingReference = listSupplementalHeadingReference(link, item, card);
+    if (!url || (!ownedProseReference && !ownedHeadingReference && (listSupplementalInteractionLink(link) ||
         (primaryUrls && primaryUrls.has(listCanonicalKey(url)))))) return;
     var clonedLink = listClonedCardNode(card, clone, link);
     if (clonedLink) supportingLinks.add(clonedLink);

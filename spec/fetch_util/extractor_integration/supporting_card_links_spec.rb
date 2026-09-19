@@ -39,6 +39,12 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
           const supplementalPrimary = supplementalContent && supplementalContent.querySelector('h2 a[href]');
           const supplementalItem = supplementalPrimary && {text: supplementalPrimary.textContent,
             url: supplementalPrimary.href, card: supplementalCard, contentCard: supplementalContent};
+          const headingFixture = main.querySelector('[data-heading-reference]');
+          const headingPrimary = headingFixture && headingFixture.querySelector('[data-primary]');
+          const headingItem = headingPrimary && {text: headingPrimary.textContent, url: headingPrimary.href,
+            card: headingFixture, sourceNode: headingPrimary};
+          const headingPrimaryUrls = headingFixture && new Set(Array.from(headingFixture.querySelectorAll('a[href]'),
+            link => link.href));
           const authorReference = main.querySelector('.author a[href]');
           const unsafeReference = document.createElement('a');
           unsafeReference.href = 'https://fixture-user:fixture-secret@example.net/private';
@@ -67,9 +73,11 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
                   collectionDescriptionValues: collectionDescriptionValues,
                   rootReference: authorReference && supportingText(authorReference),
                   unsafeRootReference: supportingText(unsafeReference),
-                  supplementalText: supplementalContent && supportingText(supplementalContent),
-                  supplemental: supplementalItem && supportingSupplemental(supplementalItem, [], supplementalCard),
-                  unchanged: main.outerHTML === original};
+                   supplementalText: supplementalContent && supportingText(supplementalContent),
+                   supplemental: supplementalItem && supportingSupplemental(supplementalItem, [], supplementalCard),
+                   headingSupplemental: headingItem && supportingSupplemental(headingItem, [], headingFixture,
+                     headingPrimaryUrls),
+                   unchanged: main.outerHTML === original};
         })()
       JS
     end
@@ -124,6 +132,43 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       "[First source](https://articles.example/sources/one)",
       "[Second source](https://articles.example/sources/two)"
     )
+  end
+
+  it "keeps local heading destinations even when they are primary records elsewhere" do
+    cards = <<~HTML
+      <div class="story" data-heading-reference>
+        <h3><a href="/category">Category</a><span> » </span>
+        <a data-primary href="/today">Today's record</a><span> » </span>
+        <a href="/archive">Archive record</a></h3>
+      </div>
+    HTML
+    result = render_supporting_cards(cards)
+    expect(result.fetch("headingSupplemental")).to eq(
+      "[Category](https://articles.example/category) » » [Archive record](https://articles.example/archive)"
+    )
+    expect(result.fetch("unchanged")).to be(true)
+  end
+
+  it "does not restore globally represented links from navigation headings" do
+    variants = [
+      ["nav", "", "/archive", ""],
+      ["div", 'role="Navigation tablist"', "/archive", ""],
+      ["div", "", "https://external.example/archive", ""],
+      ["div", "", "/archive", " explanatory prose "]
+    ]
+    variants.each do |tag, attributes, archive_url, prose|
+      cards = <<~HTML
+        <#{tag} class="story" data-heading-reference #{attributes}>
+          <h3><a href="/category">Category</a><span> » </span>
+          <a data-primary href="/today">Today's record</a>#{prose}<span> » </span>
+          <a href="#{archive_url}">Archive record</a></h3>
+        </#{tag}>
+      HTML
+      result = render_supporting_cards(cards)
+      expected = prose.empty? ? "Category » » Archive record" : "Category » #{prose.strip} » Archive record"
+      expect(result.fetch("headingSupplemental")).to eq(expected)
+      expect(result.fetch("unchanged")).to be(true)
+    end
   end
 
   it "keeps prose interaction references local without repeating their paragraphs" do
