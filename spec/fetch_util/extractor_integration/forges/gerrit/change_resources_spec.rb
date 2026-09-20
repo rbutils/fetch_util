@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Gerrit change resources' do
   include_context 'extractor integration helpers'
 
   def gerrit_resource_base_fixture
-    fixture_contents(File.expand_path('../fixtures/gerrit_change.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/gerrit_change.html', __dir__))
       .sub('<head>', '<head><base href="/r/">')
   end
 

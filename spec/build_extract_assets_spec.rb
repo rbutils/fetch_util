@@ -482,6 +482,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     community_root = File.join(source_root, "profiles/community")
     forge_root = File.join(source_root, "profiles/forges")
+    integration_root = File.join(project_root, "spec/fetch_util/extractor_integration")
     expected_forge_sources = %w[
       profiles/forges/azure_devops/entries.js
       profiles/forges/azure_devops/shared.js
@@ -530,12 +531,37 @@ RSpec.describe "extract asset bundle" do
       profiles/forges/sourcehut/todo/shared.js
       profiles/forges/sourcehut/todo/threads.js
     ]
+    expected_forge_specs = %w[
+      forges/azure_devops/pull_requests_spec.rb
+      forges/bitbucket/pull_activity_spec.rb
+      forges/bitbucket/pull_resources_spec.rb
+      forges/bitbucket/pull_statuses_spec.rb
+      forges/bitbucket/threads_spec.rb
+      forges/gerrit/change_resources_spec.rb
+      forges/gerrit/changes_spec.rb
+      forges/gitea/pull_resources_spec.rb
+      forges/gitea/threads_spec.rb
+      forges/github/pull_resources_spec.rb
+      forges/github/threads_spec.rb
+      forges/gitlab/merge_request_resources_spec.rb
+      forges/gitlab/threads_spec.rb
+      forges/pagure/pull_requests_spec.rb
+      forges/pagure/threads_spec.rb
+      forges/sourcehut/git_commits_spec.rb
+      forges/sourcehut/lists_patchsets_spec.rb
+      forges/sourcehut/lists_threads_spec.rb
+      forges/sourcehut/todo_threads_spec.rb
+    ]
     actual_forge_sources = Dir.glob(File.join(forge_root, "**/*.js")).map do |path|
       path.delete_prefix("#{source_root}/")
+    end
+    actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
+      path.delete_prefix("#{integration_root}/")
     end
 
     expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
+    expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
   end
 
   it "keeps relocated definitions before their consumers" do

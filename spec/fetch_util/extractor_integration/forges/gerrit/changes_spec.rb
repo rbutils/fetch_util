@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Gerrit changes' do
   include_context 'extractor integration helpers'
 
   def gerrit_fixture
-    fixture_contents(File.expand_path('../fixtures/gerrit_change.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/gerrit_change.html', __dir__))
   end
 
   it 'preserves a host-agnostic Gerrit change conversation and complete traversal inventory' do

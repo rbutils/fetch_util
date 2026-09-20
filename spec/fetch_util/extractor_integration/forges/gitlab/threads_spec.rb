@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
   include_context 'extractor integration helpers'
 
   def gitlab_fixture(name)
-    fixture_contents(File.expand_path("../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
   end
 
   it 'extracts a host-agnostic GitLab work-item issue with every loaded timeline record' do

@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   include_context 'extractor integration helpers'
 
   def github_fixture(name)
-    fixture_contents(File.expand_path("../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
   end
 
   def expect_no_social_fields(payload)

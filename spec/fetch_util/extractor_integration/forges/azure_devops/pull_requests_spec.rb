@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Azure DevOps pull requests' do
   include_context 'extractor integration helpers'
 
   def azure_devops_fixture
-    fixture_contents(File.expand_path('../fixtures/azure_devops_pull_request.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/azure_devops_pull_request.html', __dir__))
   end
 
   def wait_for_azure_devops_preparation(page)
