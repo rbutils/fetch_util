@@ -5,7 +5,7 @@
 ### Changed
 
 - Separate host-agnostic forge extraction and browser stabilization into product-owned families, leaving forums, Q&A, social-news, and wiki profiles under `profiles/community/` without changing runtime behavior.
-- Mirror forge, community, and social ownership in integration specs and fixtures, and replace mixed site-stabilization files with explicit community, marketplace, social, and travel loaders.
+- Mirror forge, community, and social ownership in integration specs and fixtures, replace mixed site-stabilization files with explicit family loaders, and protect the existing method ownership and stabilization phase order with executable contracts.
 - Group article extraction, homepage/list strategies, generic list records and sections, dynamic collection recovery, and Markdown helpers into cohesive source directories without changing runtime bundle order or behavior.
 
 ## v0.7.0 - 2026-09-20
