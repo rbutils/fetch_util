@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve exact-root homepage lead coverage when generalized clone mapping cannot prove correspondence, without dropping original lead destinations.
 - Preserve substantive standalone prose and control labels owned by homepage lead collections while excluding unavailable interface controls and card-local duplicates.
 - Preserve source-owned homepage context when a body-wide lead collection maps uniquely into a narrower cleaned list root.
 - Preserve coherent developer-product homepage narratives when repeated substantive feature sections own a complete set of product destinations.

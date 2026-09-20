@@ -1,4 +1,6 @@
   function supplementedHomepageLead(lead, content) {
+    var exact = exactHomepageLeadSupplement(lead, content);
+    if (exact) return exact;
     var extraction = content && content.listExtraction;
     var ownership = homepageLeadListOwnership(lead, extraction);
     if (!ownership) return null;
@@ -55,9 +57,10 @@
       var position = left.orderNode.compareDocumentPosition(right.orderNode);
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
-    return { items: items, markdown: sectionedListMarkdownWithDescriptions({
+    var result = { items: items, markdown: sectionedListMarkdownWithDescriptions({
       regions: [{ node: root, label: "", cards: items }]
     }, descriptions) };
+    return homepageLeadPreservesDestinations(lead, result) ? result : null;
   }
 
   function sameRootListRecordKey(item) {

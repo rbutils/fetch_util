@@ -10,6 +10,7 @@ RSpec.describe FetchUtil::Extractor do
                  .map { |path| File.read("#{root}/websieve/#{path}") }.join("\n")
     source.sub("})(window);", <<~JS)
         global.__leadCoverage = supplementedHomepageLead;
+        global.__leadPreservesDestinations = homepageLeadPreservesDestinations;
         global.__leadAncestorDescription = homepageLeadAncestorDescription;
         global.__leadContextDescriptions = homepageLeadContextDescriptions;
         global.__leadSectionMarkdown = sectionedListMarkdownWithDescriptions;
@@ -175,6 +176,64 @@ RSpec.describe FetchUtil::Extractor do
         %w[https://services.example/one https://services.example/two https://services.example/three]
       )
       expect(result.fetch("markdown")).not_to include("Account")
+    end
+  end
+
+  it "retains the exact-root supplement when cleaned record order cannot be mapped" do
+    html = <<~HTML
+      <html><body><main>
+        <p>Visible collection context remains before all service records.</p>
+        <article><a href="/one">First service</a></article>
+        <article><a href="/two">Second service</a></article>
+        <article><a href="/three">Third service</a></article>
+        <article><a href="/four">Fourth service</a></article>
+      </main></body></html>
+    HTML
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: lead_coverage_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const sourceMain = document.querySelector('main');
+          const root = __leadVisibleClone(sourceMain, document);
+          const sourceLinks = Array.from(sourceMain.querySelectorAll('a'));
+          const cloneLinks = Array.from(root.querySelectorAll('a'));
+          const leadItems = sourceLinks.slice(0, 2).map(link => ({
+            text: link.textContent, url: link.href, sourceNode: link, card: link.parentElement
+          }));
+          const items = [cloneLinks[3], cloneLinks[2]].map(link => ({
+            text: link.textContent, url: link.href, sourceNode: link, card: link.parentElement
+          }));
+          return __leadCoverage({ root: sourceMain, items: leadItems }, {
+            listExtraction: { sourceNode: sourceMain, root, items }
+          });
+        })()
+      JS
+      expect(result.fetch("items").map { |item| item.fetch("url") }).to eq(
+        %w[
+          https://services.example/one
+          https://services.example/two
+          https://services.example/three
+          https://services.example/four
+        ]
+      )
+      expect(result.fetch("markdown")).to start_with("Visible collection context remains")
+    end
+  end
+
+  it "requires a supplemented lead to retain every original destination" do
+    with_url_page("https://services.example/", "<html><body></body></html>") do |page|
+      page.add_script_tag(content: lead_coverage_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const lead = { items: [{ url: '/one' }, { url: '/two?utm_source=feed' }] };
+          return [
+            __leadPreservesDestinations(lead, { items: [{ url: '/one' }] }),
+            __leadPreservesDestinations(lead, { items: [{ url: '/two?utm_source=feed' }, { url: '/one' }] }),
+            __leadPreservesDestinations(lead, { items: [{ url: '/two' }, { url: '/one' }] })
+          ];
+        })()
+      JS
+      expect(result).to eq([false, true, false])
     end
   end
 
