@@ -22,26 +22,27 @@ module FetchUtil
       autoload :BitbucketCloudPullResourceModules,
                "fetch_util/browser/site_stabilization/forges/bitbucket/pulls/resource_modules"
       autoload :GerritChangeProductStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_change_product_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/changes/product_state_script"
       autoload :GerritChangeRequestStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_change_request_state_script"
-      autoload :GerritChangeState, "fetch_util/browser/site_stabilization/gerrit_change_state"
+               "fetch_util/browser/site_stabilization/forges/gerrit/changes/request_state_script"
+      autoload :GerritChangeState,
+               "fetch_util/browser/site_stabilization/forges/gerrit/changes/state"
       autoload :GerritChangeStabilization,
-               "fetch_util/browser/site_stabilization/gerrit_change_stabilization"
+               "fetch_util/browser/site_stabilization/forges/gerrit/changes/stabilization"
       autoload :GerritFileResourceProductStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_product_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/product_state_script"
       autoload :GerritFileResourceRouteStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_route_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/route_state_script"
       autoload :GerritFileResourceFetchStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_fetch_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/fetch_state_script"
       autoload :GerritFileResourceValidationStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_validation_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/validation_state_script"
       autoload :GerritFileResourceRequestStateScript,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_request_state_script"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/request_state_script"
       autoload :GerritFileResourceState,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_state"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/state"
       autoload :GerritFileResourceStabilization,
-               "fetch_util/browser/site_stabilization/gerrit_file_resource_stabilization"
+               "fetch_util/browser/site_stabilization/forges/gerrit/resources/stabilization"
       autoload :GithubPullResources,
                "fetch_util/browser/site_stabilization/forges/github/pull_resources"
       autoload :GithubPullResourceStabilization,
