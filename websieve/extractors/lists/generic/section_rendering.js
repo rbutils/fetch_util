@@ -25,7 +25,7 @@
       }
       region.cards.forEach(function(item) {
         blocks.push({
-          node: item.sourceNode || item.card || region.node,
+          node: item.orderNode || item.sourceNode || item.card || region.node,
           markdown: listMarkdown([item], primaryUrls, primaryRecordKeys),
           kind: "item",
           regionIndex: regionIndex,

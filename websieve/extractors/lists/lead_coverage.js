@@ -1,8 +1,97 @@
+  function homepageLeadListOwnership(lead, extraction) {
+    if (!lead || !extraction || !extraction.sourceNode || !extraction.root || !extraction.items.length) return null;
+    if (extraction.sourceNode !== lead.root && !lead.root.contains(extraction.sourceNode)) return null;
+
+    var root = extraction.root;
+    var sourceRoot = extraction.sourceNode;
+    var sourceLinks = Array.from(sourceRoot.querySelectorAll("a[href]"));
+    var sourceLinkIndex = {};
+    sourceLinks.forEach(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      if (!url || elementSubtreeHidden(link)) return;
+      var visibleLink = visibilityPrunedClone(link, document);
+      var heading = visibleLink && visibleLink.querySelector("h1, h2, h3, h4");
+      var titles = [leadTitle(link), normalizeText(heading && heading.textContent || "")].filter(Boolean);
+      titles.filter(function(title, index) { return titles.indexOf(title) === index; }).forEach(function(title) {
+        var key = JSON.stringify([url, title]);
+        if (!sourceLinkIndex[key]) sourceLinkIndex[key] = [];
+        sourceLinkIndex[key].push(link);
+      });
+    });
+    var leadLinks = [];
+    var retained = new Set();
+    for (var index = 0; index < lead.items.length; index += 1) {
+      var item = lead.items[index];
+      var url = materializedHttpUrl(item && item.url);
+      var source = item && item.sourceNode;
+      if (!url || retained.has(url)) return null;
+      if (!source) {
+        var matches = sourceLinkIndex[JSON.stringify([url, normalizeText(item && item.text || "")])] || [];
+        if (matches.length !== 1) return null;
+        source = matches[0];
+      }
+      if (source.tagName !== "A" || !sourceRoot.contains(source) ||
+          materializedHttpUrl(source.getAttribute("href")) !== url) return null;
+      retained.add(url);
+      leadLinks.push(source);
+    }
+
+    var mappedItems = extraction.items.map(function(item) {
+      if (item && item.sourceNode && sourceRoot.contains(item.sourceNode) &&
+          materializedHttpUrl(item.sourceNode.getAttribute("href")) === materializedHttpUrl(item.url)) {
+        return item.sourceNode;
+      }
+      var key = JSON.stringify([materializedHttpUrl(item && item.url) || "", normalizeText(item && item.text || "")]);
+      var matches = sourceLinkIndex[key] || [];
+      return matches.length === 1 ? matches[0] : null;
+    });
+    if (mappedItems.some(function(node) { return !node; })) return null;
+    for (var itemIndex = 1; itemIndex < mappedItems.length; itemIndex += 1) {
+      var position = mappedItems[itemIndex - 1].compareDocumentPosition(mappedItems[itemIndex]);
+      if (!(position & Node.DOCUMENT_POSITION_FOLLOWING) || position & Node.DOCUMENT_POSITION_DISCONNECTED) return null;
+    }
+    return { leadLinks: leadLinks, mappedItems: mappedItems, sourceRoot: sourceRoot };
+  }
+
+  function homepageLeadDescriptionSourceNodes(sourceRoot, descriptions) {
+    var tags = [];
+    descriptions.forEach(function(part) {
+      var tag = part.node && part.node.tagName;
+      if (tag && tags.indexOf(tag) === -1) tags.push(tag);
+    });
+    if (!tags.length) return [];
+
+    function signature(node) {
+      var urls = Array.from(node.querySelectorAll("a[href]")).map(function(link) {
+        return materializedHttpUrl(link.getAttribute("href")) || "";
+      });
+      return JSON.stringify([
+        node.tagName,
+        node.getAttribute("id") || "",
+        node.getAttribute("class") || "",
+        normalizeText(node.textContent || ""),
+        urls
+      ]);
+    }
+
+    var index = {};
+    Array.from(sourceRoot.querySelectorAll(tags.join(","))).forEach(function(node) {
+      if (elementSubtreeHidden(node)) return;
+      var key = signature(node);
+      if (!index[key]) index[key] = [];
+      index[key].push(node);
+    });
+    return descriptions.map(function(part) {
+      var matches = index[signature(part.node)] || [];
+      return matches.length === 1 ? matches[0] : null;
+    });
+  }
+
   function supplementedHomepageLead(lead, content) {
     var extraction = content && content.listExtraction;
-    if (!lead || !extraction || extraction.sourceNode !== lead.root || !extraction.items.length) return null;
+    var ownership = homepageLeadListOwnership(lead, extraction);
+    if (!ownership) return null;
     var root = extraction.root;
-    var links = Array.from(root.querySelectorAll("a[href]"));
     var retained = new Set();
     var items = [];
     var representedDetails = [];
@@ -10,21 +99,13 @@
       var item = lead.items[index];
       var counterparts = extraction.items.filter(function(candidate) { return candidate.url === item.url; });
       if (counterparts.length > 1) return null;
-      var matches = links.filter(function(link) {
-        return materializedHttpUrl(link.getAttribute("href")) === item.url &&
-          normalizeText(link.textContent || link.getAttribute("aria-label")) === normalizeText(item.text);
-      });
-      if (!matches.length && counterparts.length && counterparts[0].text === item.text &&
-          counterparts[0].sourceNode && root.contains(counterparts[0].sourceNode) &&
-          materializedHttpUrl(counterparts[0].sourceNode.getAttribute("href")) === item.url) {
-        matches = [counterparts[0].sourceNode];
-      }
-      if (matches.length !== 1 || retained.has(item.url)) return null;
-      if (counterparts.length && counterparts[0].card && counterparts[0].card.contains(matches[0])) {
+      if (counterparts.length && normalizeText(counterparts[0].text) !== normalizeText(item.text)) return null;
+      if (retained.has(item.url)) return null;
+      if (counterparts.length && counterparts[0].card) {
         representedDetails.push({ card: counterparts[0].card, text: normalizeText(item.detail) });
       }
       retained.add(item.url);
-      items.push(Object.assign({}, item, { sourceNode: matches[0] }));
+      items.push(Object.assign({}, item, { orderNode: ownership.leadLinks[index] }));
     }
     var additions = extraction.items.filter(function(item) { return !retained.has(item.url); });
     if (!additions.length) return null;
@@ -38,22 +119,29 @@
         return materializedHttpUrl(link.getAttribute("href"));
       });
       if (!destinations.length || destinations.some(function(url) { return !url || url !== addition.url; })) return null;
-      items.push(addition);
+      var sourceNode = ownership.mappedItems[extraction.items.indexOf(addition)];
+      if (!sourceNode) return null;
+      items.push(Object.assign({}, addition, { orderNode: sourceNode }));
     }
     var descriptions = listDescriptionParts(root, extraction.items, {
       includeInlineProse: true, preserveTextLengths: true, preserveUnrepresentedText: true
     }).filter(function(part) {
       var text = normalizeText(part.node.textContent);
-      return !elementSubtreeHidden(part.node) && !items.some(function(item) {
+      return !elementSubtreeHidden(part.node) && !extraction.items.some(function(item) {
         return normalizeText(item.text) === text &&
           (item.sourceNode.contains(part.node) || part.node.contains(item.sourceNode));
       }) && !representedDetails.some(function(detail) {
         return text && detail.card.contains(part.node) && detail.text.indexOf(text) !== -1;
       });
     });
+    var descriptionSources = homepageLeadDescriptionSourceNodes(ownership.sourceRoot, descriptions);
+    if (descriptionSources.some(function(node) { return !node; })) return null;
+    descriptions = descriptions.map(function(part, index) {
+      return Object.assign({}, part, { node: descriptionSources[index] });
+    });
     if (!descriptions.some(function(part) { return !/^#{1,6}\s/.test(part.markdown); })) return null;
     items.sort(function(left, right) {
-      var position = left.sourceNode.compareDocumentPosition(right.sourceNode);
+      var position = left.orderNode.compareDocumentPosition(right.orderNode);
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
     return { items: items, markdown: sectionedListMarkdownWithDescriptions({
