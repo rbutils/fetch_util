@@ -15,11 +15,11 @@ module FetchUtil
       autoload :AzureDevopsPrStabilization,
                "fetch_util/browser/site_stabilization/azure_devops_pr_stabilization"
       autoload :BitbucketCloudThreadState,
-               "fetch_util/browser/site_stabilization/bitbucket_cloud_thread_state"
+               "fetch_util/browser/site_stabilization/forges/bitbucket/threads/state"
       autoload :BitbucketCloudThreads,
-               "fetch_util/browser/site_stabilization/bitbucket_cloud_threads"
+               "fetch_util/browser/site_stabilization/forges/bitbucket/threads/index"
       autoload :BitbucketCloudPullResourceModules,
-               "fetch_util/browser/site_stabilization/bitbucket_cloud_pull_resource_modules"
+               "fetch_util/browser/site_stabilization/forges/bitbucket/pulls/resource_modules"
       autoload :GerritChangeProductStateScript,
                "fetch_util/browser/site_stabilization/gerrit_change_product_state_script"
       autoload :GerritChangeRequestStateScript,
