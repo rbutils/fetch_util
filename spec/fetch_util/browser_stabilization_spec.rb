@@ -247,10 +247,10 @@ RSpec.describe FetchUtil::Browser do
                                       'Gerrit API file identity mismatch')
     expect(request_script).not_to include('/content')
     shared_source = File.read(File.expand_path(
-                                '../../websieve/profiles/community/gerrit_change_shared.js', __dir__
+                                '../../websieve/profiles/forges/gerrit/shared.js', __dir__
                               ))
     resource_source = File.read(File.expand_path(
-                                  '../../websieve/profiles/community/gerrit_change_resource_shared.js', __dir__
+                                  '../../websieve/profiles/forges/gerrit/resources/shared.js', __dir__
                                 ))
     expect(shared_source).to include('function gerritChangeFileInventoryEntries')
     expect(resource_source).to include('gerritChangeFileInventoryEntries(prepared, filePath, route.target')
