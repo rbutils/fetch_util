@@ -154,4 +154,127 @@ RSpec.describe FetchUtil::Extractor do
       expect(result.fetch('html')).not_to include('data-fetchutil-page-overview')
     end
   end
+
+  it 'preserves coherent developer-product narratives instead of reducing them to product links' do
+    sections = [
+      ['Desktop UI controls', 'WinForms suite', '/products/winforms', 'WPF component library', '/products/wpf'],
+      ['Modern web frameworks', 'Blazor components', '/products/blazor', 'ASP.NET developer tools', '/products/aspnet'],
+      ['Reporting and analytics', 'Reporting SDK', '/products/reporting', 'Dashboard platform', '/products/dashboard']
+    ].each_with_index.map do |(heading, first_label, first_path, second_label, second_path), index|
+      owner_class = %w[control-group component_group ControlGroup].fetch(index)
+      <<~HTML
+        <section class="#{owner_class}"><h2>#{heading}</h2>
+        <p>Build reliable software for demanding business applications with a complete set of developer components.
+        The integrated tools share one platform, support production deployment, and include detailed product capabilities.</p>
+        <a href="#{first_path}"><svg><style>.icon_blue{fill:#26A4DD;}</style></svg><span>#{first_label}</span></a>
+        <a href="#{second_path}">#{second_label}</a></section>
+      HTML
+    end.join
+    bulk_links = (1..125).map { |index| "<a href='/products/api/#{index}'>Developer API #{index}</a>" }.join
+    bulk_section = <<~HTML
+      <section class="feature-overview"><h2>Developer APIs</h2>
+      <p>Integrate production software with a complete set of developer APIs for automation, deployment,
+      reporting, and secure application workflows across supported platforms and component libraries.</p>
+      #{bulk_links}<a href="https://user:secret@acme.example.test/products/private">Private SDK</a></section>
+    HTML
+    html = <<~HTML
+      <html><head><title>Acme UI components for .NET and JavaScript developers</title>
+      <meta name="author" content="Acme Software Inc."></head><body>
+      <nav>#{(1..20).map { |index| "<a href='/menu/#{index}'>Menu #{index}</a>" }.join}</nav>
+      <main>#{sections}#{bulk_section}</main>
+      <footer><a href="/privacy">Privacy</a></footer></body></html>
+    HTML
+
+    with_url_page('https://acme.example.test/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = extract_payload(page)
+      markdown = result.fetch('markdown')
+      expect(result.fetch('contentType')).to eq('article')
+      expect(result.fetch('byline')).to eq('Acme Software Inc.')
+      expect(result.fetch('html')).to include('data-fetchutil-page-overview')
+      expect(markdown).to include('Desktop UI controls', 'Modern web frameworks', 'Reporting and analytics')
+      expect(markdown).to include('/products/winforms)', '/products/wpf)', '/products/blazor)', '/products/aspnet)')
+      expect(markdown).to include('/products/reporting)', '/products/dashboard)')
+      expect(markdown.scan(%r{https://acme\.example\.test/products/api/(\d+)\)}).flatten).to eq((1..125).map(&:to_s))
+      expect(markdown).not_to include('.icon_blue', '/menu/', '/privacy)', 'user:secret', '/products/private)')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'does not promote link-heavy developer news as a product overview' do
+    stories = (1..6).map do |index|
+      <<~HTML
+        <section class="control-group"><h2>Developer resources #{index}</h2>
+        <p>News about software teams, product tools, component releases, and their latest work in the community.
+        This editorial record describes one update rather than a coherent product capability or owned feature overview.</p>
+        <a href="/news/#{index}/product">Product tool release #{index}</a>
+        <a href="/blog/#{index}/component">Component update #{index}</a></section>
+      HTML
+    end.join
+    html = "<html><head><title>Developer software news</title></head><body><main>#{stories}</main></body></html>"
+
+    extract_from_url('https://news.example.test/', html) do |result|
+      expect(result.fetch('html')).not_to include('data-fetchutil-page-overview')
+    end
+  end
+
+  it 'does not promote a generic software catalog without structural section ownership' do
+    sections = (1..3).map do |index|
+      <<~HTML
+        <section class="products control group features" data-testid="feature-overview" role="showcase"><h2>Developer platform #{index}</h2>
+        <p>Build production software with integrated developer components, deployment support, and detailed tools
+        for teams that maintain demanding applications across multiple environments and release cycles.</p>
+        <a href="/products/#{index}/first">Component suite #{index}</a>
+        <a href="/products/#{index}/second">Framework tool #{index}</a></section>
+      HTML
+    end.join
+    html = "<html><head><title>Acme developer software component suites</title></head><body><main>#{sections}</main></body></html>"
+
+    extract_from_url('https://acme.example.test/', html) do |result|
+      expect(result.fetch('html')).not_to include('data-fetchutil-page-overview')
+    end
+  end
+
+  it 'does not use hidden text to establish developer-product identity' do
+    sections = (1..3).map do |index|
+      <<~HTML
+        <section class="feature-overview"><h2>Business service #{index}<span hidden>Developer product platform</span></h2>
+        <p>Integrated operations support demanding organizations with reliable workflows, deployment assistance,
+        detailed administration, and coordinated delivery across multiple environments and release cycles.
+        <span style="display:none">Software developer components and product tools</span></p>
+        <a href="/services/#{index}/first">Component suite #{index}</a>
+        <a href="/services/#{index}/second">Framework tool #{index}</a></section>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Acme developer software products</title></head><body>
+      <main>#{sections}</main></body></html>
+    HTML
+
+    extract_from_url('https://acme.example.test/', html) do |result|
+      expect(result.fetch('html')).not_to include('data-fetchutil-page-overview')
+    end
+  end
+
+  it 'requires one visible main with a complete same-origin product inventory' do
+    section = lambda do |index, extra = ''|
+      <<~HTML
+        <section #{extra}><h2>Developer platform #{index}</h2>
+        <p>Build production software with integrated developer components, deployment support, and detailed tools
+        for teams that maintain demanding applications across multiple environments and release cycles.</p>
+        <a href="/products/#{index}/first">Component suite #{index}</a>
+        <a href="https://external.example.test/products/#{index}/second">Framework tool #{index}</a></section>
+      HTML
+    end
+    html = <<~HTML
+      <html><head><title>Acme developer software component suites</title></head><body>
+      <main>#{section.call(1)}#{section.call(2)}#{section.call(3, "hidden")}</main>
+      <main>#{section.call(4)}#{section.call(5)}#{section.call(6)}</main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://acme.example.test/', html) do |result|
+      expect(result.fetch('html')).not_to include('data-fetchutil-page-overview')
+    end
+  end
 end
