@@ -3,14 +3,12 @@
 module FetchUtil
   class Browser
     module SiteStabilization
-      module SocialPlatforms
-        SOCIAL_PLATFORM_STABILIZATION_PROFILES = {
-          stabilize_instagram: { host: "instagram.com", strategy: :stabilize_instagram,
-                                 notes: "Accept Instagram cookie prompts and dismiss login modals before extraction.",
-                                 tests: "spec/fetch_util/browser_stabilization_spec.rb" },
-          stabilize_facebook: { host: "facebook.com", strategy: :stabilize_facebook,
-                                notes: "Decline/accept Facebook cookie dialogs, then dismiss login prompts.",
-                                tests: "spec/fetch_util/browser_stabilization_spec.rb" }
+      module InstagramStabilization
+        INSTAGRAM_STABILIZATION_PROFILE = {
+          host: "instagram.com",
+          strategy: :stabilize_instagram,
+          notes: "Accept Instagram cookie prompts and dismiss login modals before extraction.",
+          tests: "spec/fetch_util/browser_stabilization_spec.rb"
         }.freeze
 
         private

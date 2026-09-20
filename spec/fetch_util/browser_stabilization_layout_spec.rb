@@ -9,12 +9,12 @@ RSpec.describe 'browser stabilization layout' do
     expect(Dir.children(root).sort).to eq([
                                             'communities',
                                             'communities.rb',
-                                            'facebook_stabilization.rb',
                                             'forges',
                                             'forges.rb',
                                             'marketplaces',
                                             'marketplaces.rb',
-                                            'social_platforms.rb',
+                                            'social',
+                                            'social.rb',
                                             'travel_and_lodging.rb'
                                           ])
   end
@@ -26,6 +26,13 @@ RSpec.describe 'browser stabilization layout' do
     expect(Dir[File.join(root, 'marketplaces/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }).to eq([
                                                                                                                'marketplaces/ebay.rb'
                                                                                                              ])
+  end
+
+  it 'keeps social stabilizers grouped by platform' do
+    expect(Dir[File.join(root, 'social/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }.sort).to eq([
+                                                                                                              'social/facebook.rb',
+                                                                                                              'social/instagram.rb'
+                                                                                                            ])
   end
 
   it 'keeps forge stabilizers grouped by product and resource family' do

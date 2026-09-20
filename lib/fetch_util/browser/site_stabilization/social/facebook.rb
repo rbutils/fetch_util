@@ -4,13 +4,17 @@ module FetchUtil
   class Browser
     module SiteStabilization
       module FacebookStabilization
+        FACEBOOK_STABILIZATION_PROFILE = {
+          host: "facebook.com",
+          strategy: :stabilize_facebook,
+          notes: "Decline/accept Facebook cookie dialogs, then dismiss login prompts.",
+          tests: "spec/fetch_util/browser_stabilization_spec.rb"
+        }.freeze
+
         private
 
         def stabilize_facebook(page, deadline: stabilization_deadline)
           wait_for_idle_or_content(page, deadline: deadline) if @wait_for_idle
-          return false unless stabilization_time_remaining?(deadline)
-
-          social_login_phase_pause(deadline: deadline)
           return false unless stabilization_time_remaining?(deadline)
 
           dismiss_facebook_cookie_dialog(page)
@@ -19,12 +23,16 @@ module FetchUtil
           social_login_phase_pause(deadline: deadline)
           return false unless stabilization_time_remaining?(deadline)
 
+          dismiss_facebook_cookie_dialog(page)
+          return false unless stabilization_time_remaining?(deadline)
+
           retry_until_timeout(capped_timeout(5.0, deadline: deadline), deadline: deadline) do
             dismiss_facebook_login_dialog(page)
           end
           return false unless stabilization_time_remaining?(deadline)
 
           social_login_phase_pause(deadline: deadline)
+          dismiss_facebook_login_dialog(page)
         end
 
         def dismiss_facebook_cookie_dialog(page)
