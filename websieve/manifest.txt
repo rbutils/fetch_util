@@ -194,11 +194,11 @@ profiles/forges/github/thread_shared.js
 profiles/forges/github/threads.js
 profiles/forges/github/pull_requests/file_resources.js
 profiles/forges/github/pull_requests/resources.js
-profiles/community/gitlab_thread_shared.js
-profiles/community/gitlab_threads.js
-profiles/community/gitlab_merge_request_resource_shared.js
-profiles/community/gitlab_merge_request_diffs.js
-profiles/community/gitlab_merge_request_resources.js
+profiles/forges/gitlab/thread_shared.js
+profiles/forges/gitlab/threads.js
+profiles/forges/gitlab/merge_requests/resource_shared.js
+profiles/forges/gitlab/merge_requests/diffs.js
+profiles/forges/gitlab/merge_requests/resources.js
 profiles/community/gitea_family_shared.js
 profiles/community/gitea_family_pull_resource_shared.js
 profiles/community/gitea_family_pull_commits.js
