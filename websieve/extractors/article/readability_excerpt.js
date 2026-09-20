@@ -71,7 +71,9 @@
   }
 
   function readabilitySummarySelector() {
-    return "[data-section*='summary' i], [class*='page-summary' i], [class*='article-summary' i], [class~='summary'], [class*='key-points' i]";
+    return "[data-section*='summary' i], [class*='page-summary' i], [class*='pagesummary' i], " +
+      "[class*='article-summary' i], [class*='articlesummary' i], [class~='summary'], " +
+      "[class*='key-points' i], [class*='keypoints' i]";
   }
 
   function readabilityStructuredExcerptOwner(root) {
@@ -153,20 +155,33 @@
       node.setAttribute("data-fetchutil-excerpt-source", marker);
       if (readabilityBodyExcerptNode(node, structuredOwner)) node.setAttribute("data-fetchutil-excerpt-body", marker);
     });
-    var summaryIndex = 0;
-    root.querySelectorAll(readabilitySummarySelector()).forEach(function(container) {
-      if (!readabilityExcerptNode(container)) return;
+    var summaryContainers = Array.prototype.filter.call(root.querySelectorAll(readabilitySummarySelector()), function(container) {
+      return readabilityExcerptNode(container);
+    });
+    var summaryStack = [];
+    var topLevelSummaryContainers = [];
+    summaryContainers.forEach(function(container) {
+      while (summaryStack.length && !summaryStack[summaryStack.length - 1].contains(container)) {
+        summaryStack.pop();
+      }
+      if (!summaryStack.length) topLevelSummaryContainers.push(container);
+      summaryStack.push(container);
+    });
+    summaryContainers = topLevelSummaryContainers;
+    if (summaryContainers.length === 1) {
+      var container = summaryContainers[0];
       var parts = [];
       if (container.matches("p, li")) parts.push(container);
       parts = parts.concat(Array.prototype.slice.call(container.querySelectorAll("p, li")));
       parts = parts.filter(function(node) {
-        return node.getAttribute("data-fetchutil-excerpt-source") === marker;
+        return node.getAttribute("data-fetchutil-excerpt-source") === marker && !node.querySelector("p, li");
       });
-      if (!parts.length) return;
-      var group = marker + ":" + summaryIndex;
-      summaryIndex += 1;
-      parts.forEach(function(node) { node.setAttribute("data-fetchutil-excerpt-summary", group); });
-    });
+      if (parts.length) {
+        var group = marker + ":0";
+        container.setAttribute("data-fetchutil-excerpt-summary-root", group);
+        parts.forEach(function(node) { node.setAttribute("data-fetchutil-excerpt-summary", group); });
+      }
+    }
     return marker;
   }
 
@@ -178,6 +193,14 @@
   }
 
   function readabilitySummaryExcerpt(template, shortExcerpt, marker) {
+    var roots = Array.prototype.filter.call(template.content.querySelectorAll("[data-fetchutil-excerpt-summary-root]"), function(node) {
+      var group = node.getAttribute("data-fetchutil-excerpt-summary-root") || "";
+      var value = normalizeText(node.textContent || "");
+      return group.indexOf(marker + ":") === 0 && value !== shortExcerpt &&
+        value.indexOf(shortExcerpt) !== -1 && readabilityExcerptLength(value) >= 80;
+    });
+    if (roots.length === 1) return readabilityExcerptPrefix(roots[0].textContent || "");
+
     var groups = new Map();
     template.content.querySelectorAll("[data-fetchutil-excerpt-summary]").forEach(function(node) {
       var group = node.getAttribute("data-fetchutil-excerpt-summary") || "";
@@ -241,7 +264,7 @@
   function stripReadabilityExcerptMarkers(html, marker) {
     var template = document.createElement("template");
     template.innerHTML = html;
-    template.content.querySelectorAll("[data-fetchutil-excerpt-source], [data-fetchutil-excerpt-body], [data-fetchutil-excerpt-summary]").forEach(function(node) {
+    template.content.querySelectorAll("[data-fetchutil-excerpt-source], [data-fetchutil-excerpt-body], [data-fetchutil-excerpt-summary], [data-fetchutil-excerpt-summary-root]").forEach(function(node) {
       if (node.getAttribute("data-fetchutil-excerpt-source") === marker) {
         node.removeAttribute("data-fetchutil-excerpt-source");
       }
@@ -250,6 +273,8 @@
       }
       var group = node.getAttribute("data-fetchutil-excerpt-summary") || "";
       if (group.indexOf(marker + ":") === 0) node.removeAttribute("data-fetchutil-excerpt-summary");
+      var rootGroup = node.getAttribute("data-fetchutil-excerpt-summary-root") || "";
+      if (rootGroup.indexOf(marker + ":") === 0) node.removeAttribute("data-fetchutil-excerpt-summary-root");
     });
     return template.innerHTML;
   }

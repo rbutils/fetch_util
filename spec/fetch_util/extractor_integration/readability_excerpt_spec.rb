@@ -204,4 +204,103 @@ RSpec.describe 'Readability article excerpts' do
       expect(values.values_at('widget', 'dialog', 'alertdialog')).to eq([nil, nil, nil])
     end
   end
+
+  it 'prefers a proved camel-case article summary over generic body prose' do
+    body = 'Later article reporting must not displace the explicit source summary. ' * 8
+    html = <<~HTML
+      <main>
+        <article>
+          <div class="ArticleSummary__Container">
+            <h2>Key points</h2>
+            <p>Editorially reviewed</p>
+            <ul>
+              <li><p>The first verified point explains the central development.</p></li>
+              <li><p>The second verified point supplies material context for readers.</p></li>
+            </ul>
+          </div>
+          <p>#{body}</p>
+        </article>
+      </main>
+    HTML
+
+    with_url_page('https://publisher.example/explicit-summary', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        (function() {
+          var clone = document.cloneNode(true);
+          var marker = window.__markReadabilityExcerptSources(clone);
+          var article = clone.querySelector("article");
+          var excerpt = window.__readabilityArticleExcerpt({
+            excerpt: "Editorially reviewed",
+            content: article.outerHTML,
+            textContent: article.textContent
+          }, null, marker);
+          var ambiguous = document.cloneNode(true);
+          var summary = ambiguous.querySelector(".ArticleSummary__Container");
+          summary.parentElement.insertBefore(summary.cloneNode(true), summary.nextSibling);
+          window.__markReadabilityExcerptSources(ambiguous);
+          return JSON.stringify({
+            excerpt: excerpt,
+            roots: clone.querySelectorAll("[data-fetchutil-excerpt-summary-root]").length,
+            paragraphs: clone.querySelectorAll("p[data-fetchutil-excerpt-summary]").length,
+            listItems: clone.querySelectorAll("li[data-fetchutil-excerpt-summary]").length,
+            ambiguousRoots: ambiguous.querySelectorAll("[data-fetchutil-excerpt-summary-root]").length
+          });
+        })()
+      JS
+
+      expect(values['excerpt']).to start_with(
+        'Key points Editorially reviewed The first verified point explains the central development.'
+      )
+      summary_points = [
+        'Editorially reviewed',
+        'The first verified point explains the central development.',
+        'The second verified point supplies material context for readers.'
+      ]
+      summary_positions = summary_points.map { |point| values['excerpt'].index(point) }
+      expect(summary_positions).to all(be_a(Integer))
+      expect(summary_positions).to eq(summary_positions.sort)
+      expect(values['excerpt'].each_grapheme_cluster.count).to be_between(80, 280)
+      expect(values).to include('roots' => 1, 'paragraphs' => 3, 'listItems' => 0, 'ambiguousRoots' => 0)
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
+  it 'rejects blocked and empty explicit summary regions' do
+    html = <<~HTML
+      <main>
+        <aside class="widget article-summary"><p>Editorially reviewed</p><p>Widget-owned detail is not article summary material.</p></aside>
+        <dialog class="article-summary"><p>Editorially reviewed</p><p>Dialog-owned detail is not article summary material.</p></dialog>
+        <section class="category article-summary"><p>Editorially reviewed</p><p>Category-owned detail is not article summary material.</p></section>
+        <nav class="article-summary"><p>Editorially reviewed</p><p>Navigation-owned detail is not article summary material.</p></nav>
+      </main>
+    HTML
+
+    with_page(html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      page.add_script_tag(content: readability_excerpt_source)
+      values = page.evaluate(<<~JS)
+        (() => {
+          const blocked = document.cloneNode(true);
+          window.__markReadabilityExcerptSources(blocked);
+          const empty = document.cloneNode(true);
+          const emptyMarker = window.__markReadabilityExcerptSources(empty);
+          const emptyMain = empty.querySelector('main');
+          const emptyExcerpt = window.__readabilityArticleExcerpt({
+            excerpt: '',
+            content: emptyMain.outerHTML,
+            textContent: emptyMain.textContent
+          }, null, emptyMarker);
+          return [
+            blocked.querySelectorAll('[data-fetchutil-excerpt-summary-root]').length,
+            emptyExcerpt === null
+          ];
+        })()
+      JS
+
+      expect(values).to eq([0, true])
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
 end

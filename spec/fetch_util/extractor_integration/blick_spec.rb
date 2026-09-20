@@ -43,7 +43,17 @@ RSpec.describe 'FetchUtil Blick extractor integration' do
       expect(payload['excerpt']).to start_with(
         'Darum gehts KI-generiert, redaktionell geprüft Russland greift die Ukraine unvermindert an'
       )
-      expect(payload['excerpt'].length).to eq(280)
+      summary_points = [
+        'Russland greift die Ukraine unvermindert an',
+        'Gleichzeit häufen sich Nato-Luftraumverletzungen',
+        'Experten sind sich sicher: Putin testet das Bündnis',
+        'Trump geht auf Distanz zu Putin'
+      ]
+      summary_positions = summary_points.map { |point| payload['excerpt'].index(point) }
+      expect(summary_positions).to all(be_a(Integer))
+      expect(summary_positions).to eq(summary_positions.sort)
+      expect(payload['excerpt'].each_grapheme_cluster.count).to be_between(80, 280)
+      expect(payload['html']).not_to include('data-fetchutil-excerpt-')
       %w[
         containerPiano1 containerPiano2 CMPPlaceholder__Wrapper-sc-b34bbfca-0
         EmbeddedContent__StyledEmbeddedContentContainer-sc-5c959b4b-0
