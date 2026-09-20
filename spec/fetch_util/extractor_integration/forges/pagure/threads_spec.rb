@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Pagure threads' do
   include_context 'extractor integration helpers'
 
   def pagure_fixture
-    fixture_contents(File.expand_path('../../../fixtures/forges/pagure/pagure_issue_thread.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/pagure/issue_thread.html', __dir__))
   end
 
   it 'preserves a host-agnostic Pagure issue conversation and traversal inventory' do

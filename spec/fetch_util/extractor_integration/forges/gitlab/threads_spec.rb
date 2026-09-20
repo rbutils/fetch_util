@@ -11,7 +11,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
 
   it 'extracts a host-agnostic GitLab work-item issue with every loaded timeline record' do
     extract_from_url('https://forge.example/team/project/-/work_items/12',
-                     gitlab_fixture('gitlab_work_item_thread.html'), reader_mode: false) do |payload|
+                     gitlab_fixture('work_item_thread.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'GitLab',
                                  'handle' => 'alice', 'replyCount' => nil, 'community' => 'team/project')
@@ -39,7 +39,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
   end
 
   it 'does not borrow a timeline commenter when the opening author is unavailable' do
-    html = gitlab_fixture('gitlab_work_item_thread.html')
+    html = gitlab_fixture('work_item_thread.html')
            .sub('<a data-testid="work-item-author" href="/alice">alice</a>', '')
 
     extract_from_url('https://forge.example/team/project/-/work_items/12', html, reader_mode: false) do |payload|
@@ -49,7 +49,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
   end
 
   it 'does not claim exhausted timeline controls have additional records' do
-    html = gitlab_fixture('gitlab_work_item_thread.html')
+    html = gitlab_fixture('work_item_thread.html')
            .sub('<button>Load more notes</button>', '<button aria-disabled="true">No more notes</button>')
 
     extract_from_url('https://forge.example/team/project/-/work_items/12', html, reader_mode: false) do |payload|
@@ -67,7 +67,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
         </div>
       HTML
     end.join
-    html = gitlab_fixture('gitlab_work_item_thread.html').sub('<!-- timeline-end -->', bulk)
+    html = gitlab_fixture('work_item_thread.html').sub('<!-- timeline-end -->', bulk)
 
     extract_from_url('https://forge.example/team/project/-/issues/12', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -91,7 +91,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
         <div class="note-body"><p>Duplicate permalink must not create another record.</p></div>
       </div>
     HTML
-    html = gitlab_fixture('gitlab_work_item_thread.html').sub('<!-- timeline-end -->', records)
+    html = gitlab_fixture('work_item_thread.html').sub('<!-- timeline-end -->', records)
 
     extract_from_url('https://forge.example/team/project/-/work_items/12', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -102,7 +102,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
 
   it 'extracts a GitLab merge request and inventories every public resource family' do
     extract_from_url('https://code.example.test/group/subgroup/project/-/merge_requests/42',
-                     gitlab_fixture('gitlab_merge_request_thread.html'), reader_mode: false) do |payload|
+                     gitlab_fixture('merge_request_thread.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'platform' => 'GitLab', 'handle' => 'maintainer',
                                  'community' => 'group/subgroup/project', 'replyCount' => nil)
@@ -123,7 +123,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
   end
 
   it 'requires independent GitLab product evidence while accepting GitLab work-item kinds' do
-    issue = gitlab_fixture('gitlab_work_item_thread.html')
+    issue = gitlab_fixture('work_item_thread.html')
     lookalike = issue.sub('class="gl-system"', '').sub('<meta property="og:site_name" content="GitLab">', '')
                      .sub('<meta name="gitlab-meta" content="fixture">', '')
                      .sub(%r{<script src="https://forge\.example/assets/webpack/runtime\.js"></script>}, '')
@@ -139,7 +139,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab threads' do
   end
 
   it 'keeps GitLab repository roots and resource subroutes outside conversation extraction' do
-    html = gitlab_fixture('gitlab_merge_request_thread.html')
+    html = gitlab_fixture('merge_request_thread.html')
     [
       'https://code.example.test/group/project',
       'https://code.example.test/group/project/-/merge_requests/42/commits',

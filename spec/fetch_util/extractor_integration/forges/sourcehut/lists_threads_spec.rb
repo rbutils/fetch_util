@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut lists archive thread
   include_context 'extractor integration helpers'
 
   def sourcehut_thread_fixture
-    fixture_contents(File.expand_path('../../../fixtures/forges/sourcehut/sourcehut_lists_thread.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/sourcehut/lists_thread.html', __dir__))
   end
 
   it 'preserves the complete archive conversation and traversal inventory' do

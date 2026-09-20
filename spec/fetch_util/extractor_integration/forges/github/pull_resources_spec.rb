@@ -19,7 +19,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
         </article>
       HTML
     end.join
-    html = github_resource_fixture('github_pull_commits.html').sub('</section>', "#{bulk}</section>")
+    html = github_resource_fixture('pull_commits.html').sub('</section>', "#{bulk}</section>")
 
     extract_from_url('https://github.com/octo/example/pull/42/commits', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -41,7 +41,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
       %(<div class="checks-list-item"><a href="/octo/example/pull/42/checks?check_run_id=#{200 + index}">Bulk check #{index}</a></div>)
     end.join
     hidden = '        <details class="checks-list-item" style="display: none" open>'
-    html = github_resource_fixture('github_pull_checks.html').sub(hidden, "#{bulk}#{hidden}")
+    html = github_resource_fixture('pull_checks.html').sub(hidden, "#{bulk}#{hidden}")
 
     extract_from_url('https://github.com/octo/example/pull/42/checks', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -60,7 +60,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
 
   it 'renders the selected check detail without losing the complete check inventory' do
     extract_from_url('https://github.com/octo/example/pull/42/checks?check_run_id=101',
-                     github_resource_fixture('github_pull_checks.html'), reader_mode: false) do |payload|
+                     github_resource_fixture('pull_checks.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(markdown).to include('## Selected check', 'All Linux checks passed.',
                                   '[View complete run](https://ci.example.test/runs/101)',
@@ -70,7 +70,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   end
 
   it 'keeps the files index bounded to an uncapped per-file inventory' do
-    extract_from_url('https://github.com/octo/example/pull/42/files', github_resource_fixture('github_pull_files.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/pull/42/files', github_resource_fixture('pull_files.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'list', 'siteName' => 'GitHub', 'byline' => 'octo')
       expect(markdown).to include('[lib/first.rb](https://github.com/octo/example/pull/42/files#diff-first)',
@@ -87,7 +87,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   end
 
   it 'uses the public API ceiling and complete Git ref for more than three thousand files' do
-    html = github_resource_fixture('github_pull_files.html').sub('Files changed 305', 'Files changed 3001')
+    html = github_resource_fixture('pull_files.html').sub('Files changed 305', 'Files changed 3001')
 
     extract_from_url('https://github.com/octo/example/pull/42/files', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -109,7 +109,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
       HTML
     end.join
     hidden = '      <div class="file js-file" style="display: none">'
-    html = github_resource_fixture('github_pull_files.html').sub(hidden, "#{bulk}#{hidden}").sub('Files changed 305', 'Files changed 23')
+    html = github_resource_fixture('pull_files.html').sub(hidden, "#{bulk}#{hidden}").sub('Files changed 305', 'Files changed 23')
 
     extract_from_url('https://github.com/octo/example/pull/42/files', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -122,7 +122,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
 
   it 'renders one selected file with its complete visible diff and inline review' do
     extract_from_url('https://github.com/octo/example/pull/42/files#diff-second',
-                     github_resource_fixture('github_pull_files.html'), reader_mode: false) do |payload|
+                     github_resource_fixture('pull_files.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(markdown).to include('## lib/second.rb', 'selected visible diff line',
                                   '[reviewer](https://github.com/octo/example/pull/42/files#discussion_r202)',
@@ -134,7 +134,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   end
 
   it 'reports a selected header-only file as deferred instead of loaded' do
-    document = Nokogiri::HTML(github_resource_fixture('github_pull_files.html'))
+    document = Nokogiri::HTML(github_resource_fixture('pull_files.html'))
     selected = document.at_css(".file-header[data-anchor='diff-second']").ancestors('.file').first
     selected.css('table, .review-thread').remove
 
@@ -149,7 +149,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
 
   it 'executes Browser readiness against visible and hidden selected-file evidence' do
     browser = FetchUtil::Browser.new
-    fixture = github_resource_fixture('github_pull_files.html')
+    fixture = github_resource_fixture('pull_files.html')
 
     with_url_page('https://github.com/octo/example/pull/42/files#diff-second', fixture) do |page|
       state = page.evaluate(browser.send(:github_pull_resource_state_script))
@@ -169,8 +169,8 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   end
 
   it 'does not render a different or hidden selected resource' do
-    checks = github_resource_fixture('github_pull_checks.html')
-    files = github_resource_fixture('github_pull_files.html')
+    checks = github_resource_fixture('pull_checks.html')
+    files = github_resource_fixture('pull_files.html')
 
     extract_from_url('https://github.com/octo/example/pull/42/checks?check_run_id=102', checks, reader_mode: false) do |payload|
       expect(payload.fetch('markdown')).not_to include('## Selected check', 'All Linux checks passed.')
@@ -204,7 +204,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   end
 
   it 'does not claim malformed or non-pull resource routes' do
-    html = github_resource_fixture('github_pull_commits.html')
+    html = github_resource_fixture('pull_commits.html')
     [
       'https://github.com/octo/example/issues/42/commits',
       'https://github.com/octo/example/pull/42/commits/extra',

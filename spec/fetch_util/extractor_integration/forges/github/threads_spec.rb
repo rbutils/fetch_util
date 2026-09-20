@@ -12,7 +12,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'extracts a public issue timeline as a social thread' do
-    extract_from_url('https://github.com/octo/example/issues/12', github_fixture('github_issue_thread.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/issues/12', github_fixture('issue_thread.html'), reader_mode: false) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'GitHub',
                                  'handle' => 'octocat', 'replyCount' => 2, 'community' => 'octo/example', 'score' => 7)
       expect(payload['markdown']).to include(
@@ -25,7 +25,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'preserves every loaded modern issue record and exposes continuation metadata' do
-    extract_from_url('https://github.com/octo/example/issues/12', github_fixture('github_modern_issue_thread.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/issues/12', github_fixture('modern_issue_thread.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'handle' => 'octocat', 'replyCount' => nil,
                                  'community' => 'octo/example', 'score' => 5)
@@ -49,7 +49,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'leaves the reply count unknown when rendered metadata proves records are missing' do
-    html = github_fixture('github_modern_issue_thread.html')
+    html = github_fixture('modern_issue_thread.html')
     html = html.sub('3 comments', '9 comments')
     html = html.sub(%r{\s*<div data-testid="issue-timeline-load-more-wrapper-load-top">.*?</div>}m, '')
 
@@ -60,7 +60,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'preserves a comment-only issue and its browse inventory' do
-    html = github_fixture('github_modern_issue_thread.html').sub(
+    html = github_fixture('modern_issue_thread.html').sub(
       '<p>Opening body for the modern issue. <a href="/octo/example/issues/12?timeline_page=9">UNOWNEDTIMELINELINK</a></p>',
       ''
     ).sub('<span data-testid="issue-comment-count">3 comments</span>', '')
@@ -83,7 +83,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
       HTML
     end.join
     timeline_end = "</section>\n    <div data-testid=\"issue-timeline-load-more-wrapper-load-top\">"
-    html = github_fixture('github_modern_issue_thread.html')
+    html = github_fixture('modern_issue_thread.html')
     html = html.sub('<span data-testid="issue-comment-count">3 comments</span>',
                     '<span data-testid="issue-comment-count">27 comments</span>')
     html = html.sub(timeline_end, "#{rows}#{timeline_end}")
@@ -112,7 +112,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
       </div>
     HTML
     timeline_end = "</section>\n    <div data-testid=\"issue-timeline-load-more-wrapper-load-top\">"
-    html = github_fixture('github_modern_issue_thread.html').sub(timeline_end, "#{records}#{timeline_end}")
+    html = github_fixture('modern_issue_thread.html').sub(timeline_end, "#{records}#{timeline_end}")
 
     extract_from_url('https://github.com/octo/example/issues/12', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -122,14 +122,14 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'extracts a modern discussion through the shared thread shape' do
-    extract_from_url('https://github.com/octo/example/discussions/12', github_fixture('github_modern_issue_thread.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/discussions/12', github_fixture('modern_issue_thread.html'), reader_mode: false) do |payload|
       expect(payload).to include('contentType' => 'social', 'platform' => 'GitHub', 'community' => 'octo/example')
       expect(payload.fetch('markdown')).to include('- Discussion: octo/example', 'First modern comment keeps its')
     end
   end
 
   it 'preserves pull-request reviews and exposes every public surface' do
-    extract_from_url('https://github.com/octo/example/pull/42', github_fixture('github_modern_pull_thread.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/pull/42', github_fixture('modern_pull_thread.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'handle' => 'maintainer', 'replyCount' => 3,
                                  'community' => 'octo/example')
@@ -151,7 +151,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
 
   it 'uses a later enabled timeline control after stale controls' do
     control = '<a data-testid="issue-timeline-load-more-load-bottom" href="?timeline_page=1">2 remaining items</a>'
-    html = github_fixture('github_modern_pull_thread.html').sub('</main>', "#{control}</main>")
+    html = github_fixture('modern_pull_thread.html').sub('</main>', "#{control}</main>")
 
     extract_from_url('https://github.com/octo/example/pull/42', html, reader_mode: false) do |payload|
       expect(payload['replyCount']).to be_nil
@@ -160,7 +160,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'counts accepted answers as modern discussion replies' do
-    html = github_fixture('github_modern_issue_thread.html')
+    html = github_fixture('modern_issue_thread.html')
     html = html.sub('3 comments', '2 comments')
     html = html.sub('data-testid="comment-viewer-outer-box-COMMENT1"',
                     'data-testid="comment-viewer-outer-box-COMMENT1" data-accepted="true"')
@@ -177,7 +177,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'preserves modern discussion comment permalinks' do
-    html = github_fixture('github_modern_issue_thread.html')
+    html = github_fixture('modern_issue_thread.html')
            .gsub('#issuecomment-1202', '#discussioncomment-1202')
 
     extract_from_url('https://github.com/octo/example/discussions/12', html, reader_mode: false) do |payload|
@@ -188,7 +188,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'does not let loaded reviews mask a missing reported comment' do
-    html = github_fixture('github_modern_pull_thread.html').sub('1 comment', '2 comments')
+    html = github_fixture('modern_pull_thread.html').sub('1 comment', '2 comments')
 
     extract_from_url('https://github.com/octo/example/pull/42', html, reader_mode: false) do |payload|
       expect(payload['replyCount']).to be_nil
@@ -196,7 +196,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'preserves every record on a timeline continuation page' do
-    extract_from_url('https://github.com/octo/example/issues/12?timeline_page=1', github_fixture('github_timeline_page.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/issues/12?timeline_page=1', github_fixture('timeline_page.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'replyCount' => nil, 'community' => 'octo/example')
       expect(markdown).to include(
@@ -208,14 +208,14 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'extracts pull-request reviews without timeline events' do
-    extract_from_url('https://github.com/octo/example/pull/42', github_fixture('github_pull_thread.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/pull/42', github_fixture('pull_thread.html'), reader_mode: false) do |payload|
       expect(payload).to include('contentType' => 'social', 'handle' => 'maintainer', 'replyCount' => 1, 'community' => 'octo/example', 'score' => nil)
       expect(payload['markdown']).to include('- Pull Request: octo/example', '### Accepted answer by reviewer')
     end
   end
 
   it 'extracts a no-comment discussion with an explicit zero reply count' do
-    extract_from_url('https://github.com/octo/example/discussions/9', github_fixture('github_discussion_no_comments.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example/discussions/9', github_fixture('discussion_no_comments.html'), reader_mode: false) do |payload|
       expect(payload).to include('contentType' => 'social', 'handle' => 'discussion-author', 'replyCount' => 0, 'community' => 'octo/example')
       expect(payload['markdown']).to include('Can this preserve links')
       expect(payload['markdown']).not_to include('## Comments')
@@ -223,7 +223,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'keeps public GitHub login and not-found pages out of social extraction' do
-    [['issues/12', 'github_login_wall.html'], ['issues/404', 'github_not_found.html']].each do |route, fixture|
+    [['issues/12', 'login_wall.html'], ['issues/404', 'not_found.html']].each do |route, fixture|
       extract_from_url("https://github.com/octo/example/#{route}", github_fixture(fixture), reader_mode: false) do |payload|
         expect(payload['contentType']).to eq('interstitial')
         expect_no_social_fields(payload)
@@ -232,7 +232,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'keeps repository-root README extraction separate from social threads' do
-    extract_from_url('https://github.com/octo/example', github_fixture('github_repository_root.html'), reader_mode: false) do |payload|
+    extract_from_url('https://github.com/octo/example', github_fixture('repository_root.html'), reader_mode: false) do |payload|
       expect(payload['contentType']).to eq('article')
       expect(payload['markdown']).to include('Repository README content remains separate')
       expect_no_social_fields(payload)
@@ -240,7 +240,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub threads' do
   end
 
   it 'keeps subroutes, malformed routes, and other hosts out of GitHub thread extraction' do
-    html = github_fixture('github_modern_issue_thread.html')
+    html = github_fixture('modern_issue_thread.html')
 
     [
       'https://github.com/octo/example/pull/42/checks',

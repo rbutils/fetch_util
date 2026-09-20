@@ -554,43 +554,43 @@ RSpec.describe "extract asset bundle" do
       forges/sourcehut/todo_threads_spec.rb
     ]
     expected_forge_fixtures = %w[
-      forges/azure_devops/azure_devops_pull_request.html
-      forges/bitbucket/bitbucket_cloud_pull_activity.json
-      forges/bitbucket/bitbucket_cloud_pull_commits.html
-      forges/bitbucket/bitbucket_cloud_pull_diff.html
-      forges/bitbucket/bitbucket_cloud_pull_request.html
-      forges/bitbucket/bitbucket_cloud_pull_statuses.json
-      forges/gerrit/gerrit_change.html
+      forges/azure_devops/pull_request.html
+      forges/bitbucket/pull_activity.json
+      forges/bitbucket/pull_commits.html
+      forges/bitbucket/pull_diff.html
+      forges/bitbucket/pull_request.html
+      forges/bitbucket/pull_statuses.json
+      forges/gerrit/change.html
       forges/gitea/forgejo_issue_thread.html
       forges/gitea/forgejo_pull_commits.html
       forges/gitea/forgejo_pull_files.html
       forges/gitea/gitea_issue_thread.html
       forges/gitea/gitea_pull_commits.html
       forges/gitea/gitea_pull_files.html
-      forges/github/github_discussion_no_comments.html
-      forges/github/github_issue_thread.html
-      forges/github/github_login_wall.html
-      forges/github/github_modern_issue_thread.html
-      forges/github/github_modern_pull_thread.html
-      forges/github/github_not_found.html
-      forges/github/github_pull_checks.html
-      forges/github/github_pull_commits.html
-      forges/github/github_pull_files.html
-      forges/github/github_pull_thread.html
-      forges/github/github_repository_root.html
-      forges/github/github_timeline_page.html
-      forges/gitlab/gitlab_merge_request_thread.html
-      forges/gitlab/gitlab_mr_commits.html
-      forges/gitlab/gitlab_mr_diffs.html
-      forges/gitlab/gitlab_mr_pipelines.html
-      forges/gitlab/gitlab_mr_reports.html
-      forges/gitlab/gitlab_work_item_thread.html
-      forges/pagure/pagure_issue_thread.html
-      forges/pagure/pagure_pull_request_thread.html
-      forges/sourcehut/sourcehut_git_commit.html
-      forges/sourcehut/sourcehut_lists_patchset.html
-      forges/sourcehut/sourcehut_lists_thread.html
-      forges/sourcehut/sourcehut_todo_ticket.html
+      forges/github/discussion_no_comments.html
+      forges/github/issue_thread.html
+      forges/github/login_wall.html
+      forges/github/modern_issue_thread.html
+      forges/github/modern_pull_thread.html
+      forges/github/not_found.html
+      forges/github/pull_checks.html
+      forges/github/pull_commits.html
+      forges/github/pull_files.html
+      forges/github/pull_thread.html
+      forges/github/repository_root.html
+      forges/github/timeline_page.html
+      forges/gitlab/merge_request_thread.html
+      forges/gitlab/mr_commits.html
+      forges/gitlab/mr_diffs.html
+      forges/gitlab/mr_pipelines.html
+      forges/gitlab/mr_reports.html
+      forges/gitlab/work_item_thread.html
+      forges/pagure/issue_thread.html
+      forges/pagure/pull_request_thread.html
+      forges/sourcehut/git_commit.html
+      forges/sourcehut/lists_patchset.html
+      forges/sourcehut/lists_thread.html
+      forges/sourcehut/todo_ticket.html
     ]
     actual_forge_sources = Dir.glob(File.join(forge_root, "**/*.js")).map do |path|
       path.delete_prefix("#{source_root}/")

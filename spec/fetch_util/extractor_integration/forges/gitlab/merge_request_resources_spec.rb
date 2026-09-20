@@ -18,7 +18,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
         </article>
       HTML
     end.join
-    html = gitlab_resource_fixture('gitlab_mr_commits.html').sub('<!-- records-end -->', bulk)
+    html = gitlab_resource_fixture('mr_commits.html').sub('<!-- records-end -->', bulk)
 
     extract_from_url('https://forge.example/gitlab/group/project/-/merge_requests/42/commits',
                      html, reader_mode: false) do |payload|
@@ -49,7 +49,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
       <tr data-testid="pipeline-table-row"><td>Repeated pending pipeline</td></tr>
       <tr data-testid="pipeline-table-row"><td>Repeated pending pipeline</td></tr>
     HTML
-    html = gitlab_resource_fixture('gitlab_mr_pipelines.html').sub('<!-- records-end -->', bulk + duplicates)
+    html = gitlab_resource_fixture('mr_pipelines.html').sub('<!-- records-end -->', bulk + duplicates)
 
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/pipelines',
                      html, reader_mode: false) do |payload|
@@ -63,7 +63,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
 
   it 'preserves every loaded report section' do
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/reports/codequality/',
-                     gitlab_resource_fixture('gitlab_mr_reports.html'), reader_mode: false) do |payload|
+                     gitlab_resource_fixture('mr_reports.html'), reader_mode: false) do |payload|
       expect(payload.fetch('markdown')).to include(
         'Accessibility report', 'Two improvements found', 'Code quality report', 'No regressions found',
         '[Pipelines](https://forge.example/group/project/-/merge_requests/42/pipelines)'
@@ -72,7 +72,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
   end
 
   it 'uses the project path for API traversal when numeric project metadata is absent' do
-    html = gitlab_resource_fixture('gitlab_mr_reports.html')
+    html = gitlab_resource_fixture('mr_reports.html')
            .sub(', current_project_id: 88', '')
            .sub(' data-project-id="88"', '')
 
@@ -112,7 +112,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
         </diff-file>
       HTML
     end.join
-    html = gitlab_resource_fixture('gitlab_mr_diffs.html').sub('<!-- files-end -->', bulk)
+    html = gitlab_resource_fixture('mr_diffs.html').sub('<!-- files-end -->', bulk)
 
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/diffs', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
@@ -137,7 +137,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
 
   it 'renders one selected complete diff while retaining recursive file inventory' do
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/diffs#diff-a',
-                     gitlab_resource_fixture('gitlab_mr_diffs.html'), reader_mode: false) do |payload|
+                     gitlab_resource_fixture('mr_diffs.html'), reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(markdown).to include('## lib/alpha.rb', 'alpha complete line', '[spec/beta_spec.rb]')
       expect(markdown).to include('[View raw file](https://forge.example/group/project/-/raw/main/lib/alpha.rb)')
@@ -155,7 +155,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
         <include-fragment src="/group/project/-/merge_requests/42/diffs_batch.json?file=diff-deferred"></include-fragment>
       </diff-file>
     HTML
-    html = gitlab_resource_fixture('gitlab_mr_diffs.html').sub('<!-- files-end -->', deferred)
+    html = gitlab_resource_fixture('mr_diffs.html').sub('<!-- files-end -->', deferred)
 
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/diffs#diff-deferred',
                      html, reader_mode: false) do |payload|
@@ -168,7 +168,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
   end
 
   it 'resolves fallback file fragments and tolerates malformed fragments' do
-    fixture = gitlab_resource_fixture('gitlab_mr_diffs.html')
+    fixture = gitlab_resource_fixture('mr_diffs.html')
 
     extract_from_url('https://forge.example/group/project/-/merge_requests/42/diffs#diff-c',
                      fixture, reader_mode: false) do |payload|
@@ -204,7 +204,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
   end
 
   it 'requires GitLab product evidence and exact merge-request resource routes' do
-    fixture = gitlab_resource_fixture('gitlab_mr_commits.html')
+    fixture = gitlab_resource_fixture('mr_commits.html')
     lookalike = fixture
                 .sub('class="gl-system"', '')
                 .sub('<meta property="og:site_name" content="GitLab">', '')

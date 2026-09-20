@@ -6,11 +6,11 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull resources
   include_context 'extractor integration helpers'
 
   def bitbucket_commits_fixture
-    fixture_contents(File.expand_path('../../../fixtures/forges/bitbucket/bitbucket_cloud_pull_commits.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/bitbucket/pull_commits.html', __dir__))
   end
 
   def bitbucket_diff_fixture
-    fixture_contents(File.expand_path('../../../fixtures/forges/bitbucket/bitbucket_cloud_pull_diff.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/bitbucket/pull_diff.html', __dir__))
   end
 
   def wait_for_bitbucket_diff_preparation(page)
