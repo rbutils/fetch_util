@@ -497,12 +497,23 @@ RSpec.describe "extract asset bundle" do
     ]
     expected_community_specs = %w[
       community/forums/discourse_topics_spec.rb
+      community/forums/homepages_spec.rb
       community/q_and_a/stackoverflow_spec.rb
+      community/shared/record_fidelity_spec.rb
       community/shared/thread_contracts_spec.rb
       community/social_news/hacker_news_spec.rb
       community/social_news/pikabu_spec.rb
       community/social_news/wykop_spec.rb
       community/wikis/tv_tropes_spec.rb
+    ]
+    expected_social_specs = %w[
+      social/consent_walls_spec.rb
+      social/content_spec.rb
+      social/native_networks_spec.rb
+      social/platform_walls_spec.rb
+      social/record_fidelity_spec.rb
+      social/telegram_spec.rb
+      social/weibo_spec.rb
     ]
     expected_community_fixtures = %w[
       community/contracts/discourse_list.html
@@ -639,11 +650,26 @@ RSpec.describe "extract asset bundle" do
     flat_community_specs = %w[
       community_threads_social_spec.rb
       discourse_topics_spec.rb
+      forum_homepages_spec.rb
       hacker_news_spec.rb
       pikabu_spec.rb
       stackoverflow_spec.rb
       trope_wiki_pages_spec.rb
       wykop_social_spec.rb
+    ].select do |name|
+      File.exist?(File.join(integration_root, name))
+    end
+    actual_social_specs = Dir.glob(File.join(integration_root, "social/**/*_spec.rb")).map do |path|
+      path.delete_prefix("#{integration_root}/")
+    end
+    flat_social_specs = %w[
+      consent_and_social_walls_spec.rb
+      native_social_networks_spec.rb
+      social_cap_fidelity_spec.rb
+      social_content_spec.rb
+      social_platform_walls_spec.rb
+      telegram_social_spec.rb
+      weibo_mobile_spec.rb
     ].select do |name|
       File.exist?(File.join(integration_root, name))
     end
@@ -682,6 +708,8 @@ RSpec.describe "extract asset bundle" do
     expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
     expect(actual_community_specs.sort).to eq(expected_community_specs.sort)
     expect(flat_community_specs).to eq([])
+    expect(actual_social_specs.sort).to eq(expected_social_specs.sort)
+    expect(flat_social_specs).to eq([])
     expect(actual_community_fixtures.sort).to eq(expected_community_fixtures.sort)
     expect(legacy_community_fixtures).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)

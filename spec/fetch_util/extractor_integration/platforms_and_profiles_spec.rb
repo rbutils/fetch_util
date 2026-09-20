@@ -983,42 +983,6 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts Stack Exchange questions together with top answers" do
-    html = <<~HTML
-      <html>
-        <head>
-          <title>How likely is it that any non-Celtic language was spoken in the British Isles when the Romans invaded? - History Stack Exchange</title>
-        </head>
-        <body>
-          <main>
-            <div class="question" id="question">
-              <div class="question-header">
-                <h1>How likely is it that any non-Celtic language was spoken in the British Isles when the Romans invaded?</h1>
-              </div>
-              <div class="user-details"><a href="/users/1/timothy">Timothy</a></div>
-              <div class="js-post-body">We know from Roman writers the names of many ancient British tribes, but not much about their language boundaries.</div>
-            </div>
-            <div id="answers">
-              <div class="answer accepted-answer">
-                <span class="js-vote-count">33</span>
-                <div class="user-details"><a href="/users/2/example">Example User</a></div>
-                <div class="js-post-body">The answer appears to be that we do not know with certainty. Earlier languages likely existed before Celtic spread, but the evidence is fragmentary.</div>
-              </div>
-            </div>
-          </main>
-        </body>
-      </html>
-    HTML
-
-    with_url_page("https://history.stackexchange.com/questions/68200/example", html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
-
-      expect(payload["markdown"]).to include("## Top Answers")
-      expect(payload["markdown"]).to include("### Example User (accepted) - score 33")
-      expect(payload["markdown"]).to include("Earlier languages likely existed before Celtic spread")
-    end
-  end
-
   it "extracts Substack post bodies instead of related links and comments" do
     html = <<~HTML
       <html>

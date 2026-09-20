@@ -383,7 +383,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it "classifies Mastodon-family detailed statuses without Mastodon metadata" do
-    html = fixture_contents(File.expand_path("../../fixtures/mastodon_detailed_status.html", __dir__))
+    html = fixture_contents(File.expand_path("../../../fixtures/mastodon_detailed_status.html", __dir__))
 
     with_url_page("https://todon.nl/@burnoutqueen/116892639909737254", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)

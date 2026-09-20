@@ -4,7 +4,7 @@ RSpec.describe 'Telegram public extractor integration' do
   include_context 'extractor integration helpers'
 
   def telegram_fixture(name)
-    fixture_contents(File.expand_path("../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
   end
 
   it 'extracts one public preview message as a Telegram post' do
