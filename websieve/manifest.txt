@@ -87,6 +87,7 @@ extractors/article/main_coverage.js
 extractors/article/focal_ownership.js
 extractors/article/fallback_excerpt.js
 extractors/article/fallback.js
+extractors/article/readability_excerpt.js
 extractors/article/readability.js
 extractors/article/hidden_substantive_main.js
 extractors/glossary/cleanup.js

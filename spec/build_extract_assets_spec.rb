@@ -683,6 +683,26 @@ RSpec.describe "extract asset bundle" do
     expect(oversized).to eq([])
   end
 
+  it "loads readability excerpt helpers before their runtime consumer" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    excerpt_path = "extractors/article/readability_excerpt.js"
+    runtime_path = "extractors/article/readability.js"
+    excerpt_source = File.read(File.join(source_root, excerpt_path))
+    runtime_source = File.read(File.join(source_root, runtime_path))
+
+    expect(manifest.index(excerpt_path)).to be < manifest.index(runtime_path)
+    expect(excerpt_source).to include(
+      "function readabilityArticleExcerpt",
+      "function stripReadabilityExcerptMarkers"
+    )
+    expect(runtime_source).to include("function readabilityContent")
+    expect(runtime_source).not_to include(
+      "function readabilityArticleExcerpt",
+      "function stripReadabilityExcerptMarkers"
+    )
+  end
+
   it "loads structured detail arbitration before late list dominance" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
