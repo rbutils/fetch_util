@@ -878,6 +878,84 @@ RSpec.describe "extract asset bundle" do
     expect(old_paths).to eq([])
   end
 
+  it "keeps reorganized source families in their release pipeline slots" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    segments = [
+      ["classifiers/list_pages/card_ownership.js", %w[
+        extractors/lists/generic/sections/editorial_asides.js
+      ], "classifiers/list_pages/chrome.js"],
+      ["classifiers/list_pages/link_groups.js", %w[
+        markdown/lists/list_aliases.js
+        markdown/lists/list_metadata.js
+        markdown/lists/list_supplemental.js
+        markdown/lists/lists.js
+      ], "markdown/inventory.js"],
+      ["core/docs_cleanup/engines.js", %w[
+        markdown/code/code_helpers.js
+        markdown/code/code_surfaces.js
+      ], "markdown/tables.js"],
+      ["markdown/tables.js", %w[
+        markdown/materialization/materialization_inline.js
+        markdown/materialization/materialization_containers.js
+        markdown/materialization/materialization_blocks.js
+        markdown/materialization/materialization.js
+      ], "markdown/card_links.js"],
+      ["classifiers/list_pages/detail_articles.js", %w[
+        extractors/article/coverage/code_coverage.js
+      ], "classifiers/list_pages/dominance.js"],
+      ["extractors/article/roots.js", %w[
+        extractors/article/coverage/intro_order.js
+        extractors/article/coverage/intro_coverage.js
+        extractors/article/coverage/carousel_coverage.js
+        extractors/article/coverage/resources.js
+        extractors/article/coverage/main_coverage.js
+        extractors/article/fallback/focal_ownership.js
+        extractors/article/fallback/fallback_excerpt.js
+        extractors/article/fallback/fallback.js
+        extractors/article/readability/readability_excerpt.js
+        extractors/article/readability/readability.js
+        extractors/article/coverage/hidden_substantive_main.js
+      ], "extractors/glossary/cleanup.js"],
+      ["extractors/lists/relabeling.js", %w[
+        extractors/lists/generic/records/card_evidence.js
+        extractors/lists/generic/records/duplicate_record_metadata.js
+        extractors/lists/generic/records/inline_descriptions.js
+        extractors/lists/generic/records/headline_extraction.js
+        extractors/lists/generic/records/nested_coverage.js
+      ], "extractors/lists/description_parts.js"],
+      ["extractors/lists/description_parts.js", %w[
+        extractors/lists/generic/records/flat_extraction.js
+        extractors/lists/generic/sections/heading_context.js
+        extractors/lists/generic/sections/section_rendering.js
+        extractors/lists/generic/sections/record_section_fallback.js
+        extractors/lists/generic/sections/section_discovery.js
+      ], "extractors/lists/card_visibility.js"],
+      ["extractors/lists/core.js", %w[
+        extractors/lists/homepage/search_tools.js
+        extractors/lists/homepage/homepage_lead_mapping.js
+        extractors/lists/homepage/homepage_lead_exact.js
+        extractors/lists/homepage/lead_coverage.js
+        extractors/lists/generic/visibility_recovery/dormant_body_root.js
+        extractors/lists/generic/visibility_recovery/stale_opacity_sections.js
+        extractors/lists/generic/carousels/controlled_carousels.js
+        extractors/lists/generic/carousels/slick_carousels.js
+        extractors/lists/generic/visibility_recovery/controlled_panels.js
+      ], "extractors/lists/products/cards.js"],
+      ["extractors/lists/events.js", %w[
+        extractors/lists/homepage/news_homepages.js
+      ], "extractors/search.js"]
+    ]
+
+    segments.each do |before_path, family_paths, after_path|
+      before_index = manifest.index(before_path)
+
+      expect(before_index).not_to be_nil
+      expect(manifest.slice(before_index + 1, family_paths.length)).to eq(family_paths)
+      expect(manifest.fetch(before_index + family_paths.length + 1)).to eq(after_path)
+    end
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
