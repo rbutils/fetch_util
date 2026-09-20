@@ -227,7 +227,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it 'classifies a DOM-backed Mastodon explore timeline as a social feed without dropping statuses' do
-    html = fixture_contents('spec/fixtures/mastodon_explore_timeline.html')
+    html = fixture_contents('spec/fetch_util/fixtures/social/mastodon/explore_timeline.html')
 
     with_url_page('https://mastodon.social/explore', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -240,7 +240,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it 'retains visible Mastodon profile HTML while cleaning hidden, reblog, and action chrome' do
-    html = fixture_contents('spec/fixtures/mastodon_profile_cleanup.html')
+    html = fixture_contents('spec/fetch_util/fixtures/social/mastodon/profile_cleanup.html')
 
     with_url_page('https://mastodon.social/@Mastodon', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -262,7 +262,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it 'gives Reddit challenge shells precedence over otherwise feed-like markup' do
-    html = fixture_contents('spec/fixtures/reddit_challenge_shell.html')
+    html = fixture_contents('spec/fetch_util/fixtures/social/reddit/challenge_shell.html')
 
     with_url_page('https://www.reddit.com/r/programming/?js_challenge=1&solution=token', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -274,7 +274,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it 'preserves every visible Mastodon profile field beyond the former cap' do
-    html = fixture_contents('spec/fixtures/mastodon_profile_over_cap.html')
+    html = fixture_contents('spec/fetch_util/fixtures/social/mastodon/profile_over_cap.html')
 
     with_url_page('https://mastodon.example/@ada', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -383,7 +383,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
   end
 
   it "classifies Mastodon-family detailed statuses without Mastodon metadata" do
-    html = fixture_contents(File.expand_path("../../../fixtures/mastodon_detailed_status.html", __dir__))
+    html = fixture_contents(File.expand_path('../../fixtures/social/mastodon/detailed_status.html', __dir__))
 
     with_url_page("https://todon.nl/@burnoutqueen/116892639909737254", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)

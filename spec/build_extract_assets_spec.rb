@@ -515,6 +515,19 @@ RSpec.describe "extract asset bundle" do
       social/telegram_spec.rb
       social/weibo_spec.rb
     ]
+    expected_social_fixtures = %w[
+      social/mastodon/detailed_status.html
+      social/mastodon/explore_timeline.html
+      social/mastodon/profile_cleanup.html
+      social/mastodon/profile_over_cap.html
+      social/reddit/challenge_shell.html
+      social/telegram/channel_shell.html
+      social/telegram/current_message.html
+      social/telegram/login_shell.html
+      social/telegram/public_channel.html
+      social/telegram/public_message.html
+      social/telegram/telegraph_article.html
+    ]
     expected_community_fixtures = %w[
       community/contracts/discourse_list.html
       community/contracts/discourse_topic.html
@@ -673,6 +686,24 @@ RSpec.describe "extract asset bundle" do
     ].select do |name|
       File.exist?(File.join(integration_root, name))
     end
+    actual_social_fixtures = Dir.glob(File.join(fixture_root, 'social/**/*.{html,json}')).map do |path|
+      path.delete_prefix("#{fixture_root}/")
+    end
+    legacy_social_fixtures = %w[
+      mastodon_detailed_status.html
+      mastodon_explore_timeline.html
+      mastodon_profile_cleanup.html
+      mastodon_profile_over_cap.html
+      reddit_challenge_shell.html
+      telegram_channel_shell.html
+      telegram_current_message.html
+      telegram_login_shell.html
+      telegram_public_channel.html
+      telegram_public_message.html
+      telegraph_article.html
+    ].select do |name|
+      File.exist?(File.join(project_root, 'spec/fixtures', name))
+    end
     actual_community_fixtures = Dir.glob(File.join(fixture_root, 'community/**/*.{html,json}')).map do |path|
       path.delete_prefix("#{fixture_root}/")
     end
@@ -710,6 +741,8 @@ RSpec.describe "extract asset bundle" do
     expect(flat_community_specs).to eq([])
     expect(actual_social_specs.sort).to eq(expected_social_specs.sort)
     expect(flat_social_specs).to eq([])
+    expect(actual_social_fixtures.sort).to eq(expected_social_fixtures.sort)
+    expect(legacy_social_fixtures).to eq([])
     expect(actual_community_fixtures.sort).to eq(expected_community_fixtures.sort)
     expect(legacy_community_fixtures).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)

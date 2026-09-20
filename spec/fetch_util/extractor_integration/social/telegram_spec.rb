@@ -4,11 +4,11 @@ RSpec.describe 'Telegram public extractor integration' do
   include_context 'extractor integration helpers'
 
   def telegram_fixture(name)
-    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../fixtures/social/telegram/#{name}", __dir__))
   end
 
   it 'extracts one public preview message as a Telegram post' do
-    extract_from_url('https://t.me/s/examplechannel/42', telegram_fixture('telegram_public_message.html')) do |payload|
+    extract_from_url('https://t.me/s/examplechannel/42', telegram_fixture('public_message.html')) do |payload|
       expect(payload).to include(
         'contentType' => 'social',
         'socialKind' => 'post',
@@ -25,7 +25,7 @@ RSpec.describe 'Telegram public extractor integration' do
   end
 
   it 'uses a current preview message permalink when the card omits data-post' do
-    extract_from_url('https://t.me/s/examplechannel/42', telegram_fixture('telegram_current_message.html')) do |payload|
+    extract_from_url('https://t.me/s/examplechannel/42', telegram_fixture('current_message.html')) do |payload|
       expect(payload).to include(
         'contentType' => 'social',
         'socialKind' => 'post',
@@ -41,7 +41,7 @@ RSpec.describe 'Telegram public extractor integration' do
   end
 
   it 'classifies a preview retaining multiple message cards as a Telegram feed' do
-    extract_from_url('https://t.me/s/examplechannel', telegram_fixture('telegram_public_channel.html')) do |payload|
+    extract_from_url('https://t.me/s/examplechannel', telegram_fixture('public_channel.html')) do |payload|
       expect(payload).to include(
         'contentType' => 'social',
         'socialKind' => 'feed',
@@ -55,7 +55,7 @@ RSpec.describe 'Telegram public extractor integration' do
   end
 
   it 'leaves header-only channel shells untyped' do
-    extract_from_url('https://t.me/s/examplechannel', telegram_fixture('telegram_channel_shell.html')) do |payload|
+    extract_from_url('https://t.me/s/examplechannel', telegram_fixture('channel_shell.html')) do |payload|
       expect(payload['contentType']).to eq('article')
       expect(payload.values_at('socialKind', 'platform', 'handle', 'community')).to all(be_nil)
     end
@@ -71,7 +71,7 @@ RSpec.describe 'Telegram public extractor integration' do
   end
 
   it 'preserves Telegram login shells as interstitials' do
-    extract_from_url('https://t.me/examplechannel', telegram_fixture('telegram_login_shell.html')) do |payload|
+    extract_from_url('https://t.me/examplechannel', telegram_fixture('login_shell.html')) do |payload|
       expect(payload['contentType']).to eq('interstitial')
       expect(payload['warnings']).to include('auth_or_login_interstitial')
       expect(payload.values_at('socialKind', 'platform', 'handle', 'community')).to all(be_nil)
@@ -79,7 +79,7 @@ RSpec.describe 'Telegram public extractor integration' do
   end
 
   it 'does not classify Telegram-shaped cards on other hosts' do
-    extract_from_url('https://example.com/s/examplechannel/42', telegram_fixture('telegram_current_message.html')) do |payload|
+    extract_from_url('https://example.com/s/examplechannel/42', telegram_fixture('current_message.html')) do |payload|
       expect(payload['contentType']).to eq('article')
       expect(payload.values_at('socialKind', 'platform', 'handle', 'community')).to all(be_nil)
     end
