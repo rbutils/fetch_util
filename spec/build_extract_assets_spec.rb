@@ -328,7 +328,8 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     inventory_path = "markdown/inventory.js"
-    thread_entries_path = "profiles/community/forge_thread_entries.js"
+    repository_hosts_path = "profiles/forges/repository_hosts.js"
+    thread_entries_path = "profiles/forges/shared/thread_entries.js"
     shared_path = "profiles/community/github_thread_shared.js"
     thread_path = "profiles/community/github_threads.js"
     file_resources_path = "profiles/community/github_pull_file_resources.js"
@@ -375,8 +376,11 @@ RSpec.describe "extract asset bundle" do
     gerrit_thread_path = "profiles/community/gerrit_change_threads.js"
 
     expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
+    expect(File.read(File.join(source_root, repository_hosts_path))).to include("function registerRepoHostProfiles")
     expect(File.read(File.join(source_root, thread_entries_path))).to include("function deduplicateForgeThreadPermalinks")
     expect(File.read(File.join(source_root, shared_path))).to include("function githubResourceRoute")
+    expect(manifest.index("profiles/families/institutional/index.js")).to be < manifest.index(repository_hosts_path)
+    expect(manifest.index(repository_hosts_path)).to be < manifest.index(thread_entries_path)
     expect(manifest.index(inventory_path)).to be < manifest.index(thread_path)
     expect(manifest.index(thread_entries_path)).to be < manifest.index(thread_path)
     expect(manifest.index(thread_entries_path)).to be < manifest.index(gitlab_thread_path)
