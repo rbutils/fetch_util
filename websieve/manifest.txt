@@ -190,10 +190,10 @@ profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
 profiles/forges/repository_hosts.js
 profiles/forges/shared/thread_entries.js
-profiles/community/github_thread_shared.js
-profiles/community/github_threads.js
-profiles/community/github_pull_file_resources.js
-profiles/community/github_pull_resources.js
+profiles/forges/github/thread_shared.js
+profiles/forges/github/threads.js
+profiles/forges/github/pull_requests/file_resources.js
+profiles/forges/github/pull_requests/resources.js
 profiles/community/gitlab_thread_shared.js
 profiles/community/gitlab_threads.js
 profiles/community/gitlab_merge_request_resource_shared.js
