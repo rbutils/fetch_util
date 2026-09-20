@@ -368,12 +368,12 @@ RSpec.describe "extract asset bundle" do
     azure_shared_path = "profiles/forges/azure_devops/shared.js"
     azure_entries_path = "profiles/forges/azure_devops/entries.js"
     azure_thread_path = "profiles/forges/azure_devops/threads.js"
-    gerrit_shared_path = "profiles/community/gerrit_change_shared.js"
-    gerrit_entries_path = "profiles/community/gerrit_change_entries.js"
-    gerrit_resource_shared_path = "profiles/community/gerrit_change_resource_shared.js"
-    gerrit_resource_entries_path = "profiles/community/gerrit_change_resource_entries.js"
-    gerrit_resources_path = "profiles/community/gerrit_change_resources.js"
-    gerrit_thread_path = "profiles/community/gerrit_change_threads.js"
+    gerrit_shared_path = "profiles/forges/gerrit/shared.js"
+    gerrit_entries_path = "profiles/forges/gerrit/entries.js"
+    gerrit_resource_shared_path = "profiles/forges/gerrit/resources/shared.js"
+    gerrit_resource_entries_path = "profiles/forges/gerrit/resources/entries.js"
+    gerrit_resources_path = "profiles/forges/gerrit/resources/index.js"
+    gerrit_thread_path = "profiles/forges/gerrit/threads.js"
 
     expect(File.read(File.join(source_root, inventory_path))).to include("function browsableInventory")
     expect(File.read(File.join(source_root, repository_hosts_path))).to include("function registerRepoHostProfiles")
