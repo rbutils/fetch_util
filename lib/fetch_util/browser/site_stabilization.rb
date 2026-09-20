@@ -48,19 +48,20 @@ module FetchUtil
                "fetch_util/browser/site_stabilization/forges/github/pull_resource_stabilization"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/forges/github/threads"
       autoload :GiteaFamilyThreadProductState,
-               "fetch_util/browser/site_stabilization/gitea_family_thread_product_state"
+               "fetch_util/browser/site_stabilization/forges/gitea/threads/product_state"
       autoload :GiteaFamilyThreadTimelineState,
-               "fetch_util/browser/site_stabilization/gitea_family_thread_timeline_state"
+               "fetch_util/browser/site_stabilization/forges/gitea/threads/timeline_state"
       autoload :GiteaFamilyStabilization,
-               "fetch_util/browser/site_stabilization/gitea_family_stabilization"
+               "fetch_util/browser/site_stabilization/forges/gitea/stabilization"
       autoload :GiteaFamilyVisibilityScript,
-               "fetch_util/browser/site_stabilization/gitea_family_visibility_script"
-      autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/gitea_family_threads"
+               "fetch_util/browser/site_stabilization/forges/gitea/visibility_script"
+      autoload :GiteaFamilyThreads, "fetch_util/browser/site_stabilization/forges/gitea/threads/index"
       autoload :GiteaFamilyPullResourceProductState,
-               "fetch_util/browser/site_stabilization/gitea_family_pull_resource_product_state"
+               "fetch_util/browser/site_stabilization/forges/gitea/pulls/product_state"
       autoload :GiteaFamilyPullResourceState,
-               "fetch_util/browser/site_stabilization/gitea_family_pull_resource_state"
-      autoload :GiteaFamilyPullResources, "fetch_util/browser/site_stabilization/gitea_family_pull_resources"
+               "fetch_util/browser/site_stabilization/forges/gitea/pulls/state"
+      autoload :GiteaFamilyPullResources,
+               "fetch_util/browser/site_stabilization/forges/gitea/pulls/resources"
       autoload :GitlabRepo, "fetch_util/browser/site_stabilization/forges/gitlab/repository"
       autoload :GitlabMergeRequestResourceVisibilityScript,
                "fetch_util/browser/site_stabilization/forges/gitlab/merge_requests/resource_visibility_script"
