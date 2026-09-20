@@ -3,15 +3,13 @@
 module FetchUtil
   class Browser
     module SiteStabilization
-      module TravelAndLodging
-        TRAVEL_LODGING_STABILIZATION_PROFILES = {
-          stabilize_lodging_detail: {
-            host: %w[airbnb.com booking.com],
-            path_query: ->(uri) { uri.path.match?(%r{/(?:rooms|hotel)/}) },
-            strategy: :stabilize_lodging_detail,
-            notes: "Wait for client-rendered lodging detail cues without bypassing access controls.",
-            tests: "spec/fetch_util/browser_stabilization_spec.rb"
-          }
+      module LodgingStabilization
+        LODGING_STABILIZATION_PROFILE = {
+          host: %w[airbnb.com booking.com],
+          path_query: ->(uri) { uri.path.match?(%r{/(?:rooms|hotel)/}) },
+          strategy: :stabilize_lodging_detail,
+          notes: "Wait for client-rendered lodging detail cues without bypassing access controls.",
+          tests: "spec/fetch_util/browser_stabilization_spec.rb"
         }.freeze
 
         private

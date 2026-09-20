@@ -7,13 +7,13 @@ module FetchUtil
       autoload :ForgeStabilization, "fetch_util/browser/site_stabilization/forges"
       autoload :MarketplaceStabilization, "fetch_util/browser/site_stabilization/marketplaces"
       autoload :SocialStabilization, "fetch_util/browser/site_stabilization/social"
-      autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
+      autoload :TravelStabilization, "fetch_util/browser/site_stabilization/travel"
 
       include CommunityStabilization
       include ForgeStabilization
       include MarketplaceStabilization
       include SocialStabilization
-      include TravelAndLodging
+      include TravelStabilization
     end
   end
 end

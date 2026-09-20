@@ -15,7 +15,8 @@ RSpec.describe 'browser stabilization layout' do
                                             'marketplaces.rb',
                                             'social',
                                             'social.rb',
-                                            'travel_and_lodging.rb'
+                                            'travel',
+                                            'travel.rb'
                                           ])
   end
 
@@ -32,6 +33,12 @@ RSpec.describe 'browser stabilization layout' do
     expect(Dir[File.join(root, 'social/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }.sort).to eq([
                                                                                                               'social/facebook.rb',
                                                                                                               'social/instagram.rb'
+                                                                                                            ])
+  end
+
+  it 'keeps travel stabilizers grouped by content family' do
+    expect(Dir[File.join(root, 'travel/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }.sort).to eq([
+                                                                                                              'travel/lodging.rb'
                                                                                                             ])
   end
 

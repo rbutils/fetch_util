@@ -21,7 +21,7 @@ module FetchUtil
           SiteStabilization::AzureDevopsPrStabilization::AZURE_DEVOPS_PR_STABILIZATION_PROFILE,
           SiteStabilization::GerritFileResourceStabilization::GERRIT_FILE_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GerritChangeStabilization::GERRIT_CHANGE_STABILIZATION_PROFILE,
-          SiteStabilization::TravelAndLodging::TRAVEL_LODGING_STABILIZATION_PROFILES[:stabilize_lodging_detail],
+          SiteStabilization::LodgingStabilization::LODGING_STABILIZATION_PROFILE,
           { host: "t.me", path_query: ->(uri) { uri.path.match?(%r{\A/s/[^/]+/\d+/?\z}) },
             strategy: :wait_for_telegram_message, notes: "Wait for the requested public Telegram preview message.",
             tests: "spec/fetch_util/browser_stabilization_spec.rb" },
