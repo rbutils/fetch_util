@@ -13,44 +13,6 @@ RSpec.describe 'FetchUtil extractor integration' do
     expect(payload["suspect"]).to be(suspect) unless suspect.nil?
   end
 
-  it "prefers project summary and readme content on generic gitlab instances" do
-    html = <<~HTML
-      <html>
-        <head>
-          <title>Group / Project · GitLab</title>
-          <meta name="application-name" content="GitLab">
-          <meta name="description" content="Collaborative project description.">
-        </head>
-        <body>
-          <header class="project-home-panel">
-            <p>Collaborative project description.</p>
-            <p>Project ID: 12345</p>
-          </header>
-          <article class="file-holder readme-holder">
-            <div class="md">
-              <h2>Getting started</h2>
-              <p>Clone the repository and run the setup script.</p>
-              <ul>
-                <li>Install dependencies</li>
-                <li>Run tests</li>
-              </ul>
-            </div>
-          </article>
-        </body>
-      </html>
-    HTML
-
-    with_page(html) do |page|
-      payload = FetchUtil::Extractor.new.extract(page)
-
-      expect(payload["markdown"]).to include("# Group / Project")
-      expect(payload["markdown"]).to include("Collaborative project description.")
-      expect(payload["markdown"]).to include("## Getting started")
-      expect(payload["markdown"]).to include("Install dependencies")
-      expect(payload["markdown"]).not_to include("Project ID: 12345")
-    end
-  end
-
   it "prefers package registry descriptions over release history chrome" do
     html = <<~HTML
       <html>

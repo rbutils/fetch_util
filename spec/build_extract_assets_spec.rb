@@ -585,6 +585,8 @@ RSpec.describe "extract asset bundle" do
       forges/sourcehut/lists_patchsets_spec.rb
       forges/sourcehut/lists_threads_spec.rb
       forges/sourcehut/todo_threads_spec.rb
+      forges/shared/record_fidelity_spec.rb
+      forges/shared/repository_readmes_spec.rb
     ]
     expected_forge_fixtures = %w[
       forges/azure_devops/pull_request.html
@@ -666,6 +668,9 @@ RSpec.describe "extract asset bundle" do
     actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
       path.delete_prefix("#{integration_root}/")
     end
+    flat_forge_specs = %w[repo_hosts_readme_spec.rb].select do |name|
+      File.exist?(File.join(integration_root, name))
+    end
     actual_forge_fixtures = Dir.glob(File.join(fixture_root, "forges/**/*.{html,json}")).map do |path|
       path.delete_prefix("#{fixture_root}/")
     end
@@ -681,6 +686,7 @@ RSpec.describe "extract asset bundle" do
     expect(legacy_community_fixtures).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
+    expect(flat_forge_specs).to eq([])
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)
     expect(flat_forge_fixtures).to eq([])
   end

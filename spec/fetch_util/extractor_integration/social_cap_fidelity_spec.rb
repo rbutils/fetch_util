@@ -27,7 +27,7 @@ RSpec.describe 'FetchUtil social visible-entry fidelity' do
     end
   end
 
-  it 'preserves all Stack Overflow answers and GitHub comments in order' do
+  it 'preserves all Stack Overflow answers in order' do
     answers = repeated_nodes(<<~HTML, 8)
       <div class="answer" data-answerid="%<index>d">
         <div class="js-post-body">Stack Overflow answer %<index>d contains useful detail.</div>
@@ -42,24 +42,6 @@ RSpec.describe 'FetchUtil social visible-entry fidelity' do
     extract_from_url('https://stackoverflow.com/questions/123/ruby-blocks', question) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Stack Overflow')
       expect(payload['markdown']).to include('Stack Overflow answer 1', 'Stack Overflow answer 8')
-    end
-
-    comments = repeated_nodes(<<~HTML, 14)
-      <div class="timeline-comment"><a class="author">user%<index>d</a>
-        <div class="comment-body">GitHub comment %<index>d contains useful detail.</div>
-      </div>
-    HTML
-    github = <<~HTML
-      <main><h1>Issue title</h1><div class="discussion-timeline">
-        <div class="timeline-comment"><a class="author">opener</a>
-          <div class="comment-body">Opening issue body with enough detail.</div>
-        </div>
-        #{comments}
-      </div></main>
-    HTML
-    extract_from_url('https://github.com/acme/project/issues/42', github) do |payload|
-      expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'GitHub')
-      expect(payload['markdown']).to include('GitHub comment 1', 'GitHub comment 14')
     end
   end
 
