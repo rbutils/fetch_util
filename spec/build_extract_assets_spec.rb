@@ -816,13 +816,32 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
-  it "loads materialized Slick recovery before controlled list expansion" do
+  it "groups dynamic list collections while preserving load order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    slick_path = "extractors/lists/generic/slick_carousels.js"
-    controlled_path = "extractors/lists/generic/controlled_panels.js"
+    carousel_paths = %w[
+      extractors/lists/generic/carousels/controlled_carousels.js
+      extractors/lists/generic/carousels/slick_carousels.js
+    ]
+    recovery_paths = %w[
+      extractors/lists/generic/visibility_recovery/dormant_body_root.js
+      extractors/lists/generic/visibility_recovery/stale_opacity_sections.js
+      extractors/lists/generic/visibility_recovery/controlled_panels.js
+    ]
 
-    expect(manifest.index(slick_path)).to be < manifest.index(controlled_path)
+    expect(carousel_paths + recovery_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+    expect(manifest & carousel_paths).to eq(carousel_paths)
+    expect(manifest & recovery_paths).to eq(recovery_paths)
+    expect(manifest.index(carousel_paths[1])).to be < manifest.index(recovery_paths[2])
+    old_names = %w[
+      controlled_carousels slick_carousels controlled_panels
+      dormant_body_root stale_opacity_sections
+    ]
+    old_paths = old_names.filter_map do |name|
+      path = File.join(source_root, "extractors/lists/generic/#{name}.js")
+      path if File.exist?(path)
+    end
+    expect(old_paths).to eq([])
   end
 
   it "preserves social profile registration precedence" do
