@@ -4,16 +4,17 @@ module FetchUtil
   class Browser
     module SiteStabilization
       autoload :AzureDevopsPrProductStateScript,
-               "fetch_util/browser/site_stabilization/azure_devops_pr_product_state_script"
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/product_state_script"
       autoload :AzureDevopsPrCommitDetailsScript,
-               "fetch_util/browser/site_stabilization/azure_devops_pr_commit_details_script"
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/commit_details_script"
       autoload :AzureDevopsPrRequestHelpersScript,
-               "fetch_util/browser/site_stabilization/azure_devops_pr_request_helpers_script"
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/request_helpers_script"
       autoload :AzureDevopsPrRequestStateScript,
-               "fetch_util/browser/site_stabilization/azure_devops_pr_request_state_script"
-      autoload :AzureDevopsPrState, "fetch_util/browser/site_stabilization/azure_devops_pr_state"
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/request_state_script"
+      autoload :AzureDevopsPrState,
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/state"
       autoload :AzureDevopsPrStabilization,
-               "fetch_util/browser/site_stabilization/azure_devops_pr_stabilization"
+               "fetch_util/browser/site_stabilization/forges/azure_devops/pull_requests/stabilization"
       autoload :BitbucketCloudThreadState,
                "fetch_util/browser/site_stabilization/forges/bitbucket/threads/state"
       autoload :BitbucketCloudThreads,
