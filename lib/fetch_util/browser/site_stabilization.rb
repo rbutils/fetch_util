@@ -42,10 +42,11 @@ module FetchUtil
                "fetch_util/browser/site_stabilization/gerrit_file_resource_state"
       autoload :GerritFileResourceStabilization,
                "fetch_util/browser/site_stabilization/gerrit_file_resource_stabilization"
-      autoload :GithubPullResources, "fetch_util/browser/site_stabilization/github_pull_resources"
+      autoload :GithubPullResources,
+               "fetch_util/browser/site_stabilization/forges/github/pull_resources"
       autoload :GithubPullResourceStabilization,
-               "fetch_util/browser/site_stabilization/github_pull_resource_stabilization"
-      autoload :GithubThreads, "fetch_util/browser/site_stabilization/github_threads"
+               "fetch_util/browser/site_stabilization/forges/github/pull_resource_stabilization"
+      autoload :GithubThreads, "fetch_util/browser/site_stabilization/forges/github/threads"
       autoload :GiteaFamilyThreadProductState,
                "fetch_util/browser/site_stabilization/gitea_family_thread_product_state"
       autoload :GiteaFamilyThreadTimelineState,
