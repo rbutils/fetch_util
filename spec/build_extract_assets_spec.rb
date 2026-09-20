@@ -1238,6 +1238,17 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "keeps product-specific social profiles below the social root" do
+    source_root = File.join(project_root, "websieve")
+    social_root = File.join(source_root, "profiles/social")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+
+    expect(Dir.children(social_root).sort).to eq(%w[networks professional search.js telegram])
+    expect(Dir[File.join(social_root, "telegram/**/*.js")].map { |path| File.basename(path) }).to eq(["telegram.js"])
+    expect(manifest).to include("profiles/social/telegram/telegram.js")
+    expect(manifest).not_to include("profiles/social/telegram.js")
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
