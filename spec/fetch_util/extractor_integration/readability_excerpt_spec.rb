@@ -14,6 +14,7 @@ RSpec.describe 'Readability article excerpts' do
       <<~JS + content
         global.__readabilityArticleExcerpt = readabilityArticleExcerpt;
         global.__readabilityContent = readabilityContent;
+        global.__markReadabilityExcerptSources = markReadabilityExcerptSources;
       JS
     end.join("\n")
   end
@@ -157,6 +158,50 @@ RSpec.describe 'Readability article excerpts' do
       expect(values['unicodeSentence']).to eq('Visible disclaimer')
       expect(values['unicode'].each_char.count).to eq(20)
       expect(values['unicode']).to eq('🛰' * 20)
+    end
+  end
+
+  it 'rejects widget and dialog paragraphs from structured body provenance' do
+    body = 'Verified body reporting remains eligible for the article excerpt. ' * 4
+    widget = 'Promotional widget prose must not become the article excerpt. ' * 4
+    dialog = 'Dialog prose must not become the article excerpt. ' * 4
+    html = <<~HTML
+      <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"NewsArticle",
+         "url":"https://publisher.example/report","headline":"Verified report"}
+      </script>
+      <div class="article">
+        <h1>Verified report</h1>
+        <div class="article-content">
+          <p id="body">#{body}</p>
+          <p>#{body}</p>
+        </div>
+        <div class="widget article-content"><p id="widget">#{widget}</p></div>
+        <dialog open><div class="article-content"><p id="dialog">#{dialog}</p></div></dialog>
+        <div role="alertdialog"><div class="article-content"><p id="alertdialog">#{dialog}</p></div></div>
+      </div>
+    HTML
+
+    with_url_page('https://publisher.example/report', html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var marker = window.__markReadabilityExcerptSources(document);
+          function bodyMarker(id) {
+            return document.getElementById(id).getAttribute("data-fetchutil-excerpt-body");
+          }
+          return {
+            marker: marker,
+            body: bodyMarker("body"),
+            widget: bodyMarker("widget"),
+            dialog: bodyMarker("dialog"),
+            alertdialog: bodyMarker("alertdialog")
+          };
+        })())
+      JS
+
+      expect(values['body']).to eq(values['marker'])
+      expect(values.values_at('widget', 'dialog', 'alertdialog')).to eq([nil, nil, nil])
     end
   end
 end

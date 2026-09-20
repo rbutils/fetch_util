@@ -202,6 +202,79 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "derives a structured div article excerpt from its body instead of category metadata" do
+    lead = "The structured report explains the source-backed policy changes, implementation evidence, and practical consequences for affected communities."
+    html = <<~HTML
+      <html><head><title>Structured energy report | Example News</title>
+        <script type="application/ld+json">{
+          "@context":"https://schema.org",
+          "@type":"NewsArticle",
+          "url":"https://example.test/reports/structured-energy",
+          "headline":"Structured energy report"
+        }</script>
+      </head><body><main>
+        <div class="article">
+          <div class="print-branding-header"><img alt="Example News" src="/brand.svg"></div>
+          <div class="top-part"><h1>Structured energy report</h1><div class="meta"><span class="categories">Green Economy</span> <span>News</span> <span class="date-time">7 July 2026 15:56 (UTC +04:00)</span></div></div>
+          <div class="left-part"><div class="sticky-content"></div></div>
+          <div class="right-part">
+            <div class="image-wrapper"><img alt="Structured energy project" src="/energy.jpg"></div>
+            <div class="article-paddings"><span class="author">Example Economics Correspondent</span></div>
+            <div class="article-content article-paddings">
+              <p>#{lead}</p>
+              <p>Additional evidence describes the implementation timeline, independent review, and regional cooperation in sufficient detail.</p>
+            </div>
+          </div>
+          <div class="print-branding-footer"><p>Source: https://example.test/reports/structured-energy</p></div>
+        </div>
+        <article class="related"><h2>Related report</h2><p>This separate article card must not disqualify the uniquely structured current-page article body.</p></article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/reports/structured-energy", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page, reader_mode: true)
+
+      expect(payload.fetch("excerpt")).to eq(lead)
+      expect(payload.fetch("excerpt")).not_to include("Green Economy")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
+  it "does not let foreign structured data change an ordinary div article excerpt" do
+    lead = "The unstructured report contains a substantial paragraph, but its broad layout provides no unique current-page article provenance."
+    html = <<~HTML
+      <html><head><title>Unstructured energy report | Example News</title>
+        <script type="application/ld+json">{
+          "@context":"https://schema.org",
+          "@type":"NewsArticle",
+          "url":"https://other.example.test/reports/unstructured-energy",
+          "headline":"Unstructured energy report"
+        }</script>
+      </head><body><main>
+        <div class="article">
+          <div class="print-branding-header"><img alt="Example News" src="/brand.svg"></div>
+          <div class="top-part"><h1>Unstructured energy report</h1><div class="meta"><span class="categories">Green Economy</span> <span>News</span> <span class="date-time">7 July 2026 15:56 (UTC +04:00)</span></div></div>
+          <div class="left-part"><div class="sticky-content"></div></div>
+          <div class="right-part">
+            <div class="image-wrapper"><img alt="Unstructured energy project" src="/energy.jpg"></div>
+            <div class="article-paddings"><span class="author">Example Economics Correspondent</span></div>
+            <div class="article-content article-paddings"><p>#{lead}</p><p>Another substantial paragraph provides enough text for reader extraction without proving its ownership.</p></div>
+          </div>
+          <div class="print-branding-footer"><p>Source: https://example.test/reports/unstructured-energy</p></div>
+        </div>
+        <article class="related"><h2>Related report</h2><p>This separate article card keeps ordinary main ownership intentionally ambiguous.</p></article>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://example.test/reports/unstructured-energy", html) do |page|
+      payload = extract_payload(page, reader_mode: true)
+
+      expect(payload.fetch("excerpt")).to eq(lead)
+      expect(payload.fetch("html")).not_to include("data-fetchutil-excerpt-")
+    end
+  end
+
   it "prefers an explicit article summary list over later body sections" do
     first = "Diabetes is a chronic condition that affects how the body turns food into energy."
     second = "There are three main types of diabetes, and each type requires appropriate care."

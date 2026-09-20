@@ -57,14 +57,14 @@
         var computed = window.getComputedStyle(current);
         if (computed.display === "none" || computed.visibility === "hidden" || parseFloat(computed.opacity || "1") === 0) return false;
       }
-      if (current.matches("nav, aside, footer, form, figure, figcaption, header, [role='complementary']")) return false;
+      if (current.matches("nav, aside, footer, form, figure, figcaption, header, dialog, [role='dialog'], [role='alertdialog'], [role='complementary']")) return false;
       if (current.hidden || current.hasAttribute("inert") || (current.getAttribute("aria-hidden") || "").toLowerCase() === "true") return false;
       var style = (current.getAttribute("style") || "").replace(/\s+/g, "").toLowerCase();
       if (/(?:^|;)(?:display:none|visibility:hidden|opacity:0(?:\.0+)?)(?:;|$)/.test(style)) return false;
       var signal = ["id", "class", "role", "aria-label", "data-section", "data-component", "data-testid", "data-region", "data-type"]
         .map(function(name) { return current.getAttribute(name) || ""; }).join(" ")
         .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
-      if (/\b(?:caption|promo|related|recommend(?:ed|ation|ations)?|share|global summary|sitewide summary|site summary)\b/.test(signal)) return false;
+      if (/\b(?:caption|category|taxonomy|tags?|promo|related|recommend(?:ed|ation|ations)?|share|widgets?|global summary|sitewide summary|site summary)\b/.test(signal)) return false;
       current = current.parentElement;
     }
     return true;
@@ -74,15 +74,58 @@
     return "[data-section*='summary' i], [class*='page-summary' i], [class*='article-summary' i], [class~='summary'], [class*='key-points' i]";
   }
 
-  function readabilityExcerptOwner(node) {
+  function readabilityStructuredExcerptOwner(root) {
+    var documentKeys = pageStructuredDataDocumentKeys();
+    var articleTypes = ["article", "newsarticle", "reportagenewsarticle", "analysisnewsarticle", "opinionnewsarticle"];
+    var records = structuredDataNodes().filter(function(record) {
+      if (!nodeTypes(record).some(function(type) {
+        return articleTypes.indexOf(String(type).toLowerCase()) !== -1;
+      })) return false;
+      return detailArticleRecordUrls(record).some(function(url) {
+        var key = structuredDataDocumentKey(url);
+        return key && documentKeys.indexOf(key) !== -1;
+      });
+    });
+    if (records.length !== 1) return null;
+    var title = normalizeText(records[0].headline || records[0].name || "");
+    if (!title) return null;
+
+    var headings = Array.prototype.filter.call(root.querySelectorAll("h1, [itemprop='headline']"), function(heading) {
+      return normalizeText(heading.textContent || "") === title;
+    });
+    if (headings.length !== 1) return null;
+
+    var heading = headings[0];
+    var owner = heading.closest("article, [itemprop~='articleBody'], [class~='article'], [class~='story'], [class~='post']");
+    if (!owner) return null;
+    var paragraphs = Array.prototype.filter.call(owner.querySelectorAll("p"), function(paragraph) {
+      return readabilityExcerptLength(paragraph.textContent || "") >= 80;
+    });
+    return paragraphs.length >= 2 ? {heading: heading, owner: owner} : null;
+  }
+
+  function readabilityExcerptOwner(node, structuredOwner) {
     if (!node || !node.closest) return false;
+    if (structuredOwner && structuredOwner.owner.contains(node) &&
+        (structuredOwner.heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) return true;
     if (node.closest("article")) return true;
     var main = node.closest("main, [role='main']");
     return !!main && !main.querySelector("article");
   }
 
-  function readabilityBodyExcerptNode(node) {
+  function readabilityBodyExcerptNode(node, structuredOwner) {
     if (!node || !node.matches || !node.matches("p")) return false;
+    if (structuredOwner && structuredOwner.owner.contains(node)) {
+      var structuredCurrent = node.parentElement;
+      if (structuredCurrent === structuredOwner.owner) return true;
+      while (structuredCurrent && structuredCurrent !== structuredOwner.owner) {
+        var structuredSignal = ((structuredCurrent.id || "") + " " + (structuredCurrent.className || ""))
+          .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
+        if (/\b(?:article body|article content|story body|entry content|post content|rich text|prose)\b/.test(structuredSignal)) return true;
+        structuredCurrent = structuredCurrent.parentElement;
+      }
+      return false;
+    }
     var owner = node.closest("article, main, [role='main']");
     if (!owner) return false;
     var current = node.parentElement;
@@ -102,12 +145,13 @@
     var marker = Array.from(values).map(function(value) {
       return value.toString(16).padStart(8, "0");
     }).join("");
+    var structuredOwner = readabilityStructuredExcerptOwner(root);
     var owned = Array.prototype.filter.call(root.querySelectorAll("p, li"), function(node) {
-      return readabilityExcerptOwner(node) && readabilityExcerptNode(node);
+      return readabilityExcerptOwner(node, structuredOwner) && readabilityExcerptNode(node);
     });
     owned.forEach(function(node) {
       node.setAttribute("data-fetchutil-excerpt-source", marker);
-      if (readabilityBodyExcerptNode(node)) node.setAttribute("data-fetchutil-excerpt-body", marker);
+      if (readabilityBodyExcerptNode(node, structuredOwner)) node.setAttribute("data-fetchutil-excerpt-body", marker);
     });
     var summaryIndex = 0;
     root.querySelectorAll(readabilitySummarySelector()).forEach(function(container) {
