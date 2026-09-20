@@ -701,7 +701,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(coverage_paths[0])).to be < manifest.index("classifiers/list_pages/dominance.js")
     expect(manifest.index(coverage_paths[1])).to be > manifest.index("extractors/article/roots.js")
     expect(manifest.index(coverage_paths[4])).to be < manifest.index(coverage_paths[5])
-    expect(manifest.index(coverage_paths[6])).to be > manifest.index("extractors/article/readability.js")
+    expect(manifest.index(coverage_paths[6])).to be > manifest.index("extractors/article/readability/readability.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/*_coverage.js"))).to eq([])
   end
 
@@ -717,15 +717,15 @@ RSpec.describe "extract asset bundle" do
     expect(fallback_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
     expect(manifest & fallback_paths).to eq(fallback_paths)
     expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
-    expect(manifest.index(fallback_paths[2])).to be < manifest.index("extractors/article/readability_excerpt.js")
+    expect(manifest.index(fallback_paths[2])).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
   end
 
   it "loads readability excerpt helpers before their runtime consumer" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    excerpt_path = "extractors/article/readability_excerpt.js"
-    runtime_path = "extractors/article/readability.js"
+    excerpt_path = "extractors/article/readability/readability_excerpt.js"
+    runtime_path = "extractors/article/readability/readability.js"
     excerpt_source = File.read(File.join(source_root, excerpt_path))
     runtime_source = File.read(File.join(source_root, runtime_path))
 
