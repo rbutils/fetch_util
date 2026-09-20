@@ -193,13 +193,46 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
+  it "groups Markdown families without changing their load order" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    families = [
+      %w[markdown/code/code_helpers.js markdown/code/code_surfaces.js],
+      %w[
+        markdown/lists/list_aliases.js markdown/lists/list_metadata.js
+        markdown/lists/list_supplemental.js markdown/lists/lists.js
+      ],
+      %w[
+        markdown/materialization/materialization_inline.js
+        markdown/materialization/materialization_containers.js
+        markdown/materialization/materialization_blocks.js
+        markdown/materialization/materialization.js
+      ]
+    ]
+
+    families.each do |paths|
+      expect(paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+      expect(manifest & paths).to eq(paths)
+    end
+    old_names = %w[
+      code_helpers code_surfaces list_aliases list_metadata list_supplemental lists
+      materialization_inline materialization_containers materialization_blocks materialization
+    ]
+    old_paths = old_names.filter_map do |name|
+      path = File.join(source_root, "markdown/#{name}.js")
+      path if File.exist?(path)
+    end
+    expect(old_paths).to eq([])
+  end
+
   it "places shared list rendering and glossary scoring before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    aliases_path = "markdown/list_aliases.js"
-    metadata_path = "markdown/list_metadata.js"
-    supplemental_path = "markdown/list_supplemental.js"
-    list_source = File.read(File.join(source_root, "markdown/lists.js"))
+    aliases_path = "markdown/lists/list_aliases.js"
+    metadata_path = "markdown/lists/list_metadata.js"
+    supplemental_path = "markdown/lists/list_supplemental.js"
+    list_path = "markdown/lists/lists.js"
+    list_source = File.read(File.join(source_root, list_path))
     alias_source = File.read(File.join(source_root, aliases_path))
     metadata_source = File.read(File.join(source_root, metadata_path))
     supplemental_source = File.read(File.join(source_root, supplemental_path))
@@ -215,9 +248,9 @@ RSpec.describe "extract asset bundle" do
     expect(list_source).not_to include("function listCompactMetadataRow")
     expect(list_source).not_to include("function cardField")
     expect(list_source).not_to include("function listSupplementalDetail")
-    expect(manifest.index(aliases_path)).to be < manifest.index("markdown/lists.js")
-    expect(manifest.index(metadata_path)).to be < manifest.index("markdown/lists.js")
-    expect(manifest.index(supplemental_path)).to be < manifest.index("markdown/lists.js")
+    expect(manifest.index(aliases_path)).to be < manifest.index(list_path)
+    expect(manifest.index(metadata_path)).to be < manifest.index(list_path)
+    expect(manifest.index(supplemental_path)).to be < manifest.index(list_path)
     expect(supplemental_source).to include("function listClonedCardFields", "function listSupplementalDetail")
     list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
       File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length
@@ -231,10 +264,10 @@ RSpec.describe "extract asset bundle" do
     detection_source = File.read(File.join(source_root, "extractors/glossary/detection.js"))
     expect(detection_source.index("function definitionReferenceMetadataScore")).to be < detection_source.index("function glossaryLikePage")
 
-    list_index = manifest.index("markdown/lists.js")
+    list_index = manifest.index(list_path)
     expect(list_index).to be < manifest.index("core/metadata/content_results.js")
     Dir[File.join(source_root, "**", "*.js")].each do |path|
-      next if path.end_with?("/markdown/lists.js")
+      next if path == File.join(source_root, list_path)
       next unless File.read(path).include?("listMarkdown(")
 
       expect(list_index).to be < manifest.index(path.delete_prefix("#{source_root}/"))
@@ -244,19 +277,20 @@ RSpec.describe "extract asset bundle" do
 
   it "defines list helpers before the parser-sensitive renderer snapshot" do
     manifest = File.readlines(File.join(project_root, "websieve", "manifest.txt"), chomp: true)
-    metadata_path = "markdown/list_metadata.js"
-    supplemental_path = "markdown/list_supplemental.js"
+    metadata_path = "markdown/lists/list_metadata.js"
+    supplemental_path = "markdown/lists/list_supplemental.js"
+    list_path = "markdown/lists/lists.js"
     metadata_source = File.read(File.join(project_root, "websieve", metadata_path))
     supplemental_source = File.read(File.join(project_root, "websieve", supplemental_path))
-    list_source = File.read(File.join(project_root, "websieve", "markdown", "lists.js"))
+    list_source = File.read(File.join(project_root, "websieve", list_path))
     renderer_index = list_source.index("var listMarkdown = function(items, primaryUrls, primaryRecordKeys)")
 
     expect(renderer_index).not_to be_nil
     expect(supplemental_source).to include("function listSupplementalDetail")
     expect(list_source).not_to include("function listSupplementalDetail")
     expect(metadata_source).to include("function cardField")
-    expect(manifest.index(metadata_path)).to be < manifest.index("markdown/lists.js")
-    expect(manifest.index(supplemental_path)).to be < manifest.index("markdown/lists.js")
+    expect(manifest.index(metadata_path)).to be < manifest.index(list_path)
+    expect(manifest.index(supplemental_path)).to be < manifest.index(list_path)
   end
 
   it "loads structured card-link shaping before the Markdown runtime" do
@@ -500,7 +534,7 @@ RSpec.describe "extract asset bundle" do
     record_titles_source = File.read(File.join(source_root, record_titles_path))
     linked_media_path = "classifiers/list_pages/linked_media_rows.js"
     chrome_path = "classifiers/list_pages/chrome.js"
-    renderer_path = "markdown/lists.js"
+    renderer_path = "markdown/lists/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     card_evidence_path = "extractors/lists/generic/records/card_evidence.js"
     duplicate_metadata_path = "extractors/lists/generic/records/duplicate_record_metadata.js"
