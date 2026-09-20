@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Preserve the inactive suffix of a complete materialized Slick record carousel while excluding cloned presentation copies and ambiguous hidden inventories.
 - Preserve image, category, title, and date relationships in repeated article cards whose outer link wraps every field.
 - Keep a substantial structured detail article when late list detection sees only distributed portal rails, while preserving independent directories and list routes.
 - Preserve safe article-owned supplemental asset and video destinations that reader mode omits.

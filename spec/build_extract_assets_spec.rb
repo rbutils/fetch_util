@@ -678,6 +678,15 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
+  it "loads materialized Slick recovery before controlled list expansion" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    slick_path = "extractors/lists/generic/slick_carousels.js"
+    controlled_path = "extractors/lists/generic/controlled_panels.js"
+
+    expect(manifest.index(slick_path)).to be < manifest.index(controlled_path)
+  end
+
   it "preserves social profile registration precedence" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

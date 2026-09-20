@@ -222,8 +222,13 @@
       if (controlledListMaterializedSequenceCoveredBy(sourceExtraction.items, content.listSourceItems)) ordinary = sourceExtraction;
     }
     var sourceNode = ordinary ? ordinary.sourceNode : (content.listSourceNode || document.body);
+    var supplementedMarkdown = listMarkdownWithMaterializedSlickCarousels(
+      sourceNode,
+      currentMarkdown || content.markdown || content.textContent || ""
+    );
+    var baseMarkdown = supplementedMarkdown || currentMarkdown || content.markdown || content.textContent || "";
     var preservedRoots = controlledListPanelRoots(sourceNode);
-    if (!preservedRoots.length) return null;
+    if (!preservedRoots.length) return supplementedMarkdown;
     var directCarouselItems = controlledListCarouselItems(sourceNode);
     if (!ordinary) ordinary = buildListExtraction(sourceNode, pageTitles);
     var expanded = buildListExtraction(sourceNode, pageTitles, { preservedRoots: preservedRoots });
@@ -232,7 +237,7 @@
       additions = controlledListPanelAdditions(expanded.items, ordinary.items);
       if (!additions) return null;
     } else {
-      var representedText = normalizeText(currentMarkdown || content.markdown || content.textContent || "");
+      var representedText = normalizeText(baseMarkdown);
       additions = directCarouselItems.filter(function(item) {
         return representedText.indexOf(normalizeText(item.text || "")) === -1;
       });
@@ -245,9 +250,9 @@
       return item.controlledRoot ? preservedRoots.indexOf(item.controlledRoot) !== -1 :
         (item.card && item.card.closest("[data-fetchutil-controlled-list-panel='true']"));
     });
-    if (materializedListItemCount(additions) < 3) return null;
+    if (materializedListItemCount(additions) < 3) return supplementedMarkdown;
 
     var additionalMarkdown = listMarkdown(additions);
-    if (!additionalMarkdown) return null;
-    return [(currentMarkdown || content.markdown || content.textContent || "").trim(), additionalMarkdown].filter(Boolean).join("\n\n");
+    if (!additionalMarkdown) return supplementedMarkdown;
+    return [baseMarkdown.trim(), additionalMarkdown].filter(Boolean).join("\n\n");
   }

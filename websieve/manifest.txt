@@ -111,6 +111,7 @@ extractors/lists/lead_coverage.js
 extractors/lists/generic/dormant_body_root.js
 extractors/lists/generic/stale_opacity_sections.js
 extractors/lists/generic/controlled_carousels.js
+extractors/lists/generic/slick_carousels.js
 extractors/lists/generic/controlled_panels.js
 extractors/lists/products/cards.js
 extractors/lists/products/extraction.js
