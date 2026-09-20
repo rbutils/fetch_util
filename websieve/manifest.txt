@@ -9,7 +9,7 @@ classifiers/list_pages/anchor_cards.js
 classifiers/list_pages/record_titles.js
 classifiers/list_pages/overlay_links.js
 classifiers/list_pages/card_ownership.js
-extractors/lists/generic/editorial_asides.js
+extractors/lists/generic/sections/editorial_asides.js
 classifiers/list_pages/chrome.js
 classifiers/list_pages/link_groups.js
 markdown/list_aliases.js
@@ -101,10 +101,10 @@ extractors/lists/generic/records/headline_extraction.js
 extractors/lists/generic/records/nested_coverage.js
 extractors/lists/description_parts.js
 extractors/lists/generic/records/flat_extraction.js
-extractors/lists/generic/heading_context.js
-extractors/lists/generic/section_rendering.js
-extractors/lists/generic/record_section_fallback.js
-extractors/lists/generic/section_discovery.js
+extractors/lists/generic/sections/heading_context.js
+extractors/lists/generic/sections/section_rendering.js
+extractors/lists/generic/sections/record_section_fallback.js
+extractors/lists/generic/sections/section_discovery.js
 extractors/lists/card_visibility.js
 extractors/lists/core.js
 extractors/lists/homepage/search_tools.js

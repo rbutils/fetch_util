@@ -505,8 +505,8 @@ RSpec.describe "extract asset bundle" do
     card_evidence_path = "extractors/lists/generic/records/card_evidence.js"
     duplicate_metadata_path = "extractors/lists/generic/records/duplicate_record_metadata.js"
     flat_extraction_path = "extractors/lists/generic/records/flat_extraction.js"
-    record_fallback_path = "extractors/lists/generic/record_section_fallback.js"
-    section_discovery_path = "extractors/lists/generic/section_discovery.js"
+    record_fallback_path = "extractors/lists/generic/sections/record_section_fallback.js"
+    section_discovery_path = "extractors/lists/generic/sections/section_discovery.js"
     sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, duplicate_metadata_path,
                flat_extraction_path, record_fallback_path, section_discovery_path].to_h do |path|
       [path, File.read(File.join(source_root, path))]
@@ -597,16 +597,21 @@ RSpec.describe "extract asset bundle" do
     expect(old_paths).to eq([])
   end
 
-  it "loads generic list section helpers before section discovery" do
+  it "groups generic list section helpers in dependency order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    rendering_path = "extractors/lists/generic/section_rendering.js"
-    fallback_path = "extractors/lists/generic/record_section_fallback.js"
-    discovery_path = "extractors/lists/generic/section_discovery.js"
+    editorial_path = "extractors/lists/generic/sections/editorial_asides.js"
+    heading_path = "extractors/lists/generic/sections/heading_context.js"
+    rendering_path = "extractors/lists/generic/sections/section_rendering.js"
+    fallback_path = "extractors/lists/generic/sections/record_section_fallback.js"
+    discovery_path = "extractors/lists/generic/sections/section_discovery.js"
+    section_paths = [editorial_path, heading_path, rendering_path, fallback_path, discovery_path]
     rendering_source = File.read(File.join(source_root, rendering_path))
     fallback_source = File.read(File.join(source_root, fallback_path))
     discovery_source = File.read(File.join(source_root, discovery_path))
 
+    expect(section_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+    expect(manifest & section_paths).to eq(section_paths)
     expect(manifest.index(rendering_path)).to be < manifest.index(discovery_path)
     expect(manifest.index(fallback_path)).to be < manifest.index(discovery_path)
     expect(rendering_source).to include("function sectionedListMarkdownWithDescriptions")
@@ -623,6 +628,15 @@ RSpec.describe "extract asset bundle" do
       "function simpleRecordCollection",
       "function sectionRecordCollectionFallback"
     )
+    old_names = %w[
+      editorial_asides heading_context section_rendering
+      record_section_fallback section_discovery
+    ]
+    old_paths = old_names.filter_map do |name|
+      path = File.join(source_root, "extractors/lists/generic/#{name}.js")
+      path if File.exist?(path)
+    end
+    expect(old_paths).to eq([])
   end
 
   it "groups homepage list strategies in dependency order" do
