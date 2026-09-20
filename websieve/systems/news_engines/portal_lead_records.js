@@ -2,9 +2,15 @@
     return /^(?:read|learn|see) more$/i.test(normalizeText(text || ""));
   }
 
-  function leadVisibleClone(node) {
-    if (!node || elementSubtreeHidden(node)) return null;
-    var clone = visibilityPrunedClone(node, document);
+  function leadVisibleClone(node, ancestorsVisible) {
+    if (!node || (!ancestorsVisible && elementSubtreeHidden(node))) return null;
+    var clone;
+    if (ancestorsVisible) {
+      clone = safeDeepClone(node, document);
+      pruneHiddenClone(node, clone, null, null, true);
+    } else {
+      clone = visibilityPrunedClone(node, document);
+    }
     var text = normalizeText(clone.textContent || "");
     var media = clone.querySelector("img[src], picture source[srcset], video[src], svg");
     return text || media ? clone : null;

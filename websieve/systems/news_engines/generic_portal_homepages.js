@@ -246,7 +246,10 @@
     if (sectionHeadings.length >= 2) {
       markdownParts.push(sectionHeadings.map(function(text) { return "- " + text; }).join("\n"));
     }
-    markdownParts.push(listMarkdown(leadRoot.items));
+    var contextDescriptions = homepageLeadContextDescriptions(leadRoot);
+    markdownParts.push(contextDescriptions.length ? sectionedListMarkdownWithDescriptions({
+      regions: [{ node: leadRoot.root, label: "", cards: leadRoot.items }]
+    }, contextDescriptions) : listMarkdown(leadRoot.items));
 
     var markdown = markdownParts.filter(Boolean).join("\n\n").trim();
     var supplemented = supplementedHomepageLead(leadRoot, sectioned);

@@ -11,9 +11,101 @@ RSpec.describe FetchUtil::Extractor do
     source.sub("})(window);", <<~JS)
         global.__leadCoverage = supplementedHomepageLead;
         global.__leadAncestorDescription = homepageLeadAncestorDescription;
+        global.__leadContextDescriptions = homepageLeadContextDescriptions;
+        global.__leadSectionMarkdown = sectionedListMarkdownWithDescriptions;
         global.__leadVisibleClone = visibilityPrunedClone;
       })(window);
     JS
+  end
+
+  it "retains every substantive standalone lead control in source order and excludes interface controls" do
+    controls = 125.times.map do |index|
+      decoration = index.zero? ? "<span role='button'><!-- icon --><img alt='Partner logo'></span>" : ""
+      "<button type='button' aria-expanded='false'>Financing option #{index} includes fixed monthly repayment terms#{decoration}</button>"
+    end.join
+    html = <<~HTML
+      <html><body><main>
+        <article><a class="record" href="/before">First owned service record</a><p>First owned detail.</p></article>
+        <p>Complete solutions for every customer financing need.</p>
+        <section class="financing"><div class="record-card">
+          <a class="record" href="/finance">Financing plans for every customer</a>
+          <p>Choose a financing plan.</p></div>#{controls}</section>
+        <article><a class="record" href="/after">Following owned service record</a><p>Following owned detail.</p>
+          <button aria-expanded="false">Card-local disclosure contains substantial internal text</button></article>
+        <nav><button>Navigation disclosure contains substantial menu text</button></nav>
+        <form><button>Form submission contains substantial transactional text</button></form>
+        <dialog open><button>Dialog action contains substantial temporary interface text</button></dialog>
+        <button disabled>Disabled disclosure contains substantial unavailable text</button>
+        <button aria-disabled="true">ARIA disabled disclosure contains substantial unavailable text</button>
+        <button inert>Inert disclosure contains substantial unavailable text</button>
+        <fieldset disabled><button>Inherited disabled disclosure contains substantial unavailable text</button></fieldset>
+        <div aria-disabled="true"><button>Inherited ARIA disabled disclosure contains substantial unavailable text</button></div>
+        <div inert><button>Inherited inert disclosure contains substantial unavailable text</button></div>
+        <div role="button">Nested control contains substantial outer interface text
+          <span role="button">Nested action contains substantial inner interface text</span></div>
+        <a href=""><button>Link-owned nested control contains substantial unsafe interface text</button></a>
+        <div role="button">Semantic SVG nested control contains substantial unsafe interface text
+          <span role="button"><svg tabindex="0"><title>Named SVG action</title><path></path></svg></span></div>
+        <div role="button">Interactive image nested control contains substantial unsafe interface text
+          <span role="button"><img role="button" alt="Named image action"></span></div>
+        <div role="button">Editable media nested control contains substantial unsafe interface text
+          <span role="button"><svg><g contenteditable="plaintext-only"></g><audio controls></audio></svg></span></div>
+        <div role="button">Embedded content nested control contains substantial unsafe interface text
+          <span role="button"><svg><foreignObject><iframe></iframe></foreignObject></svg></span></div>
+        <div id="nested-paragraph-owner"></div>
+        <button>Financing option 0 includes fixed monthly repayment terms</button>
+        <button hidden>Hidden disclosure contains substantial invisible text</button>
+        <button aria-haspopup="menu">Menu popup contains substantial temporary interface text</button>
+        <button aria-controls="controlled-panel">Controlled disclosure contains substantial temporary interface text</button>
+        <button aria-pressed="false">Toggle control contains substantial temporary interface text</button>
+        <footer><p>Footer prose contains substantial unrelated publishing context.</p></footer>
+        <button>Read more</button>
+      </main></body></html>
+    HTML
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: lead_coverage_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const root = document.querySelector('main');
+          const nestedParagraphOwner = document.querySelector('#nested-paragraph-owner');
+          const outerParagraph = document.createElement('p');
+          outerParagraph.textContent = 'Outer nested paragraph contains substantial overlapping context.';
+          const innerParagraph = document.createElement('p');
+          innerParagraph.textContent = 'Inner nested paragraph contains substantial overlapping context.';
+          outerParagraph.appendChild(innerParagraph);
+          nestedParagraphOwner.appendChild(outerParagraph);
+          const before = document.body.innerHTML;
+          const items = Array.from(root.querySelectorAll('a.record')).map(link => ({
+            text: link.textContent, url: link.href, sourceNode: link, card: link.closest('article, .record-card')
+          }));
+           const descriptions = __leadContextDescriptions({ root, items });
+          return {
+            markdown: __leadSectionMarkdown({ regions: [{ node: root, label: '', cards: items }] }, descriptions),
+            descriptions: descriptions.map(description => description.markdown),
+            unchanged: before === document.body.innerHTML
+          };
+        })()
+      JS
+      expect(result.fetch("descriptions").length).to eq(126)
+      expect(result.fetch("descriptions").first).to eq("Complete solutions for every customer financing need.")
+      expect(result.fetch("descriptions")[1]).to eq("Financing option 0 includes fixed monthly repayment terms")
+      expect(result.fetch("descriptions").last).to eq("Financing option 124 includes fixed monthly repayment terms")
+      expect(result.fetch("markdown")).to match(
+        /First owned service record.*Complete solutions.*Financing plans.*Financing option 0.*Financing option 124.*Following owned service record/m
+      )
+      interface_controls = Regexp.union(
+        "Navigation", "Form submission", "Dialog action", "Disabled disclosure", "ARIA disabled",
+        "Inert disclosure", "Inherited disabled", "Inherited ARIA", "Inherited inert", "Nested control",
+        "Nested action", "Link-owned nested", "Semantic SVG nested", "Named SVG", "Interactive image nested",
+        "Named image", "Editable media nested", "Embedded content nested", "Outer nested paragraph",
+        "Inner nested paragraph", "Hidden disclosure", "Menu popup", "Controlled disclosure", "Toggle control",
+        "Footer prose", "Read more"
+      )
+      expect(result.fetch("descriptions").join(" ")).not_to match(Regexp.union("Card-local", interface_controls))
+      expect(result.fetch("markdown").scan("Card-local disclosure contains substantial internal text").length).to eq(1)
+      expect(result.fetch("markdown")).not_to match(interface_controls)
+      expect(result.fetch("unchanged")).to be(true)
+    end
   end
 
   it "retains every lead detail and adds short independently owned actions and prose in DOM order" do
