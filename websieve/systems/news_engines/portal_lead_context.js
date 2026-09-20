@@ -163,7 +163,7 @@
       }
     }
 
-    return contexts.map(function(context) {
+    var descriptions = contexts.map(function(context) {
       if (context.hidden || context.unavailable || context.interfaceOwned || context.recordOwned) return null;
       if (context.kind === "control" && unsafeControls.has(context.node)) return null;
       if (context.kind === "paragraph" &&
@@ -181,4 +181,16 @@
       itemValues.add(text);
       return { node: context.node, markdown: text };
     }).filter(Boolean);
+    var substantialParagraphs = 0;
+    var paragraphChars = 0;
+    descriptions.forEach(function(description) {
+      if (description.node.tagName !== "P") return;
+      var text = normalizeText(description.markdown);
+      paragraphChars += text.length;
+      if (text.length >= 80) substantialParagraphs += 1;
+    });
+    if (substantialParagraphs >= 3 && paragraphChars >= 1200) {
+      return descriptions.filter(function(description) { return description.node.tagName !== "P"; });
+    }
+    return descriptions;
   }

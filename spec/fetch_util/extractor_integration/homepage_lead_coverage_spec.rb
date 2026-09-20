@@ -145,6 +145,37 @@ RSpec.describe FetchUtil::Extractor do
     end
   end
 
+  it "does not attach article-dominant prose to a homepage list" do
+    paragraphs = 3.times.map do |index|
+      <<~HTML
+        <p>Editorial section #{index} explains implementation planning, governance, evidence review, deployment,
+        measurement, training, and long-term support in enough detail to remain independent article material rather
+        than context for a nearby directory. It preserves the decisions, safeguards, and source distinctions readers
+        need when evaluating the report, with additional background that belongs to the article itself.</p>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><body><main>#{paragraphs}
+        <button>Compare financing plans with fixed monthly repayment terms</button>
+        <article><a href="/one">First service</a></article>
+        <article><a href="/two">Second service</a></article>
+      </main></body></html>
+    HTML
+    with_url_page("https://services.example/", html) do |page|
+      page.add_script_tag(content: lead_coverage_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const root = document.querySelector('main');
+          const items = Array.from(root.querySelectorAll('a')).map(link => ({
+            text: link.textContent, url: link.href, sourceNode: link, card: link.parentElement
+          }));
+          return __leadContextDescriptions({ root, items }).map(description => description.markdown);
+        })()
+      JS
+      expect(result).to eq(["Compare financing plans with fixed monthly repayment terms"])
+    end
+  end
+
   it "supplements a body lead from its mapped main list source" do
     html = <<~HTML
       <html><body><header><a href="/account">Account</a></header><main>

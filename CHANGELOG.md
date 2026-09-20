@@ -80,6 +80,8 @@
 - Treat explicitly named section-link groups as secondary navigation without hiding similarly named story containers.
 ### Fixed
 
+- Keep article-scale homepage prose out of compact list supplements while retaining independently owned lead controls and short context.
+
 - Prefer a substantially more informative metadata author name to an opaque short reader-mode handle while preserving meaningful visible bylines and mononyms.
 - Remove short, structurally identified article audio-control bars without discarding media, transcripts, episode metadata, or podcast/catalog content.
 - Recover one unambiguous visible article lead and its immediately attached image when Readability selects the later body from the same article owner.
