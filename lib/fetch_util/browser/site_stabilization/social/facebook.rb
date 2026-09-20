@@ -17,13 +17,13 @@ module FetchUtil
           wait_for_idle_or_content(page, deadline: deadline) if @wait_for_idle
           return false unless stabilization_time_remaining?(deadline)
 
-          dismiss_facebook_cookie_dialog(page)
-          return false unless stabilization_time_remaining?(deadline)
-
           social_login_phase_pause(deadline: deadline)
           return false unless stabilization_time_remaining?(deadline)
 
           dismiss_facebook_cookie_dialog(page)
+          return false unless stabilization_time_remaining?(deadline)
+
+          social_login_phase_pause(deadline: deadline)
           return false unless stabilization_time_remaining?(deadline)
 
           retry_until_timeout(capped_timeout(5.0, deadline: deadline), deadline: deadline) do
@@ -32,7 +32,6 @@ module FetchUtil
           return false unless stabilization_time_remaining?(deadline)
 
           social_login_phase_pause(deadline: deadline)
-          dismiss_facebook_login_dialog(page)
         end
 
         def dismiss_facebook_cookie_dialog(page)

@@ -5,6 +5,27 @@ require 'spec_helper'
 RSpec.describe FetchUtil::Browser do
   include_context 'browser spec helpers'
 
+  it 'preserves Facebook stabilization phase order' do
+    page = instance_double(Ferrum::Browser)
+    browser = browser_with_idle
+    events = []
+
+    allow(browser).to receive(:stabilization_time_remaining?).and_return(true)
+    allow(browser).to receive(:capped_timeout).and_return(5.0)
+    allow(browser).to receive(:wait_for_idle_or_content) { events << :idle }
+    allow(browser).to receive(:social_login_phase_pause) { events << :pause }
+    allow(browser).to receive(:dismiss_facebook_cookie_dialog) { events << :cookies }
+    allow(browser).to receive(:dismiss_facebook_login_dialog) { events << :login }
+    allow(browser).to receive(:retry_until_timeout) do |*_args, &block|
+      events << :login_retry
+      block.call
+    end
+
+    browser.send(:stabilize_facebook, page)
+
+    expect(events).to eq(%i[idle pause cookies pause login_retry login pause])
+  end
+
   it 'waits for delayed France24 article bodies after generic stabilization' do
     page = instance_double(Ferrum::Browser)
     network = instance_double('FerrumNetwork')

@@ -94,4 +94,27 @@ RSpec.describe 'browser stabilization layout' do
                           'gitlab/threads.rb'
                         ])
   end
+
+  it 'preserves stabilization family precedence and method ownership' do
+    browser = FetchUtil::Browser
+    stabilization = browser::SiteStabilization
+    family_ancestors = stabilization.ancestors.filter do |ancestor|
+      ancestor.name&.match?(/(?:Community|Forge|Marketplace|Social|Travel)Stabilization\z/)
+    end
+
+    expect(family_ancestors).to eq([
+                                     stabilization::TravelStabilization,
+                                     stabilization::SocialStabilization,
+                                     stabilization::MarketplaceStabilization,
+                                     stabilization::ForgeStabilization,
+                                     stabilization::CommunityStabilization
+                                   ])
+    expect(browser.instance_method(:stabilize_facebook).owner).to eq(stabilization::FacebookStabilization)
+    expect(browser.instance_method(:stabilize_instagram).owner).to eq(stabilization::InstagramStabilization)
+    expect(browser.instance_method(:stabilize_reddit).owner).to eq(stabilization::RedditStabilization)
+    expect(browser.instance_method(:stabilize_ebay_search).owner).to eq(stabilization::EbayStabilization)
+    expect(browser.instance_method(:stabilize_lodging_detail).owner).to eq(stabilization::LodgingStabilization)
+    expect(browser.instance_method(:stabilize_github_thread).owner).to eq(stabilization::GithubThreads)
+    expect(browser.instance_method(:stabilize_gitlab_repo).owner).to eq(stabilization::GitlabRepo)
+  end
 end
