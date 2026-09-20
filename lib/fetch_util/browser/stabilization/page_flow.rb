@@ -6,10 +6,10 @@ module FetchUtil
     module Stabilization
       module PageFlow
         PAGE_FLOW_STABILIZATION_PROFILES = [
-          SiteStabilization::CommunityAndMarketplace::COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES[:stabilize_reddit],
+          SiteStabilization::RedditStabilization::REDDIT_STABILIZATION_PROFILE,
           SiteStabilization::SocialPlatforms::SOCIAL_PLATFORM_STABILIZATION_PROFILES[:stabilize_instagram],
           SiteStabilization::SocialPlatforms::SOCIAL_PLATFORM_STABILIZATION_PROFILES[:stabilize_facebook],
-          SiteStabilization::CommunityAndMarketplace::COMMUNITY_MARKETPLACE_STABILIZATION_PROFILES[:stabilize_ebay_search],
+          SiteStabilization::EbayStabilization::EBAY_STABILIZATION_PROFILE,
           SiteStabilization::GithubThreads::GITHUB_THREAD_STABILIZATION_PROFILE,
           SiteStabilization::GithubPullResources::GITHUB_PULL_RESOURCE_STABILIZATION_PROFILE,
           SiteStabilization::GitlabThreads::GITLAB_THREAD_STABILIZATION_PROFILE,

@@ -7,13 +7,25 @@ RSpec.describe 'browser stabilization layout' do
 
   it 'keeps only top-level stabilization families at the root' do
     expect(Dir.children(root).sort).to eq([
-                                            'community_and_marketplace.rb',
+                                            'communities',
+                                            'communities.rb',
                                             'facebook_stabilization.rb',
                                             'forges',
                                             'forges.rb',
+                                            'marketplaces',
+                                            'marketplaces.rb',
                                             'social_platforms.rb',
                                             'travel_and_lodging.rb'
                                           ])
+  end
+
+  it 'keeps community and marketplace stabilizers in separate families' do
+    expect(Dir[File.join(root, 'communities/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }).to eq([
+                                                                                                              'communities/reddit.rb'
+                                                                                                            ])
+    expect(Dir[File.join(root, 'marketplaces/**/*.rb')].map { |path| path.delete_prefix("#{root}/") }).to eq([
+                                                                                                               'marketplaces/ebay.rb'
+                                                                                                             ])
   end
 
   it 'keeps forge stabilizers grouped by product and resource family' do
