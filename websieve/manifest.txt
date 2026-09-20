@@ -225,9 +225,9 @@ profiles/forges/sourcehut/lists/shared.js
 profiles/forges/sourcehut/lists/entries.js
 profiles/forges/sourcehut/lists/patchsets.js
 profiles/forges/sourcehut/lists/threads.js
-profiles/community/azure_devops_pr_shared.js
-profiles/community/azure_devops_pr_entries.js
-profiles/community/azure_devops_pr_threads.js
+profiles/forges/azure_devops/shared.js
+profiles/forges/azure_devops/entries.js
+profiles/forges/azure_devops/threads.js
 profiles/community/gerrit_change_shared.js
 profiles/community/gerrit_change_entries.js
 profiles/community/gerrit_change_resource_shared.js
