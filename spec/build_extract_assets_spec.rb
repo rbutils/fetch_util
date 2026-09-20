@@ -224,7 +224,9 @@ RSpec.describe "extract asset bundle" do
     end
     expect(list_definitions).to eq(1)
     expect(Dir[File.join(source_root, "**", "*.js")].sum { |path| File.read(path).scan(/function\s+definitionReferenceMetadataScore\s*\(/).length }).to eq(1)
-    expect(File.read(File.join(source_root, "extractors/lists/generic/card_evidence.js"))).not_to include("function listMarkdown")
+    expect(File.read(File.join(source_root, "extractors/lists/generic/records/card_evidence.js"))).not_to include(
+      "function listMarkdown"
+    )
     expect(File.read(File.join(source_root, "core/metadata/structured_data.js"))).not_to include("function definitionReferenceMetadataScore")
     detection_source = File.read(File.join(source_root, "extractors/glossary/detection.js"))
     expect(detection_source.index("function definitionReferenceMetadataScore")).to be < detection_source.index("function glossaryLikePage")
@@ -471,7 +473,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     base_path = "core/dom/base.js"
-    list_path = "extractors/lists/generic/flat_extraction.js"
+    list_path = "extractors/lists/generic/records/flat_extraction.js"
     base_source = File.read(File.join(source_root, base_path))
     list_source = File.read(File.join(source_root, list_path))
 
@@ -500,9 +502,9 @@ RSpec.describe "extract asset bundle" do
     chrome_path = "classifiers/list_pages/chrome.js"
     renderer_path = "markdown/lists.js"
     dominance_path = "classifiers/list_pages/dominance.js"
-    card_evidence_path = "extractors/lists/generic/card_evidence.js"
-    duplicate_metadata_path = "extractors/lists/generic/duplicate_record_metadata.js"
-    flat_extraction_path = "extractors/lists/generic/flat_extraction.js"
+    card_evidence_path = "extractors/lists/generic/records/card_evidence.js"
+    duplicate_metadata_path = "extractors/lists/generic/records/duplicate_record_metadata.js"
+    flat_extraction_path = "extractors/lists/generic/records/flat_extraction.js"
     record_fallback_path = "extractors/lists/generic/record_section_fallback.js"
     section_discovery_path = "extractors/lists/generic/section_discovery.js"
     sources = [ownership_path, renderer_path, dominance_path, card_evidence_path, duplicate_metadata_path,
@@ -568,6 +570,31 @@ RSpec.describe "extract asset bundle" do
       "allCards.filter(genericListCardBoundary)",
       "genericListNestedCardReplaces(card, nested)"
     )
+  end
+
+  it "groups generic list record producers in dependency order" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    record_paths = %w[
+      extractors/lists/generic/records/card_evidence.js
+      extractors/lists/generic/records/duplicate_record_metadata.js
+      extractors/lists/generic/records/inline_descriptions.js
+      extractors/lists/generic/records/headline_extraction.js
+      extractors/lists/generic/records/nested_coverage.js
+      extractors/lists/generic/records/flat_extraction.js
+    ]
+
+    expect(record_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+    expect(manifest & record_paths).to eq(record_paths)
+    old_names = %w[
+      card_evidence duplicate_record_metadata inline_descriptions
+      headline_extraction nested_coverage flat_extraction
+    ]
+    old_paths = old_names.filter_map do |name|
+      path = File.join(source_root, "extractors/lists/generic/#{name}.js")
+      path if File.exist?(path)
+    end
+    expect(old_paths).to eq([])
   end
 
   it "loads generic list section helpers before section discovery" do
