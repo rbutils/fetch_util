@@ -495,6 +495,15 @@ RSpec.describe "extract asset bundle" do
       profiles/community/social_news/wykop.js
       profiles/community/wikis/tv_tropes.js
     ]
+    expected_community_specs = %w[
+      community/forums/discourse_topics_spec.rb
+      community/q_and_a/stackoverflow_spec.rb
+      community/shared/thread_contracts_spec.rb
+      community/social_news/hacker_news_spec.rb
+      community/social_news/pikabu_spec.rb
+      community/social_news/wykop_spec.rb
+      community/wikis/tv_tropes_spec.rb
+    ]
     expected_forge_sources = %w[
       profiles/forges/azure_devops/entries.js
       profiles/forges/azure_devops/shared.js
@@ -609,6 +618,20 @@ RSpec.describe "extract asset bundle" do
     actual_community_sources = Dir.glob(File.join(community_root, "**/*.js")).map do |path|
       path.delete_prefix("#{source_root}/")
     end
+    actual_community_specs = Dir.glob(File.join(integration_root, "community/**/*_spec.rb")).map do |path|
+      path.delete_prefix("#{integration_root}/")
+    end
+    flat_community_specs = %w[
+      community_threads_social_spec.rb
+      discourse_topics_spec.rb
+      hacker_news_spec.rb
+      pikabu_spec.rb
+      stackoverflow_spec.rb
+      trope_wiki_pages_spec.rb
+      wykop_social_spec.rb
+    ].select do |name|
+      File.exist?(File.join(integration_root, name))
+    end
     actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
       path.delete_prefix("#{integration_root}/")
     end
@@ -621,6 +644,8 @@ RSpec.describe "extract asset bundle" do
 
     expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news wikis])
     expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
+    expect(actual_community_specs.sort).to eq(expected_community_specs.sort)
+    expect(flat_community_specs).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)

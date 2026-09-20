@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Hacker News' do
   include_context 'extractor integration helpers'
 
   def hacker_news_fixture(name)
-    fixture_contents(File.expand_path("../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../../fixtures/#{name}", __dir__))
   end
 
   it 'extracts item threads with story text, source links, and nested comments' do

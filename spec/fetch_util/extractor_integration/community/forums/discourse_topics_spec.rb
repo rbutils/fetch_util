@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Discourse topics' do
   include_context 'extractor integration helpers'
 
   it 'extracts Discourse topic threads as social output from DOM signals' do
-    html = fixture_contents(File.expand_path('../../fixtures/discourse_topic.html', __dir__))
+    html = fixture_contents(File.expand_path('../../../../fixtures/discourse_topic.html', __dir__))
 
     with_url_page('https://forum.example/t/trust-levels-explained/123', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -28,7 +28,7 @@ RSpec.describe 'FetchUtil extractor integration - Discourse topics' do
   end
 
   it 'classifies Discourse listing pages as social feeds' do
-    html = fixture_contents(File.expand_path('../../fixtures/discourse_list.html', __dir__))
+    html = fixture_contents(File.expand_path('../../../../fixtures/discourse_list.html', __dir__))
 
     with_url_page('https://forum.example/c/community', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)

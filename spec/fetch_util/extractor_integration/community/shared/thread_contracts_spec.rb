@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - community social threads' do
   include_context 'extractor integration helpers'
 
   def community_fixture(name)
-    fixture_contents(File.expand_path("../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../../fixtures/#{name}", __dir__))
   end
 
   def expect_no_social_fields(payload)
