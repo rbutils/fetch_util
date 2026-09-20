@@ -328,7 +328,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     inventory_path = "markdown/inventory.js"
-    repository_hosts_path = "profiles/forges/repository_hosts.js"
+    repository_hosts_path = "profiles/forges/shared/repository_hosts.js"
     thread_entries_path = "profiles/forges/shared/thread_entries.js"
     shared_path = "profiles/forges/github/thread_shared.js"
     thread_path = "profiles/forges/github/threads.js"
@@ -578,7 +578,7 @@ RSpec.describe "extract asset bundle" do
       profiles/forges/pagure/pull_requests.js
       profiles/forges/pagure/shared.js
       profiles/forges/pagure/threads.js
-      profiles/forges/repository_hosts.js
+      profiles/forges/shared/repository_hosts.js
       profiles/forges/shared/thread_entries.js
       profiles/forges/sourcehut/git/commits.js
       profiles/forges/sourcehut/git/shared.js
@@ -746,6 +746,7 @@ RSpec.describe "extract asset bundle" do
     expect(actual_community_fixtures.sort).to eq(expected_community_fixtures.sort)
     expect(legacy_community_fixtures).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
+    expect(Dir.glob(File.join(forge_root, "*.js"))).to eq([])
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
     expect(flat_forge_specs).to eq([])
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)

@@ -188,7 +188,7 @@ profiles/families/institutional/standards.js
 profiles/families/institutional/drupal.js
 profiles/families/institutional/topic_cards.js
 profiles/families/institutional/index.js
-profiles/forges/repository_hosts.js
+profiles/forges/shared/repository_hosts.js
 profiles/forges/shared/thread_entries.js
 profiles/forges/github/thread_shared.js
 profiles/forges/github/threads.js
