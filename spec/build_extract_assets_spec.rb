@@ -478,6 +478,66 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(resources_path)).to be < manifest.index("profiles/register.js")
   end
 
+  it "keeps forge profiles grouped by product and separate from communities" do
+    source_root = File.join(project_root, "websieve")
+    community_root = File.join(source_root, "profiles/community")
+    forge_root = File.join(source_root, "profiles/forges")
+    expected_forge_sources = %w[
+      profiles/forges/azure_devops/entries.js
+      profiles/forges/azure_devops/shared.js
+      profiles/forges/azure_devops/threads.js
+      profiles/forges/bitbucket/api_shared.js
+      profiles/forges/bitbucket/pull_requests/activity.js
+      profiles/forges/bitbucket/pull_requests/diff_files.js
+      profiles/forges/bitbucket/pull_requests/diffs.js
+      profiles/forges/bitbucket/pull_requests/resources.js
+      profiles/forges/bitbucket/pull_requests/statuses.js
+      profiles/forges/bitbucket/shared.js
+      profiles/forges/bitbucket/threads.js
+      profiles/forges/gerrit/entries.js
+      profiles/forges/gerrit/resources/entries.js
+      profiles/forges/gerrit/resources/index.js
+      profiles/forges/gerrit/resources/shared.js
+      profiles/forges/gerrit/shared.js
+      profiles/forges/gerrit/threads.js
+      profiles/forges/gitea/pulls/commits.js
+      profiles/forges/gitea/pulls/files.js
+      profiles/forges/gitea/pulls/resource_shared.js
+      profiles/forges/gitea/pulls/resources.js
+      profiles/forges/gitea/shared.js
+      profiles/forges/gitea/threads/entries.js
+      profiles/forges/gitea/threads/index.js
+      profiles/forges/github/pull_requests/file_resources.js
+      profiles/forges/github/pull_requests/resources.js
+      profiles/forges/github/thread_shared.js
+      profiles/forges/github/threads.js
+      profiles/forges/gitlab/merge_requests/diffs.js
+      profiles/forges/gitlab/merge_requests/resource_shared.js
+      profiles/forges/gitlab/merge_requests/resources.js
+      profiles/forges/gitlab/thread_shared.js
+      profiles/forges/gitlab/threads.js
+      profiles/forges/pagure/pull_requests.js
+      profiles/forges/pagure/shared.js
+      profiles/forges/pagure/threads.js
+      profiles/forges/repository_hosts.js
+      profiles/forges/shared/thread_entries.js
+      profiles/forges/sourcehut/git/commits.js
+      profiles/forges/sourcehut/git/shared.js
+      profiles/forges/sourcehut/lists/entries.js
+      profiles/forges/sourcehut/lists/patchsets.js
+      profiles/forges/sourcehut/lists/shared.js
+      profiles/forges/sourcehut/lists/threads.js
+      profiles/forges/sourcehut/todo/shared.js
+      profiles/forges/sourcehut/todo/threads.js
+    ]
+    actual_forge_sources = Dir.glob(File.join(forge_root, "**/*.js")).map do |path|
+      path.delete_prefix("#{source_root}/")
+    end
+
+    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news])
+    expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
+  end
+
   it "keeps relocated definitions before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
