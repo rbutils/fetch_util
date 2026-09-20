@@ -557,7 +557,8 @@ RSpec.describe "extract asset bundle" do
       "genericListNestedCardReplaces(card, nested)"
     )
     expect(manifest.index(card_evidence_path)).to be < manifest.index(duplicate_metadata_path)
-    [flat_extraction_path, section_discovery_path, "extractors/lists/core.js", "extractors/lists/lead_coverage.js"].each do |consumer_path|
+    [flat_extraction_path, section_discovery_path, "extractors/lists/core.js",
+     "extractors/lists/homepage/lead_coverage.js"].each do |consumer_path|
       expect(manifest.index(duplicate_metadata_path)).to be < manifest.index(consumer_path)
     end
     expect(sources.fetch(duplicate_metadata_path)).to include("function mergeDuplicateRecordAuthorContext")
@@ -597,14 +598,22 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
-  it "loads homepage lead mapping before coverage" do
+  it "groups homepage list strategies in dependency order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    mapping_path = "extractors/lists/homepage_lead_mapping.js"
-    coverage_path = "extractors/lists/lead_coverage.js"
+    search_path = "extractors/lists/homepage/search_tools.js"
+    mapping_path = "extractors/lists/homepage/homepage_lead_mapping.js"
+    exact_path = "extractors/lists/homepage/homepage_lead_exact.js"
+    coverage_path = "extractors/lists/homepage/lead_coverage.js"
+    news_path = "extractors/lists/homepage/news_homepages.js"
+    homepage_paths = [search_path, mapping_path, exact_path, coverage_path, news_path]
     mapping_source = File.read(File.join(source_root, mapping_path))
     coverage_source = File.read(File.join(source_root, coverage_path))
 
+    expect(homepage_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+    expect(manifest & homepage_paths).to eq(homepage_paths)
+    expect(manifest.index(mapping_path)).to be < manifest.index(exact_path)
+    expect(manifest.index(exact_path)).to be < manifest.index(coverage_path)
     expect(manifest.index(mapping_path)).to be < manifest.index(coverage_path)
     expect(mapping_source).to include(
       "function homepageLeadListOwnership",
@@ -614,6 +623,13 @@ RSpec.describe "extract asset bundle" do
       "function homepageLeadListOwnership",
       "function homepageLeadDescriptionSourceNodes"
     )
+    old_paths = Dir.glob(
+      File.join(
+        source_root,
+        "extractors/lists/{homepage_lead_mapping,homepage_lead_exact,lead_coverage,search_tools,news_homepages}.js"
+      )
+    )
+    expect(old_paths).to eq([])
   end
 
   it "keeps MediaWiki extraction in its canonical CMS owner" do

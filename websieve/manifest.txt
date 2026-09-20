@@ -107,10 +107,10 @@ extractors/lists/generic/record_section_fallback.js
 extractors/lists/generic/section_discovery.js
 extractors/lists/card_visibility.js
 extractors/lists/core.js
-extractors/lists/search_tools.js
-extractors/lists/homepage_lead_mapping.js
-extractors/lists/homepage_lead_exact.js
-extractors/lists/lead_coverage.js
+extractors/lists/homepage/search_tools.js
+extractors/lists/homepage/homepage_lead_mapping.js
+extractors/lists/homepage/homepage_lead_exact.js
+extractors/lists/homepage/lead_coverage.js
 extractors/lists/generic/dormant_body_root.js
 extractors/lists/generic/stale_opacity_sections.js
 extractors/lists/generic/controlled_carousels.js
@@ -122,7 +122,7 @@ extractors/lists/products/mixed_content.js
 extractors/lists/products/evidence.js
 extractors/lists/jobs.js
 extractors/lists/events.js
-extractors/lists/news_homepages.js
+extractors/lists/homepage/news_homepages.js
 extractors/search.js
 extractors/spa_data.js
 systems/content_types/medical.js
