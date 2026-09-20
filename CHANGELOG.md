@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Group article extraction, homepage/list strategies, generic list records and sections, dynamic collection recovery, and Markdown helpers into cohesive source directories without changing runtime bundle order or behavior.
+
 ## v0.7.0 - 2026-09-20
 
 ### Changed
