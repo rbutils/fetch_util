@@ -214,9 +214,9 @@ profiles/forges/bitbucket/pull_requests/diff_files.js
 profiles/forges/bitbucket/pull_requests/diffs.js
 profiles/forges/bitbucket/pull_requests/resources.js
 profiles/forges/bitbucket/threads.js
-profiles/community/pagure_shared.js
-profiles/community/pagure_threads.js
-profiles/community/pagure_pull_requests.js
+profiles/forges/pagure/shared.js
+profiles/forges/pagure/threads.js
+profiles/forges/pagure/pull_requests.js
 profiles/community/sourcehut_git_shared.js
 profiles/community/sourcehut_git_commits.js
 profiles/community/sourcehut_todo_shared.js
