@@ -61,16 +61,17 @@ module FetchUtil
       autoload :GiteaFamilyPullResourceState,
                "fetch_util/browser/site_stabilization/gitea_family_pull_resource_state"
       autoload :GiteaFamilyPullResources, "fetch_util/browser/site_stabilization/gitea_family_pull_resources"
-      autoload :GitlabRepo, "fetch_util/browser/site_stabilization/gitlab_repo"
+      autoload :GitlabRepo, "fetch_util/browser/site_stabilization/forges/gitlab/repository"
       autoload :GitlabMergeRequestResourceVisibilityScript,
-               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_visibility_script"
+               "fetch_util/browser/site_stabilization/forges/gitlab/merge_requests/resource_visibility_script"
       autoload :GitlabMergeRequestResourceStateScript,
-               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_state_script"
+               "fetch_util/browser/site_stabilization/forges/gitlab/merge_requests/resource_state_script"
       autoload :GitlabMergeRequestResourceState,
-               "fetch_util/browser/site_stabilization/gitlab_merge_request_resource_state"
-      autoload :GitlabMergeRequestResources, "fetch_util/browser/site_stabilization/gitlab_merge_request_resources"
-      autoload :GitlabStabilization, "fetch_util/browser/site_stabilization/gitlab_stabilization"
-      autoload :GitlabThreads, "fetch_util/browser/site_stabilization/gitlab_threads"
+               "fetch_util/browser/site_stabilization/forges/gitlab/merge_requests/resource_state"
+      autoload :GitlabMergeRequestResources,
+               "fetch_util/browser/site_stabilization/forges/gitlab/merge_requests/resources"
+      autoload :GitlabStabilization, "fetch_util/browser/site_stabilization/forges/gitlab/stabilization"
+      autoload :GitlabThreads, "fetch_util/browser/site_stabilization/forges/gitlab/threads"
       autoload :SocialPlatforms, "fetch_util/browser/site_stabilization/social_platforms"
       autoload :TravelAndLodging, "fetch_util/browser/site_stabilization/travel_and_lodging"
 
