@@ -484,6 +484,17 @@ RSpec.describe "extract asset bundle" do
     forge_root = File.join(source_root, "profiles/forges")
     integration_root = File.join(project_root, "spec/fetch_util/extractor_integration")
     fixture_root = File.join(project_root, "spec/fetch_util/fixtures")
+    expected_community_sources = %w[
+      profiles/community/forums/discourse.js
+      profiles/community/forums/reddit.js
+      profiles/community/q_and_a/quora.js
+      profiles/community/q_and_a/stack_exchange.js
+      profiles/community/q_and_a/stackoverflow.js
+      profiles/community/social_news/hacker_news.js
+      profiles/community/social_news/pikabu.js
+      profiles/community/social_news/wykop.js
+      profiles/community/wikis/tv_tropes.js
+    ]
     expected_forge_sources = %w[
       profiles/forges/azure_devops/entries.js
       profiles/forges/azure_devops/shared.js
@@ -595,6 +606,9 @@ RSpec.describe "extract asset bundle" do
     actual_forge_sources = Dir.glob(File.join(forge_root, "**/*.js")).map do |path|
       path.delete_prefix("#{source_root}/")
     end
+    actual_community_sources = Dir.glob(File.join(community_root, "**/*.js")).map do |path|
+      path.delete_prefix("#{source_root}/")
+    end
     actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
       path.delete_prefix("#{integration_root}/")
     end
@@ -605,7 +619,8 @@ RSpec.describe "extract asset bundle" do
       /\A(?:azure_devops|bitbucket_cloud|forgejo|gerrit|gitea|github|gitlab|pagure|sourcehut)_/
     )
 
-    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news])
+    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news wikis])
+    expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)
@@ -854,10 +869,14 @@ RSpec.describe "extract asset bundle" do
 
     expect(combined_source.scan(/function\s+mediaWikiContent\s*\(/).length).to eq(1)
     expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(0)
-    community_source = sources.fetch("profiles/families/community_wikis.js")
-    expect(community_source).not_to include("mediaWikiContent")
-    expect(community_source).not_to include("fandomWikiPage")
-    expect(community_source).not_to include("fandomContent")
+    community_sources = [
+      sources.fetch("profiles/community/wikis/tv_tropes.js"),
+      sources.fetch("profiles/community/q_and_a/stack_exchange.js")
+    ].join
+    expect(community_sources).not_to include("mediaWikiContent")
+    expect(community_sources).not_to include("fandomWikiPage")
+    expect(community_sources).not_to include("fandomContent")
+    expect(sources).not_to have_key("profiles/families/community_wikis.js")
     expect(sources.fetch("systems/cms/mediawiki.js")).to include("function mediaWikiContent(metadata)")
   end
 
@@ -1104,7 +1123,7 @@ RSpec.describe "extract asset bundle" do
     calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
     expect(calls).to eq(%w[
-                          registerCommunityWikiLeadProfiles
+                          registerTvTropesProfiles
                           registerPinterestSearchProfile
                           registerTikTokProfile
                           registerEbaySearchProfile
@@ -1141,7 +1160,7 @@ RSpec.describe "extract asset bundle" do
                           registerAzureDevopsPullRequestProfiles
                           registerGerritFileResourceProfiles
                           registerGerritChangeProfiles
-                          registerCommunityWikiProfiles
+                          registerStackExchangeProfiles
                           registerHackerNewsProfiles
                           registerMastodonProfiles
                           registerDiscourseProfiles

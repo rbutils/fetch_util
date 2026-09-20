@@ -1,4 +1,4 @@
-  registerCommunityWikiLeadProfiles();
+  registerTvTropesProfiles();
   registerPinterestSearchProfile();
   registerTikTokProfile();
   registerEbaySearchProfile();
@@ -41,7 +41,7 @@
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
   registerHostAwareProfile(true, genericDocsSystemContent);
-  registerCommunityWikiProfiles();
+  registerStackExchangeProfiles();
   registerHackerNewsProfiles();
   registerMastodonProfiles();
   registerDiscourseProfiles();
