@@ -7,7 +7,7 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut todo threads' do
   include_context 'extractor integration helpers'
 
   def sourcehut_todo_fixture
-    fixture_contents(File.expand_path('../../../fixtures/sourcehut_todo_ticket.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/sourcehut/sourcehut_todo_ticket.html', __dir__))
   end
 
   it 'preserves a host-agnostic SourceHut ticket conversation and traversal inventory' do

@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - Gitea and Forgejo threads' do
   include_context 'extractor integration helpers'
 
   def gitea_family_fixture(name)
-    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/forges/gitea/#{name}", __dir__))
   end
 
   it 'extracts every loaded Forgejo issue record with attachments, metadata, and traversal inventory' do

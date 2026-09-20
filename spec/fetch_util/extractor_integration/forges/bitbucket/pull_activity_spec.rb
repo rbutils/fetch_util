@@ -7,7 +7,7 @@ RSpec.describe 'FetchUtil extractor integration - Bitbucket Cloud pull activity'
   include_context 'extractor integration helpers'
 
   def bitbucket_activity_fixture
-    fixture_contents(File.expand_path('../../../fixtures/bitbucket_cloud_pull_activity.json', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/bitbucket/bitbucket_cloud_pull_activity.json', __dir__))
   end
 
   def extract_bitbucket_activity(json = bitbucket_activity_fixture,

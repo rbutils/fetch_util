@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - GitLab merge request resources
   include_context 'extractor integration helpers'
 
   def gitlab_resource_fixture(name)
-    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/forges/gitlab/#{name}", __dir__))
   end
 
   it 'preserves every loaded commit and relative-root resource link' do

@@ -483,6 +483,7 @@ RSpec.describe "extract asset bundle" do
     community_root = File.join(source_root, "profiles/community")
     forge_root = File.join(source_root, "profiles/forges")
     integration_root = File.join(project_root, "spec/fetch_util/extractor_integration")
+    fixture_root = File.join(project_root, "spec/fetch_util/fixtures")
     expected_forge_sources = %w[
       profiles/forges/azure_devops/entries.js
       profiles/forges/azure_devops/shared.js
@@ -552,16 +553,63 @@ RSpec.describe "extract asset bundle" do
       forges/sourcehut/lists_threads_spec.rb
       forges/sourcehut/todo_threads_spec.rb
     ]
+    expected_forge_fixtures = %w[
+      forges/azure_devops/azure_devops_pull_request.html
+      forges/bitbucket/bitbucket_cloud_pull_activity.json
+      forges/bitbucket/bitbucket_cloud_pull_commits.html
+      forges/bitbucket/bitbucket_cloud_pull_diff.html
+      forges/bitbucket/bitbucket_cloud_pull_request.html
+      forges/bitbucket/bitbucket_cloud_pull_statuses.json
+      forges/gerrit/gerrit_change.html
+      forges/gitea/forgejo_issue_thread.html
+      forges/gitea/forgejo_pull_commits.html
+      forges/gitea/forgejo_pull_files.html
+      forges/gitea/gitea_issue_thread.html
+      forges/gitea/gitea_pull_commits.html
+      forges/gitea/gitea_pull_files.html
+      forges/github/github_discussion_no_comments.html
+      forges/github/github_issue_thread.html
+      forges/github/github_login_wall.html
+      forges/github/github_modern_issue_thread.html
+      forges/github/github_modern_pull_thread.html
+      forges/github/github_not_found.html
+      forges/github/github_pull_checks.html
+      forges/github/github_pull_commits.html
+      forges/github/github_pull_files.html
+      forges/github/github_pull_thread.html
+      forges/github/github_repository_root.html
+      forges/github/github_timeline_page.html
+      forges/gitlab/gitlab_merge_request_thread.html
+      forges/gitlab/gitlab_mr_commits.html
+      forges/gitlab/gitlab_mr_diffs.html
+      forges/gitlab/gitlab_mr_pipelines.html
+      forges/gitlab/gitlab_mr_reports.html
+      forges/gitlab/gitlab_work_item_thread.html
+      forges/pagure/pagure_issue_thread.html
+      forges/pagure/pagure_pull_request_thread.html
+      forges/sourcehut/sourcehut_git_commit.html
+      forges/sourcehut/sourcehut_lists_patchset.html
+      forges/sourcehut/sourcehut_lists_thread.html
+      forges/sourcehut/sourcehut_todo_ticket.html
+    ]
     actual_forge_sources = Dir.glob(File.join(forge_root, "**/*.js")).map do |path|
       path.delete_prefix("#{source_root}/")
     end
     actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
       path.delete_prefix("#{integration_root}/")
     end
+    actual_forge_fixtures = Dir.glob(File.join(fixture_root, "forges/**/*.{html,json}")).map do |path|
+      path.delete_prefix("#{fixture_root}/")
+    end
+    flat_forge_fixtures = Dir.children(fixture_root).grep(
+      /\A(?:azure_devops|bitbucket_cloud|forgejo|gerrit|gitea|github|gitlab|pagure|sourcehut)_/
+    )
 
     expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
+    expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)
+    expect(flat_forge_fixtures).to eq([])
   end
 
   it "keeps relocated definitions before their consumers" do

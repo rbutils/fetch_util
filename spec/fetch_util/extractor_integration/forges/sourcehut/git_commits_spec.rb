@@ -9,7 +9,7 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut git commits' do
   let(:parent_id) { 'b' * 40 }
 
   def sourcehut_git_fixture
-    fixture_contents(File.expand_path('../../../fixtures/sourcehut_git_commit.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/sourcehut/sourcehut_git_commit.html', __dir__))
   end
 
   it 'preserves complete SourceHut commit metadata, diffs, and traversal' do

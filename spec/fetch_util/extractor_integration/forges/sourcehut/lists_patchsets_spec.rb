@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut lists patchsets' do
   include_context 'extractor integration helpers'
 
   def sourcehut_patchset_fixture
-    fixture_contents(File.expand_path('../../../fixtures/sourcehut_lists_patchset.html', __dir__))
+    fixture_contents(File.expand_path('../../../fixtures/forges/sourcehut/sourcehut_lists_patchset.html', __dir__))
   end
 
   it 'preserves a host-agnostic patchset conversation and traversal inventory' do

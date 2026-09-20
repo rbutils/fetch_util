@@ -6,7 +6,7 @@ RSpec.describe 'FetchUtil extractor integration - GitHub pull resources' do
   include_context 'extractor integration helpers'
 
   def github_resource_fixture(name)
-    fixture_contents(File.expand_path("../../../fixtures/#{name}", __dir__))
+    fixture_contents(File.expand_path("../../../fixtures/forges/github/#{name}", __dir__))
   end
 
   it 'preserves every visible commit and recursively inventories pull-request surfaces' do
