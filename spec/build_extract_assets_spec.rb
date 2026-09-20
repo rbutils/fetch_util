@@ -597,6 +597,25 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
+  it "loads homepage lead mapping before coverage" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    mapping_path = "extractors/lists/homepage_lead_mapping.js"
+    coverage_path = "extractors/lists/lead_coverage.js"
+    mapping_source = File.read(File.join(source_root, mapping_path))
+    coverage_source = File.read(File.join(source_root, coverage_path))
+
+    expect(manifest.index(mapping_path)).to be < manifest.index(coverage_path)
+    expect(mapping_source).to include(
+      "function homepageLeadListOwnership",
+      "function homepageLeadDescriptionSourceNodes"
+    )
+    expect(coverage_source).not_to include(
+      "function homepageLeadListOwnership",
+      "function homepageLeadDescriptionSourceNodes"
+    )
+  end
+
   it "keeps MediaWiki extraction in its canonical CMS owner" do
     source_root = File.join(project_root, "websieve")
     sources = Dir[File.join(source_root, "**", "*.js")].to_h do |path|
