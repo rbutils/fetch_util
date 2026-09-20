@@ -19,20 +19,25 @@ RSpec.describe 'Readability article excerpts' do
   end
 
   it 'expands only short excerpts backed by substantial parsed article text' do
-    with_url_page('https://publisher.example/article', '<main><h1>Daily dispatch</h1></main>') do |page|
+    short = 'AI-generated, editorially reviewed'
+    long_body = short + " #{"Substantive verified reporting continues here. " * 20}"
+    html = "<main><h1>Daily dispatch</h1><article><p>#{short}</p><p>#{long_body}</p></article></main>"
+
+    with_url_page('https://publisher.example/article', html) do |page|
       page.add_script_tag(content: readability_excerpt_source)
       values = JSON.parse(page.evaluate(<<~JS))
         JSON.stringify((function() {
           var short = "AI-generated, editorially reviewed";
           var longBody = short + " " + "Substantive verified reporting continues here. ".repeat(20);
           var original = window.Readability;
-          window.Readability = function() {};
+          window.Readability = function(documentClone) { this.document = documentClone; };
           window.Readability.prototype.parse = function() {
+            var article = this.document.querySelector("article");
             return {
               title: "Daily dispatch",
               byline: "Reporter",
               excerpt: short,
-              content: "<article><p>" + short + "</p><p>" + longBody + "</p></article>",
+              content: article.outerHTML,
               textContent: longBody
             };
           };
@@ -55,7 +60,8 @@ RSpec.describe 'Readability article excerpts' do
       JS
 
       expect(values['production']).to start_with('AI-generated, editorially reviewed Substantive verified reporting')
-      expect(values['production'].length).to eq(280)
+      expect(values['production'].length).to be_between(80, 280)
+      expect(values['production']).to end_with('.')
       expect(values['substantive']).to eq(
         'A complete summary that already contains enough useful context for the article reader.'
       )
@@ -69,17 +75,24 @@ RSpec.describe 'Readability article excerpts' do
       page.add_script_tag(content: readability_excerpt_source)
       values = JSON.parse(page.evaluate(<<~JS))
         JSON.stringify((function() {
+          var marker = "fixture-marker";
           var excerpt79 = "x".repeat(79);
           var excerpt80 = "x".repeat(80);
-          var body399 = excerpt79 + "b".repeat(320);
-          var body400 = excerpt79 + "b".repeat(321);
+          var body399 = excerpt79 + ". " + "b".repeat(318);
+          var body400 = excerpt79 + ". " + "b".repeat(319);
           var unicode = "🛰".repeat(400);
+          function markedArticle(excerpt, body) {
+            return {
+              excerpt: excerpt,
+              content: "<p data-fetchutil-excerpt-body='" + marker + "'>" + excerpt + "</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + body + "</p>",
+              textContent: body
+            };
+          }
           return {
-            excerpt79: window.__readabilityArticleExcerpt({
-              excerpt: excerpt79,
-              content: "<p>" + excerpt79 + "</p>",
-              textContent: excerpt79 + "b".repeat(400)
-            }),
+            excerpt79: window.__readabilityArticleExcerpt(
+              markedArticle(excerpt79, excerpt79 + ". " + "Verified reporting. ".repeat(20)), null, marker
+            ),
             excerpt80: window.__readabilityArticleExcerpt({
               excerpt: excerpt80,
               content: "<p>" + excerpt80 + "</p>",
@@ -87,59 +100,63 @@ RSpec.describe 'Readability article excerpts' do
             }),
             body399: window.__readabilityArticleExcerpt({
               excerpt: excerpt79, content: "<p>" + excerpt79 + "</p>", textContent: body399
-            }),
-            body400: window.__readabilityArticleExcerpt({
-              excerpt: excerpt79, content: "<p>" + excerpt79 + "</p>", textContent: body400
-            }),
+            }, null, marker),
+            body400: window.__readabilityArticleExcerpt(markedArticle(excerpt79, body400), null, marker),
             unrelated: window.__readabilityArticleExcerpt({
               excerpt: "Concise editorial summary",
               content: "<p>Different article body.</p>",
               textContent: "Different article body. ".repeat(30)
-            }),
+            }, null, marker),
             late: window.__readabilityArticleExcerpt({
               excerpt: "Visible disclaimer",
-              content: "<p>" + "Opening context. ".repeat(10) + "</p><p>Visible disclaimer</p>",
+              content: "<p>" + "Opening context. ".repeat(10) + "</p><p>Visible disclaimer</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + "Reporting. ".repeat(30) + "</p>",
               textContent: "Opening context. ".repeat(10) + "Visible disclaimer " + "Reporting. ".repeat(30)
-            }),
+            }, null, marker),
             repeatedAfterSentence: window.__readabilityArticleExcerpt({
               excerpt: "Concise editorial summary",
-              content: "<p>Opening sentence.</p><p>Concise editorial summary</p>",
+              content: "<p>Opening sentence.</p><p>Concise editorial summary</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + "Reporting. ".repeat(30) + "</p>",
               textContent: "Opening sentence. Concise editorial summary " + "Reporting. ".repeat(30)
-            }),
+            }, null, marker),
             prefix39: window.__readabilityArticleExcerpt({
               excerpt: "Visible disclaimer",
-              content: "<div>" + "p".repeat(39) + "</div><p>Visible disclaimer</p>",
+              content: "<div>" + "p".repeat(39) + "</div><p>Visible disclaimer</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + "Reporting. ".repeat(40) + "</p>",
               textContent: "p".repeat(39) + "Visible disclaimer " + "Reporting. ".repeat(40)
-            }),
+            }, null, marker),
             prefix40: window.__readabilityArticleExcerpt({
               excerpt: "Visible disclaimer",
-              content: "<div>" + "p".repeat(40) + "</div><p>Visible disclaimer</p>",
+              content: "<div>" + "p".repeat(40) + "</div><p>Visible disclaimer</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + "Reporting. ".repeat(40) + "</p>",
               textContent: "p".repeat(40) + "Visible disclaimer " + "Reporting. ".repeat(40)
-            }),
+            }, null, marker),
             unicodeSentence: window.__readabilityArticleExcerpt({
               excerpt: "Visible disclaimer",
-              content: "<div>先行文。</div><p>Visible disclaimer</p>",
+              content: "<div>先行文。</div><p>Visible disclaimer</p>" +
+                "<p data-fetchutil-excerpt-body='" + marker + "'>" + "Reporting. ".repeat(40) + "</p>",
               textContent: "先行文。Visible disclaimer " + "Reporting. ".repeat(40)
-            }),
-            unicode: window.__readabilityArticleExcerpt({
-              excerpt: "🛰".repeat(20), content: "<p>" + "🛰".repeat(20) + "</p>", textContent: unicode
-            })
+            }, null, marker),
+            unicode: window.__readabilityArticleExcerpt(
+              markedArticle("🛰".repeat(20), unicode), null, marker
+            )
           };
         })())
       JS
 
-      expect(values['excerpt79'].length).to eq(280)
+      expect(values['excerpt79'].length).to be_between(80, 280)
       expect(values['excerpt80']).to eq('x' * 80)
       expect(values['body399']).to eq('x' * 79)
-      expect(values['body400'].length).to eq(280)
+      expect(values['body400'].length).to be_between(80, 280)
       expect(values['unrelated']).to eq('Concise editorial summary')
       expect(values['late']).to eq('Visible disclaimer')
       expect(values['repeatedAfterSentence']).to eq('Concise editorial summary')
-      expect(values['prefix39'].length).to eq(280)
+      expect(values['prefix39'].length).to be_between(80, 280)
+      expect(values['prefix39']).to end_with('.')
       expect(values['prefix40']).to eq('Visible disclaimer')
       expect(values['unicodeSentence']).to eq('Visible disclaimer')
-      expect(values['unicode'].each_char.count).to eq(280)
-      expect(values['unicode']).to eq('🛰' * 280)
+      expect(values['unicode'].each_char.count).to eq(20)
+      expect(values['unicode']).to eq('🛰' * 20)
     end
   end
 end
