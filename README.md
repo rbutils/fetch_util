@@ -184,7 +184,8 @@ pp FetchUtil.regulatory(
 
 ## Behavior
 
-- Extracts articles, list/index pages, and search pages into compact markdown.
+- Extracts articles, list/index pages, search pages, glossaries, and structured detail content into compact markdown.
+- Handles dynamic pages, SPAs, and open or closed component content in a real browser.
 - Uses page classification to select extraction logic appropriate to the rendered page type.
 - Detects consent prompts, login-required pages, and challenge/interstitial screens and reports them with concise summaries and warning tags. A delivered JavaScript/WebAssembly proof-of-work may complete in the normal browser session within `timeout`; unresolved challenges remain explicit interstitials.
 - Cleans up docs/reference pages aggressively enough for agent consumption.
