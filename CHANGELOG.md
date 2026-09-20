@@ -1,9 +1,12 @@
 # Changelog
 
-- Remove only short exact-token `most-read` recommendation furniture from cleaned article clones while preserving substantive or semantic owners, similarly named content, intentional page overviews, and the source DOM.
-
 ## Unreleased
 
+## v0.7.0 - 2026-09-20
+
+### Changed
+
+- Remove only short exact-token `most-read` recommendation furniture from cleaned article clones while preserving substantive or semantic owners, similarly named content, intentional page overviews, and the source DOM.
 - Preserve source-owned reader excerpts for structured detail articles whose body uses non-semantic wrappers, without promoting category/date chrome or ambiguous page prose.
 - Preserve exact-root homepage lead coverage when generalized clone mapping cannot prove correspondence, without dropping original lead destinations.
 - Preserve substantive standalone prose and control labels owned by homepage lead collections while excluding unavailable interface controls and card-local duplicates.
@@ -154,6 +157,10 @@
 - Keep sectioned directories in list mode when their complete page-owned descriptions are rendered after classification; restrict the new late-portal protection to code coverage.
 - Preserve complete materialized code-editor examples, block-based line breaks, and highlighted code before article cleanup, without collapsing multiple examples into the first code block.
 - Extract evidenced software-project homepages as complete documentation overviews, preserving feature prose, examples, releases, and resource lists together instead of reducing them to unrelated links.
+
+### Known Limitations
+
+- A fresh immutable-DOM comparison of 300 websites against published v0.6.2 found 121 improvements, 148 ties, no regressions, 28 mixed outcomes, and three inconclusive cases after repair. Mixed and inconclusive outcomes are not wins, so this does not establish a universal strict improvement.
 
 ## v0.6.2 - 2026-09-10
 
