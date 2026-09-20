@@ -504,6 +504,19 @@ RSpec.describe "extract asset bundle" do
       community/social_news/wykop_spec.rb
       community/wikis/tv_tropes_spec.rb
     ]
+    expected_community_fixtures = %w[
+      community/contracts/discourse_list.html
+      community/contracts/discourse_topic.html
+      community/contracts/generic_article.html
+      community/contracts/generic_list.html
+      community/contracts/login_wall.html
+      community/contracts/reddit_thread.html
+      community/contracts/stack_exchange_question.html
+      community/contracts/stackoverflow_question.html
+      community/forums/discourse_list.html
+      community/forums/discourse_topic.html
+      community/q_and_a/stackoverflow_question.html
+    ]
     expected_forge_sources = %w[
       profiles/forges/azure_devops/entries.js
       profiles/forges/azure_devops/shared.js
@@ -632,6 +645,24 @@ RSpec.describe "extract asset bundle" do
     ].select do |name|
       File.exist?(File.join(integration_root, name))
     end
+    actual_community_fixtures = Dir.glob(File.join(fixture_root, 'community/**/*.{html,json}')).map do |path|
+      path.delete_prefix("#{fixture_root}/")
+    end
+    legacy_community_fixtures = %w[
+      community_discourse_list.html
+      community_discourse_topic.html
+      community_generic_article.html
+      community_generic_list.html
+      community_login_wall.html
+      community_reddit_thread.html
+      community_stackexchange_question.html
+      community_stackoverflow_question.html
+      discourse_list.html
+      discourse_topic.html
+      stackoverflow_question.html
+    ].select do |name|
+      File.exist?(File.join(project_root, 'spec/fixtures', name))
+    end
     actual_forge_specs = Dir.glob(File.join(integration_root, "forges/**/*_spec.rb")).map do |path|
       path.delete_prefix("#{integration_root}/")
     end
@@ -646,6 +677,8 @@ RSpec.describe "extract asset bundle" do
     expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
     expect(actual_community_specs.sort).to eq(expected_community_specs.sort)
     expect(flat_community_specs).to eq([])
+    expect(actual_community_fixtures.sort).to eq(expected_community_fixtures.sort)
+    expect(legacy_community_fixtures).to eq([])
     expect(actual_forge_sources.sort).to eq(expected_forge_sources.sort)
     expect(actual_forge_specs.sort).to eq(expected_forge_specs.sort)
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)

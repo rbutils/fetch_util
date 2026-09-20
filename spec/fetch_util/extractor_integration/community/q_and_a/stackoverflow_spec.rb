@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil StackOverflow extraction' do
   include_context 'extractor integration helpers'
 
   it 'extracts question pages as social threads with question body and top answers' do
-    fixture_path = File.expand_path('../../../../fixtures/stackoverflow_question.html', __dir__)
+    fixture_path = File.expand_path('../../../fixtures/community/q_and_a/stackoverflow_question.html', __dir__)
 
     extract_from_url('https://stackoverflow.com/questions/11828270/how-do-i-exit-the-vim-editor', fixture_contents(fixture_path)) do |payload|
       markdown = payload['markdown']
