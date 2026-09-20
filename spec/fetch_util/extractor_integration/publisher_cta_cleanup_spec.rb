@@ -72,6 +72,16 @@ RSpec.describe 'FetchUtil publisher CTA cleanup' do
     end
   end
 
+  it 'preserves publisher notes with page-authored excerpt-marker attributes' do
+    furniture = <<~HTML
+      <div class="publisher-cta"><p data-fetchutil-excerpt-source="page-authored">Follow us on Facebook.</p></div>
+    HTML
+
+    cleaned = clean_publisher_cta_root(furniture)
+    expect(cleaned.fetch('clone')).to include('Follow us on Facebook', 'data-fetchutil-excerpt-source="page-authored"')
+    expect(cleaned.fetch('sourceUnchanged')).to be(true)
+  end
+
   it 'preserves uncertain, structured, linked, mixed, or similarly named notes' do
     furniture = <<~HTML
       <div class="disclaimer"><p>Editorial disclosure: reporting methods and source limitations remain material.</p></div>

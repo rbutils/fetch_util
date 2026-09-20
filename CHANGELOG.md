@@ -82,6 +82,7 @@
 
 - Keep article-scale homepage prose out of compact list supplements while retaining independently owned lead controls and short context.
 - Preserve explicit source-owned article summaries before expanding reader excerpts from generic body prose.
+- Remove publisher follow and subscribe furniture before adding reader-excerpt provenance attributes, without trusting page-authored marker lookalikes.
 
 - Prefer a substantially more informative metadata author name to an opaque short reader-mode handle while preserving meaningful visible bylines and mononyms.
 - Remove short, structurally identified article audio-control bars without discarding media, transcripts, episode metadata, or podcast/catalog content.

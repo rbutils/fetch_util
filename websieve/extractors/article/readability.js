@@ -5,6 +5,7 @@
       var comments = visibleCommentMarkup(document);
       var clone = safeReadableDocumentClone();
       pruneHiddenClone(document.documentElement, clone.documentElement);
+      stripPublisherCtaNotes(clone);
       var excerptMarker = markReadabilityExcerptSources(clone);
       normalizeCodeSurfaces(clone);
       if (commentOnlyRoot(clone)) return null;
