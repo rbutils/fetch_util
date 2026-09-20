@@ -705,6 +705,22 @@ RSpec.describe "extract asset bundle" do
     expect(Dir.glob(File.join(source_root, "extractors/article/*_coverage.js"))).to eq([])
   end
 
+  it "groups article fallback helpers without changing their load order" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    fallback_paths = %w[
+      extractors/article/fallback/focal_ownership.js
+      extractors/article/fallback/fallback_excerpt.js
+      extractors/article/fallback/fallback.js
+    ]
+
+    expect(fallback_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
+    expect(manifest & fallback_paths).to eq(fallback_paths)
+    expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
+    expect(manifest.index(fallback_paths[2])).to be < manifest.index("extractors/article/readability_excerpt.js")
+    expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
+  end
+
   it "loads readability excerpt helpers before their runtime consumer" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
