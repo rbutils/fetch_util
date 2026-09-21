@@ -4,24 +4,22 @@
     var body = document.querySelector("#articleContent[itemprop='articleBody'], [itemprop='articleBody'], .article-body, .entry-content");
     if (!body) return null;
 
-    var root = document.createElement("article");
     var article = document.querySelector("article#article") || body.closest("article") || document;
-
-    ["#article-headline", "article h1", "h1"].some(function(selector) {
-      var node = article.querySelector(selector) || document.querySelector(selector);
-      if (!node) return false;
-      root.appendChild(safeDeepClone(node, document));
-      return true;
+    var root = composeProfileArticleRoot({
+      scope: article,
+      titleSelectors: ["#article-headline", "article h1", "h1"],
+      leadSelectors: function(scope) {
+        var lead = null;
+        ["#perex-id", ".article-perex", "[itemprop='description']"].some(function(selector) {
+          var node = scope.querySelector(selector) || document.querySelector(selector);
+          if (!node || normalizeText(node.textContent || "").length < 40) return false;
+          lead = node;
+          return true;
+        });
+        return lead;
+      },
+      bodySelectors: body
     });
-
-    ["#perex-id", ".article-perex", "[itemprop='description']"].some(function(selector) {
-      var node = article.querySelector(selector) || document.querySelector(selector);
-      if (!node || normalizeText(node.textContent || "").length < 40) return false;
-      root.appendChild(safeDeepClone(node, document));
-      return true;
-    });
-
-    root.appendChild(safeDeepClone(body, document));
 
     return profileArticleContent(metadata, root, {
       title: firstText(["#article-headline", "article h1", "h1"]) || metadata.title,

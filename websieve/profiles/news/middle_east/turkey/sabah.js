@@ -47,18 +47,16 @@
     if (bodyNodes.length === 0 && frame !== document) bodyNodes = Array.prototype.slice.call(document.querySelectorAll(bodySelector));
     if (bodyNodes.length === 0) return null;
 
-    var root = document.createElement("article");
-    [".pageTitle", "h1.pageTitle", "h1", ".spot", "h2.spot"].forEach(function(selector) {
-      var node = frame.querySelector(selector) || document.querySelector(selector);
-      if (node && !root.querySelector(selector)) root.appendChild(safeDeepClone(node, document));
+    var substantiveBodyNodes = bodyNodes.filter(function(node) {
+      return normalizeText(node.textContent || "").length >= 60;
     });
-
-    bodyNodes.forEach(function(node) {
-      var text = normalizeText(node.textContent || "");
-      if (text.length >= 60) root.appendChild(safeDeepClone(node, document));
+    return composeProfileArticleRoot({
+      scope: frame,
+      titleSelectors: [".pageTitle", "h1.pageTitle", "h1"],
+      leadSelectors: [".spot", "h2.spot"],
+      bodySelectors: substantiveBodyNodes,
+      minTextLength: 250
     });
-
-    return normalizeText(root.textContent || "").length >= 250 ? root : null;
   }
 
   registerHostAwareProfile(true, sabahArticleContent);
