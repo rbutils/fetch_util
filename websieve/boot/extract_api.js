@@ -19,6 +19,25 @@
           (candidate.contentType === "article" || candidate.contentType === "medical"));
       }
 
+      function strongArticleContent(candidate, medicalArticle) {
+        return cachedFocalArticleContent(candidate) || articleRouteFocalContent(candidate) || medicalArticle ||
+          substantialArticleContent(candidate) || strongArticleMetadata(metadata, candidate);
+      }
+
+      function genericListMayReplace(candidate) {
+        return candidate && !candidate.hostAware && !candidate.docsLike &&
+          !cachedFocalArticleContent(candidate) && !articleRouteFocalContent(candidate);
+      }
+
+      function indexListCandidateAllowed(candidate) {
+        return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
+          candidate.contentType !== "medical" && candidate.contentType !== "product" &&
+          candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
+          candidate.contentType !== "hotel" && candidate.contentType !== "event" &&
+          !sportsTypedContent(candidate) && !candidate.hostAware && !candidate.docsLike &&
+          !candidate.legalProvision;
+      }
+
       if (!content) {
         var mediaWiki = mediaWikiContent(metadata);
         if (mediaWiki) {
@@ -138,8 +157,7 @@
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
       content = applySocialContentType(content);
-      var strongArticle = cachedFocalArticleContent(content) || articleRouteFocalContent(content) ||
-        substantialArticleContent(content) || strongArticleMetadata(metadata, content);
+      var strongArticle = strongArticleContent(content, false);
 
       var productList = genericProductListContent(metadata);
       if (productList && content && content.contentType !== "social" && content.contentType !== "product" && content.contentType !== "property" && content.contentType !== "hotel" && !content.hostAware && !content.docsLike) {
@@ -158,8 +176,8 @@
       if (content === productList) content = mixedHomepageProductListContent(metadata, productList) || content;
 
       var jobList = genericJobListContent(metadata);
-      if (jobList && content && (content.contentType === "article" || content.contentType === "list") && !content.hostAware && !content.docsLike &&
-          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content)) {
+      if (jobList && genericListMayReplace(content) &&
+          (content.contentType === "article" || content.contentType === "list")) {
         content = jobList;
       }
 
@@ -167,8 +185,7 @@
         (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
       var strongEventList = strongEventListingPage();
-      if (eventList && content && !content.hostAware && !content.docsLike && content.contentType !== "event" &&
-          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
+      if (eventList && genericListMayReplace(content) && content.contentType !== "event" &&
           (!eventArticle || strongEventList) && (content.contentType !== "list" || strongEventList)) {
         content = eventList;
       }
@@ -192,8 +209,7 @@
        }
 
        var medicalArticle = medicalArticlePage(metadata, content);
-      var strongArticle = cachedFocalArticleContent(content) || articleRouteFocalContent(content) || medicalArticle ||
-        substantialArticleContent(content) || strongArticleMetadata(metadata, content);
+      strongArticle = strongArticleContent(content, medicalArticle);
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;
       }
@@ -207,9 +223,12 @@
       }
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
       var indexListCandidate = null;
-      if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && dominantIndexListPage(content)) {
+      var indexListAllowed = indexListCandidateAllowed(content);
+      if (indexListAllowed && dominantIndexListPage(content)) {
         indexListCandidate = listContent(metadata);
-      } else if (content.contentType !== "list" && content.contentType !== "social" && content.contentType !== "medical" && content.contentType !== "product" && content.contentType !== "recipe" && content.contentType !== "property" && content.contentType !== "hotel" && content.contentType !== "event" && !sportsTypedContent(content) && !content.hostAware && !content.docsLike && !content.legalProvision && isProbablyListPage(content) && (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) && !strongArticle) {
+      } else if (indexListAllowed && isProbablyListPage(content) &&
+          (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
+          !strongArticle) {
         indexListCandidate = listContent(metadata);
       }
       if (indexListCandidate && !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
