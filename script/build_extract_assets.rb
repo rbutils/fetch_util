@@ -103,7 +103,11 @@ end
 built = terser_build(source)
 
 if check_mode
-  if OUTPUT.read == built
+  if OUTPUT.read == built && FetchUtil::ExtractAssetState.cached_build_current?(
+    source_digest,
+    output: OUTPUT,
+    digest_output: DIGEST_OUTPUT
+  )
     puts "Verified #{OUTPUT} is up to date"
     exit 0
   end

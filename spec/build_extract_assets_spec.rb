@@ -1624,6 +1624,34 @@ RSpec.describe "extract asset bundle" do
     end
   end
 
+  it "rejects a matching build when its checksum record is invalid" do
+    with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
+      bin_dir = File.join(root, "bin")
+      invocation_count = File.join(root, "npx-invocations")
+      FileUtils.mkdir_p(bin_dir)
+      install_fake_terser(root)
+      File.write(
+        File.join(bin_dir, "npx"),
+        "#!/bin/sh\nprintf x >> \"$NPX_INVOCATIONS\"\nprintf 'window.fetchUtilAssetSmoke=!0;\\n'\n"
+      )
+      FileUtils.chmod(0o755, File.join(bin_dir, "npx"))
+      env = {
+        "NPX_INVOCATIONS" => invocation_count,
+        "PATH" => [bin_dir, ENV.fetch("PATH")].join(File::PATH_SEPARATOR)
+      }
+
+      _stdout, stderr, status = run_build_script(root: root, env: env)
+      expect(status.success?).to be(true), stderr
+      File.write(File.join(root, "lib", "fetch_util", "assets", "extract.js.sha256"), "invalid invalid\n")
+
+      _stdout, stderr, status = run_build_script("--check", root: root, env: env)
+
+      expect(status.success?).to be(false)
+      expect(stderr).to include("Stale built asset: run `bundle exec rake build_extract_assets`")
+      expect(File.read(invocation_count)).to eq("xx")
+    end
+  end
+
   it "rejects a non-executable Terser before accepting a cached check" do
     with_asset_project(manifest: "present.js\n", files: { "present.js" => "const present = true;\n" }) do |root|
       bin_dir = File.join(root, "bin")
