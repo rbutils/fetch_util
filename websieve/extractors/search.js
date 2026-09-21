@@ -84,9 +84,8 @@
     return materializedHttpUrl(url);
   }
 
-  function sponsoredSearchResult(title, detail, href, rawHref) {
-    var text = (title + " " + detail).toLowerCase();
-    return /\bad\b|sponsored|report ad/.test(text) || /[?&](ad_|ad=|ad_domain=)/i.test(href) || /(?:^|\/)y\.js\?/i.test(rawHref || "");
+  function sponsoredSearchTarget(href, rawHref) {
+    return /[?&](ad_|ad=|ad_domain=)/i.test(href) || /(?:^|\/)y\.js\?/i.test(rawHref || "");
   }
 
   function searchEngineSource() {
@@ -99,7 +98,7 @@
     return null;
   }
 
-  function searchResultContainers(source) {
+  function searchResultContainerSelector(source) {
     var selectors = {
       google: ".MjjYud, .g",
       duckduckgo: "article[data-testid='result'], .result",
@@ -107,7 +106,20 @@
       brave: "[data-testid='result'], .snippet, .fdb",
       ecosia: "article[data-test-id='result'], .result"
     };
-    return selectors[source] ? document.querySelectorAll(selectors[source]) : [];
+    return selectors[source] || null;
+  }
+
+  function searchResultContainers(source) {
+    var selector = searchResultContainerSelector(source);
+    return selector ? document.querySelectorAll(selector) : [];
+  }
+
+  function searchPageChromeText(source) {
+    if (!document.body) return "";
+    var clone = document.body.cloneNode(true);
+    var selector = searchResultContainerSelector(source);
+    if (selector) clone.querySelectorAll(selector).forEach(function(container) { container.remove(); });
+    return normalizeText(clone.textContent || "");
   }
 
   function searchResultLink(container, source) {
@@ -177,7 +189,7 @@
     if (/^(images|videos|news|maps|shopping|sign in|privacy|terms|feedback|more|people also ask|related searches)$/i.test(title)) return;
     if (/^(javascript:|mailto:)/i.test(href)) return;
     if (!isSearchResultHref(href)) return;
-    if (sponsoredSearchResult(title, detail, href, rawHref)) return;
+    if (sponsoredSearchTarget(href, rawHref)) return;
 
     var key = title + "|" + href;
     if (seen[key]) return;
@@ -189,11 +201,11 @@
   function searchResultsContent(metadata) {
     var source = searchEngineSource();
     if (!source) return null;
-    var bodyText = normalizeText((document.body && document.body.textContent) || "");
-    if (typeof consentWallPage === "function" && consentWallPage(metadata.title || document.title, bodyText || pageReadableText() || "")) {
+    var chromeText = searchPageChromeText(source);
+    if (typeof consentWallPage === "function" && consentWallPage(metadata.title || document.title, chromeText)) {
       return null;
     }
-    if (blockedSearchPage(bodyText)) return null;
+    if (blockedSearchPage(chromeText)) return null;
 
     var items = [];
     var seen = {};

@@ -149,6 +149,26 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not treat organic result prose as challenge or advertising evidence" do
+    html = <<~HTML
+      <html><head><title>security documentation - Bing</title></head><body><main>
+        <li class="b_algo"><h2><a href="https://docs.example.test/ad-blockers">How ad blockers work</a></h2>
+          <div class="b_caption"><p>Captcha integration documentation and security check APIs.</p></div></li>
+        <li class="b_algo sponsored"><h2><a href="https://ads.example.test/security">Sponsored security course</a></h2>
+          <div class="b_caption"><p>Commercial training.</p></div></li>
+      </main></body></html>
+    HTML
+
+    extract_from_url("https://www.bing.com/search?q=security+documentation", html) do |payload|
+      expect_content_type(payload, 'search')
+      expect(payload.fetch('markdown')).to include(
+        '- [How ad blockers work](https://docs.example.test/ad-blockers) - ' \
+        'Captcha integration documentation and security check APIs.'
+      )
+      expect(payload.fetch('markdown')).not_to include('Sponsored security course')
+    end
+  end
+
   it "does not terminalize non-SERP routes on supported search-engine hosts" do
     html = fixture_contents(File.expand_path('../../fixtures/serp_engine_non_search.html', __dir__))
     [
