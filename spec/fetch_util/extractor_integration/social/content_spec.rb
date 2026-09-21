@@ -71,21 +71,29 @@ RSpec.describe 'FetchUtil social result contract' do
     profiles = [
       {
         url: 'https://community.example/@ada',
-        html: '<html><head><title>Ada Lovelace | Common Ground</title></head><body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p><p>Computing notes.</p></main></body></html>',
+        html: '<html><head><title>Ada Lovelace | Common Ground</title></head>' \
+          '<body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p>' \
+          '<p>Computing notes.</p></main></body></html>',
         platform: 'Common Ground',
         handle: '@ada',
         text: 'Computing notes.'
       },
       {
         url: 'https://work.example/company/acme-systems/',
-        html: '<html><head><title>Acme Systems | Work Square</title></head><body><main><h1>Acme Systems</h1><p>Industry</p><p>Software Development</p><p>100 followers</p><p>About</p><p>Acme builds public infrastructure software.</p><p>Website</p><p>https://acme.example</p></main></body></html>',
+        html: '<html><head><title>Acme Systems | Work Square</title></head>' \
+          '<body><main><h1>Acme Systems</h1><p>Industry</p><p>Software Development</p>' \
+          '<p>100 followers</p><p>About</p><p>Acme builds public infrastructure software.</p>' \
+          '<p>Website</p><p>https://acme.example</p></main></body></html>',
         platform: 'Work Square',
         handle: '@acme-systems',
         text: 'Acme builds public infrastructure software.'
       },
       {
         url: 'https://neighbors.example/garden-circle/',
-        html: '<html><head><title>Garden Circle | Neighbor Space</title></head><body><main><h1>Garden Circle</h1><p>Page · Community</p><p>12K followers</p><p>Intro</p><p>Public workshops, schedules, and neighborhood resources.</p></main></body></html>',
+        html: '<html><head><title>Garden Circle | Neighbor Space</title></head>' \
+          '<body><main><h1>Garden Circle</h1><p>Page · Community</p><p>12K followers</p>' \
+          '<p>Intro</p><p>Public workshops, schedules, and neighborhood resources.</p>' \
+          '</main></body></html>',
         platform: 'Neighbor Space',
         handle: '@garden-circle',
         text: 'Public workshops, schedules, and neighborhood resources.'

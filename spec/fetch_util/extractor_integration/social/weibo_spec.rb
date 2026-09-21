@@ -53,7 +53,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("清晨的城市迎来一场小型音乐会")
       expect(payload["markdown"]).to include("#今日舞台记录#")
       expect(payload["markdown"]).to include("https://wx3.sinaimg.cn/orj360/006H9hSBly1ieo6j378z1j30u01hc0ui.jpg")
-      expected_replies = Array.new(12) { |index| "可见回复 #{format('%02d', index + 1)}" }
+      expected_replies = Array.new(12) { |index| "可见回复 #{format("%02d", index + 1)}" }
       reply_positions = expected_replies.map { |reply| payload["markdown"].index(reply) }
       expect(payload["markdown"].scan(/可见回复 \d{2}/)).to eq(expected_replies)
       expect(reply_positions).to eq(reply_positions.sort)
