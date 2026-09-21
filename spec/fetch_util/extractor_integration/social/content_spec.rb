@@ -168,7 +168,7 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
-  it 'types a visible public Facebook profile' do
+  it 'keeps all visible public Facebook profile fields through shared profile inference' do
     html = <<~HTML
       <html><head><title>Example Page | Facebook</title></head><body><main role="main"><div>Page · Community</div><div>12K followers</div><div>Intro</div><p>Public updates for the local community, events, workshops, volunteer opportunities, neighborhood news, and resources for residents and visitors.</p><p>Our organizers share schedules, speaker announcements, accessibility details, and practical guides for every event.</p><p>Members can read public recaps, connect with local volunteers, and find links to upcoming workshops.</p></main></body></html>
     HTML
@@ -177,6 +177,44 @@ RSpec.describe 'FetchUtil social result contract' do
       payload = extract_payload(page)
 
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Facebook', 'handle' => '@example-page')
+      expect(payload['markdown']).to include(
+        'Page · Community',
+        '12K followers',
+        'Intro',
+        'Public updates for the local community',
+        'Our organizers share schedules',
+        'Members can read public recaps'
+      )
+    end
+  end
+
+  it 'preserves every distinct visible Facebook post beyond former prefix deduplication' do
+    shared_prefix = 'Shared opening about the community workshop schedule, accessibility details, transit updates, and volunteer check-in procedures'
+    posts = (1..12).map do |index|
+      <<~HTML
+        <article>
+          <h2><a href="/example-page/posts/#{index}">Update #{index}</a></h2>
+          <div dir="auto">#{shared_prefix}. Distinct update #{index} has its own source-owned details.</div>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Example Page | Facebook</title></head><body><main role="main">
+        <div>Page · Community</div><div>12K followers</div><div>Intro</div>
+        <p>Public updates for the local community.</p>
+        #{posts}
+      </main></body></html>
+    HTML
+
+    with_url_page('https://www.facebook.com/example-page/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Facebook', 'handle' => '@example-page')
+      (1..12).each do |index|
+        expect(payload['markdown']).to include("Update #{index}", "Distinct update #{index} has its own source-owned details.")
+      end
+      positions = (1..12).map { |index| payload['markdown'].index("Distinct update #{index} has its own source-owned details.") }
+      expect(positions).to eq(positions.sort)
     end
   end
 

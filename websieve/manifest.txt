@@ -253,7 +253,6 @@ profiles/community/forums/discourse.js
 profiles/community/q_and_a/stackoverflow.js
 profiles/social/networks/meta/index.js
 profiles/social/networks/meta/instagram.js
-profiles/social/networks/meta/facebook.js
 profiles/social/networks/twitter.js
 profiles/social/professional/linkedin.js
 profiles/social/networks/bluesky.js

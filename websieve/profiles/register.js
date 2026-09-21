@@ -45,7 +45,6 @@
   registerDiscourseProfiles();
   registerStackOverflowProfiles();
   registerInstagramProfiles();
-  registerFacebookProfiles();
   registerTelegramProfiles();
   registerTwitterProfiles();
   registerLinkedinProfiles();
