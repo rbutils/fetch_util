@@ -59,4 +59,39 @@ RSpec.describe 'FetchUtil StackOverflow extraction' do
       expect(payload["markdown"]).to include("Earlier languages likely existed before Celtic spread")
     end
   end
+
+  it 'keeps short Stack Exchange answers in source order' do
+    html = <<~HTML
+      <html>
+        <head><title>How should this be fetched? - History Stack Exchange</title></head>
+        <body>
+          <main>
+            <div class="question" id="question" data-answercount="2">
+              <div class="question-header"><h1>How should this be fetched?</h1></div>
+              <div class="user-details"><a href="/users/1/ada">Ada</a></div>
+              <div class="js-post-body">I need to preserve every visible answer in the order presented by the source.</div>
+            </div>
+            <div class="answer" data-answerid="10">
+              <span class="js-vote-count">100</span>
+              <div class="user-details"><a href="/users/2/first">First User</a></div>
+              <div class="js-post-body">This longer answer appears first in the document.</div>
+            </div>
+            <div class="answer accepted-answer" data-answerid="11">
+              <span class="js-vote-count">1</span>
+              <div class="user-details"><a href="/users/3/second">Second User</a></div>
+              <div class="js-post-body">Use fetch.</div>
+            </div>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://history.stackexchange.com/questions/68201/fetch-order', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['markdown']).to include('This longer answer appears first', 'Use fetch.')
+      expect(payload['markdown'].index('First User')).to be < payload['markdown'].index('Second User')
+      expect(payload['html']).to include('data-answerid="10"', 'data-answerid="11"')
+    end
+  end
 end

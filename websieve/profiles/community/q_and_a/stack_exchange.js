@@ -18,7 +18,8 @@
     }
     if (!body) body = firstText([".question .js-post-body", ".question .s-prose", "#question .js-post-body", "#question .s-prose", ".postcell .js-post-body", ".postcell .s-prose", "[data-questionid] .js-post-body", "[data-questionid] .s-prose"]);
     var byline = firstText([".question .user-details a", "#question .user-details a", ".postcell .user-details a", "[data-questionid] .user-details a"]);
-    var answers = Array.prototype.slice.call(document.querySelectorAll(".answer, .js-answer, [data-answerid]")).map(function(node) {
+    var answerNodes = document.querySelectorAll(".answer, .js-answer, [data-answerid]");
+    var answers = collectCommunityThreadEntries(answerNodes, function(node) {
       var scoreText = normalizeText(((node.querySelector(".js-vote-count, .vote-count-post") || {}).textContent || "0").replace(/[^\d-]+/g, ""));
       var score = parseInt(scoreText || "0", 10);
       var author = normalizeText(((node.querySelector(".user-details a") || {}).textContent || ""));
@@ -33,16 +34,12 @@
       var accepted = node.matches(".accepted-answer") || !!node.querySelector(".js-accepted-answer-indicator, .accepted-answer, [data-accepted='true']");
 
       return {
+        id: node.getAttribute("data-answerid") || node.id,
         score: isNaN(score) ? 0 : score,
         author: author,
         body: answerBody,
         accepted: accepted
       };
-    }).filter(function(answer) {
-      return answer.body.length >= 40;
-    }).sort(function(a, b) {
-      if (a.accepted !== b.accepted) return a.accepted ? -1 : 1;
-      return b.score - a.score;
     });
 
     if (!title || (!body && answers.length === 0)) return null;
@@ -68,7 +65,7 @@
       excerpt: body || metadata.excerpt,
       siteName: metadata.siteName || location.hostname,
       publishedTime: metadata.publishedTime,
-      html: question ? question.outerHTML : "",
+      html: communityThreadNodesHtml([question].concat(answers.map(function(answer) { return answer.sourceNode; }))),
       markdown: markdown,
       textContent: normalizeText(markdown),
       readerMode: false,

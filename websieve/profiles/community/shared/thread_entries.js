@@ -20,7 +20,11 @@
   }
 
   function communityThreadEntriesHtml(entries) {
-    var nodes = entries.map(function(entry) { return entry.sourceNode; });
+    return communityThreadNodesHtml(entries.map(function(entry) { return entry.sourceNode; }));
+  }
+
+  function communityThreadNodesHtml(nodes) {
+    nodes = nodes.filter(Boolean);
     var includedNodes = new Set(nodes);
 
     return nodes.filter(function(node) {
