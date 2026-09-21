@@ -492,7 +492,6 @@ RSpec.describe "extract asset bundle" do
     expected_community_sources = %w[
       profiles/community/forums/discourse.js
       profiles/community/q_and_a/stack_exchange.js
-      profiles/community/q_and_a/stackoverflow.js
       profiles/community/shared/thread_entries.js
       profiles/community/social_news/hacker_news.js
       profiles/community/wikis/tv_tropes.js
@@ -1309,7 +1308,6 @@ RSpec.describe "extract asset bundle" do
                           registerHackerNewsProfiles
                           registerMastodonProfiles
                           registerDiscourseProfiles
-                          registerStackOverflowProfiles
                           registerTelegramProfiles
                           registerTwitterProfiles
                           registerBlueskyProfiles

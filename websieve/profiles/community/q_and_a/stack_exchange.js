@@ -68,6 +68,8 @@
       html: communityThreadNodesHtml([question].concat(answers.map(function(answer) { return answer.sourceNode; }))),
       markdown: markdown,
       textContent: normalizeText(markdown),
+      hostAware: true,
+      singleTopicPage: true,
       readerMode: false,
       contentType: "social",
       socialKind: "thread",

@@ -43,7 +43,6 @@
   registerHackerNewsProfiles();
   registerMastodonProfiles();
   registerDiscourseProfiles();
-  registerStackOverflowProfiles();
   registerTelegramProfiles();
   registerTwitterProfiles();
   registerBlueskyProfiles();

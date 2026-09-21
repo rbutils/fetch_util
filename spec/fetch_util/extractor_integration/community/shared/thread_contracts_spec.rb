@@ -84,11 +84,11 @@ RSpec.describe 'FetchUtil extractor integration - community social threads' do
     end
   end
 
-  it 'classifies Stack Overflow and Stack Exchange question DOM without changing answer headings' do
+  it 'classifies Stack Overflow and Stack Exchange question DOM with shared answer headings' do
     extract_from_url('https://stackoverflow.com/questions/123/ruby-blocks', community_fixture('stackoverflow_question.html')) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Stack Overflow',
                                  'handle' => 'Ada', 'replyCount' => 1, 'community' => 'Stack Overflow', 'score' => 5)
-      expect(payload['markdown']).to include('## Answers', '### Accepted answer (9 votes)')
+      expect(payload['markdown']).to include('## Top Answers', '### Answer 1 (accepted) - score 9')
     end
 
     extract_from_url('https://history.stackexchange.com/questions/68200/roman-languages', community_fixture('stack_exchange_question.html')) do |payload|
