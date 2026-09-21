@@ -67,6 +67,72 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'infers visible profiles from route-owned audience evidence without host rules' do
+    profiles = [
+      {
+        url: 'https://community.example/@ada',
+        html: '<html><head><title>Ada Lovelace | Common Ground</title></head><body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p><p>Computing notes.</p></main></body></html>',
+        platform: 'Common Ground',
+        handle: '@ada',
+        text: 'Computing notes.'
+      },
+      {
+        url: 'https://work.example/company/acme-systems/',
+        html: '<html><head><title>Acme Systems | Work Square</title></head><body><main><h1>Acme Systems</h1><p>Industry</p><p>Software Development</p><p>100 followers</p><p>About</p><p>Acme builds public infrastructure software.</p><p>Website</p><p>https://acme.example</p></main></body></html>',
+        platform: 'Work Square',
+        handle: '@acme-systems',
+        text: 'Acme builds public infrastructure software.'
+      },
+      {
+        url: 'https://neighbors.example/garden-circle/',
+        html: '<html><head><title>Garden Circle | Neighbor Space</title></head><body><main><h1>Garden Circle</h1><p>Page · Community</p><p>12K followers</p><p>Intro</p><p>Public workshops, schedules, and neighborhood resources.</p></main></body></html>',
+        platform: 'Neighbor Space',
+        handle: '@garden-circle',
+        text: 'Public workshops, schedules, and neighborhood resources.'
+      }
+    ]
+
+    profiles.each do |profile|
+      with_url_page(profile.fetch(:url), profile.fetch(:html)) do |page|
+        payload = extract_payload(page)
+
+        expect(payload).to include(
+          'contentType' => 'social',
+          'socialKind' => 'profile',
+          'platform' => profile.fetch(:platform),
+          'handle' => profile.fetch(:handle)
+        )
+        expect(payload['markdown']).to include(profile.fetch(:text))
+      end
+    end
+  end
+
+  it 'does not infer a profile from audience prose without profile ownership' do
+    html = <<~HTML
+      <html><head><title>Audience report | Research Notes</title></head><body><main><article><h1>Audience report</h1><p>About 100 followers joined after the public workshop.</p><p>This ordinary analysis explains the campaign results without representing a person or organization profile.</p></article></main></body></html>
+    HTML
+
+    with_url_page('https://research.example/growth/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['contentType']).not_to eq('social')
+      expect_empty_social_fields(payload)
+    end
+  end
+
+  it 'does not infer a profile from a profile-shaped login form' do
+    html = <<~HTML
+      <html><head><title>Ada Lovelace | Common Ground</title></head><body><main><h1>Sign in to continue</h1><p>@ada</p><p>2K followers</p><form><input type="email"><input type="password"></form></main></body></html>
+    HTML
+
+    with_url_page('https://community.example/@ada', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['contentType']).to eq('interstitial')
+      expect_empty_social_fields(payload)
+    end
+  end
+
   it 'clears handler social fields when a login shell is finalized as an interstitial' do
     html = <<~HTML
       <html><head><title>Log in</title></head><body><main><h1>Log in</h1><p>Log in to view this discussion.</p><form><input type='email'><input type='password'></form></main></body></html>
