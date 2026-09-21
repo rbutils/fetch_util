@@ -52,4 +52,27 @@ RSpec.describe FetchUtil::Extractor do
       expect(markdown).not_to include('javascript:', 'name:secret', 'Hidden reference', '/hidden')
     end
   end
+
+  it 'keeps same-label table references with distinct destinations' do
+    html = <<~HTML
+      <html><head><title>Resource index</title></head><body><main><article>
+        <h1>Resource index</h1>
+        <p>The resource index provides independent implementation guides for each supported runtime.</p>
+        <table><tr><th>Runtime</th><th>Guides</th></tr><tr><td>Ruby</td><td>
+          <div><a href="/guides/basics">Read</a></div>
+          <div><a href="/guides/advanced">Read</a></div>
+          <div><a href="/guides/advanced">Read</a></div>
+        </td></tr></table>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url('https://manual.example.test/resources', html, reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include(
+        '[Read](https://manual.example.test/guides/basics)',
+        '[Read](https://manual.example.test/guides/advanced)'
+      )
+      expect(markdown.scan('https://manual.example.test/guides/advanced').length).to eq(1)
+    end
+  end
 end

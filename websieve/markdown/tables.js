@@ -6,6 +6,12 @@
     return normalizeText(text).toLowerCase().replace(/\s+/g, "");
   }
 
+  function tableCellReferenceKey(node) {
+    return Array.prototype.map.call(node.querySelectorAll("a[href]"), function(link) {
+      return materializedHttpUrl(link.getAttribute("href")) || link.getAttribute("href") || "";
+    }).join("\n");
+  }
+
   function leadingBlockElement(node) {
     if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
     if (/^(p|div|section|article|header|h[1-6]|li)$/i.test(node.tagName)) return node;
@@ -26,7 +32,9 @@
 
       var previousKey = tableCellLabelKey(previous.textContent);
       var currentKey = tableCellLabelKey(current.textContent);
-      if (previousKey && previousKey === currentKey) current.remove();
+      if (previousKey && previousKey === currentKey &&
+          previous.tagName === current.tagName &&
+          tableCellReferenceKey(previous) === tableCellReferenceKey(current)) current.remove();
     }
     return clone;
   }
