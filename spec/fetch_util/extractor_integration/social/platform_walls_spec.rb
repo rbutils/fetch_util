@@ -21,7 +21,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     end
   end
 
-  it "summarizes Reddit cookie prompts from metadata and flags them" do
+  it "preserves visible Reddit context while flagging cookie prompts" do
     html = simple_consent_wall_html(
       title: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
       heading: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
@@ -37,8 +37,8 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("# Is Cedar Outfitters changing plans?")
-      expect(payload["markdown"]).to include("Discussion about whether Cedar Outfitters is changing plans.")
-      expect(payload["markdown"]).not_to include("Let us know your cookie preferences")
+      expect(payload["markdown"]).to include("Before you continue to Reddit")
+      expect(payload["markdown"]).to include("This forum uses cookies and similar tools")
       expect(payload["warnings"]).to include("consent_interstitial")
     end
   end
@@ -103,16 +103,23 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     with_url_page("https://www.reddit.com/r/ruby/comments/123/ruby-thread", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
+      expect(payload).to include(
+        "contentType" => "social",
+        "socialKind" => "thread",
+        "platform" => "Reddit",
+        "handle" => "alice",
+        "replyCount" => 3,
+        "community" => "r/ruby"
+      )
       expect(payload["readerMode"]).to eq(false)
       expect(payload["markdown"]).to include("# Ruby thread")
       expect(payload["markdown"]).to include("Here is the original post body.")
-      expect(payload["markdown"]).to include("## Top Comments")
-      expect(payload["markdown"]).to include("### bob (12 points)")
       expect(payload["markdown"]).to include("First top-level comment.")
-      expect(payload["markdown"]).to include("#### nested (2 points)")
       expect(payload["markdown"]).to include("Nested reply remains in its source position.")
-      expect(payload["markdown"]).to include("### carol (4 points)")
       expect(payload["markdown"]).to include("Second top-level comment.")
+      expect(payload["markdown"].scan("First top-level comment.").length).to eq(1)
+      expect(payload["markdown"].scan("Nested reply remains in its source position.").length).to eq(1)
+      expect(payload["markdown"].scan("Second top-level comment.").length).to eq(1)
       expect(payload["markdown"].index("Nested reply")).to be < payload["markdown"].index("Second top-level comment")
       expect(payload["html"].scan("Nested reply remains in its source position.").length).to eq(1)
       expect(payload["markdown"]).not_to include("This Reddit page requires cookie acceptance or login")
@@ -272,7 +279,8 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload['contentType']).to eq('interstitial')
-      expect(payload['markdown']).to include('Challenge: Reddit access verification')
+      expect(payload['markdown']).to include('Challenge: Cloudflare/Turnstile')
+      expect(payload['markdown']).to include('challenge before the original content is available')
       expect(payload['contentType']).not_to eq('social')
     end
   end
