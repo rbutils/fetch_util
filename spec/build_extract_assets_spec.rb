@@ -1256,7 +1256,7 @@ RSpec.describe "extract asset bundle" do
     social_root = File.join(source_root, "profiles/social")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
 
-    expect(Dir.children(social_root).sort).to eq(%w[networks professional search.js telegram])
+    expect(Dir.children(social_root).sort).to eq(%w[networks search.js telegram])
     expect(Dir[File.join(social_root, "telegram/**/*.js")].map { |path| File.basename(path) }).to eq(["telegram.js"])
     expect(manifest).to include("profiles/social/telegram/telegram.js")
     expect(manifest).not_to include("profiles/social/telegram.js")
