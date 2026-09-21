@@ -169,14 +169,16 @@
   }
 
   function applySocialContentType(content, metadata) {
-    if (content && !content.hostAware && content.contentType !== "interstitial") {
-      var repeatedPost = socialPostOwnedContent(metadata);
-      if (repeatedPost) content = repeatedPost;
+    if (document.body) {
+      if (content && !content.hostAware && content.contentType !== "interstitial") {
+        var repeatedPost = socialPostOwnedContent(metadata);
+        if (repeatedPost) content = repeatedPost;
+      }
+      content = applyInferredSocialThread(content, metadata);
+      content = applyInferredSocialFeed(content, metadata);
+      content = applyInferredSocialPost(content, metadata);
+      content = applyInferredSocialProfile(content, metadata);
     }
-    content = applyInferredSocialThread(content, metadata);
-    content = applyInferredSocialFeed(content, metadata);
-    content = applyInferredSocialPost(content, metadata);
-    content = applyInferredSocialProfile(content, metadata);
     if (!content || content.contentType !== "social") return content;
 
     var kind = normalizedSocialText(content.socialKind);

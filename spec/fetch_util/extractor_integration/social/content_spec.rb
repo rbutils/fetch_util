@@ -67,6 +67,27 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'keeps extracted articles when their source body is unavailable to social inference' do
+    html = <<~HTML
+      <html><head><title>Consumed source body</title></head><body><article><h1>Consumed source body</h1><p>The article extractor already captured this complete source-owned body.</p></article></body></html>
+    HTML
+
+    with_url_page('https://social-contract.test/consumed-body', html) do |page|
+      payload = synthetic_social_payload(page, <<~JS)
+        window.registerHostAwareProfile(/(^|\\.)social-contract\\.test$/, function() {
+          var article = document.querySelector('article');
+          var result = { title: 'Consumed source body', html: article.outerHTML, markdown: '# Consumed source body\\n\\nThe article extractor already captured this complete source-owned body.', textContent: article.textContent, readerMode: false, contentType: 'article', hostAware: true };
+          document.body.remove();
+          return result;
+        });
+      JS
+
+      expect(payload).to include('contentType' => 'article', 'title' => 'Consumed source body')
+      expect(payload['markdown']).to include('complete source-owned body')
+      expect_empty_social_fields(payload)
+    end
+  end
+
   it 'infers visible profiles from route-owned audience evidence without host rules' do
     profiles = [
       {
