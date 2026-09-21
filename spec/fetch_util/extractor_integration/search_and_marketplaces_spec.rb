@@ -435,7 +435,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "summarizes Quora security pages with a question heading and warning" do
+  it "returns Quora security pages as generic verification interstitials" do
     html = <<~HTML
       <html>
         <head>
@@ -454,7 +454,9 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://www.quora.com/What-are-the-advantages-of-using-Proc-Lambda-in-Ruby?share=1", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# What are the advantages of using Proc Lambda in Ruby")
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["markdown"]).to include("Challenge: Cloudflare/Turnstile")
+      expect(payload["markdown"]).not_to include("What are the advantages of using Proc Lambda in Ruby")
       expect(payload["warnings"]).to include("bot_or_access_interstitial")
     end
   end

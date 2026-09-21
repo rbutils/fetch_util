@@ -491,7 +491,6 @@ RSpec.describe "extract asset bundle" do
     fixture_root = File.join(project_root, "spec/fetch_util/fixtures")
     expected_community_sources = %w[
       profiles/community/forums/discourse.js
-      profiles/community/q_and_a/quora.js
       profiles/community/q_and_a/stack_exchange.js
       profiles/community/q_and_a/stackoverflow.js
       profiles/community/shared/thread_entries.js
@@ -1321,7 +1320,6 @@ RSpec.describe "extract asset bundle" do
                           registerThreadsProfiles
                           registerLinkedinProfiles
                           registerBlueskyProfiles
-                          registerQuoraProfiles
                         ])
     expect(register_source).to include(
       "registerAcademicPreprintProfiles();\n  registerHostAwareProfile(true, scientificRecordContent);"

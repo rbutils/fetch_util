@@ -53,4 +53,3 @@
   registerThreadsProfiles();
   registerLinkedinProfiles();
   registerBlueskyProfiles();
-  registerQuoraProfiles();
