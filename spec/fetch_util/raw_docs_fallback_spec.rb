@@ -192,6 +192,26 @@ RSpec.describe FetchUtil::RawDocsFallback do
     )
   end
 
+  it "renders leaf blocks when one is the requested fragment root" do
+    examples = {
+      "p" => "Paragraph fragment content remains available when the requested identifier belongs to the paragraph itself.",
+      "pre" => "puts 'Code fragment content remains available from the requested preformatted block.'",
+      "li" => "List item fragment content remains available when the requested identifier belongs to one item."
+    }
+
+    examples.each do |element, content|
+      html = <<~HTML
+        <html lang="en"><head><title>Leaf fragment reference</title></head><body><main>
+          <#{element} id="target">#{content}</#{element}>
+        </main></body></html>
+      HTML
+
+      payload = described_class.new.payload_from_html(html, requested_url: "https://docs.example.com/reference#target")
+
+      expect(payload.fetch("markdown")).to include(content)
+    end
+  end
+
   it "falls back to the final http url for unsafe canonical metadata" do
     html = <<~HTML
       <html>

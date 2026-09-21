@@ -300,7 +300,7 @@ module FetchUtil
     def markdown_from_root(root, title)
       sections = []
       blocks = root.css(BLOCK_SELECTOR).to_a
-      blocks.unshift(root) if %w[ul ol].include?(root.name)
+      blocks.unshift(root) if BLOCK_ELEMENTS.include?(root.name)
       blocks.each do |node|
         next if node.ancestors.any? { |ancestor| %w[ul ol].include?(ancestor.name) }
 
@@ -320,6 +320,10 @@ module FetchUtil
           sections << [fence, code, fence].join("\n")
         when "ul", "ol"
           sections << markdown_list(node)
+        when "li"
+          content = node.dup
+          content.css("ul, ol").remove
+          sections << "- #{clean_text(content.text)}"
         when "tr"
           cells = node.css("th, td").map { |cell| clean_text(cell.text) }.reject(&:empty?)
           sections << "- #{cells.join(": ")}" unless cells.empty?
