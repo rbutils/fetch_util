@@ -167,7 +167,7 @@ function interstitialContent(metadata, pageText, type) {
     "body h2",
     "body h3",
     "body p"
-  ], 20).filter(function(text) {
+  ]).filter(function(text) {
     return text && text.length <= 240 && !interstitialNoiseText(text);
   });
   var description = lines.find(function(text) {
@@ -179,6 +179,7 @@ function interstitialContent(metadata, pageText, type) {
   if (type === "human_verification") {
     if (!title || domainLikeText(title)) title = "Robot or human?";
     details.push("Gate: human verification");
+    highlights = lines.filter(function(text) { return text !== title && text !== description; });
   } else if (type === "consent_wall") {
     var consentSummary = consentSummaryParts();
     if (consentSummary.headings.length) title = consentSummary.headings[0];

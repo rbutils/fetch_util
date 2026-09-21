@@ -1,6 +1,5 @@
   registerTvTropesProfiles();
   registerPinterestSearchProfile();
-  registerTikTokProfile();
   registerEbaySearchProfile();
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();

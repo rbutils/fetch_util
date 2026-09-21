@@ -1273,7 +1273,6 @@ RSpec.describe "extract asset bundle" do
     expect(calls).to eq(%w[
                           registerTvTropesProfiles
                           registerPinterestSearchProfile
-                          registerTikTokProfile
                           registerEbaySearchProfile
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
@@ -1326,20 +1325,18 @@ RSpec.describe "extract asset bundle" do
     )
     expected_search_manifest = %w[
       profiles/social/search.js
-      profiles/social/networks/tiktok.js
       profiles/media_commerce/search.js
       profiles/media_commerce/index.js
     ]
-    expect(manifest[(manifest.index("profiles/host_aware.js") + 1), 4]).to eq(expected_search_manifest)
+    expect(manifest[(manifest.index("profiles/host_aware.js") + 1), 3]).to eq(expected_search_manifest)
 
     registration_prefix = register_source.lines.grep(
-      /^\s*register(?:PinterestSearchProfile|TikTokProfile|EbaySearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
+      /^\s*register(?:PinterestSearchProfile|EbaySearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
     ).map do |line|
       line.strip.delete_suffix("();")
     end
     expected_registration_prefix = %w[
       registerPinterestSearchProfile
-      registerTikTokProfile
       registerEbaySearchProfile
       registerRingierAxelSpringerProfiles
       registerMediaCommerceLeadProfiles

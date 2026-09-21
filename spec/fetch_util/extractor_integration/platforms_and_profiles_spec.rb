@@ -935,7 +935,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "summarizes TikTok tag pages while still flagging verification prompts" do
+  it "preserves visible page context while flagging verification prompts" do
     html = <<~HTML
       <html>
         <head>
@@ -955,7 +955,12 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect_payload(payload, includes: ["# #ruby", "- 1.2M posts"], warnings_include: ["human_verification_interstitial"])
+      expect_payload(
+        payload,
+        content_type: "interstitial",
+        includes: ["# TikTok - Make Your Day", "Gate: human verification", "- ruby", "1.2M posts", "Drag the slider to fit the puzzle"],
+        warnings_include: ["human_verification_interstitial"]
+      )
     end
   end
 
