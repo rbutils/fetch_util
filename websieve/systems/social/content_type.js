@@ -28,11 +28,13 @@
 
   function socialPlatformLabel(metadata) {
     var siteName = normalizedSocialText(metadata && metadata.siteName);
-    if (siteName && !/^[\w.-]+\.[a-z]{2,}$/i.test(siteName)) return siteName.replace(/\.(?:com|net|org)$/i, "");
+    if (siteName && /^[\x00-\x7f]+$/.test(siteName) && !/^[\w.-]+\.[a-z]{2,}$/i.test(siteName)) {
+      return siteName.replace(/\.(?:com|net|org)$/i, "");
+    }
 
     var titleMatch = normalizedSocialText(document.title || "");
     titleMatch = titleMatch && titleMatch.match(/[|•·]\s*([^|•·]{2,40})$/);
-    if (titleMatch) return normalizedSocialText(titleMatch[1]);
+    if (titleMatch && /^[\x00-\x7f]+$/.test(titleMatch[1])) return normalizedSocialText(titleMatch[1]);
 
     var labels = String(location.hostname || "").toLowerCase().replace(/^www\./, "").split(".").filter(Boolean);
     var index = labels.length - 2;
@@ -158,7 +160,7 @@
 
   function applySocialContentType(content, metadata) {
     if (content && !content.hostAware && content.contentType !== "interstitial") {
-      var repeatedPost = socialRepeatedPostContent(metadata);
+      var repeatedPost = socialPostOwnedContent(metadata);
       if (repeatedPost) content = repeatedPost;
     }
     content = applyInferredSocialThread(content, metadata);

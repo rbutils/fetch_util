@@ -3,7 +3,15 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it "classifies a validated Pikabu story post without comments" do
+  it "classifies a Pikabu story and preserves every visible comment" do
+    comments = (1..12).map do |index|
+      <<~HTML
+        <div id="comment_#{index}" class="comment" data-id="#{index}">
+          <a class="comment__user" href="https://pikabu.ru/@reader#{index}">reader#{index}</a>
+          <p>Visible reply #{format("%02d", index)} with source-owned discussion text.</p>
+        </div>
+      HTML
+    end.join
     html = <<~HTML
       <html lang="ru">
         <head>
@@ -21,8 +29,9 @@ RSpec.describe 'FetchUtil extractor integration' do
                    <h1 class="story__title"><span class="story__title-link">Пожалуй, хватит на сегодня интернета</span><span class="story-title-icons">Скопировать ссылку на пост</span></h1>
                 </header>
                 <div class="story__content story__typography">
-                  <div class="story__content-inner">
-                    <div class="story-block story-block_type_video">
+                   <div class="story__content-inner">
+                     <p>Основной текст публикации остается рядом с автором, тегами и медиа.</p>
+                     <div class="story-block story-block_type_video">
                       <div data-role="player" data-type="video-file" poster="https://cs18.pikabu.ru/s/2026/07/06/10/video-poster.jpg">
                         <div data-role="player-controls"><button>pause</button><span>00:05 / 00:10</span></div>
                   <video src="blob:https://pikabu.ru/example"></video>
@@ -40,11 +49,7 @@ RSpec.describe 'FetchUtil extractor integration' do
             </div>
             <div id="comments" class="comments__nav-point"></div>
             <section class="comments">
-              <div id="comment_397677707" class="comment" data-id="397677707">
-                <p>13 часов назад</p>
-                <p>Странно, но эта футболка сухая и совсем не пахнет</p>
-                <button>Ещё 0 раскрыть ветку (2)</button>
-              </div>
+              #{comments}
             </section>
              <aside class="sidebar">Пикабу Игры +1000 бесплатных развлечений</aside>
           </main>
@@ -57,9 +62,14 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload).to include("socialKind" => "post", "platform" => "Pikabu", "handle" => "rahatlykym")
       expect(payload.values_at("replyCount", "community", "score")).to all(be_nil)
       expect(payload["markdown"]).to include("# Пожалуй, хватит на сегодня интернета")
-      expect(payload["markdown"]).to include("Открыть видео")
+      expect(payload["markdown"]).to include("Основной текст публикации")
+      expect(payload["markdown"]).to include("![Video poster](https://cs18.pikabu.ru/s/2026/07/06/10/video-poster.jpg)")
+      expect(payload["markdown"]).to include("[Открыть видео](https://pikabu.ru/video/story/pozhaluy_khvatit_na_segodnya_interneta_14125196/1688958)")
       expect(payload["markdown"]).to include("Короткая запись")
-      expect(payload["markdown"]).not_to include("Странно, но эта футболка сухая")
+      comment_texts = (1..12).map { |index| "Visible reply #{format("%02d", index)} with source-owned discussion text." }
+      comment_texts.each { |text| expect(payload["markdown"].scan(text).length).to eq(1) }
+      positions = comment_texts.map { |text| payload["markdown"].index(text) }
+      expect(positions).to eq(positions.sort)
       expect(payload["markdown"]).not_to include("Пикабу Игры")
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction truncated_content url_content_mismatch consent_interstitial])
       expect(payload["suspect"]).to be(false)

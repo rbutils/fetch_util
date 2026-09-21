@@ -495,7 +495,6 @@ RSpec.describe "extract asset bundle" do
       profiles/community/q_and_a/stackoverflow.js
       profiles/community/shared/thread_entries.js
       profiles/community/social_news/hacker_news.js
-      profiles/community/social_news/pikabu.js
       profiles/community/wikis/tv_tropes.js
     ]
     expected_community_specs = %w[
@@ -1519,7 +1518,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/publishing/ameba_blog.js
                                 profiles/news/europe/dnevnik.js
                                 profiles/publishing/segmentfault.js
-                                profiles/community/social_news/pikabu.js
                                 profiles/news/europe/southern/rcs_corriere.js
                                 profiles/news/europe/western/le_monde.js
                                 profiles/news/europe/central/czech/idnes.js

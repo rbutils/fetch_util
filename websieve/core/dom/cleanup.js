@@ -143,6 +143,7 @@
 
     // Strip comment sections (WordPress, Disqus, generic)
     root.querySelectorAll("#comments, #respond, .comments-area, .comment-list, .comments-section, #disqus_thread, .disqus-comment-count, [class*='comment-respond'], .wp-block-comments, .post-comments").forEach(function(el) {
+      if (el.closest("[data-fetchutil-social-comment]")) return;
       el.remove();
     });
     stripEmptyCommentUi(root);
