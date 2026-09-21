@@ -32,9 +32,10 @@
 
       var previousKey = tableCellLabelKey(previous.textContent);
       var currentKey = tableCellLabelKey(current.textContent);
+      var previousReferenceKey = tableCellReferenceKey(previous);
+      var currentReferenceKey = tableCellReferenceKey(current);
       if (previousKey && previousKey === currentKey &&
-          previous.tagName === current.tagName &&
-          tableCellReferenceKey(previous) === tableCellReferenceKey(current)) current.remove();
+          (!currentReferenceKey || previousReferenceKey === currentReferenceKey)) current.remove();
     }
     return clone;
   }
