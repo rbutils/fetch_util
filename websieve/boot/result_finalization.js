@@ -62,6 +62,7 @@ function deferredListFinalizationMarkdown(content, metadata, markdown) {
     markdown = materializedMarkdown(cleanupMarkdownNoise(searchToolsMarkdown));
     content.textContent = markdown;
   }
+  if (listLikeContent) markdown = listMarkdownWithPresentationUrls(markdown);
   return markdown;
 }
 
@@ -213,6 +214,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = applySocialContentType(content, metadata);
   if (content.contentType === "article") markdown = articleCitationResourceMarkdown(content, markdown);
   var warnings = finalizationWarnings(content, metadata, markdown, pageText, signals, primaryTitle);
+  markdown = interstitialRequestedContextMarkdown(content, metadata, markdown, warnings);
   markdown = deferredListFinalizationMarkdown(content, metadata, markdown);
   markdown = stripStructuredCardFieldMarkers(markdown);
   content.textContent = stripStructuredCardFieldMarkers(content.textContent);

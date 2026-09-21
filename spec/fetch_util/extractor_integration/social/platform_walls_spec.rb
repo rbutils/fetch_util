@@ -21,7 +21,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     end
   end
 
-  it "preserves visible Reddit context while flagging cookie prompts" do
+  it "preserves requested Reddit context while flagging cookie prompts" do
     html = simple_consent_wall_html(
       title: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
       heading: "Is Cedar Outfitters changing plans? : r/BackpackingDogs",
@@ -37,6 +37,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["markdown"]).to include("# Is Cedar Outfitters changing plans?")
+      expect(payload["markdown"]).to include("Requested page summary: Discussion about whether Cedar Outfitters is changing plans.")
       expect(payload["markdown"]).to include("Before you continue to Reddit")
       expect(payload["markdown"]).to include("This forum uses cookies and similar tools")
       expect(payload["warnings"]).to include("consent_interstitial")
@@ -126,7 +127,7 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     end
   end
 
-  it "summarizes Behance cookie-settings prompts and flags them" do
+  it "preserves requested Behance context while flagging cookie-settings prompts" do
     html = simple_consent_wall_html(
       title: "Embossage Projects :: Photos, videos, logos, illustrations and branding",
       heading: "Cookie Settings",
@@ -137,9 +138,13 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     with_url_page("https://www.behance.net/search/projects/embossage", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["markdown"]).to include("# Embossage Projects")
-      expect(payload["markdown"]).to include("Discover projects related to embossage on Behance.")
-      expect(payload["markdown"]).not_to include("Adobe and our partners use cookies")
+      expect(payload["contentType"]).to eq("interstitial")
+      expect(payload["markdown"]).to include("# Cookie Settings")
+      expect(payload["markdown"]).to include("Requested page: Embossage Projects")
+      expect(payload["markdown"]).to include("Requested page summary: Discover projects related to embossage on Behance.")
+      expect(payload["markdown"]).to include("Adobe and our partners use cookies")
+      expect(payload["markdown"]).to include("Measure performance")
+      expect(payload["markdown"]).to include("Personalize advertising")
       expect(payload["warnings"]).to include("consent_interstitial")
     end
   end
@@ -180,8 +185,11 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Atelier : Embossage](https://www.behance.net/gallery/33413299/Atelier-Embossage)")
-      expect(payload["markdown"]).to include("- [Chapitre 02 // Paragraphe](https://www.behance.net/gallery/128386867/Chapitre-02-Paragraphe)")
+      expect(payload["markdown"]).to include("[Atelier : Embossage](https://www.behance.net/gallery/33413299/Atelier-Embossage)")
+      expect(payload["markdown"]).to include("[Chapitre 02 // Paragraphe](https://www.behance.net/gallery/128386867/Chapitre-02-Paragraphe)")
+      expect(payload["markdown"]).to include("Jean-Philippe Ogez 44 views", "marielle Marenati 746 views")
+      expect(payload["markdown"].index("Atelier : Embossage")).to be < payload["markdown"].index("Chapitre 02 // Paragraphe")
+      expect(payload["markdown"]).not_to include("tracking_source")
       expect(payload["warnings"]).not_to include("consent_interstitial")
     end
   end

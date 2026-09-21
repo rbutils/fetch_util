@@ -488,7 +488,15 @@ RSpec.describe 'FetchUtil extractor integration' do
       title: "Cookie Settings",
       heading: "Cookie Settings",
       paragraphs: ["We use cookies to keep this service reliable and to measure audience activity.", "Essential cookies are always active."],
-      buttons: ["Reject optional cookies", "Accept all cookies"]
+      buttons: [
+        "Reject optional cookies",
+        "Accept all cookies",
+        "Manage cookies",
+        "Reject all",
+        "Allow essential cookies",
+        "Customize settings",
+        "Save preferences"
+      ]
     )
 
     with_url_page("https://example.org/privacy/consent", html) do |page|
@@ -497,6 +505,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("# Cookie Settings")
       expect(payload["markdown"]).to include("We use cookies to keep this service reliable")
       expect(payload["markdown"]).to include("Control: Accept all cookies")
+      expect(payload["markdown"]).to include("Control: Save preferences")
       expect(payload["warnings"]).to include("consent_interstitial")
       expect(payload["suspect"]).to eq(true)
     end

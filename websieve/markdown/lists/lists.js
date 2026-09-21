@@ -3,12 +3,12 @@ function escapeMarkdownLinkLabel(text) {
 }
 
 function markdownLink(text, url) {
-  var href = materializedHttpUrl(url);
+  var href = listPresentationUrl(url);
   return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
 }
 
 function markdownLinkWithFormattedLabel(markdown, url) {
-  var href = materializedHttpUrl(url);
+  var href = listPresentationUrl(url);
   return href ? "[" + markdown + "](" + href + ")" : markdown;
 }
 

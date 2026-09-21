@@ -157,6 +157,8 @@ function interstitialContent(metadata, pageText, type) {
   if (type === "meta_login") return metaWallContent(metadata, pageText);
 
   var title = normalizeText(metadata.title || document.title);
+  var requestedTitle = title;
+  var requestedDescription = normalizeText(metadata.excerpt || "");
   var lines = manyTexts([
     "main h1",
     "main h2",
@@ -185,7 +187,11 @@ function interstitialContent(metadata, pageText, type) {
     if (consentSummary.headings.length) title = consentSummary.headings[0];
     if (consentSummary.description) description = consentSummary.description;
     details.push("Interstitial: cookie or consent prompt");
-    highlights = consentSummary.highlights.filter(function(text) { return text !== title && text !== description; }).slice(0, 6);
+    if (requestedDescription && requestedDescription !== description) {
+      if (requestedTitle && requestedTitle !== title) details.push("Requested page: " + requestedTitle);
+      details.push("Requested page summary: " + requestedDescription);
+    }
+    highlights = consentSummary.highlights.filter(function(text) { return text !== title && text !== description; });
   } else if (type === "region_selector") {
     details.push("Interstitial: region or country selector");
     highlights = lines.filter(function(text) { return text !== title && text !== description; }).slice(0, 3);
@@ -221,4 +227,22 @@ function interstitialContent(metadata, pageText, type) {
     siteName: metadata.siteName || location.hostname,
     contentType: "interstitial"
   });
+}
+
+function interstitialRequestedContextMarkdown(content, metadata, markdown, warnings) {
+  if (content.contentType !== "interstitial" || warnings.indexOf("consent_interstitial") === -1) return markdown;
+  var normalizedMarkdown = normalizeText(markdown).toLowerCase();
+  var requestedTitle = normalizeText(metadata.title || "");
+  var requestedDescription = normalizeText(metadata.excerpt || "");
+  var context = [];
+  if (requestedTitle && normalizedMarkdown.indexOf(requestedTitle.toLowerCase()) === -1) {
+    context.push("- Requested page: " + requestedTitle);
+  }
+  if (requestedDescription && normalizedMarkdown.indexOf(requestedDescription.toLowerCase()) === -1) {
+    context.push("- Requested page summary: " + requestedDescription);
+  }
+  if (!context.length) return markdown;
+  markdown = cleanupMarkdownNoise([markdown, context.join("\n")].filter(Boolean).join("\n\n"));
+  content.textContent = markdown;
+  return markdown;
 }

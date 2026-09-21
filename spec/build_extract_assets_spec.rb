@@ -1311,7 +1311,6 @@ RSpec.describe "extract asset bundle" do
                           registerMastodonProfiles
                           registerDiscourseProfiles
                           registerStackOverflowProfiles
-                          registerBehanceProfiles
                           registerInstagramProfiles
                           registerFacebookProfiles
                           registerTelegramProfiles
