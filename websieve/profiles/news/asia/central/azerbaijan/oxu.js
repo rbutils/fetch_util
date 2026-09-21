@@ -12,14 +12,6 @@
       cleanupMarkdown: false,
       rewriteRoot: function(root) {
         removeAll(root, "button, script, style, .post-detail-actions, .m-share-block, .ad, .row.mt-3");
-
-        var share = document.createElement("p");
-        share.textContent = "Xəbər maraqlı gəlib? Sosial şəbəkələrdə paylaşın Facebook Telegram X oxu.az/1078092";
-        root.appendChild(share);
-
-        var shareLink = document.createElement("p");
-        shareLink.textContent = "Paylaş linki: https://oxu.az/1078092";
-        root.appendChild(shareLink);
       }
     });
   }
