@@ -45,7 +45,6 @@
   registerHackerNewsProfiles();
   registerMastodonProfiles();
   registerDiscourseProfiles();
-  registerRedditProfiles();
   registerStackOverflowProfiles();
   registerBehanceProfiles();
   registerInstagramProfiles();

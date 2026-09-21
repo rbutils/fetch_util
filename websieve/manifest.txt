@@ -251,7 +251,6 @@ profiles/community/social_news/hacker_news.js
 systems/social/mastodon.js
 profiles/social/telegram/telegram.js
 profiles/community/forums/discourse.js
-profiles/community/forums/reddit.js
 profiles/community/q_and_a/stackoverflow.js
 profiles/social/professional/behance.js
 profiles/community/q_and_a/quora.js

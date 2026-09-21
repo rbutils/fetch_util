@@ -17,7 +17,9 @@ RSpec.describe 'FetchUtil extractor integration - community social threads' do
     extract_from_url('https://www.reddit.com/r/ruby/comments/123/ruby-thread', community_fixture('reddit_thread.html')) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Reddit',
                                  'handle' => 'alice', 'replyCount' => 2, 'community' => 'r/ruby', 'score' => 17)
-      expect(payload['markdown']).to include('## Top Comments', 'First top-level comment.', 'Second top-level comment.')
+      expect(payload['markdown']).to include('First top-level comment.', 'Second top-level comment.')
+      expect(payload['markdown'].scan('First top-level comment.').length).to eq(1)
+      expect(payload['markdown'].index('First top-level comment.')).to be < payload['markdown'].index('Second top-level comment.')
     end
   end
 

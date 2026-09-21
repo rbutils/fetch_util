@@ -491,7 +491,6 @@ RSpec.describe "extract asset bundle" do
     fixture_root = File.join(project_root, "spec/fetch_util/fixtures")
     expected_community_sources = %w[
       profiles/community/forums/discourse.js
-      profiles/community/forums/reddit.js
       profiles/community/q_and_a/quora.js
       profiles/community/q_and_a/stack_exchange.js
       profiles/community/q_and_a/stackoverflow.js
@@ -761,7 +760,6 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     thread_entries_index = manifest.index("profiles/community/shared/thread_entries.js")
     expect(thread_entries_index).to be < manifest.index("profiles/community/forums/discourse.js")
-    expect(thread_entries_index).to be < manifest.index("profiles/community/forums/reddit.js")
     expect(thread_entries_index).to be < manifest.index("profiles/community/q_and_a/stack_exchange.js")
   end
 
@@ -1316,7 +1314,6 @@ RSpec.describe "extract asset bundle" do
                           registerHackerNewsProfiles
                           registerMastodonProfiles
                           registerDiscourseProfiles
-                          registerRedditProfiles
                           registerStackOverflowProfiles
                           registerBehanceProfiles
                           registerInstagramProfiles
