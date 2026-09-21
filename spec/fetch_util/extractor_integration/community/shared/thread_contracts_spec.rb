@@ -21,6 +21,28 @@ RSpec.describe 'FetchUtil extractor integration - community social threads' do
     end
   end
 
+  it 'classifies a coherent custom-element thread without a site profile' do
+    html = <<~HTML
+      <html><head><title>Garden planning</title><meta property="og:site_name" content="Gather"></head><body><main>
+        <gather-post author="orchard" comment-count="2" score="9">
+          <h1 slot="title">Garden planning</h1>
+          <div slot="text-body">Neighbors are planning the autumn garden together.</div>
+        </gather-post>
+        <gather-comment author="seedling"><div slot="comment">I can bring tomato seeds and tools.</div></gather-comment>
+        <gather-comment author="compost"><div slot="comment">I will organize the compost delivery.</div></gather-comment>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://community.example/c/gardening/thread/42', html) do |payload|
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Gather',
+                                 'handle' => 'orchard', 'replyCount' => 2, 'community' => 'c/gardening', 'score' => 9)
+      expect(payload['markdown']).to include('Neighbors are planning', 'I can bring tomato seeds',
+                                             'I will organize the compost delivery')
+      expect(payload['markdown'].scan('I can bring tomato seeds').length).to eq(1)
+      expect(payload['markdown'].scan('I will organize the compost delivery').length).to eq(1)
+    end
+  end
+
   it 'classifies verified Discourse topic and category list DOM as a thread and feed' do
     extract_from_url('https://forum.example/t/trust-levels-explained/123', community_fixture('discourse_topic.html')) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Discourse', 'community' => 'Community')

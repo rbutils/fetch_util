@@ -156,7 +156,7 @@
       content = applyPropertyListingContent(content, metadata);
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
-      content = applySocialContentType(content);
+      content = applySocialContentType(content, metadata);
       var strongArticle = strongArticleContent(content, false);
 
       var productList = genericProductListContent(metadata);

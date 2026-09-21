@@ -101,9 +101,22 @@
     ];
   }
 
+  function visibleCommentCandidates(root) {
+    var comments = Array.prototype.slice.call(root.querySelectorAll(
+      "#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, " +
+      "[class*='comment' i], [role='comment'], [itemprop~='comment']"
+    ));
+    Array.prototype.forEach.call(root.getElementsByTagName("*"), function(node) {
+      if (/-comment$/.test(String(node.localName || "")) && comments.indexOf(node) === -1) comments.push(node);
+    });
+    return comments.filter(function(node) {
+      return !elementSubtreeHidden(node) && !node.closest("nav, footer, form, dialog, [role='dialog']");
+    });
+  }
+
   function commentOnlyRoot(root) {
     if (!root || !root.querySelector) return false;
-    var comments = root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]");
+    var comments = visibleCommentCandidates(root);
     if (!comments.length) return false;
     var total = normalizeText(root.textContent || "").length;
     var commentText = Array.prototype.reduce.call(comments, function(length, node) {
@@ -114,16 +127,17 @@
 
   function visibleCommentMarkup(root) {
     var containers = [];
-    root.querySelectorAll("#comments, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread, [class*='comment' i]").forEach(function(node) {
-      if (!node.querySelector("p, li, [class*='body' i]")) return;
+    visibleCommentCandidates(root).forEach(function(node) {
+      if (!node.querySelector("p, li, [class*='body' i], [slot='comment']")) return;
       if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
     });
-    return containers.map(function(node) {
-      return visibilityPrunedClone(node, document);
-    }).filter(function(node) {
-      return normalizeText(node.textContent || "").length >= 40;
-    }).map(function(node) {
-      return node.outerHTML;
+    return containers.map(function(source) {
+      return { source: source, clone: visibilityPrunedClone(source, document) };
+    }).filter(function(entry) {
+      var minimum = /-comment$/.test(String(entry.source.localName || "")) ? 8 : 40;
+      return normalizeText(entry.clone.textContent || "").length >= minimum;
+    }).map(function(entry) {
+      return entry.clone.outerHTML;
     }).join("");
   }
 

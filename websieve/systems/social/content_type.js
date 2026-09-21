@@ -26,7 +26,74 @@
     content.score = null;
   }
 
-  function applySocialContentType(content) {
+  function socialPlatformLabel(metadata) {
+    var siteName = normalizedSocialText(metadata && metadata.siteName);
+    if (siteName && !/^[\w.-]+\.[a-z]{2,}$/i.test(siteName)) return siteName.replace(/\.(?:com|net|org)$/i, "");
+
+    var labels = String(location.hostname || "").toLowerCase().replace(/^www\./, "").split(".").filter(Boolean);
+    var index = labels.length - 2;
+    if (labels.length > 2 && labels[labels.length - 1].length === 2 && /^(?:ac|co|com|edu|gov|net|org)$/.test(labels[index])) {
+      index -= 1;
+    }
+    var label = labels[Math.max(0, index)] || "";
+    return normalizedSocialText(label.replace(/[-_]+/g, " ").replace(/\b\w/g, function(letter) {
+      return letter.toUpperCase();
+    }));
+  }
+
+  function socialRouteCommunity() {
+    var match = safeDecodeURI(location.pathname || "").match(/\/(r|c|communit(?:y|ies)|groups?|tags?)\/([^/?#]+)/i);
+    if (!match) return null;
+    var prefix = match[1].toLowerCase();
+    var value = normalizedSocialText(match[2].replace(/[-_]+/g, " "));
+    if (!value) return null;
+    return /^(?:r|c)$/.test(prefix) ? prefix + "/" + value : value;
+  }
+
+  function socialCustomThreadEvidence() {
+    var nodes = Array.prototype.slice.call(document.body.getElementsByTagName("*")).filter(function(node) {
+      return !elementSubtreeHidden(node) &&
+        !node.closest("nav, footer, aside, form, dialog, [role='dialog']") &&
+        /-(?:post|comment)$/.test(String(node.localName || ""));
+    });
+    var posts = nodes.filter(function(node) { return /-post$/.test(node.localName); });
+    var candidates = posts.map(function(post) {
+      var stem = post.localName.slice(0, -"-post".length);
+      var owner = post.closest("main, article, [role='main']") || document.body;
+      var comments = nodes.filter(function(node) {
+        return node.localName === stem + "-comment" &&
+          (node.closest("main, article, [role='main']") || document.body) === owner &&
+          normalizeText(node.textContent).length >= 8 &&
+          !!(post.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      if (!comments.length || normalizeText(post.textContent).length < 20) return null;
+      return { post: post, comments: comments };
+    }).filter(Boolean);
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+
+  function applyInferredSocialThread(content, metadata) {
+    if (!content || content.contentType === "social" || content.contentType === "interstitial") return content;
+    var evidence = socialCustomThreadEvidence();
+    if (!evidence) return content;
+
+    var post = evidence.post;
+    var author = normalizedSocialText(post.getAttribute("author") || post.getAttribute("data-author"));
+    content.contentType = "social";
+    content.socialKind = "thread";
+    content.platform = socialPlatformLabel(metadata);
+    content.handle = author;
+    content.byline = content.byline || author;
+    content.replyCount = socialInteger(post.getAttribute("comment-count") || post.getAttribute("data-comment-count"), false);
+    if (content.replyCount === null) content.replyCount = evidence.comments.length;
+    content.community = socialRouteCommunity();
+    content.score = socialInteger(post.getAttribute("score") || post.getAttribute("data-score"), true);
+    content.readerMode = false;
+    return content;
+  }
+
+  function applySocialContentType(content, metadata) {
+    content = applyInferredSocialThread(content, metadata);
     if (!content || content.contentType !== "social") return content;
 
     var kind = normalizedSocialText(content.socialKind);
