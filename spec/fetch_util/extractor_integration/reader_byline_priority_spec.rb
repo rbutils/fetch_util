@@ -293,6 +293,24 @@ RSpec.describe 'reader byline priority' do
     end
   end
 
+  it 'ignores source links whose labels are not valid bylines' do
+    paragraph_one = 'The selected report contains independently verified details about its subject and public impact for every participating community.'
+    paragraph_two = 'A second substantial paragraph establishes the same focal article without relying on unrelated author metadata or nearby modules.'
+    html = <<~HTML
+      <main><article><h1>Selected report</h1>
+        <a href="/more">Read more</a>
+        <p>#{paragraph_one}</p><p>#{paragraph_two}</p>
+      </article></main>
+    HTML
+    content = {
+      'html' => "<p>#{paragraph_one}</p><p>#{paragraph_two}</p>",
+      'textContent' => "#{paragraph_one} #{paragraph_two}",
+      'byline' => 'Jane Doe'
+    }
+
+    expect(source_reader_author(html, content, 'Jane Doe')).to be_nil
+  end
+
   it 'expands initials across a lowercase particle joined to a surname' do
     html = reader_byline_article(metadata_author: "Jean d'Arc", visible_author: 'JA')
 

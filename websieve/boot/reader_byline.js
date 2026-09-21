@@ -64,6 +64,7 @@ function readerBylineSourceAuthorLink(content, metadataByline) {
       owner = owner.parentElement;
     }
     var sourceName = sanitizeByline(link.textContent);
+    if (!sourceName) return null;
     var compactSourceName = sourceName.replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
     var sameName = sourceName.toLowerCase() === metadataName.toLowerCase();
     var titledIdentity = link.matches("[rel~='author'][title]") &&
