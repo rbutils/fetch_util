@@ -5,6 +5,7 @@ core/metadata/visible_metadata.js
 core/metadata/structured_data_entities.js
 core/metadata/structured_data.js
 classifiers/list_pages/linked_media_rows.js
+classifiers/list_pages/media_cards.js
 classifiers/list_pages/anchor_cards.js
 classifiers/list_pages/record_titles.js
 classifiers/list_pages/overlay_links.js

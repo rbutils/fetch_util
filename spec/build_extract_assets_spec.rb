@@ -817,7 +817,9 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     ownership_path = "classifiers/list_pages/card_ownership.js"
+    media_cards_path = "classifiers/list_pages/media_cards.js"
     presentation_path = "classifiers/list_pages/anchor_cards.js"
+    media_cards_source = File.read(File.join(source_root, media_cards_path))
     presentation_source = File.read(File.join(source_root, presentation_path))
     record_titles_path = "classifiers/list_pages/record_titles.js"
     record_titles_source = File.read(File.join(source_root, record_titles_path))
@@ -837,10 +839,12 @@ RSpec.describe "extract asset bundle" do
 
     expect(sources.values.join.scan(/function\s+genericListCardSelector\s*\(/).length).to eq(1)
     expect(manifest.index(linked_media_path)).to be < manifest.index(presentation_path)
+    expect(manifest.index(media_cards_path)).to be < manifest.index(presentation_path)
     expect(manifest.index(presentation_path)).to be < manifest.index(record_titles_path)
     expect(manifest.index(record_titles_path)).to be < manifest.index(dominance_path)
     expect(manifest.index(presentation_path)).to be < manifest.index(ownership_path)
     expect(presentation_source).to include("function genericListPresentationCardNode", "function genericListAlignmentOnlyCard")
+    expect(media_cards_source).to include("function genericListPairedMediaCard", "function genericListImageTitleCard")
     expect(presentation_source).not_to include("function genericListDirectAnchorTitle")
     expect(record_titles_source).to include(
       "function genericListDirectAnchorTitle",

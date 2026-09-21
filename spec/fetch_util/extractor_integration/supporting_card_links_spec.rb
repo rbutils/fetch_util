@@ -245,13 +245,15 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     expect(result.fetch("collectionDescriptionValues").join(" ")).not_to include("Second summary")
   end
 
-  it "keeps short titles when paired media proves their descriptive cards" do
-    cards = %w[Educator Guidance Resources].map.with_index do |title, index|
+  it "keeps short titles when repeated image cards prove their descriptive fields" do
+    titles = ["AI", "Shift"] + 10.times.map { |index| "Collection #{index + 1}" }
+    cards = titles.map.with_index do |title, index|
       <<~HTML
         <div class="promo-card">
-          <a href="/resources/#{index}"><img src="/images/#{index}.jpg" alt=""></a>
+          <picture><img src="https://images.example/#{index}.jpg" alt="#{title}" width="160" height="90"></picture>
+          <a class="promo-card-cover" href="/resources/#{index}" title="Open #{title}"></a>
           <div class="promo-card-content">
-            <h3><a href="/resources/#{index}">#{title}</a></h3>
+            <h3 class="promo-card-title"><a href="/resources/#{index}">#{title}</a></h3>
             <p>Material guidance owned by #{title.downcase}.</p>
           </div>
         </div>
@@ -262,7 +264,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       <p>This unpaired short record must not lower the generic threshold.</p></article>
     HTML
     result = render_supporting_cards(cards)
-    expect(result.fetch("items")).to eq(%w[Educator Guidance Resources].map.with_index do |title, index|
+    expect(result.fetch("items")).to eq(titles.map.with_index do |title, index|
       { "text" => title, "url" => "https://articles.example/resources/#{index}" }
     end)
   end

@@ -38,7 +38,8 @@
       var chromeOwnedCard = !!(link && container && container.parentElement &&
         container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
       var anchorMinimum = minimumListTitleLength(text);
-      if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
+      if (link && genericListImageTitleCard(link)) anchorMinimum = 1;
+      else if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
       var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? anchorMinimum : (caseRecordContext ? 3 : 18));
       if (link && genericListLinkGroup(link, context.linkGroups)) minimumLength = 1;
       return text.length < minimumLength ||
@@ -54,7 +55,7 @@
       var candidate = listLinkCandidate(link, container, context, true);
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       var directAnchorCard = genericListDirectAnchorCard(link, container) ||
-        !!(candidate && genericListPairedMediaCard(link) === candidate.card);
+        !!(candidate && (genericListPairedMediaCard(link) === candidate.card || genericListImageTitleCard(link) === candidate.card));
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);

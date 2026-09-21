@@ -42,39 +42,6 @@
       "a[href]:has([class*='title' i]):has([class*='description' i])";
   }
 
-  function genericListPairedMediaCard(link) {
-    if (!link || !link.matches || !link.matches("a[href]") || listCardNodeHidden(link) ||
-        link.closest("nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) return null;
-    var url = materializedHttpUrl(link.getAttribute("href"));
-    if (!url) return null;
-    var parent = link.parentElement;
-    while (parent && !parent.matches("main, body, html, article, li, tr, .post, .entry, .product, .product-tile, [itemtype$='/Product']")) {
-      if (listCardNodeHidden(parent) || listChromeNode(parent)) return null;
-      var links = Array.from(parent.querySelectorAll("a[href]")).filter(function(anchor) { return !listCardNodeHidden(anchor); });
-      if (links.length > 2) return null;
-      if (links.length === 2 && links.every(function(anchor) { return materializedHttpUrl(anchor.getAttribute("href")) === url; })) {
-        var image = links.find(function(anchor) {
-          return Array.from(anchor.querySelectorAll("img[src]")).some(function(node) {
-            return !listCardNodeHidden(node) && materializedHttpUrl(node.getAttribute("src"));
-          });
-        });
-        var name = links.find(function(anchor) {
-          var text = normalizeText(anchor.textContent);
-          return anchor !== image && !anchor.querySelector("img") && text.length >= minimumListTitleLength(text) &&
-            !genericListControlText(text) && !looksLikeFooterLink(text, url);
-        });
-        var branches = Array.from(parent.children).filter(function(node) {
-          return !node.matches("script, style, template") && !listCardNodeHidden(node);
-        });
-        if (image && name && branches.length === 2 && branches.every(function(branch) {
-          return branch.contains(image) !== branch.contains(name);
-        }) && !Array.from(parent.childNodes).some(function(node) { return node.nodeType === 3 && normalizeText(node.textContent); })) return parent;
-      }
-      parent = parent.parentElement;
-    }
-    return null;
-  }
-
   function genericListPrimaryHeadingLink(record) {
     if (!record || !record.querySelectorAll) return null;
     var links = Array.from(record.querySelectorAll("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4")).map(function(node) {

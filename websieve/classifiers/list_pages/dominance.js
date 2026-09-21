@@ -175,8 +175,9 @@
     if (!href || href[0] === "#") return null;
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
     var group = genericListLinkGroup(link, context.linkGroups);
+    var imageTitleCard = genericListImageTitleCard(link);
     var minimumTitleLength = minimumListTitleLength(text);
-    if (group) minimumTitleLength = 1;
+    if (group || imageTitleCard) minimumTitleLength = 1;
     else if (tableIndexRow) minimumTitleLength = 2;
     else if (directAnchorTitle && genericListWrappedAnchorCard(link)) minimumTitleLength = Math.min(6, minimumTitleLength);
     if (text.length < minimumTitleLength || text.length > 220) return null;
@@ -197,7 +198,7 @@
     if ((!group && looksLikeFooterLink(text, href)) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
     if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
-    var card = listCardRoot(link, container, group, context.figureCollections);
+    var card = imageTitleCard || listCardRoot(link, container, group, context.figureCollections);
     if (genericLinkedCollectionHeading(link, card)) return null;
     if (genericListSupportingCard(link, card, context.supportingCards)) {
       context.supportingLinks.add(link);
