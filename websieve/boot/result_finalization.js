@@ -1,3 +1,68 @@
+function finalizationWarnings(content, metadata, markdown, pageText, signals, primaryTitle) {
+  var warnings = suspicionReasons(metadata, content, markdown, pageText, signals);
+  (Array.isArray(content.warningReasons) ? content.warningReasons : []).forEach(function(reason) {
+    reason = normalizeText(reason);
+    if (reason && warnings.indexOf(reason) === -1) warnings.push(reason);
+  });
+  if (content.spaDataGuard && warnings.indexOf("spa_data_traversal_guard") === -1) warnings.push("spa_data_traversal_guard");
+  var normalizedMarkdown = normalizeText(markdown);
+  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdown, { maxTextLength: 1800, checkStructured: true })) {
+    if (warnings.indexOf("not_found_interstitial") === -1) warnings.push("not_found_interstitial");
+  }
+  var errorContext = normalizeText([primaryTitle, metadata.title, metadata.siteName, location.hostname, location.pathname, markdown].join(" "));
+  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, errorContext, { maxTextLength: 2000 }) && /\b(court|courts|case law|caselaw|legal|law|opinion|citation)\b/i.test(errorContext) && warnings.indexOf("not_found_interstitial") === -1) {
+    warnings.push("not_found_interstitial");
+  }
+  promoteWarningToInterstitial(content, warnings, "not_found_interstitial");
+  promoteWarningToInterstitial(content, warnings, "consent_interstitial", 500, markdown);
+  promoteWarningToInterstitial(content, warnings, "auth_or_login_interstitial", 1200, markdown);
+  if (warnings.indexOf("meta_login_wall") !== -1 && warnings.indexOf("consent_interstitial") !== -1 && content.contentType !== "social") {
+    content.contentType = "interstitial";
+    clearSocialFields(content);
+  }
+  if (normalizedMarkdown.length < 1200 && /\b(?:service|site|product|platform|application|app)\b/i.test(errorContext) && /\b(?:no longer available|has been retired|have been retired|is retired|was retired|shutdown|shut down|sunset|discontinued)\b/i.test(errorContext) && warnings.indexOf("access_error_interstitial") === -1) {
+    warnings.push("access_error_interstitial");
+  }
+  if (normalizedMarkdown.length < 10 && warnings.indexOf("empty_extraction") === -1) {
+    warnings.push("empty_extraction");
+  }
+  if (normalizedMarkdown.length < 140 && /copyright\b.*\ball rights reserved\b/i.test(normalizedMarkdown) && warnings.indexOf("empty_extraction") === -1) {
+    warnings.push("empty_extraction");
+  }
+  if (normalizedMarkdown.length < 500 && /(?:^|:\s*)error$/i.test(primaryTitle || metadata.title || "") && warnings.indexOf("access_error_interstitial") === -1) {
+    warnings.push("access_error_interstitial");
+  }
+  promoteWarningToInterstitial(content, warnings, "access_error_interstitial", 1200, markdown);
+  return warnings;
+}
+
+function deferredListFinalizationMarkdown(content, metadata, markdown) {
+  if (content.contentType === "list" && content.sectionMarkdownWithDescription) {
+    markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
+    content.textContent = markdown;
+  }
+  var listExtraction = content.listExtraction;
+  if (content.contentType === "list" && listExtraction && content.markdown === listExtraction.markdown) {
+    var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
+      listMarkdownWithInlineDescriptions(listExtraction);
+    if (inlineDescriptionMarkdown) {
+      markdown = materializedMarkdown(cleanupMarkdownNoise(inlineDescriptionMarkdown));
+      content.textContent = markdown;
+    }
+  }
+  var controlledPanelMarkdown = listMarkdownWithControlledPanels(content, metadata, markdown);
+  if (controlledPanelMarkdown) {
+    markdown = materializedMarkdown(cleanupMarkdownNoise(controlledPanelMarkdown));
+    content.textContent = markdown;
+  }
+  var searchToolsMarkdown = homepageSearchToolsMarkdown(content, markdown);
+  if (searchToolsMarkdown) {
+    markdown = materializedMarkdown(cleanupMarkdownNoise(searchToolsMarkdown));
+    content.textContent = markdown;
+  }
+  return markdown;
+}
+
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
@@ -144,63 +209,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (firstMarkdownLine.length >= 100 && !/^[-*]\s+\[/.test(firstMarkdownLine)) content.contentType = "article";
   }
   if (content.contentType === "article") markdown = articleCitationResourceMarkdown(content, markdown);
-  var warnings = suspicionReasons(metadata, content, markdown, pageText, signals);
-  (Array.isArray(content.warningReasons) ? content.warningReasons : []).forEach(function(reason) {
-    reason = normalizeText(reason);
-    if (reason && warnings.indexOf(reason) === -1) warnings.push(reason);
-  });
-  if (content.spaDataGuard && warnings.indexOf("spa_data_traversal_guard") === -1) warnings.push("spa_data_traversal_guard");
-  var normalizedMarkdownForWarnings = normalizeText(markdown);
-  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdownForWarnings, { maxTextLength: 1800, checkStructured: true })) {
-    if (warnings.indexOf("not_found_interstitial") === -1) warnings.push("not_found_interstitial");
-  }
-  var errorContext = normalizeText([primaryTitle, metadata.title, metadata.siteName, location.hostname, location.pathname, markdown].join(" "));
-  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, errorContext, { maxTextLength: 2000 }) && /\b(court|courts|case law|caselaw|legal|law|opinion|citation)\b/i.test(errorContext) && warnings.indexOf("not_found_interstitial") === -1) {
-    warnings.push("not_found_interstitial");
-  }
-  promoteWarningToInterstitial(content, warnings, "not_found_interstitial");
-  promoteWarningToInterstitial(content, warnings, "consent_interstitial", 500, markdown);
-  promoteWarningToInterstitial(content, warnings, "auth_or_login_interstitial", 1200, markdown);
-  if (warnings.indexOf("meta_login_wall") !== -1 && warnings.indexOf("consent_interstitial") !== -1 && content.contentType !== "social") {
-    content.contentType = "interstitial";
-    clearSocialFields(content);
-  }
-  if (normalizeText(markdown).length < 1200 && /\b(?:service|site|product|platform|application|app)\b/i.test(errorContext) && /\b(?:no longer available|has been retired|have been retired|is retired|was retired|shutdown|shut down|sunset|discontinued)\b/i.test(errorContext) && warnings.indexOf("access_error_interstitial") === -1) {
-    warnings.push("access_error_interstitial");
-  }
-  if (normalizeText(markdown).length < 10 && warnings.indexOf("empty_extraction") === -1) {
-    warnings.push("empty_extraction");
-  }
-  if (normalizeText(markdown).length < 140 && /copyright\b.*\ball rights reserved\b/i.test(normalizeText(markdown)) && warnings.indexOf("empty_extraction") === -1) {
-    warnings.push("empty_extraction");
-  }
-  if (normalizeText(markdown).length < 500 && /(?:^|:\s*)error$/i.test(primaryTitle || metadata.title || "") && warnings.indexOf("access_error_interstitial") === -1) {
-    warnings.push("access_error_interstitial");
-  }
-  promoteWarningToInterstitial(content, warnings, "access_error_interstitial", 1200, markdown);
-  if (content.contentType === "list" && content.sectionMarkdownWithDescription) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
-    content.textContent = markdown;
-  }
-  var listExtraction = content.listExtraction;
-  if (content.contentType === "list" && listExtraction && content.markdown === listExtraction.markdown) {
-    var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
-      listMarkdownWithInlineDescriptions(listExtraction);
-    if (inlineDescriptionMarkdown) {
-      markdown = materializedMarkdown(cleanupMarkdownNoise(inlineDescriptionMarkdown));
-      content.textContent = markdown;
-    }
-  }
-  var controlledPanelMarkdown = listMarkdownWithControlledPanels(content, metadata, markdown);
-  if (controlledPanelMarkdown) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(controlledPanelMarkdown));
-    content.textContent = markdown;
-  }
-  var searchToolsMarkdown = homepageSearchToolsMarkdown(content, markdown);
-  if (searchToolsMarkdown) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(searchToolsMarkdown));
-    content.textContent = markdown;
-  }
+  var warnings = finalizationWarnings(content, metadata, markdown, pageText, signals, primaryTitle);
+  markdown = deferredListFinalizationMarkdown(content, metadata, markdown);
   markdown = stripStructuredCardFieldMarkers(markdown);
   content.textContent = stripStructuredCardFieldMarkers(content.textContent);
   var pageTextLength = normalizeText(pageText || "").length;
