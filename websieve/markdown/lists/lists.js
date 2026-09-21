@@ -7,6 +7,11 @@ function markdownLink(text, url) {
   return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
 }
 
+function markdownLinkWithFormattedLabel(markdown, url) {
+  var href = materializedHttpUrl(url);
+  return href ? "[" + markdown + "](" + href + ")" : markdown;
+}
+
 function listItemMaterialIdentity(item, rawHref) {
   return JSON.stringify([
     item.url || "unlinked:" + (rawHref || ""),

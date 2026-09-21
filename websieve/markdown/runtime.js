@@ -129,7 +129,7 @@
       replacement: function(content, node) {
         // Markdown link labels cannot contain the blank lines introduced by block children.
         var label = content.trim().replace(/\s*\n+\s*/g, " ");
-        return markdownLink(label, node.getAttribute("href"));
+        return markdownLinkWithFormattedLabel(label, node.getAttribute("href"));
       }
     });
 
@@ -141,7 +141,7 @@
       replacement: function(content, node) {
         // Associate the destination with the card's heading without flattening its body.
         var body = content.trim().replace(/^(#{1,6}[ \t]+)([^\n]+)/m, function(_match, prefix, label) {
-          return prefix + markdownLink(label, node.getAttribute("href"));
+          return prefix + markdownLinkWithFormattedLabel(label, node.getAttribute("href"));
         });
         return "\n\n" + body + "\n\n";
       }
