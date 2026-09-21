@@ -157,6 +157,10 @@
   }
 
   function applySocialContentType(content, metadata) {
+    if (content && !content.hostAware && content.contentType !== "interstitial") {
+      var repeatedPost = socialRepeatedPostContent(metadata);
+      if (repeatedPost) content = repeatedPost;
+    }
     content = applyInferredSocialThread(content, metadata);
     content = applyInferredSocialFeed(content, metadata);
     content = applyInferredSocialPost(content, metadata);

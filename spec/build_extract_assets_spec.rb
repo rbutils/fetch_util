@@ -1519,7 +1519,6 @@ RSpec.describe "extract asset bundle" do
                                 profiles/publishing/ameba_blog.js
                                 profiles/news/europe/dnevnik.js
                                 profiles/publishing/segmentfault.js
-                                profiles/social/networks/weibo_mobile.js
                                 profiles/community/social_news/pikabu.js
                                 profiles/news/europe/southern/rcs_corriere.js
                                 profiles/news/europe/western/le_monde.js

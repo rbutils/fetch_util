@@ -1,7 +1,7 @@
   function socialPostRouteEvidence() {
     var parts = safeDecodeURI(location.pathname || "").split("/").filter(Boolean);
     var postIndex = parts.findIndex(function(part) {
-      return /^(?:p|reels?|statuses?|tv)$/i.test(part);
+      return /^(?:p|reels?|status(?:es)?|tv)$/i.test(part);
     });
     if (postIndex < 0 || !/^[a-z0-9._-]{2,128}$/i.test(parts[postIndex + 1] || "")) return null;
 
@@ -29,6 +29,95 @@
     }).length;
     if (!hasMedia && socialActions < 2 && !/[\d,.]+[KMB]?\s+(?:likes?|comments?|replies?|reposts?|views?)\b/i.test(text)) return null;
     return route;
+  }
+
+  function socialPostRecordSignature(node) {
+    if (!node || elementVisuallyHidden(node) || node.closest("nav, footer, aside, dialog, [role='dialog']")) return null;
+    var text = normalizeText(node.innerText || "");
+    if (text.length < 4 && !node.querySelector("img[src], video, audio")) return null;
+
+    var tokens = [node.id || "", node.getAttribute("data-testid") || "", node.getAttribute("role") || ""].concat(Array.from(node.classList || []));
+    if (!tokens.some(function(token) { return /(?:^|[-_])(card|comment|feed|message|post|reply|status|thread)(?:[-_]|$)/i.test(token); })) return null;
+
+    var classes = Array.from(node.classList || []).filter(function(name) {
+      return !/^(?:active|current|expanded|loaded|open|selected)$/i.test(name);
+    }).sort();
+    return node.tagName.toLowerCase() + "|" + classes.join(".") + "|" + (node.getAttribute("role") || "");
+  }
+
+  function socialRepeatedPostEvidence() {
+    var route = socialPostRouteEvidence();
+    if (!route) return null;
+
+    var candidates = Array.prototype.map.call(document.querySelectorAll("main, [role='main']"), function(owner) {
+      if (elementVisuallyHidden(owner) || owner.querySelector('input[type="password"], input[autocomplete="current-password"]')) return null;
+      if (normalizeText(owner.innerText || "").length < 80) return null;
+
+      var authorLink = Array.prototype.find.call(owner.querySelectorAll("a[href]"), function(link) {
+        if (elementVisuallyHidden(link)) return false;
+        return /\/(?:members?|people|profiles?|users?)\/[^/?#]+/i.test(link.getAttribute("href") || "");
+      });
+      if (!authorLink) return null;
+
+      var signatures = {};
+      var materialSignatures = {};
+      Array.prototype.forEach.call(owner.children || [], function(child) {
+        var signature = socialPostRecordSignature(child);
+        if (!signature) return;
+        signatures[signature] = (signatures[signature] || 0) + 1;
+        if (normalizeText(child.innerText || "").length >= 24 || child.querySelector("img[src], video, audio")) {
+          materialSignatures[signature] = (materialSignatures[signature] || 0) + 1;
+        }
+      });
+      var repeatedSignature = Object.keys(signatures).some(function(signature) {
+        return signatures[signature] >= 3 && (materialSignatures[signature] || 0) >= 2;
+      });
+      if (!repeatedSignature) return null;
+
+      var author = normalizeText(authorLink.innerText || "");
+      var handleMatch = (authorLink.getAttribute("href") || "").match(/\/(?:members?|people|profiles?|users?)\/([^/?#]+)/i);
+      return {
+        author: author || null,
+        handle: handleMatch ? safeDecodeURI(handleMatch[1]) : route.handle,
+        owner: owner
+      };
+    }).filter(Boolean);
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+
+  function socialRepeatedPostContent(metadata) {
+    var evidence = socialRepeatedPostEvidence();
+    if (!evidence) return null;
+
+    var clone = visibilityPrunedClone(evidence.owner, document);
+    clone.querySelectorAll("script, style, noscript, template, iframe").forEach(function(node) { node.remove(); });
+    clone.querySelectorAll("img[src]").forEach(function(image) {
+      if (!normalizeText(image.getAttribute("alt") || "")) {
+        image.setAttribute("alt", normalizeText(image.getAttribute("aria-label") || image.getAttribute("title") || "Image"));
+      }
+    });
+    materializeHttpAttributes(clone, true);
+    var markdown = markdownFor(clone.outerHTML).trim();
+    var text = normalizeText(clone.innerText || "");
+    if (text.length < 80 || normalizeText(markdown).length < 80) return null;
+
+    return {
+      title: evidence.author || metadata.title,
+      byline: evidence.author || metadata.byline,
+      excerpt: metadata.excerpt || text.slice(0, 280),
+      siteName: metadata.siteName,
+      publishedTime: metadata.publishedTime || firstTextFromNode(evidence.owner, ["time", ".time"]),
+      canonicalUrl: metadata.canonicalUrl,
+      html: clone.outerHTML,
+      markdown: markdown,
+      textContent: text,
+      readerMode: false,
+      contentType: "social",
+      socialKind: "post",
+      platform: socialPlatformLabel(metadata),
+      handle: evidence.handle,
+      hostAware: false
+    };
   }
 
   function applyInferredSocialPost(content, metadata) {

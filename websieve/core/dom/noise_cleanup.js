@@ -100,8 +100,9 @@
     stripArticleWidgets(root);
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
-      if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el)) el.remove();
-      if (playerControlText(text) && textLength(el) < 80 && !codeContentNode(el)) el.remove();
+      var ownsMaterialMedia = !el.matches("a, button") && !!el.querySelector("img[src], picture, video, audio");
+      if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el) && !ownsMaterialMedia) el.remove();
+      if (playerControlText(text) && textLength(el) < 80 && !codeContentNode(el) && !ownsMaterialMedia) el.remove();
     });
 
     // Strip social media join/follow CTAs

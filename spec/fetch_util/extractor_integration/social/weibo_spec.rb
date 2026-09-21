@@ -3,7 +3,19 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it "extracts a mobile Weibo status instead of comments" do
+  it "preserves every visible mobile Weibo status record in source order" do
+    replies = Array.new(12) do |index|
+      number = format("%02d", index + 1)
+      <<~HTML
+        <div class="card-wrap">
+          <div class="card-main">
+            <h4>回复标题 #{number}</h4>
+            <p><a href="/profile/commenter-#{number}">评论者 #{number}</a><span>:</span><span>可见回复 #{number}</span></p>
+          </div>
+        </div>
+      HTML
+    end.join
+
     html = <<~HTML
       <html lang="zh-CN">
         <head>
@@ -27,19 +39,7 @@ RSpec.describe 'FetchUtil extractor integration' do
                 <div class="weibo-media-wraps weibo-media f-media media-b"><ul class="m-auto-list"><li><img src="https://wx3.sinaimg.cn/orj360/006H9hSBly1ieo6j378z1j30u01hc0ui.jpg"><span class="video-icon"></span></li></ul><span>00:35</span></div>
               </div>
             </div>
-            <div class="card-wrap">
-              <div class="card-main">
-                 <h4>晚风里的旋律怎么写</h4>
-                 <h3>她在舞台上的表现很突出，歌曲也保持了自己的风格。</h3>
-                 <p><a>星河小记</a><span>:</span><span>现场音响听见清唱片段十分动人</span></p>
-              </div>
-            </div>
-            <div class="card-wrap">
-              <div class="card-main">
-                 <h4>另一段旋律11111</h4>
-                 <h3>这位歌手没有改变方向，她的歌曲大多来自自己的创作。</h3>
-              </div>
-            </div>
+            #{replies}
           </main>
         </body>
       </html>
@@ -48,11 +48,15 @@ RSpec.describe 'FetchUtil extractor integration' do
     extract_from_url("https://m.weibo.cn/status/5315784902447884", html) do |payload|
       expect_content_type(payload, "social")
       expect(payload).to include("socialKind" => "post", "platform" => "Weibo", "handle" => "6134393125")
-      expect(payload["markdown"]).to include("# Music_Data - 微博正文")
+      expect(payload).to include("title" => "Music_Data", "byline" => "Music_Data")
+      expect(payload["markdown"]).to include("Music\\_Data")
       expect(payload["markdown"]).to include("清晨的城市迎来一场小型音乐会")
       expect(payload["markdown"]).to include("#今日舞台记录#")
-      expect(payload["markdown"]).not_to include("晚风里的旋律怎么写")
-      expect(payload["markdown"]).not_to include("现场音响听见清唱片段十分动人")
+      expect(payload["markdown"]).to include("https://wx3.sinaimg.cn/orj360/006H9hSBly1ieo6j378z1j30u01hc0ui.jpg")
+      expected_replies = Array.new(12) { |index| "可见回复 #{format('%02d', index + 1)}" }
+      reply_positions = expected_replies.map { |reply| payload["markdown"].index(reply) }
+      expect(payload["markdown"].scan(/可见回复 \d{2}/)).to eq(expected_replies)
+      expect(reply_positions).to eq(reply_positions.sort)
       expect(payload["warnings"]).not_to include("multi_topic_page")
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
       expect(payload["suspect"]).to be(false)
