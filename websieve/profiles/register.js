@@ -47,5 +47,4 @@
   registerInstagramProfiles();
   registerTelegramProfiles();
   registerTwitterProfiles();
-  registerLinkedinProfiles();
   registerBlueskyProfiles();

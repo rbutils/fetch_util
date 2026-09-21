@@ -1314,7 +1314,6 @@ RSpec.describe "extract asset bundle" do
                           registerInstagramProfiles
                           registerTelegramProfiles
                           registerTwitterProfiles
-                          registerLinkedinProfiles
                           registerBlueskyProfiles
                         ])
     expect(register_source).to include(

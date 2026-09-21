@@ -72,14 +72,64 @@ RSpec.describe 'FetchUtil native social network profiles' do
     extract_from_url('https://bsky.app/profile/ada.bsky.social/post/current', lookalike) { |payload| expect_no_social(payload) }
   end
 
-  it 'classifies a LinkedIn company profile when public profile fields are returned' do
+  it 'keeps every visible LinkedIn company field and update through shared profile inference' do
+    updates = (1..12).map do |index|
+      <<~HTML
+        <article><h3>Update #{index}</h3><p>Public infrastructure release #{index} has distinct source-owned details.</p></article>
+      HTML
+    end.join
     html = <<~HTML
-      <html><head><title>Acme Systems | LinkedIn</title></head><body><main><h1>Acme Systems</h1><p>Industry</p><p>Software Development</p><p>100 followers</p><p>About</p><p>Acme builds public infrastructure software for local communities.</p><p>Website</p><p>https://acme.example</p></main></body></html>
+      <html><head><title>Acme Systems | LinkedIn</title></head><body><main>
+        <h1>Acme Systems</h1><p>Industry</p><p>Software Development</p><p>100 followers</p>
+        <p>About</p><p>Acme builds public infrastructure software for local communities.</p>
+        <p>Website</p><p>https://acme.example</p><p>Company size</p><p>51-200 employees</p>
+        <p>Headquarters</p><p>London, England</p><p>Type</p><p>Privately Held</p>
+        <p>Specialties</p><p>Infrastructure, accessibility, and public services</p><p>Founded</p><p>2012</p>
+        <h2>Updates</h2>#{updates}
+      </main></body></html>
     HTML
 
     extract_from_url('https://www.linkedin.com/company/acme-systems/', html) do |payload|
       expect_social(payload, kind: 'profile', platform: 'LinkedIn')
-      expect(payload['markdown']).to include('Acme builds public infrastructure software')
+      expect(payload['markdown']).to include(
+        'Acme Systems',
+        'Software Development',
+        '100 followers',
+        'Acme builds public infrastructure software',
+        'https://acme.example',
+        '51-200 employees',
+        'London, England',
+        'Privately Held',
+        'Infrastructure, accessibility, and public services',
+        '2012'
+      )
+      positions = (1..12).map do |index|
+        expect(payload['markdown']).to include("Update #{index}", "Public infrastructure release #{index} has distinct source-owned details.")
+        payload['markdown'].index("Public infrastructure release #{index} has distinct source-owned details.")
+      end
+      expect(positions).to eq(positions.sort)
+    end
+  end
+
+  it 'keeps every visible LinkedIn personal profile field through shared profile inference' do
+    html = <<~HTML
+      <html><head><title>Ada Lovelace | LinkedIn</title></head><body><main>
+        <h1>Ada Lovelace</h1><p>Computing Historian</p><p>250 followers</p><p>500+ connections</p>
+        <p>Location</p><p>London, England</p><h2>About</h2>
+        <p>Public notes about analytical engines, mathematics, and computing history.</p>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://www.linkedin.com/in/ada-lovelace/', html) do |payload|
+      expect_social(payload, kind: 'profile', platform: 'LinkedIn')
+      expect(payload['markdown']).to include(
+        'Ada Lovelace',
+        'Computing Historian',
+        '250 followers',
+        '500+ connections',
+        'London, England',
+        'Public notes about analytical engines, mathematics, and computing history.'
+      )
     end
   end
 
