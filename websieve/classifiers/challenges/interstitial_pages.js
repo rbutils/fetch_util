@@ -134,9 +134,12 @@ function interstitialPageType(metadata, pageText) {
   var page = normalizeText([pageText || "", (document.body && document.body.textContent) || ""].join(" "));
   var combined = (title + " " + page).toLowerCase();
   var substantialPublic = substantialPublicPage(page);
+  var captchaOwnedPressAndHold = Array.prototype.some.call(document.querySelectorAll("#px-captcha, [id*='captcha' i], [class*='captcha' i]"), function(owner) {
+    return !elementSubtreeHidden(owner) && /press\s*(?:&|and)\s*hold/i.test(owner.innerText || owner.textContent || "");
+  });
 
   if (metaWallPage(metadata, pageText)) return "meta_login";
-  if (/robot or human|confirm (?:that )?you (?:are|.?re) (?:a )?human|activate and hold the button|press\s*(?:&|and)\s*hold|px-captcha|drag the slider to fit the puzzle|slide to verify|help us protect|verifying that you.?re a real person|unusual activity from your computer network|click the box below to let us know you.?re not a robot/i.test(combined)) return "human_verification";
+  if (/robot or human|confirm (?:that )?you (?:are|.?re) (?:a )?human|activate and hold the button|px-captcha|drag the slider to fit the puzzle|slide to verify|help us protect|verifying that you.?re a real person|unusual activity from your computer network|click the box below to let us know you.?re not a robot/i.test(combined) || captchaOwnedPressAndHold) return "human_verification";
   if (/select your country|choose a country|shopping in the u\.s\?|best buy international/i.test(combined) && !substantialPublic) return "region_selector";
   if (/browser is not supported|your browser is not supported|unsupported browser|for the best experience, use any of these supported browsers|use any of these supported browsers|supported browsers:/i.test(combined) && !substantialPublic) return "browser_support";
   if (/^access error$/i.test(title) || /potential misuse|page you are trying to access is unavailable|help\.ft\.com|request blocked|you have been blocked|troubleshooting cloudflare errors/i.test(combined)) return "access_error";

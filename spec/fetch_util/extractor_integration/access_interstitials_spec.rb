@@ -297,6 +297,41 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not classify phone press-and-hold help as human verification" do
+    resources = (1..7).map do |index|
+      %(<li><a href="/resources/#{index}">CaptionCall mobile resource #{index}</a></li>)
+    end.join
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <head><title>How to Check Voicemail | CaptionCall</title></head>
+        <body>
+          <div class="ginput_recaptchav3" style="display: none"><input name="g-recaptcha-response"></div>
+          <main>
+            <article>
+              <h1>How to Check Voicemail</h1>
+              <p>CaptionCall Mobile provides public instructions and accessibility resources for checking voicemail on supported phones.</p>
+              <h2>Open your voicemail</h2>
+              <ul><li>Press and hold the 1 on the CaptionCall Mobile dialer (or dial *97).</li></ul>
+              <h2>Related resources</h2>
+              <ul>#{resources}</ul>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://caption.example.test/help/mobile", html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload["contentType"]).not_to eq("interstitial")
+      expect_warnings(payload, exclude: %w[human_verification_interstitial bot_or_access_interstitial interstitial])
+      (1..7).each do |index|
+        expect(payload["markdown"]).to include("https://caption.example.test/resources/#{index}")
+      end
+    end
+  end
+
   it "flags help-us-protect verification pages" do
     html = <<~HTML
       <html>
