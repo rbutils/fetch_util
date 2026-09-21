@@ -79,16 +79,16 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
         </head>
         <body>
           <main>
-            <shreddit-post author="alice" comment-count="2">
+            <shreddit-post author="alice" comment-count="3">
               <div slot="credit-bar">Go to ruby r/ruby 4d ago alice</div>
               <h1 slot="title">Ruby thread</h1>
               <div slot="text-body">Here is the original post body.</div>
             </shreddit-post>
-            <shreddit-comment author="bob" depth="0" score="12">
+            <shreddit-comment thingid="t1_bob" author="bob" depth="0" score="12">
               <div slot="commentMeta">bob 3d ago</div>
               <div slot="comment">First top-level comment.</div>
-              <shreddit-comment author="nested" depth="1" score="2">
-                <div slot="comment">Nested reply should not be promoted as a top-level heading.</div>
+              <shreddit-comment thingid="t1_nested" parent-comment-id="t1_bob" author="nested" depth="1" score="2">
+                <div slot="comment">Nested reply remains in its source position.</div>
               </shreddit-comment>
             </shreddit-comment>
             <shreddit-comment author="carol" depth="0" score="4">
@@ -109,8 +109,12 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
       expect(payload["markdown"]).to include("## Top Comments")
       expect(payload["markdown"]).to include("### bob (12 points)")
       expect(payload["markdown"]).to include("First top-level comment.")
+      expect(payload["markdown"]).to include("#### nested (2 points)")
+      expect(payload["markdown"]).to include("Nested reply remains in its source position.")
       expect(payload["markdown"]).to include("### carol (4 points)")
       expect(payload["markdown"]).to include("Second top-level comment.")
+      expect(payload["markdown"].index("Nested reply")).to be < payload["markdown"].index("Second top-level comment")
+      expect(payload["html"].scan("Nested reply remains in its source position.").length).to eq(1)
       expect(payload["markdown"]).not_to include("This Reddit page requires cookie acceptance or login")
     end
   end

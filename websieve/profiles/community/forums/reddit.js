@@ -17,23 +17,27 @@
     }
     var commentCount = redditExplicitInteger(post.getAttribute("comment-count"));
     var score = redditExplicitInteger(post.getAttribute("score"));
-    var commentNodes = Array.prototype.slice.call(document.querySelectorAll("shreddit-comment[depth='0'], shreddit-comment:not([depth])"));
-    var comments = [];
-
-    commentNodes.forEach(function(node) {
+    var commentNodes = document.querySelectorAll("shreddit-comment");
+    var comments = collectCommunityThreadEntries(commentNodes, function(node) {
+      var metaNode = node.querySelector(':scope > [slot="commentMeta"]');
+      var bodyNode = node.querySelector(':scope > [slot="comment"]');
       var author = normalizeText(node.getAttribute("author") || "");
       var score = normalizeText(node.getAttribute("score") || "");
-      var metaText = normalizeText((node.querySelector('[slot="commentMeta"]') || {}).innerText || "");
-      var text = normalizeText((node.querySelector('[slot="comment"]') || {}).innerText || "");
-      if (!text) return;
+      var metaText = normalizeText((metaNode || {}).innerText || "");
+      var text = normalizeText((bodyNode || {}).innerText || "");
+      if (!text) return null;
 
       var heading = author || "Comment";
       if (score) heading += " (" + score + " points)";
-      comments.push({
+      return {
+        id: node.getAttribute("thingid") || node.getAttribute("comment-id") || node.id,
+        parentId: node.getAttribute("parent-comment-id"),
+        depth: redditCommentDepth(node),
         heading: heading,
         meta: metaText,
+        body: text,
         text: text
-      });
+      };
     });
 
     if (!title || (!body && comments.length === 0)) return null;
@@ -45,9 +49,9 @@
     if (commentCount || comments.length) sections.push("## Top Comments");
 
     comments.forEach(function(comment) {
-      sections.push("### " + comment.heading);
+      sections.push(redditCommentHeadingPrefix(comment.depth) + " " + comment.heading);
       if (comment.meta && comment.meta.toLowerCase().indexOf(comment.heading.toLowerCase()) === -1) sections.push(comment.meta);
-      sections.push(comment.text);
+      sections.push(comment.body);
     });
 
     return {
@@ -56,7 +60,7 @@
       excerpt: body || metadata.excerpt,
       siteName: metadata.siteName || "Reddit",
       publishedTime: metadata.publishedTime,
-      html: post.outerHTML,
+      html: [post.outerHTML, communityThreadEntriesHtml(comments)].filter(Boolean).join("\n"),
       markdown: sections.filter(Boolean).join("\n\n"),
       textContent: normalizeText([title, body].concat(comments.map(function(comment) { return comment.text; })).join(" ")),
       readerMode: false,
@@ -68,6 +72,15 @@
       community: comments.length ? redditCommunity() : null,
       score: comments.length ? score : null
     };
+  }
+
+  function redditCommentDepth(node) {
+    var depth = Number(node.getAttribute("depth"));
+    return Number.isFinite(depth) && depth > 0 ? depth : 0;
+  }
+
+  function redditCommentHeadingPrefix(depth) {
+    return "######".slice(0, Math.min(3 + depth, 6));
   }
 
   function redditExplicitInteger(value) {

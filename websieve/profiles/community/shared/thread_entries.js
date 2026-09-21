@@ -20,7 +20,15 @@
   }
 
   function communityThreadEntriesHtml(entries) {
-    return entries.map(function(entry) {
-      return entry.sourceNode.outerHTML;
+    var nodes = entries.map(function(entry) { return entry.sourceNode; });
+    var includedNodes = new Set(nodes);
+
+    return nodes.filter(function(node) {
+      for (var parent = node.parentElement; parent; parent = parent.parentElement) {
+        if (includedNodes.has(parent)) return false;
+      }
+      return true;
+    }).map(function(node) {
+      return node.outerHTML;
     }).join("\n");
   }
