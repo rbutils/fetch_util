@@ -1,6 +1,10 @@
+function escapeMarkdownLinkLabel(text) {
+  return String(text == null ? "" : text).replace(/\\/g, "\\\\").replace(/([\[\]])/g, "\\$1");
+}
+
 function markdownLink(text, url) {
   var href = materializedHttpUrl(url);
-  return href ? "[" + text + "](" + href + ")" : text;
+  return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
 }
 
 function listItemMaterialIdentity(item, rawHref) {

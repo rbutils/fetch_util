@@ -75,4 +75,20 @@ RSpec.describe FetchUtil::Extractor do
       expect(markdown.scan('https://manual.example.test/guides/advanced').length).to eq(1)
     end
   end
+
+  it 'escapes generated Markdown link labels' do
+    html = <<~HTML
+      <html><head><title>Preview guide</title></head><body><main><article>
+        <h1>Preview guide</h1>
+        <p>This guide documents the preview runtime and its supported deployment workflow.</p>
+        <table><tr><th>Guide</th></tr><tr><td><a href="/preview">A ] B [preview]</a></td></tr></table>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url('https://manual.example.test/preview-guide', html, reader_mode: false) do |payload|
+      expect(payload.fetch('markdown')).to include(
+        '[A \\] B \\[preview\\]](https://manual.example.test/preview)'
+      )
+    end
+  end
 end
