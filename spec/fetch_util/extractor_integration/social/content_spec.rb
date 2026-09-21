@@ -436,15 +436,16 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
-  it 'types a visible public Threads profile' do
+  it 'keeps every visible Threads profile field through shared profile inference' do
     html = <<~HTML
-      <html><head><title>Ada Lovelace (@ada) • Threads</title><meta name="description" content="2K Followers • 18 Threads • Computing notes."></head><body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p><p>Computing notes.</p></main></body></html>
+      <html><head><title>Ada Lovelace (@ada) • Threads</title><meta name="description" content="2K Followers • 18 Threads • Computing notes."></head><body><main><h1>Ada Lovelace</h1><p>@ada</p><p>2K Followers</p><p>18 Threads</p><p>Computing notes.</p></main></body></html>
     HTML
 
     with_url_page('https://www.threads.net/@ada', html) do |page|
       payload = extract_payload(page)
 
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Threads', 'handle' => '@ada')
+      expect(payload['markdown']).to include('Ada Lovelace', '@ada', '2K Followers', '18 Threads', 'Computing notes.')
     end
   end
 

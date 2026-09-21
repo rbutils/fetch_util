@@ -48,6 +48,5 @@
   registerFacebookProfiles();
   registerTelegramProfiles();
   registerTwitterProfiles();
-  registerThreadsProfiles();
   registerLinkedinProfiles();
   registerBlueskyProfiles();
