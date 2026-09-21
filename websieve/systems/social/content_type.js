@@ -156,63 +156,10 @@
     return content;
   }
 
-  function socialProfileRouteEvidence() {
-    var parts = safeDecodeURI(location.pathname || "").split("/").filter(Boolean);
-    var first = normalizedSocialText(parts[0]);
-    var second = normalizedSocialText(parts[1]);
-    if (parts.length === 1 && /^@[a-z0-9._-]{2,64}$/i.test(first || "")) {
-      return { identifier: first.slice(1), explicit: true };
-    }
-    if (parts.length === 2 && /^(?:company|in|members?|people|profiles?|users?)$/i.test(first || "") && /^[a-z0-9._-]{2,64}$/i.test(second || "")) {
-      return { identifier: second, explicit: true };
-    }
-    if (parts.length !== 1 || !/^[a-z0-9._-]{2,64}$/i.test(first || "") || /^(?:about|account|accounts|auth|explore|feed|home|login|search|settings|signup)$/i.test(first)) return null;
-    return { identifier: first, explicit: false };
-  }
-
-  function socialVisibleProfileEvidence() {
-    var route = socialProfileRouteEvidence();
-    if (!route) return null;
-    var root = Array.prototype.find.call(document.querySelectorAll("main, [role='main']"), function(node) {
-      return !elementVisuallyHidden(node);
-    });
-    if (!root || root.querySelector('input[type="password"], input[autocomplete="current-password"]')) return null;
-
-    var rawText = root.innerText || "";
-    var text = normalizeText(rawText);
-    if (text.length < 24 || !/[\d,.]+[KMB]?\s+(?:followers?|following|connections?)\b/i.test(text)) return null;
-
-    var handleMatch = rawText.match(/(?:^|\s)(@[a-z0-9._-]{2,64})\b/i);
-    var publicationCount = /[\d,.]+[KMB]?\s+(?:posts?|threads?)\b/i.test(text);
-    var labeledSections = [
-      /(?:^|\n)\s*(?:about|company size|founded|headquarters|industry|intro|specialties|website)\s*(?:\n|$)/i,
-      /\b(?:page|profile)\s*·/i
-    ].filter(function(pattern) { return pattern.test(rawText); }).length;
-    if (!route.explicit && !handleMatch && !(publicationCount && labeledSections) && labeledSections < 2) return null;
-    if (route.explicit && !handleMatch && !publicationCount && !labeledSections) return null;
-
-    return {
-      handle: handleMatch ? handleMatch[1] : "@" + route.identifier.replace(/^@/, "")
-    };
-  }
-
-  function applyInferredSocialProfile(content, metadata) {
-    if (!content || content.contentType === "social" || content.contentType === "interstitial") return content;
-    if (["article", "list"].indexOf(content.contentType) === -1) return content;
-    var evidence = socialVisibleProfileEvidence();
-    if (!evidence) return content;
-
-    content.contentType = "social";
-    content.socialKind = "profile";
-    content.platform = socialPlatformLabel(metadata);
-    content.handle = evidence.handle;
-    content.readerMode = false;
-    return content;
-  }
-
   function applySocialContentType(content, metadata) {
     content = applyInferredSocialThread(content, metadata);
     content = applyInferredSocialFeed(content, metadata);
+    content = applyInferredSocialPost(content, metadata);
     content = applyInferredSocialProfile(content, metadata);
     if (!content || content.contentType !== "social") return content;
 

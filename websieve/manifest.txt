@@ -136,6 +136,7 @@ systems/content_types/sports.js
 systems/content_types/press_releases.js
 systems/content_types/products.js
 systems/content_types/properties.js
+systems/social/visible_content.js
 systems/social/content_type.js
 systems/docs/core/docs_detector.js
 systems/docs/stldocs/methods.js
@@ -252,7 +253,6 @@ profiles/social/telegram/telegram.js
 profiles/community/forums/discourse.js
 profiles/community/q_and_a/stackoverflow.js
 profiles/social/networks/meta/index.js
-profiles/social/networks/meta/instagram.js
 profiles/social/networks/twitter.js
 profiles/social/networks/bluesky.js
 profiles/publishing/csdn.js

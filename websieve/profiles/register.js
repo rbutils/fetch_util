@@ -44,7 +44,6 @@
   registerMastodonProfiles();
   registerDiscourseProfiles();
   registerStackOverflowProfiles();
-  registerInstagramProfiles();
   registerTelegramProfiles();
   registerTwitterProfiles();
   registerBlueskyProfiles();

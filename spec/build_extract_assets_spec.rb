@@ -1311,7 +1311,6 @@ RSpec.describe "extract asset bundle" do
                           registerMastodonProfiles
                           registerDiscourseProfiles
                           registerStackOverflowProfiles
-                          registerInstagramProfiles
                           registerTelegramProfiles
                           registerTwitterProfiles
                           registerBlueskyProfiles
@@ -1348,6 +1347,7 @@ RSpec.describe "extract asset bundle" do
     expect_manifest_order(manifest, "profiles/news/news_homepages.js", register_path)
     expect_manifest_order(
       manifest,
+      "systems/social/visible_content.js",
       "systems/social/content_type.js",
       "boot/result_finalization.js",
       "boot/extract_api.js"
@@ -1358,7 +1358,6 @@ RSpec.describe "extract asset bundle" do
       "core/dom/selectors.js"
     )
     expect_manifest_order(manifest, "profiles/host_aware.js", register_path)
-    expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/instagram.js")
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
   end
 

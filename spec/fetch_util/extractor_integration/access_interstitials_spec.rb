@@ -185,7 +185,16 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts visible instagram comments from the public post text" do
+  it "preserves every visible Instagram comment from the public post text" do
+    additional_comments = (1..12).map do |index|
+      <<~HTML
+        <div>commenter_#{index}</div>
+        <div>#{index}m</div>
+        <div>Visible comment #{index} remains distinct.</div>
+        <div>Like</div>
+        <div>Reply</div>
+      HTML
+    end.join
     html = <<~HTML
       <html>
         <head>
@@ -210,6 +219,7 @@ RSpec.describe 'FetchUtil extractor integration' do
             <div>Esse Daniel parece um fantasma.👻</div>
             <div>Like</div>
             <div>Reply</div>
+            #{additional_comments}
             <div>153.9K</div>
             <div>1.3K</div>
             <div>4 days ago</div>
@@ -222,11 +232,20 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     with_url_page("https://www.instagram.com/ronaldo/p/DWh3vbdkXI1/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload["markdown"]
 
-      expect(payload["markdown"]).to include("## Comments")
-      expect(payload["markdown"]).to include("@douglas_kadosh: Sim meu 09, acho que já tá na hora de parar de brincar né?")
-      expect(payload["markdown"]).to include("@k.le.bersou: Esse Daniel parece um fantasma.👻")
-      expect(payload["markdown"]).not_to include("Access notice: Instagram login required")
+      expect(payload).to include("contentType" => "social", "socialKind" => "post", "platform" => "Instagram", "handle" => "@ronaldo")
+      expected_comments = [
+        ["douglas_kadosh", "Sim meu 09, acho que já tá na hora de parar de brincar né?"],
+        ["k.le.bersou", "Esse Daniel parece um fantasma.👻"]
+      ] + (1..12).map { |index| ["commenter_#{index}", "Visible comment #{index} remains distinct."] }
+      expected_comments.each do |user, text|
+        expect(markdown.lines.count { |line| line.strip == user.gsub('_', '\\_') }).to eq(1)
+        expect(markdown.lines.count { |line| line.strip == text }).to eq(1)
+      end
+      positions = expected_comments.map { |_user, text| markdown.index(text) }
+      expect(positions).to eq(positions.sort)
+      expect(markdown).not_to include("Access notice: Instagram login required")
     end
   end
 

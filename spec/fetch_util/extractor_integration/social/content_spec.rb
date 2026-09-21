@@ -291,7 +291,33 @@ RSpec.describe 'FetchUtil social result contract' do
       payload = extract_payload(page)
 
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'post', 'platform' => 'Instagram', 'handle' => '@ronaldo')
+      expect(payload['markdown']).to include('Training day', 'https://example.test/post.jpg')
       expect(payload['markdown']).not_to include('javascript:', 'ftp:')
+    end
+  end
+
+  it 'keeps every visible Instagram profile item through shared profile inference' do
+    posts = (1..12).map do |index|
+      <<~HTML
+        <article><a href="/ada/p/experiment-#{index}/"><img src="/experiment-#{index}.jpg" alt="Experiment #{index}"><span>Experiment #{index}</span></a></article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Ada | Instagram</title><meta property="og:site_name" content="Instagram"></head><body><main>
+      <header><section><h1>Ada</h1><span>@ada</span><span>12 posts</span><span>2K followers</span><span>100 following</span><span>Computing notes and experiments.</span></section></header>
+      #{posts}
+      </main></body></html>
+    HTML
+
+    with_url_page('https://www.instagram.com/ada/', html) do |page|
+      payload = extract_payload(page)
+      markdown = payload['markdown']
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Instagram', 'handle' => '@ada')
+      expect(markdown).to include('Ada', '@ada', '12 posts', '2K followers', '100 following', 'Computing notes and experiments.')
+      positions = (1..12).map { |index| markdown.index("Experiment #{index}") }
+      expect(positions).to all(be_a(Integer))
+      expect(positions).to eq(positions.sort)
     end
   end
 
