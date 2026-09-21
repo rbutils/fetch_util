@@ -20,7 +20,7 @@ module FetchUtil
       end
 
       def tdm_policy_record(url, target_origin:)
-        cache_fetch("tdmpolicy:#{origin_key(target_origin)}:#{url}") do
+        cache_fetch("tdmpolicy:#{origin_key(target_origin)}:#{url}", shape: { "signals" => [] }) do
           response, cacheable = safe_get(url)
           signals = []
           if response&.status&.between?(200, 299) && json_like_response?(response.headers, response.body)

@@ -43,6 +43,7 @@ module FetchUtil
     autoload :SourceSelection, "fetch_util/regulatory/source_selection"
     autoload :Signals, "fetch_util/regulatory/signals"
     autoload :FetchRecords, "fetch_util/regulatory/fetch_records"
+    autoload :CacheValidation, "fetch_util/regulatory/cache_validation"
     autoload :CacheStore, "fetch_util/regulatory/cache_store"
     autoload :Robots, "fetch_util/regulatory/robots"
     autoload :RobotGlobs, "fetch_util/regulatory/robot_globs"

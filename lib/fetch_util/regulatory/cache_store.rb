@@ -3,12 +3,14 @@
 module FetchUtil
   class Regulatory
     module CacheStore
+      include CacheValidation
+
       private
 
-      def cache_fetch(key)
+      def cache_fetch(key, shape: nil)
         path = cache_file_path(key)
         cached = read_cache(path)
-        return cached if cached
+        return cached if cached && (!shape || cache_payload_matches?(cached, shape))
 
         payload, cacheable = yield
         begin
@@ -20,7 +22,7 @@ module FetchUtil
       end
 
       def fetch_record(key, uri, fallback: nil, require_success: true)
-        cache_fetch(key) do
+        cache_fetch(key, shape: fallback) do
           response, cacheable = record_response(uri, require_success: require_success)
           payload = response ? yield(response.body, response) : fallback
           [payload, cacheable]

@@ -83,6 +83,20 @@ RSpec.describe FetchUtil::Regulatory::CacheStore do
     expect(yielded).to be(true)
   end
 
+  it "treats cache payloads that do not match the record shape as misses" do
+    File.write(
+      path,
+      JSON.generate("cached_at" => Time.now.utc.iso8601, "payload" => {})
+    )
+    allow(store).to receive(:cache_file_path).with("key").and_return(path)
+
+    result = store.send(:cache_fetch, "key", shape: { "signals" => {}, "policies" => [] }) do
+      [{ "signals" => {}, "policies" => [] }, false]
+    end
+
+    expect(result).to eq("signals" => {}, "policies" => [])
+  end
+
   it "preserves fresh results when cache publication fails" do
     allow(store).to receive(:cache_file_path).and_return(path)
     allow(store).to receive(:read_cache).with(path).and_return(nil)
