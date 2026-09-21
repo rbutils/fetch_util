@@ -252,7 +252,6 @@ systems/social/mastodon.js
 profiles/social/telegram/telegram.js
 profiles/community/forums/discourse.js
 profiles/community/q_and_a/stackoverflow.js
-profiles/social/networks/meta/index.js
 profiles/social/networks/twitter.js
 profiles/social/networks/bluesky.js
 profiles/publishing/csdn.js
