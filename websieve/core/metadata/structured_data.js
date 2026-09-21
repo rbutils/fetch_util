@@ -127,11 +127,31 @@ function pageOwnedStructuredDataNodes(nodes) {
   return expanded;
 }
 
+var structuredDataSnapshot = null;
+
+function structuredDataSnapshotMatches(snapshot, scripts, texts, documentKeys) {
+  if (!snapshot || snapshot.scripts.length !== scripts.length || snapshot.documentKeys.length !== documentKeys.length) return false;
+
+  return scripts.every(function(script, index) {
+    return snapshot.scripts[index] === script && snapshot.texts[index] === texts[index];
+  }) && documentKeys.every(function(key, index) {
+    return snapshot.documentKeys[index] === key;
+  });
+}
+
 function structuredDataNodes() {
+  var scripts = Array.prototype.slice.call(document.querySelectorAll('script[type="application/ld+json"]'));
+  var texts = scripts.map(function(script) {
+    return script.textContent || script.innerText || "";
+  });
+  var documentKeys = pageStructuredDataDocumentKeys();
+  if (structuredDataSnapshotMatches(structuredDataSnapshot, scripts, texts, documentKeys)) {
+    return structuredDataSnapshot.nodes;
+  }
+
   var nodes = [];
 
-  document.querySelectorAll('script[type="application/ld+json"]').forEach(function(script) {
-    var text = script.textContent || script.innerText || "";
+  texts.forEach(function(text) {
     if (!normalizeText(text)) return;
 
     try {
@@ -140,7 +160,13 @@ function structuredDataNodes() {
     }
   });
 
-  return pageOwnedStructuredDataNodes(nodes);
+  structuredDataSnapshot = {
+    scripts: scripts,
+    texts: texts,
+    documentKeys: documentKeys,
+    nodes: pageOwnedStructuredDataNodes(nodes)
+  };
+  return structuredDataSnapshot.nodes;
 }
 
 function structuredDataNode(typeNames) {
