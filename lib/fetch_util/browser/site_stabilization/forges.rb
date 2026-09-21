@@ -48,6 +48,7 @@ module FetchUtil
       autoload :GithubPullResourceStabilization,
                "fetch_util/browser/site_stabilization/forges/github/pull_resource_stabilization"
       autoload :GithubThreads, "fetch_util/browser/site_stabilization/forges/github/threads"
+      autoload :ForgeObservationState, "fetch_util/browser/site_stabilization/forges/observation_state"
       autoload :GiteaFamilyThreadProductState,
                "fetch_util/browser/site_stabilization/forges/gitea/threads/product_state"
       autoload :GiteaFamilyThreadTimelineState,

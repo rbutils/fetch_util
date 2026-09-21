@@ -91,7 +91,8 @@ RSpec.describe 'browser stabilization layout' do
                           'gitlab/merge_requests/resources.rb',
                           'gitlab/repository.rb',
                           'gitlab/stabilization.rb',
-                          'gitlab/threads.rb'
+                          'gitlab/threads.rb',
+                          'observation_state.rb'
                         ])
   end
 

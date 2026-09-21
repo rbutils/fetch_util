@@ -16,11 +16,7 @@ module FetchUtil
         private
 
         def stabilize_bitbucket_cloud_pull_resource(page, deadline: stabilization_deadline)
-          last_signature = nil
-          stable_observations = 0
-          incomplete_signature = nil
-          incomplete_observations = 0
-          terminal_incomplete = false
+          observation = ForgeObservationState.new(reset_stability_when_incomplete: true)
           observed = retry_until_timeout(
             capped_timeout(6.0, deadline: deadline),
             interval: 0.1,
@@ -30,37 +26,10 @@ module FetchUtil
             return false if state.is_a?(Hash) && state["product"] == false
             next false unless state.is_a?(Hash) && state["product"]
 
-            unless state["ready"]
-              last_signature = nil
-              stable_observations = 0
-              if state["loading"]
-                incomplete_signature = nil
-                incomplete_observations = 0
-              elsif state["signature"] == incomplete_signature
-                incomplete_observations += 1
-              else
-                incomplete_signature = state["signature"]
-                incomplete_observations = 1
-              end
-              if incomplete_observations >= 10
-                terminal_incomplete = true
-                next true
-              end
-              next false
-            end
-
-            incomplete_signature = nil
-            incomplete_observations = 0
-            if state["signature"] == last_signature
-              stable_observations += 1
-            else
-              last_signature = state["signature"]
-              stable_observations = 1
-            end
-            stable_observations >= 3
+            observation.observe(state)
           end
 
-          return false if terminal_incomplete
+          return false if observation.terminal_incomplete?
 
           fail_bitbucket_cloud_pull_diff_preparation(page) unless observed
 
