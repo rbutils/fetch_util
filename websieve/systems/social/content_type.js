@@ -37,7 +37,8 @@
   }
 
   function socialPlatformLabel(metadata) {
-    var siteName = normalizedSocialText(metadata && metadata.siteName);
+    var rawSiteName = normalizeText(metadata && metadata.siteName).replace(/\s*\([^()]*\)\s*$/, "");
+    var siteName = normalizedSocialText(rawSiteName);
     if (siteName && /^[\x00-\x7f]+$/.test(siteName) && !/^[\w.-]+\.[a-z]{2,}$/i.test(siteName)) {
       return siteName.replace(/\.(?:com|net|org)$/i, "");
     }

@@ -16,7 +16,7 @@ RSpec.describe 'FetchUtil native social network profiles' do
 
   it 'classifies an X profile only when its native header contains public content' do
     html = <<~HTML
-      <html><head><title>Ada (@ada) / X</title></head><body><main><div data-testid="UserName">Ada Lovelace @ada</div><div data-testid="UserDescription">Public notes on computing history.</div><a href="/ada/followers">42 followers</a></main></body></html>
+      <html><head><title>Ada (@ada) / X</title><meta property="og:site_name" content="X (formerly Twitter)"></head><body><main><div data-testid="UserName">Ada Lovelace @ada</div><div data-testid="UserDescription">Public notes on computing history.</div><a href="/ada/followers">42 followers</a></main></body></html>
     HTML
 
     extract_from_url('https://x.com/ada', html) do |payload|
@@ -78,14 +78,23 @@ RSpec.describe 'FetchUtil native social network profiles' do
         <article><h3>Update #{index}</h3><p>Public infrastructure release #{index} has distinct source-owned details.</p></article>
       HTML
     end.join
+    products = (1..4).map do |index|
+      <<~HTML
+        <div class="product-card">
+          <a href="/products/acme-#{index}"><h3>Acme product #{index}</h3></a>
+          <p>Product line #{index} for public infrastructure teams.</p>
+        </div>
+      HTML
+    end.join
     html = <<~HTML
       <html><head><title>Acme Systems | LinkedIn</title></head><body><main>
+        <form style="display:none"><input type="password" autocomplete="current-password"></form>
         <h1>Acme Systems</h1><p>Industry</p><p>Software Development</p><p>100 followers</p>
         <p>About</p><p>Acme builds public infrastructure software for local communities.</p>
         <p>Website</p><p>https://acme.example</p><p>Company size</p><p>51-200 employees</p>
         <p>Headquarters</p><p>London, England</p><p>Type</p><p>Privately Held</p>
         <p>Specialties</p><p>Infrastructure, accessibility, and public services</p><p>Founded</p><p>2012</p>
-        <h2>Updates</h2>#{updates}
+        <h2>Products</h2>#{products}<h2>Updates</h2>#{updates}
       </main></body></html>
     HTML
 
@@ -103,9 +112,14 @@ RSpec.describe 'FetchUtil native social network profiles' do
         'Infrastructure, accessibility, and public services',
         '2012'
       )
+      (1..4).each do |index|
+        expect(payload['markdown']).to include("https://www.linkedin.com/products/acme-#{index}")
+      end
       positions = (1..12).map do |index|
-        expect(payload['markdown']).to include("Update #{index}", "Public infrastructure release #{index} has distinct source-owned details.")
-        payload['markdown'].index("Public infrastructure release #{index} has distinct source-owned details.")
+        text = "Public infrastructure release #{index} has distinct source-owned details."
+        expect(payload['markdown']).to include("Update #{index}", text)
+        expect(payload['markdown'].scan(text).length).to eq(1)
+        payload['markdown'].index(text)
       end
       expect(positions).to eq(positions.sort)
     end
