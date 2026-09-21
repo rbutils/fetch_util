@@ -75,6 +75,77 @@ function consentSummaryParts() {
   };
 }
 
+function agreementLoginGateEvidence() {
+  var headings = Array.prototype.filter.call(document.querySelectorAll("h1, h2, h3, [role='heading']"), function(node) {
+    return consentSummaryVisible(node) && /\b(?:log in|login|sign in|sign up|create (?:an )?account)\b/i.test(consentSummaryText(node));
+  });
+
+  for (var headingIndex = 0; headingIndex < headings.length; headingIndex += 1) {
+    var owner = headings[headingIndex];
+    while (owner && owner !== document.body) {
+      if (consentSummaryVisible(owner)) {
+        var visibleLinks = Array.prototype.filter.call(owner.querySelectorAll("a[href]"), consentSummaryVisible);
+        var agreementLink = visibleLinks.find(function(link) {
+          return /\b(?:user agreement|terms (?:of (?:service|use)|and conditions))\b/i.test(consentSummaryText(link));
+        });
+        var privacyLink = visibleLinks.find(function(link) {
+          return /\bprivacy (?:policy|notice|statement)\b/i.test(consentSummaryText(link));
+        });
+        var controls = Array.prototype.filter.call(owner.querySelectorAll("button, [role='button'], a[href], label, input, select, textarea"), function(node) {
+          if (!consentSummaryVisible(node)) return false;
+          var text = consentSummaryText(node) || node.getAttribute("placeholder") || node.getAttribute("name") || "";
+          return /\b(?:continue|email|username|password|log in|login|sign in|sign up|sso|forgot|one-time|phone)\b/i.test(text);
+        });
+        if (agreementLink && privacyLink && controls.length >= 2) {
+          return { owner: owner, heading: headings[headingIndex] };
+        }
+      }
+      owner = owner.parentElement;
+    }
+  }
+
+  return null;
+}
+
+function agreementLoginGateSummary(evidence) {
+  var owner = evidence.owner;
+  var selected = [];
+  var seen = {};
+  var lines = [];
+
+  Array.prototype.forEach.call(owner.querySelectorAll("*"), function(node) {
+    if (!consentSummaryVisible(node)) return;
+    var semantic = node.matches("h1, h2, h3, p, li, label, button, [role='button'], a[href], input, select, textarea");
+    if (!semantic && node.children.length) return;
+    if (selected.some(function(parent) { return parent.contains(node); })) return;
+
+    var rendered = "";
+    if (node.matches("p, li") && node.querySelector("a[href]")) {
+      rendered = cleanupMarkdownNoise(markdownFor(node.outerHTML));
+    } else {
+      rendered = consentSummaryText(node) || node.getAttribute("placeholder") || node.getAttribute("aria-label") || node.getAttribute("name") || "";
+    }
+    rendered = String(rendered || "").trim();
+    var key = normalizeText(rendered);
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    selected.push(node);
+    lines.push({ node: node, text: rendered, key: key });
+  });
+
+  var title = consentSummaryText(evidence.heading);
+  var descriptionEntry = lines.find(function(entry) {
+    return entry.node.matches("p") && entry.key !== title && entry.key.length >= 20;
+  });
+  return {
+    title: title,
+    description: descriptionEntry ? descriptionEntry.text : null,
+    highlights: lines.filter(function(entry) {
+      return entry.key !== title && entry !== descriptionEntry;
+    }).map(function(entry) { return entry.text; })
+  };
+}
+
 function consentLikeInterstitial(interstitialType, combined, body, page) {
   var normalizedBody = normalizeText(body || "").toLowerCase();
   var normalizedPage = normalizeText(page || "").toLowerCase();

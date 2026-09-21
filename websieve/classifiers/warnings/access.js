@@ -25,7 +25,10 @@
     if (interstitialType === "subscription" && (!substantialContent || subscriptionWallDominates(body) || (subscriptionWallDominates(page) && !hasPublicContent))) {
       reasons.push("subscription_interstitial");
     }
-    if (interstitialType === "auth_wall") reasons.push("auth_or_login_interstitial");
+    if (interstitialType === "auth_wall") {
+      reasons.push("auth_or_login_interstitial");
+      if (agreementLoginGateEvidence()) reasons.push("consent_interstitial");
+    }
     if (interstitialType === "meta_login" && /cookie/i.test(combined)) reasons.push("consent_interstitial");
     if (!(docsLike && readableDocsPage) && (challengeType || (!substantialContent && !hasPublicContent && /(verify you are human|unusual traffic|are you a robot|access denied|security verification|checking your browser)/.test(combined)))) {
       reasons.push("bot_or_access_interstitial");

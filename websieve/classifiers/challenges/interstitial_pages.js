@@ -134,6 +134,7 @@ function interstitialPageType(metadata, pageText) {
   var page = normalizeText([pageText || "", (document.body && document.body.textContent) || ""].join(" "));
   var combined = (title + " " + page).toLowerCase();
   var substantialPublic = substantialPublicPage(page);
+  var agreementLoginGate = agreementLoginGateEvidence();
   var captchaOwnedPressAndHold = Array.prototype.some.call(document.querySelectorAll("#px-captcha, [id*='captcha' i], [class*='captcha' i]"), function(owner) {
     return !elementSubtreeHidden(owner) && /press\s*(?:&|and)\s*hold/i.test(owner.innerText || owner.textContent || "");
   });
@@ -144,6 +145,7 @@ function interstitialPageType(metadata, pageText) {
   if (/browser is not supported|your browser is not supported|unsupported browser|for the best experience, use any of these supported browsers|use any of these supported browsers|supported browsers:/i.test(combined) && !substantialPublic) return "browser_support";
   if (/^access error$/i.test(title) || /potential misuse|page you are trying to access is unavailable|help\.ft\.com|request blocked|you have been blocked|troubleshooting cloudflare errors/i.test(combined)) return "access_error";
   if (siteUnavailablePage(title, page)) return "site_unavailable";
+  if (agreementLoginGate) return "auth_wall";
   if (consentWallPage(title, page)) return "consent_wall";
   if (/\bmy account\b[\s\S]{0,120}\blog in\b/i.test(page) && /\byou must log in to access\b/i.test(page) && !document.querySelector("article, [itemprop='articleBody'], [property='articleBody']")) return "auth_wall";
   if (notFoundInterstitialEvidence(title, page, { checkStructured: true, requireDominance: true, requireInterstitialPage: true, substantialPublic: substantialPublic, excludeDefinitionsNet: true })) return "not_found";
@@ -162,6 +164,7 @@ function interstitialContent(metadata, pageText, type) {
   var title = normalizeText(metadata.title || document.title);
   var requestedTitle = title;
   var requestedDescription = normalizeText(metadata.excerpt || "");
+  var agreementLoginGate = type === "auth_wall" ? agreementLoginGateEvidence() : null;
   var lines = manyTexts([
     "main h1",
     "main h2",
@@ -215,6 +218,12 @@ function interstitialContent(metadata, pageText, type) {
   } else if (type === "subscription") {
     details.push("Access notice: subscription or institutional login required");
   } else if (type === "auth_wall") {
+    if (agreementLoginGate) {
+      var loginSummary = agreementLoginGateSummary(agreementLoginGate);
+      title = loginSummary.title || title;
+      description = loginSummary.description || description;
+      highlights = loginSummary.highlights;
+    }
     if (!title || domainLikeText(title)) title = "Login required";
     details.push("Access notice: login or account required");
   } else if (type === "js_redirect") {

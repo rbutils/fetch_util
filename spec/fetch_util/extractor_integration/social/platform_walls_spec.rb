@@ -72,6 +72,44 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     end
   end
 
+  it "preserves every visible control in agreement-backed login gates" do
+    controls = 12.times.map { |index| format("Continue with provider %02d", index + 1) }
+    html = <<~HTML
+      <html>
+        <head><title>Welcome to the forum</title></head>
+        <body>
+          <main>
+            <section class="login-panel">
+              <h1>Log in to use the forum</h1>
+              <p>Accounts are required to access this community.</p>
+              <p>
+                By continuing, you agree to our <a href="/user-agreement">User Agreement</a>
+                and acknowledge our <a href="/privacy">Privacy Policy</a>.
+              </p>
+              #{controls.map { |control| "<button>#{control}</button>" }.join}
+              <label>Email or username <input name="username"></label>
+              <label>Password <input type="password" name="password"></label>
+              <a href="/forgot">Forgot password?</a>
+              <button>Log In</button>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://forum.example/login", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect_content_type(payload, "interstitial")
+      expect_warnings(payload, include: %w[consent_interstitial auth_or_login_interstitial])
+      expect(payload["markdown"]).to include("Accounts are required to access this community.")
+      expect(payload["markdown"]).to include("[User Agreement](https://forum.example/user-agreement)")
+      expect(payload["markdown"]).to include("[Privacy Policy](https://forum.example/privacy)")
+      controls.each { |control| expect(payload["markdown"].scan(control).length).to eq(1) }
+      expect(controls.map { |control| payload["markdown"].index(control) }).to eq(controls.map { |control| payload["markdown"].index(control) }.sort)
+    end
+  end
+
   it "extracts reddit threads with comments without relying on readability" do
     html = <<~HTML
       <html>
