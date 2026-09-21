@@ -11,6 +11,10 @@ RSpec.describe "extract asset bundle" do
     File.expand_path("..", __dir__)
   end
 
+  def expect_manifest_order(manifest, *paths)
+    expect(manifest & paths).to eq(paths)
+  end
+
   def run_build_script(*args, root: project_root, env: {})
     script = File.join(root, "script", "build_extract_assets.rb")
     Open3.capture3(env, RbConfig.ruby, script, *args, chdir: root)
@@ -436,46 +440,47 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, gerrit_resource_entries_path))).to include("function gerritDiffTextLines")
     expect(File.read(File.join(source_root, gerrit_resources_path))).to include("function gerritFileResourceContent")
     expect(File.read(File.join(source_root, gerrit_thread_path))).to include("function gerritChangeContent")
-    expect(manifest.index(gitlab_resources_path)).to be < manifest.index(gitea_shared_path)
-    expect(manifest.index(gitea_shared_path)).to be < manifest.index(gitea_resource_shared_path)
-    expect(manifest.index(gitea_resource_shared_path)).to be < manifest.index(gitea_commits_path)
-    expect(manifest.index(gitea_commits_path)).to be < manifest.index(gitea_files_path)
-    expect(manifest.index(gitea_files_path)).to be < manifest.index(gitea_resources_path)
-    expect(manifest.index(gitea_resources_path)).to be < manifest.index(gitea_entries_path)
-    expect(manifest.index(gitea_entries_path)).to be < manifest.index(gitea_thread_path)
-    expect(manifest.index(gitea_thread_path)).to be < manifest.index(bitbucket_shared_path)
-    expect(manifest.index(bitbucket_shared_path)).to be < manifest.index(bitbucket_api_shared_path)
-    expect(manifest.index(bitbucket_api_shared_path)).to be < manifest.index(bitbucket_activity_path)
-    expect(manifest.index(bitbucket_activity_path)).to be < manifest.index(bitbucket_statuses_path)
-    expect(manifest.index(bitbucket_statuses_path)).to be < manifest.index(bitbucket_diff_files_path)
-    expect(manifest.index(bitbucket_diff_files_path)).to be < manifest.index(bitbucket_diffs_path)
-    expect(manifest.index(bitbucket_diffs_path)).to be < manifest.index(bitbucket_resources_path)
-    expect(manifest.index(bitbucket_resources_path)).to be < manifest.index(bitbucket_thread_path)
-    expect(manifest.index(bitbucket_thread_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(bitbucket_thread_path)).to be < manifest.index(pagure_shared_path)
-    expect(manifest.index(pagure_shared_path)).to be < manifest.index(pagure_thread_path)
-    expect(manifest.index(pagure_thread_path)).to be < manifest.index(pagure_pull_path)
-    expect(manifest.index(pagure_pull_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(pagure_pull_path)).to be < manifest.index(sourcehut_git_shared_path)
-    expect(manifest.index(sourcehut_git_shared_path)).to be < manifest.index(sourcehut_git_commit_path)
-    expect(manifest.index(sourcehut_git_commit_path)).to be < manifest.index(sourcehut_shared_path)
-    expect(manifest.index(sourcehut_shared_path)).to be < manifest.index(sourcehut_thread_path)
-    expect(manifest.index(sourcehut_thread_path)).to be < manifest.index(sourcehut_lists_shared_path)
-    expect(manifest.index(sourcehut_lists_shared_path)).to be < manifest.index(sourcehut_lists_entries_path)
-    expect(manifest.index(sourcehut_lists_entries_path)).to be < manifest.index(sourcehut_lists_patchset_path)
-    expect(manifest.index(sourcehut_lists_patchset_path)).to be < manifest.index(sourcehut_lists_thread_path)
-    expect(manifest.index(sourcehut_lists_thread_path)).to be < manifest.index(azure_shared_path)
-    expect(manifest.index(azure_shared_path)).to be < manifest.index(azure_entries_path)
-    expect(manifest.index(azure_entries_path)).to be < manifest.index(azure_thread_path)
-    expect(manifest.index(azure_thread_path)).to be < manifest.index(gerrit_shared_path)
-    expect(manifest.index(gerrit_shared_path)).to be < manifest.index(gerrit_entries_path)
-    expect(manifest.index(gerrit_entries_path)).to be < manifest.index(gerrit_resource_shared_path)
-    expect(manifest.index(gerrit_resource_shared_path)).to be < manifest.index(gerrit_resource_entries_path)
-    expect(manifest.index(gerrit_resource_entries_path)).to be < manifest.index(gerrit_resources_path)
-    expect(manifest.index(gerrit_resources_path)).to be < manifest.index(gerrit_thread_path)
-    expect(manifest.index(gerrit_thread_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(gitlab_resources_path)).to be < manifest.index("profiles/register.js")
-    expect(manifest.index(resources_path)).to be < manifest.index("profiles/register.js")
+    expect_manifest_order(
+      manifest,
+      gitlab_resources_path,
+      gitea_shared_path,
+      gitea_resource_shared_path,
+      gitea_commits_path,
+      gitea_files_path,
+      gitea_resources_path,
+      gitea_entries_path,
+      gitea_thread_path,
+      bitbucket_shared_path,
+      bitbucket_api_shared_path,
+      bitbucket_activity_path,
+      bitbucket_statuses_path,
+      bitbucket_diff_files_path,
+      bitbucket_diffs_path,
+      bitbucket_resources_path,
+      bitbucket_thread_path,
+      pagure_shared_path,
+      pagure_thread_path,
+      pagure_pull_path,
+      sourcehut_git_shared_path,
+      sourcehut_git_commit_path,
+      sourcehut_shared_path,
+      sourcehut_thread_path,
+      sourcehut_lists_shared_path,
+      sourcehut_lists_entries_path,
+      sourcehut_lists_patchset_path,
+      sourcehut_lists_thread_path,
+      azure_shared_path,
+      azure_entries_path,
+      azure_thread_path,
+      gerrit_shared_path,
+      gerrit_entries_path,
+      gerrit_resource_shared_path,
+      gerrit_resource_entries_path,
+      gerrit_resources_path,
+      gerrit_thread_path,
+      "profiles/register.js"
+    )
+    expect_manifest_order(manifest, resources_path, "profiles/register.js")
   end
 
   it "keeps forge profiles grouped by product and separate from communities" do
@@ -768,10 +773,14 @@ RSpec.describe "extract asset bundle" do
     expect(sources.values.join.scan(/function\s+mwananchiPrePageTextCleanup\s*\(/).length).to eq(1)
     expect(sources.values.join.scan(/function\s+genericHomepageLeadRoot\s*\(/).length).to eq(1)
     expect(sources.values.join.scan(/function\s+registerGenericPortalHomepageProfiles\s*\(/).length).to eq(1)
-    expect(manifest.index("profiles/news/mwananchi.js")).to be < manifest.index("boot/pipeline_helpers.js")
-    expect(manifest.index("systems/news_engines/portal_lead_records.js")).to be < manifest.index("systems/news_engines/portal_lead_context.js")
-    expect(manifest.index("systems/news_engines/portal_lead_context.js")).to be < manifest.index("systems/news_engines/generic_portal_homepages.js")
-    expect(manifest.index("systems/news_engines/generic_portal_homepages.js")).to be < manifest.index("profiles/news/news_homepages.js")
+    expect_manifest_order(manifest, "profiles/news/mwananchi.js", "boot/pipeline_helpers.js")
+    expect_manifest_order(
+      manifest,
+      "systems/news_engines/portal_lead_records.js",
+      "systems/news_engines/portal_lead_context.js",
+      "systems/news_engines/generic_portal_homepages.js",
+      "profiles/news/news_homepages.js"
+    )
 
     pipeline = sources.fetch("boot/pipeline_helpers.js")
     extract_api = sources.fetch("boot/extract_api.js")
@@ -1262,7 +1271,6 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     register_path = "profiles/register.js"
     register_index = manifest.index(register_path)
-    paths_before_register = manifest.take(register_index)
     register_source = File.read(File.join(source_root, register_path))
     calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
@@ -1354,17 +1362,31 @@ RSpec.describe "extract asset bundle" do
     wykop_source = File.read(File.join(source_root, "profiles/community/social_news/wykop.js"))
     expect(wykop_source).to include("registerHostAwareProfile(/(^|\\.)wykop\\.pl$/i, wykopContent);")
     expect(wykop_source).not_to include("docsHostSignature")
-    expect(manifest.index("profiles/news/news_homepages.js")).to be < register_index
-    expect(manifest.index("profiles/community/social_news/wykop.js")).to be < register_index
-
-    expect(manifest.index("systems/social/content_type.js")).to be < manifest.index("boot/result_finalization.js")
-    expect(manifest.index("boot/result_finalization.js")).to be < manifest.index("boot/extract_api.js")
-    expect(manifest.index("extractors/lists/generic/canonical_identity.js")).to be < manifest.index("core/dom/selectors.js")
-    expect(manifest.index("profiles/host_aware.js")).to be < register_index
+    expect_manifest_order(manifest, "profiles/news/news_homepages.js", register_path)
+    expect_manifest_order(manifest, "profiles/community/social_news/wykop.js", register_path)
+    expect_manifest_order(
+      manifest,
+      "systems/social/content_type.js",
+      "boot/result_finalization.js",
+      "boot/extract_api.js"
+    )
+    expect_manifest_order(
+      manifest,
+      "extractors/lists/generic/canonical_identity.js",
+      "core/dom/selectors.js"
+    )
+    expect_manifest_order(manifest, "profiles/host_aware.js", register_path)
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/instagram.js")
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/facebook.js")
     expect(manifest.index("profiles/social/networks/meta/index.js")).to be < manifest.index("profiles/social/networks/meta/threads.js")
     expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
+  end
+
+  it "keeps retired profile implementations absent" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    register_source = File.read(File.join(source_root, "profiles/register.js"))
+
     wp_path = "profiles/news/europe/central/poland/wp.js"
     onet_path = "profiles/news/europe/central/poland/onet.js"
     expect(manifest).not_to include(wp_path)
@@ -1435,6 +1457,16 @@ RSpec.describe "extract asset bundle" do
     expect(ringier_source).not_to include("mediaWatchContent =")
     expect(ringier_source).not_to include("ringierAxelSpringerBaseMediaWatchContent")
     expect(register_source.index("registerRingierAxelSpringerProfiles();")).to be < register_source.index("registerMediaCommerceLeadProfiles();")
+  end
+
+  it "keeps registration functions singly owned before dispatch" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    register_path = "profiles/register.js"
+    register_index = manifest.index(register_path)
+    paths_before_register = manifest.take(register_index)
+    register_source = File.read(File.join(source_root, register_path))
+    calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
     calls.each do |call|
       definitions = paths_before_register.flat_map do |path|
