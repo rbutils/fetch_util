@@ -47,6 +47,33 @@ RSpec.describe 'SPA data fallback' do
     end
   end
 
+  it 'prefers content-owned SPA data over longer recommendation data' do
+    article_text = ('OWNED_SPA_ARTICLE explains the requested record in detail. ' * 8).strip
+    recommendation_text = ('UNRELATED_SPA_RECOMMENDATION describes another record. ' * 14).strip
+    next_data = JSON.generate(
+      props: {
+        pageProps: {
+          title: 'Owned SPA article',
+          content: article_text,
+          relatedArticles: { content: recommendation_text }
+        }
+      }
+    )
+    html = <<~HTML
+      <html><head><title>Owned SPA article</title></head><body>
+        <main><h1>Loading article</h1></main>
+        <script id="__NEXT_DATA__" type="application/json">#{next_data}</script>
+      </body></html>
+    HTML
+
+    with_page(html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['markdown']).to include('OWNED_SPA_ARTICLE')
+      expect(payload['markdown']).not_to include('UNRELATED_SPA_RECOMMENDATION')
+    end
+  end
+
   it 'examines content after the former array and object-key probe limits' do
     array_values = Array.new(205, 'small metadata')
     array_values << ('LATE_ARRAY_CONTENT is visible content beyond the old array probe limit. ' * 8)
