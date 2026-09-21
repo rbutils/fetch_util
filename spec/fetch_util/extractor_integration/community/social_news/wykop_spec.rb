@@ -64,7 +64,7 @@ RSpec.describe "Wykop social feeds" do
       positions = (1..16).map { |number| markdown.index("Wykop story #{number} with a meaningful title") }
       expect(positions).to all(be >= 0)
       expect(positions).to eq(positions.sort)
-      expect(markdown).to include("Summary for Wykop story 16", "author16", "16 replies", "Media: Story 16 image", "Promoted")
+      expect(markdown).to include("Summary for Wykop story 16", "author16", "16 replies", "Story 16 image", "Wykop Poleca")
       expect(markdown).not_to include("javascript:")
       expect(markdown).not_to include("Zaloguj się", "Załóż konto")
     end
@@ -90,7 +90,7 @@ RSpec.describe "Wykop social feeds" do
         "platform" => "Wykop",
         "community" => "nieruchomosci"
       )
-      expect(payload["title"]).to include("nieruchomosci")
+      expect(payload["title"]).to eq("Nieruchomości")
       expect(payload["warnings"]).not_to include("url_content_mismatch")
       expect(payload["markdown"].lines.grep(/^- \[/).length).to eq(3)
       expect(payload["markdown"]).to match(/Pierwszy wpis.*Raport cen mieszkań.*Trzeci wpis/m)
@@ -98,23 +98,26 @@ RSpec.describe "Wykop social feeds" do
     end
   end
 
-  it "does not mark a credible root headline feed as a URL language mismatch" do
+  it "keeps an interaction-free headline collection as a credible generic list" do
     with_url_page("https://wykop.pl/", wykop_headline_fixture) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["contentType"]).to eq("social")
-      expect(payload["socialKind"]).to eq("feed")
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["socialKind"]).to be_nil
       expect(payload["warnings"]).not_to include("url_content_mismatch")
       expect(payload["suspect"]).to eq(false)
     end
   end
 
-  it "does not claim Wykop-looking markup on another host" do
+  it "infers the same structural feed without host ownership" do
     with_url_page("https://example.test/tag/nieruchomosci", wykop_home_fixture) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload["platform"]).not_to eq("Wykop")
-      expect(payload["contentType"]).not_to eq("social")
+      expect(payload).to include(
+        "contentType" => "social",
+        "socialKind" => "feed",
+        "platform" => "Example"
+      )
     end
   end
 end

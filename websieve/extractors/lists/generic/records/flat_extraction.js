@@ -150,7 +150,7 @@
     cleanupCookieChrome(root);
     stripTrackingPixels(root);
     resolveLazyImages(root);
-    stripUIWidgets(root);
+    stripUIWidgets(root, { preserveCommentCounts: true });
     stripNavigationLeaks(root);
     root.querySelectorAll("header, footer, nav, menu, [role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']").forEach(function(el) {
       el.remove();

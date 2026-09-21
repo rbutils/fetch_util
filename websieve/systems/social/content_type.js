@@ -92,10 +92,7 @@
     return content;
   }
 
-  function socialFeedEvidence(content, metadata) {
-    if (!content || content.contentType !== "list") return null;
-    var evidenceContent = content.listExtraction ? content : listContent(metadata);
-    var items = evidenceContent.listExtraction && evidenceContent.listExtraction.items || [];
+  function socialFeedItemsEvidence(items) {
     if (items.length < 3) return null;
 
     var evidencedUrls = {};
@@ -111,11 +108,40 @@
     return { itemCount: items.length };
   }
 
+  function socialSourceFeedEvidence() {
+    var root = document.querySelector("main, [role='main']") || document.body;
+    var selector = genericListCardSelector(false) + ", section, .feed-item, [class*='thread' i]";
+    var items = Array.prototype.map.call(root.querySelectorAll(selector), function(card) {
+      if (elementSubtreeHidden(card) || card.closest("nav, header, footer, aside, dialog, [role='dialog']")) return null;
+      var link = genericListStructuredCardLink(card, false) || Array.prototype.find.call(card.querySelectorAll("a[href]"), function(anchor) {
+        return materializedHttpUrl(anchor.getAttribute("href")) && normalizeText(anchor.textContent).length >= 6;
+      });
+      var url = link && materializedHttpUrl(link.getAttribute("href"));
+      return url ? { card: card, url: url } : null;
+    }).filter(Boolean);
+    var evidenced = items.filter(function(item) {
+      var fields = listItemSocialFields(item).owned;
+      return fields.author && fields.time && fields.score && fields.replyCount;
+    });
+    return new Set(evidenced.map(function(item) { return listCanonicalKey(item.url); })).size >= 3;
+  }
+
+  function socialFeedEvidence(content, metadata) {
+    if (!content || ["list", "article"].indexOf(content.contentType) === -1) return null;
+    if (content.contentType === "article" && !socialSourceFeedEvidence()) return null;
+    var evidenceContent = content.listExtraction ? content : listContent(metadata);
+    var items = evidenceContent.listExtraction && evidenceContent.listExtraction.items || [];
+    var evidence = socialFeedItemsEvidence(items);
+    if (evidence) evidence.content = evidenceContent;
+    return evidence;
+  }
+
   function applyInferredSocialFeed(content, metadata) {
     if (!content || content.contentType === "social" || content.contentType === "interstitial") return content;
     var evidence = socialFeedEvidence(content, metadata);
     if (!evidence) return content;
 
+    if (content.contentType === "article") content = evidence.content;
     content.contentType = "social";
     content.socialKind = "feed";
     content.platform = socialPlatformLabel(metadata);

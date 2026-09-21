@@ -248,7 +248,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts wykop homepages as social feeds without privacy chrome" do
+  it "extracts interaction-light Wykop homepages as complete generic lists without privacy chrome" do
     html = <<~HTML
       <html>
         <head>
@@ -300,9 +300,15 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://wykop.pl/", html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect(payload).to include("contentType" => "social", "socialKind" => "feed", "platform" => "Wykop")
-      expect(payload["markdown"]).to include("- [Ruby 3.5 przyspiesza kompilacje](https://wykop.pl/link/1/ruby-3-5-przyspiesza-kompilacje)")
-      expect(payload["markdown"]).to include("45 komentarzy")
+      expect(payload).to include("contentType" => "list", "socialKind" => nil, "platform" => nil)
+      expect(payload["markdown"]).to include(
+        "- [Ruby 3.5 przyspiesza kompilacje](https://wykop.pl/link/1/ruby-3-5-przyspiesza-kompilacje)",
+        "Fetch Util lepiej czyści markdown",
+        "Przeglądarka usuwa dialogi cookies",
+        "Wykop prerender wciąż działa",
+        "45 komentarzy",
+        "6 komentarzy"
+      )
       expect(payload["markdown"]).not_to include("We value your privacy")
       expect(payload["markdown"]).not_to include("Ustawienia prywatności")
       expect(payload["markdown"]).not_to include("Załóż konto")

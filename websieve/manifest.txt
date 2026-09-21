@@ -254,7 +254,6 @@ profiles/community/forums/discourse.js
 profiles/community/q_and_a/stackoverflow.js
 profiles/social/professional/behance.js
 profiles/community/q_and_a/quora.js
-profiles/community/social_news/wykop.js
 profiles/social/networks/meta/index.js
 profiles/social/networks/meta/instagram.js
 profiles/social/networks/meta/facebook.js

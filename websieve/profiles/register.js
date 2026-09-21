@@ -17,7 +17,6 @@
   registerLegalReferenceProfiles();
   registerHostAwareProfile(/(^|\.)sec\.gov$/i, secEdgarFilingContent);
   registerHostAwareProfile(true, institutionalPlatformContent);
-  registerWykopProfiles();
   registerHostAwareProfile(true, docsHostContent);
   registerRailsRdocProfiles();
   registerRepoHostProfiles();

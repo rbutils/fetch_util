@@ -497,7 +497,6 @@ RSpec.describe "extract asset bundle" do
       profiles/community/shared/thread_entries.js
       profiles/community/social_news/hacker_news.js
       profiles/community/social_news/pikabu.js
-      profiles/community/social_news/wykop.js
       profiles/community/wikis/tv_tropes.js
     ]
     expected_community_specs = %w[
@@ -1288,7 +1287,6 @@ RSpec.describe "extract asset bundle" do
                           registerPackageRegistryProfiles
                           registerStatuspageProfiles
                           registerLegalReferenceProfiles
-                          registerWykopProfiles
                           registerRailsRdocProfiles
                           registerRepoHostProfiles
                           registerGitHubThreadProfiles
@@ -1356,11 +1354,7 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/function\s+registerSocialSearchProfiles\s*\(/).length
     end
     expect(old_wrapper_count).to eq(0)
-    wykop_source = File.read(File.join(source_root, "profiles/community/social_news/wykop.js"))
-    expect(wykop_source).to include("registerHostAwareProfile(/(^|\\.)wykop\\.pl$/i, wykopContent);")
-    expect(wykop_source).not_to include("docsHostSignature")
     expect_manifest_order(manifest, "profiles/news/news_homepages.js", register_path)
-    expect_manifest_order(manifest, "profiles/community/social_news/wykop.js", register_path)
     expect_manifest_order(
       manifest,
       "systems/social/content_type.js",

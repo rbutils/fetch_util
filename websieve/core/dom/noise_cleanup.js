@@ -96,7 +96,7 @@
     return root;
   }
 
-  function stripUIWidgets(root) {
+  function stripUIWidgets(root, options) {
     stripArticleWidgets(root);
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
@@ -134,7 +134,7 @@
     });
 
     // Strip comment count badges/links
-    root.querySelectorAll("[class*='comment-count'], [class*='comment_count'], [class*='comments-count'], [class*='commentCount'], [class*='komentari'], [data-type='comment-count']").forEach(function(el) {
+    (options && options.preserveCommentCounts ? [] : root.querySelectorAll("[class*='comment-count'], [class*='comment_count'], [class*='comments-count'], [class*='commentCount'], [class*='komentari'], [data-type='comment-count']")).forEach(function(el) {
       if (textLength(el) < 30) el.remove();
     });
 
