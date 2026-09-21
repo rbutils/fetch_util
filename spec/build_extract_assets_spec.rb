@@ -490,6 +490,7 @@ RSpec.describe "extract asset bundle" do
       profiles/community/q_and_a/quora.js
       profiles/community/q_and_a/stack_exchange.js
       profiles/community/q_and_a/stackoverflow.js
+      profiles/community/shared/thread_entries.js
       profiles/community/social_news/hacker_news.js
       profiles/community/social_news/pikabu.js
       profiles/community/social_news/wykop.js
@@ -735,7 +736,7 @@ RSpec.describe "extract asset bundle" do
       /\A(?:azure_devops|bitbucket_cloud|forgejo|gerrit|gitea|github|gitlab|pagure|sourcehut)_/
     )
 
-    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a social_news wikis])
+    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a shared social_news wikis])
     expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
     expect(actual_community_specs.sort).to eq(expected_community_specs.sort)
     expect(flat_community_specs).to eq([])
@@ -751,6 +752,12 @@ RSpec.describe "extract asset bundle" do
     expect(flat_forge_specs).to eq([])
     expect(actual_forge_fixtures.sort).to eq(expected_forge_fixtures.sort)
     expect(flat_forge_fixtures).to eq([])
+
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    thread_entries_index = manifest.index("profiles/community/shared/thread_entries.js")
+    expect(thread_entries_index).to be < manifest.index("profiles/community/forums/discourse.js")
+    expect(thread_entries_index).to be < manifest.index("profiles/community/forums/reddit.js")
+    expect(thread_entries_index).to be < manifest.index("profiles/community/q_and_a/stack_exchange.js")
   end
 
   it "keeps relocated definitions before their consumers" do

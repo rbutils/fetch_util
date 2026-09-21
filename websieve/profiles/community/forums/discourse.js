@@ -7,28 +7,31 @@
   function discourseTopicArticleContent(metadata) {
     var postNodes = Array.prototype.slice.call(document.querySelectorAll(".topic-post, article[data-post-id], [data-post-id].topic-post"));
     var sections = [];
-    var bodyTexts = [];
-    var seenPosts = {};
     var title = normalizeText(firstText([".fancy-title", "#topic-title h1", ".topic-title h1", "main h1", "article h1", "h1"]) || metadata.title || document.title);
 
-    postNodes.forEach(function(post) {
+    var entries = collectCommunityThreadEntries(postNodes, function(post) {
       var cooked = post.querySelector(".cooked, .post-body");
-      if (!cooked) return;
+      if (!cooked) return null;
 
       var bodyText = normalizeText(cooked.innerText || cooked.textContent || "");
-      if (!bodyText) return;
-
-      var key = bodyText.slice(0, 240);
-      if (seenPosts[key]) return;
-      seenPosts[key] = true;
+      if (!bodyText) return null;
 
       var heading = discoursePostHeading(post);
       var markdown = markdownFor(cooked.outerHTML);
-      if (!markdown) return;
+      if (!markdown) return null;
 
-      sections.push("## " + heading);
-      sections.push(markdown);
-      bodyTexts.push(bodyText);
+      return {
+        id: post.getAttribute("data-post-id") || post.id,
+        heading: heading,
+        body: markdown,
+        text: bodyText
+      };
+    });
+    var bodyTexts = entries.map(function(entry) { return entry.text; });
+
+    entries.forEach(function(entry) {
+      sections.push("## " + entry.heading);
+      sections.push(entry.body);
     });
 
     if (!title || bodyTexts.length === 0) return null;
@@ -39,7 +42,7 @@
       excerpt: bodyTexts[0],
       siteName: metadata.siteName || location.hostname,
       publishedTime: metadata.publishedTime,
-      html: postNodes.map(function(post) { return post.outerHTML; }).join("\n"),
+      html: communityThreadEntriesHtml(entries),
       markdown: ["# " + title].concat(sections).join("\n\n"),
       textContent: normalizeText([title].concat(bodyTexts).join(" ")),
       hostAware: true,

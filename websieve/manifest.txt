@@ -244,6 +244,7 @@ profiles/government/gov_uk.js
 profiles/legal/courtlistener.js
 profiles/legal/statutes.js
 profiles/families/legal_reference/index.js
+profiles/community/shared/thread_entries.js
 profiles/community/wikis/tv_tropes.js
 profiles/community/q_and_a/stack_exchange.js
 profiles/community/social_news/hacker_news.js
