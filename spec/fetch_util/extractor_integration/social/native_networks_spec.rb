@@ -25,6 +25,56 @@ RSpec.describe 'FetchUtil native social network profiles' do
     end
   end
 
+  it 'keeps profile context and every visible X post through shared profile inference' do
+    posts = (1..12).map do |index|
+      <<~HTML
+        <article>
+          <a href="/OpenAI/status/#{index}"><h3>Research update #{index}</h3></a>
+          <p>Public research announcement #{index} has distinct source-owned details.</p>
+        </article>
+      HTML
+    end.join
+    resources = (1..4).map do |index|
+      <<~HTML
+        <div class="resource-card">
+          <a href="/OpenAI/resources/#{index}"><h3>Resource #{index}</h3></a>
+          <p>Public resource #{index} for developers and researchers.</p>
+        </div>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>OpenAI (@OpenAI) on X</title><meta property="og:site_name" content="X (formerly Twitter)"></head><body><main>
+        <a href="/OpenAI/header_photo"><img src="/header.jpg" alt="OpenAI profile banner"></a>
+        <h1>OpenAI @OpenAI</h1>
+        <p class="profile-description">OpenAI's mission is to ensure advanced intelligence benefits everyone. We are hiring at <a href="https://openai.example/jobs">openai.example/jobs</a>.</p>
+        <a href="/OpenAI/following">4 following</a><a href="/OpenAI/followers">5.3M followers</a>
+        <h2>Resources</h2>#{resources}<h2>Updates</h2>#{posts}
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://x.com/OpenAI', html) do |payload|
+      expect_social(payload, kind: 'profile', platform: 'X', handle: '@OpenAI')
+      expect(payload).to include(
+        'title' => 'OpenAI',
+        'siteName' => 'X',
+        'excerpt' => "OpenAI's mission is to ensure advanced intelligence benefits everyone. We are hiring at openai.example/jobs."
+      )
+      expect(payload['markdown']).to include(
+        'https://x.com/OpenAI/header_photo',
+        'https://openai.example/jobs'
+      )
+      (1..4).each do |index|
+        expect(payload['markdown']).to include("https://x.com/OpenAI/resources/#{index}")
+      end
+      positions = (1..12).map do |index|
+        text = "Public research announcement #{index} has distinct source-owned details."
+        expect(payload['markdown'].scan(text).length).to eq(1)
+        payload['markdown'].index(text)
+      end
+      expect(positions).to eq(positions.sort)
+    end
+  end
+
   it 'classifies a public X post with retained replies as a thread and keeps its explicit count' do
     html = <<~HTML
       <html><head><title>Ada on X</title></head><body><main><article data-testid="tweet"><div data-testid="User-Name">Ada Lovelace @ada</div><div data-testid="tweetText">A public focal post with enough content to retain.</div><button data-testid="reply" aria-label="3 replies"></button></article><article data-testid="tweet"><div data-testid="User-Name">Grace Hopper @grace</div><div data-testid="tweetText">A retained public reply.</div></article></main></body></html>
@@ -100,6 +150,11 @@ RSpec.describe 'FetchUtil native social network profiles' do
 
     extract_from_url('https://www.linkedin.com/company/acme-systems/', html) do |payload|
       expect_social(payload, kind: 'profile', platform: 'LinkedIn')
+      expect(payload).to include(
+        'title' => 'Acme Systems',
+        'siteName' => 'LinkedIn',
+        'excerpt' => 'Acme builds public infrastructure software for local communities.'
+      )
       expect(payload['markdown']).to include(
         'Acme Systems',
         'Software Development',

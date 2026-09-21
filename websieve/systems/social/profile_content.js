@@ -40,28 +40,49 @@
     if (!route.explicit && !handleMatch && !(publicationCount && labeledSections) && labeledSections < 2) return null;
     if (route.explicit && !handleMatch && !publicationCount && !labeledSections) return null;
 
+    var titleNode = Array.prototype.find.call(root.querySelectorAll("h1, h2, [data-testid*='UserName' i], [data-testid*='DisplayName' i]"), function(node) {
+      return !elementSubtreeHidden(node) && normalizeText(node.innerText || node.textContent || "").length >= 2;
+    });
+    var title = normalizeText(titleNode && (titleNode.innerText || titleNode.textContent) || "")
+      .replace(/@[a-z0-9._-]{2,64}\b/ig, "")
+      .trim();
+    var description = Array.prototype.map.call(root.querySelectorAll("p, [class*='bio' i], [class*='description' i], [data-testid*='description' i]"), function(node) {
+      if (elementSubtreeHidden(node) || node.closest("nav, footer, aside, dialog, [role='dialog'], form, article")) return "";
+      return normalizeText(node.innerText || node.textContent || "");
+    }).find(function(value) {
+      return value.length >= 40 && value.length <= 500 && !/^[\d,.]+[KMB]?\s+(?:followers?|following|connections?|posts?|threads?)\b/i.test(value);
+    }) || null;
+
     return {
+      description: description,
       handle: handleMatch ? handleMatch[1] : "@" + route.identifier.replace(/^@/, ""),
-      root: root
+      root: root,
+      title: title || null
     };
   }
 
   function socialProfileContextMarkdown(root, markdown) {
-    var represented = {};
-    String(markdown || "").split(/\n+/).forEach(function(line) {
-      var key = normalizeText(line).toLowerCase();
-      if (key) represented[key] = true;
+    var clone = visibilityPrunedClone(root, document);
+    if (!clone) return "";
+    clone.querySelectorAll("nav, footer, aside, dialog, [role='dialog'], form, article, script, style, noscript, template, iframe, li, [class*='card' i], [class*='item' i], [class*='result' i]").forEach(function(node) {
+      node.remove();
     });
-    var seen = {};
-    return Array.prototype.map.call(root.querySelectorAll("h1, h2, h3, p, span, div, strong"), function(node) {
-      if (elementVisuallyHidden(node) || node.closest("nav, footer, aside, dialog, [role='dialog'], a[href], article, li, [class*='card' i], [class*='item' i], [class*='result' i]")) return "";
-      if (node.querySelector("h1, h2, h3, p, span, div, strong")) return "";
-      var text = normalizeText(node.innerText || node.textContent || "");
-      var key = text.toLowerCase();
-      if (!text || text.length > 500 || seen[key] || represented[key]) return "";
-      seen[key] = true;
-      return text;
-    }).filter(Boolean).join("\n\n");
+    materializeHttpAttributes(clone, true);
+    var context = markdownFor(clone.innerHTML).trim();
+    var represented = normalizeText(markdown || "").toLowerCase();
+    var key = normalizeText(context).toLowerCase();
+    return key && represented.indexOf(key) < 0 ? context : "";
+  }
+
+  function socialProfileExcerpt(markdown) {
+    return String(markdown || "").split(/\n\s*\n/).map(function(block) {
+      return normalizeText(block
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replace(/^#{1,6}\s+/g, ""));
+    }).find(function(text) {
+      return text.length >= 40 && text.length <= 500 && !/^[\d,.]+[KMB]?\s+(?:followers?|following|connections?|posts?|threads?)\b/i.test(text);
+    }) || null;
   }
 
   function socialProfileArticleMarkdown(root, markdown) {
@@ -76,8 +97,14 @@
       materializeHttpAttributes(clone, true);
       var addition = markdownFor(clone.outerHTML).trim();
       var sourceKey = normalizeText(article.innerText || article.textContent || "").toLowerCase();
+      var sourceSegments = Array.prototype.map.call(article.querySelectorAll("h1, h2, h3, h4, p, [data-testid*='text' i]"), function(node) {
+        return normalizeText(node.innerText || node.textContent || "").toLowerCase();
+      }).filter(function(value) { return value.length >= 8; });
+      var fullyRepresented = sourceSegments.length && sourceSegments.every(function(value) {
+        return represented.indexOf(value) >= 0;
+      });
       var key = normalizeText(addition).toLowerCase();
-      if (!key || seen[key] || represented.indexOf(key) >= 0 || (sourceKey && represented.indexOf(sourceKey) >= 0)) return "";
+      if (!key || seen[key] || fullyRepresented || represented.indexOf(key) >= 0 || (sourceKey && represented.indexOf(sourceKey) >= 0)) return "";
       seen[key] = true;
       return addition;
     }).filter(Boolean).join("\n\n");
@@ -97,13 +124,17 @@
       var profileArticles = socialProfileArticleMarkdown(evidence.root, profileList.markdown);
       profileList.markdown = [profileContext, profileList.markdown, profileArticles].filter(Boolean).join("\n\n");
       profileList.textContent = profileList.markdown;
+      evidence.description = evidence.description || socialProfileExcerpt(profileContext);
       content = profileList;
     }
 
     content.contentType = "social";
     content.socialKind = "profile";
     content.platform = socialPlatformLabel(metadata);
+    content.siteName = content.platform;
     content.handle = evidence.handle;
+    content.title = evidence.title || content.title;
+    content.excerpt = evidence.description || content.excerpt;
     content.readerMode = false;
     return content;
   }
