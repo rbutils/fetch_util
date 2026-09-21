@@ -1,7 +1,3 @@
-  function fazHomepageContent(metadata) {
-    return newsHomepageListContent(metadata, fazHomepageListConfig());
-  }
-
   function fazHomepageListConfig() {
     return {
       pathAllowed: function() {

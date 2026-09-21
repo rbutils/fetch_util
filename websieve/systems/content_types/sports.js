@@ -100,10 +100,6 @@
     return lines;
   }
 
-  function sportsVisibleScoreLines(root) {
-    return sportsVisibleScoreNodes(root).map(function(entry) { return entry.text; });
-  }
-
   function sportsTableLooksRelevant(table) {
     if (!table || (table.closest && table.closest("nav, header, footer, aside, form, [aria-hidden='true'], [hidden]"))) return false;
     var text = normalizeText(table.textContent || "");
@@ -220,37 +216,6 @@
     if (evidence && evidence.event) return "sports_event";
     if (evidence && evidence.typed) return "sports";
     return (content && content.contentType) || "article";
-  }
-
-  function sportsMetadataContent(metadata) {
-    var evidence = sportsContentEvidence(metadata);
-    if (!evidence || !evidence.event) return null;
-
-    var title = (evidence.structured && evidence.structured.title) || metadata.title || document.title;
-    var details = sportsDetails(evidence);
-    var sections = ["# " + title];
-    if (details.length) sections.push(details.map(function(detail) { return "- " + detail; }).join("\n"));
-    sections = sections.concat(evidence.tables || []);
-
-    var markdown = cleanupMarkdownNoise(sections.filter(Boolean).join("\n\n"));
-    if (normalizeText(markdown).length < 80) return null;
-
-    return {
-      title: title,
-      byline: null,
-      excerpt: details[0] || metadata.excerpt,
-      siteName: metadata.siteName || location.hostname,
-      publishedTime: metadata.publishedTime || null,
-      html: "",
-      markdown: markdown,
-      textContent: normalizeText(markdown),
-      readerMode: false,
-      contentType: "sports_event",
-      sportsDetailEvidence: {
-        kind: "sports_detail",
-        urlMatch: evidence.detail ? sportsRequestedTeamEvidence(evidence.detail.identity.teams) : "opaque"
-      }
-    };
   }
 
   function applySportsContent(content, metadata) {

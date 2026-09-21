@@ -1,7 +1,3 @@
-  function sozcuHomepageContent(metadata) {
-    return newsHomepageListContent(metadata, sozcuHomepageListConfig());
-  }
-
   function sozcuHomepageListConfig() {
     return {
       pathAllowed: homepageRootPath,

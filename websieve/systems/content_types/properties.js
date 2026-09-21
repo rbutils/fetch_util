@@ -5,14 +5,6 @@
     });
   }
 
-  function propertyFirstEntityText(values) {
-    for (var i = 0; i < values.length; i += 1) {
-      var text = entityText(values[i]) || entityName(values[i]);
-      if (text) return text;
-    }
-    return "";
-  }
-
   function propertyAddressText(value) {
     return structuredPostalAddressText(value) || "";
   }

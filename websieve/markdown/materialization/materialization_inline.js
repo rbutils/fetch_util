@@ -187,21 +187,6 @@ function markdownCredentialUrlAt(markdown, position) {
   return { value: visible, end: position + candidate[0].length };
 }
 
-function markdownDelimiterEnd(value, start, opening, closing) {
-  var depth = 0;
-  for (var index = start; index < value.length; index += 1) {
-    if (value[index] === "\\") {
-      index += 1;
-    } else if (value[index] === opening) {
-      depth += 1;
-    } else if (value[index] === closing) {
-      depth -= 1;
-      if (!depth) return index;
-    }
-  }
-  return -1;
-}
-
 function markdownLabelEnd(value, start) {
   var depth = 0;
   for (var index = start; index < value.length; index += 1) {

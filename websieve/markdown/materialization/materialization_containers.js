@@ -91,13 +91,6 @@ function markdownLineEnd(value, position) {
   return lineEnd < 0 ? value.length : lineEnd;
 }
 
-function markdownPreviousLineBlank(value, position) {
-  if (!position) return true;
-  var previousEnd = position - 1;
-  var previousStart = value.lastIndexOf("\n", previousEnd - 1) + 1;
-  return !value.slice(previousStart, previousEnd).trim();
-}
-
 function markdownPreviousContainerLineBlank(value, position, line, output) {
   if (!position) return true;
 

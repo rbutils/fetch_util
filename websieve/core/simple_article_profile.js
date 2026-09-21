@@ -70,8 +70,3 @@
       });
     };
   }
-
-  function simpleArticleProfileRegistration(config) {
-    config = config || {};
-    registerHostAwareProfile(config.condition === undefined ? true : config.condition, simpleArticleProfile(config));
-  }
