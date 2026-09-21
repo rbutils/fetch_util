@@ -57,6 +57,33 @@ RSpec.describe 'FetchUtil extractor integration - community social threads' do
     end
   end
 
+  it 'classifies a structurally evidenced generic social feed' do
+    cards = (1..4).map do |number|
+      <<~HTML
+        <article class="post feed-item">
+          <h2><a href="/posts/#{number}">Garden update #{number}</a></h2>
+          <p>Neighbors shared garden update #{number} with the group.</p>
+          <span class="author">gardener#{number}</span>
+          <time datetime="2026-09-#{10 + number}">#{number} days ago</time>
+          <span class="score">#{number * 3} points</span>
+          <a class="comments" href="/posts/#{number}#comments">#{number + 1} replies</a>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Garden updates</title><meta property="og:site_name" content="Common Ground"></head>
+      <body><main><h1>Garden updates</h1>#{cards}</main></body></html>
+    HTML
+
+    extract_from_url('https://community.example/tag/gardening', html) do |payload|
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'feed', 'platform' => 'Common Ground',
+                                 'community' => 'gardening')
+      expect(payload.fetch('warnings', [])).not_to include('url_content_mismatch')
+      expect(payload['markdown']).to include('Garden update 1', 'gardener1', '2 replies', 'Garden update 4')
+      expect(payload['markdown'].scan(/\[Garden update \d\]\(/).length).to eq(4)
+    end
+  end
+
   it 'classifies Stack Overflow and Stack Exchange question DOM without changing answer headings' do
     extract_from_url('https://stackoverflow.com/questions/123/ruby-blocks', community_fixture('stackoverflow_question.html')) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'Stack Overflow',

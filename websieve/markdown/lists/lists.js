@@ -101,8 +101,38 @@ function listSupplementalHeadingReference(link, item, card) {
   return /^[\s»›>\/|·:;,.–—-]*$/.test(clone.textContent || "");
 }
 
+function listItemSocialFields(item) {
+  item = item || {};
+  var card = item.card;
+  var timeSelector = "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]";
+  var scoreSelector = "[class*='score' i], [data-score], [data-karma]";
+  var replySelector = ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]";
+  var communitySelector = "[class*='community' i], [class*='subreddit' i], [data-community]";
+  var owned = {
+    author: cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
+      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
+    }),
+    time: cardField(card, timeSelector, item.url),
+    score: cardField(card, scoreSelector, item.url),
+    replyCount: cardField(card, replySelector, item.url, false, function(node) {
+      return !genericListAuthorMetadataNode(node);
+    }),
+    community: cardField(card, communitySelector, item.url)
+  };
+  return {
+    timeNode: card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null,
+    scoreNode: card && card.querySelector ? cardOwnedNodes(card, scoreSelector)[0] : null,
+    author: owned.author || item.author,
+    time: owned.time || item.time,
+    score: owned.score || item.score,
+    replyCount: owned.replyCount || item.replyCount,
+    community: owned.community || item.community,
+    owned: owned
+  };
+}
+
 function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
-   if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
+  if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
   if (rowDetail) {
@@ -114,31 +144,22 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
   }
 
   var compactMetadata = listCompactMetadataRow(card, item);
-  var timeSelector = "time, [datetime], [class~='time'], [class*='timestamp' i], [class*='date' i]";
-  var scoreSelector = "[class*='score' i], [data-score], [data-karma]";
-  var timeNode = card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null;
-  var scoreNode = card && card.querySelector ? cardOwnedNodes(card, scoreSelector)[0] : null;
+  var socialFields = listItemSocialFields(item);
   var compactSummary = listCompactMetadataFollowingField(
     card,
     compactMetadata,
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
     item.summary
   );
-  var timeValue = cardField(card, timeSelector, item.url) || item.time;
-  var scoreValue = cardField(card, scoreSelector, item.url) || item.score;
   var contextValues = [
     listCompactMetadataRepresents(compactMetadata, item.category) ? "" : item.category,
     item.contextHeading,
     compactSummary ? "" : item.summary,
-    cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
-      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
-    }) || item.author,
-    listCompactMetadataContains(compactMetadata, timeNode) ? "" : timeValue,
-    listCompactMetadataContains(compactMetadata, scoreNode) ? "" : scoreValue,
-    cardField(card, ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]", item.url, false, function(node) {
-      return !genericListAuthorMetadataNode(node);
-    }) || item.replyCount,
-    cardField(card, "[class*='community' i], [class*='subreddit' i], [data-community]", item.url) || item.community,
+    socialFields.author,
+    listCompactMetadataContains(compactMetadata, socialFields.timeNode) ? "" : socialFields.time,
+    listCompactMetadataContains(compactMetadata, socialFields.scoreNode) ? "" : socialFields.score,
+    socialFields.replyCount,
+    socialFields.community,
     item.image,
     item.caption
   ];

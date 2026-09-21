@@ -37,12 +37,14 @@ function finalizationWarnings(content, metadata, markdown, pageText, signals, pr
 }
 
 function deferredListFinalizationMarkdown(content, metadata, markdown) {
-  if (content.contentType === "list" && content.sectionMarkdownWithDescription) {
+  var listLikeContent = content.contentType === "list" ||
+    (content.contentType === "social" && content.socialKind === "feed");
+  if (listLikeContent && content.sectionMarkdownWithDescription) {
     markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
     content.textContent = markdown;
   }
   var listExtraction = content.listExtraction;
-  if (content.contentType === "list" && listExtraction && content.markdown === listExtraction.markdown) {
+  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown) {
     var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
       listMarkdownWithInlineDescriptions(listExtraction);
     if (inlineDescriptionMarkdown) {
@@ -208,6 +210,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     var firstMarkdownLine = (markdown.split("\n").map(function(line) { return normalizeText(line).replace(/^#+\s*/, ""); }).filter(Boolean)[0] || "");
     if (firstMarkdownLine.length >= 100 && !/^[-*]\s+\[/.test(firstMarkdownLine)) content.contentType = "article";
   }
+  content = applySocialContentType(content, metadata);
   if (content.contentType === "article") markdown = articleCitationResourceMarkdown(content, markdown);
   var warnings = finalizationWarnings(content, metadata, markdown, pageText, signals, primaryTitle);
   markdown = deferredListFinalizationMarkdown(content, metadata, markdown);

@@ -15,7 +15,8 @@
       return (listPath && editorialSections) || portalRoot;
     }
 
-    if (content.contentType !== "social" || content.socialKind !== "feed" || !content.hostAware) return false;
+    if (content.contentType !== "social" || content.socialKind !== "feed" ||
+        (!content.hostAware && !content.structuralSocialFeed)) return false;
     if (!rootPage && !/^\/(?:tag|tags|topic|topics|category|categories|feed|feeds|latest|headlines|news)(?:\/|$)/.test(path)) return false;
     return content.itemCount >= 3 && listLinks >= 3;
   }

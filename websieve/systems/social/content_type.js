@@ -92,8 +92,43 @@
     return content;
   }
 
+  function socialFeedEvidence(content, metadata) {
+    if (!content || content.contentType !== "list") return null;
+    var evidenceContent = content.listExtraction ? content : listContent(metadata);
+    var items = evidenceContent.listExtraction && evidenceContent.listExtraction.items || [];
+    if (items.length < 3) return null;
+
+    var evidencedUrls = {};
+    var evidencedItems = items.filter(function(item) {
+      var url = materializedHttpUrl(item && item.url);
+      var fields = listItemSocialFields(item).owned;
+      var evidenced = !!(url && fields.author && fields.time && fields.score && fields.replyCount);
+      if (evidenced) evidencedUrls[listCanonicalKey(url)] = true;
+      return evidenced;
+    });
+    var requiredCount = Math.max(3, Math.ceil(items.length * 0.75));
+    if (Object.keys(evidencedUrls).length < requiredCount || evidencedItems.length < requiredCount) return null;
+    return { itemCount: items.length };
+  }
+
+  function applyInferredSocialFeed(content, metadata) {
+    if (!content || content.contentType === "social" || content.contentType === "interstitial") return content;
+    var evidence = socialFeedEvidence(content, metadata);
+    if (!evidence) return content;
+
+    content.contentType = "social";
+    content.socialKind = "feed";
+    content.platform = socialPlatformLabel(metadata);
+    content.community = socialRouteCommunity();
+    content.itemCount = evidence.itemCount;
+    content.structuralSocialFeed = true;
+    content.readerMode = false;
+    return content;
+  }
+
   function applySocialContentType(content, metadata) {
     content = applyInferredSocialThread(content, metadata);
+    content = applyInferredSocialFeed(content, metadata);
     if (!content || content.contentType !== "social") return content;
 
     var kind = normalizedSocialText(content.socialKind);
