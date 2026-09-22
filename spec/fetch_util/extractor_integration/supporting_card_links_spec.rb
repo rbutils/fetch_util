@@ -246,7 +246,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
   end
 
   it "keeps short titles when repeated image cards prove their descriptive fields" do
-    titles = ["AI", "Shift"] + 10.times.map { |index| "Collection #{index + 1}" }
+    titles = %w[AI Shift] + 10.times.map { |index| "Collection #{index + 1}" }
     cards = titles.map.with_index do |title, index|
       <<~HTML
         <div class="promo-card">
