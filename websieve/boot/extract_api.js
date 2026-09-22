@@ -41,6 +41,13 @@
         if (Array.isArray(candidate.listSourceItems)) {
           itemCount = Math.max(itemCount, candidate.listSourceItems.length);
         }
+        if (!itemCount && candidate.html) {
+          var candidateRoot = document.createElement("div");
+          candidateRoot.innerHTML = candidate.html;
+          itemCount = Array.prototype.filter.call(candidateRoot.querySelectorAll("a[href]"), function(link) {
+            return !!materializedHttpUrl(link.getAttribute("href"));
+          }).length;
+        }
         return !candidateText && itemCount === 0 && !!currentText && !!(current && current.readerMode);
       }
 
