@@ -110,6 +110,65 @@ RSpec.describe 'FetchUtil extractor integration - social platform walls' do
     end
   end
 
+  it "does not classify newsletter signup forms as login gates" do
+    html = <<~HTML
+      <html>
+        <head><title>Independent publishing tools</title></head>
+        <body>
+          <main>
+            <h1>Publish and sell your next book</h1>
+            <p>Build beautiful books with professional layouts and global distribution.</p>
+            <p>Choose print formats, compare pricing, and manage every published edition.</p>
+            <section>
+              <h2>Want 30% off? Sign up and save on your first book.</h2>
+              <form>
+                <label>Email Address <input type="email" name="email"></label>
+                <button>Subscribe</button>
+                <p>See our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
+              </form>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://publisher.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).not_to eq("interstitial")
+      expect(payload.fetch("warnings", [])).not_to include("auth_or_login_interstitial", "consent_interstitial")
+      expect(payload["markdown"]).to include("Publish and sell your next book")
+    end
+  end
+
+  it "does not pair editorial sign-in links with footer policies" do
+    stories = 12.times.map do |index|
+      format('<li><a href="/stories/%<index>02d">Editorial story %<index>02d</a></li>', index: index + 1)
+    end.join
+    html = <<~HTML
+      <html>
+        <head><title>World briefing</title></head>
+        <body>
+          <header><a href="/account/login">Sign In</a></header>
+          <main>
+            <h1>World briefing</h1>
+            <ul>#{stories}</ul>
+            <section><h2>Sign up to the weekly briefing</h2><p>Global analysis delivered every Wednesday.</p></section>
+          </main>
+          <footer><a href="/terms">Terms of Use</a><a href="/privacy">Privacy Policy</a></footer>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://news.example/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).not_to eq("interstitial")
+      expect(payload.fetch("warnings", [])).not_to include("auth_or_login_interstitial", "consent_interstitial")
+      expect(payload["markdown"]).to include("Editorial story 12")
+    end
+  end
+
   it "extracts reddit threads with comments without relying on readability" do
     html = <<~HTML
       <html>

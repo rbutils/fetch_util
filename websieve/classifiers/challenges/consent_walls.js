@@ -91,12 +91,21 @@ function agreementLoginGateEvidence() {
         var privacyLink = visibleLinks.find(function(link) {
           return /\bprivacy (?:policy|notice|statement)\b/i.test(consentSummaryText(link));
         });
-        var controls = Array.prototype.filter.call(owner.querySelectorAll("button, [role='button'], a[href], label, input, select, textarea"), function(node) {
-          if (!consentSummaryVisible(node)) return false;
+        var visibleControls = Array.prototype.filter.call(owner.querySelectorAll("button, [role='button'], a[href], label, input, select, textarea"), consentSummaryVisible);
+        var controls = visibleControls.filter(function(node) {
           var text = consentSummaryText(node) || node.getAttribute("placeholder") || node.getAttribute("name") || "";
           return /\b(?:continue|email|username|password|log in|login|sign in|sign up|sso|forgot|one-time|phone)\b/i.test(text);
         });
-        if (agreementLink && privacyLink && controls.length >= 2) {
+        var credentialControl = visibleControls.find(function(node) {
+          var text = consentSummaryText(node) || node.getAttribute("placeholder") || node.getAttribute("name") || "";
+          return String(node.getAttribute("type") || "").toLowerCase() === "password" || /\b(?:username|password|one-time|sso)\b/i.test(text);
+        });
+        var authAction = visibleControls.find(function(node) {
+          if (!node.matches("button, [role='button'], a[href], input[type='submit'], input[type='button']")) return false;
+          var text = consentSummaryText(node) || node.getAttribute("value") || node.getAttribute("aria-label") || "";
+          return /\b(?:log in|login|sign in|sign up|create (?:an )?account)\b/i.test(text);
+        });
+        if (agreementLink && privacyLink && controls.length >= 2 && credentialControl && authAction) {
           return { owner: owner, heading: headings[headingIndex] };
         }
       }
