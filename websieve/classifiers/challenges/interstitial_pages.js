@@ -19,10 +19,17 @@ function originAccessErrorPage(title, page) {
   var forbiddenLead = normalizedPage.slice(0, 500);
   if (forbiddenTitle && /\b(?:forbidden|do not have permission(?: to)? access|permission denied|access denied)\b/i.test(forbiddenLead)) return true;
 
-  var errorNode = document.body && Array.from(document.body.children).find(function(node) {
+  var directError = document.body && Array.from(document.body.children).find(function(node) {
     return node.tagName && node.tagName.toLowerCase() === "error";
   });
-  if (!errorNode || document.body.children.length !== 1) return false;
+  var viewer = document.querySelector("#webkit-xml-viewer-source-xml");
+  var viewerError = viewer && Array.from(viewer.children).find(function(node) {
+    return node.tagName && node.tagName.toLowerCase() === "error";
+  });
+  var errorNode = directError || viewerError;
+  var directOwner = directError && document.body.children.length === 1;
+  var viewerOwner = viewerError && document.querySelector(".pretty-print");
+  if (!errorNode || (!directOwner && !viewerOwner)) return false;
   var code = normalizeText(((errorNode.querySelector("code") || {}).textContent) || "");
   var message = normalizeText(((errorNode.querySelector("message") || {}).textContent) || "");
   return /^accessdenied$/i.test(code) && /^access denied$/i.test(message);

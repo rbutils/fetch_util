@@ -462,6 +462,29 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies Chromium-rendered AccessDenied XML as an access interstitial" do
+    html = <<~HTML
+      <html>
+        <head><title></title></head>
+        <body>
+          <div id="webkit-xml-viewer-source-xml" hidden>
+            <Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>request-123</RequestId></Error>
+          </div>
+          <div class="header">This XML file does not appear to have any style information associated with it.</div>
+          <div class="pretty-print">&lt;Error&gt; &lt;Code&gt;AccessDenied&lt;/Code&gt; &lt;Message&gt;Access Denied&lt;/Message&gt;</div>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://assets.example/private.xml", html) do |page|
+      payload = extract_payload(page)
+
+      expect_content_type(payload, "interstitial")
+      expect(payload["markdown"]).to include("AccessDenied", "Access Denied")
+      expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+    end
+  end
+
   it "does not flag substantial public government pages that mention access errors incidentally" do
     paragraphs = (1..8).map do |index|
       <<~HTML
