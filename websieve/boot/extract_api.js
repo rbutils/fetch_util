@@ -161,6 +161,12 @@
       var strongArticle = strongArticleContent(content, false);
 
       var productList = genericProductListContent(metadata);
+      var supportingProductCollection = productList && productList.supportingCollection;
+      if (productList && productList.supportingCollection && content && content.contentType === "article" &&
+          normalizeText(content.markdown || content.textContent || "").length >= 280) {
+        content.supportingProductCollection = true;
+        productList = null;
+      }
       if (productList && content && content.contentType !== "social" && content.contentType !== "product" && content.contentType !== "property" && content.contentType !== "hotel" && !content.hostAware && !content.docsLike) {
         var currentText = normalizeText(content.markdown || content.textContent || "").toLowerCase();
         var commerceContext = normalizeText([document.title, location.pathname, location.search, metadata && metadata.siteName].join(" ")).toLowerCase();
@@ -236,7 +242,8 @@
           !strongArticle) {
         indexListCandidate = listContent(metadata);
       }
-      if (indexListCandidate && !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
+      if (indexListCandidate && !(supportingProductCollection && content.contentType === "article") &&
+          !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
           !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {

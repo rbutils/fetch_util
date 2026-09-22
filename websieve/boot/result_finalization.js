@@ -202,7 +202,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown);
   if (content.contentType === "article" && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
-  if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
+  if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision &&
+      !content.supportingProductCollection && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
   if (legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";

@@ -113,7 +113,7 @@
       var detail = productCardDetail(card, title, url);
       if (!titleMatchesPageTerms(title) && !productUrl && !productCard) return null;
 
-      return { text: title, url: url, sourceHref: href, detail: detail };
+      return { text: title, url: url, sourceHref: href, detail: detail, sourceNode: link };
     }
 
     function productCandidates(root, dedupe) {
@@ -152,5 +152,26 @@
       items: items
     });
     result.productListItems = items;
+    result.supportingCollection = productListSupportingCollection(items);
     return result;
+  }
+
+  function productListSupportingCollection(items) {
+    if (!items || !items.length) return false;
+    var sources = items.map(function(item) { return item.sourceNode; }).filter(Boolean);
+    if (sources.length !== items.length) return false;
+
+    var owner = sources[0];
+    while (owner && owner !== document.body) {
+      if (sources.every(function(source) { return owner.contains(source); })) {
+        var supportingHeading = Array.prototype.some.call(owner.querySelectorAll("h1, h2, h3, h4"), function(heading) {
+          if (elementSubtreeHidden(heading)) return false;
+          var text = normalizeText(visibilityPrunedClone(heading, document).textContent || "");
+          return /^(?:(?:related|recommended|similar|other|more)\s+(?:products?|solutions?|services?|offerings?)|you may also like|customers also viewed)$/i.test(text);
+        });
+        if (supportingHeading) return true;
+      }
+      owner = owner.parentElement;
+    }
+    return false;
   }

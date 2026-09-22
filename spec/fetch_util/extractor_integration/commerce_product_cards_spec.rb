@@ -388,6 +388,37 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     end
   end
 
+  it "keeps substantive detail content ahead of an explicitly related product collection" do
+    narrative = "A complete exposure-management platform explains how teams discover assets, prioritize risk, and remediate findings across complex environments. " * 5
+    related = 4.times.map do |index|
+      <<~HTML
+        <article class="product-card">
+          <h3><a href="/products/related-#{index + 1}">Related security product #{index + 1}</a></h3>
+          <span class="price">$#{index + 1}9.00</span>
+        </article>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Exposure Management Platform</title></head><body><main>
+        <article><h1>Exposure Management Platform</h1>
+          <p>#{narrative}Primary implementation guidance remains part of the detail page.</p>
+          <p>#{narrative}Operational response guidance remains part of the detail page.</p>
+        </article>
+        <section class="related-products"><h2>Related products</h2>#{related}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://security.example.test/products/exposure-management", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["markdown"]).to include(
+        "Primary implementation guidance remains part of the detail page.",
+        "Operational response guidance remains part of the detail page."
+      )
+    end
+  end
+
   it "surfaces JSON-LD product offer, rating, and availability details on category cards" do
     html = <<~HTML
       <html>
