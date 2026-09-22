@@ -49,34 +49,4 @@ RSpec.describe "FetchUtil extractor integration - card presentation fields" do
       expect(result.fetch("unchanged")).to be(true)
     end
   end
-
-  it "keeps matching image alternatives without repeating each record title" do
-    with_url_page("https://events.example/", "<main></main>") do |page|
-      root = File.expand_path("../../..", __dir__)
-      source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
-        File.read(File.join(root, "websieve", entry))
-      end.join("\n")
-      probe = "global.fieldProbe = {render: listMarkdown}; })(window);"
-      page.add_script_tag(content: source.sub("})(window);", probe))
-      markdown = page.evaluate(<<~JS)
-        (() => {
-          const items = Array.from({length: 12}, (_, index) => {
-            const number = index + 1;
-            return {
-              text: `Collection ${number}`,
-              url: `https://events.example/collection/${number}`,
-              image: `![Collection ${number}](https://events.example/image/${number}.jpg)`
-            };
-          });
-          return fieldProbe.render(items);
-        })()
-      JS
-
-      (1..12).each do |i|
-        link = "[Collection #{i}](https://events.example/collection/#{i})"
-        expect(markdown.scan(link).length).to eq(1)
-        expect(markdown).to include("![](https://events.example/image/#{i}.jpg)")
-      end
-    end
-  end
 end

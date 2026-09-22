@@ -131,14 +131,6 @@ function listItemSocialFields(item) {
   };
 }
 
-function listItemImageValue(item) {
-  var image = item.image || "";
-  var labelEnd = image.indexOf("](");
-  if (image.indexOf("![") !== 0 || labelEnd < 0) return image;
-  var label = normalizeText(image.slice(2, labelEnd).replace(/\\([\\[\]])/g, "$1"));
-  return label === normalizeText(item.text || "") ? "![]" + image.slice(labelEnd + 1) : image;
-}
-
 function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
   if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
@@ -168,7 +160,7 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
     listCompactMetadataContains(compactMetadata, socialFields.scoreNode) ? "" : socialFields.score,
     socialFields.replyCount,
     socialFields.community,
-    listItemImageValue(item),
+    item.image,
     item.caption
   ];
   var detailCard = item.supplementalCard || card;
