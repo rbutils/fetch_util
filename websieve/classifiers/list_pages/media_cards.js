@@ -35,8 +35,15 @@
     if (!link || !link.matches || !link.matches("a[href]") || listCardNodeHidden(link) ||
         link.closest("nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) return null;
     var url = materializedHttpUrl(link.getAttribute("href"));
+    var destinationPath = "";
     var text = normalizeText(link.textContent);
     if (!url || !text || genericListControlText(text) || looksLikeFooterLink(text, url)) return null;
+    try {
+      var destination = new URL(url);
+      destinationPath = destination.origin + destination.pathname;
+    } catch (_error) {
+      return null;
+    }
     if (text.length >= minimumListTitleLength(text)) return null;
     if (!link.matches("[class*='title' i], [class*='name' i]") &&
         !link.closest("h1, h2, h3, h4, [class*='title' i], [class*='name' i]")) return null;
@@ -52,7 +59,15 @@
               !!anchor.closest("h1, h2, h3, h4, [class*='title' i], [class*='name' i]"));
         });
         var destinationLinks = Array.from(card.querySelectorAll("a[href]")).filter(function(anchor) {
-          return !listCardNodeHidden(anchor) && materializedHttpUrl(anchor.getAttribute("href")) === url;
+          if (listCardNodeHidden(anchor)) return false;
+          var anchorUrl = materializedHttpUrl(anchor.getAttribute("href"));
+          if (!anchorUrl) return false;
+          try {
+            var anchorDestination = new URL(anchorUrl);
+            return anchorDestination.origin + anchorDestination.pathname === destinationPath;
+          } catch (_error) {
+            return false;
+          }
         });
         var hasImage = Array.from(card.querySelectorAll("img[src]")).some(function(image) {
           return !listCardNodeHidden(image) && materializedHttpUrl(image.getAttribute("src"));

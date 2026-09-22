@@ -254,7 +254,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
       <<~HTML
         <div class="project-cover-root">
           <picture><img src="https://images.example/#{index}.jpg" alt="#{title}" width="160" height="90"></picture>
-          <a class="promo-card-cover" href="/resources/#{index}" title="Open #{title}"></a>
+          <a class="promo-card-cover" href="/resources/#{index}?tracking_source=grid&amp;l=#{index}" title="Open #{title}"></a>
           <div class="promo-card-content">
             <h3 class="promo-card-title"><a href="/resources/#{index}">#{title}</a></h3>
             <p>Material guidance owned by #{title.downcase}.</p>
