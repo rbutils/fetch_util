@@ -1,8 +1,8 @@
   function financialStatementLinkCandidates() {
     var candidates = [];
     var seen = [];
-    var pageContext = /\b(?:financial statements?|investor relations|earnings(?: release)?|quarterly report|annual report|shareholder letter|balance sheets?|income statements?|cash flows?|form\s*(?:10-k|10-q|8-k)|sec filing)\b/i;
-    var statementContext = /\b(?:financial statements?|condensed consolidated|consolidated statements?|balance sheets?|income statements?|cash flows?|earnings(?: release)?|quarterly report|annual report|shareholder letter|form\s*(?:10-k|10-q|8-k)|sec filing)\b/i;
+    var pageContext = /\b(?:financial statements?|investor relations|earnings release|quarterly report|annual report|shareholder letter|balance sheets?|income statements?|cash flows?|form\s*(?:10-k|10-q|8-k)|sec filing)\b/i;
+    var statementContext = /\b(?:financial statements?|condensed consolidated|consolidated statements?|balance sheets?|income statements?|cash flows?|earnings release|quarterly report|annual report|shareholder letter|form\s*(?:10-k|10-q|8-k)|sec filing)\b/i;
 
     function financialPageText() {
       var root = document.querySelector("article, main") || document.body;
@@ -39,11 +39,11 @@
 
     document.querySelectorAll("figure img[src], picture img[src], img[src]").forEach(function(image) {
       var contextNode = image.closest("figure, picture, section, article, div") || image;
-      var label = normalizeText(image.getAttribute("alt") || image.getAttribute("aria-label") || "Financial statement image");
-      var context = normalizeText(contextNode.textContent || label).slice(0, 500);
+      var label = normalizeText(image.getAttribute("alt") || image.getAttribute("aria-label") || image.getAttribute("title") || "");
+      var context = normalizeText(contextNode.textContent || "").slice(0, 500);
       if (!statementContext.test(label + " " + context)) return;
 
-      try { push(new URL(image.getAttribute("src"), location.href).href, label, context); } catch (_error) {}
+      try { push(new URL(image.getAttribute("src"), location.href).href, label || "Financial statement image", context); } catch (_error) {}
     });
 
     return candidates;

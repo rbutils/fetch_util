@@ -17,6 +17,35 @@ RSpec.describe 'Investor relations extraction' do
     end
   end
 
+  it 'does not fabricate financial links from generic earnings copy and unlabeled site images' do
+    html = <<~HTML
+      <html>
+        <head><title>Creator rewards dashboard</title></head>
+        <body>
+          <main>
+            <article>
+              <img src="/assets/site-logo.png">
+              <h1>Creator rewards dashboard</h1>
+              <p>Track group earnings by day, month, and all time.</p>
+              <div class="cookie-settings">
+                <img src="/cookie/close.svg">
+                <img src="/cookie/powered-by.svg">
+              </div>
+              <p>This public dashboard explains rewards, referrals, and payout history.</p>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page('https://rewards.example/dashboard', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['markdown']).to include('Track group earnings by day, month, and all time.')
+      expect(payload['markdown']).not_to include('## Financial Statement Links', 'close.svg', 'powered-by.svg')
+    end
+  end
+
   it 'surfaces linked financial statement PDFs and images from earnings releases' do
     html = fixture_contents(File.expand_path('../../fixtures/ir_apple_earnings.html', __dir__))
 
