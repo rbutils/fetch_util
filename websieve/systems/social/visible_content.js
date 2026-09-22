@@ -45,6 +45,14 @@
     return node.tagName.toLowerCase() + "|" + classes.join(".") + "|" + (node.getAttribute("role") || "");
   }
 
+  function socialPostRecordNodes(owner) {
+    return Array.prototype.filter.call(owner.querySelectorAll("*"), function(node) {
+      var identity = [node.localName || "", node.id || "", node.getAttribute("data-testid") || "", node.getAttribute("role") || ""]
+        .concat(Array.from(node.classList || [])).join(" ");
+      return /(?:^|[-_\s])(card|comment|feed|message|post|reply|status|thread)(?:[-_\s]|$)/i.test(identity);
+    });
+  }
+
   function socialPostAuthorLink(owner) {
     return Array.prototype.find.call(owner.querySelectorAll("a[href]"), function(link) {
       if (elementVisuallyHidden(link)) return false;
@@ -72,7 +80,7 @@
 
       var signatures = {};
       var materialSignatures = {};
-      Array.prototype.forEach.call(owner.children || [], function(child) {
+      socialPostRecordNodes(owner).forEach(function(child) {
         var signature = socialPostRecordSignature(child);
         if (!signature) return;
         signatures[signature] = (signatures[signature] || 0) + 1;

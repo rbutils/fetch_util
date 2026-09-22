@@ -34,12 +34,14 @@ RSpec.describe 'FetchUtil community record fidelity' do
       slug = format('%02d', index)
       media = index == 27 ? '<img src="/images/final-post.jpg" alt="Final post image">' : ''
       <<~HTML
-        <shreddit-post author="#{author}" score="#{index}">
-          <a href="/user/#{author}">#{author}</a>
-          <a href="/r/ruby/comments/#{slug}/story-#{slug}"><h2>#{title}</h2></a>
-          <div slot="text-body">Substantive visible body for #{title}.</div>
-          #{media}
-        </shreddit-post>
+        <article>
+          <shreddit-post author="#{author}" score="#{index}">
+            <a href="/user/#{author}">#{author}</a>
+            <a href="/r/ruby/comments/#{slug}/story-#{slug}"><h2>#{title}</h2></a>
+            <div slot="text-body">Substantive visible body for #{title}.</div>
+            #{media}
+          </shreddit-post>
+        </article>
       HTML
     end.join
     html = <<~HTML
@@ -48,7 +50,7 @@ RSpec.describe 'FetchUtil community record fidelity' do
           <title>reddit for rubyists</title>
           <meta property="og:site_name" content="Reddit">
         </head>
-        <body><main><h1>r/ruby</h1>#{posts}</main></body>
+        <body><main><h1>r/ruby</h1><div><shreddit-feed>#{posts}</shreddit-feed></div></main></body>
       </html>
     HTML
 
