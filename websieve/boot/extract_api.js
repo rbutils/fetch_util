@@ -202,10 +202,14 @@
        }
 
        if (provisionalHomepageContent && provisionalHomepageAlternative) {
-         if (!listCandidateLosesArticleMaterial(provisionalHomepageAlternative, provisionalHomepageContent)) {
-           content = provisionalHomepageContent;
-         } else if (!content || listCandidateLosesArticleMaterial(provisionalHomepageAlternative, content)) {
-           content = provisionalHomepageAlternative;
+          var provisionalHomepageText = normalizeText(provisionalHomepageContent.markdown || provisionalHomepageContent.textContent || "");
+          var provisionalHomepageAlternativeText = normalizeText(provisionalHomepageAlternative.markdown || provisionalHomepageAlternative.textContent || "");
+          if (!provisionalHomepageText && provisionalHomepageAlternativeText) {
+            content = provisionalHomepageAlternative;
+          } else if (!listCandidateLosesArticleMaterial(provisionalHomepageAlternative, provisionalHomepageContent)) {
+            content = provisionalHomepageContent;
+          } else if (!content || listCandidateLosesArticleMaterial(provisionalHomepageAlternative, content)) {
+            content = provisionalHomepageAlternative;
          }
        }
 

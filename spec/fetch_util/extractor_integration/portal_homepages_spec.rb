@@ -767,6 +767,40 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
     end
   end
 
+  it 'keeps a nonempty fallback over an empty provisional homepage result' do
+    html = <<~HTML
+      <html><head><title>Flight planning tools</title></head><body>
+        <main><h1>Plan your next trip</h1>
+        <p>Search flexible routes and compare departure options for your next journey.</p>
+        <p>Choose an origin and destination to start planning.</p></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://empty-provisional.example/', html) do |page|
+      inject_standalone_extractor(page)
+      payload = page.evaluate(<<~JS)
+        (function() {
+          window.registerHostAwareProfile(/(^|\\.)empty-provisional\\.example$/, function() {
+            return {
+              title: "Flight planning tools",
+              html: "<main></main>",
+              markdown: "",
+              textContent: "",
+              readerMode: false,
+              contentType: "list",
+              provisionalPortal: true
+            };
+          });
+          return window.FetchUtilExtract.extract({ reader_mode: true });
+        })()
+      JS
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Search flexible routes', 'Choose an origin and destination')
+      expect(payload['warnings']).not_to include('empty_extraction')
+    end
+  end
+
   it 'does not replace a liveblog article with a structural portal list' do
     html = <<~HTML
       <main><article><h1>Live: city council vote and reactions</h1><p class="byline">By Live Desk</p>
