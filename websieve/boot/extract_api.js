@@ -34,7 +34,14 @@
         if (!candidate || candidate.contentType !== "list") return false;
         var candidateText = normalizeText(candidate.markdown || candidate.textContent || "");
         var currentText = normalizeText(current && (current.markdown || current.textContent) || "");
-        return !candidateText && !!currentText;
+        var itemCount = candidate.itemCount || 0;
+        if (candidate.listExtraction && Array.isArray(candidate.listExtraction.items)) {
+          itemCount = Math.max(itemCount, candidate.listExtraction.items.length);
+        }
+        if (Array.isArray(candidate.listSourceItems)) {
+          itemCount = Math.max(itemCount, candidate.listSourceItems.length);
+        }
+        return !candidateText && itemCount === 0 && !!currentText && !!(current && current.readerMode);
       }
 
       function indexListCandidateAllowed(candidate) {
