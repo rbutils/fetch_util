@@ -481,7 +481,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect_content_type(payload, "interstitial")
       expect(payload["markdown"]).to include("AccessDenied", "Access Denied")
-      expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+      expect(payload["warnings"]).to eq(%w[access_error_interstitial bot_or_access_interstitial])
     end
   end
 

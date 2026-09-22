@@ -39,5 +39,5 @@
     if (!challengeType && !interstitialType && normalizeText(markdown || "").length < 10 && (metadata.title || "").length > 3) {
       if (reasons.indexOf("empty_extraction") === -1 && reasons.indexOf("short_extraction") === -1) reasons.push("short_extraction");
     }
-    return reasons;
+    return reasons.filter(function(reason, index) { return reasons.indexOf(reason) === index; });
   }
