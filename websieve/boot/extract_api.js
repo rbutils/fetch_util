@@ -3,6 +3,7 @@
       resetTerminalArticleCollectionMarker();
       mwananchiPrePageTextCleanup();
       var metadata = collectMetadata();
+      var ownedSocialPost = socialPostOwnedContent(metadata);
       var focalArticleRoute = articleRouteFocalContent();
       var content;
       var provisionalHomepageContent = null;
@@ -156,7 +157,7 @@
       content = applyPropertyListingContent(content, metadata);
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
-      content = applySocialContentType(content, metadata);
+      content = applySocialContentType(content, metadata, ownedSocialPost);
       var strongArticle = strongArticleContent(content, false);
 
       var productList = genericProductListContent(metadata);

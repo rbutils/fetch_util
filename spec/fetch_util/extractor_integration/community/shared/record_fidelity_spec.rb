@@ -27,6 +27,52 @@ RSpec.describe 'FetchUtil community record fidelity' do
     end
   end
 
+  it 'preserves every visible subreddit post despite optional media differences' do
+    posts = (1..27).map do |index|
+      title = format('Visible subreddit post %02d', index)
+      author = format('author%02d', index)
+      slug = format('%02d', index)
+      media = index == 27 ? '<img src="/images/final-post.jpg" alt="Final post image">' : ''
+      <<~HTML
+        <shreddit-post author="#{author}" score="#{index}">
+          <a href="/user/#{author}">#{author}</a>
+          <a href="/r/ruby/comments/#{slug}/story-#{slug}"><h2>#{title}</h2></a>
+          <div slot="text-body">Substantive visible body for #{title}.</div>
+          #{media}
+        </shreddit-post>
+      HTML
+    end.join
+    html = <<~HTML
+      <html>
+        <head>
+          <title>reddit for rubyists</title>
+          <meta property="og:site_name" content="Reddit">
+        </head>
+        <body><main><h1>r/ruby</h1>#{posts}</main></body>
+      </html>
+    HTML
+
+    extract_from_url('https://www.reddit.com/r/ruby/', html) do |payload|
+      expect(payload).to include(
+        'contentType' => 'social',
+        'socialKind' => 'feed',
+        'platform' => 'Reddit',
+        'community' => 'r/ruby'
+      )
+
+      titles = (1..27).map do |index|
+        title = format('Visible subreddit post %02d', index)
+        destination = format('https://www.reddit.com/r/ruby/comments/%02d/story-%02d', index, index)
+        expect(payload['markdown'].scan(/\[#{Regexp.escape(title)}\]\(/).length).to eq(1)
+        expect(payload['markdown'].scan("Substantive visible body for #{title}.").length).to eq(1)
+        expect(payload['markdown'].scan(destination).length).to eq(1)
+        title
+      end
+      expect(titles.map { |title| payload['markdown'].index(title) }).to eq(titles.map { |title| payload['markdown'].index(title) }.sort)
+      expect(payload['markdown']).to include('https://www.reddit.com/images/final-post.jpg')
+    end
+  end
+
   it 'preserves all Stack Overflow answers in order' do
     answers = repeated_nodes(<<~HTML, 8)
       <div class="answer" data-answerid="%<index>d">

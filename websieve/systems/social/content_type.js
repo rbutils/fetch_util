@@ -169,9 +169,12 @@
     return content;
   }
 
-  function applySocialContentType(content, metadata) {
+  function applySocialContentType(content, metadata, ownedPostContent) {
+    if (content && !content.hostAware && content.contentType !== "interstitial" && ownedPostContent) {
+      content = ownedPostContent;
+    }
     if (document.body) {
-      if (content && !content.hostAware && content.contentType !== "interstitial") {
+      if (content && !content.hostAware && content.contentType !== "interstitial" && !ownedPostContent) {
         var repeatedPost = socialPostOwnedContent(metadata);
         if (repeatedPost) content = repeatedPost;
       }

@@ -36,7 +36,7 @@
     var text = normalizeText(node.innerText || "");
     if (text.length < 4 && !node.querySelector("img[src], video, audio")) return null;
 
-    var tokens = [node.id || "", node.getAttribute("data-testid") || "", node.getAttribute("role") || ""].concat(Array.from(node.classList || []));
+    var tokens = [node.localName || "", node.id || "", node.getAttribute("data-testid") || "", node.getAttribute("role") || ""].concat(Array.from(node.classList || []));
     if (!tokens.some(function(token) { return /(?:^|[-_])(card|comment|feed|message|post|reply|status|thread)(?:[-_]|$)/i.test(token); })) return null;
 
     var classes = Array.from(node.classList || []).filter(function(name) {
@@ -60,7 +60,8 @@
 
   function socialRepeatedPostEvidence() {
     var route = socialPostRouteEvidence();
-    if (!route) return null;
+    var community = socialRouteCommunity();
+    if (!route && !community) return null;
 
     var candidates = Array.prototype.map.call(document.querySelectorAll("main, [role='main']"), function(owner) {
       if (elementVisuallyHidden(owner) || owner.querySelector('input[type="password"], input[autocomplete="current-password"]')) return null;
@@ -79,16 +80,25 @@
           materialSignatures[signature] = (materialSignatures[signature] || 0) + 1;
         }
       });
-      var repeatedSignature = Object.keys(signatures).some(function(signature) {
+      var repeatedSignatures = Object.keys(signatures).filter(function(signature) {
         return signatures[signature] >= 3 && (materialSignatures[signature] || 0) >= 2;
       });
-      if (!repeatedSignature) return null;
+      if (!route) {
+        repeatedSignatures = repeatedSignatures.filter(function(signature) {
+          return /(?:^|[-_.|])post(?:[-_.|]|$)/i.test(signature);
+        });
+      }
+      if (!repeatedSignatures.length) return null;
 
       var author = normalizeText(authorLink.innerText || "");
       return {
         author: author || null,
-        handle: socialPostHandle(authorLink, route.handle),
-        owner: owner
+        community: route ? null : community,
+        handle: route ? socialPostHandle(authorLink, route.handle) : null,
+        itemCount: Math.max.apply(null, repeatedSignatures.map(function(signature) { return signatures[signature]; })),
+        kind: route ? "post" : "feed",
+        owner: owner,
+        title: route ? null : firstTextFromNode(owner, ["h1", "h2"])
       };
     }).filter(Boolean);
     return candidates.length === 1 ? candidates[0] : null;
@@ -168,8 +178,8 @@
     if (text.length < 80 || normalizeText(markdown).length < 80) return null;
 
     return {
-      title: evidence.title || evidence.author || metadata.title,
-      byline: evidence.author || metadata.byline,
+      title: evidence.title || (evidence.kind === "feed" ? metadata.title : evidence.author || metadata.title),
+      byline: evidence.kind === "feed" ? metadata.byline : evidence.author || metadata.byline,
       excerpt: metadata.excerpt || text.slice(0, 280),
       siteName: metadata.siteName,
       publishedTime: metadata.publishedTime || firstTextFromNode(evidence.owner, ["time", ".time"]),
@@ -179,9 +189,11 @@
       textContent: text,
       readerMode: false,
       contentType: "social",
-      socialKind: "post",
+      socialKind: evidence.kind || "post",
       platform: socialPlatformLabel(metadata),
       handle: evidence.handle,
+      community: evidence.community,
+      itemCount: evidence.itemCount,
       hostAware: false
     };
   }
