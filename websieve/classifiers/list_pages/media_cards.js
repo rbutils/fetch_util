@@ -37,6 +37,7 @@
     var url = materializedHttpUrl(link.getAttribute("href"));
     var text = normalizeText(link.textContent);
     if (!url || !text || genericListControlText(text) || looksLikeFooterLink(text, url)) return null;
+    if (text.length >= minimumListTitleLength(text)) return null;
     if (!link.matches("[class*='title' i], [class*='name' i]") &&
         !link.closest("h1, h2, h3, h4, [class*='title' i], [class*='name' i]")) return null;
 
@@ -44,12 +45,14 @@
     while (card && card !== document.body) {
       if (card.matches(genericListCardSelector()) && !listCardNodeHidden(card) && !listChromeNode(card)) {
         var titleLinks = Array.from(card.querySelectorAll("a[href]")).filter(function(anchor) {
-          if (listCardNodeHidden(anchor) || anchor.querySelector("img") ||
-              materializedHttpUrl(anchor.getAttribute("href")) !== url) return false;
+          if (listCardNodeHidden(anchor) || anchor.querySelector("img")) return false;
           var anchorText = normalizeText(anchor.textContent);
           return !!anchorText && !genericListControlText(anchorText) && !looksLikeFooterLink(anchorText, url) &&
             (anchor.matches("[class*='title' i], [class*='name' i]") ||
               !!anchor.closest("h1, h2, h3, h4, [class*='title' i], [class*='name' i]"));
+        });
+        var destinationLinks = Array.from(card.querySelectorAll("a[href]")).filter(function(anchor) {
+          return !listCardNodeHidden(anchor) && materializedHttpUrl(anchor.getAttribute("href")) === url;
         });
         var hasImage = Array.from(card.querySelectorAll("img[src]")).some(function(image) {
           return !listCardNodeHidden(image) && materializedHttpUrl(image.getAttribute("src"));
@@ -61,7 +64,8 @@
           });
           return sharedClass && !!peer.querySelector("img[src]") && !!peer.querySelector("a[href]");
         });
-        if (titleLinks.length === 1 && titleLinks[0] === link && hasImage && peers && peers.length >= 3) return card;
+        if (titleLinks.length === 1 && titleLinks[0] === link && destinationLinks.length >= 2 &&
+            hasImage && peers && peers.length >= 3) return card;
       }
       card = card.parentElement;
     }

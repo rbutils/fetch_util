@@ -10,6 +10,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
         File.read(File.join(root, "websieve", entry))
       end.join("\n").sub("})(window);", "global.supportingClone = visibleListClone; " \
                                            "global.supportingItems = extractListItems; " \
+                                            "global.supportingImageTitleCard = genericListImageTitleCard; " \
                                             "global.supportingProof = genericListSupportingCard; " \
                                             "global.supportingDescriptionValues = listDescriptionItemValues; " \
                                             "global.supportingDescription = listDescriptionMarkdown; " \
@@ -66,6 +67,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
           distinctAliasCard.href = 'https://articles.example/archive?utm_source=angle';
           distinctAliasCard.textContent = 'Archive coverage';
           const authorReference = main.querySelector('.author a[href]');
+          const aggregateShortTitle = main.querySelector('[data-aggregate-short-title]');
           const unsafeReference = document.createElement('a');
           unsafeReference.href = 'https://fixture-user:fixture-secret@example.net/private';
           unsafeReference.textContent = 'private label';
@@ -92,6 +94,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
                   firstStoryDescriptionValues: firstStoryDescriptionValues,
                   collectionDescriptionValues: collectionDescriptionValues,
                   rootReference: authorReference && supportingText(authorReference),
+                  aggregateShortClaim: aggregateShortTitle && !!supportingImageTitleCard(aggregateShortTitle),
                   unsafeRootReference: supportingText(unsafeReference),
                    supplementalText: supplementalContent && supportingText(supplementalContent),
                    supplemental: supplementalItem && supportingSupplemental(supplementalItem, [], supplementalCard),
@@ -267,6 +270,23 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     expect(result.fetch("items")).to eq(titles.map.with_index do |title, index|
       { "text" => title, "url" => "https://articles.example/resources/#{index}" }
     end)
+  end
+
+  it "does not let a short nested title claim an aggregate image-card owner" do
+    cards = 3.times.map do |index|
+      <<~HTML
+        <article class="result-card">
+          <img src="https://images.example/group-#{index}.jpg" alt="Category #{index + 1}">
+          <h3 class="result-title"><a data-aggregate-short-title href="/groups/#{index}">AI</a></h3>
+          <div class="subcategories">
+            <h4 class="subcategory-title"><a href="/groups/#{index}/alpha">Alpha category #{index + 1}</a></h4>
+            <h4 class="subcategory-title"><a href="/groups/#{index}/beta">Beta category #{index + 1}</a></h4>
+          </div>
+        </article>
+      HTML
+    end.join
+    result = render_supporting_cards(cards)
+    expect(result.fetch("aggregateShortClaim")).to be(false)
   end
 
   it "keeps unsafe and hidden supporting destinations out of rendered output" do
