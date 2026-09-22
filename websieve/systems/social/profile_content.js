@@ -85,8 +85,24 @@
     }) || null;
   }
 
+  function socialProfileArticleOverlay(article) {
+    var owner = article && article.parentElement;
+    if (!owner || owner.closest("article")) return null;
+    var articles = Array.prototype.filter.call(owner.children, function(node) { return node.matches("article"); });
+    if (articles.length !== 1 || articles[0] !== article) return null;
+    var overlays = Array.prototype.filter.call(owner.children, function(node) {
+      return node.matches("a[href][aria-label]") && !normalizeText(node.textContent || "");
+    });
+    if (overlays.length !== 1) return null;
+    var label = normalizeText(overlays[0].getAttribute("aria-label") || "");
+    var url = materializedHttpUrl(overlays[0].getAttribute("href"));
+    if (!label || !url || genericListControlText(label) || looksLikeFooterLink(label, url)) return null;
+    return { label: label, url: url };
+  }
+
   function socialProfileArticleMarkdown(root, markdown) {
     var represented = normalizeText(markdown || "").toLowerCase();
+    var representedMarkdown = String(markdown || "").toLowerCase();
     var seen = {};
     return Array.prototype.map.call(root.querySelectorAll("article"), function(article) {
       if (elementVisuallyHidden(article) || article.closest("nav, footer, aside, dialog, [role='dialog']")) return "";
@@ -96,6 +112,7 @@
       clone.querySelectorAll("script, style, noscript, template, iframe").forEach(function(node) { node.remove(); });
       materializeHttpAttributes(clone, true);
       var addition = markdownFor(clone.outerHTML).trim();
+      var additions = [];
       var sourceKey = normalizeText(article.innerText || article.textContent || "").toLowerCase();
       var sourceSegments = Array.prototype.map.call(article.querySelectorAll("h1, h2, h3, h4, p, [data-testid*='text' i]"), function(node) {
         return normalizeText(node.innerText || node.textContent || "").toLowerCase();
@@ -104,9 +121,16 @@
         return represented.indexOf(value) >= 0;
       });
       var key = normalizeText(addition).toLowerCase();
-      if (!key || seen[key] || fullyRepresented || represented.indexOf(key) >= 0 || (sourceKey && represented.indexOf(sourceKey) >= 0)) return "";
-      seen[key] = true;
-      return addition;
+      if (key && !seen[key] && !fullyRepresented && represented.indexOf(key) < 0 && (!sourceKey || represented.indexOf(sourceKey) < 0)) {
+        seen[key] = true;
+        additions.push(addition);
+      }
+      var overlay = socialProfileArticleOverlay(article);
+      if (overlay && representedMarkdown.indexOf(overlay.url.toLowerCase()) < 0 && !seen[overlay.url]) {
+        seen[overlay.url] = true;
+        additions.push(markdownLink(overlay.label, overlay.url));
+      }
+      return additions.join("\n\n");
     }).filter(Boolean).join("\n\n");
   }
 

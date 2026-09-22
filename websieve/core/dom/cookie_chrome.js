@@ -30,8 +30,7 @@
     var vendorNamespace = [node.getAttribute("id") || ""].concat(Array.from(node.classList || [])).some(function(token) {
       return /^(?:ot|cky)-[\w-]+$/i.test(token);
     });
-    var vendorContainer = vendorNamespace || /(onetrust|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs) ||
-      node.getAttribute("data-nosnippet") === "true";
+    var vendorContainer = vendorNamespace || /(onetrust|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs);
 
     if (vendorContainer || externalConsentPlaceholderNode(node)) return true;
     if (!text) return false;
@@ -66,7 +65,7 @@
   function cleanupCookieChrome(root) {
     if (!root || !root.querySelectorAll) return root;
 
-    root.querySelectorAll("[role='dialog'], [aria-modal='true'], dialog, [id*='cookie' i], [class*='cookie' i], [id*='consent' i], [class*='consent' i], [id*='privacy' i], [class*='privacy' i], [id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [id*='gdpr' i], [class*='gdpr' i], [id*='ccpa' i], [class*='ccpa' i], [class*='CookieConsent' i], [id*='CookieConsent' i], [class*='CookieDeclaration' i], [id*='CookieDeclaration' i], [class*='cookiebar' i], [id*='cookiebar' i], [class*='cookie-banner' i], [id*='cookie-banner' i], [class*='cookie-notice' i], [id*='cookie-notice' i], [class*='privacy-center' i], [id*='privacy-center' i], [data-nosnippet='true'], .cc-banner, .cc-window, #CybotCookiebotDialog, .cky-consent-container, #usercentrics-root, .osano-cm-dialog").forEach(function(el) {
+    root.querySelectorAll("[role='dialog'], [aria-modal='true'], dialog, [id*='cookie' i], [class*='cookie' i], [id*='consent' i], [class*='consent' i], [id*='privacy' i], [class*='privacy' i], [id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [id*='gdpr' i], [class*='gdpr' i], [id*='ccpa' i], [class*='ccpa' i], [class*='CookieConsent' i], [id*='CookieConsent' i], [class*='CookieDeclaration' i], [id*='CookieDeclaration' i], [class*='cookiebar' i], [id*='cookiebar' i], [class*='cookie-banner' i], [id*='cookie-banner' i], [class*='cookie-notice' i], [id*='cookie-notice' i], [class*='privacy-center' i], [id*='privacy-center' i], .cc-banner, .cc-window, #CybotCookiebotDialog, .cky-consent-container, #usercentrics-root, .osano-cm-dialog").forEach(function(el) {
       if (cookieChromeNode(el)) el.remove();
     });
 

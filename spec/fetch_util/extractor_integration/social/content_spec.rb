@@ -136,6 +136,42 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'preserves every profile activity body and its empty overlay destination' do
+    activities = (1..10).map do |index|
+      <<~HTML
+        <div class="relative feed-card-wrapper">
+          <article data-id="main-feed-card">
+            <p data-nosnippet="true">Visible activity #{index} shares substantive public guidance#{index == 1 ? " and *sips tea*" : ""}.</p>
+          </article>
+          <a class="absolute overlay" href="/posts/activity-#{index}" aria-label="Update #{index}"></a>
+        </div>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Example Network | Work Square</title></head><body><main>
+        <header><h1>Example Network</h1><p>34M followers</p><h2>About</h2><p>Public professional updates and resources.</p></header>
+        <ul><li><a href="/company/example/about">About us</a></li><li><a href="/company/example/products">Products</a></li><li><a href="/company/example/jobs">Jobs</a></li></ul>
+        #{activities}
+      </main></body></html>
+    HTML
+
+    with_url_page('https://work.example/company/example/', html) do |page|
+      payload = extract_payload(page)
+      markdown = payload['markdown']
+
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'platform' => 'Work Square')
+      positions = (1..10).map do |index|
+        prose = "Visible activity #{index} shares substantive public guidance"
+        destination = "https://work.example/posts/activity-#{index}"
+        expect(markdown.scan(prose).length).to eq(1)
+        expect(markdown.scan("](#{destination})").length).to eq(1)
+        markdown.index(prose)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(markdown).to include('*sips tea*')
+    end
+  end
+
   it 'does not infer a profile from audience prose without profile ownership' do
     html = <<~HTML
       <html><head><title>Audience report | Research Notes</title></head><body><main><article><h1>Audience report</h1><p>About 100 followers joined after the public workshop.</p><p>This ordinary analysis explains the campaign results without representing a person or organization profile.</p></article></main></body></html>

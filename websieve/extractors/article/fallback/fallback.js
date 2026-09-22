@@ -2,9 +2,9 @@
     if (!node || cookieChromeNode(node)) return -Infinity;
     if (!fallbackFocalArticleRoot(node) && commentOnlyRoot(node)) return -Infinity;
 
-    if (node.matches("[id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [class*='privacy-center' i], [id*='privacy-center' i], [data-nosnippet='true']")) return -Infinity;
+    if (node.matches("[id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [class*='privacy-center' i], [id*='privacy-center' i]")) return -Infinity;
 
-    var privacyTitle = node.querySelector("#ot-pc-title, #ot-pc-desc, [id^='ot-pc-' i], [class*='ot-pc' i], [class*='ot-accordion' i], [id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [id*='privacy' i], [class*='privacy' i], [id*='cookie' i], [class*='cookie' i], [class*='privacy-center' i], [id*='privacy-center' i], [data-nosnippet='true']");
+    var privacyTitle = node.querySelector("#ot-pc-title, #ot-pc-desc, [id^='ot-pc-' i], [class*='ot-pc' i], [class*='ot-accordion' i], [id*='onetrust' i], [class*='onetrust' i], [id^='ot-' i], [class*='ot-' i], [id*='privacy' i], [class*='privacy' i], [id*='cookie' i], [class*='cookie' i], [class*='privacy-center' i], [id*='privacy-center' i]");
     var privacyText = normalizeText((privacyTitle && privacyTitle.textContent) || node.textContent || "").slice(0, 500);
     if (privacyTitle && (cookieNoticeText(privacyText) || utilityHeadingText(privacyText))) return -Infinity;
 
