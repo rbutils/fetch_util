@@ -7,6 +7,27 @@ function siteUnavailablePage(title, page) {
     (normalizedPage.length < 1200 && unavailablePattern.test(normalizedPage.slice(0, 500)));
 }
 
+function originAccessErrorPage(title, page) {
+  var normalizedTitle = normalizeText(title || "").toLowerCase();
+  var normalizedPage = normalizeText(page || "").toLowerCase();
+  var cloudflareStatus = /\|\s*52\d\s*:/i.test(title || "") &&
+    /\b(?:error code\s*52\d|cloudflare ray id|host error)\b/i.test(normalizedPage) &&
+    /\b(?:connection timed out|web server returning unknown error|web server is down|origin is unreachable|ssl handshake failed|host error)\b/i.test(normalizedPage);
+  if (cloudflareStatus) return true;
+
+  var forbiddenTitle = /(?:^|\b)(?:error\s*[-:]\s*)?403(?:\s*[-:|]|$)/i.test(normalizedTitle);
+  var forbiddenLead = normalizedPage.slice(0, 500);
+  if (forbiddenTitle && /\b(?:forbidden|do not have permission(?: to)? access|permission denied|access denied)\b/i.test(forbiddenLead)) return true;
+
+  var errorNode = document.body && Array.from(document.body.children).find(function(node) {
+    return node.tagName && node.tagName.toLowerCase() === "error";
+  });
+  if (!errorNode || document.body.children.length !== 1) return false;
+  var code = normalizeText(((errorNode.querySelector("code") || {}).textContent) || "");
+  var message = normalizeText(((errorNode.querySelector("message") || {}).textContent) || "");
+  return /^accessdenied$/i.test(code) && /^access denied$/i.test(message);
+}
+
 function notFoundInterstitialPattern() {
   return /\b404\b|\boops!\b|\bnot found\b|page not found|not the web page you are looking for|sorry, (?:we )?(?:can.?t|could not) find (?:that |the )?page|we.?re sorry, but that page cannot be found|(?:that |the )?page cannot be found|the page you (?:requested|were looking for|are looking for) (?:can.?t be found|does(?:n'?t| not) exist)|this page is no longer available|content no longer available|(?:dataset|record|project|submission) (?:you are trying to view )?is not available|this doi cannot be found in the doi system|doi cannot be found|ご利用のページが見つかりません|ページまたはファイルが存在しません|移動または削除されている|urlに誤りがある|urlには.*存在しません/i;
 }
@@ -143,6 +164,7 @@ function interstitialPageType(metadata, pageText) {
   if (/robot or human|confirm (?:that )?you (?:are|.?re) (?:a )?human|activate and hold the button|px-captcha|drag the slider to fit the puzzle|slide to verify|help us protect|verifying that you.?re a real person|unusual activity from your computer network|click the box below to let us know you.?re not a robot/i.test(combined) || captchaOwnedPressAndHold) return "human_verification";
   if (/select your country|choose a country|shopping in the u\.s\?|best buy international/i.test(combined) && !substantialPublic) return "region_selector";
   if (/browser is not supported|your browser is not supported|unsupported browser|for the best experience, use any of these supported browsers|use any of these supported browsers|supported browsers:/i.test(combined) && !substantialPublic) return "browser_support";
+  if (originAccessErrorPage(title, page)) return "access_error";
   if (/^access error$/i.test(title) || /potential misuse|page you are trying to access is unavailable|help\.ft\.com|request blocked|you have been blocked|troubleshooting cloudflare errors/i.test(combined)) return "access_error";
   if (siteUnavailablePage(title, page)) return "site_unavailable";
   if (agreementLoginGate) return "auth_wall";

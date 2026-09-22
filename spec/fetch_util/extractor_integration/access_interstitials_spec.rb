@@ -380,6 +380,58 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies explicit origin and access failures as interstitials" do
+    cases = [
+      [
+        "https://timeout.example/",
+        "timeout.example | 522: Connection timed out",
+        "Connection timed out Error code 522 Visit cloudflare.com for more information. Host Error What happened? " \
+          "The initial connection between Cloudflare's network and the origin web server timed out."
+      ],
+      [
+        "https://unknown.example/",
+        "unknown.example | 520: Web server returning unknown error",
+        "Web server returning unknown error Error code 520 Visit cloudflare.com for more information. Host Error What happened? " \
+          "There is an unknown connection issue between Cloudflare and the origin web server."
+      ],
+      [
+        "https://forbidden.example/",
+        "forbidden.example - error - 403",
+        "OOPS! It's 403! You do not have permission access this page."
+      ]
+    ]
+
+    cases.each do |url, title, message|
+      html = "<html><head><title>#{title}</title></head><body><main><h1>#{message}</h1></main></body></html>"
+      with_url_page(url, html) do |page|
+        payload = extract_payload(page)
+
+        expect_content_type(payload, "interstitial")
+        expect(payload["markdown"]).to include(message.split(" Error code").first)
+        expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+      end
+    end
+  end
+
+  it "classifies structured AccessDenied responses as access interstitials" do
+    html = <<~HTML
+      <Error>
+        <Code>AccessDenied</Code>
+        <Message>Access Denied</Message>
+        <RequestId>ABC123</RequestId>
+        <HostId>opaque-request-host-id</HostId>
+      </Error>
+    HTML
+
+    with_url_page("https://assets.example/object", html) do |page|
+      payload = extract_payload(page)
+
+      expect_content_type(payload, "interstitial")
+      expect(payload["markdown"]).to include("Access Denied", "ABC123")
+      expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+    end
+  end
+
   it "does not flag substantial public government pages that mention access errors incidentally" do
     paragraphs = (1..8).map do |index|
       <<~HTML
