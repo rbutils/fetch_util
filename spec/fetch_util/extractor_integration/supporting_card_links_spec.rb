@@ -252,7 +252,7 @@ RSpec.describe "FetchUtil extractor integration - supporting card links" do
     titles = %w[AI Shift] + 10.times.map { |index| "Collection #{index + 1}" }
     cards = titles.map.with_index do |title, index|
       <<~HTML
-        <div class="promo-card">
+        <div class="project-cover-root">
           <picture><img src="https://images.example/#{index}.jpg" alt="#{title}" width="160" height="90"></picture>
           <a class="promo-card-cover" href="/resources/#{index}" title="Open #{title}"></a>
           <div class="promo-card-content">

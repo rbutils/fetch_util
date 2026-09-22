@@ -43,7 +43,7 @@
 
     var card = link.parentElement;
     while (card && card !== document.body) {
-      if (card.matches(genericListCardSelector()) && !listCardNodeHidden(card) && !listChromeNode(card)) {
+      if (!listCardNodeHidden(card) && !listChromeNode(card)) {
         var titleLinks = Array.from(card.querySelectorAll("a[href]")).filter(function(anchor) {
           if (listCardNodeHidden(anchor) || anchor.querySelector("img")) return false;
           var anchorText = normalizeText(anchor.textContent);
