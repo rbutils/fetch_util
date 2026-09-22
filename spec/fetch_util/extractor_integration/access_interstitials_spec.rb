@@ -357,6 +357,36 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "does not treat public security and cookie prose as human verification" do
+    resources = (1..7).map do |index|
+      %(<li><a href="/learn/#{index}">Public trading guide #{index}</a></li>)
+    end.join
+    html = <<~HTML
+      <html>
+        <head><title>Trading guides and market education</title></head>
+        <body>
+          <main>
+            <article>
+              <h1>Trading guides and market education</h1>
+              <p>Learn how markets work, compare order types, and review risk-management techniques before trading.</p>
+              <p>Cookies and similar technologies help us protect the security of the website, our clients, and combat fraud.</p>
+              <h2>Learning resources</h2>
+              <ul>#{resources}</ul>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://markets.example/learn", html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload["contentType"]).not_to eq("interstitial")
+      expect(payload["markdown"]).to include("Learn how markets work")
+      expect_warnings(payload, exclude: %w[human_verification_interstitial bot_or_access_interstitial])
+    end
+  end
+
   it "flags blocked request shells" do
     html = <<~HTML
       <html>

@@ -159,9 +159,11 @@ function interstitialPageType(metadata, pageText) {
   var captchaOwnedPressAndHold = Array.prototype.some.call(document.querySelectorAll("#px-captcha, [id*='captcha' i], [class*='captcha' i]"), function(owner) {
     return !elementSubtreeHidden(owner) && /press\s*(?:&|and)\s*hold/i.test(owner.innerText || owner.textContent || "");
   });
+  var helpProtectVerification = /help us protect/i.test(combined) && !substantialPublic &&
+    /\b(?:verify|verification|real person|human|robot|security check|suspicious activity)\b/i.test(combined);
 
   if (metaWallPage(metadata, pageText)) return "meta_login";
-  if (/robot or human|confirm (?:that )?you (?:are|.?re) (?:a )?human|activate and hold the button|px-captcha|drag the slider to fit the puzzle|slide to verify|help us protect|verifying that you.?re a real person|unusual activity from your computer network|click the box below to let us know you.?re not a robot/i.test(combined) || captchaOwnedPressAndHold) return "human_verification";
+  if (/robot or human|confirm (?:that )?you (?:are|.?re) (?:a )?human|activate and hold the button|px-captcha|drag the slider to fit the puzzle|slide to verify|verifying that you.?re a real person|unusual activity from your computer network|click the box below to let us know you.?re not a robot/i.test(combined) || helpProtectVerification || captchaOwnedPressAndHold) return "human_verification";
   if (/select your country|choose a country|shopping in the u\.s\?|best buy international/i.test(combined) && !substantialPublic) return "region_selector";
   if (/browser is not supported|your browser is not supported|unsupported browser|for the best experience, use any of these supported browsers|use any of these supported browsers|supported browsers:/i.test(combined) && !substantialPublic) return "browser_support";
   if (originAccessErrorPage(title, page)) return "access_error";
