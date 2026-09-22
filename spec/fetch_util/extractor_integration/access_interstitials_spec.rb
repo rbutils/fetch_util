@@ -443,6 +443,25 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "classifies short gateway and access-denied shells without a status-coded title" do
+    cases = [
+      ["https://gateway.example/", "Bad Gateway", "Bad Gateway"],
+      ["https://denied.example/", "Access denied", "You don't have permission to access this resource."],
+      ["https://blocked.example/", "Request rejected", "Access Denied. Reference ID: 7f2130b5"]
+    ]
+
+    cases.each do |url, title, message|
+      html = "<html><head><title>#{title}</title></head><body><main><h1>#{message}</h1></main></body></html>"
+      with_url_page(url, html) do |page|
+        payload = extract_payload(page)
+
+        expect_content_type(payload, "interstitial")
+        expect(payload["markdown"]).to include(message)
+        expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+      end
+    end
+  end
+
   it "classifies structured AccessDenied responses as access interstitials" do
     html = <<~HTML
       <Error>

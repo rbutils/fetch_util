@@ -10,6 +10,11 @@ function siteUnavailablePage(title, page) {
 function originAccessErrorPage(title, page) {
   var normalizedTitle = normalizeText(title || "").toLowerCase();
   var normalizedPage = normalizeText(page || "").toLowerCase();
+  var shortErrorPage = normalizedPage.length < 1200 &&
+    !document.querySelector("article, [itemprop='articleBody'], [property='articleBody']");
+  if (shortErrorPage && (/(?:^|\b)502\s+bad gateway\b/i.test(normalizedTitle + " " + normalizedPage) ||
+      normalizedTitle === "bad gateway" || normalizedPage === "bad gateway")) return true;
+  if (shortErrorPage && /\b(?:access denied|you do not have permission|you don't have permission|permission denied)\b/i.test(normalizedPage.slice(0, 500))) return true;
   var cloudflareStatus = /\|\s*52\d\s*:/i.test(title || "") &&
     /\b(?:error code\s*52\d|cloudflare ray id|host error)\b/i.test(normalizedPage) &&
     /\b(?:connection timed out|web server returning unknown error|web server is down|origin is unreachable|ssl handshake failed|host error)\b/i.test(normalizedPage);
