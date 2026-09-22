@@ -30,6 +30,13 @@
           !cachedFocalArticleContent(candidate) && !articleRouteFocalContent(candidate);
       }
 
+      function emptyListCandidateLosesContent(current, candidate) {
+        if (!candidate || candidate.contentType !== "list") return false;
+        var candidateText = normalizeText(candidate.markdown || candidate.textContent || "");
+        var currentText = normalizeText(current && (current.markdown || current.textContent) || "");
+        return !candidateText && !!currentText;
+      }
+
       function indexListCandidateAllowed(candidate) {
         return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
           candidate.contentType !== "medical" && candidate.contentType !== "product" &&
@@ -208,9 +215,7 @@
        }
 
        if (provisionalHomepageContent && provisionalHomepageAlternative) {
-          var provisionalHomepageText = normalizeText(provisionalHomepageContent.markdown || provisionalHomepageContent.textContent || "");
-          var provisionalHomepageAlternativeText = normalizeText(provisionalHomepageAlternative.markdown || provisionalHomepageAlternative.textContent || "");
-          if (!provisionalHomepageText && provisionalHomepageAlternativeText) {
+          if (emptyListCandidateLosesContent(provisionalHomepageAlternative, provisionalHomepageContent)) {
             content = provisionalHomepageAlternative;
           } else if (!listCandidateLosesArticleMaterial(provisionalHomepageAlternative, provisionalHomepageContent)) {
             content = provisionalHomepageContent;
@@ -242,7 +247,8 @@
           !strongArticle) {
         indexListCandidate = listContent(metadata);
       }
-      if (indexListCandidate && !(supportingProductCollection && content.contentType === "article") &&
+      if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
+          !(supportingProductCollection && content.contentType === "article") &&
           !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
           !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });

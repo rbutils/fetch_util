@@ -801,6 +801,42 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
     end
   end
 
+  it 'keeps nonempty content over an empty inferred index list' do
+    html = <<~HTML
+      <html><head><title>Public travel planning</title></head><body>
+        <main><h1>Plan a flexible journey</h1>
+        <p>Compare public routes and choose departure options for your next trip.</p>
+        <p>Search dates and destinations while keeping the complete planning context.</p></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://empty-index.example/', html) do |page|
+      inject_standalone_extractor(page)
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      source.sub!(
+        '      var indexListCandidate = null;',
+        '      var indexListCandidate = {contentType: "list", html: "<main></main>", markdown: "", textContent: "", readerMode: false};'
+      ) || raise('index candidate boundary missing')
+      source.sub!(
+        '      var indexListAllowed = indexListCandidateAllowed(content);',
+        '      var indexListAllowed = false;'
+      ) || raise('index arbitration boundary missing')
+      source.sub!(
+        '"fetch-util:standalone-api:v1"',
+        '(function(api) { global.FetchUtilExtract = api; })'
+      ) || raise('standalone delivery boundary missing')
+      page.add_script_tag(content: source)
+      payload = page.evaluate('window.FetchUtilExtract.extract({reader_mode: true})')
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Compare public routes', 'Search dates and destinations')
+      expect(payload['warnings']).not_to include('empty_extraction')
+    end
+  end
+
   it 'does not replace a liveblog article with a structural portal list' do
     html = <<~HTML
       <main><article><h1>Live: city council vote and reactions</h1><p class="byline">By Live Desk</p>
