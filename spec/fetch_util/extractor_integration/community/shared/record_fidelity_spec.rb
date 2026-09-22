@@ -59,7 +59,8 @@ RSpec.describe 'FetchUtil community record fidelity' do
         'contentType' => 'social',
         'socialKind' => 'feed',
         'platform' => 'Reddit',
-        'community' => 'r/ruby'
+        'community' => 'r/ruby',
+        'title' => 'reddit for rubyists'
       )
 
       titles = (1..27).map do |index|

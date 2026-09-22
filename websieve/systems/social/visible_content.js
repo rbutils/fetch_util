@@ -186,7 +186,7 @@
     if (text.length < 80 || normalizeText(markdown).length < 80) return null;
 
     return {
-      title: evidence.title || (evidence.kind === "feed" ? metadata.title : evidence.author || metadata.title),
+      title: evidence.kind === "feed" ? metadata.title || evidence.title : evidence.title || evidence.author || metadata.title,
       byline: evidence.kind === "feed" ? metadata.byline : evidence.author || metadata.byline,
       excerpt: metadata.excerpt || text.slice(0, 280),
       siteName: metadata.siteName,
