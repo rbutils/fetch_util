@@ -44,7 +44,7 @@
         if (!itemCount && candidate.html) {
           var candidateRoot = document.createElement("div");
           candidateRoot.innerHTML = candidate.html;
-          itemCount = Array.prototype.filter.call(candidateRoot.querySelectorAll("a[href]"), function(link) {
+          itemCount = Array.prototype.filter.call(candidateRoot.querySelectorAll("table a[href], .itemlist a[href]"), function(link) {
             return !!materializedHttpUrl(link.getAttribute("href"));
           }).length;
         }
