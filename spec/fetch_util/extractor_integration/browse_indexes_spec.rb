@@ -39,6 +39,7 @@ RSpec.describe 'FetchUtil extractor integration - source-owned browse indexes' d
       urls += (1890..2016).map { |year| "https://records.example/records/#{year}.html" }
 
       expect(payload['contentType']).to eq('list')
+      expect(payload['contentFormat']).to be_nil
       expect(payload['readerMode']).to eq(false)
       expect(payload.fetch('html')).to include('toc-A.html', '2016.html', 'IMPORTANT INFORMATION')
       positions = urls.map do |url|

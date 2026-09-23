@@ -178,7 +178,9 @@
     // Pages with many short items each linking out (e.g. daily flash-news compilations,
     // weekly newsletters, aggregated briefing hubs). Distinct from "briefing" which
     // matches specific title patterns — this catches structural layout patterns.
-    if (formatMarkdown && content && content.html && !credibleRootHomepageList) {
+    // A proved alphabet/year browse index is a directory, even when its links
+    // satisfy the short-block and link-density heuristics for a digest.
+    if (formatMarkdown && content && content.html && !credibleRootHomepageList && !content.browseIndexEvidence) {
       var mdLines = formatMarkdown.split("\n").filter(function(l) { return l.trim().length > 0; });
       var mdLinks = (formatMarkdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
       var mdHeadings = (formatMarkdown.match(/^#{1,3}\s+/gm) || []).length;
