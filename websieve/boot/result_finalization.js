@@ -132,6 +132,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
+    primaryTitle = articleTitleFromOwnedExternalHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromSelfLinkedHeading(cleanedHtml, primaryTitle);
     markdown = articleSelfLinkedHeadlineMarkdown(markdown, cleanedHtml, primaryTitle);
     if (primaryTitle !== originalPrimaryTitle) {

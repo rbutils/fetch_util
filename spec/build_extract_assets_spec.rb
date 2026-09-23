@@ -328,6 +328,17 @@ RSpec.describe "extract asset bundle" do
     expect(finalization_source).to include("byline = listPageByline(byline, metadata, content, markdown)")
   end
 
+  it "loads source-owned adjacent headings before result finalization" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    helper_path = "core/docs_cleanup/adjacent_headings.js"
+    finalization_path = "boot/result_finalization.js"
+
+    expect(manifest.count(helper_path)).to eq(1)
+    expect(manifest.index(helper_path)).to be < manifest.index(finalization_path)
+    expect(File.read(File.join(source_root, helper_path))).to include("function articleTitleFromOwnedExternalHeading")
+  end
+
   it "loads browsable inventories and GitHub thread primitives before their consumers" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

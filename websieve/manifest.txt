@@ -43,6 +43,7 @@ core/article/profile_article.js
 core/simple_article_profile.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/titles.js
+core/docs_cleanup/adjacent_headings.js
 core/docs_cleanup/engines.js
 markdown/code/code_helpers.js
 markdown/code/code_surfaces.js

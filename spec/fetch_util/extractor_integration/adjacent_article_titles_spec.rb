@@ -161,4 +161,60 @@ RSpec.describe 'Adjacent source-owned article headings' do
       expect(payload['title']).to eq('Quickstart | Editorial context')
     end
   end
+
+  it 'uses a unique preceding main headline corroborated by the selected article body' do
+    short = 'Researchers publish the complete regional transport funding records'
+    headline = "#{short}, including independent measurements from every district"
+    html = <<~HTML
+      <html><head><title>#{short} | Public records journal</title>
+      <meta property="og:site_name" content="Public records journal"></head><body><main>
+        <h1>#{headline}</h1>
+        <div class="article-author">Independent author</div>
+        <aside><a href="/other-story">Unrelated article</a></aside>
+        <article>
+          <p>#{headline}</p>
+          <p>The first section describes the independently checked regional measurements and explains their relevance to every affected district.</p>
+          <p>The second section reports the complete public funding records alongside the timetable, consultation dates, and supporting documents.</p>
+        </article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://records.example/articles/regional-funding', html) do |payload|
+      expect(payload['title']).to eq(headline)
+      expect(payload['markdown']).not_to include('Public records journal', 'Unrelated article')
+      expect(payload['markdown']).to include('independently checked regional measurements', 'complete public funding records')
+    end
+  end
+
+  it 'does not promote an adjacent headline when another article shares its main owner' do
+    short = 'Researchers publish the complete regional transport funding records'
+    headline = "#{short}, including independent measurements from every district"
+    html = <<~HTML
+      <html><head><title>#{short} | Public records journal</title></head><body><main>
+        <h1>#{headline}</h1>
+        <article>
+          <p>#{headline}</p>
+          <p>The first section describes the independently checked regional measurements for affected residents.</p>
+          <p>The second section reports the complete public funding records and consultation timetable.</p>
+        </article>
+        <article><p>An independent report on a different public issue appears in this second article.</p></article>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://records.example/articles/regional-funding', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      source = source.sub('})(window);', 'global.adjacentTitleProbe = articleTitleFromOwnedExternalHeading; })(window);')
+      page.add_script_tag(content: source)
+      selected = "<p>#{headline}</p>" \
+                 '<p>The first section describes the independently checked regional measurements for affected residents.</p>' \
+                 '<p>The second section reports the complete public funding records and consultation timetable.</p>'
+      title = "#{short} | Public records journal"
+
+      expect(page.evaluate("adjacentTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'Public records journal')"))
+        .to eq(title)
+    end
+  end
 end
