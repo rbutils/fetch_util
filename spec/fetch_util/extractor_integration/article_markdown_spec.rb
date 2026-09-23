@@ -89,7 +89,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       before = page.evaluate("document.body.innerHTML")
       payload = extract_payload(page, reader_mode: false)
 
-      expect(payload.fetch("excerpt")).to eq(opening.strip[0, 280])
+      expect(payload.fetch("excerpt")).to eq("#{opening} #{continuation}"[0, 280])
       expect(payload.fetch("excerpt")).not_to include("Fallback excerpt report", "Verified Reporter", "Related coverage", "Promotional metadata")
       expect(payload.fetch("markdown")).to include(
         "[Jane Doe](https://reports.example/authors/jane-doe)",

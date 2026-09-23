@@ -1,6 +1,6 @@
   function fallbackArticleExcerpt(root, text) {
     var renderedText = normalizeText(text || "");
-    var paragraph = root && Array.prototype.find.call(root.querySelectorAll("p, [itemprop~='description']"), function(node) {
+    function ownedParagraph(node) {
       var value = normalizeText(node.textContent || "");
       if (Array.from(value).length < 80) return false;
       if (node.matches("[itemprop~='description']") && node.querySelector("p, [itemprop~='description']")) return false;
@@ -11,8 +11,17 @@
       if (node.querySelector("button, input, select, textarea")) return false;
       if (fallbackExcerptChromeOwner(root, node)) return false;
       return !renderedText || renderedText.indexOf(value) >= 0;
-    });
+    }
+
+    var paragraph = root && Array.prototype.find.call(root.querySelectorAll("p, [itemprop~='description']"), ownedParagraph);
     var excerpt = normalizeText((paragraph && paragraph.textContent) || renderedText);
+    if (paragraph && Array.from(excerpt).length < 280 &&
+        !paragraph.closest("[itemprop~='description'], [class*='summary' i], [class*='standfirst' i], [class*='excerpt' i]")) {
+      var continuation = paragraph.nextElementSibling;
+      if (continuation && continuation.matches("p") && ownedParagraph(continuation)) {
+        excerpt = normalizeText(excerpt + " " + continuation.textContent);
+      }
+    }
     return Array.from(excerpt).slice(0, 280).join("") || null;
   }
 
