@@ -44,6 +44,28 @@ RSpec.describe 'Article-owned interface widgets' do
     end
   end
 
+  it 'removes compact multilingual share controls without deleting article prose or linked sources' do
+    html = <<~HTML
+      <html><head><title>Public tournament report</title></head><body><main><article>
+      <h1>Public tournament report</h1>
+      <p>The appeal commission reviewed the match record and explained why the original decision remains in force for the upcoming round of the tournament.</p>
+      <div class="story-more-options">Compartilhe Ícone Facebook Facebook Ícone Whatsapp Whatsapp Copiar link</div>
+      <p>Readers can examine the <a href="/decision">written decision</a> and the detailed account of the hearing without using the sharing controls.</p>
+      <div class="story-options"><p>The report describes how Facebook and Whatsapp responded to the coverage and explains what the authors learned from their statements.</p><a href="/statements">Public statements</a></div>
+      <p>The final section supplies further source context about the appeal and how it affects the teams participating in the tournament.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/tournament', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload.fetch('markdown')).not_to include('Compartilhe Ícone', 'Copiar link')
+      expect(payload.fetch('markdown')).to include('written decision', 'Facebook and Whatsapp responded', 'Public statements')
+      expect(payload.fetch('markdown')).to include('The final section supplies further source context')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'removes only structurally empty article ad placeholders' do
     html = <<~HTML
       <html><head><title>Regional transport investigation</title>

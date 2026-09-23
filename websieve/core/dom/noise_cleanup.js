@@ -95,6 +95,15 @@
 
   function stripUIWidgets(root, options) {
     stripArticleWidgets(root);
+    root.querySelectorAll("div, section, aside").forEach(function(el) {
+      var classes = el.getAttribute("class") || "";
+      if (!/(?:^|[\s_-])(?:share|social|more-options|actions?)(?:[\s_-]|$)/i.test(classes)) return;
+      if (el.querySelector("p, article, h1, h2, h3, h4, a[href], img[src], picture, video, audio, pre, code, table, ul, ol")) return;
+      var text = normalizeText(el.textContent || "");
+      if (text.length > 160 || !/^(?:share|compartilhe|compartir|partager)\b/i.test(text)) return;
+      var networks = text.match(/\b(?:facebook|whatsapp|twitter|instagram|telegram|linkedin|pinterest)\b/gi) || [];
+      if (networks.length >= 2 && /\b(?:copy|copiar|copier)\s+(?:link|lien|enlace)\b/i.test(text)) el.remove();
+    });
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       var ownsMaterialMedia = !el.matches("a, button") && !!el.querySelector("img[src], picture, video, audio");
