@@ -87,6 +87,31 @@ function articleSyntheticSummaryControl(node) {
     /(?:inteligencia artificial|artificial intelligence)/i.test(text);
 }
 
+function articleSourceOwnedActionPrompt(node) {
+  if (!node.matches("p, div, span") || !node.closest("article") || codeContentNode(node)) return false;
+  if (node.querySelector("p, article, h1, h2, h3, h4, a[href], button, img, picture, video, audio, pre, code, table, ul, ol, time")) return false;
+
+  var text = normalizeText(node.textContent || "");
+  var save = /^(?:save (?:this )?article|uložiť článok)$/i.test(text);
+  var listen = /^listen to (?:this|the) (?:article|story) \d{1,3} (?:min(?:ute)?s?|sec(?:ond)?s?)$/i.test(text);
+  if (!save && !listen) return false;
+
+  var selectedArticle = node.closest("article");
+  var sourceArticle = selectedArticle.id ? document.getElementById(selectedArticle.id) : document.querySelector("article");
+  if (!sourceArticle || !sourceArticle.matches("article") ||
+      (!selectedArticle.id && document.querySelectorAll("article").length !== 1)) return false;
+
+  var matches = Array.from(sourceArticle.querySelectorAll("div, p, span")).filter(function(source) {
+    return !elementSubtreeHidden(source) && normalizeText(source.textContent || "") === text;
+  });
+  if (matches.length !== 1) return false;
+  var original = matches[0];
+  if (original.querySelector("p, article, h1, h2, h3, h4, a[href], button, img, picture, video, audio, pre, code, table, ul, ol, time")) return false;
+  var classes = original.getAttribute("class") || "";
+  return save ? /(?:^|\s)(?:save-article|article-save)(?:\s|$)/i.test(classes) :
+    /(?:^|[\s_-])player(?:[\s_-]|$)/i.test(classes);
+}
+
 function articlePlaceholderOwner(node, context) {
   var path = [];
   var current = node;
@@ -215,6 +240,10 @@ function stripArticleWidgets(root) {
 
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
     if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node)) node.remove();
+  });
+
+  root.querySelectorAll("article p, article div, article span").forEach(function(node) {
+    if (articleSourceOwnedActionPrompt(node)) node.remove();
   });
 
   root.querySelectorAll(".article-call-to-action, .article-cta, [data-role='article-call-to-action']").forEach(function(node) {

@@ -10,7 +10,7 @@ RSpec.describe "generic article audio-control cleanup" do
     "<article><h1>Public investigation</h1>#{widgets}<div class='article-body'>#{body}</div></article>"
   end
 
-  def cleaned_article_widgets(html)
+  def cleaned_article_widgets(html, source_html: "<main>Unchanged source page</main>")
     root = File.expand_path("../../..", __dir__)
     source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true)
                  .reject { |line| line.empty? || line.start_with?("#") }
@@ -25,13 +25,57 @@ RSpec.describe "generic article audio-control cleanup" do
       };
     JS
 
-    with_page("<main>Unchanged source page</main>") do |page|
+    with_page(source_html) do |page|
       before = page.evaluate("document.body.innerHTML")
       page.add_script_tag(content: source)
       result = page.evaluate("window.__cleanArticleWidgets(#{JSON.generate(html)})")
       expect(page.evaluate("document.body.innerHTML")).to eq(before)
       result
     end
+  end
+
+  it "removes only source-proven save and listen prompts transformed into article paragraphs" do
+    body = (1..4).map do |index|
+      "<p>Public reporting paragraph #{index} preserves the full account, independently reported details, and a complete source-owned explanation.</p>"
+    end.join
+    source_html = <<~HTML
+      <article id="report"><h1>Public investigation</h1>
+        <div class="save-article">Uložiť článok</div>
+        <div class="beyondwords-player">Listen to this article 6 min</div>
+        <p>Visible introduction remains part of the article.</p>#{body}
+      </article>
+    HTML
+    selected = <<~HTML
+      <article id="report"><h1>Public investigation</h1>
+        <p>Uložiť článok</p><p>Listen to this article 6 min</p>
+        <p>Visible introduction remains part of the article.</p>#{body}
+      </article>
+    HTML
+
+    cleaned = cleaned_article_widgets(selected, source_html: source_html)
+    expect(cleaned).not_to include("Uložiť článok", "Listen to this article 6 min")
+    expect(cleaned).to include("Visible introduction", "Public reporting paragraph 1", "Public reporting paragraph 4")
+  end
+
+  it "keeps ordinary prose, ambiguous prompts and material audio owned by an article" do
+    source_html = <<~HTML
+      <article id="report"><h1>Audio accessibility report</h1>
+        <p>Listen to this article 6 min</p>
+        <div class="beyondwords-player">Listen to this article 6 min</div>
+        <div class="save-article"><a href="/read-later">Save article</a></div>
+        <div class="audio-player"><audio src="/recording.mp3"></audio>Listen to this story 5 min</div>
+        <p>Save article</p><p>Independent editorial context remains material.</p>
+      </article>
+    HTML
+    selected = <<~HTML
+      <article id="report"><h1>Audio accessibility report</h1>
+        <p>Listen to this article 6 min</p><p>Save article</p>
+        <p>Independent editorial context remains material.</p>
+      </article>
+    HTML
+
+    cleaned = cleaned_article_widgets(selected, source_html: source_html)
+    expect(cleaned).to include("Listen to this article 6 min", "Save article", "Independent editorial context")
   end
 
   it "removes short localized audio control bars from article output without mutating the page" do
