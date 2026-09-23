@@ -245,6 +245,27 @@
     return root;
   }
 
+  function stripInlineEmoticonArtwork(root) {
+    if (!document.body || document.querySelectorAll("article").length !== 1) return root;
+    var sourceImages = Array.from(document.querySelectorAll("article p img[src]"));
+    root.querySelectorAll("p img[src]").forEach(function(image) {
+      var src = image.getAttribute("src") || "";
+      var alt = normalizeText(image.getAttribute("alt") || "");
+      if (!/(?:^|\/)(?:emoji|emoticons?|img\/char)\//i.test(src) || alt.length > 20 ||
+          image.closest("a[href], figure, figcaption") || image.getAttribute("title")) return;
+      var paragraph = image.closest("p");
+      if (normalizeText(paragraph.textContent || "").length < 24 ||
+          normalizeText(paragraph.textContent || "").indexOf(alt) >= 0) return;
+      if (!sourceImages.some(function(source) {
+        return source.getAttribute("src") === src && !elementSubtreeHidden(source) &&
+          !source.closest("a[href], figure, figcaption") &&
+          normalizeText(source.closest("p").textContent || "").length >= 24;
+      })) return;
+      image.remove();
+    });
+    return root;
+  }
+
   function contentWithoutTerminalArticleFurniture(content) {
     if (!content || !content.html || Object.prototype.hasOwnProperty.call(content, "markdown") ||
         !/^(?:article|medical)$/i.test(content.contentType || "")) return content;
@@ -254,6 +275,7 @@
     stripTerminalArticleLinkCollections(root);
     stripShortRelatedArticleTeasers(root);
     stripPromotedComplementaryArticleSiblings(root);
+    stripInlineEmoticonArtwork(root);
     if (root.innerHTML === originalHtml) return content;
 
     return Object.assign({}, content, {
