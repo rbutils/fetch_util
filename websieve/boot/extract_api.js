@@ -266,6 +266,7 @@
       if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
           !(supportingProductCollection && content.contentType === "article") &&
           !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
+          !sourceOwnedFallbackListLoss(content, indexListCandidate) &&
           !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {

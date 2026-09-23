@@ -236,6 +236,8 @@
     if (fallback.legalProvision) return fallback;
     var instructional = instructionalFallbackContent(primary, fallback, primaryRoot, fallbackRoot);
     if (instructional) return instructional;
+    var ownedSections = sourceOwnedFallbackContent(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText);
+    if (ownedSections) return ownedSections;
     if (primaryText.length < 4000 &&
         fallbackText.length >= Math.max(1800, primaryText.length * (fallbackContainsPrimary ? 2.5 : 3)) &&
         fallbackParagraphs >= Math.max(8, primaryParagraphs + 5) &&
