@@ -1116,11 +1116,14 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     excerpt_path = "extractors/article/readability/readability_excerpt.js"
+    compact_path = "extractors/article/readability/compact_body_excerpt.js"
     runtime_path = "extractors/article/readability/readability.js"
     excerpt_source = File.read(File.join(source_root, excerpt_path))
     runtime_source = File.read(File.join(source_root, runtime_path))
 
-    expect(manifest.index(excerpt_path)).to be < manifest.index(runtime_path)
+    expect(manifest.index(excerpt_path)).to be < manifest.index(compact_path)
+    expect(manifest.index(compact_path)).to be < manifest.index(runtime_path)
+    expect(File.read(File.join(source_root, compact_path))).to include("function readabilityCompactBodyExcerpt")
     expect(excerpt_source).to include(
       "function readabilityArticleExcerpt",
       "function stripReadabilityExcerptMarkers"
@@ -1224,6 +1227,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/fallback.js
         extractors/article/readability/readability_excerpt.js
+        extractors/article/readability/compact_body_excerpt.js
         extractors/article/readability/readability.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],

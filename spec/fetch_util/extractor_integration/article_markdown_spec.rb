@@ -202,6 +202,27 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "prefers repeated compact CJK body paragraphs over a taxonomy-only reader excerpt" do
+    first = "地域の皆さまへ向けて今夏の公開資料を詳しく紹介します。必要な背景と確認方法を説明します。"
+    second = "公開資料には重要な日程や担当部署の記録が含まれています。住民の皆さまも内容を確認できます。"
+    paragraphs = (1..6).map { |index| "<p>#{index}回目の報告では追加の資料と公開記録を紹介します。自治体が説明会で回答した内容も含みます。</p>" }.join
+    html = <<~HTML
+      <html><head><title>公開記録の案内</title></head><body><main><article>
+        <h1>公開記録の案内</h1><div class="entry-themes">テーマ：地域の活動</div>
+        <div id="entryBody"><p>#{first}</p><p>#{second}</p><h2>公開資料について</h2>#{paragraphs}</div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://journal.example/entries/public-records", html) do |page|
+      payload = extract_payload(page, reader_mode: true)
+
+      expect(payload.fetch("excerpt")).to start_with(first)
+      expect(payload.fetch("excerpt")).to include(second)
+      expect(payload.fetch("excerpt")).not_to include("テーマ：")
+      expect(payload.fetch("markdown")).to include("公開資料について", "6回目の報告")
+    end
+  end
+
   it "derives a structured div article excerpt from its body instead of category metadata" do
     lead = "The structured report explains the source-backed policy changes, implementation evidence, and practical consequences for affected communities."
     html = <<~HTML

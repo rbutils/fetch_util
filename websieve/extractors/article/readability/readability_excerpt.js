@@ -123,7 +123,7 @@
       while (structuredCurrent && structuredCurrent !== structuredOwner.owner) {
         var structuredSignal = ((structuredCurrent.id || "") + " " + (structuredCurrent.className || ""))
           .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
-        if (/\b(?:article body|article content|detail body|detail content|story body|entry content|post content|rich text|prose)\b/.test(structuredSignal)) return true;
+        if (/\b(?:article body|article content|detail body|detail content|story body|entry body|entry content|post body|post content|rich text|prose)\b/.test(structuredSignal)) return true;
         structuredCurrent = structuredCurrent.parentElement;
       }
       return false;
@@ -135,7 +135,7 @@
       if (current.matches("section")) return true;
       var signal = ((current.id || "") + " " + (current.className || ""))
         .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
-      if (!/\b(?:article body|article content|detail body|detail content|story body|entry content|post content|rich text|prose)\b/.test(signal)) return false;
+      if (!/\b(?:article body|article content|detail body|detail content|story body|entry body|entry content|post body|post content|rich text|prose)\b/.test(signal)) return false;
       current = current.parentElement;
     }
     return current === owner;
@@ -243,11 +243,14 @@
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);
-    if (excerptCharacters.length >= 80 || textCharacters.length < 400) return article.excerpt;
+    if (excerptCharacters.length >= 80) return article.excerpt;
 
-    if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
     var template = readabilityArticleTemplate(article);
     if (!template) return article.excerpt;
+    var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
+    if (compactBodyExcerpt) return compactBodyExcerpt;
+    if (textCharacters.length < 400) return article.excerpt;
+    if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
     var summaryExcerpt = readabilitySummaryExcerpt(template, excerpt, marker);
     if (summaryExcerpt) return summaryExcerpt;
 
