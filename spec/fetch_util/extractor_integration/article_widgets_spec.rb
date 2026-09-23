@@ -90,6 +90,26 @@ RSpec.describe 'Article-owned interface widgets' do
     end
   end
 
+  it 'drops a synthetic summary prompt while retaining an article about artificial intelligence' do
+    html = <<~HTML
+      <html><head><title>Public investigation of automated summaries</title></head><body><article>
+        <h1>Public investigation of automated summaries</h1>
+        <div class="summary-player">Ver resumenTiempo de lectura: 16s Inteligencia Artificial Experimental: Resumen y análisis automáticos realizados con Inteligencia Artificial</div>
+        <p>The investigation describes what the public dataset actually shows about automatic summaries and explains the methods used to inspect the original reports.</p>
+        <p>Researchers tested artificial intelligence in the public sector and published a detailed analysis of its effects on access to government records.</p>
+        <p>The final section gives readers enough context to evaluate the sources, including limitations and independent responses to the proposed process.</p>
+      </article></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/automated-summaries', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      markdown = extract_payload(page).fetch('markdown')
+      expect(markdown).not_to include('Ver resumenTiempo de lectura', 'Experimental: Resumen')
+      expect(markdown).to include('Researchers tested artificial intelligence', 'evaluate the sources')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'removes only structurally empty article ad placeholders' do
     html = <<~HTML
       <html><head><title>Regional transport investigation</title>

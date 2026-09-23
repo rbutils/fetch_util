@@ -77,6 +77,16 @@ function articleAudioPromptNode(node) {
   return /^(?:(?:listen(?:\s+to)?|play|slu[sš]aj)\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)|read\s+(?:(?:(?:this|the)\s+)?(?:article|story|news|report|vest)\s+aloud|(?:it\s+)?aloud\s+(?:(?:this|the)\s+)?(?:article|story|news|report|vest)))[.!]?$/i.test(text);
 }
 
+function articleSyntheticSummaryControl(node) {
+  if (!node.closest("article, [itemprop~='articleBody' i]") || codeContentNode(node)) return false;
+  if (node.querySelector("p, article, h1, h2, h3, h4, a[href], button, img, video, audio, pre, code, table, ul, ol")) return false;
+  var text = normalizeText(node.textContent || "");
+  if (!text || text.length > 240) return false;
+  return /^(?:ver resumen|view summary)(?=\s|tiempo|reading|$)/i.test(text) &&
+    /(?:tiempo de lectura|reading time)/i.test(text) &&
+    /(?:inteligencia artificial|artificial intelligence)/i.test(text);
+}
+
 function articlePlaceholderOwner(node, context) {
   var path = [];
   var current = node;
@@ -192,6 +202,9 @@ function articleEmptyAdPlaceholderNode(node, context) {
 
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
+  root.querySelectorAll("div, section, aside").forEach(function(node) {
+    if (articleSyntheticSummaryControl(node)) node.remove();
+  });
   var placeholders = Array.from(root.querySelectorAll("[data-placeholder-caption]"));
   if (root.matches && root.matches("[data-placeholder-caption]")) placeholders.unshift(root);
   var placeholderContext = placeholders.length ? articlePlaceholderContext(document) : null;
