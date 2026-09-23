@@ -4,22 +4,35 @@ RSpec.describe 'FetchUtil Blogger extractor integration' do
   include_context 'extractor integration helpers'
 
   it 'extracts Blogger blogspot article content from DOM signals' do
-    expect_fixture_article(
-      url: 'https://bloggingatoz24.blogspot.com/2013/10/how-to-increase-space-between-post.html',
-      fixture_path: File.expand_path('../../fixtures/blogger_blogspot_article.html', __dir__),
-      includes: [
-        '# How to Increase the Space Between the Post Title & the Post Body on Blogger',
+    html = fixture_contents(File.expand_path('../../fixtures/blogger_blogspot_article.html', __dir__))
+    url = 'https://bloggingatoz24.blogspot.com/2013/10/how-to-increase-space-between-post.html'
+
+    with_url_page(url, html) do |page|
+      source_body = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect_content_type(payload, 'article')
+      expect(payload['title']).to eq('How to Increase the Space Between the Post Title & the Post Body on Blogger')
+      expect(payload['publishedTime']).to eq('Posted on July 8, 2026')
+      expect(payload['warnings']).to eq([])
+      expect(payload['excerpt']).to eq(
+        'How to Increase the Space Between the Post Title & the Post Body on Blogger ' \
+        'The first paragraph keeps the actual Blogger article body. ' \
+        'The second paragraph stays in extracted markdown.'
+      )
+      paragraphs = [
         'The first paragraph keeps the actual Blogger article body.',
         'The second paragraph stays in extracted markdown.'
-      ],
-      excludes: [
-        'Blogger navbar',
-        'Archive widget',
-        'Posted on July 8, 2026',
-        'Leave a comment'
-      ],
-      warning_excludes: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial]
-    )
+      ]
+      paragraphs.each do |paragraph|
+        expect(payload['markdown'].scan(paragraph).length).to eq(1)
+        expect(payload['html']).to include("<p>#{paragraph}</p>")
+      end
+      expect(payload['markdown']).to start_with('# How to Increase the Space Between the Post Title & the Post Body on Blogger')
+      expect(payload['markdown']).not_to include('Blogger navbar', 'Archive widget', 'Leave a comment', 'Comment thread')
+      expect(payload['html']).not_to include('Leave a comment', 'Comment thread')
+      expect(page.evaluate('document.body.innerHTML')).to eq(source_body)
+    end
   end
 
   it 'extracts custom-domain Blogger article content from DOM signals' do
