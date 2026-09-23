@@ -155,6 +155,15 @@ function agreementLoginGateSummary(evidence) {
   };
 }
 
+function consentCookieNoticeLead(text, maxLength) {
+  if (text.length >= maxLength || text.indexOf("cookie") < 0 || text.indexOf("cookie") >= 140) return false;
+  var lead = text.slice(0, 180);
+  var usage = /\b(?:we|our (?:site|website)|this (?:site|website))\s+(?:use|uses|set)\s+cookies?\b/i;
+  var choice = /\b(?:accept|reject|manage|allow|agree to)\s+(?:all\s+)?cookies?\b/i;
+  var notice = /\b(?:use of cookies?|cookies?\s+(?:are|will be)\s+used|cookies?\s+(?:preferences?|settings?|notice|consent))\b/i;
+  return usage.test(lead) || choice.test(lead) || notice.test(lead);
+}
+
 function consentLikeInterstitial(interstitialType, combined, body, page) {
   var normalizedBody = normalizeText(body || "").toLowerCase();
   var normalizedPage = normalizeText(page || "").toLowerCase();
@@ -165,8 +174,8 @@ function consentLikeInterstitial(interstitialType, combined, body, page) {
 
   if (!bodySignals && !pageSignals && interstitialType !== "meta_login") return false;
 
-  var bodyCookieLed = cookieLeadPattern.test(normalizedBody) || (normalizedBody.indexOf("cookie") >= 0 && normalizedBody.indexOf("cookie") < 140 && normalizedBody.length < 500);
-  var pageCookieLed = cookieLeadPattern.test(normalizedPage) || (normalizedPage.indexOf("cookie") >= 0 && normalizedPage.indexOf("cookie") < 140 && normalizedPage.length < 260);
+  var bodyCookieLed = cookieLeadPattern.test(normalizedBody) || consentCookieNoticeLead(normalizedBody, 500);
+  var pageCookieLed = cookieLeadPattern.test(normalizedPage) || consentCookieNoticeLead(normalizedPage, 260);
 
   return interstitialType === "meta_login" || bodyCookieLed || pageCookieLed;
 }
