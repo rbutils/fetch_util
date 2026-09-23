@@ -78,6 +78,8 @@ RSpec.describe 'FetchUtil Chosun extractor integration' do
     ) do |payload|
       expect_content_type(payload, 'article')
       expect(payload['markdown']).to include('대법원은 교사의 발언이 단순한 모욕이 아니라 학생을 지도하는 과정에서 나온 훈계의 성격이 강하다고 봤다')
+      expect(payload['markdown']).to include('공개된 기사 본문만으로도 사건의 핵심 쟁점은 충분히 이해되며')
+      expect(payload['markdown']).to include('기사 본문은 1심과 2심의 판단 차이')
       expect(payload['markdown']).not_to include('관련기사')
       expect(payload['markdown']).not_to include('추천기사')
       expect_warnings(payload, exclude: %w[multi_topic_page paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
@@ -91,6 +93,8 @@ RSpec.describe 'FetchUtil Chosun extractor integration' do
     ) do |payload|
       expect_content_type(payload, 'article')
       expect(payload['markdown']).to include('고우석은 메이저리그 첫 등판을 앞두고 팀에 합류했지만')
+      expect(payload['markdown']).to include('기사 말미에는 빅리그 데뷔가 최소 하루 밀렸다는 점')
+      expect(payload['markdown'].scan(/^# /).length).to eq(1)
       expect(payload['markdown']).not_to include('관련기사')
       expect(payload['markdown']).not_to include('추천기사')
       expect_warnings(payload, exclude: %w[multi_topic_page paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])

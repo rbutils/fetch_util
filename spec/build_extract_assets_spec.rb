@@ -1505,7 +1505,6 @@ RSpec.describe "extract asset bundle" do
     expect(direct_tail).to eq(%w[
                                 profiles/news/global/xinhua.js
                                 profiles/news/middle_east/walla.js
-                                profiles/news/asia/east/chosun.js
                                 profiles/news/europe/southern/spain/20minutos.js
                                 profiles/news/asia/east/nhk.js
                                 systems/cms/joomla.js
