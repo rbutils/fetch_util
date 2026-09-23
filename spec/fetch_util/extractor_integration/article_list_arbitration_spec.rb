@@ -228,6 +228,99 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     end
   end
 
+  it 'keeps a page-owned publication collection when reader mode proposes footer prose' do
+    publications = (1..10).map do |index|
+      <<~HTML
+        <li><a href="/publications/volume-#{index}"><h3>Volume #{index} of the regional series</h3></a>
+        <p>Volume #{index} documents distinct regional economic indicators, public data sources, and
+        environmental trends for readers comparing the complete annual series.</p></li>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Regional economic indicators series</title>
+      <meta property="article:published_time" content="2017-11-23T12:00:00Z"></head><body>
+        <div class="page-content"><div class="column-content">
+          <h1>Regional economic indicators series</h1>
+          <p>The publication series presents economic, financial, and environmental data from across the region.</p>
+          <div class="item-list"><ul>#{publications}</ul></div>
+        </div></div>
+        <footer><p>The regional institution supports public partnerships and sustainable development across the world.</p>
+          <p>Its main office coordinates international programs, financing and operational guidance for members.</p>
+          <p>Contact the institution for subscription questions, support requests and administrative details.</p></footer>
+      </body></html>
+    HTML
+
+    with_url_page('https://publisher.example/publications/series/regional-economic-indicators', html) do |page|
+      payload = extract_with_readability_root(page, 'document.querySelector("footer")')
+
+      expect(payload['markdown']).to include('The publication series presents economic')
+      (1..10).each do |index|
+        destination = "https://publisher.example/publications/volume-#{index}"
+        expect(payload['markdown'].scan("](#{destination})").length).to eq(1)
+        expect(payload['markdown']).to include("Volume #{index} documents distinct regional economic indicators")
+      end
+      positions = (1..10).map do |index|
+        payload['markdown'].index("](https://publisher.example/publications/volume-#{index})")
+      end
+      expect(positions).not_to include(nil)
+      expect(positions).to eq(positions.sort)
+    end
+  end
+
+  it 'keeps a reader-owned article even when it shares a page with a publication collection' do
+    html = <<~HTML
+      <html><head><title>Regional indicators field report</title></head><body>
+        <main><article><h1>Regional indicators field report</h1>
+          <p>The report explains how field researchers verify climate data and economic indicators across regions.</p>
+          <p>Independent findings document collection methods, source reliability and interpretation of each trend.</p>
+          <p>A third substantive paragraph compares observations across years and describes why they matter.</p>
+        </article><div class="item-list"><ul>
+          #{(1..10).map { |index| %(<li><a href="/publications/volume-#{index}"><h3>Regional volume #{index}</h3></a><p>Independent related volume #{index} documents regional data and comparison methods.</p></li>) }.join}
+        </ul></div></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://publisher.example/publications/reports/regional-indicators', html) do |page|
+      payload = extract_with_readability_root(page, 'document.querySelector("article")')
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Independent findings document collection methods')
+    end
+  end
+
+  it 'does not replace owned article prose with its related publication collection' do
+    paragraphs = (1..3).map do |index|
+      <<~HTML
+        <p>Report section #{index} describes the data collection methods, verification process, and regional
+        analysis behind this complete research article. Its observations explain the chronology, interpretation,
+        and public impact of the evidence independently of the related publications listed below.</p>
+      HTML
+    end.join
+    related = (1..10).map do |index|
+      <<~HTML
+        <li><a href="/publications/related-#{index}"><h3>Related volume #{index} on regional data</h3></a>
+        <p>Supplementary volume #{index} discusses different research programs, statistical resources, institutional
+        reviews, source archives, comparative findings, and additional study references.</p></li>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Regional research report</title></head><body>
+        <div class="page-content"><h1>Regional research report</h1>
+          <section id="report-body">#{paragraphs}</section>
+          <div class="item-list"><ul>#{related}</ul></div>
+        </div>
+      </body></html>
+    HTML
+
+    with_url_page('https://publisher.example/publications/series/regional-research', html) do |page|
+      payload = extract_with_readability_root(page, 'document.querySelector("#report-body")')
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Report section 1 describes the data collection methods')
+      expect(payload['markdown']).to include('Report section 3 describes the data collection methods')
+    end
+  end
+
   it 'does not prefer a similarly sized fallback that does not contain the reader content' do
     broad_paragraphs = (1..8).map do |index|
       <<~HTML

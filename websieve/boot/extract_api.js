@@ -254,12 +254,14 @@
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
       var indexListCandidate = null;
       var indexListAllowed = indexListCandidateAllowed(content);
+      var sourceOwnedIndex = indexListAllowed && strongArticle && !cachedFocalArticleContent(content) &&
+        sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {
         indexListCandidate = listContent(metadata);
-      } else if (indexListAllowed && isProbablyListPage(content) &&
+      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content)) &&
           (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
-          !strongArticle) {
-        indexListCandidate = listContent(metadata);
+          (!strongArticle || sourceOwnedIndex)) {
+        indexListCandidate = sourceOwnedIndex || listContent(metadata);
       }
       if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
           !(supportingProductCollection && content.contentType === "article") &&

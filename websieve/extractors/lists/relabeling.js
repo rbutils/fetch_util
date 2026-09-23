@@ -145,3 +145,51 @@
     if (publishedTime && byline) return true;
     return !!(publishedTime && text.length >= 320);
   }
+
+  function sourceOwnedListAgainstReader(content, metadata) {
+    if (!document.body || !content || content.contentType !== "article" || !content.readerMode ||
+        content.hostAware || articleRouteFocalContent(content) || !isProbablyListPage(content)) return null;
+
+    var readerRoot = document.createElement("div");
+    readerRoot.innerHTML = content.html || "";
+    if (readerRoot.querySelector("h1, h2, h3, article")) return null;
+
+    var readerText = normalizeText(content.markdown || content.textContent || "");
+    var pageHeading = Array.prototype.find.call(document.querySelectorAll("h1"), function(heading) {
+      return !elementSubtreeHidden(heading) && normalizeText(heading.textContent || "");
+    });
+    if (!readerText || !pageHeading) return null;
+
+    var candidate = listContent(metadata);
+    var candidateText = normalizeText(candidate.markdown || candidate.textContent || "");
+    if (candidateText.length < readerText.length * 2) return null;
+    var candidateUrls = new Set((candidate.listExtraction.items || []).map(function(item) { return item.url; }));
+    var readerParagraphs = Array.prototype.map.call(readerRoot.querySelectorAll("p, blockquote"), function(paragraph) {
+      return normalizeText(paragraph.textContent || "");
+    }).filter(function(text) { return text.length >= 80; });
+
+    var completeCollection = Array.prototype.some.call(document.querySelectorAll("ul, ol, [role='list']"), function(list) {
+      if (elementSubtreeHidden(list) || list.closest("nav, header, footer, aside, form, [role='navigation'], [role='complementary']")) return false;
+      var owner = list.parentElement;
+      while (owner && owner !== document.body && !owner.contains(pageHeading)) owner = owner.parentElement;
+      if (!owner || owner === document.body || owner.querySelectorAll("h1").length !== 1) return false;
+      var ownerText = normalizeText(owner.textContent || "");
+      if (readerParagraphs.some(function(text) { return ownerText.indexOf(text) >= 0; })) return false;
+
+      var records = Array.prototype.filter.call(list.children, function(child) {
+        return child.matches("li, [role='listitem']") && !elementSubtreeHidden(child) &&
+          child.querySelector("h2, h3, h4") && child.querySelector("a[href]");
+      });
+      if (records.length < 4 || records.filter(function(child) {
+        return Array.prototype.some.call(child.querySelectorAll("p"), function(paragraph) {
+          return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent || "").length >= 40;
+        });
+      }).length < records.length / 2) return false;
+
+      var urls = records.map(function(child) {
+        return materializedHttpUrl(child.querySelector("a[href]").getAttribute("href"));
+      });
+      return urls.every(function(url) { return url && candidateUrls.has(url); }) && new Set(urls).size === records.length;
+    });
+    return completeCollection ? candidate : null;
+  }
