@@ -76,7 +76,7 @@
 
   function mediaPageOwnedBody() {
     var main = document.querySelector("main, [role='main']");
-    if (!main || elementSubtreeHidden(main)) return false;
+    if (!main || elementSubtreeHidden(main)) return null;
 
     var visible = visibilityPrunedClone(main, document);
     var paragraphs = Array.prototype.filter.call(visible.querySelectorAll("p"), function(node) {
@@ -84,7 +84,7 @@
         normalizeText(node.textContent || "").length >= 70;
     });
     var textLength = normalizeText(visible.textContent || "").length;
-    if (textLength < 400) return false;
+    if (textLength < 400) return null;
 
     var article = visible.querySelector("article");
     var articleBody = article && article.querySelector("h1, h2") && paragraphs.some(function(node) {
@@ -93,7 +93,8 @@
     var transcriptHeading = Array.prototype.some.call(visible.querySelectorAll("h1, h2, h3"), function(node) {
       return /\btranscript\b/i.test(normalizeText(node.textContent || ""));
     });
-    return !!articleBody || (transcriptHeading && paragraphs.length >= 3);
+    if (!articleBody && !(transcriptHeading && paragraphs.length >= 3)) return null;
+    return { transcript: transcriptHeading && paragraphs.length >= 3 };
   }
 
   function mediaWatchContent(metadata) {
@@ -114,7 +115,15 @@
 
     // A player can be embedded in a complete article or transcript. In that case the
     // shared article extractor must keep the owned body instead of a metadata teaser.
-    if (mediaPageOwnedBody()) return null;
+    var ownedBody = mediaPageOwnedBody();
+    if (ownedBody) {
+      metadata.mediaOwnedBody = {
+        byline: entityName(profile.byline) || metadata.byline,
+        publishedTime: entityText(profile.publishedTime) || metadata.publishedTime,
+        transcript: ownedBody.transcript
+      };
+      return null;
+    }
 
     if (!playerData && !videoPath && !/^video\b/.test(ogType)) {
       var articleParagraphs = Array.prototype.filter.call(document.querySelectorAll("article p, main p"), function(paragraph) {

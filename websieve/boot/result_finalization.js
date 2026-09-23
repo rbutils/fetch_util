@@ -71,6 +71,12 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = enrichMainArticleContent(content, metadata);
   content = supplementNotFoundTickerRecords(content, metadata, pageText);
   content = contentWithoutTerminalArticleLinkCollections(content);
+  if (metadata.mediaOwnedBody && content.contentType === "article" && !content.hostAware) {
+    var mediaContext = metadata.mediaOwnedBody;
+    if (mediaContext.byline) content.byline = mediaContext.byline;
+    if (mediaContext.publishedTime) content.publishedTime = mediaContext.publishedTime;
+    content.mediaOwnedTranscript = mediaContext.transcript;
+  }
   var contentByline = sanitizeByline(content.byline);
   var metadataByline = sanitizeByline(metadata.byline);
   var displayedPublishedTime = visiblePublishedTime();

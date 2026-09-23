@@ -99,7 +99,7 @@ RSpec.describe 'FetchUtil media watch page extraction' do
           <meta property="og:type" content="video.other">
           <meta property="og:video:url" content="https://screen.example/player/feature">
           <script type="application/ld+json">
-            {"@context":"https://schema.org","@type":"VideoObject","name":"Posts navigation","description":"Short video teaser."}
+            {"@context":"https://schema.org","@type":"VideoObject","name":"Posts navigation","description":"Short video teaser.","author":{"@type":"Person","name":"Archive Editor"},"uploadDate":"2026-09-22T10:15:00Z"}
           </script>
         </head>
         <body><main><article>
@@ -117,6 +117,7 @@ RSpec.describe 'FetchUtil media watch page extraction' do
       payload = extract(page)
 
       expect(payload['contentType']).to eq('article')
+      expect(payload).to include('byline' => 'Archive Editor', 'publishedTime' => '2026-09-22T10:15:00Z')
       expect(payload['markdown']).to include('# Visible film article', 'previous crew vanished', 'final message left by the crew')
       (1..12).each do |index|
         expect(payload['markdown']).to include("[Source resource #{index}](https://screen.example/resources/#{index})")
@@ -136,6 +137,9 @@ RSpec.describe 'FetchUtil media watch page extraction' do
           <meta property="og:type" content="video.other">
           <meta property="og:video:url" content="https://media.example/player/bridge">
           <meta property="og:description" content="A brief summary of the island bridge project.">
+          <script type="application/ld+json">
+            {"@context":"https://schema.org","@type":"VideoObject","name":"Island bridge project","uploadDate":"2026-09-22T18:00:00+08:00","description":"A brief summary of the island bridge project."}
+          </script>
         </head>
         <body><main><h1>Island bridge project</h1><video src="https://media.example/bridge.mp4"></video>
           <h2>Transcript</h2>#{paragraphs}
@@ -147,6 +151,7 @@ RSpec.describe 'FetchUtil media watch page extraction' do
       payload = extract(page)
 
       expect(payload['contentType']).to eq('article')
+      expect(payload).to include('publishedTime' => '2026-09-22T18:00:00+08:00', 'contentFormat' => 'video')
       segments = (1..12).map { |index| "Transcript segment #{index} explains" }
       positions = segments.map { |segment| payload['markdown'].index(segment) }
       expect(positions).not_to include(nil)

@@ -86,6 +86,9 @@
       return "liveblog";
     }
 
+    if (content.mediaOwnedTranscript && /\/(?:videos|watch|clip|replay)\b/.test(pathname) &&
+        structuredDataNode(["VideoObject"])) return "video";
+
     // 4. Briefing / digest / roundup / compilation detection
     // Title patterns: "This Week in ...", "Daily Briefing", "Morning Roundup", "News Digest", etc.
     if (/\b(daily briefing|morning briefing|evening briefing|weekly briefing|news briefing|this week in|week in review|daily digest|news digest|morning roundup|evening roundup|weekly roundup|daily round-?up|weekly round-?up|tagesüberblick|nachrichtenüberblick|wochenrückblick|résumé de la semaine|tour d'horizon|resumen semanal|rassegna stampa|przegląd tygodnia|przegląd dnia|podsumowanie tygodnia|podsumowanie dnia|daglig oversikt|veckosammanfattning|nyhedsoverblik|ugens nyheder|viikon katsaus|savaitės apžvalga|nedēļas apskats|преглед на седмицата|огляд тижня|преглед на денот|săptămâna în revistă|heti összefoglaló|týdenní přehled)\b/.test(title)) {
