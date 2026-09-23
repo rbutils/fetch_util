@@ -267,7 +267,6 @@ profiles/news/middle_east/walla.js
 profiles/news/asia/east/nhk.js
 systems/cms/joomla.js
 systems/cms/blogger.js
-systems/cms/static_ssg.js
 systems/cms/ghost.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
