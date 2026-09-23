@@ -60,9 +60,13 @@
       var record = closestGenericListCard(node.parentElement);
       if (record && genericListStructuredCardLink(record) === node) ariaLabel = "";
     }
+    var ownershipClasses = Array.from(node.classList || []).filter(function(name) {
+      // A page can hide its sticky footer without becoming footer chrome itself.
+      return !/^(?:hide|hidden|no)[-_](?:sticky[-_])?(?:footer|header|sidebar|nav(?:igation)?)$/i.test(name);
+    });
     var attrs = normalizeText([
       node.getAttribute("id"),
-      node.getAttribute("class"),
+      ownershipClasses.join(" "),
       node.getAttribute("role"),
       ariaLabel,
       node.getAttribute("data-testid")

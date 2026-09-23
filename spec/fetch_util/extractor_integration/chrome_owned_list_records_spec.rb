@@ -68,4 +68,41 @@ RSpec.describe "FetchUtil extractor integration - chrome-owned list records" do
       expect(payload.fetch("html")).not_to include("Long navigation destination")
     end
   end
+
+  it "keeps visible stories under a wrapper that hides its own footer" do
+    stories = (1..12).map do |number|
+      <<~HTML
+        <article class="story-card">
+          <h2><a href="/story/#{number}">Independent public story #{number}</a></h2>
+          <p>Source-owned summary for public story #{number}.</p>
+        </article>
+      HTML
+    end.join
+    footer_links = (1..6).map do |number|
+      %(<a href="/footer/#{number}">Footer destination #{number}</a>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Today's stories</title></head><body>
+        <div class="app-shell hide-sticky-footer">
+          <h1>Today's stories</h1>
+          <div class="story-grid">#{stories}</div>
+          <div class="footer"><nav>#{footer_links}</nav></div>
+        </div>
+      </body></html>
+    HTML
+
+    with_url_page("https://bulletin.example/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload.fetch("markdown")
+
+      expect(payload["contentType"]).to eq("list")
+      destinations = markdown.scan(%r{https://bulletin\.example/story/(\d+)\)}).flatten.map(&:to_i)
+      expect(destinations).to eq((1..12).to_a)
+      (1..12).each do |number|
+        expect(markdown).to include("Independent public story #{number}")
+        expect(markdown).to include("Source-owned summary for public story #{number}.")
+      end
+      expect(markdown).not_to include("Footer destination", "/footer/")
+    end
+  end
 end
