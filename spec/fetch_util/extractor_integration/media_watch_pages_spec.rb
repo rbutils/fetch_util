@@ -88,6 +88,73 @@ RSpec.describe 'FetchUtil media watch page extraction' do
     end
   end
 
+  it 'keeps a complete article around a video instead of a structured metadata teaser' do
+    resources = (1..12).map do |index|
+      %(<li><a href="/resources/#{index}">Source resource #{index}</a></li>)
+    end.join
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Visible film article | Screen Journal</title>
+          <meta property="og:type" content="video.other">
+          <meta property="og:video:url" content="https://screen.example/player/feature">
+          <script type="application/ld+json">
+            {"@context":"https://schema.org","@type":"VideoObject","name":"Posts navigation","description":"Short video teaser."}
+          </script>
+        </head>
+        <body><main><article>
+          <h1>Visible film article</h1>
+          <h2>Film information</h2>
+          <p>The film follows a team of explorers who repair a remote station and discover why the previous crew vanished during the winter storm.</p>
+          <h2>Full synopsis</h2>
+          <p>After the station loses contact, the team follows a trail across the valley and uncovers the final message left by the crew before the storm arrived.</p>
+          <h2>Source resources</h2><ul>#{resources}</ul>
+        </article></main></body>
+      </html>
+    HTML
+
+    with_url_page('https://screen.example/films/visible-feature', html) do |page|
+      payload = extract(page)
+
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('# Visible film article', 'previous crew vanished', 'final message left by the crew')
+      (1..12).each do |index|
+        expect(payload['markdown']).to include("[Source resource #{index}](https://screen.example/resources/#{index})")
+      end
+      expect(payload['markdown']).not_to include('# Posts navigation')
+    end
+  end
+
+  it 'keeps every visible transcript paragraph on a video route' do
+    paragraphs = (1..12).map do |index|
+      "<p>Transcript segment #{index} explains how the bridge improves evacuation routes and reduces travel time for island residents.</p>"
+    end.join
+    html = <<~HTML
+      <html>
+        <head>
+          <title>Island bridge project | Public Development Bank</title>
+          <meta property="og:type" content="video.other">
+          <meta property="og:video:url" content="https://media.example/player/bridge">
+          <meta property="og:description" content="A brief summary of the island bridge project.">
+        </head>
+        <body><main><h1>Island bridge project</h1><video src="https://media.example/bridge.mp4"></video>
+          <h2>Transcript</h2>#{paragraphs}
+        </main></body>
+      </html>
+    HTML
+
+    with_url_page('https://media.example/news/videos/island-bridge', html) do |page|
+      payload = extract(page)
+
+      expect(payload['contentType']).to eq('article')
+      segments = (1..12).map { |index| "Transcript segment #{index} explains" }
+      positions = segments.map { |segment| payload['markdown'].index(segment) }
+      expect(positions).not_to include(nil)
+      expect(positions).to eq(positions.sort)
+      segments.each { |segment| expect(payload['markdown'].scan(segment).length).to eq(1) }
+    end
+  end
+
   it 'keeps all visible media headings and chapters in DOM order' do
     headings = (1..8).map { |index| "<h1>Heading #{index}</h1>" }.join
     chapters = (1..14).map { |index| "<ytd-macro-markers-list-item-renderer><h4>Chapter #{index}</h4></ytd-macro-markers-list-item-renderer>" }.join
