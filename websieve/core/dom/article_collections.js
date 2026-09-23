@@ -223,6 +223,28 @@
     return root;
   }
 
+  function stripPromotedComplementaryArticleSiblings(root) {
+    if (!document.body || root.querySelectorAll("article").length !== 1 ||
+        document.querySelectorAll("main article").length !== 1) return root;
+    var article = root.querySelector("article");
+    var complementary = new Map();
+    document.querySelectorAll("aside[id], [role='complementary'][id]").forEach(function(source) {
+      if (source.closest("main, article") || elementSubtreeHidden(source) ||
+          source.querySelector("a[href], article, section, p, blockquote, h1, h2, h3, figure, img[src], video, audio, table, dl")) return;
+      var text = normalizeText(source.textContent || "");
+      var labels = Array.from(source.children, function(child) { return normalizeText(child.textContent || ""); });
+      if (!text || text.length > 240 ||
+          !labels.some(function(label) { return /(?:\bprofile\b|プロフィール)/i.test(label); }) ||
+          !labels.some(function(label) { return /(?:\b(?:recent|latest)\s+(?:articles?|posts?|entries)\b|最新の記事)/i.test(label); })) return;
+      complementary.set(source.id, text);
+    });
+    root.querySelectorAll("[id]").forEach(function(node) {
+      if (!complementary.has(node.id) || article.contains(node) || node.contains(article)) return;
+      if (normalizeText(node.textContent || "") === complementary.get(node.id)) node.remove();
+    });
+    return root;
+  }
+
   function contentWithoutTerminalArticleFurniture(content) {
     if (!content || !content.html || Object.prototype.hasOwnProperty.call(content, "markdown") ||
         !/^(?:article|medical)$/i.test(content.contentType || "")) return content;
@@ -231,6 +253,7 @@
     var originalHtml = root.innerHTML;
     stripTerminalArticleLinkCollections(root);
     stripShortRelatedArticleTeasers(root);
+    stripPromotedComplementaryArticleSiblings(root);
     if (root.innerHTML === originalHtml) return content;
 
     return Object.assign({}, content, {
