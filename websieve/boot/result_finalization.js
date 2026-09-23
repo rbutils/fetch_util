@@ -72,6 +72,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = supplementNotFoundTickerRecords(content, metadata, pageText);
   content = contentWithoutTerminalArticleFurniture(content);
   content = sourceOwnedReaderHeadlineContent(content);
+  content = sourceOwnedReaderMissingHeadlineContent(content);
   if (metadata.mediaOwnedBody && content.contentType === "article" && !content.hostAware) {
     var mediaContext = metadata.mediaOwnedBody;
     if (mediaContext.byline) content.byline = mediaContext.byline;

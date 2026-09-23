@@ -825,6 +825,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/publisher_cta.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/article_action_chrome.js")).to be < manifest.index("core/dom/article_collections.js")
+    expect(manifest.index("extractors/article/readability/source_headline.js")).to be < manifest.index("extractors/article/readability/readability.js")
   end
 
   it "loads the shared generic list card boundary before its consumers" do
@@ -1246,6 +1247,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/fallback.js
+        extractors/article/readability/source_headline.js
         extractors/article/readability/readability_excerpt.js
         extractors/article/readability/caption_credit_excerpt.js
         extractors/article/readability/compact_body_excerpt.js
