@@ -77,7 +77,7 @@ function consentSummaryParts() {
 
 function agreementLoginGateEvidence() {
   var headings = Array.prototype.filter.call(document.querySelectorAll("h1, h2, h3, [role='heading']"), function(node) {
-    return consentSummaryVisible(node) && /\b(?:log in|login|sign in|sign up|create (?:an )?account)\b/i.test(consentSummaryText(node));
+    return consentSummaryVisible(node) && /^(?:log in|login|sign in|sign up|create (?:an )?account)\b/i.test(consentSummaryText(node));
   });
 
   for (var headingIndex = 0; headingIndex < headings.length; headingIndex += 1) {
@@ -98,7 +98,11 @@ function agreementLoginGateEvidence() {
         });
         var credentialControl = visibleControls.find(function(node) {
           var text = consentSummaryText(node) || node.getAttribute("placeholder") || node.getAttribute("name") || "";
-          return String(node.getAttribute("type") || "").toLowerCase() === "password" || /\b(?:username|password|one-time|sso)\b/i.test(text);
+          var credentialField = node.matches("input, select, textarea, label") &&
+            (String(node.getAttribute("type") || "").toLowerCase() === "password" || /\b(?:username|password|one-time|sso)\b/i.test(text));
+          var federatedLogin = node.matches("button, [role='button']") &&
+            /\b(?:log in|login|sign in|continue)\b/i.test(text) && /\b(?:sso|one-time)\b/i.test(text);
+          return credentialField || federatedLogin;
         });
         var authAction = visibleControls.find(function(node) {
           if (!node.matches("button, [role='button'], a[href], input[type='submit'], input[type='button']")) return false;
