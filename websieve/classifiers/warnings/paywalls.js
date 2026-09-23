@@ -61,3 +61,29 @@
       contentTier: contentTier ? normalizeText(contentTier).toLowerCase() : (sdPaywall ? "locked" : null)
     };
   }
+
+  function visiblePublicArticleBodyRetained(content, paywall) {
+    if (!content || content.contentType !== "article" || !paywall || paywall.contentTier !== "premium" || !document.body) return false;
+    if (subscriptionWallDominates(document.body.innerText || "")) return false;
+
+    var gates = document.querySelectorAll("[data-paywall], [class*='paywall' i], [id*='paywall' i], [class*='subscribe-wall' i], [class*='premium-wall' i], [data-piano-offer]");
+    if (Array.prototype.some.call(gates, function(node) { return !elementSubtreeHidden(node); })) return false;
+
+    var articles = Array.prototype.filter.call(document.querySelectorAll("main article, [role='main'] article"), function(node) {
+      return !elementSubtreeHidden(node) && !node.closest("aside, nav, footer, header");
+    });
+    if (articles.length !== 1) return false;
+    if (/\b(?:subscribers? only|members? only|subscription required|premium subscribers?)\b/i.test(articles[0].innerText || "")) return false;
+
+    var body = articles[0].querySelector("[itemprop='articleBody'], [data-article-body]") || articles[0];
+    var paragraphs = Array.prototype.map.call(body.querySelectorAll("p"), function(node) {
+      if (elementSubtreeHidden(node) || node.closest("aside, nav, footer, header, [class*='related' i]")) return "";
+      return normalizeText(node.textContent || "");
+    }).filter(function(text) { return text.length >= 40; });
+    if (paragraphs.length < 3 || paragraphs.join(" ").length < 300) return false;
+
+    var selected = document.createElement("div");
+    selected.innerHTML = content.html || "";
+    var extractedText = normalizeText(selected.textContent || content.textContent || "");
+    return paragraphs.every(function(text) { return extractedText.indexOf(text) !== -1; });
+  }

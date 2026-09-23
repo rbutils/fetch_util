@@ -5,6 +5,45 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
   include_context 'extractor integration helpers'
 
+  it 'keeps a complete visible public article distinct from premium metadata' do
+    paragraphs = (1..4).map do |index|
+      "<p>Public article section #{index} explains the decision, its background, the primary evidence " \
+        'and the consequences for the people involved in enough detail to be read independently.</p>'
+    end.join
+    html = <<~HTML
+      <html><head><title>Public investigation</title>
+      <meta property="article:content_tier" content="premium">
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","isAccessibleForFree":false}</script>
+      </head><body><main><article><h1>Public investigation</h1>#{paragraphs}</article></main></body></html>
+    HTML
+
+    with_url_page('https://news.example.test/investigation', html) do |page|
+      payload = extract(page)
+      (1..4).each { |index| expect(payload['markdown']).to include("Public article section #{index}") }
+      expect(payload['warnings']).not_to include('paywall_partial_content')
+      expect(payload['paywallState']).to be_nil
+    end
+  end
+
+  it 'still warns when a premium article has a visible subscription gate' do
+    paragraphs = (1..4).map do |index|
+      "<p>Public teaser section #{index} gives the reader enough context to understand the topic " \
+        'but the publication still says that the complete article is restricted to subscribers.</p>'
+    end.join
+    html = <<~HTML
+      <html><head><title>Restricted investigation</title><meta property="article:content_tier" content="premium"></head>
+      <body><main><article><h1>Restricted investigation</h1>#{paragraphs}
+      <div class="paywall-overlay">Subscribe to continue reading the complete investigation.</div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://news.example.test/restricted-investigation', html) do |page|
+      payload = extract(page)
+      expect(payload['warnings']).to include('subscription_interstitial')
+      expect(payload['paywallState']).to eq('full_block')
+    end
+  end
+
   it "flags paywall_partial_content for articles between 3000-5000 chars with paywall signals" do
     # Build article body that's ~3500 chars (above old 3000 threshold, below new 5000)
     paragraphs = 20.times.map { |i| "<p>This is paragraph #{i + 1} with moderate content providing details about the topic at hand.</p>" }.join("\n")

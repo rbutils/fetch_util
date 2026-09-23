@@ -120,7 +120,10 @@
         //   a substantial teaser is extracted but the full article is much longer (common with
         //   premium publishers like handelsblatt, nzz, luxtimes where teasers can be 5-10K chars)
         var paywallRatio = page.length > 0 ? body.length / page.length : 1;
-        if (body.length > 0 && ((!publicArticle && body.length < 5000) || (!publicArticle && body.length < 8000 && paywallRatio < 0.40) || (body.length < 12000 && paywallRatio < 0.25))) {
+        var partialBody = (!publicArticle && body.length < 5000) ||
+          (!publicArticle && body.length < 8000 && paywallRatio < 0.40) ||
+          (body.length < 12000 && paywallRatio < 0.25);
+        if (body.length > 0 && partialBody && !visiblePublicArticleBodyRetained(content, paywall)) {
           reasons.push("paywall_partial_content");
         }
       }

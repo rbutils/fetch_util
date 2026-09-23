@@ -231,7 +231,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentFormat = detectContentFormat(metadata, content, markdown);
   var paywall = paywallSignals();
   var paywallState = null;
-  if (paywall) {
+  if (paywall && !visiblePublicArticleBodyRetained(content, paywall)) {
     paywallState = warnings.indexOf("subscription_interstitial") !== -1 ? "full_block" : "detected";
   }
   if (content.contentType === "interstitial") clearSocialFields(content);
