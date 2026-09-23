@@ -127,6 +127,10 @@ function cleanupDocsRoot(root, options) {
   root.querySelectorAll("a[href]").forEach(function(el) {
     var text = normalizeText(el.textContent);
     var title = normalizeText(el.getAttribute("title"));
+    // Method signatures can be headings wrapped by their own fragment link.
+    // Removing that link would remove the heading, not just its permalink.
+    var wrappedHeading = el.querySelector("h1, h2, h3, h4, h5, h6");
+    if (wrappedHeading && normalizeText(wrappedHeading.textContent)) return;
     if (el.closest("h1, h2, h3, h4, h5, h6") && text.length >= 8) return;
     if (samePageFragmentLink(el.getAttribute("href")) && (!text || text.length < 40 || /link for this heading/i.test(title) || /^skip to (?:main )?content$/i.test(text))) el.remove();
   });

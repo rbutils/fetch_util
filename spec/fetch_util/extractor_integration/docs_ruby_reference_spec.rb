@@ -297,6 +297,44 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps every short method heading wrapped by its own fragment link" do
+    methods = (1..12).map do |index|
+      <<~HTML
+        <section class="method">
+          <a href="#method-i-short-#{index}"><h4>short#{index}! → value</h4></a>
+          <p>Independent documentation for operation #{index} with its own public method description.</p>
+        </section>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>String | Ruby API (v4.0)</title></head><body>
+        <main><h1>String</h1>
+          <nav><a href="#method-i-short-1"><h4>Index only</h4></a></nav>
+          <p>String method reference for the documented public operations.</p>
+          #{methods}
+          <h4 id="utilities">Utilities<a class="headerlink" href="#utilities">¶</a></h4>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://rubyapi.org/4.0/o/string", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload.fetch("markdown")
+      positions = (1..12).map do |index|
+        label = "short#{index}! → value"
+        expect(markdown.scan(label).length).to eq(1)
+        expect(markdown).to include("operation #{index} with its own public method description")
+        markdown.index(label)
+      end
+
+      expect(positions).to eq(positions.sort)
+      expect(markdown).to include("Utilities")
+      expect(markdown).not_to include("Index only", "¶")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
   it "extracts generic sphinx docs through system detection" do
     html = <<~HTML
       <html>
