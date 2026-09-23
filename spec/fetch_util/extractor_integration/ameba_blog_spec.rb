@@ -56,16 +56,30 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    extract_from_url("https://ameblo.jp/happy-happybag/entry-12971651517.html", html) do |payload|
+    with_url_page("https://ameblo.jp/happy-happybag/entry-12971651517.html", html) do |page|
+      source_html = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
       expect_content_type(payload, "article")
+      expect(payload["title"]).to eq("【2026】久世福商店 夏の福袋を徹底紹介！人気商品8点入りのお得な中身とは？")
+      expect(payload["byline"]).to be_nil
+      expect(payload["publishedTime"]).to eq("2026-07-04T04:00:17+09:00")
+      expect(payload["excerpt"]).to start_with("こんにちは♪ お得情報を探しながら毎日を楽しんでいる琴子です♡")
+      expect(payload["excerpt"]).to include("毎日の食卓に使いやすい定番品が中心")
+      expect(payload["excerpt"]).not_to include("テーマ：")
+      expect(payload["hostAware"]).to be(false)
       expect(payload["markdown"]).to include("# 【2026】久世福商店 夏の福袋を徹底紹介！人気商品8点入りのお得な中身とは？")
+      expect(payload["markdown"]).to include("2026年07月04日 04時00分17秒", "テーマ：2026 夏の福袋")
       expect(payload["markdown"]).to include("久世福商店で人気の定番商品に、夏限定らしい爽やかな商品")
       expect(payload["markdown"]).to include("オンライン限定で数量には限りがあります")
+      expect(payload["markdown"].scan(/^## /).length).to eq(5)
       expect(payload["markdown"]).not_to include("目次を開く")
       expect(payload["markdown"]).not_to include("四角オレンジ")
-      expect(payload["markdown"]).not_to include("プロフィール 琴子")
+      expect(payload["markdown"]).not_to include("プロフィール 琴子", "最新の記事")
+      expect(payload["markdown"].scan("送料込みで購入できるので").length).to eq(1)
       expect_warnings(payload, exclude: %w[multi_topic_page empty_extraction short_extraction url_content_mismatch consent_interstitial])
       expect(payload["suspect"]).to be(false)
+      expect(page.evaluate('document.body.innerHTML')).to eq(source_html)
     end
   end
 end
