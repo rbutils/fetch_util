@@ -26,6 +26,7 @@ extractors/lists/generic/canonical_identity.js
 core/dom/selectors.js
 core/dom/cookie_chrome.js
 core/dom/widgets/article_placeholders.js
+core/dom/widgets/action_prompts.js
 core/dom/widgets/article.js
 core/dom/promo_cleanup.js
 core/dom/noise_cleanup.js

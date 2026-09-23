@@ -57,6 +57,25 @@ RSpec.describe "generic article audio-control cleanup" do
     expect(cleaned).to include("Visible introduction", "Public reporting paragraph 1", "Public reporting paragraph 4")
   end
 
+  it "removes a coherent group of compact article actions without removing reporting or media" do
+    body = (1..4).map do |index|
+      "<p>Reported paragraph #{index} preserves independently verified details, substantial public context, and the complete factual account for readers.</p>"
+    end.join
+    source_html = <<~HTML
+      <article><h1>Public investigation</h1>
+        <p>Show article summary</p><p>Listen to this article</p><p>Share this article</p>
+        <p><a href="/transcript">Read the complete transcript</a></p>
+        <audio src="/interview.mp3" controls></audio>#{body}
+      </article>
+    HTML
+    cleaned = cleaned_article_widgets(source_html, source_html: source_html)
+    expect(cleaned).not_to include("Show article summary", "Listen to this article", "Share this article")
+    expect(cleaned).to include("Reported paragraph 1", "Reported paragraph 4", "/transcript", "/interview.mp3")
+
+    incomplete = source_html.sub("<p>Listen to this article</p>", "<p>The article explains how to listen to an interview.</p>")
+    expect(cleaned_article_widgets(incomplete, source_html: incomplete)).to include("Show article summary", "Share this article")
+  end
+
   it "keeps ordinary prose, ambiguous prompts and material audio owned by an article" do
     source_html = <<~HTML
       <article id="report"><h1>Audio accessibility report</h1>

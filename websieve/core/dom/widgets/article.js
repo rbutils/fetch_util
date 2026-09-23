@@ -243,7 +243,7 @@ function stripArticleWidgets(root) {
   });
 
   root.querySelectorAll("article p, article div, article span").forEach(function(node) {
-    if (articleSourceOwnedActionPrompt(node)) node.remove();
+    if (articleSourceOwnedActionPrompt(node) || articleGroupedActionPrompt(node)) node.remove();
   });
 
   root.querySelectorAll(".article-call-to-action, .article-cta, [data-role='article-call-to-action']").forEach(function(node) {
