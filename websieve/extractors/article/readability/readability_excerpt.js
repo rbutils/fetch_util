@@ -243,6 +243,11 @@
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);
+    if (readabilityCaptionCreditCandidate(excerpt)) {
+      var captionTemplate = readabilityArticleTemplate(article);
+      var bodyLead = captionTemplate && readabilityCaptionCreditExcerpt(captionTemplate, marker, excerpt);
+      if (bodyLead) return bodyLead;
+    }
     if (excerptCharacters.length >= 80) return article.excerpt;
 
     var template = readabilityArticleTemplate(article);
