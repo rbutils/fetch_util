@@ -212,6 +212,7 @@
     return {
       currentUrl: currentListPageUrl(),
       linkGroups: new WeakMap(),
+      numberedCollections: new WeakMap(),
       cardText: new WeakMap(),
       figureCollections: new WeakMap(),
       supportingCards: new WeakMap(),

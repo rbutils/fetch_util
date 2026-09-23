@@ -177,7 +177,7 @@
     var group = genericListLinkGroup(link, context.linkGroups);
     var imageTitleCard = genericListImageTitleCard(link);
     var minimumTitleLength = minimumListTitleLength(text);
-    if (group || imageTitleCard) minimumTitleLength = 1;
+    if (group || imageTitleCard || genericListNumberedCollectionLink(link, context && context.numberedCollections)) minimumTitleLength = 1;
     else if (tableIndexRow) minimumTitleLength = 2;
     else if (directAnchorTitle && genericListWrappedAnchorCard(link)) minimumTitleLength = Math.min(6, minimumTitleLength);
     if (text.length < minimumTitleLength || text.length > 220) return null;

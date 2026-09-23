@@ -85,3 +85,57 @@
     });
     return grouped ? { card: branch, label: label } : null;
   }
+
+  function genericListNumberedCollectionLink(link, cache) {
+    if (!link || !link.matches("a[href]") || elementSubtreeHidden(link) ||
+        link.closest("nav, header, footer, aside, menu, form, [role='navigation'], [role='complementary']") ||
+        listChromeAncestor(link)) return false;
+
+    var record = link.closest("li, [role='listitem']");
+    var collection = record && record.parentElement;
+    if (!collection || !collection.matches("ul, ol, [role='list']") ||
+        listChromeNode(collection) || listNoiseNode(collection)) return false;
+    if (cache && cache.has(collection)) return cache.get(collection).has(link);
+
+    var rows = Array.from(collection.children).filter(function(child) {
+      return child.matches("li, [role='listitem']") && !elementSubtreeHidden(child);
+    });
+    var admitted = new Set();
+    var destinations = new Set();
+    var expectedLinks = null;
+    var numberedRows = 0;
+    var complete = rows.length >= 4;
+
+    rows.forEach(function(row) {
+      if (!complete || listChromeNode(row) || row.querySelector("ul, ol, [role='list']")) {
+        complete = false;
+        return;
+      }
+      var links = Array.from(row.querySelectorAll("a[href]")).filter(function(anchor) {
+        return !elementSubtreeHidden(anchor);
+      });
+      if (!links.length || (expectedLinks !== null && links.length !== expectedLinks)) {
+        complete = false;
+        return;
+      }
+      expectedLinks = links.length;
+      if (links.some(function(anchor) {
+        return /\b(?:chapter|episode|part)\s*\d+[a-z]?\b|第\s*[\d〇一二三四五六七八九十百千]+\s*[章節节回話话]/i.test(normalizeText(anchor.textContent || ""));
+      })) numberedRows += 1;
+
+      links.forEach(function(anchor) {
+        var url = materializedHttpUrl(anchor.getAttribute("href"));
+        if (!normalizeText(anchor.textContent || anchor.getAttribute("aria-label") || "") ||
+            !url || destinations.has(url)) {
+          complete = false;
+          return;
+        }
+        destinations.add(url);
+        admitted.add(anchor);
+      });
+    });
+
+    if (!complete || numberedRows * 2 < rows.length) admitted.clear();
+    if (cache) cache.set(collection, admitted);
+    return admitted.has(link);
+  }
