@@ -15,7 +15,7 @@
 
     var sourceParagraphs = Array.from(owner.querySelectorAll("p")).filter(function(paragraph) {
       return !elementSubtreeHidden(paragraph) &&
-        !paragraph.closest("aside, nav, footer, form, [role='complementary']") &&
+        !paragraph.closest("aside, nav, footer, form, figure, figcaption, [role='complementary'], [class*='caption' i], [class*='related' i], [class*='recommend' i]") &&
         normalizeText(paragraph.textContent).length >= 80;
     }).map(function(paragraph) { return normalizeText(paragraph.textContent); });
     var selectedParagraphs = Array.from(selected.querySelectorAll("p")).map(function(paragraph) {
@@ -39,4 +39,12 @@
     heading.textContent = normalizeText(evidence.heading.textContent);
     root.insertBefore(heading, root.firstChild);
     return Object.assign({}, content, { html: root.innerHTML });
+  }
+
+  function sourceOwnedReaderMissingExcerpt(article, metadata) {
+    if (!article || normalizeText(article.excerpt || "") ||
+        normalizeText((metadata && metadata.excerpt) || "")) return null;
+    var evidence = sourceOwnedReaderHeadlineEvidence(article.content, article.title);
+    if (!evidence) return null;
+    return readabilityExcerptPrefix(evidence.lead);
   }

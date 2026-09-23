@@ -19,6 +19,7 @@
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
+      if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
       article.content += comments;
 
