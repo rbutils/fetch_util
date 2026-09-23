@@ -142,7 +142,7 @@
     "recommended", "trending", "popular", "latest\\s*news", "other\\s*news", "also\\s*read", "read\\s*more\\s*:?", "further\\s*reading",
     "references", "citations", "metrics", "altmetric", "więcej\\s*(z\\s*tej\\s*kategorii|artykułów|wiadomości|na\\s*ten\\s*temat)",
     "zobacz\\s*również", "polecamy", "czytaj\\s*również", "inne\\s*wiadomości", "повезано", "погледајте", "сродне\\s*вијести", "слично",
-    "такође\\s*прочитајте", "още\\s*от", "виж\\s*също", "свързани\\s*новини", "más\\s*de", "noticias\\s*relacionadas", "ver\\s*también",
+    "такође\\s*прочитајте", "още\\s*от", "виж\\s*също", "свързани\\s*новини", "más\\s*de", "noticias\\s*relacionadas", "ver\\s*también", "te\\s*puede\\s*interesar",
     "plus\\s*de", "à\\s*lire\\s*aussi", "lire\\s*aussi", "sur\\s*le\\s*même\\s*sujet", "mehr\\s*aus", "lesen\\s*sie\\s*auch",
     "das\\s*könnte\\s*sie\\s*auch\\s*interessieren", "altre\\s*notizie", "leggi\\s*anche", "ook\\s*interessant", "lees\\s*ook", "läs\\s*också",
     "relateret", "relaterte\\s*saker", "les\\s*også", "aiheeseen\\s*liittyvät", "lue\\s*myös", "ilgili\\s*haberler", "daha\\s*fazla",

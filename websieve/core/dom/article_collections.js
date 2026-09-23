@@ -198,13 +198,39 @@
     return root;
   }
 
-  function contentWithoutTerminalArticleLinkCollections(content) {
+  function shortRelatedArticleTeaser(node) {
+    var description = normalizeText(node.lastElementChild && node.lastElementChild.textContent || "");
+    if (!node.matches("section, aside") || node.children.length !== 2 ||
+        !node.firstElementChild.matches("h2, h3, h4") ||
+        !RELATED_SECTION_HEADING_PATTERN.test(normalizeText(node.firstElementChild.textContent || "")) ||
+        !node.lastElementChild.matches("p") || !description || description.length >= 110) return false;
+    return !node.querySelector("a[href], img, figure, video, audio, blockquote, ul, ol");
+  }
+
+  function stripShortRelatedArticleTeasers(root) {
+    if (!document.body) return root;
+    var candidates = Array.prototype.filter.call(root.querySelectorAll("section, aside"), shortRelatedArticleTeaser);
+    if (!candidates.length) return root;
+    var owners = new Map();
+    document.body.querySelectorAll("article section, article aside, main section, main aside").forEach(function(source) {
+      if (elementSubtreeHidden(source) || !shortRelatedArticleTeaser(source)) return;
+      var text = normalizeText(source.textContent || "");
+      owners.set(text, (owners.get(text) || 0) + 1);
+    });
+    candidates.forEach(function(node) {
+      if (owners.get(normalizeText(node.textContent || "")) === 1) node.remove();
+    });
+    return root;
+  }
+
+  function contentWithoutTerminalArticleFurniture(content) {
     if (!content || !content.html || Object.prototype.hasOwnProperty.call(content, "markdown") ||
         !/^(?:article|medical)$/i.test(content.contentType || "")) return content;
     var root = document.createElement("div");
     root.innerHTML = content.html;
     var originalHtml = root.innerHTML;
     stripTerminalArticleLinkCollections(root);
+    stripShortRelatedArticleTeasers(root);
     if (root.innerHTML === originalHtml) return content;
 
     return Object.assign({}, content, {

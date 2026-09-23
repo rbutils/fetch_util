@@ -70,7 +70,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
   content = supplementNotFoundTickerRecords(content, metadata, pageText);
-  content = contentWithoutTerminalArticleLinkCollections(content);
+  content = contentWithoutTerminalArticleFurniture(content);
   if (metadata.mediaOwnedBody && content.contentType === "article" && !content.hostAware) {
     var mediaContext = metadata.mediaOwnedBody;
     if (mediaContext.byline) content.byline = mediaContext.byline;
