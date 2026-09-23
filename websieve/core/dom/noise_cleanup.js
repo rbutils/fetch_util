@@ -95,6 +95,12 @@
 
   function stripUIWidgets(root, options) {
     stripArticleWidgets(root);
+    root.querySelectorAll("div, section, span").forEach(function(el) {
+      if (!/(?:^|[\s_-])refresh[-_](?:button|control|trigger)(?:[\s_-]|$)/i.test(el.getAttribute("class") || "")) return;
+      if (el.querySelector("p, article, h1, h2, h3, h4, a[href], img[src], picture, video, audio, pre, code, table, ul, ol")) return;
+      var text = normalizeText(el.textContent || "");
+      if (text.length <= 60 && /^(?:refresh(?: (?:feed|page|updates?))?|last updates?|latest updates?|últim[oa] minut[oa]|actualizar|atualizar)$/i.test(text)) el.remove();
+    });
     root.querySelectorAll("div, section, aside").forEach(function(el) {
       var classes = el.getAttribute("class") || "";
       if (!/(?:^|[\s_-])(?:share|social|more-options|actions?)(?:[\s_-]|$)/i.test(classes)) return;

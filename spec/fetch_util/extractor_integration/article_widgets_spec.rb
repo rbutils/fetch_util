@@ -66,6 +66,30 @@ RSpec.describe 'Article-owned interface widgets' do
     end
   end
 
+  it 'removes only compact refresh controls beside a visible article timeline' do
+    html = <<~HTML
+      <html><head><title>Public wildfire updates</title></head><body><article>
+        <h1>Public wildfire updates</h1>
+        <p>Emergency crews contained the first fire after a full afternoon of work, and local residents received a complete account of the response.</p>
+        <section><h2>First source-owned update</h2><p>Officials described the conditions around the first fire and the resources used to protect nearby homes.</p></section>
+        <section><h2>Second source-owned update</h2><p>The regional team reported the second fire under control and explained what work remains.</p></section>
+        <div class="c-detail--mam__refresh-button">Último minuto</div>
+        <section><h2>Third source-owned update</h2><p>A third briefing explained the aftermath and the next steps for the affected area.</p></section>
+        <div class="story-refresh-control"><h2>Latest updates</h2><p>This is substantive editorial context, not a compact refresh control.</p></div>
+        <h2>Último minuto</h2><p>This editorial heading is separate from the refresh control and remains visible.</p>
+      </article></body></html>
+    HTML
+
+    with_url_page('https://journal.example/updates', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      markdown = FetchUtil::Extractor.new(reader_mode: false).extract(page).fetch('markdown')
+      %w[First Second Third].each { |ordinal| expect(markdown).to include("#{ordinal} source-owned update") }
+      expect(markdown.scan('Último minuto').length).to eq(1)
+      expect(markdown).to include('This is substantive editorial context', 'separate from the refresh control')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'removes only structurally empty article ad placeholders' do
     html = <<~HTML
       <html><head><title>Regional transport investigation</title>
