@@ -51,17 +51,36 @@ RSpec.describe 'FetchUtil extractor integration for Root.cz articles' do
 
     url = 'https://www.root.cz/clanky/klavesnice-osmibitovych-pocitacu-atari-az-prekvapive-komplikovana-problematika/'
 
-    extract_from_url(url, html) do |payload|
+    with_url_page(url, html) do |page|
+      original_body = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
       expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('práce s klávesnicí osmibitových domácích mikropočítačů Atari')
-      expect(payload['markdown']).to include('Klávesy Start, Select a Option se ovšem čtou jinak')
-      expect(payload['markdown']).not_to include('Počet nových komentářů')
-      expect(payload['markdown']).not_to include('PŘIDEJTE NÁZOR')
-      expect(payload['markdown']).not_to include('Líbí se vám článek')
-      expect(payload['markdown']).not_to include('Podpořte redakci')
-      expect(payload['markdown']).not_to include('Sdílet')
-      expect(payload['markdown']).not_to include('REKLAMA')
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect(payload).to include('title' => 'Klávesnice osmibitových počítačů Atari: až překvapivě komplikovaná problematika',
+                                 'byline' => 'Pavel Tišnovský', 'language' => 'cs',
+                                 'readerMode' => false, 'hostAware' => false, 'warnings' => [])
+      expect(payload.fetch('excerpt')).to start_with('V dnešním článku se budeme věnovat')
+      expect(payload.fetch('excerpt')).to end_with('specifickým způsobem.')
+      expect(payload.fetch('html')).to include('<h1 class="design-title">')
+      expect(payload.fetch('markdown')).to include('[Pavel Tišnovský](https://www.root.cz/autori/pavel-tisnovsky/)')
+      passages = [
+        'U mnoha typů počítačů je práce s klávesnicí mnohdy až absurdně komplikovaná.',
+        'V dnešním článku se budeme věnovat zdánlivě jednoduchému tématu,',
+        'Ve skutečnosti se však jedná o dosti komplikované téma,',
+        'Rozdělení kláves do skupin na základě jejich funkce a zapojení',
+        'Standardní klávesy se používaly při programování,',
+        'Klávesy Start, Select a Option se ovšem čtou jinak'
+      ]
+      passages.each do |passage|
+        expect(payload.fetch('markdown').scan(passage).length).to eq(1)
+        expect(payload.fetch('html').scan(passage).length).to eq(1)
+      end
+      [payload.fetch('markdown'), payload.fetch('html'), payload.fetch('textContent')].each do |rendered|
+        expect(rendered).not_to include('Počet nových komentářů', 'PŘIDEJTE NÁZOR', 'Podpořte redakci',
+                                        'Přidat mezi oblíbené zdroje na Googlu', 'BYL PRO VÁS ČLÁNEK PŘÍNOSNÝ?',
+                                        'REKLAMA')
+      end
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
     end
   end
 end
