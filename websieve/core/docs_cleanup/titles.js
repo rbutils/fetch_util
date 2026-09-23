@@ -189,6 +189,34 @@ function articleTitleFromSelfLinkedHeading(html, title) {
   return ownerLinks.length === 1 ? heading : title;
 }
 
+function articleSelfLinkedHeadlineMarkdown(markdown, html, title) {
+  if (!markdown || !html || !title || !document.body) return markdown;
+  var root = document.createElement("div");
+  root.innerHTML = html;
+  var articles = root.querySelectorAll("article");
+  if (articles.length !== 1) return markdown;
+  var heading = articles[0].firstElementChild;
+  var link = heading && heading.matches("h2") && heading.querySelector("a[href]");
+  if (!link || heading.querySelectorAll("a[href]").length !== 1 ||
+      normalizeText(link.textContent || "") !== normalizeText(title)) return markdown;
+  var source = Array.prototype.filter.call(document.querySelectorAll("main article h1 a[href]"), function(node) {
+    return !elementSubtreeHidden(node) && normalizeText(node.textContent || "") === normalizeText(title);
+  });
+  if (source.length !== 1) return markdown;
+  var selectedUrl = materializedHttpUrl(link.getAttribute("href"));
+  var sourceUrl = materializedHttpUrl(source[0].getAttribute("href"));
+  if (!selectedUrl || selectedUrl !== sourceUrl ||
+      new URL(selectedUrl).origin !== location.origin ||
+      new URL(selectedUrl).pathname !== location.pathname ||
+      new URL(selectedUrl).search !== location.search) return markdown;
+
+  var lines = markdown.split("\n");
+  var first = lines.findIndex(function(line) { return !!normalizeText(line); });
+  if (first < 0 || normalizeText(lines[first]) !== normalizeText(cleanupMarkdownNoise(markdownFor(heading.outerHTML)))) return markdown;
+  lines[first] = "# " + title;
+  return lines.join("\n");
+}
+
 function compactReferenceText(text) {
   return normalizeText(text || "")
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")

@@ -68,6 +68,38 @@ RSpec.describe 'Adjacent source-owned article headings' do
     end
   end
 
+  it 'renders a uniquely owned self-linked reader headline as the page title' do
+    headline = 'Researchers publish complete transport evidence and public records for every district'
+    html = <<~HTML
+      <html><head><title>#{headline} | Author journal</title></head><body><main><article>
+        <h1><a href="/reports/funding-records">#{headline}</a></h1>
+        #{body}
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/funding-records', html) do |page|
+      extractor_for(true).__send__(:inject_assets, page)
+      payload = page.evaluate <<~JS
+        (() => {
+          const Reader = function() {};
+          Reader.prototype.parse = function() {
+            const body = document.querySelector('main article').innerHTML;
+            return {title: document.title,
+              content: '<article>' + body.replace('<h1>', '<h2>').replace('</h1>', '</h2>') + '</article>',
+              textContent: document.querySelector('main article').textContent};
+          };
+          window.Readability = Reader;
+          return window.FetchUtilExtract.extract({reader_mode: true});
+        })()
+      JS
+
+      expect(payload.fetch('title')).to eq(headline)
+      expect(payload.fetch('markdown')).to start_with("# #{headline}\n")
+      expect(payload.fetch('markdown')).not_to include("## [#{headline}]")
+      expect(payload.fetch('markdown')).to include('The announced programme also covers maintenance')
+    end
+  end
+
   it 'does not trust a linked heading that points to a different article' do
     headline = 'Local researchers publish complete transport funding records for every district'
     html = <<~HTML
