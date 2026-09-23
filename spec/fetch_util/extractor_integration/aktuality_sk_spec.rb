@@ -42,14 +42,24 @@ RSpec.describe 'FetchUtil extractor integration for Aktuality.sk articles' do
     url = 'https://www.aktuality.sk/clanok/1SfqLZq/republike-hrozi-vysetrovanie-zo-strany-europskej-unie-obvinuju-ich-z-nenavisti-a-chcu-im-odobrat-peniaze/'
 
     extract_from_url(url, html) do |payload|
+      expect(payload['title']).to eq('Republike hrozí vyšetrovanie zo strany Európskej únie. Obviňujú ich z nenávisti a chcú im odobrať peniaze')
       expect_content_type(payload, 'article')
+      expect(payload).to include('readerMode' => true, 'hostAware' => false)
+      expect(payload['excerpt']).to eq(
+        'Takmer 300-stranová správa bruselského úradu opisuje nenávistný slovník a kontakty na Rusko. ' \
+        'Vyšetrovanie môže ESN pripraviť o milióny z európskych peňazí.'
+      )
       expect(payload['markdown']).to include('Takmer 300-stranová správa bruselského úradu')
       expect(payload['markdown']).to include('Európsky parlament dnes v Štrasburgu rozhodoval')
+      expect(payload['markdown']).to include('Osemnásť poslancov sa zdržalo hlasovania.')
+      expect(payload['markdown'].scan('Europoslanci návrh na vyšetrovanie').length).to eq(1)
       expect(payload['markdown']).not_to include('Radičová')
       expect(payload['markdown']).not_to include('Posadnutý pomstou')
       expect(payload['markdown']).not_to include('Listen to this article')
+      expect(payload['markdown']).not_to include('Uložiť článok')
       expect(payload['markdown']).not_to include('Prečítajte si tiež')
       expect(payload['markdown']).not_to include('piano.io')
+      expect(payload['html']).not_to include('Uložiť článok', 'Listen to this article')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial multi_topic_page])
     end
   end
