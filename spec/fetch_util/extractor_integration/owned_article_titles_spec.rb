@@ -55,4 +55,63 @@ RSpec.describe 'Owned article titles' do
       expect(result['markdown']).to include('Post-match analysis', 'North Club')
     end
   end
+
+  it 'restores the uniquely source-owned H1 when a reader demotes it to H2' do
+    html = <<~HTML
+      <html><head><title>Getting started</title></head><body><main><article>
+        <h1>Getting started</h1>
+        <h3>Quick start</h3><p>Create the first project and verify that its preview is available.</p>
+        <h3>Basic usage</h3><p>Use the command line to build and publish the complete project.</p>
+        <h3>Directory structure</h3><p>The project keeps layouts and content in distinct directories.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://docs.example/getting-started', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      extractor_for(true).__send__(:inject_assets, page)
+      payload = page.evaluate <<~JS
+        (() => {
+          const Reader = function() {};
+          Reader.prototype.parse = function() {
+            const article = document.querySelector('main article');
+            return {title: document.title, content: '<article>' + article.innerHTML.replace('<h1>', '<h2>').replace('</h1>', '</h2>') + '</article>', textContent: article.textContent};
+          };
+          window.Readability = Reader;
+          return window.FetchUtilExtract.extract({reader_mode: true});
+        })()
+      JS
+
+      expect(payload.fetch('contentType')).to eq('article')
+      expect(payload.fetch('html')).to match(%r{<h1>Getting started</h1>})
+      expect(payload.fetch('html')).not_to include('<h2>Getting started</h2>')
+      expect(payload.fetch('markdown')).to start_with("# Getting started\n")
+      expect(payload.fetch('markdown')).to include('Quick start', 'Basic usage', 'Directory structure')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'does not promote an H2 when multiple articles or a different title undermine ownership' do
+    html = <<~HTML
+      <html><head><title>Getting started</title></head><body><main>
+        <article><h1>Getting started</h1><p>The first independent project explains setup in detail.</p><p>It also documents the complete local build process.</p></article>
+        <article><h1>Related guide</h1><p>A different article introduces another workflow.</p></article>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://docs.example/getting-started', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub('})(window);', 'global.readerHeadingProbe = sourceOwnedReaderHeadlineContent; })(window);'))
+      selected = '<article><h2>Getting started</h2><p>The first independent project explains setup in detail.</p>' \
+                 '<p>It also documents the complete local build process.</p></article>'
+      candidate = { html: selected, title: 'Getting started', contentType: 'article', readerMode: true }
+      expect(page.evaluate("readerHeadingProbe(#{JSON.generate(candidate)})").fetch('html')).to eq(selected)
+      page.evaluate("document.querySelectorAll('main article')[1].remove()")
+      expect(page.evaluate("readerHeadingProbe(#{JSON.generate(candidate)})").fetch('html')).to include('<h1>Getting started</h1>')
+      different_title = candidate.merge(title: 'Another guide')
+      expect(page.evaluate("readerHeadingProbe(#{JSON.generate(different_title)})").fetch('html')).to eq(selected)
+    end
+  end
 end

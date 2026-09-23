@@ -160,6 +160,43 @@ function articleTitleFromVisibleArticleHeading(html, title) {
   return paragraphs.every(function(text) { return sourceText.indexOf(text) !== -1; }) ? headline : title;
 }
 
+function sourceOwnedReaderHeadlineContent(content) {
+  if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
+      !content.html || content.markdown || !document.body) return content;
+  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("main article"), function(article) {
+    return !elementSubtreeHidden(article) && !article.parentElement.closest("article");
+  });
+  if (sourceArticles.length !== 1) return content;
+  var source = sourceArticles[0];
+  var sourceHeading = source.firstElementChild;
+  if (!sourceHeading || !sourceHeading.matches("h1") || elementSubtreeHidden(sourceHeading) ||
+      source.querySelectorAll("h1").length !== 1) return content;
+
+  var root = document.createElement("div");
+  root.innerHTML = content.html;
+  var articles = root.querySelectorAll("article");
+  if (articles.length !== 1) return content;
+  var selected = articles[0];
+  var heading = selected.firstElementChild;
+  var title = normalizeText(sourceHeading.textContent || "");
+  if (!heading || !heading.matches("h2") || selected.querySelectorAll("h1, h2").length !== 1 ||
+      title.length < 8 || normalizeText(heading.textContent || "") !== title ||
+      normalizeText(content.title || document.title || "") !== title) return content;
+  var sourceText = normalizeText(source.textContent || "");
+  var paragraphs = Array.prototype.map.call(selected.querySelectorAll("p"), function(node) {
+    return normalizeText(node.textContent || "");
+  }).filter(Boolean);
+  if (paragraphs.length < 2 || !paragraphs.every(function(text) { return sourceText.indexOf(text) !== -1; })) return content;
+
+  var restored = document.createElement("h1");
+  Array.prototype.forEach.call(heading.attributes, function(attribute) {
+    restored.setAttribute(attribute.name, attribute.value);
+  });
+  while (heading.firstChild) restored.appendChild(heading.firstChild);
+  heading.replaceWith(restored);
+  return Object.assign({}, content, { html: root.innerHTML });
+}
+
 function articleTitleFromAdjacentHeading(html, title) {
   if (!document.body || !html || !title) return title;
   var articles = Array.prototype.filter.call(document.querySelectorAll("article"), function(article) {
