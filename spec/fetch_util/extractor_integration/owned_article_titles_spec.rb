@@ -90,6 +90,40 @@ RSpec.describe 'Owned article titles' do
     end
   end
 
+  it 'restores a uniquely owned H1 in an article directly under the body' do
+    html = <<~HTML
+      <html><head><title>Public notice across borders</title></head><body>
+        <article><h1>Public notice across borders</h1>
+          <p>The opening paragraph reports the complete public notice and describes the independent meetings that led to this announcement.</p>
+          <p>The second paragraph documents the decisions, the evidence for each decision, and the practical consequences for residents.</p>
+          <p>The third paragraph preserves the public article rather than a short subscription prompt or an unrelated recommendation.</p>
+          <div class="paywall-content">Continue reading with full access</div>
+        </article>
+      </body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/public-notice', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      extractor_for(true).__send__(:inject_assets, page)
+      payload = page.evaluate <<~JS
+        (() => {
+          const Reader = function() {};
+          Reader.prototype.parse = function() {
+            const article = document.querySelector('body > article');
+            return {title: document.title, content: '<article>' + article.innerHTML.replace('<h1>', '<h2>').replace('</h1>', '</h2>') + '</article>', textContent: article.textContent};
+          };
+          window.Readability = Reader;
+          return window.FetchUtilExtract.extract({reader_mode: true});
+        })()
+      JS
+
+      expect(payload.fetch('html')).to include('<h1>Public notice across borders</h1>')
+      expect(payload.fetch('html')).not_to include('<h2>Public notice across borders</h2>')
+      expect(payload.fetch('markdown')).to include('The opening paragraph reports', 'The third paragraph preserves')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'does not promote an H2 when multiple articles or a different title undermine ownership' do
     html = <<~HTML
       <html><head><title>Getting started</title></head><body><main>
@@ -110,6 +144,9 @@ RSpec.describe 'Owned article titles' do
       expect(page.evaluate("readerHeadingProbe(#{JSON.generate(candidate)})").fetch('html')).to eq(selected)
       page.evaluate("document.querySelectorAll('main article')[1].remove()")
       expect(page.evaluate("readerHeadingProbe(#{JSON.generate(candidate)})").fetch('html')).to include('<h1>Getting started</h1>')
+      page.evaluate("document.body.insertAdjacentHTML('beforeend', '<article><h1>Another source</h1></article>')")
+      expect(page.evaluate("readerHeadingProbe(#{JSON.generate(candidate)})").fetch('html')).to eq(selected)
+      page.evaluate("document.body.lastElementChild.remove()")
       different_title = candidate.merge(title: 'Another guide')
       expect(page.evaluate("readerHeadingProbe(#{JSON.generate(different_title)})").fetch('html')).to eq(selected)
     end

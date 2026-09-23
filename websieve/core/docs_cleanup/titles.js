@@ -163,7 +163,7 @@ function articleTitleFromVisibleArticleHeading(html, title) {
 function sourceOwnedReaderHeadlineContent(content) {
   if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
       !content.html || content.markdown || !document.body) return content;
-  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("main article"), function(article) {
+  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("main article, body > article"), function(article) {
     return !elementSubtreeHidden(article) && !article.parentElement.closest("article");
   });
   if (sourceArticles.length !== 1) return content;
