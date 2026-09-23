@@ -129,6 +129,36 @@ function articleTitleFromOwnedHeading(html, title, siteName) {
   return brand(match[1]) === brand(siteName) ? heading : title;
 }
 
+function articleTitleFromAdjacentHeading(html, title) {
+  if (!document.body || !html || !title) return title;
+  var articles = Array.prototype.filter.call(document.querySelectorAll("article"), function(article) {
+    return !elementSubtreeHidden(article) && article.previousElementSibling &&
+      article.previousElementSibling.matches("header") && article.querySelectorAll("p").length >= 2;
+  });
+  if (articles.length !== 1) return title;
+
+  var article = articles[0];
+  var header = article.previousElementSibling;
+  var headings = header.querySelectorAll("h1");
+  if (headings.length !== 1 || header.querySelector("nav, form, [role='navigation'], a[href]") ||
+      elementSubtreeHidden(headings[0])) return title;
+
+  function words(text) {
+    return normalizeText(text || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  }
+
+  var shortTitle = words(title);
+  var heading = normalizeText(headings[0].textContent || "");
+  var fullTitle = words(heading);
+  if (shortTitle.length < 35 || fullTitle.length < shortTitle.length + 12 ||
+      fullTitle.indexOf(shortTitle) !== 0) return title;
+
+  var finalWords = fullTitle.split(" ").slice(-4).join(" ");
+  if (finalWords.length < 15 || words(article.textContent).indexOf(finalWords) < 0 ||
+      words(html).indexOf(finalWords) < 0) return title;
+  return heading;
+}
+
 function compactReferenceText(text) {
   return normalizeText(text || "")
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")
