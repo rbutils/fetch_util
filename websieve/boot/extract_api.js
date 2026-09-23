@@ -178,6 +178,7 @@
       content = applyPropertyListingContent(content, metadata);
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
+      content = prepareSourceOwnedBrowseIndex(content, metadata);
       content = applySocialContentType(content, metadata, ownedSocialPost);
       var strongArticle = strongArticleContent(content, false);
 
@@ -220,7 +221,7 @@
 
        content = applyMedicalContentType(content, metadata);
 
-       var portalRootContent = crediblePortalRootListContent(metadata, content);
+        var portalRootContent = content && content.browseIndexContent ? null : crediblePortalRootListContent(metadata, content);
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);
        if (ownedDetailArticle) {
          content = ownedDetailArticle;
@@ -243,7 +244,7 @@
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;
       }
-      if (content.contentType === "article" && !content.hostAware && !content.docsLike &&
+      if (content.contentType === "article" && !content.browseIndexContent && !content.hostAware && !content.docsLike &&
           !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
           legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);

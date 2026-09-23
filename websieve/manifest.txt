@@ -96,6 +96,7 @@ extractors/article/coverage/hidden_substantive_main.js
 extractors/glossary/cleanup.js
 extractors/glossary/detection.js
 extractors/glossary/extraction.js
+extractors/lists/generic/browse_indexes.js
 extractors/lists/relabeling.js
 extractors/lists/generic/records/card_evidence.js
 extractors/lists/generic/records/duplicate_record_metadata.js

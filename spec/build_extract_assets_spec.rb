@@ -1150,6 +1150,15 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
+  it "loads shared browse-index ownership before reader list arbitration" do
+    manifest = File.readlines(File.join(project_root, "websieve/manifest.txt"), chomp: true)
+    browse_path = "extractors/lists/generic/browse_indexes.js"
+
+    expect(manifest.count(browse_path)).to eq(1)
+    expect(manifest.index(browse_path)).to be < manifest.index("extractors/lists/relabeling.js")
+    expect(manifest.index(browse_path)).to be < manifest.index("boot/extract_api.js")
+  end
+
   it "groups dynamic list collections while preserving load order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)

@@ -147,6 +147,8 @@
   }
 
   function sourceOwnedListAgainstReader(content, metadata) {
+    var browseIndex = content && content.browseIndexContent || sourceOwnedBrowseIndexContent(content, metadata);
+    if (browseIndex) return browseIndex;
     if (!document.body || !content || content.contentType !== "article" || !content.readerMode ||
         content.hostAware || articleRouteFocalContent(content) || !isProbablyListPage(content)) return null;
 

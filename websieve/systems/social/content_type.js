@@ -173,6 +173,7 @@
     if (content && !content.hostAware && content.contentType !== "interstitial" && ownedPostContent) {
       content = ownedPostContent;
     }
+    if (content && !ownedPostContent && (content.browseIndexContent || content.browseIndexEvidence)) return content;
     if (document.body) {
       if (content && !content.hostAware && content.contentType !== "interstitial" && !ownedPostContent) {
         var repeatedPost = socialPostOwnedContent(metadata);
