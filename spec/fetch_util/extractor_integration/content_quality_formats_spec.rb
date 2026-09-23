@@ -474,7 +474,7 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     with_url_page("https://science-records.example.org/compound/2244", html) do |page|
       payload = extract(page)
 
-      expect(payload["contentFormat"]).to eq("liveblog")
+      expect(payload["contentFormat"]).to be_nil
       expect(payload["warnings"]).not_to include("multi_topic_page")
     end
   end
@@ -575,6 +575,43 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["contentFormat"]).not_to eq("liveblog")
+    end
+  end
+
+  it "does not infer liveblog from dated records in an internal publication series" do
+    records = (1..12).map do |index|
+      <<~RECORD
+        <li>
+          <h3><a href="/publications/report-#{index}">Regional indicators report #{index}</a></h3>
+          <time datetime="#{2012 + index}-08-15T12:00:00Z">August #{2012 + index}</time>
+          <p>Detailed economic and environmental indicators for the region in report #{index}, with independent country and regional assessments.</p>
+        </li>
+      RECORD
+    end.join
+    html = <<~HTML
+      <html><head><title>Regional indicators publication series</title></head><body>
+        <main><h1>Regional indicators publication series</h1><section><h2>Publications</h2><ul>#{records}</ul></section></main>
+      </body></html>
+    HTML
+
+    with_url_page("https://research.example.org/publications/series/indicators", html) do |page|
+      root = File.expand_path("../../..", __dir__)
+      source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, "websieve", entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub("})(window);", "global.contentFormatProbe = { detect: detectContentFormat, markdown: markdownFor }; })(window);"))
+      format = page.evaluate(<<~JS)
+        (() => {
+          const owner = document.querySelector('main');
+          return contentFormatProbe.detect(
+            { title: document.title },
+            { contentType: 'list', title: document.title, html: owner.innerHTML, textContent: owner.textContent },
+            contentFormatProbe.markdown(owner.innerHTML)
+          );
+        })()
+      JS
+
+      expect(format).to be_nil
     end
   end
 
