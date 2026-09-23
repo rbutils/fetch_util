@@ -112,6 +112,34 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     end
   end
 
+  it 'removes empty article comment prompts without deleting published replies' do
+    replies = (1..12).map do |index|
+      "<article itemprop='comment'><p>Published correction #{index}: verified source context remains available.</p></article>"
+    end.join
+    comment_ui = <<~HTML
+      <div class="post-footer">Leave a comment</div>
+      <div class="comments"><p>Comment thread</p></div>
+    HTML
+
+    extract_comment_cleanup(comment_ui) do |payload, after, before|
+      expect(payload.fetch('markdown')).not_to include('Leave a comment')
+      expect(payload.fetch('markdown')).not_to include('Comment thread')
+      expect(payload.fetch('markdown')).to include('Verified report paragraph 1')
+      expect(after).to eq(before)
+    end
+
+    clone = clean_comment_ui_root("<div>#{comment_ui}<div class='comments'><p>Comment thread</p>#{replies}</div></div>")
+    expect(clone.fetch('sourceUnchanged')).to be(true)
+    expect(clone.fetch('clone')).not_to include('post-footer', '<div class="comments"><p>Comment thread</p></div>')
+    expect(clone.fetch('clone').scan('Comment thread').length).to eq(1)
+    positions = (1..12).map do |index|
+      phrase = "Published correction #{index}: verified source context remains available."
+      expect(clone.fetch('clone').scan(phrase).length).to eq(1)
+      clone.fetch('clone').index(phrase)
+    end
+    expect(positions).to eq(positions.sort)
+  end
+
   it 'preserves nonempty continuation controls and actual comment or reply content' do
     controls = <<~HTML
       <div class="more-comments-button"><a href="/comments">Other comments (3)</a></div>
