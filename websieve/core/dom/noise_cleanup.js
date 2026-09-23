@@ -12,9 +12,6 @@
   var PROMO_CONTAINER_SELECTOR = "[class*='app-download'], [class*='app_download'], [class*='download-app'], [class*='download_app'], [class*='app-banner'], [class*='app_banner'], [class*='app-install'], [class*='app_install'], [class*='install-app'], [class*='install_app'], [class*='mobile-app'], [class*='mobile_app'], [class*='open-in-app'], [class*='open_in_app'], [class*='app-promo'], [class*='app_promo'], [class*='amp-banner'], [class*='amp_banner'], [class*='amp-promo'], [class*='amp_promo'], [class*='subscribe-cta'], [class*='subscribe_cta'], [class*='newsletter-signup'], [class*='newsletter_signup'], [class*='push-notification'], [class*='push_notification'], [class*='telegram-cta'], [class*='whatsapp-cta']";
   var SOCIAL_SHARE_AD_SELECTOR = "[class*='share'], [class*='social'], [class*='rating'], [class*='vote'], [class*='like-button'], [class*='dislike'], [data-testid*='share'], [data-testid*='like'], [class*='ad-overlay'], [class*='ad_overlay'], [class*='video-ad'], [class*='adWrapper'], [class*='ad-wrapper'], [class*='ad-container'], [id*='ad-overlay'], [id*='ad_overlay'], [class*='announcement-bar'], [class*='global-alert'], [id*='announcement-bar']";
   var AD_NETWORK_CONTAINER_SELECTOR = NOISE_AD_NETWORK_CONTAINER_SELECTOR;
-  var PROMO_ATTR_PATTERN = new RegExp("(?:^|[-_\\s])(" + NOISE_PROMO_ATTR_TERMS + ")(?:[-_\\s]|$)", "i");
-  var PROMO_TEXT_PATTERN = new RegExp("\\b(" + NOISE_PROMO_TEXT_TERMS + ")\\b", "i");
-  var PROMO_MEDIA_PATTERN = new RegExp("(?:\\/|[-_])(" + NOISE_PROMO_MEDIA_TERMS + ")(?:\\/|[-_.?]|$)", "i");
   var RELATED_SECTION_HEADING_PATTERN = noiseExactTextPattern(NOISE_RELATED_HEADING_TERMS, "i");
   var INLINE_CONSENT_PROMPT_PATTERN = noiseExactTextPattern(NOISE_INLINE_CONSENT_PROMPT_SOURCES, "i");
   var navigationWordSegmenter = null;
@@ -162,37 +159,6 @@
     });
 
     return root;
-  }
-
-  function stripPromoAdModules(root) {
-    root.querySelectorAll("aside, section, div, figure, picture").forEach(function(el) {
-      if (el.matches("main, article, [role='main']")) return;
-      if (el.querySelector("article, main, [role='main']")) return;
-      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
-
-      var text = normalizeText(el.textContent || "");
-      var textLower = text.toLowerCase();
-      var attrs = [
-        el.className || "",
-        el.id || "",
-        el.getAttribute("data-testid") || "",
-        el.getAttribute("data-test") || "",
-        el.getAttribute("aria-label") || ""
-      ].join(" ").toLowerCase();
-      var imageSrcs = Array.prototype.map.call(el.querySelectorAll("img, source"), function(img) {
-        return (img.getAttribute("src") || img.getAttribute("srcset") || "").toLowerCase();
-      }).join(" ");
-
-      var promoAttrs = PROMO_ATTR_PATTERN.test(attrs);
-      var promoText = PROMO_TEXT_PATTERN.test(textLower);
-      var promoMedia = PROMO_MEDIA_PATTERN.test(imageSrcs);
-
-      if ((promoAttrs || promoMedia) && (text.length < 900 || promoText)) {
-        el.remove();
-      } else if (promoText && promoMedia && text.length < 1200) {
-        el.remove();
-      }
-    });
   }
 
   function stripRelatedSectionsByHeading(root) {

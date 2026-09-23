@@ -806,10 +806,12 @@ RSpec.describe "extract asset bundle" do
     expect(list_source).not_to include("function pruneHiddenListClone")
   end
 
-  it "loads publisher CTA cleanup before its shared consumer" do
+  it "loads promotional and publisher CTA cleanup before their shared consumer" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
 
+    expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/noise_cleanup.js")
+    expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/publisher_cta.js")).to be < manifest.index("core/dom/cleanup.js")
   end
 
