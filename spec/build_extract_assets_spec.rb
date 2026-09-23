@@ -824,6 +824,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/noise_cleanup.js")
     expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/publisher_cta.js")).to be < manifest.index("core/dom/cleanup.js")
+    expect(manifest.index("core/dom/article_action_chrome.js")).to be < manifest.index("core/dom/article_collections.js")
   end
 
   it "loads the shared generic list card boundary before its consumers" do

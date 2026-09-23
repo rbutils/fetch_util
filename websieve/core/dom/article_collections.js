@@ -276,6 +276,8 @@
     stripShortRelatedArticleTeasers(root);
     stripPromotedComplementaryArticleSiblings(root);
     stripInlineEmoticonArtwork(root);
+    stripSourceOwnedArticleActions(root);
+    stripEmptyCommentUi(root);
     if (root.innerHTML === originalHtml) return content;
 
     return Object.assign({}, content, {

@@ -36,7 +36,7 @@
     return node.matches(selector) || !!node.querySelector(selector);
   }
 
-  var EMPTY_COMMENT_FORM_HEADING_PATTERN = /^(?:comments?|leave (?:a )?(?:comment|reply)|add (?:a )?comment|join the discussion|komentari?|ostavi komentar|dodaj komentar|коментари|остави коментар|комментарии|оставить комментарий|komentarze|dodaj komentarz|zostaw komentarz|kommentare|kommentar schreiben|comentarios|deja (?:un )?comentario|comentários|deixe (?:um )?comentário|commentaires|laisser (?:un )?commentaire|commenti|lascia (?:un )?commento)$/i;
+  var EMPTY_COMMENT_FORM_HEADING_PATTERN = /^(?:comments?|leave (?:a )?(?:comment|reply)|add (?:a )?comment|join the discussion|komentari?|ostavi komentar|dodaj komentar|коментари|остави коментар|комментарии|оставить комментарий|komentarze|dodaj komentarz|zostaw komentarz|kommentare|kommentar schreiben|přidejte názor|comentarios|deja (?:un )?comentario|comentários|deixe (?:um )?comentário|commentaires|laisser (?:un )?commentaire|commenti|lascia (?:un )?commento)$/i;
 
   function emptyCommentFormHeading(heading) {
     if (heading.closest(markedCommentContentSelector())) return false;
@@ -145,7 +145,9 @@
       var bareInvitation = !node.children.length && EMPTY_COMMENT_FORM_HEADING_PATTERN.test(text);
       var emptyThread = node.children.length === 1 && node.firstElementChild.matches("p") &&
         !node.firstElementChild.children.length && /^comment thread$/i.test(text);
-      if (!bareInvitation && !emptyThread) return;
+      var emptyAction = node.children.length === 1 && node.firstElementChild.matches("a:not([href])") &&
+        !node.firstElementChild.children.length && EMPTY_COMMENT_FORM_HEADING_PATTERN.test(text);
+      if (!bareInvitation && !emptyThread && !emptyAction) return;
       removedRoot = removeCleanupNode(root, node) || removedRoot;
     });
     return removedRoot;
