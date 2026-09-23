@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe 'FetchUtil extractor integration for SegmentFault articles' do
+RSpec.describe 'FetchUtil extractor integration for generic publishing articles' do
   include_context 'extractor integration helpers'
 
-  it 'classifies SegmentFault article pages as articles instead of lists' do
+  it 'retains the complete article and source-owned body excerpt without a host profile' do
     html = <<~HTML
       <html lang="zh-CN">
         <head>
@@ -40,13 +40,28 @@ RSpec.describe 'FetchUtil extractor integration for SegmentFault articles' do
       </html>
     HTML
 
-    extract_from_url('https://segmentfault.com/a/1190000047942575', html) do |payload|
+    with_url_page('https://segmentfault.com/a/1190000047942575', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+
       expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('事先声明，用的 ChatGPT 账号不是乱买来的')
-      expect(payload['markdown']).to include('Pro 会员没有立刻恢复')
+      expect(payload['title']).to eq('记录ChatGPT 因为 Cyber Abuse 莫名其妙被封号的解封方案，以及解封后 Pro 会员消失的真相')
+      expect(payload['byline']).to eq('示例作者')
+      expect(payload['publishedTime']).to be_nil
+      expect(payload['excerpt']).to start_with('事先声明，用的 ChatGPT 账号不是乱买来的')
+      expect(payload['excerpt']).not_to include('解封后 Pro 会员消失的真相')
+      [
+        '事先声明，用的 ChatGPT 账号不是乱买来的',
+        '在 6.19 号，我先收到了一个警告邮件',
+        '直到 6.27 我发现 ChatGPT 被退出登录',
+        '打开我的 outlook 邮箱一看',
+        '去查了一下，没人说清楚这个 Cyber Abuse 是什么',
+        '最后账号解封后，Pro 会员没有立刻恢复'
+      ].each { |paragraph| expect(payload['markdown'].scan(paragraph).length).to eq(1) }
       expect(payload['markdown']).not_to include('Apache Doris Python UDF')
       expect(payload['markdown']).not_to include('评论内容不属于正文')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end
