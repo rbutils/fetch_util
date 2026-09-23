@@ -49,7 +49,10 @@
     var missingParagraphChars = paragraphs.reduce(function(total, paragraph) {
       return total + (candidateText.indexOf(paragraph) === -1 ? paragraph.length : 0);
     }, 0);
-    return missingParagraphChars >= 900;
+    if (missingParagraphChars >= 900) return true;
+    // Individually short sections can lose much of a complete fallback body below that threshold.
+    return !content.readerMode && root.querySelectorAll("h1, h2, h3").length >= 3 &&
+      missingParagraphChars >= Math.max(300, paragraphChars * 0.25);
   }
 
   function listCandidateLosesArticleListMaterial(content, candidate) {

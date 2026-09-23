@@ -9,6 +9,7 @@ RSpec.describe "FetchUtil fallback scoring pass" do
                  .reject { |line| line.empty? || line.start_with?("#") }
                  .map { |path| File.read(File.join(root, "websieve", path)) }.join("\n")
     source.sub("})(window);", <<~JAVASCRIPT)
+      global.checkArticleMaterialLoss = listCandidateLosesArticleMaterial;
       global.checkFallbackScoring = function() {
         var best = null;
         genericArticleSelectors().forEach(function(selector) {
@@ -74,6 +75,70 @@ RSpec.describe "FetchUtil fallback scoring pass" do
       result = page.evaluate("checkFallbackScoring()")
       expect(result.fetch("equal")).to be(true)
       expect(result.fetch("html")).to include("Outside body observations")
+    end
+  end
+
+  it "retains source-owned content components while removing actual short widgets" do
+    sections = (1..12).map do |index|
+      <<~HTML
+        <section class="elementor-widget elementor-widget-text-editor">
+          <div class="elementor-widget-container">
+            <h2>Hosting feature #{index}</h2>
+            <p>Source-owned feature details #{index} remain visible here.</p>
+            <a href="/features/#{index}">Feature details #{index}</a>
+          </div>
+        </section>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><body><main><h1>Hosting features</h1>
+        <p>Hosting plans include visible product information and detailed support terms for every customer.</p>
+        #{sections}
+        <figure><figcaption class="widget-image-caption">Visible photograph credit</figcaption></figure>
+        <aside class="widget">Account menu</aside>
+        <div class="widget-quicklinks"><a href="/sign-in">Sign in</a></div>
+        <div class="comment-thread">Unrelated short comment widget</div>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://hosting.example/plans", html) do |page|
+      page.add_script_tag(content: fallback_scoring_source)
+      result = page.evaluate("checkFallbackScoring()")
+      expect(result.fetch("equal")).to be(true)
+      (1..12).each do |index|
+        expect(result.fetch("html")).to include("Hosting feature #{index}", "Source-owned feature details #{index}", "/features/#{index}")
+      end
+      expect(result.fetch("html")).to include("Visible photograph credit")
+      expect(result.fetch("html")).not_to include("Account menu", "Sign in", "Unrelated short comment widget")
+    end
+  end
+
+  it "rejects inferred lists missing a quarter of short sections from a complete fallback" do
+    sections = (1..12).map do |index|
+      <<~HTML
+        <section><h2>Substantive section #{index}</h2>
+          <p>Section #{index} explains implementation, maintenance, security and customer support with independently
+          verifiable details for each aspect of the service, without relying on a linked catalog.</p></section>
+      HTML
+    end.join
+
+    with_url_page("https://hosting.example/plans", "<main><h1>Service plans</h1>#{sections}</main>") do |page|
+      page.add_script_tag(content: fallback_scoring_source)
+      result = page.evaluate(<<~JAVASCRIPT)
+        (() => {
+          const root = document.querySelector('main');
+          const paragraphs = Array.from(root.querySelectorAll('p')).map(node => node.textContent);
+          const article = {contentType: 'article', readerMode: false, html: root.innerHTML, textContent: root.textContent};
+          const list = {contentType: 'list', markdown: paragraphs.slice(0, 8).join(String.fromCharCode(10))};
+          return {
+            missing: checkArticleMaterialLoss(article, list),
+            reader: checkArticleMaterialLoss({...article, readerMode: true}, list),
+            complete: checkArticleMaterialLoss(article,
+              {contentType: 'list', markdown: paragraphs.join(String.fromCharCode(10))})
+          };
+        })()
+      JAVASCRIPT
+      expect(result).to eq("missing" => true, "reader" => false, "complete" => false)
     end
   end
 

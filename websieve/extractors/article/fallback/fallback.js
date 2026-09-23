@@ -172,7 +172,11 @@
   }
 
   function cleanupFallbackArticleChrome(root) {
-    root.querySelectorAll(".comment-thread, [class*='comment-thread' i], .widget, [class*='widget' i], .views-element-container, [class~='comment'], .date-header").forEach(function(node) {
+    var chromeSelector = [".comment-thread", "[class*='comment-thread' i]", ".widget",
+      "[class^='widget-' i]", "[class*=' widget-' i]", ".views-element-container",
+      "[class~='comment']", ".date-header"].join(", ");
+    root.querySelectorAll(chromeSelector).forEach(function(node) {
+      if (node.matches("figcaption, caption")) return;
       var text = normalizeText(node.textContent || "");
       if (!text || text.length < 100 || !node.querySelector("p, article, section, ul, ol, table")) node.remove();
     });
