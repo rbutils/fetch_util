@@ -125,4 +125,40 @@ RSpec.describe 'Adjacent source-owned article headings' do
       expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
     end
   end
+
+  it 'uses the sole visible article heading instead of an unowned site tagline' do
+    html = <<~HTML
+      <html><head><title>Quickstart | Example • Source documentation</title></head><body><main><article>
+        <h1>Quickstart</h1>
+        <p>This first paragraph explains how to install the publishing tool and prepare the first local project with a complete public guide.</p>
+        <p>The next paragraph shows the build command, where to preview the output, and how to publish the finished documentation.</p>
+        <div class="comments">Leave a comment</div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://docs.example/quickstart', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['title']).to eq('Quickstart')
+      expect(payload['markdown']).to start_with("# Quickstart\n")
+      expect(payload['markdown'].scan('how to publish the finished documentation').length).to eq(1)
+    end
+  end
+
+  it 'keeps the full page title when multiple articles make ownership uncertain' do
+    html = <<~HTML
+      <html><head><title>Quickstart | Editorial context</title></head><body><main>
+        <article><h1>Quickstart</h1>
+          <p>The first article describes the project setup and its workflow for readers seeking detailed installation guidance.</p>
+          <p>The next article section describes the available build commands and how to verify the generated site locally.</p>
+        </article>
+        <article><h1>Related report</h1><p>A separate independent article follows with its own public source and story.</p></article>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://docs.example/quickstart', html) do |page|
+      payload = extract_payload(page)
+      expect(payload['title']).to eq('Quickstart | Editorial context')
+    end
+  end
 end

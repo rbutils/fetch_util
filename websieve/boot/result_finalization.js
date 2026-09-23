@@ -129,6 +129,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var primaryTitle = originalPrimaryTitle;
   if (content.contentType === "article" || content.contentType === "medical") {
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
+    primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromSelfLinkedHeading(cleanedHtml, primaryTitle);
     markdown = articleSelfLinkedHeadlineMarkdown(markdown, cleanedHtml, primaryTitle);

@@ -129,6 +129,37 @@ function articleTitleFromOwnedHeading(html, title, siteName) {
   return brand(match[1]) === brand(siteName) ? heading : title;
 }
 
+function articleTitleFromVisibleArticleHeading(html, title) {
+  if (!document.body || !html || !title) return title;
+  var selected = document.createElement("div");
+  selected.innerHTML = html;
+  var selectedArticles = selected.querySelectorAll("article");
+  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("main article"), function(article) {
+    return !elementSubtreeHidden(article) && !article.parentElement.closest("article");
+  });
+  if (selectedArticles.length !== 1 || sourceArticles.length !== 1) return title;
+
+  var source = sourceArticles[0];
+  var article = selectedArticles[0];
+  var heading = source.firstElementChild;
+  if (!heading || !heading.matches("h1") || source.querySelectorAll("h1").length !== 1 ||
+      !article.firstElementChild || !article.firstElementChild.matches("h1") ||
+      article.querySelectorAll("h1").length !== 1 || elementSubtreeHidden(heading)) return title;
+  var headline = normalizeText(heading.textContent || "");
+  var fullTitle = normalizeText(title);
+  if (headline.length < 8 || normalizeText(article.firstElementChild.textContent || "") !== headline ||
+      fullTitle.indexOf(headline) !== 0) return title;
+  var suffix = normalizeText(fullTitle.slice(headline.length));
+  if (!/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
+      normalizeText(source.textContent || "").indexOf(suffix.slice(2)) >= 0) return title;
+  var paragraphs = Array.prototype.map.call(article.querySelectorAll("p"), function(node) {
+    return normalizeText(node.textContent || "");
+  }).filter(function(text) { return text.length >= 60; });
+  if (paragraphs.length < 2) return title;
+  var sourceText = normalizeText(source.textContent || "");
+  return paragraphs.every(function(text) { return sourceText.indexOf(text) !== -1; }) ? headline : title;
+}
+
 function articleTitleFromAdjacentHeading(html, title) {
   if (!document.body || !html || !title) return title;
   var articles = Array.prototype.filter.call(document.querySelectorAll("article"), function(article) {
