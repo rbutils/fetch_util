@@ -1502,42 +1502,42 @@ RSpec.describe "extract asset bundle" do
     direct_tail = manifest.drop(register_index + 1).select do |path|
       File.read(File.join(source_root, path)).match?(/(?:^[ \t]*|;[ \t]*)registerHostAwareProfile\(/)
     end
-    expect(direct_tail).to eq(%w[
-                                profiles/news/global/xinhua.js
-                                profiles/news/middle_east/walla.js
-                                profiles/news/europe/southern/spain/20minutos.js
-                                profiles/news/asia/east/nhk.js
-                                systems/cms/joomla.js
-                                systems/cms/blogger.js
-                                systems/cms/static_ssg.js
-                                systems/cms/ghost.js
-                                systems/cms/wordpress.js
-                                profiles/news/asia/central/azerbaijan/oxu.js
-                                profiles/news/middle_east/almasryalyoum.js
-                                profiles/news/asia/south/pakistan/jang.js
-                                profiles/news/middle_east/skynewsarabia.js
-                                profiles/news/middle_east/turkey/milliyet_live.js
-                                profiles/news/europe/central/aktuality_sk.js
-                                profiles/news/middle_east/turkey/sabah.js
-                                profiles/news/europe/central/poland/interia.js
-                                profiles/news/americas/south/clarin.js
-                                profiles/news/europe/central/hungary/tempo.js
-                                profiles/news/europe/southern/spain/unidad_editorial.js
-                                profiles/news/europe/southern/spain/marca.js
-                                profiles/news/europe/western/germany/faz.js
-                                profiles/news/europe/central/poland/agora_wyborcza.js
-                                profiles/news/europe/central/hungary/index_hu.js
-                                profiles/news/europe/central/czech/root_cz.js
-                                profiles/news/americas/south/brazil/abril.js
-                                profiles/news/asia/east/netease_news.js
-                                profiles/publishing/ameba_blog.js
-                                profiles/news/europe/dnevnik.js
-                                profiles/publishing/segmentfault.js
-                                profiles/news/europe/southern/rcs_corriere.js
-                                profiles/news/europe/western/le_monde.js
-                                profiles/news/europe/central/czech/idnes.js
-                                profiles/publishing/naver_blog.js
-                              ])
+    expected_tail = %w[
+      profiles/news/global/xinhua.js
+      profiles/news/middle_east/walla.js
+      profiles/news/asia/east/nhk.js
+      systems/cms/joomla.js
+      systems/cms/blogger.js
+      systems/cms/static_ssg.js
+      systems/cms/ghost.js
+      systems/cms/wordpress.js
+      profiles/news/asia/central/azerbaijan/oxu.js
+      profiles/news/middle_east/almasryalyoum.js
+      profiles/news/asia/south/pakistan/jang.js
+      profiles/news/middle_east/skynewsarabia.js
+      profiles/news/middle_east/turkey/milliyet_live.js
+      profiles/news/europe/central/aktuality_sk.js
+      profiles/news/middle_east/turkey/sabah.js
+      profiles/news/europe/central/poland/interia.js
+      profiles/news/americas/south/clarin.js
+      profiles/news/europe/central/hungary/tempo.js
+      profiles/news/europe/southern/spain/unidad_editorial.js
+      profiles/news/europe/southern/spain/marca.js
+      profiles/news/europe/western/germany/faz.js
+      profiles/news/europe/central/poland/agora_wyborcza.js
+      profiles/news/europe/central/hungary/index_hu.js
+      profiles/news/europe/central/czech/root_cz.js
+      profiles/news/americas/south/brazil/abril.js
+      profiles/news/asia/east/netease_news.js
+      profiles/publishing/ameba_blog.js
+      profiles/news/europe/dnevnik.js
+      profiles/publishing/segmentfault.js
+      profiles/news/europe/southern/rcs_corriere.js
+      profiles/news/europe/western/le_monde.js
+      profiles/news/europe/central/czech/idnes.js
+      profiles/publishing/naver_blog.js
+    ]
+    expect(direct_tail).to eq(expected_tail)
   end
 
   it "rebuilds deterministically" do

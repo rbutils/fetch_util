@@ -263,7 +263,6 @@ profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/global/xinhua.js
 profiles/news/middle_east/walla.js
-profiles/news/europe/southern/spain/20minutos.js
 profiles/news/asia/east/nhk.js
 systems/cms/joomla.js
 systems/cms/blogger.js
