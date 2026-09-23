@@ -167,7 +167,10 @@
     // with a single publication timestamp (e.g. "Stand: 04:07 Uhr")
     if (formatMarkdown && !timestampedIndexList) {
       var h2Count = (formatMarkdown.match(/^##\s+/gm) || []).length;
-      var timestampCount = (formatMarkdown.match(/\b\d{1,2}[:.]\d{2}\s*(?:Uhr|AM|PM|CET|CEST|UTC|GMT|[A-Z]{2,4}T)?\b/gm) || []).length;
+      // A dotted coin price such as 0.01 is not a time; dotted clocks need a time unit.
+      var clockTimes = formatMarkdown.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/gm) || [];
+      var dottedTimes = formatMarkdown.match(/\b(?:[01]?\d|2[0-3])\.[0-5]\d\s*(?:Uhr|AM|PM|CET|CEST|UTC|GMT)\b/gm) || [];
+      var timestampCount = clockTimes.length + dottedTimes.length;
       if (h2Count >= 6 && timestampCount >= 6) return "liveblog";
     }
 
