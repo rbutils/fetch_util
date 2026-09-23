@@ -1,5 +1,7 @@
-  function fallbackArticleExcerpt(root, text) {
+  function fallbackArticleExcerpt(root, text, metadata) {
     var renderedText = normalizeText(text || "");
+    var repeatedHeadlineLead = fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata);
+    if (repeatedHeadlineLead) return repeatedHeadlineLead;
     function ownedParagraph(node) {
       var value = normalizeText(node.textContent || "");
       if (Array.from(value).length < 80) return false;
@@ -23,6 +25,23 @@
       }
     }
     return Array.from(excerpt).slice(0, 280).join("") || null;
+  }
+
+  function fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata) {
+    if (!root || !root.matches || !root.matches("article") || !metadata || !metadata.siteName) return null;
+    var headline = articleTitleFromOwnedExternalHeading(root.innerHTML, document.title, metadata.siteName);
+    if (headline === normalizeText(document.title || "") || renderedText.indexOf(headline) !== 0) return null;
+
+    var paragraphs = Array.prototype.slice.call(root.querySelectorAll("p"));
+    if (paragraphs.length < 3 || normalizeText(paragraphs[0].textContent || "") !== headline) return null;
+    var prose = paragraphs.slice(1).filter(function(paragraph) {
+      return !paragraph.closest("aside, nav, footer, form, menu, [role='complementary']") &&
+        !paragraph.querySelector("button, input, select, textarea") &&
+        !fallbackExcerptChromeOwner(root, paragraph) && !articleIntroFurniture(paragraph, root);
+    }).map(function(paragraph) { return normalizeText(paragraph.textContent || ""); }).filter(Boolean);
+    if (prose.length < 2) return null;
+    var lead = normalizeText(prose.join(" "));
+    return Array.from(lead).length >= 80 ? Array.from(lead).slice(0, 280).join("") : null;
   }
 
   function fallbackExplicitHeaderLead(node) {

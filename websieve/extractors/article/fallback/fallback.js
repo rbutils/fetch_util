@@ -142,7 +142,7 @@
     return {
       title: document.title,
       byline: null,
-      excerpt: fallbackArticleExcerpt(visibleNode, text),
+      excerpt: fallbackArticleExcerpt(visibleNode, text, metadata),
       siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,
       html: clone.innerHTML,
