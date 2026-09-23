@@ -123,7 +123,7 @@
       while (structuredCurrent && structuredCurrent !== structuredOwner.owner) {
         var structuredSignal = ((structuredCurrent.id || "") + " " + (structuredCurrent.className || ""))
           .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
-        if (/\b(?:article body|article content|story body|entry content|post content|rich text|prose)\b/.test(structuredSignal)) return true;
+        if (/\b(?:article body|article content|detail body|detail content|story body|entry content|post content|rich text|prose)\b/.test(structuredSignal)) return true;
         structuredCurrent = structuredCurrent.parentElement;
       }
       return false;
@@ -135,7 +135,7 @@
       if (current.matches("section")) return true;
       var signal = ((current.id || "") + " " + (current.className || ""))
         .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[^A-Za-z0-9]+/g, " ").toLowerCase();
-      if (!/\b(?:article body|article content|story body|entry content|post content|rich text|prose)\b/.test(signal)) return false;
+      if (!/\b(?:article body|article content|detail body|detail content|story body|entry content|post content|rich text|prose)\b/.test(signal)) return false;
       current = current.parentElement;
     }
     return current === owner;
@@ -222,7 +222,9 @@
     var paragraph = Array.prototype.find.call(template.content.querySelectorAll("p"), function(node) {
       var value = normalizeText(node.textContent || "");
       return node.getAttribute("data-fetchutil-excerpt-body") === marker &&
-        value !== shortExcerpt && readabilityExcerptLength(value) >= 80;
+        value !== shortExcerpt && readabilityExcerptLength(value) >= 80 &&
+        !(readabilityExcerptLength(value) <= 160 &&
+          /\b(?:based on facts|basado en hechos)\b.*\b(?:verified|verificad[oa]s?)\b.*\b(?:journalists?|reporters?|periodistas?)\b/i.test(value));
     });
     return paragraph ? readabilityExcerptPrefix(paragraph.textContent || "") : null;
   }

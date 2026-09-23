@@ -303,4 +303,47 @@ RSpec.describe 'Readability article excerpts' do
       expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
+
+  it 'selects a substantive lead inside detail-body wrappers after a category and editorial note' do
+    lead = 'The wildfire response continues across several regions as crews protect communities and contain the affected area.'
+    later = 'Officials described the response and the continuing work at the scene in detail.' * 6
+    html = <<~HTML
+      <article>
+        <div class="detail-content">
+          <div class="detail-body">
+            <p>National</p><p>News</p>
+            <p>Based on facts observed and verified directly by our journalists.</p>
+            <p>08 Jul 2026</p>
+            <p>#{lead}</p><p>#{later}</p>
+            <section class="related"><p>Unrelated recommendation must not become the excerpt.</p></section>
+          </div>
+        </div>
+      </article>
+    HTML
+
+    with_url_page('https://publisher.example/report', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      page.add_script_tag(content: readability_excerpt_source)
+      values = page.evaluate(<<~JS)
+        (() => {
+          const clone = document.cloneNode(true);
+          const marker = window.__markReadabilityExcerptSources(clone);
+          const article = clone.querySelector('article');
+          return {
+            excerpt: window.__readabilityArticleExcerpt({
+              excerpt: 'National', content: article.outerHTML,
+              textContent: article.textContent
+            }, null, marker),
+            marked: Array.from(article.querySelectorAll('p[data-fetchutil-excerpt-body]'))
+              .map(node => node.textContent.trim())
+          };
+        })()
+      JS
+
+      expect(values.fetch('excerpt')).to eq(lead)
+      expect(values.fetch('marked')).to include(lead, later)
+      expect(values.fetch('marked')).not_to include('Unrelated recommendation must not become the excerpt.')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
 end
