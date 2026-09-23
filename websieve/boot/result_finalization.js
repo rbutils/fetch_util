@@ -130,6 +130,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (content.contentType === "article" || content.contentType === "medical") {
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
+    primaryTitle = articleTitleFromSelfLinkedHeading(cleanedHtml, primaryTitle);
     if (primaryTitle !== originalPrimaryTitle) {
       var removedBrandedHeading = false;
       markdown = markdown.replace(/^#{1,6}[ \t]+([^\n]+)\n?/gm, function(line, heading) {

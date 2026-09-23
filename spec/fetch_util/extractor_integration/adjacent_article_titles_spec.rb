@@ -48,4 +48,49 @@ RSpec.describe 'Adjacent source-owned article headings' do
       expect(payload['title']).to eq(short_title)
     end
   end
+
+  it 'uses a unique self-linked article headline instead of an unrelated blog suffix' do
+    headline = 'Local researchers publish complete transport funding records for every district'
+    html = <<~HTML
+      <html><head><title>#{headline} | Author journal and notebook</title></head><body><main>
+        <article>
+          <h1><a href="/reports/funding-records">#{headline}</a></h1>
+          <p>The first section explains where the public funding originated and how the regional transport team checked the submitted documents.</p>
+          <p>The published records also name each district, the expected completion dates, and the public consultation held before decisions were made.</p>
+          <p>Readers can review the complete report and compare the independent measurements with the ministry's own published timetable.</p>
+        </article>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://journal.example/reports/funding-records', html) do |payload|
+      expect(payload['title']).to eq(headline)
+      expect(payload['markdown']).to include('each district', 'independent measurements')
+    end
+  end
+
+  it 'does not trust a linked heading that points to a different article' do
+    headline = 'Local researchers publish complete transport funding records for every district'
+    html = <<~HTML
+      <html><head><title>#{headline} | Regional research archive</title></head><body><main>
+        <article>
+          <h1><a href="/reports/another-story">#{headline}</a></h1>
+          <p>The complete regional report explains the public funding decisions and offers the original records for review by affected residents.</p>
+          <p>Each section describes the local consultation, the possible route changes, and the dates when the final policy will be announced.</p>
+          <p>Researchers also published independent measurements that readers can compare with the ministry's own report and supporting evidence.</p>
+        </article>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/funding-records', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);'))
+      selected = "<article><h2><a href='/reports/another-story'>#{headline}</a></h2><p>Original article prose.</p></article>"
+      title = "#{headline} | Regional research archive"
+
+      expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+    end
+  end
 end

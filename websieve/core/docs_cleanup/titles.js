@@ -159,6 +159,36 @@ function articleTitleFromAdjacentHeading(html, title) {
   return heading;
 }
 
+function articleTitleFromSelfLinkedHeading(html, title) {
+  if (!document.body || !html || !title) return title;
+  var root = document.createElement("div");
+  root.innerHTML = html;
+  var articles = root.querySelectorAll("article");
+  if (articles.length !== 1) return title;
+  var article = articles[0];
+  var firstHeading = article.querySelector("h1, h2");
+  var link = firstHeading && firstHeading.querySelector("a[href]");
+  if (!link || firstHeading !== article.firstElementChild) return title;
+  var heading = normalizeText(link.textContent || "");
+  var fullTitle = normalizeText(title);
+  if (heading.length < 35 || fullTitle.indexOf(heading) !== 0) return title;
+  var suffix = normalizeText(fullTitle.slice(heading.length));
+  if (!/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
+      normalizeText(article.textContent || "").indexOf(suffix.slice(2)) >= 0) return title;
+
+  var ownerLinks = Array.prototype.filter.call(document.querySelectorAll("article h1 a[href], article h2 a[href]"), function(candidate) {
+    if (elementSubtreeHidden(candidate) || normalizeText(candidate.textContent || "") !== heading) return false;
+    var owner = candidate.closest("article");
+    if (!owner || owner.querySelectorAll("p").length < 3 || owner.querySelector("h1, h2") !== candidate.parentElement) return false;
+    var url = materializedHttpUrl(candidate.getAttribute("href"));
+    if (!url) return false;
+    var destination = new URL(url);
+    return destination.origin === location.origin && destination.pathname === location.pathname &&
+      destination.search === location.search;
+  });
+  return ownerLinks.length === 1 ? heading : title;
+}
+
 function compactReferenceText(text) {
   return normalizeText(text || "")
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")
