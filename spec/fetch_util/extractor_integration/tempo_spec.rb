@@ -39,20 +39,36 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     url = 'https://www.tempo.co/ekonomi/aturan-anti-deforestasi-eropa-eudr-ekspor-indonesia-2273962'
 
-    extract_from_url(url, html) do |payload|
+    with_url_page(url, html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+
       expect(payload['contentType']).to eq('article')
-      expect(payload['markdown']).to include('PRODUSEN makanan dan minuman masih menunggu kepastian')
-      expect(payload['markdown']).to include('Pemerintah diminta mempercepat sistem pendataan')
+      expect(payload).to include('title' => 'Seberapa Berat Memenuhi Aturan Antideforestasi Eropa',
+                                 'readerMode' => true, 'hostAware' => false)
+      expect(payload['excerpt']).to start_with('PRODUSEN makanan dan minuman masih menunggu kepastian')
+      expect(payload['excerpt']).to end_with('pada akhir 2026.')
+      expect(payload['excerpt']).not_to include('Tempo/M Taufan Rengganis')
+      paragraphs = [
+        'PRODUSEN makanan dan minuman masih menunggu kepastian',
+        'Mereka belum mendapatkan kepastian agar produk-produknya',
+        'Ketentuan itu mengharuskan pelaku usaha membuktikan',
+        'Kalangan industri menyatakan penelusuran asal-usul bahan baku',
+        'Pemerintah diminta mempercepat sistem pendataan'
+      ]
+      positions = paragraphs.map do |text|
+        expect(payload['markdown'].scan(text).length).to eq(1)
+        payload['markdown'].index(text)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(payload['markdown'].scan('Tempo/M Taufan Rengganis').length).to eq(1)
       expect(payload['markdown']).not_to include('Purbaya Prediksi Defisit APBN')
       expect(payload['markdown']).not_to include('Maxim Indonesia')
       expect(payload['markdown']).not_to include('MSCI Ubah Bobot')
       expect(payload['markdown']).not_to include('Baca juga berita ekonomi lainnya')
-      expect(payload['markdown']).not_to include('Dengarkan artikel')
-      expect(payload['markdown']).not_to include('Bagikan')
-      expect(payload['warnings']).not_to include('empty_extraction')
-      expect(payload['warnings']).not_to include('short_extraction')
-      expect(payload['warnings']).not_to include('url_content_mismatch')
-      expect(payload['warnings']).not_to include('consent_interstitial')
+      expect(payload['markdown']).not_to include('Tampilkan Ringkasan Artikel', 'Dengarkan artikel', 'Bagikan')
+      expect(payload['warnings']).to eq([])
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end
