@@ -137,6 +137,16 @@
     return removedRoot;
   }
 
+  function stripCommentSubscriptionPrompt(root) {
+    cleanupMatchesIncludingRoot(root, "div.comments, section.comments, div.comentarios, section.comentarios").forEach(function(node) {
+      if (node.closest("[data-fetchutil-social-comment]") ||
+          node.querySelector("p, article, blockquote, a[href], img, video, audio, ul, ol, pre, code")) return;
+      var text = normalizeText(node.textContent || "");
+      if (text.length > 160) return;
+      if (/^(?:comentarios|comments)\s+(?:suscr[ií]b[ei]te para comentar|subscribe to comment|sign in to comment)\b.*(?:ya tengo suscripci[oó]n|already subscribed|log in|sign in)$/i.test(text)) node.remove();
+    });
+  }
+
   function cleanupAgentRoot(root) {
     cleanupCookieChrome(root);
     stripInlineConsentPrompts(root);
@@ -147,6 +157,7 @@
       el.remove();
     });
     stripEmptyCommentUi(root);
+    stripCommentSubscriptionPrompt(root);
 
     stripShortRecommendationFurniture(root);
 

@@ -79,6 +79,20 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     end
   end
 
+  it 'removes only a compact comment subscription prompt, not published replies' do
+    prompt = <<~HTML
+      <div class="comments">Comentarios SUSCRIBITE PARA COMENTAR YA TENGO SUSCRIPCIÓN</div>
+      <section class="comments"><article itemprop="comment"><p>A published reply supplies a substantive correction to the source record.</p></article></section>
+    HTML
+
+    extract_comment_cleanup(prompt) do |payload, after, before|
+      expect(payload.fetch('markdown')).not_to include('SUSCRIBITE PARA COMENTAR', 'YA TENGO SUSCRIPCIÓN')
+      expect(payload.fetch('markdown')).to include('A published reply supplies a substantive correction')
+      expect(payload.fetch('markdown')).to include('Verified report paragraph 1')
+      expect(after).to eq(before)
+    end
+  end
+
   it 'preserves nonempty continuation controls and actual comment or reply content' do
     controls = <<~HTML
       <div class="more-comments-button"><a href="/comments">Other comments (3)</a></div>
