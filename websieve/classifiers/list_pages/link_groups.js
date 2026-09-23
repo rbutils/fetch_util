@@ -44,12 +44,49 @@
     return destinations.size >= 2 ? { card: group, label: normalizeText(headings[0].textContent) } : null;
   }
 
+  function genericListSamePathQueryGroup(link) {
+    var row = link.closest("li, [role='listitem']");
+    var collection = row && row.parentElement;
+    if (!collection || !collection.matches("ul, ol, [role='list']") ||
+        !collection.previousElementSibling ||
+        !collection.previousElementSibling.matches("h1, h2, h3, h4, [role='heading']") ||
+        !normalizeText(collection.previousElementSibling.textContent) ||
+        listChromeNode(collection) || listNoiseNode(collection)) return null;
+
+    var rows = Array.from(collection.children).filter(function(child) {
+      return child.matches("li, [role='listitem']") && !elementSubtreeHidden(child);
+    });
+    if (rows.length < 4 || rows.indexOf(row) < 0) return null;
+
+    var destinations = new Set();
+    var complete = rows.every(function(child) {
+      if (listChromeNode(child) || child.querySelector("ul, ol, [role='list']")) return false;
+      var links = Array.from(child.querySelectorAll("a[href]")).filter(function(anchor) {
+        return !elementSubtreeHidden(anchor);
+      });
+      if (links.length !== 1 || !normalizeText(links[0].textContent) ||
+          normalizeText(child.textContent) !== normalizeText(links[0].textContent)) return false;
+
+      var url = materializedHttpUrl(links[0].getAttribute("href"));
+      if (!url || listCanonicalKey(url) === listCanonicalKey(location.href)) return false;
+      var parsed = new URL(url, location.href);
+      if (parsed.origin !== location.origin || parsed.pathname !== location.pathname || !parsed.search) return false;
+      var key = listCanonicalKey(url);
+      if (destinations.has(key)) return false;
+      destinations.add(key);
+      return true;
+    });
+    return complete ? { card: row, label: "" } : null;
+  }
+
   function genericListLinkGroup(link, cache) {
     if (!link || !materializedHttpUrl(link.getAttribute("href")) || elementSubtreeHidden(link)) return null;
     if (link.closest("header, footer, nav, aside, menu, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar'], [role='banner'], [role='complementary'], [role='contentinfo']")) return null;
     if (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
     var described = genericListDescribedLinkGroup(link);
     if (described) return described;
+    var queryCollection = genericListSamePathQueryGroup(link);
+    if (queryCollection) return queryCollection;
 
     var collection = genericListContextCard(closestGenericListCard(link));
     if (!collection) return genericListPlainLinkGroup(link, cache);

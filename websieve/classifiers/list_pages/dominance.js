@@ -146,7 +146,7 @@
     var path = matchInfo.path;
     var containerNoise = listNoiseNode(container);
 
-    if (url.replace(/[?#].*$/, "") === context.currentUrl) return -Infinity;
+    if (listCanonicalKey(url) === listCanonicalKey(location.href)) return -Infinity;
     if (containerNoise && listNoiseNode(container && container.parentElement) &&
         !matchInfo.keywordMatches && !matchInfo.sectionMatches) return -Infinity;
     if (container && container.matches("article, section, li")) score += 120;
@@ -193,7 +193,7 @@
       } catch (_error) {
         return null;
       }
-      if (url.replace(/[?#].*$/, "") === context.currentUrl) return null;
+      if (listCanonicalKey(url) === listCanonicalKey(location.href)) return null;
     }
     if (genericListControlText(text)) return null;
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;

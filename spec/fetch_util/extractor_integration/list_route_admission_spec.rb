@@ -63,7 +63,18 @@ RSpec.describe 'Generic list route admission' do
       'https://publisher.example:8443/archive'
     ]
 
-    expect(admitted_route_urls(urls.map { |url| { url: url } })).to eq([urls[0], nil, nil, urls[3], urls[4]])
+    expect(admitted_route_urls(urls.map { |url| { url: url } })).to eq([urls[0], nil, urls[2], urls[3], urls[4]])
+  end
+
+  it 'rejects fragment and tracking-only self-links while admitting distinct query records' do
+    urls = [
+      'https://publisher.example/archive#overview',
+      'https://publisher.example/archive?utm_source=sidebar',
+      'https://publisher.example/archive?search=field',
+      'https://publisher.example/archive?search=other'
+    ]
+
+    expect(admitted_route_urls(urls.map { |url| { url: url } })).to eq([nil, nil, urls[2], urls[3]])
   end
 
   it 'applies weather and programme route exclusions only to their paths' do
