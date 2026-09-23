@@ -93,6 +93,25 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     end
   end
 
+  it 'removes a text-only comment form invitation while retaining real replies' do
+    comment_ui = <<~HTML
+      <div class="comments">Leave a comment</div>
+      <section class="comments">
+        <article itemprop="comment"><p>A published reply supplies a correction to the public report.</p></article>
+      </section>
+      <div class="comments"><p>A real comment can quote the phrase Leave a comment.</p></div>
+    HTML
+
+    extract_comment_cleanup(comment_ui) do |payload, after, before|
+      expect(payload.fetch('markdown')).not_to include("\nLeave a comment\n")
+      expect(payload.fetch('html')).not_to include('<div class="comments">Leave a comment</div>')
+      expect(payload.fetch('textContent')).not_to start_with('Leave a comment')
+      expect(payload.fetch('markdown')).to include('A published reply supplies a correction')
+      expect(payload.fetch('markdown')).to include('A real comment can quote the phrase Leave a comment.')
+      expect(after).to eq(before)
+    end
+  end
+
   it 'preserves nonempty continuation controls and actual comment or reply content' do
     controls = <<~HTML
       <div class="more-comments-button"><a href="/comments">Other comments (3)</a></div>

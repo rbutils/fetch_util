@@ -134,6 +134,11 @@
       var emptyWrapper = !normalizeText(node.textContent || "") && !node.querySelector("*");
       if (formUi || emptyWrapper) removedRoot = removeCleanupNode(root, node) || removedRoot;
     });
+    cleanupMatchesIncludingRoot(root, "div.comments, section.comments").forEach(function(node) {
+      if (node.closest("[data-fetchutil-social-comment]") || node.children.length) return;
+      if (!EMPTY_COMMENT_FORM_HEADING_PATTERN.test(normalizeText(node.textContent || ""))) return;
+      removedRoot = removeCleanupNode(root, node) || removedRoot;
+    });
     return removedRoot;
   }
 
