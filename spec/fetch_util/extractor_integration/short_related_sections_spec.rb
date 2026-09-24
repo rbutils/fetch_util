@@ -71,6 +71,8 @@ RSpec.describe 'Short related-story sections' do
         <ul><li>First trending story</li></ul>
         <h2>Leia mais sobre o financiamento público</h2>
         <p>This editorial section explains the legal framework behind the funding and remains part of the focal report.</p>
+        <h2>References</h2>
+        <ol><li>A historical announcement archived by Business Wire documents the implementation milestone.</li></ol>
       </article></main></body></html>
     HTML
 
@@ -85,7 +87,8 @@ RSpec.describe 'Short related-story sections' do
         'Leia mais sobre o financiamento público',
         'legal framework behind the funding',
         'focal report continues after the related links',
-        'Auditors will compare the published measurements'
+        'Auditors will compare the published measurements',
+        'Business Wire documents the implementation milestone'
       )
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end

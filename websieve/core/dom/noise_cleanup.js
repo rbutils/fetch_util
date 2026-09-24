@@ -210,7 +210,7 @@
         totalText += normalizeText(el.textContent || "").length;
       });
       // Require at least 2 links and either link-dense content or short total text
-      var compactList = toRemove.length === 1 && toRemove[0].matches("ul, ol") &&
+      var compactList = /^em\s+alta:?$/i.test(text) && toRemove.length === 1 && toRemove[0].matches("ul, ol") &&
         toRemove[0].querySelectorAll("li").length >= 1 && totalText < 500;
       if ((totalLinks >= 2 && (totalText < 1500 || totalLinks >= 4)) || compactList) {
         heading.remove();
