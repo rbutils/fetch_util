@@ -108,6 +108,7 @@
   function crediblePortalRootListContent(metadata, content) {
     if (!document.body) return null;
     if (content && content.contentType !== "article" && content.contentType !== "list") return null;
+    if (completeCodeReferenceArticle(content)) return null;
     if (content && content.contentType === "list") {
       if (!homepageRootPath()) return null;
       if (content.docsLike) return null;

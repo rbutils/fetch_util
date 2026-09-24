@@ -57,6 +57,51 @@
     return candidate;
   }
 
+  function completeCodeReferenceArticle(content) {
+    if (!document.body || !content || content.contentType !== "article" || !content.readerMode ||
+        !content.html || homepageRootPath() ||
+        !/(?:^|\/)(?:api|reference|docs?|guides?)(?:\/|$)/i.test(location.pathname || "")) return false;
+
+    var sourceExamples = Array.from(document.body.querySelectorAll("pre"));
+    if (sourceExamples.length < 3) return false;
+    var owner = sourceExamples[0].closest("main, article, [role='main'], [id*='content' i], [class*='content' i]");
+    if (!owner || elementSubtreeHidden(owner) || owner.querySelectorAll("pre").length !== sourceExamples.length) return false;
+
+    var sourceHeadings = Array.from(owner.querySelectorAll("h1, h2, h3")).filter(function(heading) {
+      return !elementSubtreeHidden(heading) && normalizeText(heading.textContent);
+    });
+    var sourceParagraphs = Array.from(owner.querySelectorAll("p")).filter(function(paragraph) {
+      return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent).length >= 80;
+    });
+    if (sourceHeadings.length < 3 || sourceParagraphs.length < 3) return false;
+
+    var sourceText = normalizeText(owner.textContent || "");
+    var linkTextLength = Array.from(owner.querySelectorAll("a[href]")).reduce(function(total, link) {
+      return total + normalizeText(link.textContent || "").length;
+    }, 0);
+    if (sourceText.length < 1500 || linkTextLength / sourceText.length >= 0.25) return false;
+
+    var selected = document.createElement("div");
+    selected.innerHTML = content.html;
+    var selectedExamples = selected.querySelectorAll("pre");
+    var selectedHeadings = Array.from(selected.querySelectorAll("h1, h2, h3")).map(function(heading) {
+      return normalizeText(heading.textContent || "");
+    });
+    if (selectedExamples.length !== sourceExamples.length ||
+        !sourceHeadings.every(function(heading) {
+          return selectedHeadings.indexOf(normalizeText(heading.textContent || "")) >= 0;
+        })) return false;
+
+    var selectedText = normalizeText(selected.textContent || "");
+    if (!selectedText.includes(normalizeText(sourceParagraphs[0].textContent || "")) ||
+        !selectedText.includes(normalizeText(sourceParagraphs[sourceParagraphs.length - 1].textContent || ""))) return false;
+    return [0, sourceExamples.length - 1].every(function(index) {
+      var original = normalizeText(sourceExamples[index].textContent || "");
+      var retained = normalizeText(selectedExamples[index].textContent || "");
+      return retained && original.includes(retained) && retained.length >= original.length * 0.5;
+    });
+  }
+
   function instructionalArticleRoot(source, clone) {
     if (!source.matches("main, article, section, div, [role='main']") ||
         source.closest("nav, header, footer, aside, form, [role='navigation'], [role='complementary']")) return false;
