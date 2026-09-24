@@ -98,6 +98,56 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps a required-cookie gate and every visible choice when public content is absent" do
+    controls = (1..12).map { |index| format('Agree with preference %02d', index) }
+    html = <<~HTML
+      <html><head><title>Protein record</title></head><body><div id="root">
+        <header><a href="/blast">BLAST</a><a href="/align">Align</a></header>
+        <div class="gdpr-section">
+          This website requires cookies, and the limited processing of your personal data in order to function.
+          By using the site you are agreeing to this as outlined in our <a href="/privacy">Privacy Notice</a>.
+          #{controls.map { |control| "<button>#{control}</button>" }.join}
+        </div>
+      </div></body></html>
+    HTML
+
+    with_url_page('https://proteins.example.test/uniprotkb/P04637', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect_content_type(payload, 'interstitial')
+      expect_warnings(payload, include: %w[consent_interstitial])
+      expect(payload['markdown']).to include('This website requires cookies')
+      expect(payload['markdown']).to include('[Privacy Notice](https://proteins.example.test/privacy)')
+      positions = controls.map do |control|
+        expect(payload['markdown'].scan(control).size).to eq(1)
+        payload['markdown'].index(control)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it "keeps a substantial public article despite an incidental required-cookie notice" do
+    paragraphs = (1..12).map do |index|
+      "<p>Published section #{index} provides independent source facts and a complete paragraph about this public article.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Open protein research</title></head><body>
+        <div class="gdpr-section">This website requires cookies to function.
+          <button>Agree and dismiss</button></div>
+        <main><article><h1>Open protein research</h1>#{paragraphs}</article></main>
+      </body></html>
+    HTML
+
+    with_url_page('https://proteins.example.test/research/open-proteins', html) do |page|
+      payload = extract_payload(page)
+      expect_content_type(payload, 'article')
+      (1..12).each { |index| expect(payload['markdown']).to include("Published section #{index}") }
+      expect_warnings(payload, exclude: %w[consent_interstitial])
+    end
+  end
+
   it "does not treat long article pages as cookie-led consent walls" do
     html = <<~HTML
       <html>

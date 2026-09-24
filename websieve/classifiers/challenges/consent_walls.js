@@ -32,6 +32,21 @@ function addConsentSummaryItem(items, seen, text, limit) {
   items.push(text);
 }
 
+function requiredCookieGateOwner() {
+  if (!document.body || substantialPublicPage(document.body.textContent || "")) return null;
+  return Array.prototype.find.call(document.querySelectorAll(
+    "[class*='gdpr' i], [class*='cookie-banner' i], [class*='consent-banner' i], [role='dialog']"
+  ), function(node) {
+    if (elementSubtreeHidden(node) || node.closest("nav, header, footer, aside") ||
+        node.querySelector("article, main, [role='main']")) return false;
+    var text = normalizeText(node.textContent || "");
+    if (text.length < 40 || text.length > 800 || !/\b(?:requires?|must)\s+cookies?\b/i.test(text)) return false;
+    return Array.prototype.some.call(node.querySelectorAll("button, [role='button']"), function(control) {
+      return !elementSubtreeHidden(control) && /\b(?:agree|accept|dismiss|close|continue)\b/i.test(control.textContent || "");
+    });
+  }) || null;
+}
+
 function consentSummaryParts() {
   var seen = {};
   var headings = [];
@@ -61,6 +76,13 @@ function consentSummaryParts() {
     if (!/(accept|reject|decline|manage|options|settings|choices|privacy|cookies?|consent|allow|agree|continue|more|customize|save|confirm|necessary|essential|preferences|alles|tout|todas?|todos?|rifiuta|rejeitar|weigeren|afvis|hylkää|odmítnout|noraidīt|elutasítás|elutasítom)/i.test(text)) return;
     addConsentSummaryItem(controls, seen, "Control: " + text, 100);
   });
+
+  var requiredGate = requiredCookieGateOwner();
+  if (requiredGate) {
+    var notice = requiredGate.cloneNode(true);
+    notice.querySelectorAll("button, [role='button']").forEach(function(control) { control.remove(); });
+    addConsentSummaryItem(paragraphs, seen, cleanupMarkdownNoise(markdownFor(notice.outerHTML)), 800);
+  }
 
   var mainParagraph = paragraphs.find(function(text) {
     return text.length >= 40 && /(cookies?|data|privacy|personal|ads?|content|services|device|information|partners?|consent)/i.test(text);
@@ -191,6 +213,7 @@ function consentWallPage(title, page) {
   var cookieLeadPattern = consentKeywordLeadPattern();
   if (/^before you continue to (google|youtube)\b/.test(normalizedTitle)) return true;
   if (/before you continue to (google|youtube)/.test(normalizedPage) && /accept all|reject all|more options|we use cookies and data/.test(normalizedPage)) return true;
+  if (requiredCookieGateOwner()) return true;
   if (!consentWallDominates(normalizedPage)) return false;
 
   return cookiePattern.test(normalizedTitle) || cookieLeadPattern.test(normalizedPage);
