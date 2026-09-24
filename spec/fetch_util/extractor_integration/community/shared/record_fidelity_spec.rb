@@ -100,6 +100,7 @@ RSpec.describe 'FetchUtil community record fidelity' do
     extract_from_url('https://www.reddit.com/r/ruby/', html) do |payload|
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'feed', 'community' => 'r/ruby')
       expect(payload['publishedTime']).to be_nil
+      expect(payload['excerpt']).to eq('Community report 01')
       labels = (1..3).map { |index| format('Community report %02d', index) }
       positions = labels.map do |label|
         expect(payload['markdown'].scan(label).length).to be >= 1

@@ -104,6 +104,9 @@
       if (!repeatedSignatures.length) return null;
 
       var author = normalizeText(authorLink.innerText || "");
+      var firstRecord = socialPostRecordNodes(owner).find(function(node) {
+        return repeatedSignatures.indexOf(socialPostRecordSignature(node)) !== -1;
+      });
       return {
         author: author || null,
         community: route ? null : community,
@@ -111,6 +114,7 @@
         itemCount: Math.max.apply(null, repeatedSignatures.map(function(signature) { return signatures[signature]; })),
         kind: route ? "post" : "feed",
         owner: owner,
+        firstRecordTitle: firstRecord && firstTextFromNode(firstRecord, ["[slot='title']", "h1", "h2", "h3"]),
         title: route ? null : firstTextFromNode(owner, ["h1", "h2"])
       };
     }).filter(Boolean);
@@ -193,7 +197,7 @@
     return {
       title: evidence.kind === "feed" ? metadata.title || evidence.title : evidence.title || evidence.author || metadata.title,
       byline: evidence.kind === "feed" ? metadata.byline : evidence.author || metadata.byline,
-      excerpt: metadata.excerpt || text.slice(0, 280),
+      excerpt: (evidence.kind === "feed" && evidence.firstRecordTitle) || metadata.excerpt || text.slice(0, 280),
       siteName: metadata.siteName,
       publishedTime: evidence.kind === "feed" ? null : metadata.publishedTime || firstTextFromNode(evidence.owner, ["time", ".time"]),
       canonicalUrl: metadata.canonicalUrl,
