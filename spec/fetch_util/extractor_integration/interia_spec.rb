@@ -57,18 +57,24 @@ RSpec.describe 'FetchUtil extractor integration for Interia articles' do
 
     url = 'https://wydarzenia.interia.pl/kraj/news-polska-podpisala-porozumienie-ws-patriotow-bardzo-sie-myla,nId,23510737'
 
-    extract_from_url(url, html) do |payload|
+    with_url_page(url, html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
       expect_content_type(payload, 'article')
+      expect(payload).to include('readerMode' => true, 'hostAware' => false, 'warnings' => [])
+      expect(payload['excerpt']).to eq(
+        'Polska podpisała porozumienie z USA, Niemcami, Holandią oraz Szwecją w sprawie ' \
+        'utworzenia w Europie centrum serwisowania pocisków PAC-3 do systemów Patriot.'
+      )
       expect(payload['markdown']).to include('Polska podpisała porozumienie z USA, Niemcami, Holandią oraz Szwecją')
       expect(payload['markdown']).to include('udowadniamy, jak bardzo się mylą')
       expect(payload['markdown']).to include('Podczas szczytu NATO podpisywane są też dokumenty')
-      expect(payload['markdown']).not_to include('Lubię to')
-      expect(payload['markdown']).not_to include('like.svg')
-      expect(payload['markdown']).not_to include('Odsłuchaj artykuł')
-      expect(payload['markdown']).not_to include('Audio generowane przez AI')
-      expect(payload['markdown']).not_to include('Zobacz również')
-      expect(payload['markdown']).not_to include('REKLAMA')
-      expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial multi_topic_page])
+      expect(payload.values_at('markdown', 'html').join).not_to include(
+        'Lubię to', 'like.svg', 'Zły', 'angry.svg', 'Odsłuchaj artykuł',
+        'Audio generowane przez AI', 'Zobacz również', 'Przełom ws. rakiet Patriot', 'REKLAMA'
+      )
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end
