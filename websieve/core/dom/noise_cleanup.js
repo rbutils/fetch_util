@@ -196,6 +196,8 @@
         // Stop if we hit another heading at the same or higher level (don't over-strip)
         var siblingTag = sibling.tagName;
         if (/^H[1-4]$/.test(siblingTag) && !RELATED_SECTION_HEADING_PATTERN.test(normalizeText(sibling.textContent || "").trim())) break;
+        if (sibling.matches("p, blockquote") && normalizeText(sibling.textContent || "").length >= 80 &&
+            !sibling.querySelector("a[href]")) break;
         toRemove.push(sibling);
         sibling = sibling.nextElementSibling;
       }
@@ -208,7 +210,9 @@
         totalText += normalizeText(el.textContent || "").length;
       });
       // Require at least 2 links and either link-dense content or short total text
-      if (totalLinks >= 2 && (totalText < 1500 || totalLinks >= 4)) {
+      var compactList = toRemove.length === 1 && toRemove[0].matches("ul, ol") &&
+        toRemove[0].querySelectorAll("li").length >= 1 && totalText < 500;
+      if ((totalLinks >= 2 && (totalText < 1500 || totalLinks >= 4)) || compactList) {
         heading.remove();
         toRemove.forEach(function(el) { el.remove(); });
       }

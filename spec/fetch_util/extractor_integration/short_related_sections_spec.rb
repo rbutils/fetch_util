@@ -65,8 +65,10 @@ RSpec.describe 'Short related-story sections' do
         <p>Independent auditors will publish quarterly measurements so residents can review the program's progress.</p>
         <h2>LEIA MAIS</h2>
         <ul><li><a href='/related/one'>First unrelated story</a></li><li><a href='/related/two'>Second unrelated story</a></li></ul>
+        <p>The focal report continues after the related links with substantive evidence about the implementation timetable and the clinics receiving support.</p>
+        <p>Auditors will compare the published measurements with the original commitments before the program enters its second year.</p>
         <h2>EM ALTA</h2>
-        <ul><li><a href='/popular/one'>First trending story</a></li><li><a href='/popular/two'>Second trending story</a></li></ul>
+        <ul><li>First trending story</li></ul>
         <h2>Leia mais sobre o financiamento público</h2>
         <p>This editorial section explains the legal framework behind the funding and remains part of the focal report.</p>
       </article></main></body></html>
@@ -79,8 +81,12 @@ RSpec.describe 'Short related-story sections' do
       expect(payload.fetch('markdown')).not_to include(
         'LEIA MAIS', 'EM ALTA', 'First unrelated story', 'First trending story'
       )
-      expect(payload.fetch('markdown')).to include('Leia mais sobre o financiamento público',
-                                                   'legal framework behind the funding')
+      expect(payload.fetch('markdown')).to include(
+        'Leia mais sobre o financiamento público',
+        'legal framework behind the funding',
+        'focal report continues after the related links',
+        'Auditors will compare the published measurements'
+      )
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
