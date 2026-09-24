@@ -4,7 +4,11 @@
     if (repeatedHeadlineLead) return repeatedHeadlineLead;
     function ownedParagraph(node) {
       var value = normalizeText(node.textContent || "");
-      if (Array.from(value).length < 80) return false;
+      var characters = Array.from(value).length;
+      var minimum = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(value) ? 40 : 80;
+      if (characters < minimum) return false;
+      var headings = document.querySelectorAll("h1");
+      if (headings.length === 1 && normalizeText(headings[0].textContent || "") === value) return false;
       if (node.matches("[itemprop~='description']") && node.querySelector("p, [itemprop~='description']")) return false;
       if (node.closest("address, nav, footer, aside, form, menu, [role='banner'], [role='navigation'], [role='complementary'], [role='menu'], [role='toolbar'], [role='contentinfo'], [role='search']")) return false;
       if (node.closest("header") && !fallbackExplicitHeaderLead(node)) return false;
