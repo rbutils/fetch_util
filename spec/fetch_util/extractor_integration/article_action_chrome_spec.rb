@@ -119,4 +119,26 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'removes whole-line Turkish follow and app prompts without deleting editorial prose' do
+    html = article_with_actions(
+      toolbar: '',
+      promotion: <<~HTML,
+        <p>Google Haberler'de tüm gelişmeleri tek kaynakta görmek için Gazete'yi takip edin.</p>
+        <p>gazete.example Uygulamamızı İndirin</p>
+        <p>Editörler Google Haberler ve mobil uygulamaların haber dağıtımına etkisini karşılaştırdı.</p>
+      HTML
+      comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect(payload.fetch('markdown')).not_to include("Gazete'yi takip edin", 'Uygulamamızı İndirin')
+      expect(payload.fetch('markdown')).to include('Editörler Google Haberler ve mobil uygulamaların haber dağıtımına etkisini karşılaştırdı.')
+      expect(payload.fetch('markdown')).to include('first report paragraph', 'third report paragraph')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

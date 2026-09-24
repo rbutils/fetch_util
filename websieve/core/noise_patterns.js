@@ -79,7 +79,8 @@
     "registrera dig", "følg os", "abonner", "tilmeld dig", "følg oss", "abonner på", "meld deg på", "registrer deg", "subscriu-te",
     "fes-te subscriptor", "fes-te'n subscriptor", "გამოიწერეთ", "შემოგვიერთდით", "მოგვყევით", "අපව අනුගමනය කරන්න",
     "bizə qoşulun", "abunə olun", "bizi izləyin", "subskrybuj", "zasubskrybuj", "zapisz się na newsletter", "dołącz do nas",
-    "obserwuj nas", "śledź nas"
+    "obserwuj nas", "śledź nas", "google haberler(?:'|’)de tüm gelişmeleri tek kaynakta görmek için .{1,80}(?:'|’)(?:y)?(?:ı|i|u|ü) takip edin\\.?",
+    "(?:[a-z0-9.-]+\\s+)?uygulamamızı indirin"
   ];
 
   var NOISE_MARKDOWN_SOCIAL_CTA_SOURCES = [
@@ -95,7 +96,9 @@
   var NOISE_MARKDOWN_SOCIAL_APP_CTA_LINE_SOURCES = [
     "(?:Join|Follow)\\s+(?:us\\s+)?on\\s+(?:Telegram|WhatsApp|Instagram|Facebook|YouTube|Twitter|X)",
     "(?:Join|Follow)\\s+(?:our\\s+)?(?:Telegram|WhatsApp)\\s+(?:Group|Channel)",
-    "(?:Download|Get|Install)\\s+(?:our|the)\\s+(?:App|Mobile App)"
+    "(?:Download|Get|Install)\\s+(?:our|the)\\s+(?:App|Mobile App)",
+    "Google Haberler(?:'|’)de tüm gelişmeleri tek kaynakta görmek için .{1,80}(?:'|’)(?:y)?(?:ı|i|u|ü) takip edin\\.?",
+    "(?:[A-Za-z0-9.-]+\\s+)?Uygulamamızı İndirin"
   ];
 
   var NOISE_INLINE_CONSENT_PROMPT_SOURCES = [
