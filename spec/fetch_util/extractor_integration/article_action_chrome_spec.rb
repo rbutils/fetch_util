@@ -138,6 +138,8 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(payload.fetch('markdown')).not_to include("Gazete'yi takip edin", 'Uygulamamızı İndirin')
       expect(payload.fetch('markdown')).to include('Editörler Google Haberler ve mobil uygulamaların haber dağıtımına etkisini karşılaştırdı.')
       expect(payload.fetch('markdown')).to include('first report paragraph', 'third report paragraph')
+      expect(payload.fetch('html')).not_to include("Gazete'yi takip edin", 'Uygulamamızı İndirin')
+      expect(payload.fetch('html')).to include('Editörler Google Haberler ve mobil uygulamaların haber dağıtımına etkisini karşılaştırdı.')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end

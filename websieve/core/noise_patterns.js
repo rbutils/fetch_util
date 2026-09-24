@@ -80,7 +80,7 @@
     "fes-te subscriptor", "fes-te'n subscriptor", "გამოიწერეთ", "შემოგვიერთდით", "მოგვყევით", "අපව අනුගමනය කරන්න",
     "bizə qoşulun", "abunə olun", "bizi izləyin", "subskrybuj", "zasubskrybuj", "zapisz się na newsletter", "dołącz do nas",
     "obserwuj nas", "śledź nas", "google haberler(?:'|’)de tüm gelişmeleri tek kaynakta görmek için .{1,80}(?:'|’)(?:y)?(?:ı|i|u|ü) takip edin\\.?",
-    "(?:[a-z0-9.-]+\\s+)?uygulamamızı indirin"
+    "(?:[a-z0-9.-]+\\s+)?uygulamamızı [iİ]ndirin"
   ];
 
   var NOISE_MARKDOWN_SOCIAL_CTA_SOURCES = [

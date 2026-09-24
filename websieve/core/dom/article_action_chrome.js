@@ -1,10 +1,11 @@
   function articleActionSourceOwner(root) {
-    if (!document.body || root.querySelectorAll("h1").length !== 1) return null;
+    if (!document.body || root.querySelectorAll("h1").length > 1) return null;
     var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
       return !elementSubtreeHidden(heading);
     });
-    if (headings.length !== 1 ||
-        normalizeText(headings[0].textContent) !== normalizeText(root.querySelector("h1").textContent)) return null;
+    var selectedHeading = root.querySelector("h1");
+    if (headings.length !== 1 || (selectedHeading &&
+        normalizeText(headings[0].textContent) !== normalizeText(selectedHeading.textContent))) return null;
 
     var owner = headings[0].parentElement;
     while (owner && owner !== document.body && owner.querySelectorAll("p").length < 3) {
@@ -69,12 +70,25 @@
     });
   }
 
+  function articlePublicationPromoControl(node, sourceOwner) {
+    var text = normalizeText(node.textContent || "");
+    if (node.children.length || !text || text.length > 220 ||
+        !SOCIAL_APP_PROMO_TEXT_PATTERN.test(text)) return false;
+    return Array.prototype.some.call(sourceOwner.querySelectorAll("p, div, span, a"), function(source) {
+      return !elementSubtreeHidden(source) && source.tagName === node.tagName && !source.children.length &&
+        normalizeText(source.textContent || "") === text;
+    });
+  }
+
   function stripSourceOwnedArticleActions(root) {
     var sourceOwner = articleActionSourceOwner(root);
     if (!sourceOwner) return root;
     root.querySelectorAll("div, section").forEach(function(node) {
       if (articleActionCluster(node, sourceOwner)) node.remove();
       else if (articleReactionControl(node, sourceOwner)) node.remove();
+    });
+    root.querySelectorAll("p, div, span, a").forEach(function(node) {
+      if (articlePublicationPromoControl(node, sourceOwner)) node.remove();
     });
     root.querySelectorAll("a[href]").forEach(function(node) {
       if (articleNewsFollowControl(node, sourceOwner)) node.remove();
