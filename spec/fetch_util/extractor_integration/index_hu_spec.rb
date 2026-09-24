@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts a single Index.hu Mindekozben post without adjacent feed posts' do
+  it 'extracts the exact-permalink post without an adjacent feed or fabricated timezone' do
     html = <<~HTML
       <html lang="hu">
         <head>
@@ -40,18 +40,26 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     url = 'https://index.hu/mindekozben/poszt/2026/07/06/online-vasarolt-dinokat-a-nagypapa-az-unokainak-de-varatlan-fordulat-jott/'
 
-    extract_from_url(url, html) do |payload|
-      expect(payload['contentType']).to eq('article')
-      expect(payload['title']).to eq('Az unokák imádják, a felesége kevésbé, négy dinoszaurusszal tért haza a nagypapa')
-      expect(payload['publishedTime']).to eq('2026-07-06T00:00:00+02:00')
-      expect(payload['markdown']).to include('Ilyen sztorit se hallani mindennap')
-      expect(payload['markdown']).to include('Darren öt unokája egyszerűen odáig van')
-      expect(payload['markdown']).not_to include('új poszt érkezett')
-      expect(payload['markdown']).not_to include('Valkusz Milán megszólalt')
-      expect(payload['warnings']).not_to include('stale_content')
-      expect(payload['warnings']).not_to include('multi_topic_page')
-      expect(payload['warnings']).not_to include('url_content_mismatch')
-      expect(payload['warnings']).not_to include('consent_interstitial')
+    with_url_page(url, html) do |page|
+      source = page.evaluate('document.body.innerHTML')
+      paragraphs = page.evaluate("Array.from(document.querySelectorAll('.current-post p'), node => node.textContent.trim())")
+      payload = extract_payload(page)
+
+      expect(payload).to include(
+        'contentType' => 'article', 'readerMode' => false, 'hostAware' => false,
+        'title' => 'Az unokák imádják, a felesége kevésbé, négy dinoszaurusszal tért haza a nagypapa',
+        'publishedTime' => '2026-07-06', 'warnings' => []
+      )
+      expect(payload.fetch('excerpt')).to eq(paragraphs.first)
+      expect(payload.fetch('html')).to include('<h1>Az unokák imádják, a felesége kevésbé')
+      locations = paragraphs.map do |paragraph|
+        expect(payload.fetch('markdown').scan(paragraph).size).to eq(1)
+        expect(payload.fetch('html').scan(paragraph).size).to eq(1)
+        payload.fetch('markdown').index(paragraph)
+      end
+      expect(locations).to eq(locations.sort)
+      expect(payload.fetch('markdown')).not_to include('új poszt érkezett', 'Valkusz Milán megszólalt')
+      expect(page.evaluate('document.body.innerHTML')).to eq(source)
     end
   end
 end
