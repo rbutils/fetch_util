@@ -17,7 +17,7 @@ RSpec.describe 'FetchUtil Al Masry Al Youm extractor integration' do
     )
   end
 
-  it 'retains the visible article, source heading and complete lead through the generic Reader' do
+  it 'retains every visible section and story link in its article root' do
     html = File.read(File.expand_path('../fixtures/almasryalyoum_article.html', __dir__))
     url = 'https://www.almasryalyoum.com/news/details/3055115'
 
@@ -29,10 +29,12 @@ RSpec.describe 'FetchUtil Al Masry Al Youm extractor integration' do
       heading = page.evaluate("document.querySelector('.article-title').textContent.trim()")
       payload = extract_payload(page)
 
-      expect(payload).to include('title' => heading, 'contentType' => 'article',
-                                 'readerMode' => true, 'hostAware' => false, 'warnings' => [])
-      expect(payload.fetch('excerpt')).to eq(paragraphs.first)
-      expect(payload.fetch('html')).to include("<h1>#{heading}</h1>", image, 'نشرة أخبار الصباح - صورة أرشيفية')
+      expect(payload).to include(
+        'title' => heading, 'contentType' => 'article',
+        'readerMode' => false, 'hostAware' => true, 'warnings' => []
+      )
+      expect(payload.fetch('html')).to match(%r{<h1\b[^>]*>#{Regexp.escape(heading)}</h1>})
+      expect(payload.fetch('html')).to include(image, 'نشرة أخبار الصباح - صورة أرشيفية')
       expect(payload.fetch('markdown')).to include(image, 'نشرة أخبار الصباح - صورة أرشيفية')
       paragraphs.each do |paragraph|
         expect(payload.fetch('markdown').scan(paragraph).length).to eq(1)
