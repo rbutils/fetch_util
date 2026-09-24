@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it "extracts offered Le Monde articles without a paywall false positive" do
+  it "preserves the offered article while reporting its still-gated continuation" do
     html = <<~HTML
       <html lang="fr">
         <head>
@@ -47,8 +47,16 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("Les Français n’ont presque pas eu le temps de ranger les ventilateurs")
       expect(payload["markdown"]).not_to include("Cet article vous est offert")
       expect(payload["markdown"]).not_to include("La suite est réservée")
-      expect_warnings(payload, exclude: %w[paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
-      expect(payload["suspect"]).to be(false)
+      expect(payload["html"]).to include("<h1>La France bascule dans une nouvelle vague de chaleur caniculaire")
+      expect(payload["html"]).to include("A Bordeaux, le 6 juillet 2026")
+      expect(payload["html"]).not_to include("Cet article vous est offert", "La suite est réservée")
+      expect(payload["html"].scan("Les Français n’ont presque pas eu le temps de ranger les ventilateurs").length).to eq(1)
+      lead = "Provoquée par un anticyclone au large du Portugal et des îles britanniques, " \
+             "la chaleur s’est installée lundi dans une large partie du territoire."
+      expect(payload["excerpt"]).to eq(lead)
+      expect_warnings(payload, include: %w[paywall_partial_content], exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect(payload["paywallState"]).to eq("detected")
+      expect(payload["suspect"]).to be(true)
     end
   end
 
