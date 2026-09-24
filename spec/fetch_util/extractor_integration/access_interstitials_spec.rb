@@ -443,6 +443,33 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps every visible access-denial detail in source order" do
+    references = (1..12).map { |index| format("Reference #%02d", index) }
+    urls = (1..12).map { |index| "https://errors.example/ref-#{index}" }
+    html = "<html><head><title>Access Denied</title></head><body><h1>Access Denied</h1>" \
+           'You do not have permission to access "https://denied.example/record" on this server.' \
+           "#{references.zip(urls).map { |reference, url| "<p>#{reference}</p><p>#{url}</p>" }.join}</body></html>"
+
+    with_url_page("https://denied.example/record", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page)
+      markdown = payload.fetch("markdown")
+
+      expect_content_type(payload, "interstitial")
+      expect_warnings(payload, include: %w[access_error_interstitial bot_or_access_interstitial])
+      expect(markdown).to include('You do not have permission to access "https://denied.example/record"')
+      rendered_lines = markdown.lines.map(&:strip)
+      positions = references.zip(urls).flat_map do |reference, url|
+        [reference, url].map do |text|
+          expect(rendered_lines.count("- #{text}")).to eq(1)
+          rendered_lines.index("- #{text}")
+        end
+      end
+      expect(positions).to eq(positions.sort)
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
   it "classifies short gateway and access-denied shells without a status-coded title" do
     cases = [
       ["https://gateway.example/", "Bad Gateway", "Bad Gateway"],

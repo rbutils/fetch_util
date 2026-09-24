@@ -7,39 +7,6 @@ function siteUnavailablePage(title, page) {
     (normalizedPage.length < 1200 && unavailablePattern.test(normalizedPage.slice(0, 500)));
 }
 
-function originAccessErrorPage(title, page) {
-  var normalizedTitle = normalizeText(title || "").toLowerCase();
-  var normalizedPage = normalizeText(page || "").toLowerCase();
-  var shortErrorPage = normalizedPage.length < 1200 &&
-    !document.querySelector("article, [itemprop='articleBody'], [property='articleBody']");
-  if (shortErrorPage && (/(?:^|\b)502\s+bad gateway\b/i.test(normalizedTitle + " " + normalizedPage) ||
-      normalizedTitle === "bad gateway" || normalizedPage === "bad gateway")) return true;
-  if (shortErrorPage && /\b(?:access denied|you do not have permission|you don't have permission|permission denied)\b/i.test(normalizedPage.slice(0, 500))) return true;
-  var cloudflareStatus = /\|\s*52\d\s*:/i.test(title || "") &&
-    /\b(?:error code\s*52\d|cloudflare ray id|host error)\b/i.test(normalizedPage) &&
-    /\b(?:connection timed out|web server returning unknown error|web server is down|origin is unreachable|ssl handshake failed|host error)\b/i.test(normalizedPage);
-  if (cloudflareStatus) return true;
-
-  var forbiddenTitle = /(?:^|\b)(?:error\s*[-:]\s*)?403(?:\s*[-:|]|$)/i.test(normalizedTitle);
-  var forbiddenLead = normalizedPage.slice(0, 500);
-  if (forbiddenTitle && /\b(?:forbidden|do not have permission(?: to)? access|permission denied|access denied)\b/i.test(forbiddenLead)) return true;
-
-  var directError = document.body && Array.from(document.body.children).find(function(node) {
-    return node.tagName && node.tagName.toLowerCase() === "error";
-  });
-  var viewer = document.querySelector("#webkit-xml-viewer-source-xml");
-  var viewerError = viewer && Array.from(viewer.children).find(function(node) {
-    return node.tagName && node.tagName.toLowerCase() === "error";
-  });
-  var errorNode = directError || viewerError;
-  var directOwner = directError && document.body.children.length === 1;
-  var viewerOwner = viewerError && document.querySelector(".pretty-print");
-  if (!errorNode || (!directOwner && !viewerOwner)) return false;
-  var code = normalizeText(((errorNode.querySelector("code") || {}).textContent) || "");
-  var message = normalizeText(((errorNode.querySelector("message") || {}).textContent) || "");
-  return /^accessdenied$/i.test(code) && /^access denied$/i.test(message);
-}
-
 function notFoundInterstitialPattern() {
   return /\b404\b|\boops!\b|\bnot found\b|page not found|not the web page you are looking for|sorry, (?:we )?(?:can.?t|could not) find (?:that |the )?page|we.?re sorry, but that page cannot be found|(?:that |the )?page cannot be found|the page you (?:requested|were looking for|are looking for) (?:can.?t be found|does(?:n'?t| not) exist)|this page is no longer available|content no longer available|(?:dataset|record|project|submission) (?:you are trying to view )?is not available|this doi cannot be found in the doi system|doi cannot be found|ご利用のページが見つかりません|ページまたはファイルが存在しません|移動または削除されている|urlに誤りがある|urlには.*存在しません/i;
 }
@@ -241,6 +208,9 @@ function interstitialContent(metadata, pageText, type) {
     details.push("Interstitial: unsupported browser shell");
   } else if (type === "access_error") {
     details.push("Interstitial: access error or blocked session");
+    var errorLines = accessErrorVisibleDetails();
+    description = errorLines.find(function(text) { return text !== title && text.length >= 12; }) || description;
+    highlights = errorLines.filter(function(text) { return text !== title && text !== description; });
   } else if (type === "site_unavailable") {
     details.push("Interstitial: site unavailable or temporarily offline");
   } else if (type === "not_found") {

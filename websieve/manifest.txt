@@ -62,6 +62,7 @@ markdown/runtime.js
 classifiers/challenges/challenge_pages.js
 classifiers/challenges/meta_walls.js
 classifiers/challenges/consent_walls.js
+classifiers/challenges/access_error_details.js
 classifiers/challenges/interstitial_pages.js
 classifiers/challenges/not_found_context.js
 classifiers/challenges/index.js
