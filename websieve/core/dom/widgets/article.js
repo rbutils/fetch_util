@@ -227,6 +227,9 @@ function articleEmptyAdPlaceholderNode(node, context) {
 
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
+  root.querySelectorAll("[data-icon]").forEach(function(node) {
+    if (articleReactionChip(node)) node.remove();
+  });
   root.querySelectorAll("div, section, aside").forEach(function(node) {
     if (articleSyntheticSummaryControl(node)) node.remove();
   });
@@ -239,7 +242,7 @@ function stripArticleWidgets(root) {
   });
 
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
-    if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node)) node.remove();
+    if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node) || articleSyntheticAudioNotice(node)) node.remove();
   });
 
   root.querySelectorAll("article p, article div, article span").forEach(function(node) {

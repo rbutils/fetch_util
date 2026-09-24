@@ -37,6 +37,7 @@ RSpec.describe 'Source-owned article action chrome' do
         var owner = document.querySelector('.story-tile');
         var before = owner.outerHTML;
         var clone = owner.cloneNode(true);
+        stripArticleWidgets(clone);
         stripSourceOwnedArticleActions(clone);
         stripEmptyCommentUi(clone);
         return {html: clone.outerHTML, unchanged: before === owner.outerHTML};
@@ -140,6 +141,40 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(payload.fetch('markdown')).to include('first report paragraph', 'third report paragraph')
       expect(payload.fetch('html')).not_to include("Gazete'yi takip edin", 'Uygulamamızı İndirin')
       expect(payload.fetch('html')).to include('Editörler Google Haberler ve mobil uygulamaların haber dağıtımına etkisini karşılaştırdı.')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'removes inert reaction and synthetic audio widgets while preserving real engagement content' do
+    html = article_with_actions(
+      toolbar: <<~HTML,
+        <div data-icon="like"><span>Lubię to</span><img src="/emotion/like.svg" alt="like"></div>
+        <div data-icon="angry"><span>Zły</span><img src="/emotion/angry.svg" alt="angry"></div>
+        <div class="audio-news-player ids-audio-news-player">
+          <p>Odsłuchaj artykuł</p><p>02:32 min</p><p>Audio generowane przez AI, może zawierać błędy</p>
+        </div>
+      HTML
+      promotion: <<~HTML,
+        <p>Researchers measured angry reactions to the proposal and explained why readers liked the final compromise.</p>
+        <div data-icon="like"><a href="/reactions">Like reactions with published context</a><img src="/emotion/like.svg" alt="like"></div>
+        <div class="audio-player"><audio controls src="/recording.mp3"></audio><p>A complete source recording remains available.</p></div>
+      HTML
+      comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      cleaned = article_action_probe(page)
+      payload = extract_payload(page)
+
+      expect(payload.fetch('markdown')).not_to include('Lubię to', 'Odsłuchaj artykuł', 'Audio generowane przez AI')
+      expect(payload.fetch('markdown')).to include('Researchers measured angry reactions')
+      expect(cleaned.fetch('html')).not_to include('Lubię to')
+      expect(cleaned.fetch('html')).not_to include('Odsłuchaj artykuł')
+      expect(cleaned.fetch('html')).not_to include('Audio generowane przez AI')
+      expect(cleaned.fetch('html')).to include('Like reactions with published context', '/reactions',
+                                               'A complete source recording remains available.', 'recording.mp3')
+      expect(cleaned.fetch('unchanged')).to be(true)
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
