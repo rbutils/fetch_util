@@ -159,6 +159,21 @@ function interstitialPageType(metadata, pageText) {
   return null;
 }
 
+function interstitialVisibleLines(selectors) {
+  var seen = new Set();
+  var lines = [];
+  selectors.forEach(function(selector) {
+    document.querySelectorAll(selector).forEach(function(node) {
+      if (node.closest("noscript") || elementVisuallyHidden(node)) return;
+      var text = normalizeText(node.textContent || "");
+      if (!text || text.length > 240 || interstitialNoiseText(text) || seen.has(text)) return;
+      seen.add(text);
+      lines.push(text);
+    });
+  });
+  return lines;
+}
+
 function interstitialContent(metadata, pageText, type) {
   if (type === undefined) type = interstitialPageType(metadata, pageText);
   if (!type) return null;
@@ -168,7 +183,7 @@ function interstitialContent(metadata, pageText, type) {
   var requestedTitle = title;
   var requestedDescription = normalizeText(metadata.excerpt || "");
   var agreementLoginGate = type === "auth_wall" ? agreementLoginGateEvidence() : null;
-  var lines = manyTexts([
+  var lines = interstitialVisibleLines([
     "main h1",
     "main h2",
     "main h3",
@@ -178,9 +193,7 @@ function interstitialContent(metadata, pageText, type) {
     "body h2",
     "body h3",
     "body p"
-  ]).filter(function(text) {
-    return text && text.length <= 240 && !interstitialNoiseText(text);
-  });
+  ]);
   var description = lines.find(function(text) {
     return text !== title && text.length >= 12;
   }) || metadata.excerpt || normalizeText(pageText || "");

@@ -271,6 +271,38 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "omits hidden verification errors but keeps every visible instruction" do
+    instructions = (1..12).map do |index|
+      "<p>Visible security instruction #{index} explains how to complete the current public verification step.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Human Verification</title></head><body><main>
+        <h1>Let's confirm you are human</h1>
+        <div style="display:none"><p>Temporary error. Please try again.</p></div>
+        <div hidden><p>Disable the translation tool and retry.</p></div>
+        <noscript><h2>JavaScript is disabled</h2><p>This inactive fallback is not materialized.</p></noscript>
+        #{instructions}
+      </main></body></html>
+    HTML
+
+    with_url_page("https://verification.example/check", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract_payload(page)
+      markdown = payload.fetch("markdown")
+
+      expect_content_type(payload, "interstitial")
+      expect_warnings(payload, include: %w[human_verification_interstitial bot_or_access_interstitial])
+      positions = (1..12).map do |index|
+        text = "Visible security instruction #{index} explains how to complete the current public verification step."
+        expect(markdown.lines.count { |line| line.strip == "- #{text}" }).to eq(1)
+        markdown.index(text)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(markdown).not_to include("Temporary error", "Disable the translation tool", "JavaScript is disabled")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
   it "flags press-and-hold human verification gates" do
     html = <<~HTML
       <html>
