@@ -112,6 +112,18 @@ RSpec.describe FetchUtil::Browser do
     expect(strategy_for.call('https://git.example/group/project/issues/12')).to eq(:stabilize_gitea_family_thread)
   end
 
+  it 'does not run host-agnostic path predicates on opaque navigation URLs' do
+    browser = browser_with_idle
+    profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES
+
+    %w[about:blank data:text/html,loading file:///loading].each do |url|
+      expect(browser.send(:matching_stabilization_profile, url, profiles)).to be_nil
+    end
+    expect(browser.send(:matching_stabilization_profile,
+                        'https://forge.example/group/project/-/issues/12', profiles)&.fetch(:strategy))
+      .to eq(:stabilize_gitlab_thread)
+  end
+
   it 'routes host-agnostic Gitea-family conversations through product-aware stabilization' do
     browser = browser_with_idle
     profiles = FetchUtil::Browser::Stabilization::PageFlow::PAGE_FLOW_STABILIZATION_PROFILES

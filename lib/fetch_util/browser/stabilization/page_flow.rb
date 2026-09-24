@@ -95,6 +95,8 @@ module FetchUtil
 
         def matching_stabilization_profile(url, profiles)
           uri = URI.parse(url)
+          return nil unless uri.is_a?(URI::HTTP) && uri.host
+
           host = FetchUtil.strip_www_host(url)
           profiles.find { |profile| profile_match?(profile, uri, host) }
         rescue URI::InvalidURIError
