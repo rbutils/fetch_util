@@ -143,7 +143,7 @@
   var NOISE_RELATED_HEADING_TERMS = [
     "related\\s*(articles?|stories|news|posts|content|links)?", "more\\s*(from|in|stories|articles?|news)", "see\\s*also", "you\\s*may\\s*(also\\s*)?like",
     "recommended", "trending", "popular", "latest\\s*news", "other\\s*news", "also\\s*read", "read\\s*more\\s*:?", "further\\s*reading",
-    "references", "citations", "metrics", "altmetric", "więcej\\s*(z\\s*tej\\s*kategorii|artykułów|wiadomości|na\\s*ten\\s*temat)",
+    "references", "citations", "metrics", "altmetric", "leia\\s*mais", "em\\s*alta", "więcej\\s*(z\\s*tej\\s*kategorii|artykułów|wiadomości|na\\s*ten\\s*temat)",
     "zobacz\\s*również", "polecamy", "czytaj\\s*również", "inne\\s*wiadomości", "повезано", "погледајте", "сродне\\s*вијести", "слично",
     "такође\\s*прочитајте", "още\\s*от", "виж\\s*също", "свързани\\s*новини", "más\\s*de", "noticias\\s*relacionadas", "ver\\s*también", "te\\s*puede\\s*interesar",
     "plus\\s*de", "à\\s*lire\\s*aussi", "lire\\s*aussi", "sur\\s*le\\s*même\\s*sujet", "mehr\\s*aus", "lesen\\s*sie\\s*auch",

@@ -55,4 +55,33 @@ RSpec.describe 'Short related-story sections' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'omits Portuguese related and trending rails without matching editorial headings' do
+    html = <<~HTML
+      <html><head><title>Public health funding report</title></head><body><main><article>
+        <h1>Public health funding report</h1>
+        <p>The published report explains the approved funding, the affected clinics, and the implementation timetable for the next fiscal year.</p>
+        <p>Officials documented the public consultation and the evidence used to select the regional projects.</p>
+        <p>Independent auditors will publish quarterly measurements so residents can review the program's progress.</p>
+        <h2>LEIA MAIS</h2>
+        <ul><li><a href='/related/one'>First unrelated story</a></li><li><a href='/related/two'>Second unrelated story</a></li></ul>
+        <h2>EM ALTA</h2>
+        <ul><li><a href='/popular/one'>First trending story</a></li><li><a href='/popular/two'>Second trending story</a></li></ul>
+        <h2>Leia mais sobre o financiamento público</h2>
+        <p>This editorial section explains the legal framework behind the funding and remains part of the focal report.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/public-health-funding', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload.fetch('markdown')).not_to include(
+        'LEIA MAIS', 'EM ALTA', 'First unrelated story', 'First trending story'
+      )
+      expect(payload.fetch('markdown')).to include('Leia mais sobre o financiamento público',
+                                                   'legal framework behind the funding')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end
