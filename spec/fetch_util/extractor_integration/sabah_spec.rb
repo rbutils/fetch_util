@@ -48,7 +48,9 @@ RSpec.describe 'FetchUtil extractor integration for Sabah articles' do
 
       expect_content_type(payload, 'article')
       expect(payload).to include('readerMode' => true, 'hostAware' => false, 'warnings' => [])
-      expect(payload['excerpt']).to eq("Dinar'a bağlı Haydarlı Belediye Başkanı Süleyman Çetinkaya, 5 Temmuz günü saat 19.00 sıralarında evine girmek üzereyken bir kişinin bıçaklı saldırısına uğradı.")
+      expected_excerpt = "Dinar'a bağlı Haydarlı Belediye Başkanı Süleyman Çetinkaya, 5 Temmuz günü saat " \
+                         "19.00 sıralarında evine girmek üzereyken bir kişinin bıçaklı saldırısına uğradı."
+      expect(payload['excerpt']).to eq(expected_excerpt)
       expect(payload['markdown']).to include('Dinar\'a bağlı Haydarlı Belediye Başkanı Süleyman Çetinkaya')
       expect(payload['markdown']).to include('saldırının şiddetle kınandığı belirtildi')
       expect(payload['markdown']).to include('Giriş Tarihi: 7.07.2026 10:48')
