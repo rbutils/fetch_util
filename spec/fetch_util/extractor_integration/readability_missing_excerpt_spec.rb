@@ -63,4 +63,33 @@ RSpec.describe 'Source-owned Reader excerpts' do
       expect(page.evaluate("window.__missingExcerptProof(#{JSON.generate(article)}, null)")).to be_nil
     end
   end
+
+  it 'replaces a semantic breadcrumb excerpt with the uniquely owned source lead' do
+    title = 'Regional council publishes the verified transport report'
+    lead = 'The opening report paragraph records the complete transport decision, its public evidence, and the implementation timetable.'
+    paragraphs = (1..4).map do |index|
+      "<p>Source-owned paragraph #{index} preserves the council findings, supporting measurements, and implementation details for public review.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>#{title}</title></head><body><main>
+        <section class="article-frame">
+          <div class="breadcrumb"><a href="/reports">Reports</a><a href="/transport">Transport</a><span>#{title}</span></div>
+          <h1>#{title}</h1>
+          <div class="breadcrumb-story"><p>#{lead}</p></div>
+          <div class="article-body">#{paragraphs}</div>
+        </section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://reports.example/transport/verified-decision', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect(payload).to include('readerMode' => true, 'contentType' => 'article')
+      expect(payload.fetch('excerpt')).to eq(lead)
+      expect(payload.fetch('markdown')).not_to include('[Reports]', '[Transport]')
+      expect(payload.fetch('markdown')).to include(lead, 'Source-owned paragraph 1', 'Source-owned paragraph 4')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

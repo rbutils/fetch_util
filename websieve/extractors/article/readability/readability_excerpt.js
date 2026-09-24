@@ -236,6 +236,14 @@
     return /\p{Sentence_Terminal}(?:["'’”)\]]*)$/u.test(excerpt) && /^\s/u.test(value.slice(excerpt.length));
   }
 
+  function readabilityBreadcrumbExcerpt(excerpt) {
+    return Array.prototype.some.call(document.querySelectorAll(
+      "[class~='breadcrumb' i], [class~='breadcrumbs' i], [aria-label*='breadcrumb' i]"
+    ), function(node) {
+      return !elementSubtreeHidden(node) && normalizeText(node.textContent || "") === excerpt;
+    });
+  }
+
   function readabilityArticleExcerpt(article, metadata, marker) {
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt) return (article && article.excerpt) || null;
@@ -243,6 +251,11 @@
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);
+    if (readabilityBreadcrumbExcerpt(excerpt)) {
+      var headlineEvidence = sourceOwnedReaderHeadlineEvidence(article.content, article.title);
+      var sourceLead = headlineEvidence && readabilityExcerptPrefix(headlineEvidence.lead);
+      if (sourceLead) return sourceLead;
+    }
     if (readabilityCaptionCreditCandidate(excerpt)) {
       var captionTemplate = readabilityArticleTemplate(article);
       var bodyLead = captionTemplate && readabilityCaptionCreditExcerpt(captionTemplate, marker, excerpt);
