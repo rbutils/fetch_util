@@ -2,11 +2,32 @@
 
 ## Unreleased
 
+## v0.8.0 - 2026-09-24
+
 ### Changed
 
 - Separate host-agnostic forge extraction and browser stabilization into product-owned families, leaving forums, Q&A, social-news, and wiki profiles under `profiles/community/` without changing runtime behavior.
 - Mirror forge, community, and social ownership in integration specs and fixtures, replace mixed site-stabilization files with explicit family loaders, and protect the existing method ownership and stabilization phase order with executable contracts.
 - Group article extraction, homepage/list strategies, generic list records and sections, dynamic collection recovery, and Markdown helpers into cohesive source directories without changing runtime bundle order or behavior.
+- Infer visible social threads, feeds, posts, and public profiles through shared structural ownership, retaining every materialized record and nested reply in source order without presentation-count caps.
+- Retire redundant or synthetic host handlers only where shared extraction proves better on the same page; restore six focused article handlers after broader frozen-page testing exposed lost bodies, paywall teasers, or focal liveblog ownership.
+
+### Fixed
+
+- Preserve source-owned article sections, author and publication context, image captions, supplemental resources, public paywall teasers, and complete code examples when generic reader or list arbitration would omit them.
+- Retain all visible records in directories, numbered collections, image cards, community feeds, and legal indexes without replacing substantial articles with unrelated portal links.
+- Keep Markdown links distinct by destination, escape generated link labels correctly, and retain complete RawDocs leaf fragments and validated regulatory cache payloads.
+- Distinguish public content from cookie, login, verification, access-error, and empty browser shells; preserve visible denial diagnostics and avoid fabricated content or misleading access warnings.
+- Prefer page-owned SPA data and source-corroborated article headlines and excerpts while excluding related rails, inline controls, and hidden challenge text.
+- Reject blank navigation results and opaque URLs during browser stabilization instead of allowing empty acquisitions or GitLab-thread predicate errors.
+
+### Performance
+
+- Reuse extraction-local structured-data snapshots and skip speculative list scans for complete source-owned code-reference articles without raising timeouts or truncating code samples.
+
+### Known Limitations
+
+- An immutable 600-website comparison with the local v0.7.0 release found 54 reviewed improvements, 496 byte-identical ties, 30 semantic ties, 17 mixed outcomes, one baseline-better page, one v0.7.0-only extraction failure, and one page unavailable in every version. Strict no-regression acceptance did not pass; the mixed and unavailable cases are not counted as wins.
 
 ## v0.7.0 - 2026-09-20
 
