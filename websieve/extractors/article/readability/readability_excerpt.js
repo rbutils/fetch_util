@@ -262,7 +262,9 @@
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);
     if (readabilityBreadcrumbExcerpt(excerpt) || readabilityPublicationLabelExcerpt(excerpt)) {
-      var headlineEvidence = sourceOwnedReaderHeadlineEvidence(article.content, article.title);
+      var headlineEvidence = readabilityPublicationLabelExcerpt(excerpt) ?
+        sourceOwnedReaderArticleLeadEvidence(article.content, article.title) :
+        sourceOwnedReaderHeadlineEvidence(article.content, article.title);
       var sourceLead = headlineEvidence && readabilityExcerptPrefix(headlineEvidence.lead);
       if (sourceLead) return sourceLead;
     }

@@ -104,6 +104,7 @@ RSpec.describe 'Source-owned Reader excerpts' do
         <section class="article-frame">
           <div class="news-detail-info">Giriş Tarihi: 7.07.2026 10:48</div>
           <h1>#{title}</h1>
+          <h2>Service changes begin after the published implementation window.</h2>
           <div class="article-body"><p>#{lead}</p>#{paragraphs}</div>
         </section>
       </main></body></html>

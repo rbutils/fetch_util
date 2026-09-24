@@ -1,4 +1,4 @@
-  function sourceOwnedReaderHeadlineEvidence(html, title) {
+  function sourceOwnedReaderBodyLeadEvidence(html, title, allowSubheadings) {
     if (!document.body || !html || !title) return null;
     var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
       return !elementSubtreeHidden(heading) && !heading.closest("header, nav, footer, aside, form, [role='navigation']");
@@ -7,7 +7,8 @@
 
     var selected = document.createElement("div");
     selected.innerHTML = html;
-    if (selected.querySelector("h1, h2, h3, h4, h5, h6")) return null;
+    if (selected.querySelector("h1") ||
+        (!allowSubheadings && selected.querySelector("h2, h3, h4, h5, h6"))) return null;
 
     var owner = headings[0].parentElement;
     while (owner && owner !== document.body && owner.querySelectorAll("p").length < 3) owner = owner.parentElement;
@@ -25,6 +26,14 @@
         !selectedParagraphs.every(function(text) { return sourceParagraphs.indexOf(text) >= 0; })) return null;
 
     return { heading: headings[0], lead: sourceParagraphs[0] };
+  }
+
+  function sourceOwnedReaderHeadlineEvidence(html, title) {
+    return sourceOwnedReaderBodyLeadEvidence(html, title, false);
+  }
+
+  function sourceOwnedReaderArticleLeadEvidence(html, title) {
+    return sourceOwnedReaderBodyLeadEvidence(html, title, true);
   }
 
   function sourceOwnedReaderMissingHeadlineContent(content) {
