@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration for Sabah articles' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Sabah article bodies without breadcrumb and promo chrome' do
+  it 'extracts Sabah articles generically without breadcrumb and promo chrome' do
     html = <<~HTML
       <html>
         <head>
@@ -42,15 +42,23 @@ RSpec.describe 'FetchUtil extractor integration for Sabah articles' do
 
     url = 'https://www.sabah.com.tr/yasam/suleyman-cetinkaya-saldiri'
 
-    extract_from_url(url, html) do |payload|
+    with_url_page(url, html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
       expect_content_type(payload, 'article')
+      expect(payload).to include('readerMode' => true, 'hostAware' => false, 'warnings' => [])
+      expect(payload['excerpt']).to eq("Dinar'a bağlı Haydarlı Belediye Başkanı Süleyman Çetinkaya, 5 Temmuz günü saat 19.00 sıralarında evine girmek üzereyken bir kişinin bıçaklı saldırısına uğradı.")
       expect(payload['markdown']).to include('Dinar\'a bağlı Haydarlı Belediye Başkanı Süleyman Çetinkaya')
       expect(payload['markdown']).to include('saldırının şiddetle kınandığı belirtildi')
+      expect(payload['markdown']).to include('Giriş Tarihi: 7.07.2026 10:48')
       expect(payload['markdown']).not_to include('Haberler](https://www.sabah.com.tr/')
       expect(payload['markdown']).not_to include('Yaşam Haberleri')
       expect(payload['markdown']).not_to include('Google Haberler')
       expect(payload['markdown']).not_to include('Uygulamamızı İndirin')
+      expect(payload['html']).not_to include('breadcrumb', 'Google Haberler', 'Uygulamamızı İndirin')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end
