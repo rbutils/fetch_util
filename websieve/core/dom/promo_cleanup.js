@@ -11,7 +11,7 @@
   }
 
   function stripPromoAdModules(root) {
-    root.querySelectorAll("aside, section, div, figure, picture").forEach(function(el) {
+    root.querySelectorAll("aside, section, div, figure, picture, p, span").forEach(function(el) {
       if (el.matches("main, article, [role='main']")) return;
       if (el.querySelector("article, main, [role='main']")) return;
       if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
@@ -32,6 +32,7 @@
       var promoAttrs = PROMO_ATTR_PATTERN.test(attrs);
       var promoText = PROMO_TEXT_PATTERN.test(textLower);
       var promoMedia = PROMO_MEDIA_PATTERN.test(imageSrcs);
+      if (el.matches("p, span") && !(promoAttrs && promoText)) return;
 
       // A layout's detached CTA slot is not promotional content when it owns
       // a visible heading and has no action or other promotional evidence.

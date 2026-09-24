@@ -44,8 +44,8 @@
   var NOISE_AD_NETWORK_HOST_PATTERN = "(?:outbrain|taboola|zemanta|revcontent|mgid|content\\.ad|plista|ligatus|adblade|nativendo|dianomi|nativo|sharethrough|triplelift)\\.(?:com|net|co|io)";
   var NOISE_AD_NETWORK_CONTAINER_TERMS = ["taboola", "outbrain", "promoted-content", "promoted_content", "sponsored-content", "sponsored_content", "mgid", "zergnet", "revcontent"];
   var NOISE_AD_NETWORK_CONTAINER_SELECTOR = "[class*='taboola'], [id*='taboola'], [class*='outbrain'], [id*='outbrain'], [data-widget-type*='taboola'], [data-widget-type*='outbrain'], [class*='promoted-content'], [class*='promoted_content'], [id*='promoted-content'], [class*='sponsored-content'], [class*='sponsored_content'], [class*='mgid'], [id*='mgid'], [class*='zergnet'], [id*='zergnet'], [class*='revcontent'], [id*='revcontent']";
-  var NOISE_PROMO_ATTR_TERMS = "ad|ads|advert|advertisement|promo|promoted|sponsor|sponsored|subscription|subscribe|subscriber|paywall|upsell|marketing|newsletter|cta";
-  var NOISE_PROMO_TEXT_TERMS = "save\\s+\\d+%|subscribe\\s+(?:now|today)|subscription|subscriber|sign\\s+up\\s+for|get\\s+started\\s+for\\s+free|limited\\s+time\\s+offer|annual\\s+subscriptions?|trusted\\s+destination\\s+for";
+  var NOISE_PROMO_ATTR_TERMS = "ad|ads|advert|advertisement|promo|promoted|sponsor|sponsored|subscription|subscribe|subscriber|paywall|upsell|marketing|newsletter|cta|recirculation|recirculacao";
+  var NOISE_PROMO_TEXT_TERMS = "save\\s+\\d+%|subscribe\\s+(?:now|today)|subscription|subscriber|sign\\s+up\\s+for|get\\s+started\\s+for\\s+free|limited\\s+time\\s+offer|annual\\s+subscriptions?|trusted\\s+destination\\s+for|tudo\\s+sobre\\s+.{1,80}\\s+em\\s+um\\s+s[oó]\\s+lugar";
   var NOISE_PROMO_MEDIA_TERMS = "ad|ads|advert|promo|sponsor|sponsored|subscription|subscribe|marketing|upsell";
 
   var NOISE_ACCOUNT_ACTION_TERMS = [

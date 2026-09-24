@@ -5,6 +5,30 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil CTA-layout content ownership' do
   include_context 'extractor integration helpers'
 
+  def clean_promo_root(html)
+    root = File.expand_path('../../..', __dir__)
+    source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true)
+                 .reject { |line| line.empty? || line.start_with?('#') }
+                 .map { |path| File.read(File.join(root, 'websieve', path)) }.join("\n")
+    outro = File.read(File.join(root, 'websieve/99_outro.js'))
+    source = source.delete_suffix(outro) + <<~JS + outro
+      window.__cleanPromoRoot = function(input) {
+        var template = document.createElement("template");
+        template.innerHTML = input;
+        var sourceNode = template.content.firstElementChild;
+        var before = sourceNode.outerHTML;
+        var clone = sourceNode.cloneNode(true);
+        stripPromoAdModules(clone);
+        return {clone: clone.outerHTML, sourceUnchanged: sourceNode.outerHTML === before};
+      };
+    JS
+
+    with_page('<main>Unchanged source page</main>') do |page|
+      page.add_script_tag(content: source)
+      page.evaluate("window.__cleanPromoRoot(#{JSON.generate(html)})")
+    end
+  end
+
   it 'retains every heading and date in an actionless CTA layout' do
     venues = (1..12).map do |number|
       <<~HTML
@@ -40,5 +64,37 @@ RSpec.describe 'FetchUtil CTA-layout content ownership' do
       end
       expect(positions).to eq(positions.sort)
     end
+  end
+
+  it 'removes compact recirculation slogans without deleting substantive analysis' do
+    html = <<~HTML
+      <html><head><title>Public policy briefing</title></head><body><main><article>
+        <h1>Public policy briefing</h1>
+        <p>The briefing explains the enacted policy and records the evidence considered by legislators.</p>
+        <p>Independent analysts supplied historical context, implementation costs, and regional comparisons.</p>
+        <p>Officials published the final timetable and committed to quarterly progress reports.</p>
+        <p class="article-recirculacao">TUDO SOBRE A COPA, EM UM SÓ LUGAR</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://reports.example/public-policy-briefing', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload.fetch('markdown')).not_to include('TUDO SOBRE A COPA, EM UM SÓ LUGAR')
+      expect(payload.fetch('html')).not_to include('TUDO SOBRE A COPA, EM UM SÓ LUGAR')
+      expect(payload.fetch('markdown')).to include('Independent analysts supplied historical context')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+
+    analysis = clean_promo_root(<<~HTML)
+      <section class="recirculation-analysis">
+        <h2>How water recirculation works</h2>
+        <p>Closed-loop systems filter and reuse water while sensors monitor flow and contamination.</p>
+      </section>
+    HTML
+    expect(analysis.fetch('clone')).to include('How water recirculation works',
+                                               'Closed-loop systems filter and reuse water')
+    expect(analysis.fetch('sourceUnchanged')).to be(true)
   end
 end
