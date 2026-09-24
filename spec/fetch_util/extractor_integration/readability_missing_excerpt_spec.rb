@@ -92,4 +92,32 @@ RSpec.describe 'Source-owned Reader excerpts' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'replaces a compact publication label with the source-owned article lead' do
+    title = 'Regional council confirms the public transport schedule'
+    lead = 'The first article paragraph records the confirmed schedule, its public evidence, and the implementation date for residents.'
+    paragraphs = (1..4).map do |index|
+      "<p>Verified body paragraph #{index} preserves the council findings, route measurements, and implementation details for review.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>#{title}</title></head><body><main>
+        <section class="article-frame">
+          <div class="news-detail-info">Giriş Tarihi: 7.07.2026 10:48</div>
+          <h1>#{title}</h1>
+          <div class="article-body"><p>#{lead}</p>#{paragraphs}</div>
+        </section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://reports.example/transport/confirmed-schedule', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect(payload).to include('readerMode' => true, 'contentType' => 'article')
+      expect(payload.fetch('excerpt')).to eq(lead)
+      expect(payload.fetch('markdown')).to include(lead, 'Verified body paragraph 1',
+                                                   'Verified body paragraph 4')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

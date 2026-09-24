@@ -244,6 +244,16 @@
     });
   }
 
+  function readabilityPublicationLabelExcerpt(excerpt) {
+    var value = normalizeText(excerpt || "");
+    if (readabilityExcerptLength(value) > 80 ||
+        !/^(?:published|updated|last updated|publication date|giriş tarihi|yayın tarihi|fecha de publicación|date de publication|veröffentlicht)\s*[:：-]/i.test(value)) return false;
+    return Array.prototype.some.call(document.querySelectorAll("time, p, div, span"), function(node) {
+      return !elementSubtreeHidden(node) && normalizeText(node.textContent || "") === value &&
+        !node.closest("nav, header, footer, aside, form, [role='navigation'], [role='complementary']");
+    });
+  }
+
   function readabilityArticleExcerpt(article, metadata, marker) {
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt) return (article && article.excerpt) || null;
@@ -251,7 +261,7 @@
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);
-    if (readabilityBreadcrumbExcerpt(excerpt)) {
+    if (readabilityBreadcrumbExcerpt(excerpt) || readabilityPublicationLabelExcerpt(excerpt)) {
       var headlineEvidence = sourceOwnedReaderHeadlineEvidence(article.content, article.title);
       var sourceLead = headlineEvidence && readabilityExcerptPrefix(headlineEvidence.lead);
       if (sourceLead) return sourceLead;
