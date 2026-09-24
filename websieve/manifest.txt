@@ -294,6 +294,7 @@ profiles/news/asia/east/netease_news.js
 profiles/news/europe/southern/rcs_corriere.js
 profiles/news/europe/dnevnik.js
 profiles/news/europe/central/czech/idnes.js
+profiles/news/americas/south/brazil/folha.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js
 boot/pipeline_helpers.js
