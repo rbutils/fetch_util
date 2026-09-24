@@ -90,6 +90,73 @@ RSpec.describe 'Owned article titles' do
     end
   end
 
+  it 'removes a publication-owned suffix when restoring a demoted source H1' do
+    html = <<~HTML
+      <html><head><title>Conteudo Exclusivo | VEJA</title></head><body><main><article>
+        <h1>Conteudo Exclusivo</h1>
+        <p>A primeira parte da reportagem apresenta o contexto público com informações verificáveis e uma explicação completa para os leitores.</p>
+        <p>O segundo parágrafo documenta as decisões, as fontes consultadas e as consequências práticas discutidas pela reportagem.</p>
+        <p>A conclusão preserva o restante do conteúdo público e diferencia a matéria de recomendações ou chamadas promocionais.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://veja.abril.com.br/brasil/conteudo-exclusivo', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      extractor_for(true).__send__(:inject_assets, page)
+      payload = page.evaluate <<~JS
+        (() => {
+          const Reader = function() {};
+          Reader.prototype.parse = function() {
+            const article = document.querySelector('main article');
+            return {title: document.title, siteName: location.hostname,
+              content: '<article>' + article.innerHTML.replace('<h1>', '<h2>').replace('</h1>', '</h2>') + '</article>',
+              textContent: article.textContent};
+          };
+          window.Readability = Reader;
+          return window.FetchUtilExtract.extract({reader_mode: true});
+        })()
+      JS
+
+      expect(payload.fetch('title')).to eq('Conteudo Exclusivo')
+      expect(payload.fetch('html')).to include('<h1>Conteudo Exclusivo</h1>')
+      expect(payload.fetch('markdown')).to start_with("# Conteudo Exclusivo\n")
+      expect(payload.fetch('markdown')).not_to include('| VEJA')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'keeps a genuine title extension when a reader demotes the source H1' do
+    html = <<~HTML
+      <html><head><title>Research across borders - A new method</title></head><body><main><article>
+        <h1>Research across borders</h1>
+        <p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion in the report.</p>
+        <p>The investigators also published the assumptions, complete methodology, and public records used to reproduce the analysis.</p>
+        <p>A final section explains the new method and why it changes how the measurements should be interpreted by other researchers.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/borders', html) do |page|
+      extractor_for(true).__send__(:inject_assets, page)
+      payload = page.evaluate <<~JS
+        (() => {
+          const Reader = function() {};
+          Reader.prototype.parse = function() {
+            const article = document.querySelector('main article');
+            return {title: document.title, siteName: location.hostname,
+              content: '<article>' + article.innerHTML.replace('<h1>', '<h2>').replace('</h1>', '</h2>') + '</article>',
+              textContent: article.textContent};
+          };
+          window.Readability = Reader;
+          return window.FetchUtilExtract.extract({reader_mode: true});
+        })()
+      JS
+
+      expect(payload.fetch('title')).to eq('Research across borders - A new method')
+      expect(payload.fetch('html')).to include('<h2>Research across borders</h2>')
+      expect(payload.fetch('markdown')).to include('A new method')
+    end
+  end
+
   it 'restores a uniquely owned H1 in an article directly under the body' do
     html = <<~HTML
       <html><head><title>Public notice across borders</title></head><body>

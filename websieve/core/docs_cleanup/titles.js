@@ -179,9 +179,21 @@ function sourceOwnedReaderHeadlineContent(content) {
   var selected = articles[0];
   var heading = selected.firstElementChild;
   var title = normalizeText(sourceHeading.textContent || "");
+  var contentTitle = normalizeText(content.title || document.title || "");
+  var titleOwned = contentTitle === title;
+  if (!titleOwned && contentTitle.indexOf(title) === 0) {
+    var suffix = normalizeText(contentTitle.slice(title.length));
+    var suffixMatch = suffix.match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
+    var suffixBrand = normalizeText(suffixMatch && suffixMatch[1] || "").toLowerCase();
+    var siteBrand = normalizeText(content.siteName || "").replace(/^www\./i, "").toLowerCase();
+    var hostBrands = (location.hostname || "").replace(/^www\./i, "").toLowerCase().split(".").filter(function(part) {
+      return part.length >= 3 && !/^(?:com|net|org|gov|edu|co)$/.test(part);
+    });
+    titleOwned = !!suffixBrand && (suffixBrand === siteBrand || hostBrands.indexOf(suffixBrand) >= 0);
+  }
   if (!heading || !heading.matches("h2") || selected.querySelectorAll("h1, h2").length !== 1 ||
       title.length < 8 || normalizeText(heading.textContent || "") !== title ||
-      normalizeText(content.title || document.title || "") !== title) return content;
+      !titleOwned) return content;
   var sourceText = normalizeText(source.textContent || "");
   var paragraphs = Array.prototype.map.call(selected.querySelectorAll("p"), function(node) {
     return normalizeText(node.textContent || "");
@@ -194,7 +206,7 @@ function sourceOwnedReaderHeadlineContent(content) {
   });
   while (heading.firstChild) restored.appendChild(heading.firstChild);
   heading.replaceWith(restored);
-  return Object.assign({}, content, { html: root.innerHTML });
+  return Object.assign({}, content, { title: title, html: root.innerHTML });
 }
 
 function articleTitleFromSelfLinkedHeading(html, title) {
