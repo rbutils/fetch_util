@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe 'FetchUtil extractor integration for generic publishing articles' do
+RSpec.describe 'FetchUtil SegmentFault article extraction' do
   include_context 'extractor integration helpers'
 
-  it 'retains the complete article and source-owned body excerpt without a host profile' do
+  it 'retains the complete article and source-owned body excerpt without turning it into a related list' do
     html = <<~HTML
       <html lang="zh-CN">
         <head>
@@ -45,6 +45,7 @@ RSpec.describe 'FetchUtil extractor integration for generic publishing articles'
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect_content_type(payload, 'article')
+      expect(payload).to include('readerMode' => false, 'hostAware' => true)
       expect(payload['title']).to eq('记录ChatGPT 因为 Cyber Abuse 莫名其妙被封号的解封方案，以及解封后 Pro 会员消失的真相')
       expect(payload['byline']).to eq('示例作者')
       expect(payload['publishedTime']).to be_nil

@@ -1551,6 +1551,7 @@ RSpec.describe "extract asset bundle" do
       profiles/news/europe/central/hungary/index_hu.js
       profiles/news/americas/south/brazil/abril.js
       profiles/news/asia/east/netease_news.js
+      profiles/publishing/segmentfault.js
       profiles/news/europe/southern/rcs_corriere.js
       profiles/news/europe/dnevnik.js
       profiles/news/europe/central/czech/idnes.js
