@@ -1113,6 +1113,7 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     fallback_paths = %w[
       extractors/article/fallback/focal_ownership.js
+      extractors/article/fallback/focal_permalink.js
       extractors/article/fallback/fallback_excerpt.js
       extractors/article/fallback/section_ownership.js
       extractors/article/fallback/fallback.js
@@ -1245,6 +1246,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/figure_captions.js
         extractors/article/coverage/main_coverage.js
         extractors/article/fallback/focal_ownership.js
+        extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/fallback.js

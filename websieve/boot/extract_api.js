@@ -16,7 +16,7 @@
       }
 
       function cachedFocalArticleContent(candidate) {
-        return !!(focalArticleRoute && candidate &&
+        return !!(candidate && (candidate.focalPermalinkContent || focalArticleRoute) &&
           (candidate.contentType === "article" || candidate.contentType === "medical"));
       }
 
@@ -53,6 +53,7 @@
 
       function indexListCandidateAllowed(candidate) {
         return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
+          !candidate.focalPermalinkContent &&
           candidate.contentType !== "medical" && candidate.contentType !== "product" &&
           candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
           candidate.contentType !== "hotel" && candidate.contentType !== "event" &&
