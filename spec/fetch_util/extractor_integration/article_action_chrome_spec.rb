@@ -101,4 +101,22 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(positions).to eq(positions.sort)
     end
   end
+
+  it 'removes exact breadcrumb wrappers without treating similarly named prose as navigation' do
+    html = article_with_actions(
+      toolbar: '<div class="breadcrumb"><a href="/reports">Reports</a><a href="/reports/hardware">Hardware</a></div>',
+      promotion: '<section class="breadcrumb-story"><p>A breadcrumb-story class can still own substantive editorial context.</p></section>',
+      comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+
+      expect(payload.fetch('markdown')).not_to include('[Reports]', '[Hardware]')
+      expect(payload.fetch('markdown')).to include('A breadcrumb-story class can still own substantive editorial context.')
+      expect(payload.fetch('markdown')).to include('first report paragraph', 'third report paragraph')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end
