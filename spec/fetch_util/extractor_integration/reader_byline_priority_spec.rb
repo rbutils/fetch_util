@@ -52,6 +52,7 @@ RSpec.describe 'reader byline priority' do
       window.__readerBylineCanExpand = function(input) {
         return readerBylineCanExpand(input.content, input.author);
       };
+      window.__sanitizeByline = sanitizeByline;
     JS
   end
 
@@ -83,6 +84,19 @@ RSpec.describe 'reader byline priority' do
       page.add_script_tag(content: reader_byline_test_source)
       page.evaluate("window.__readerBylineCanExpand(#{JSON.generate(content: content, author: author)})")
     end
+  end
+
+  def sanitized_byline(value)
+    with_url_page('https://example.de/culture/byline', '<main>Original source body.</main>') do |page|
+      page.add_script_tag(content: reader_byline_test_source)
+      page.evaluate("window.__sanitizeByline(#{JSON.generate(value)})")
+    end
+  end
+
+  it 'removes a written-by presentation prefix without changing ordinary names' do
+    expect(sanitized_byline('Written By Yana Khodun')).to eq('Yana Khodun')
+    expect(sanitized_byline('Yana Khodun')).to eq('Yana Khodun')
+    expect(sanitized_byline('Written Bypass')).to eq('Written Bypass')
   end
 
   it 'prefers a substantially more informative metadata name to an opaque reader handle' do
