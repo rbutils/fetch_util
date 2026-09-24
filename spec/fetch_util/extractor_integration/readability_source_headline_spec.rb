@@ -85,6 +85,13 @@ RSpec.describe 'Source-owned Reader headlines' do
       end
       unrelated_markdown = candidate.merge(markdown: "# Another report\n\nThe unrelated article is not the source headline.")
       expect(page.evaluate("window.__readerHeadlineProof(#{JSON.generate(unrelated_markdown)})").fetch('html')).to eq(candidate.fetch(:html))
+      page.evaluate("document.querySelector('h1').textContent = '# Verified source report'")
+      literal_marker_title = candidate.merge(title: '# Verified source report',
+                                             markdown: "# # Verified source report\n\nThe literal marker is part of the title.")
+      expect(page.evaluate("window.__readerHeadlineProof(#{JSON.generate(literal_marker_title)})").fetch('html')).to eq(candidate.fetch(:html))
+      literal_marker_without_markdown = literal_marker_title.reject { |key, _| key == :markdown }
+      expect(page.evaluate("window.__readerHeadlineProof(#{JSON.generate(literal_marker_without_markdown)})").fetch('html')).to eq(candidate.fetch(:html))
+      page.evaluate("document.querySelector('h1').textContent = 'Verified source report'")
       expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
     end
   end
