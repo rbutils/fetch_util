@@ -1156,6 +1156,7 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(project_root, "websieve/manifest.txt"), chomp: true)
     expect(manifest.index("core/dom/widgets/action_prompts.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/article_engagement.js")).to be < manifest.index("core/dom/widgets/article.js")
+    expect(manifest.index("core/dom/widgets/related_records.js")).to be < manifest.index("core/dom/noise_cleanup.js")
   end
 
   it "loads structured detail arbitration before late list dominance" do

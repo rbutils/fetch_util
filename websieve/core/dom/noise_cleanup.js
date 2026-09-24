@@ -217,6 +217,10 @@
     root.querySelectorAll("div, section, aside").forEach(function(block) {
       if (block.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (!block.closest("article, main, [role='main']")) return;
+      if (relatedHeadingRecordRail(block)) {
+        block.remove();
+        return;
+      }
 
       var text = normalizeText(block.textContent || "").trim();
       if (!text || !RELATED_SECTION_HEADING_PATTERN.test(text.slice(0, 120))) return;

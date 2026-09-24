@@ -25,4 +25,34 @@ RSpec.describe 'Short related-story sections' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'omits heading-and-time related rails without deleting substantive related commentary' do
+    records = (1..6).map do |index|
+      "<article><h2>Independent recommendation headline #{index}</h2><time>#{index}:15</time></article>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Regional transport funding report</title></head><body><main><article>
+        <h1>Regional transport funding report</h1>
+        <p>Officials explained the completed public consultation and gave a detailed account of which routes will be funded across the region this year.</p>
+        <p>The report identifies the expected station improvements, the timetable, and the sources of funding for the work under discussion.</p>
+        <section><h2>Zobacz również:</h2>#{records}</section>
+        <p>Residents can compare the measurements in the original published report with the decisions reached during a later council meeting.</p>
+        <section><h3>Related articles</h3>
+          <article><h4>Historical assessment</h4><p>A substantive retrospective explains how earlier proposals were assessed and why the final route differs.</p></article>
+          <article><h4>Funding context</h4><p>A substantive funding note documents the public record and the decisions made by the council.</p></article>
+          <article><h4>Timetable context</h4><p>A substantive timetable note records project stages and the evidence used for the final schedule.</p></article>
+        </section>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/transport-funding', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload.fetch('markdown')).not_to include('Zobacz również', 'Independent recommendation headline')
+      expect(payload.fetch('markdown')).to include('substantive retrospective', 'substantive funding note',
+                                                   'substantive timetable note', 'Residents can compare')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end
