@@ -1242,6 +1242,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/intro_coverage.js
         extractors/article/coverage/carousel_coverage.js
         extractors/article/coverage/resources.js
+        extractors/article/coverage/figure_captions.js
         extractors/article/coverage/main_coverage.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/fallback_excerpt.js

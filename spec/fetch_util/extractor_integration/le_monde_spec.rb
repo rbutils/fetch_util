@@ -24,7 +24,7 @@ RSpec.describe 'FetchUtil extractor integration' do
             <p class="article__desc">Provoquée par un anticyclone au large du Portugal et des îles britanniques, la chaleur s’est installée lundi dans une large partie du territoire.</p>
             <p class="article__author">Audrey Garric</p>
             <article class="article__content old__article-content-single">
-              <figure class="article__media"><img src="heatwave.jpg" alt="A Bordeaux, le 6 juillet 2026"><figcaption>A Bordeaux, le 6 juillet 2026, alors que la France connaît une nouvelle vague de chaleur.</figcaption></figure>
+              <figure class="article__media"><img src="heatwave.jpg" alt="A Bordeaux, le 6 juillet 2026"><figcaption>A Bordeaux, le 6 juillet 2026, alors que la France connaît une nouvelle vague de chaleur. CHRISTOPHE ARCHAMBAULT/AFP</figcaption></figure>
               <p class="article__paragraph">Les Français n’ont presque pas eu le temps de ranger les ventilateurs. Moins d’une semaine après la fin de la canicule historique de juin, le pays bascule officiellement dans une nouvelle vague de chaleur.</p>
               <p class="article__paragraph">Cette surchauffe s’annonce intense et durable, probablement autour d’une douzaine de jours. Ce troisième épisode caniculaire de l’année mettra de nouveau à rude épreuve les organismes.</p>
               <p class="article__paragraph">De nouveau, le thermomètre s’affole. Les 40 °C seront atteints dans de nombreuses régions du Sud et de l’Ouest.</p>
@@ -49,6 +49,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).not_to include("La suite est réservée")
       expect(payload["html"]).to include("<h1>La France bascule dans une nouvelle vague de chaleur caniculaire")
       expect(payload["html"]).to include("A Bordeaux, le 6 juillet 2026")
+      expect(payload["markdown"]).to include("CHRISTOPHE ARCHAMBAULT/AFP")
       expect(payload["html"]).not_to include("Cet article vous est offert", "La suite est réservée")
       expect(payload["html"].scan("Les Français n’ont presque pas eu le temps de ranger les ventilateurs").length).to eq(1)
       lead = "Provoquée par un anticyclone au large du Portugal et des îles britanniques, " \
