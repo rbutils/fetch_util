@@ -233,6 +233,9 @@ module FetchUtil
           raise unless page_loaded_enough?(page)
         end
         stabilize_page(page, loaded_page_url(page, url))
+        if page.current_url == "about:blank" && url != "about:blank"
+          raise Ferrum::Error, "Request to #{url} finished on about:blank without a public page"
+        end
         page
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
         close_page(page)

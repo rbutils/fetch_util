@@ -145,6 +145,22 @@ RSpec.describe FetchUtil::Browser do
     expect(page).to have_received(:go_to).once
   end
 
+  it 'does not yield an empty browser page after a failed public navigation' do
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage')
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page, current_url: 'about:blank')
+    allow(page).to receive(:close)
+    browser = browser_with_idle
+    allow(browser).to receive(:stabilize_page)
+
+    expect do
+      browser.with_page('https://example.com/') { |loaded| loaded }
+    end.to raise_error(FetchUtil::BrowserError, /about:blank without a public page/)
+    expect(page).to have_received(:close).once
+    expect(page).to have_received(:go_to).once
+  end
+
   it 'shares pending-connection classification with navigation retries' do
     browser = browser_with_idle
     pending = Ferrum::Error.new('There are still pending connections')
