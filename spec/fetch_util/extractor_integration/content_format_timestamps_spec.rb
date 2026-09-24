@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil implicit liveblog clocks' do
   include_context 'extractor integration helpers'
 
-  def format_for(url, html)
+  def format_for(url, html, reader_mode: false)
     with_url_page(url, html) do |page|
       extractor_for(true).__send__(:inject_assets, page)
       source_root = File.expand_path('../../../websieve', __dir__)
@@ -18,7 +18,8 @@ RSpec.describe 'FetchUtil implicit liveblog clocks' do
           const owner = document.querySelector('main');
           const markdown = formatProbe.markdown(owner.innerHTML);
           return formatProbe.detect({ title: document.title },
-            { contentType: 'article', title: document.title, html: owner.innerHTML, textContent: owner.textContent },
+             { contentType: 'article', title: document.title, html: owner.innerHTML,
+               textContent: owner.textContent, readerMode: #{reader_mode} },
             markdown);
         })()
       JS
@@ -48,5 +49,24 @@ RSpec.describe 'FetchUtil implicit liveblog clocks' do
     html = "<html><head><title>Incident timeline</title></head><body><main>#{sections}</main></body></html>"
 
     expect(format_for('https://reports.example/coverage', html)).to eq('liveblog')
+  end
+
+  it 'does not mistake embedded example times in a code-rich guide for live updates' do
+    sections = (1..12).map do |number|
+      <<~HTML
+        <section><h2>API example #{number}</h2>
+          <p>The complete reference explains one independent programming operation with substantive source-owned prose.</p>
+          <p>Readers can use this guide to understand the example and its documented return values.</p>
+          <pre><code>clock = "#{format("%02d", number + 8)}:30"; call_endpoint(clock)</code></pre></section>
+      HTML
+    end.join
+    html = "<html><head><title>Getting Started with a Framework</title></head><body>" \
+           "<main><article><h1>Getting Started</h1>#{sections}</article></main></body></html>"
+
+    expect(format_for('https://guides.framework.example/getting_started.html', html, reader_mode: true)).to be_nil
+    expect(format_for('https://guides.framework.example/getting_started.html', html)).to be_nil
+
+    live = html.sub('Getting Started with a Framework', 'Live updates for a framework release')
+    expect(format_for('https://guides.framework.example/live-updates', live, reader_mode: true)).to eq('liveblog')
   end
 end

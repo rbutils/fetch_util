@@ -137,6 +137,13 @@
 
     var formatView = multiTopicExtractionView(content, markdown);
     var formatMarkdown = formatView.markdown || markdown || "";
+    var guideRoot = formatView.root;
+    var codeRichGuide = content && content.contentType === "article" && guideRoot &&
+      /\b(?:guides?|docs?|documentation|reference|tutorials?|manual)\b/i.test([
+        document.title, location.pathname, location.hostname
+      ].join(" ")) &&
+      guideRoot.querySelectorAll("pre").length >= 6 && guideRoot.querySelectorAll("p").length >= 8 &&
+      guideRoot.querySelectorAll("h2, h3").length >= 6;
 
     // 5. Multi-topic heuristic: page contains multiple distinct timestamped entries or update blocks
     // Count headings and timestamps only after related/sidebar/list/feed widgets are removed.
@@ -145,7 +152,7 @@
     var credibleRootHomepageList = timestampedHomepageList &&
       (content.portalRootEvidence || homepageHasEditorialSections(document));
     // Dated records on any list are not live updates without the explicit evidence above.
-    if (formatView.root && !timestampedIndexList) {
+    if (formatView.root && !timestampedIndexList && !codeRichGuide) {
       var headings = formatView.root.querySelectorAll("h2, h3");
       var timeElements = formatView.root.querySelectorAll("time, [datetime]");
 
@@ -165,7 +172,7 @@
     // 6. Markdown-level heuristic: many H2/H3 with timestamps interspersed
     // Require higher thresholds to avoid false positives on regular articles
     // with a single publication timestamp (e.g. "Stand: 04:07 Uhr")
-    if (formatMarkdown && !timestampedIndexList) {
+    if (formatMarkdown && !timestampedIndexList && !codeRichGuide) {
       var h2Count = (formatMarkdown.match(/^##\s+/gm) || []).length;
       // A dotted coin price such as 0.01 is not a time; dotted clocks need a time unit.
       var clockTimes = formatMarkdown.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/gm) || [];
