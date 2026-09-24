@@ -185,6 +185,32 @@ RSpec.describe 'FetchUtil social result contract' do
     end
   end
 
+  it 'keeps code-rich document routes distinct from dotted public handles' do
+    examples = (1..12).map do |index|
+      "<section><h2>API example #{index}</h2><p>Example #{index} explains how this programming API works for a public guide.</p>" \
+        "<pre><code>@products = catalogue.fetch(#{index})</code></pre></section>"
+    end.join
+    docs = '<html><head><title>Getting Started with a Framework</title></head><body><main><article>' \
+           '<h1>Getting Started with a Framework</h1><p>This guide explains a complete software application in detail.</p>' \
+           '<p>One example account has 200 followers, but the guide is not a public profile.</p>' \
+           "<h2>About</h2>#{examples}</article></main></body></html>"
+
+    with_url_page('https://guide.example/getting_started.html', docs) do |page|
+      payload = extract_payload(page)
+      expect(payload['contentType']).to eq('article')
+      expect_empty_social_fields(payload)
+      expect(payload['markdown']).to include('API example 1', 'API example 12', '@products')
+    end
+
+    profile = '<html><head><title>Ada Developer | Work Square</title></head><body><main>' \
+              '<h1>Ada Developer</h1><p>@ada.dev</p><p>200 followers</p><h2>About</h2>' \
+              '<p>Ada documents public research and publishes software updates for the community.</p></main></body></html>'
+    with_url_page('https://work.example/ada.dev', profile) do |page|
+      payload = extract_payload(page)
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'profile', 'handle' => '@ada.dev')
+    end
+  end
+
   it 'does not infer a profile from a profile-shaped login form' do
     html = <<~HTML
       <html><head><title>Ada Lovelace | Common Ground</title></head><body><main><h1>Sign in to continue</h1><p>@ada</p><p>2K followers</p><form><input type="email"><input type="password"></form></main></body></html>

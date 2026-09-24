@@ -8,6 +8,7 @@
     if (parts.length === 2 && /^(?:company|in|members?|people|profiles?|users?)$/i.test(first || "") && /^[a-z0-9._-]{2,64}$/i.test(second || "")) {
       return { identifier: second, explicit: true };
     }
+    if (parts.length === 1 && /\.(?:html?|md|pdf|php|aspx?)$/i.test(first || "")) return null;
     if (parts.length !== 1 || !/^[a-z0-9._-]{2,64}$/i.test(first || "") || /^(?:about|account|accounts|auth|explore|feed|home|login|search|settings|signup)$/i.test(first)) return null;
     return { identifier: first, explicit: false };
   }
