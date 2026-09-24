@@ -39,6 +39,10 @@
     var tokens = [node.localName || "", node.id || "", node.getAttribute("data-testid") || "", node.getAttribute("role") || ""].concat(Array.from(node.classList || []));
     if (!tokens.some(function(token) { return /(?:^|[-_])(card|comment|feed|message|post|reply|status|thread)(?:[-_]|$)/i.test(token); })) return null;
 
+    var permalink = node.getAttribute("permalink") || "";
+    if (/^[a-z][a-z0-9-]*-post$/i.test(node.localName || "") && node.getAttribute("author") &&
+        materializedHttpUrl(permalink)) return node.localName + "|post";
+
     var classes = Array.from(node.classList || []).filter(function(name) {
       return !/^(?:active|current|expanded|loaded|open|selected)$/i.test(name);
     }).sort();
@@ -70,6 +74,7 @@
     var route = socialPostRouteEvidence();
     var community = socialRouteCommunity();
     if (!route && !community) return null;
+    if (!route && /\/(?:comments?|posts?|threads?)\/[^/]+/i.test(location.pathname || "")) return null;
 
     var candidates = Array.prototype.map.call(document.querySelectorAll("main, [role='main']"), function(owner) {
       if (elementVisuallyHidden(owner) || owner.querySelector('input[type="password"], input[autocomplete="current-password"]')) return null;
@@ -190,7 +195,7 @@
       byline: evidence.kind === "feed" ? metadata.byline : evidence.author || metadata.byline,
       excerpt: metadata.excerpt || text.slice(0, 280),
       siteName: metadata.siteName,
-      publishedTime: metadata.publishedTime || firstTextFromNode(evidence.owner, ["time", ".time"]),
+      publishedTime: evidence.kind === "feed" ? null : metadata.publishedTime || firstTextFromNode(evidence.owner, ["time", ".time"]),
       canonicalUrl: metadata.canonicalUrl,
       html: clone.outerHTML,
       markdown: markdown,

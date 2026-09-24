@@ -246,7 +246,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var socialFields = content.contentType === "social" ? content : {};
   byline = listPageByline(byline, metadata, content, markdown);
 
-  var publishedTime = content.contentType === "list" ? (content.publishedTime || null) : (content.publishedTime || metadata.publishedTime);
+  var publishedTime = collectionPublishedTime(content, metadata);
   if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;
   var result = {
     title: primaryTitle || normalizeText(metadata.title),

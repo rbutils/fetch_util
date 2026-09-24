@@ -83,3 +83,10 @@ function listPageByline(byline, metadata, content, markdown) {
   });
   return owned.length > 0 && sourceOwnership.local ? null : byline;
 }
+
+function collectionPublishedTime(content, metadata) {
+  if (content.contentType === "list" || (content.contentType === "social" && content.socialKind === "feed")) {
+    return content.publishedTime || null;
+  }
+  return content.publishedTime || metadata.publishedTime;
+}
