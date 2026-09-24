@@ -63,4 +63,29 @@ RSpec.describe 'Source-owned Reader headlines' do
       expect(page.evaluate("window.__readerHeadlineProof(#{JSON.generate(already_titled)})").fetch('html')).to eq(already_titled.fetch(:html))
     end
   end
+
+  it 'restores a source-owned HTML headline when Reader already rendered the matching Markdown title' do
+    paragraphs = (1..12).map do |index|
+      "<p>Original observation #{index} retains its complete source description and verified sequence of events.</p>"
+    end.join
+    html = "<main><article><h1>Verified source report</h1>#{paragraphs}</article></main>"
+
+    with_url_page('https://reports.example/source-report', html) do |page|
+      original_body = page.evaluate('document.body.innerHTML')
+      reader_source_headline_probe(page)
+      candidate = { title: 'Verified source report', html: "<div>#{paragraphs}</div>",
+                    markdown: "# Verified source report\n\nAll twelve observations remain in the original order.",
+                    readerMode: true, contentType: 'article' }
+      result = page.evaluate("window.__readerHeadlineProof(#{JSON.generate(candidate)})")
+
+      expect(result.fetch('html')).to start_with('<h1>Verified source report</h1>')
+      expect(result.fetch('markdown')).to eq(candidate.fetch(:markdown))
+      (1..12).each do |index|
+        expect(result.fetch('html').scan("Original observation #{index} retains").length).to eq(1)
+      end
+      unrelated_markdown = candidate.merge(markdown: "# Another report\n\nThe unrelated article is not the source headline.")
+      expect(page.evaluate("window.__readerHeadlineProof(#{JSON.generate(unrelated_markdown)})").fetch('html')).to eq(candidate.fetch(:html))
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
+    end
+  end
 end

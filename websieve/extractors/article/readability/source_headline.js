@@ -29,7 +29,7 @@
 
   function sourceOwnedReaderMissingHeadlineContent(content) {
     if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
-        !content.html || content.markdown) return content;
+        !content.html || (content.markdown && !markdownStartsWithTitle(content.markdown, content.title))) return content;
     var evidence = sourceOwnedReaderHeadlineEvidence(content.html, content.title);
     if (!evidence) return content;
 
