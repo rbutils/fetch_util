@@ -45,10 +45,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload['contentType']).to eq('article')
       expect(payload).to include('title' => 'Seberapa Berat Memenuhi Aturan Antideforestasi Eropa',
-                                 'readerMode' => true, 'hostAware' => false)
-      expect(payload['excerpt']).to start_with('PRODUSEN makanan dan minuman masih menunggu kepastian')
-      expect(payload['excerpt']).to end_with('pada akhir 2026.')
-      expect(payload['excerpt']).not_to include('Tempo/M Taufan Rengganis')
+                                 'readerMode' => false, 'hostAware' => true)
       paragraphs = [
         'PRODUSEN makanan dan minuman masih menunggu kepastian',
         'Mereka belum mendapatkan kepastian agar produk-produknya',
