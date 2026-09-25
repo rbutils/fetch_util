@@ -112,6 +112,14 @@
     }
 
     var selected = best && best.score > -Infinity ? best : null;
+    var homepageLanding = homepageLandingOwnership();
+    if (homepageLanding) {
+      var homepageMainRecord = records.find(function(record) { return record.node === homepageLanding.main; });
+      if (homepageMainRecord && Number.isFinite(homepageMainRecord.score)) {
+        selected = homepageMainRecord;
+        focalOwnership = null;
+      }
+    }
     if (!selected || !focalOwnership || selected.node !== focalOwnership.node) focalOwnership = null;
     var node = selected ? selected.node : document.body;
     var visibleNode = selected ? selected.visibleNode : visibleBody;

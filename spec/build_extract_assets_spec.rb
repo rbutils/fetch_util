@@ -1231,7 +1231,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     segments = [
-      ["classifiers/list_pages/article_body_collection.js", [], "classifiers/list_pages/context.js"],
+      ["classifiers/list_pages/article_body_collection.js", ["classifiers/list_pages/ownership/homepage_landing.js"], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
       ], "classifiers/list_pages/chrome.js"],

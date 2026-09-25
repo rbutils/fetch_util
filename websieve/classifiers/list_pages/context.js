@@ -88,6 +88,7 @@
 
   function articleRouteFocalContent(content) {
     if (!document.body) return false;
+    var homepageLanding = homepageLandingOwnership();
     var semanticCandidates = Array.prototype.filter.call(document.querySelectorAll("[itemprop~='articleBody' i], article[role~='main' i]"), function(node) {
       if (elementSubtreeHidden(node) || node.closest("nav, aside, footer, [role~='navigation' i], [role~='complementary' i]")) return false;
       return normalizeText(node.textContent || "").length >= 120;
@@ -109,24 +110,30 @@
     });
     var mainFocal = topLevelMainArticles[0] || null;
     if (semanticAmbiguous && !headlineFocal) return false;
-    var focal = headlineFocal || semanticFocal || classFocal || mainFocal;
+    var focal = (homepageLanding && homepageLanding.main) || headlineFocal || semanticFocal || classFocal || mainFocal;
     if (!articleLikePath() && !focal) return false;
     if (focal === classFocal && !articleLikePath() && focal !== headlineFocal) return false;
     if (content && content.contentType !== "article" && content.contentType !== "medical" &&
-        !(content.contentType === "list" && focal === headlineFocal)) return false;
+        !(content.contentType === "list" && (focal === headlineFocal || (homepageLanding && focal === homepageLanding.main)))) return false;
 
-    var root = focal ? visibilityPrunedClone(focal, document) : document.createElement("div");
+    var focalCloneMap = new WeakMap();
+    var root = focal ? visibilityPrunedClone(focal, document, focalCloneMap) : document.createElement("div");
     if (!focal && content && content.html) root.innerHTML = content.html;
-    var heading = focal === headlineFocal && headlineOwnership
+    var heading = homepageLanding && focal === homepageLanding.main && focalCloneMap.get(homepageLanding.heading)
+      ? focalCloneMap.get(homepageLanding.heading)
+      : (focal === headlineFocal && headlineOwnership
       ? headlineOwnership.heading
       : Array.prototype.find.call(root.querySelectorAll("h1, h2[itemprop~='headline' i], [role='heading'][aria-level='1']"), function(node) {
         return !elementSubtreeHidden(node);
-      });
+      }));
     var ownedTitle = heading && normalizeText(heading.textContent || "") ||
       (focal === headlineFocal && headlineOwnership && headlineOwnership.title);
+    var clonedLandingBody = homepageLanding && focal === homepageLanding.main
+      ? focalCloneMap.get(homepageLanding.body)
+      : null;
     var paragraphs = Array.prototype.filter.call(root.querySelectorAll("p"), function(paragraph) {
       var owner = paragraph.closest("article");
-      return !owner || owner === root;
+      return !owner || owner === root || (clonedLandingBody && owner === clonedLandingBody);
     });
     var text = normalizeText(paragraphs.map(function(paragraph) { return paragraph.textContent || ""; }).join(" "));
     if (!focal && content && content.html) text = normalizeText(root.textContent || "");
@@ -149,11 +156,14 @@
       return total + normalizeText(link.textContent || "").length;
     }, 0);
     var effectiveLinkDensity = paragraphlessBody ? paragraphlessLinkText / rootText.length : linkDensity;
-    var requiresExclusiveMainOwnership = !!focal && (focal === classFocal || focal === mainFocal) && focal !== headlineFocal;
+    var requiresExclusiveMainOwnership = !!focal && (focal === classFocal || focal === mainFocal ||
+      (homepageLanding && focal === homepageLanding.main)) && focal !== headlineFocal;
     var ownsMainBody = topLevelMainArticles.length === 1 && topLevelMainArticles[0] === focal;
-    var bodyEvidence = requiresExclusiveMainOwnership && !ownsMainBody
-      ? paragraphlessBody
-      : (substantialProse || structuredLiveBody || paragraphlessBody);
+    var bodyEvidence = homepageLanding && homepageLanding.main === focal
+      ? text.length >= 280 && !semanticAmbiguous
+      : (requiresExclusiveMainOwnership && !ownsMainBody
+        ? paragraphlessBody
+        : (substantialProse || structuredLiveBody || paragraphlessBody));
     var broadListRoute = queryOrCategoryPage() || (likelyListPath() && !articleLikePath());
     if (semanticFocal !== focal && ownsMainBody && broadListRoute) {
       var recordSelector = genericListCardSelector();

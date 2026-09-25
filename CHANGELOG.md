@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- Preserve homepage landing copy, service links, and partner media when a visible external heading owns one unambiguous prose article.
 - Restore visible author-profile links for source-owned fallback articles using the same paragraph and identity proof as Reader output.
 - Preserve complete source-owned focal article paragraphs in excerpts instead of clipping words or merging the next paragraph.
 - Prefer explicit discussion threads over broad comment-layout wrappers so adjacent recommendations are not appended as reader comments.
