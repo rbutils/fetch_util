@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the Dnevnik article profile while preserving visible public teasers, source language, author attribution, and subscription warnings through shared extraction.
 - Retire the Al Masry Al Youm article profile, preserving complete digest stories and applying normal news-age warnings instead of a documentation exemption.
 - Retire the Tempo article profile while preserving source-owned reporting, public previews, captions, and access warnings through shared extraction.
 - Retire the arXiv abstract profile in favor of shared scholarly extraction that preserves source-owned authors, dates, version history, and download links.
