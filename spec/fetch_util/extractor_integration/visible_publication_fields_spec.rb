@@ -45,4 +45,45 @@ RSpec.describe 'FetchUtil visible publication fields' do
       expect(payload['publishedTime']).to eq('2026-09-25T09:30:00Z')
     end
   end
+
+  def inline_publication_page(field)
+    heading = '<h1 class="entry-title">Restoring the river</h1>'
+    publication_field_page('').sub(heading, "<header class=\"entry-header\">#{field}#{heading}</header>")
+  end
+
+  it 'retains inline labeled header dates in metadata and content without making them the excerpt' do
+    field = 'Atualizado em <strong>08/09/2026 às 13:55</strong> • Verificação em tempo real'
+
+    extract_from_url('https://example-blog.test/restoration/', inline_publication_page(field)) do |payload|
+      expect(payload['publishedTime']).to eq('08/09/2026 às 13:55')
+      expect(payload['html']).to include('Atualizado em <strong>08/09/2026 às 13:55</strong>')
+      expect(payload['markdown']).to include('Atualizado em **08/09/2026 às 13:55**')
+      expect(payload['excerpt']).to start_with('The restoration team returned to the river')
+    end
+  end
+
+  it 'does not promote event dates, hidden dates, ambiguous headers, or non-date labels' do
+    fields = [
+      'Meeting on <strong>08/09/2026</strong>',
+      'Updated <strong hidden>2026-09-08</strong>',
+      'Updated <strong style="visibility:hidden">2026-09-08</strong>',
+      'Updated <strong>all river measurements</strong>',
+      'Updated <strong>2026-09-08</strong><h1>Another article</h1>'
+    ]
+
+    fields.each do |field|
+      extract_from_url('https://example-blog.test/restoration/', inline_publication_page(field)) do |payload|
+        expect(payload['publishedTime']).to be_nil
+      end
+    end
+  end
+
+  it 'keeps explicit datetime priority while preserving the separate updated field in content' do
+    field = 'Updated <strong>2026-09-08 13:55</strong><time datetime="2026-09-07T12:00:00Z">7 September</time>'
+
+    extract_from_url('https://example-blog.test/restoration/', inline_publication_page(field)) do |payload|
+      expect(payload['publishedTime']).to eq('2026-09-07T12:00:00Z')
+      expect(payload['markdown']).to include('Updated **2026-09-08 13:55**')
+    end
+  end
 end

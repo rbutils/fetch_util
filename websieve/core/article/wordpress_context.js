@@ -47,7 +47,9 @@
     var leads = wordpressArticleHeaderLeads(body, article);
     var parts = leads.concat(wordpressArticleFeaturedMedia(body, article));
     var header = wordpressArticleHeader(body, article);
+    var dateFields = visibleInlineHeaderDateFields(header);
     if (header) parts.push(header.matches("h1") ? header : header.querySelector("h1"));
+    dateFields.forEach(function(field) { parts.push(field.node); });
     if (!parts.length) return body;
     parts = parts.filter(function(node, index) {
       return parts.indexOf(node) === index &&
@@ -61,6 +63,14 @@
     parts.forEach(function(part) {
       var clone = visibilityPrunedClone(part, document);
       if (leads.indexOf(part) !== -1) clone.setAttribute("data-fetchutil-wordpress-lead", "true");
+      var dateField = dateFields.find(function(field) { return field.node === part; });
+      if (dateField) {
+        var field = document.createElement("p");
+        field.setAttribute("data-fetchutil-publication-time", "true");
+        field.appendChild(document.createTextNode(dateField.label + " "));
+        field.appendChild(clone);
+        clone = field;
+      }
       root.appendChild(clone);
     });
     root.appendChild(visibilityPrunedClone(body, document));
@@ -95,7 +105,7 @@
     var paragraphs = Array.from(root.querySelectorAll("p"));
     for (var index = 0; index < paragraphs.length; index++) {
       var paragraph = paragraphs[index];
-      if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre")) continue;
+      if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre, [data-fetchutil-publication-time]")) continue;
       var value = normalizeText(paragraph.textContent || "");
       if (value) return value;
     }

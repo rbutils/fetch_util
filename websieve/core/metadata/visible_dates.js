@@ -16,6 +16,28 @@ function visiblePublishedTimeField(node) {
   return !node.querySelector(contentSelector + ", h1, h2, h3, h4, h5, h6, figure, blockquote, pre, table");
 }
 
+function visibleInlineHeaderDateFields(header) {
+  if (!header || elementVisuallyHidden(header) || header.closest("aside, nav, [role='complementary']")) return [];
+  return Array.from(header.querySelectorAll("strong, b, span, time")).map(function(node) {
+    var previous = node.previousSibling;
+    if (!previous || previous.nodeType !== Node.TEXT_NODE || elementVisuallyHidden(node)) return null;
+    var label = normalizeText(previous.textContent || "");
+    if (!/^(?:published|updated|last updated|atualizad[oa]|publicad[oa]|actualizado|aggiornato)(?:\s+(?:on|at|em|el|às))?\s*:?$/i.test(label)) return null;
+    var value = normalizeText(node.textContent || "");
+    if (!/^(?:\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})(?:\s+(?:(?:at|às)\s+)?\d{1,2}:\d{2}(?::\d{2})?)?$/i.test(value)) return null;
+    return { node: node, label: label, value: value };
+  }).filter(Boolean);
+}
+
+function visibleInlinePublishedTime(roots) {
+  var headings = Array.from(document.querySelectorAll("h1")).filter(function(node) { return !elementVisuallyHidden(node); });
+  if (headings.length !== 1) return null;
+  var header = headings[0].closest("header, .entry-header, .post-header");
+  if (!header || !roots.some(function(root) { return root.contains(header); })) return null;
+  var fields = visibleInlineHeaderDateFields(header);
+  return fields.length ? fields[0].value : null;
+}
+
 function visiblePublishedTime() {
   var roots = visiblePublishedTimeRoots();
   return firstScopedText(roots, ["time[datetime]"], "datetime") ||
@@ -38,5 +60,5 @@ function visiblePublishedTime() {
       "[class*='posted' i]",
       "[data-testid*='date' i]",
       "time"
-    ], null, null, visiblePublishedTimeField);
+    ], null, null, visiblePublishedTimeField) || visibleInlinePublishedTime(roots);
 }

@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Recover explicitly labeled inline publication and update dates from owned article headers without treating the header or body as a date.
 - Preserve visible external WordPress comments and nested replies when the thread's declared post ID matches the selected article, including author links and timestamps.
 - Retain uniquely owned WordPress header headlines in article HTML as well as Markdown and title metadata.
 - Derive shared WordPress excerpts from complete owned header leads or body prose instead of image Markdown and captions.
