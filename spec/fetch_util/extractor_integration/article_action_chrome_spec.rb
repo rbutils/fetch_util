@@ -178,4 +178,45 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'removes a complete inert automatic-audio notice from an article and its excerpt' do
+    notice = "Ascolta l'articolo 4 min Questo audio è generato in automatico."
+    html = article_with_actions(
+      toolbar: "<div class='widget-audio-article'>#{notice}</div>", promotion: '', comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      cleaned = article_action_probe(page)
+      payload = extract_payload(page)
+
+      %w[html markdown excerpt].each { |field| expect(payload.fetch(field)).not_to include(notice) }
+      expect(payload.fetch('markdown')).to include('source-owned introduction', 'third report paragraph')
+      expect(cleaned.fetch('html')).not_to include(notice)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'preserves quoted audio notices, additional reporting, links, and recordings' do
+    notice = "Ascolta l'articolo 4 min Questo audio è generato in automatico."
+    html = article_with_actions(
+      toolbar: '',
+      promotion: <<~HTML,
+        <p class="audio-article">#{notice}</p>
+        <div class="audio-article">#{notice} Il rapporto analizza gli errori della sintesi vocale.</div>
+        <div class="audio-article"><a href="/transcript">#{notice}</a></div>
+        <div class="audio-article"><audio src="/recording.mp3" controls></audio>#{notice}</div>
+        <div class="audio-article"><h2>#{notice}</h2></div>
+        <div class="audio-description">#{notice}</div>
+      HTML
+      comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      cleaned = article_action_probe(page)
+      expect(cleaned.fetch('html').scan(notice).length).to eq(6)
+      expect(cleaned.fetch('html')).to include('gli errori della sintesi vocale', '/transcript', '/recording.mp3')
+      expect(cleaned.fetch('unchanged')).to be(true)
+    end
+  end
 end

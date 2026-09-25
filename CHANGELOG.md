@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Exclude complete inert Italian automatic-audio notices from article text and excerpts while preserving quoted notices, additional reporting, links, and recordings.
+
 ## v0.8.0 - 2026-09-24
 
 ### Changed

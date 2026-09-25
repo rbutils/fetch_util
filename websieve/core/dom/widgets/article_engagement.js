@@ -15,9 +15,17 @@ function articleReactionChip(node) {
 function articleSyntheticAudioNotice(node) {
   if (!node || !node.matches) return false;
   var tokens = articleWidgetTokens(node);
-  if (tokens.indexOf("audio") === -1 || tokens.indexOf("player") === -1) return false;
+  if (tokens.indexOf("audio") === -1) return false;
   if (node.querySelector("a[href], button, input, audio, video, iframe, object, embed, img, picture, figure, pre, code, table, ul, ol")) return false;
 
+  var articlePlayer = tokens.indexOf("article") >= 0 || tokens.indexOf("player") >= 0;
+  var plainNotice = node.matches("div, span") && Array.from(node.querySelectorAll("*")).every(function(child) {
+    return child.matches("div, span");
+  });
+  if (articlePlayer && plainNotice &&
+      /^Ascolta l['\u2019]articolo\s+\d+\s+min(?:uti)?\s+Questo audio \u00e8 generato in automatico\.?$/i.test(normalizeText(node.textContent))) return true;
+
+  if (tokens.indexOf("player") === -1) return false;
   var lines = Array.from(node.querySelectorAll("p, span, div")).filter(function(child) {
     return !child.querySelector("p, span, div");
   }).map(function(child) { return normalizeText(child.textContent || ""); }).filter(Boolean);
