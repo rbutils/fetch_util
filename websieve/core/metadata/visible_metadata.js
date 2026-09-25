@@ -137,6 +137,7 @@ function localizedAuthorMetadataOwner(node, root) {
 
 function localizedAuthorLinkContext(node, root) {
   if (!node || elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return false;
+  if (!articleBylineNode(node)) return false;
   if (!localizedAuthorProfilePath(node.getAttribute("href") || "")) return false;
 
   var parent = node.parentElement;
@@ -176,6 +177,7 @@ function visibleNamedAuthorByline() {
   visibleBylineRoots().forEach(function(root) {
     root.querySelectorAll("[class*='author-name' i]").forEach(function(node) {
       if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return;
+      if (!articleBylineNode(node)) return;
       var value = normalizeText(node.textContent || "");
       if (value && values.indexOf(value) === -1) values.push(value);
     });
@@ -230,7 +232,7 @@ function visibleByline() {
     "[class*='writer' i]",
     "[class*='reporter' i]",
     "[data-testid*='author' i]"
-  ], null, /^(?:author information|authors? and affiliations?)$/i);
+  ], null, /^(?:author information|authors? and affiliations?)$/i, articleBylineNode);
   if (!value) value = visibleLocalizedAuthor(roots);
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;

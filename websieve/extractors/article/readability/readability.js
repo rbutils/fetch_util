@@ -15,7 +15,13 @@
       var mediaWikiLike = !!document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output, .mw-parser-output");
       if (!mediaWikiLike) cleanupAgentRoot(clone);
       cleanupGenericArticleRoot(clone);
-      var article = new Readability(clone).parse();
+      var reader = new Readability(clone);
+      var checkByline = reader._checkByline;
+      // Readability removes accepted bylines; linked records own their own attribution.
+      reader._checkByline = function(node, matchString) {
+        return articleBylineNode(node) && checkByline.call(this, node, matchString);
+      };
+      var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
