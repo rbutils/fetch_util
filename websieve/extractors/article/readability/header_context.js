@@ -62,6 +62,7 @@
 
     var restored = cleanClone(visibilityPrunedClone(header));
     if (!restored.querySelector("h1")) return content;
+    var excerpt = sourceOwnedReaderHeaderExcerpt(restored) || content.excerpt;
     var represented = Array.from(root.querySelectorAll("header")).filter(function(existing) {
       return Array.from(existing.querySelectorAll("h2, h3, h4, h5, h6")).some(function(heading) {
         return normalizeText(heading.textContent) === normalizeText(title);
@@ -73,7 +74,7 @@
           !Array.from(represented[0].querySelectorAll("a[href]")).every(function(link) { return sourceLinks.indexOf(link.href) >= 0; })) return content;
       represented[0].replaceWith(restored);
       return Object.assign({}, content, {
-        title: title, html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
+        title: title, excerpt: excerpt, html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
       });
     }
     var article = header.closest("article");
@@ -101,6 +102,16 @@
     });
     root.insertBefore(restored, root.firstChild);
     return Object.assign({}, content, {
-      title: title, html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
+      title: title, excerpt: excerpt, html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
     });
+  }
+
+  function sourceOwnedReaderHeaderExcerpt(header) {
+    var heading = header.querySelector("h1");
+    var descriptions = readerHeaderParagraphs(header).filter(function(paragraph) {
+      if (!(heading.compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      return paragraph.matches("[itemprop~='description']") ||
+        /(?:^|[\s_-])(?:excerpt|summary|standfirst|dek)(?:$|[\s_-])/i.test(paragraph.className);
+    });
+    return descriptions.length === 1 ? normalizeText(descriptions[0].textContent) : null;
   }

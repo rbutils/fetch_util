@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Use complete, explicitly marked source-owned Reader header leads as excerpts while preserving existing excerpts for ambiguous header text.
 - Restore visible article-header context when its unique headline and ordered body paragraphs establish Reader ownership, preserving taxonomy, reading time, and distinct header leads.
 - Restrict duration-player label cleanup to standalone timing lines so editorial prose and image descriptions keep the word “duration”.
 - Retain linked images and charts inside Markdown table cells and separate block-level cell labels without losing destinations.

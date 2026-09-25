@@ -93,4 +93,36 @@ RSpec.describe 'Source-owned Reader article headers' do
       expect(payload['markdown']).to include('[Science](https://reports.example/science)', 'Engineers recorded improved flow')
     end
   end
+
+  it 'uses the complete, explicitly marked owned header lead as its excerpt' do
+    details = 'Detailed reporting. ' * 18
+    lead = "A complete guide to <a href='/rivers'>restoring rivers</a> explains the evidence. #{details}"
+    %w[article-excerpt story-summary standfirst dek].each do |marker|
+      html = reader_header_page(lead: lead).sub("<p>#{lead}</p>", "<p class='#{marker}'>#{lead}</p>")
+      extract_from_url('https://reports.example/river', html) do |payload|
+        expected = "A complete guide to restoring rivers explains the evidence. #{details}".strip
+        expect(payload['excerpt']).to eq(expected)
+        expect(payload['markdown']).to include('[restoring rivers](https://reports.example/rivers)')
+        expect(payload['markdown']).to include('Engineers recorded improved flow')
+      end
+    end
+  end
+
+  it 'keeps the existing excerpt when marked header descriptions are hidden, ambiguous or before the headline' do
+    lead = 'A complete guide to restoring the river.'
+    variants = [
+      "<p class='summary' hidden>#{lead}</p>",
+      "<p class='summary'>#{lead}</p><p itemprop='description'>A different summary.</p>"
+    ].map { |replacement| reader_header_page.sub("<p>#{lead}</p>", replacement) }
+    variants << reader_header_page.sub('<h1>Restoring the river</h1>', '').sub(
+      "<p>#{lead}</p>", "<p class='summary'>#{lead}</p><h1>Restoring the river</h1>"
+    )
+    variants.each do |html|
+      with_url_page('https://reports.example/river', html) do |page|
+        reader_header_probe(page)
+        result = page.evaluate("window.__readerHeader(#{JSON.generate(reader_header_candidate)})")
+        expect(result.fetch('excerpt')).to eq('A useful body lead.')
+      end
+    end
+  end
 end
