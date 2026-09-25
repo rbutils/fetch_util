@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- Distinguish Arabic writer labels from author names, retaining named authors and rejecting empty attribution labels.
 - Choose WordPress body prose ahead of caption fields and standalone photo-credit lines for excerpts while retaining all captions, images, and links in the article.
 - Remove complete inert closed-discussion notices while preserving quoted statements, editorial text, reader comments, links, and media.
 - Normalize WordPress fallback titles against an explicitly declared publisher suffix while preserving actual headlines and unmatched title text.
