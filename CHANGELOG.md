@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Reject whole article and body containers as visible publication-date fields while retaining localized dates and explicit timestamps.
 - Preserve visible, source-labeled editorial iframe destinations as links when article cleanup removes the embedded frames.
 - Retain source-owned WordPress featured images and captions before the article body without importing hidden or unrelated media.
 - Preserve separate WordPress article-header leads when unique headline and body ownership establish their relationship, excluding hidden, sidebar, and ambiguous summaries.

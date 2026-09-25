@@ -65,13 +65,14 @@ function visibleBylineRoots() {
   return articles.length >= 2 ? [] : roots;
 }
 
-function firstScopedText(roots, selectors, attr, rejectedValue) {
+function firstScopedText(roots, selectors, attr, rejectedValue, acceptNode) {
   for (var r = 0; r < roots.length; r += 1) {
     for (var i = 0; i < selectors.length; i += 1) {
       var nodes = roots[r].querySelectorAll(selectors[i]);
       for (var n = 0; n < nodes.length; n += 1) {
         var node = nodes[n];
         if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) continue;
+        if (acceptNode && !acceptNode(node)) continue;
 
         var value = attr ? node.getAttribute(attr) : node.textContent;
         value = normalizeText(value);
@@ -233,43 +234,6 @@ function visibleByline() {
   if (!value) value = visibleLocalizedAuthor(roots);
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
-}
-
-function visiblePublishedTimeRoots() {
-  var path = location.pathname || "/";
-  if (path !== "/" && !/^\/index\.(?:html?|php|aspx?)$/i.test(path)) return visibleMetadataRoots();
-
-  var roots = [];
-  document.querySelectorAll("[itemprop='articleBody'], article[role='main']").forEach(function(node) {
-    var root = node.closest("article, [role='main'], main") || node;
-    if (roots.indexOf(root) === -1 && textLength(root) >= 80) roots.push(root);
-  });
-  return roots;
-}
-
-function visiblePublishedTime() {
-  var roots = visiblePublishedTimeRoots();
-  return firstScopedText(roots, ["time[datetime]"], "datetime") ||
-    firstScopedText(roots, [
-      "[itemprop='datePublished']",
-      "[itemprop='dateModified']",
-      "[class*='pubdate' i]",
-      "[class*='published-date' i]",
-      "[class*='published_at' i]",
-      "[class*='published-at' i]",
-      "[class*='publication-date' i]",
-      "[class*='fecha' i]",
-      "[class*='data-publicacao' i]",
-      "[class*='data-publicação' i]",
-      "[class*='datum' i]",
-      "[class*='tarih' i]",
-      "[class*='date' i]",
-      "[class*='time' i]",
-      "[class*='publish' i]",
-      "[class*='posted' i]",
-      "[data-testid*='date' i]",
-      "time"
-    ]);
 }
 
 function manyTexts(selectors, limit) {
