@@ -193,7 +193,6 @@ profiles/news/news_homepages.js
 profiles/families/academic/core.js
 profiles/families/academic/records.js
 profiles/families/academic/records_output.js
-profiles/families/academic/preprints.js
 profiles/families/scientific_records/iucn.js
 profiles/families/scientific_records/ensembl.js
 profiles/families/scientific_records/ncbi_gene.js

@@ -1328,7 +1328,6 @@ RSpec.describe "extract asset bundle" do
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
                           registerBookingProfiles
-                          registerAcademicPreprintProfiles
                           registerCsdnProfiles
                           registerSubstackProfiles
                           registerPackageRegistryProfiles
@@ -1364,7 +1363,7 @@ RSpec.describe "extract asset bundle" do
                           registerBlueskyProfiles
                         ])
     expect(register_source).to include(
-      "registerAcademicPreprintProfiles();\n  registerHostAwareProfile(true, scientificRecordContent);"
+      "registerHostAwareProfile(true, genericScholarlyArticleContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
     )
     expected_search_manifest = %w[
       profiles/social/search.js

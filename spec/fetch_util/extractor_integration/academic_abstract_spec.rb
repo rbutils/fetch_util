@@ -550,7 +550,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
-  it 'surfaces arXiv abstract details instead of sidebar tooling' do
+  it 'surfaces arXiv abstract details through shared scholarly record ownership' do
     html = <<~HTML
       <html>
         <head>
@@ -595,7 +595,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
 
       expect(payload['contentType']).to eq('article')
       expect(markdown).to include('# Attention Is All You Need')
-      expect(markdown).to include('Author: Ashish Vaswani, Noam Shazeer')
+      expect(markdown).to include('Authors: Ashish Vaswani, Noam Shazeer')
       expect(markdown).to include('The dominant sequence transduction models')
       expect(markdown).to include('Submitted on 12 Jun 2017')
       expect(markdown).not_to include('Bibliographic and Citation Tools')

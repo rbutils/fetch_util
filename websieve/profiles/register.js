@@ -6,7 +6,7 @@
   registerHostAwareProfile(true, softwareProjectHomepageContent);
   registerNewsHomepageProfiles();
   registerBookingProfiles();
-  registerAcademicPreprintProfiles();
+  registerHostAwareProfile(true, genericScholarlyArticleContent);
   registerHostAwareProfile(true, scientificRecordContent);
   registerCsdnProfiles();
   registerSubstackProfiles();

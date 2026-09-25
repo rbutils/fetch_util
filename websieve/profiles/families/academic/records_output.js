@@ -112,7 +112,7 @@
     }).map(function(item) { return item.node; });
   }
 
-  function scholarlyRecordContent(metadata) {
+  function genericScholarlyArticleContent(metadata) {
     var candidates = scholarlyRecordAbstracts(document).map(function(node) {
       var owner = scholarlyRecordCandidateOwner(node);
       return { abstract: node, owner: owner, text: normalizeText(visibilityPrunedClone(node, document).textContent || "") };
