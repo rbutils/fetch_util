@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Preserve owned inline header dates when the same article repeats its exact headline in the body, while rejecting competing article headings.
 - Preserve complete structured discussion tables in list extraction, including short topic labels, author links, and per-row metadata.
 - Skip standalone image-strip labels when choosing WordPress prose excerpts while retaining their text and images in the full article.
 - Recover explicitly labeled inline publication and update dates from owned article headers without treating the header or body as a date.

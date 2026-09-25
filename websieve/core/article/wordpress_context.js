@@ -2,9 +2,10 @@
     var headings = Array.from(document.querySelectorAll("h1")).filter(function(node) {
       return !elementSubtreeHidden(node);
     });
-    if (headings.length !== 1) return null;
+    var datedHeader = headings.length === 1 ? null : visibleInlineDateHeader();
+    if (headings.length !== 1 && !datedHeader) return null;
 
-    var heading = headings[0];
+    var heading = datedHeader ? datedHeader.querySelector("h1") : headings[0];
     var header = heading.closest("header, .entry-header, .post-header");
     if (!header || body.contains(header) || header.contains(body)) return null;
     if (!(header.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;

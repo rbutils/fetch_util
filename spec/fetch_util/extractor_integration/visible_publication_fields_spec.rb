@@ -86,4 +86,15 @@ RSpec.describe 'FetchUtil visible publication fields' do
       expect(payload['markdown']).to include('Updated **2026-09-08 13:55**')
     end
   end
+
+  it 'retains a dated header when the same article repeats its exact headline in the body' do
+    html = inline_publication_page('Atualizado em <strong>14/09/2026 às 13:36</strong>')
+           .sub('<div class="entry-content">', '<div class="entry-content"><h1>Restoring the river</h1>')
+
+    extract_from_url('https://example-blog.test/restoration/', html) do |payload|
+      expect(payload['publishedTime']).to eq('14/09/2026 às 13:36')
+      expect(payload['markdown']).to include('Atualizado em **14/09/2026 às 13:36**')
+      expect(payload['excerpt']).to start_with('The restoration team returned to the river')
+    end
+  end
 end

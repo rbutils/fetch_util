@@ -29,10 +29,24 @@ function visibleInlineHeaderDateFields(header) {
   }).filter(Boolean);
 }
 
-function visibleInlinePublishedTime(roots) {
+function visibleInlineDateHeader() {
   var headings = Array.from(document.querySelectorAll("h1")).filter(function(node) { return !elementVisuallyHidden(node); });
-  if (headings.length !== 1) return null;
-  var header = headings[0].closest("header, .entry-header, .post-header");
+  var headers = headings.map(function(heading) { return heading.closest("header, .entry-header, .post-header"); }).filter(function(header, index, all) {
+    return header && all.indexOf(header) === index && visibleInlineHeaderDateFields(header).length;
+  });
+  if (headers.length !== 1) return null;
+  var header = headers[0];
+  var owner = header.closest("article");
+  var headline = header.matches("h1") ? header : header.querySelector("h1");
+  if (headings.some(function(heading) {
+    return heading !== headline && (!owner || heading.closest("article") !== owner ||
+      normalizeText(heading.textContent) !== normalizeText(headline.textContent));
+  })) return null;
+  return header;
+}
+
+function visibleInlinePublishedTime(roots) {
+  var header = visibleInlineDateHeader();
   if (!header || !roots.some(function(root) { return root.contains(header); })) return null;
   var fields = visibleInlineHeaderDateFields(header);
   return fields.length ? fields[0].value : null;
