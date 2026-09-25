@@ -3,20 +3,24 @@
 RSpec.describe 'FetchUtil extractor integration - DOM-based docs/article engines' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Ghost articles through DOM detection' do
-    expect_fixture_article(
-      url: 'https://ghost.org/resources/how-to-setup-your-ghost-publication',
-      fixture_path: File.expand_path('../../fixtures/ghost_article.html', __dir__),
-      includes: [
+  it 'extracts Ghost articles through shared Reader ownership' do
+    html = fixture_contents(File.expand_path('../../fixtures/ghost_article.html', __dir__))
+    extract_from_url('https://ghost.org/resources/how-to-setup-your-ghost-publication', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include(
         'How to set up your Ghost publication',
         'Resources',
         '2 min read',
         'A complete introduction to configuring your publication.',
         'Start publishing with Ghost in a few practical steps.'
-      ],
-      excludes: ['Published with Ghost', 'Sign in', 'Get Started'],
-      warning_excludes: %w[short_extraction empty_extraction url_content_mismatch consent_interstitial]
-    )
+      )
+      expect(payload['markdown']).not_to include('Published with Ghost', 'Sign in', 'Get Started')
+      expect_warnings(payload, exclude: %w[short_extraction empty_extraction url_content_mismatch consent_interstitial])
+      expect(payload['suspect']).to be(false)
+      expect(payload['hostAware']).to be(false)
+      expect(payload['readerMode']).to be(true)
+      expect(payload['excerpt']).to eq('A complete introduction to configuring your publication.')
+    end
   end
 
   it 'extracts Sphinx docs through DOM detection' do
