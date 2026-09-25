@@ -62,6 +62,55 @@
     return { root: root, markdown: filteredMarkdown || "" };
   }
 
+  function unicodeWordCount(text) {
+    var value = String(text || "");
+    if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+      var segments = new Intl.Segmenter(undefined, { granularity: "word" }).segment(value);
+      var words = 0;
+      for (var segment of segments) {
+        if (segment.isWordLike) words++;
+      }
+      return words;
+    }
+    return (value.match(/[\p{L}\p{N}]+/gu) || []).length;
+  }
+
+  function newsletterFocalArticleRoot(metadata, content, root) {
+    if (!content || content.contentType !== "article" || !root) return null;
+    var focalHeading = root.querySelector("h1, [itemprop='headline']") || root.querySelector("h2");
+    var pageTitle = normalizeText((content && content.title) || (metadata && metadata.title) || "");
+    var focalTitle = normalizeText(focalHeading && focalHeading.textContent);
+    var hasFocalTitle = focalTitle === pageTitle ||
+      (focalTitle.length >= 6 && pageTitle.indexOf(focalTitle) === 0 && /^[\s|:–—-]/.test(pageTitle.slice(focalTitle.length)));
+    if (!focalHeading || !pageTitle || !hasFocalTitle) return null;
+    return focalHeading.closest("article, [itemprop='articleBody']") || null;
+  }
+
+  function newsletterCommerceCardCount(root) {
+    if (!root) return 0;
+    var cards = root.querySelectorAll(
+      "[itemtype*='Product' i], [itemtype*='Offer' i], [itemprop='offers'], [data-product-id], [data-item-id][data-detail-setting]"
+    );
+    var destinationsSeen = [];
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      var links = [];
+      if (card.matches("a[href]")) links.push(card);
+      Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) { links.push(link); });
+      var destinations = [];
+      var linkedImage = false;
+      for (var j = 0; j < links.length; j++) {
+        var destination = links[j].href || links[j].getAttribute("href");
+        if (destination && destinations.indexOf(destination) === -1) destinations.push(destination);
+        if (links[j].querySelector("img")) linkedImage = true;
+      }
+      if (destinations.length === 1 && linkedImage && destinationsSeen.indexOf(destinations[0]) === -1) {
+        destinationsSeen.push(destinations[0]);
+      }
+    }
+    return destinationsSeen.length;
+  }
+
   // Detect liveblog / multi-topic / briefing content format
   function detectContentFormat(metadata, content, markdown) {
     var title = normalizeText((content && content.title) || metadata.title || "").toLowerCase();
@@ -191,9 +240,9 @@
       var mdLines = formatMarkdown.split("\n").filter(function(l) { return l.trim().length > 0; });
       var mdLinks = (formatMarkdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
       var mdHeadings = (formatMarkdown.match(/^#{1,3}\s+/gm) || []).length;
+      var focalArticleRoot = newsletterFocalArticleRoot(metadata, content, guideRoot);
 
-      // Count short text blocks (< 200 chars between headings/links) — characteristic of
-      // digest/hub layouts where each item is just a headline + 1-2 sentence summary + link
+      // Count short text blocks (< 200 chars between headings/links) as before.
       var shortBlocks = 0;
       var currentBlockLen = 0;
       for (var li = 0; li < mdLines.length; li++) {
@@ -208,14 +257,15 @@
       if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
 
       // Newsletter/digest: many headings, many links, and most content blocks are short
+      shortBlocks = Math.max(0, shortBlocks - newsletterCommerceCardCount(focalArticleRoot));
       if (mdHeadings >= 4 && mdLinks.length >= 5 && shortBlocks >= 4 && shortBlocks >= mdHeadings * 0.6) {
         return "newsletter";
       }
 
       // Hub/index page: dominated by links with very little prose relative to link count
       // (e.g. news hub pages listing story headlines as links)
-      var proseText = formatMarkdown.replace(/\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/^#{1,6}\s+.*$/gm, "").replace(/[^a-zA-Z\u00C0-\u024F\u0400-\u04FF\u0370-\u03FF\u0100-\u017F\u0180-\u024F]/g, " ").replace(/\s+/g, " ").trim();
-      var proseWordCount = proseText.split(/\s+/).filter(function(w) { return w.length >= 3; }).length;
+      var proseText = formatMarkdown.replace(/\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/^#{1,6}\s+.*$/gm, "");
+      var proseWordCount = unicodeWordCount(proseText);
       if (mdLinks.length >= 8 && mdHeadings >= 4 && proseWordCount < mdLinks.length * 5) {
         return "newsletter";
       }

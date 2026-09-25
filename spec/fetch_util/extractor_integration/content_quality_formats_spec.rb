@@ -322,6 +322,85 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "keeps a narrative Japanese product review with linked commerce cards as an article" do
+    sections = (1..5).map do |index|
+      <<~SECTION
+        <h2>商品のポイント#{index}</h2>
+        <p>この商品は毎日の食卓で使いやすく、素材の風味と使い心地を丁寧に確かめました。家族で楽しめる味わいで、季節の料理にも合わせやすいと感じます。</p>
+        <article itemtype="https://schema.org/Product">
+          <a data-item-id="offer-#{index}" data-detail-setting='{"show_price":true}' href="/shop/item-#{index}">
+            <img src="/images/item-#{index}.jpg" alt="商品#{index}">商品#{index}の詳細
+          </a>
+        </article>
+      SECTION
+    end.join
+    html = <<~HTML
+      <html><head><title>夏の食品セットを実際に試したレビュー</title></head><body><main><article>
+        <h1>夏の食品セットを実際に試したレビュー</h1>
+        <p>こんにちは。今回は夏限定の食品セットを実際に試し、味や使い方を一つずつ紹介します。</p>
+        #{sections}
+        <p>販売情報まとめ。価格や購入方法を確認してから選ぶと安心です。</p>
+        <a href="/shop/bundle">セットを購入する</a>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://reviews.example.com/summer-food-set", html) do |page|
+      payload = extract(page)
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["markdown"]).to include("商品のポイント", "販売情報まとめ", "/shop/item-5", "/shop/bundle")
+      expect(payload["html"]).to include(*5.times.map { |index| "item-#{index + 1}.jpg" })
+    end
+  end
+
+  it "keeps a mixed market digest a newsletter when one story has a product offer card" do
+    stories = (1..7).map do |index|
+      offer = if index == 3
+                '<article itemtype="https://schema.org/Product">' \
+                  '<a data-item-id="market-offer" data-detail-setting="{}" href="/offers/fund">' \
+                  '<img src="/fund.jpg" alt="Fund offer">Fund offer details</a></article>'
+              else
+                ""
+              end
+      <<~STORY
+        <h2>Market update #{index}</h2>
+        <p>#{offer}The daily market bulletin reports a short update on rates, earnings, and the latest movement in this sector.</p>
+        <a href="/markets/story-#{index}">Read the full update</a>
+      STORY
+    end.join
+    html = <<~HTML
+      <html><head><title>Today's Market Briefing</title></head><body><main><article>
+        <h1>Today's Market Briefing</h1>
+        #{stories}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://news.example.com/market-briefing", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+    end
+  end
+
+  it "does not mistake short Japanese narrative prose for a linked digest" do
+    html = <<~HTML
+      <html><head><title>今日の買い物メモ</title></head><body><main><article>
+        <h1>今日の買い物メモ</h1>
+        <h2>朝のこと</h2><p>今朝は近所でパンを買い、家でゆっくり朝食を楽しみました。</p><article><a href="/shop/bread"><img src="/bread.jpg" alt="パン">パンの商品情報</a></article>
+        <h2>昼のこと</h2><p>昼には季節の野菜を使って、簡単な料理を作りました。</p><article><a href="/shop/vegetables"><img src="/vegetables.jpg" alt="野菜">野菜の商品情報</a></article>
+        <h2>夕方のこと</h2><p>夕方は家族と散歩をして、帰りに必要なものを買いました。</p><article><a href="/shop/tea"><img src="/tea.jpg" alt="お茶">お茶の商品情報</a></article>
+        <h2>明日の予定</h2><p>明日は天気を見ながら、また出かける場所を決めたいと思います。</p><article><a href="/shop/bag"><img src="/bag.jpg" alt="バッグ">バッグの商品情報</a></article>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://diary.example.com/today", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["markdown"]).to include("朝のこと", "明日の予定")
+    end
+  end
+
   it "does not warn multi_topic_page for a substantial institutional overview with focus cards" do
     intro = 8.times.map do |i|
       <<~PARAGRAPH
