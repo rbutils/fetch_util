@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the Maroela-specific WordPress override in favor of shared title, prose-excerpt, discussion-status, and post-owned comment handling.
 - Retire the Ghost article handler in favor of shared extraction that preserves owned headers, complete leads, editorial headings, linked-card attribution, and embedded media.
 - Retire the NewsIT-specific WordPress override in favor of shared extraction that preserves owned leads, media, quotations, links, and reader discussions.
 
