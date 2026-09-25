@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the 20minutos live-article profile while preserving every visible update, source order, and complete numeric lead sentences through shared extraction.
 - Retire the Dnevnik article profile while preserving visible public teasers, source language, author attribution, and subscription warnings through shared extraction.
 - Retire the Al Masry Al Youm article profile, preserving complete digest stories and applying normal news-age warnings instead of a documentation exemption.
 - Retire the Tempo article profile while preserving source-owned reporting, public previews, captions, and access warnings through shared extraction.

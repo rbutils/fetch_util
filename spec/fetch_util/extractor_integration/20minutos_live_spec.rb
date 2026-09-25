@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil 20minutos live extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'preserves every visible live entry without hidden history or page controls' do
+  it 'preserves every visible live entry through shared extraction without hidden history or controls' do
     url = 'https://www.20minutos.es/nacional/incendios-espana-directo-un-amplio-dispositivo-trabaja-para-mantener-perimetro-incendio-castellon_7010836_6.html'
     html = fixture_contents(File.expand_path('../../fixtures/20minutos_live_article.html', __dir__))
     additional_entries = (4..12).map do |index|
@@ -30,7 +30,7 @@ RSpec.describe 'FetchUtil 20minutos live extractor integration' do
       markdown = payload.fetch('markdown')
 
       expect_content_type(payload, 'article')
-      expect(payload).to include('readerMode' => false, 'hostAware' => true)
+      expect(payload).to include('readerMode' => true, 'hostAware' => false)
       expect(payload['title']).to include('Incendios en España, en directo')
       expect(payload['publishedTime']).to eq('08/07/2026')
       expect(payload['excerpt']).to start_with('En plena ola de calor, numerosos incendios')
@@ -60,7 +60,8 @@ RSpec.describe 'FetchUtil 20minutos live extractor integration' do
       before = page.evaluate('document.body.innerHTML')
       payload = extract_payload(page)
 
-      expect(payload['excerpt']).to eq('El incendio arrasó 7.000 hectáreas de monte y las brigadas mantuvieron la vigilancia durante la noche.')
+      expect(payload['excerpt']).to eq('El incendio arrasó 7.000 hectáreas de monte y las brigadas mantuvieron la vigilancia durante la noche. ' \
+                                      'Esta actualización añade contexto sobre la respuesta pública.')
       expect(payload['markdown']).to include('Esta actualización añade contexto sobre la respuesta pública.')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
