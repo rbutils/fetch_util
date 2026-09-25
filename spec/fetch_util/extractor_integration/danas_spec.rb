@@ -37,7 +37,7 @@ RSpec.describe 'FetchUtil Danas extraction' do
           'excerpt' => 'Predsednik Aleksandar Vučić ponovo „preti“ svojim ministrima, ovog puta ' \
                        'pokretanjem aplikacije putem koje će građani moći da prijavljuju rupe na ' \
                        'saobraćajnicama, a kojom će u svom „džepu“ imati pregled svih oštećenja ' \
-                       'širom Srbije. Poručio je da će to biti „pakao“ za sve ministre ',
+                       'širom Srbije. Poručio je da će to biti „pakao“ za sve ministre i putare.',
           'contentType' => 'article',
           'contentFormat' => nil,
           'hostAware' => true,
