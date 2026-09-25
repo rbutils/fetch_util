@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Tempo article bodies without leading related-link clusters' do
+  it 'extracts Tempo bodies through shared ownership without leading related-link clusters' do
     html = <<~HTML
       <html>
         <head>
@@ -45,7 +45,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload['contentType']).to eq('article')
       expect(payload).to include('title' => 'Seberapa Berat Memenuhi Aturan Antideforestasi Eropa',
-                                 'readerMode' => false, 'hostAware' => true)
+                                 'readerMode' => true, 'hostAware' => false)
       paragraphs = [
         'PRODUSEN makanan dan minuman masih menunggu kepastian',
         'Mereka belum mendapatkan kepastian agar produk-produknya',
