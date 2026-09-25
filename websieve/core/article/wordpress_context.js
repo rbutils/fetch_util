@@ -55,8 +55,8 @@
     });
 
     var root = document.createElement("article");
-    parts.forEach(function(part) { root.appendChild(safeDeepClone(part, document)); });
-    root.appendChild(safeDeepClone(body, document));
+    parts.forEach(function(part) { root.appendChild(visibilityPrunedClone(part, document)); });
+    root.appendChild(visibilityPrunedClone(body, document));
     return root;
   }
 

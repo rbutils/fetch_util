@@ -220,6 +220,7 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
+    materializeEditorialFrameLinks(node, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {
       clone.querySelectorAll(preserveSelector).forEach(function(el) {
