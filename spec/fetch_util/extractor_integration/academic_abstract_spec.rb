@@ -86,7 +86,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     Array(excludes).each { |text| expect(content).not_to include(text) }
   end
 
-  it 'extracts PLOS style open-access article sections from the article text root' do
+  it 'extracts PLOS style open-access article sections through shared record ownership' do
     html = <<~HTML
       <html>
         <head>
@@ -190,7 +190,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     expect(result.markdown).to include('## Discussion')
   end
 
-  it 'extracts PLOS Biology article bodies with sec-prefixed section anchors' do
+  it 'extracts PLOS Biology bodies with sec-prefixed anchors through shared record ownership' do
     html = <<~HTML
       <html>
         <head>

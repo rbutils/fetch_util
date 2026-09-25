@@ -1,70 +1,3 @@
-  function plosStyleArticleContent(metadata) {
-    function articleParts(source) {
-      var candidate = Array.prototype.reduce.call(source.querySelectorAll(".article-content .article-text"), function(best, node) {
-        var sections = node.querySelectorAll(".section.toc-section a[data-toc^='s']").length;
-        if (!best || sections > best.sections) return { node: node, sections: sections };
-        return best;
-      }, null);
-      var articleText = candidate && candidate.node;
-      if (!articleText) return null;
-
-      var abstractNode = articleText.querySelector(".abstract.toc-section, .abstract");
-      var bodySections = Array.prototype.filter.call(articleText.querySelectorAll(".section.toc-section"), function(section) {
-        var tocTarget = section.querySelector("a[data-toc]");
-        var toc = tocTarget && tocTarget.getAttribute("data-toc") || "";
-        var text = normalizeText(section.textContent || "");
-        return /^(?:s|sec)\d+$/i.test(toc) && text.length >= 80;
-      });
-
-      return { abstractNode: abstractNode, bodySections: bodySections };
-    }
-
-    var parts = articleParts(document);
-    if (!parts) return null;
-    if (parts.bodySections.length < 3) {
-      var fallback = fallbackContent();
-      var fallbackRoot = document.createElement("div");
-      fallbackRoot.innerHTML = fallback && fallback.html || "";
-      var fallbackParts = articleParts(fallbackRoot);
-      if (fallbackParts && fallbackParts.bodySections.length > parts.bodySections.length) parts = fallbackParts;
-    }
-    if (!parts.abstractNode || parts.bodySections.length < 2) return null;
-
-    var abstractNode = parts.abstractNode;
-    var bodySections = parts.bodySections;
-
-    var signature = document.querySelector("meta[name='citation_doi'], meta[name='citation_journal_title']") ||
-      /\b(open access|peer-reviewed|research article|article info)\b/i.test(normalizeText(document.body && document.body.textContent || "").slice(0, 12000));
-    if (!signature) return null;
-
-    var title = firstText([".article-header h1", "h1", "meta[name='citation_title']"]) || metadata.title || document.title;
-    title = normalizeText(title || "").replace(/\s*\|\s*PLOS\s+\w+\s*$/i, "");
-
-    function plosPlainMarkdown() {
-      var lines = title ? ["# " + title] : [];
-      [abstractNode].concat(bodySections).forEach(function(section) {
-        section.querySelectorAll("h2, h3, h4, p, figcaption").forEach(function(block) {
-          var blockText = normalizeText(block.textContent || "");
-          if (!blockText) return;
-          if (/^H2$/i.test(block.tagName)) lines.push("", "## " + blockText);
-          else if (/^H3$/i.test(block.tagName)) lines.push("", "### " + blockText);
-          else if (/^H4$/i.test(block.tagName)) lines.push("", "#### " + blockText);
-          else lines.push("", blockText);
-        });
-      });
-      return cleanupMarkdownNoise(lines.join("\n").trim());
-    }
-
-    return assembleScholarlyArticle({
-      metadata: metadata,
-      abstractRoot: abstractNode,
-      bodyRoots: bodySections,
-      title: title,
-      markdownFallback: plosPlainMarkdown,
-      minTextLength: 300
-    });
-  }
-
   function elsevierArticleContent(metadata) { return configuredScholarlyArticleContent(metadata, SCHOLARLY_ARTICLE_CONFIGS.elsevier); }
 
   function ieeeXploreArticleContent(metadata) {
@@ -121,7 +54,6 @@
   }
 
   function registerAcademicPublisherProfiles() {
-    registerHostAwareProfile(true, plosStyleArticleContent);
     registerHostAwareProfile(true, elsevierArticleContent);
     registerHostAwareProfile(true, ieeeXploreArticleContent);
   }
