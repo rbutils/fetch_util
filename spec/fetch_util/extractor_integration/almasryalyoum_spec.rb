@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Al Masry Al Youm extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Al Masry Al Youm article bodies without stale-content warnings' do
+  it 'extracts Al Masry Al Youm article bodies through shared ownership' do
     # Al Masry Al Youm article pages wrap the real body in the masry article container.
     expect_fixture_article(
       url: 'https://www.almasryalyoum.com/news/details/3055115',
@@ -31,7 +31,7 @@ RSpec.describe 'FetchUtil Al Masry Al Youm extractor integration' do
 
       expect(payload).to include(
         'title' => heading, 'contentType' => 'article',
-        'readerMode' => false, 'hostAware' => true, 'warnings' => []
+        'readerMode' => true, 'hostAware' => false, 'warnings' => []
       )
       expect(payload.fetch('html')).to match(%r{<h1\b[^>]*>#{Regexp.escape(heading)}</h1>})
       expect(payload.fetch('html')).to include(image, 'نشرة أخبار الصباح - صورة أرشيفية')
