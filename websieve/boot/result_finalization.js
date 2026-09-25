@@ -98,7 +98,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   contentByline = bylineWithoutSiblingActions(contentByline, metadataByline);
-  var readerAuthor = content.readerMode ? readerBylineSourceAuthorLink(content, metadataByline) : null;
+  var sourceBylineEligible = content.readerMode || (content.contentType === "article" && content.sourceOwnedFocalArticle);
+  var readerAuthor = sourceBylineEligible ? readerBylineSourceAuthorLink(content, metadataByline) : null;
   var readerTextByline = content.readerMode && !readerAuthor ? readerTextBylineSource(content, metadataByline) : null;
   var expandsByline = readerBylineCanExpand(content, readerAuthor);
   if (expandsByline) {

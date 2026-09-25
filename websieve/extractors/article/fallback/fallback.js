@@ -133,6 +133,7 @@
       byline: null,
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
         fallbackArticleExcerpt(visibleNode, text, metadata, !!focalOwnership),
+      sourceOwnedFocalArticle: !!focalOwnership,
       focalPublicPreview: !!(focalOwnership && focalOwnership.body.publicPreview),
       siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,
