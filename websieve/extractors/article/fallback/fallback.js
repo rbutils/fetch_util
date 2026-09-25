@@ -132,7 +132,7 @@
       title: focalOwnership ? focalOwnership.title : document.title,
       byline: null,
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
-        fallbackArticleExcerpt(visibleNode, text, metadata),
+        fallbackArticleExcerpt(visibleNode, text, metadata, !!focalOwnership),
       focalPublicPreview: !!(focalOwnership && focalOwnership.body.publicPreview),
       siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,

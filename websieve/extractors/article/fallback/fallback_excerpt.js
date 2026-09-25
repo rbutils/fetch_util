@@ -1,6 +1,6 @@
-  function fallbackArticleExcerpt(root, text, metadata) {
+  function fallbackArticleExcerpt(root, text, metadata, completeParagraph) {
     var renderedText = normalizeText(text || "");
-    var repeatedHeadlineLead = fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata);
+    var repeatedHeadlineLead = fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph);
     if (repeatedHeadlineLead) return repeatedHeadlineLead;
     function ownedParagraph(node) {
       var value = normalizeText(node.textContent || "");
@@ -21,6 +21,7 @@
 
     var paragraph = root && Array.prototype.find.call(root.querySelectorAll("p, [itemprop~='description']"), ownedParagraph);
     var excerpt = normalizeText((paragraph && paragraph.textContent) || renderedText);
+    if (completeParagraph && paragraph) return excerpt;
     if (paragraph && Array.from(excerpt).length < 280 &&
         !paragraph.closest("[itemprop~='description'], [class*='summary' i], [class*='standfirst' i], [class*='excerpt' i]")) {
       var continuation = paragraph.nextElementSibling;
@@ -31,7 +32,7 @@
     return Array.from(excerpt).slice(0, 280).join("") || null;
   }
 
-  function fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata) {
+  function fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph) {
     if (!root || !root.matches || !root.matches("article") || !metadata || !metadata.siteName) return null;
     var headline = articleTitleFromOwnedExternalHeading(root.innerHTML, document.title, metadata.siteName);
     if (headline === normalizeText(document.title || "") || renderedText.indexOf(headline) !== 0) return null;
@@ -44,6 +45,12 @@
         !fallbackExcerptChromeOwner(root, paragraph) && !articleIntroFurniture(paragraph, root);
     }).map(function(paragraph) { return normalizeText(paragraph.textContent || ""); }).filter(Boolean);
     if (prose.length < 2) return null;
+    if (completeParagraph) {
+      return prose.find(function(value) {
+        var minimum = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(value) ? 40 : 80;
+        return Array.from(value).length >= minimum;
+      }) || null;
+    }
     var lead = normalizeText(prose.join(" "));
     return Array.from(lead).length >= 80 ? Array.from(lead).slice(0, 280).join("") : null;
   }
