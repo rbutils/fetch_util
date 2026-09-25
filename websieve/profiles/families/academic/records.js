@@ -135,14 +135,33 @@
       document.querySelectorAll("meta[name='citation_doi']").length <= 1 &&
       document.querySelectorAll("meta[name='citation_journal_title']").length <= 1;
     var titledRecord = !!title || (!!citationTitle && uniqueCitation);
+    var documentTitleRecord = uniqueCitation && citationJournal &&
+      normalizeText(citationJournal.getAttribute("content") || "") &&
+      scholarlyRecordDocumentTitleIdentity(owner, abstractNode, metadata);
     var structuralOwner = owner.matches("main, [role='main']") && title &&
       abstractNode.closest("[data-extent='frontmatter']") &&
       owner.querySelectorAll("[property='articleBody']:not([hidden])").length === 1 &&
       owner.querySelectorAll("article").length === 0 &&
       owner.querySelectorAll("[data-extent='bodymatter']").length === 1;
-    return !!(schema || structuralOwner || (abstractNode.closest("[role='doc-abstract']") && titledRecord && (uniqueCitation || localRecordFields)) ||
+    return !!(schema || structuralOwner || documentTitleRecord || (abstractNode.closest("[role='doc-abstract']") && titledRecord && (uniqueCitation || localRecordFields)) ||
       (title && (uniqueCitation || localRecordFields || labeledPublication)) ||
       (abstractNode.matches(".abstract-text-content") && labeledPublication));
+  }
+
+  function scholarlyRecordDocumentTitleIdentity(owner, abstractNode, metadata) {
+    if (!owner.matches("article, .article-text")) return false;
+    var title = normalizeText(document.title || "");
+    if (!title || title !== normalizeText(metadata.title || "")) return false;
+    if (Array.from(document.querySelectorAll("h1, [itemprop='headline']")).some(scholarlyRecordVisible)) return false;
+    var abstracts = scholarlyRecordAbstracts(owner).filter(function(node) {
+      return scholarlyRecordCandidateOwner(node) === owner;
+    });
+    if (abstracts.length !== 1 || abstracts[0] !== abstractNode) return false;
+    var sections = scholarlyRecordBodyRoots(owner, abstractNode).filter(function(node) {
+      return node.closest("article, .article-text") === owner &&
+        !node.closest("aside, nav, footer, [role='navigation'], [role='complementary'], [class*='recommend' i], [id*='recommend' i], [class*='sidebar' i], [id*='sidebar' i]");
+    });
+    return sections.length >= 2;
   }
 
   function scholarlyRecordBodyRoots(owner, abstractNode) {

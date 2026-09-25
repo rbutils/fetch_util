@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- Recognize unheaded scholarly records only when a unique journal citation, document title, abstract, and visible scientific sections share one owner.
 - Keep independently owned directories ahead of canonical introduction metadata on collection routes, without promoting hidden, sidebar, or related record groups.
 - Count prose across writing systems and distinguish linked product offers from digest stories when classifying article formats.
 - Preserve homepage landing copy, service links, and partner media when a visible external heading owns one unambiguous prose article.

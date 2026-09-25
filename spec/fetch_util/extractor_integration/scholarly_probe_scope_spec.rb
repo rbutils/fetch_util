@@ -15,7 +15,7 @@ RSpec.describe "FetchUtil scholarly probe scope" do
           calls += 1;
           return { html: document.body.innerHTML };
         };
-        var result = plosStyleArticleContent(collectMetadata());
+        var result = genericScholarlyArticleContent(collectMetadata());
         return { calls: calls, type: result && result.contentType };
       };
       })(window);
@@ -45,7 +45,34 @@ RSpec.describe "FetchUtil scholarly probe scope" do
       HTML
       with_url_page("https://research.example/paper", html) do |page|
         page.add_script_tag(content: scholarly_probe_source)
-        expect(page.evaluate("probeScholarlyArticle()")).to eq("calls" => (count == 2 ? 1 : 0), "type" => "article")
+        expect(page.evaluate("probeScholarlyArticle()")).to eq("calls" => 0, "type" => "article")
+      end
+    end
+  end
+
+  it "rejects document-title identity without unique visible citation and section ownership" do
+    prose = "These observations describe experimental controls, reproducible measurements and the scientific results. " * 2
+    abstract = %(<section class="abstract toc-section"><h2>Abstract</h2><p>#{prose}</p></section>)
+    sections = (1..2).map do |index|
+      %(<section class="section toc-section"><a data-toc="s#{index}"></a><h2>Section #{index}</h2><p>#{prose}</p></section>)
+    end.join
+    citation = %(<meta name="citation_journal_title" content="Research">)
+    record = %(<div class="article-text">#{abstract}#{sections}</div>)
+    cases = [
+      ["", record],
+      [citation * 2, record],
+      [citation, record * 2],
+      [citation, %(<div class="article-text">#{abstract}</div>#{sections})],
+      [citation, %(<div class="article-text">#{abstract}<div hidden>#{sections}</div></div>)],
+      [citation, %(<div class="article-text">#{abstract}<aside>#{sections}</aside></div>)],
+      [citation, "<h1>Independent research directory</h1>#{record}"]
+    ]
+
+    cases.each do |metadata, body|
+      html = "<html><head><title>Research observations</title>#{metadata}</head><body>#{body}</body></html>"
+      with_url_page("https://research.example/paper", html) do |page|
+        page.add_script_tag(content: scholarly_probe_source)
+        expect(page.evaluate("probeScholarlyArticle()")).to eq("calls" => 0, "type" => nil)
       end
     end
   end
