@@ -47,6 +47,36 @@ RSpec.describe 'FetchUtil WordPress prose excerpts' do
     end
   end
 
+  it 'uses body prose after caption fields or standalone photo-credit lines without removing their content' do
+    credit = 'Jabulani Mabuza, raadsvoorsitter van Eskom (Foto: Nhlanhla Phillips/African News Agency/ANA)'
+    captions = [
+      "<div class='wp-caption'><img src='/portrait.jpg' alt='Interview portrait'><p class='wp-caption-text'>#{credit}</p></div>",
+      "<p class='wp-caption-text'>#{credit}</p>", "<p>#{credit}</p>",
+      '<p>Volunteers beside the river (Photo: Field team)</p>'
+    ]
+    captions.each do |caption|
+      extract_from_url('https://example-blog.test/restoration/', wordpress_excerpt_page(body_prefix: caption)) do |payload|
+        expect(payload['excerpt']).to start_with('The restoration team returned to the river')
+        expect(payload['markdown']).to include(caption.include?('Jabulani') ? credit : 'Volunteers beside the river (Photo: Field team)')
+        expect(payload['html']).to include('https://example-blog.test/portrait.jpg') if caption.include?('<img')
+      end
+    end
+  end
+
+  it 'keeps editorial explanations, linked leads, and unrelated caption classes eligible as excerpts' do
+    explanation = 'The report explains image attribution. Its example reads (Photo: Field team)'
+    prefixes = {
+      "<p>#{explanation}</p>" => explanation,
+      '<p><a href="/interview">Field interview</a> (Photo: Field team)</p>' => 'Field interview (Photo: Field team)',
+      '<p class="caption">Floods returned to the river.</p>' => 'Floods returned to the river.'
+    }
+    prefixes.each do |prefix, expected|
+      extract_from_url('https://example-blog.test/restoration/', wordpress_excerpt_page(body_prefix: prefix)) do |payload|
+        expect(payload['excerpt']).to eq(expected)
+      end
+    end
+  end
+
   it 'preserves short or linked leads and colon-ending prose with an independent body' do
     prefixes = {
       '<p>Floods returned.</p>' => 'Floods returned.',

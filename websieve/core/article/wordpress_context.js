@@ -108,8 +108,16 @@
       var paragraph = paragraphs[index];
       if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre, [data-fetchutil-publication-time]")) continue;
       var value = normalizeText(paragraph.textContent || "");
-      if (value && !wordpressArticleMediaLabel(paragraph, root)) return value;
+      if (value && !wordpressArticleCaptionParagraph(paragraph) && !wordpressArticleMediaLabel(paragraph, root)) return value;
     }
+  }
+
+  function wordpressArticleCaptionParagraph(paragraph) {
+    if (paragraph.matches(".wp-caption-text")) return true;
+    var frame = paragraph.closest(".wp-caption");
+    if (frame && frame.querySelector("img, picture")) return true;
+    if (paragraph.children.length) return false;
+    return /^[^.!?()]+\s+\((?:photo|foto|image|credit|courtesy)\s*:\s*[^()]+\)$/i.test(normalizeText(paragraph.textContent || ""));
   }
 
   function wordpressArticleMediaLabel(paragraph, root) {
