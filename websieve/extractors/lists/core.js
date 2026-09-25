@@ -134,6 +134,10 @@
       best.renderedDescriptions = descriptions;
       best.markdown = sectionedListMarkdownWithDescriptions(best.renderedSections, descriptions) || listMarkdown(best.items);
     }
+    if (structuredListTables(best.root).length) {
+      best.sourceTableMarkdown = markdownFor(best.root.innerHTML);
+      best.markdown = best.sourceTableMarkdown;
+    }
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");
     }).length;

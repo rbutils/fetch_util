@@ -39,12 +39,13 @@ function finalizationWarnings(content, metadata, markdown, pageText, signals, pr
 function deferredListFinalizationMarkdown(content, metadata, markdown) {
   var listLikeContent = content.contentType === "list" ||
     (content.contentType === "social" && content.socialKind === "feed");
-  if (listLikeContent && content.sectionMarkdownWithDescription) {
+  var listExtraction = content.listExtraction;
+  var sourceTableMarkdown = listExtraction && listExtraction.sourceTableMarkdown;
+  if (listLikeContent && content.sectionMarkdownWithDescription && !sourceTableMarkdown) {
     markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
     content.textContent = markdown;
   }
-  var listExtraction = content.listExtraction;
-  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown) {
+  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown && !sourceTableMarkdown) {
     var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
       listMarkdownWithInlineDescriptions(listExtraction);
     if (inlineDescriptionMarkdown) {

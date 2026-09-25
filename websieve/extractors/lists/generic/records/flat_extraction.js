@@ -117,13 +117,22 @@
       return candidates;
     }
 
+    var dataTables = structuredListTables(root);
+    dataTables.forEach(function(table) {
+      structuredListTableItems(table).forEach(function(candidate) {
+        if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.card);
+      });
+      table.querySelectorAll("a[href]").forEach(function(link) { acceptedLinks.add(link); });
+    });
     itemNodes.forEach(function(node) {
+      if (dataTables.some(function(table) { return table.contains(node); })) return;
       if (!node.matches("tr") && node.querySelectorAll("tr a[href]").length >= 2) return;
       pushLink(bestLink(node), node);
     });
 
     // Recognizing one collection must not disable discovery of the other records.
     var anchors = Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
+      if (acceptedLinks.has(link)) return false;
       var text = normalizeText(link.textContent);
       var href = link.getAttribute("href");
       if (!href || href[0] === "#") return false;
@@ -137,6 +146,7 @@
     });
     extractFallbackHeadlineItems(root, context).forEach(function(candidate) {
       if (acceptedLinks.has(candidate.sourceNode)) return;
+      if (candidate.sourceNode && dataTables.some(function(table) { return table.contains(candidate.sourceNode); })) return;
       if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.sourceNode);
     });
     candidates.sort(function(a, b) {
