@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Preserve Reader article-header ownership across transformed linked cards when their source text, destination, and position agree.
 - Keep linked resource-card attribution in article content without mistaking it for the article's author.
 - Preserve prose-supported editorial headings whose generated anchor IDs contain newsletter, advertising, or other cleanup keywords.
 - Use complete, explicitly marked source-owned Reader header leads as excerpts while preserving existing excerpts for ambiguous header text.

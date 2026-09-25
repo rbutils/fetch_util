@@ -5,10 +5,20 @@
     });
   }
 
-  function sourceOwnedReaderHeader(root, title) {
-    var selectedParagraphs = readerHeaderParagraphs(root).map(function(paragraph) {
-      return normalizeText(paragraph.textContent);
+  function sourceOwnedReaderLinkedFigure(figure, article) {
+    var selected = linkedArticleResourceFigure(figure);
+    if (!selected) return null;
+    var text = normalizeText(figure.textContent || "").replace(/\s/g, "");
+    var matches = Array.from(article.querySelectorAll("figure")).filter(function(source) {
+      if (source.closest("article") !== article) return false;
+      var record = linkedArticleResourceFigure(source);
+      return record && record.href === selected.href && normalizeText(source.textContent || "").replace(/\s/g, "") === text;
     });
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  function sourceOwnedReaderHeader(root, title) {
+    var selectedParagraphs = readerHeaderParagraphs(root);
     if (selectedParagraphs.length < 2) return null;
 
     var headers = Array.from(document.querySelectorAll("article header")).filter(function(header) {
@@ -26,23 +36,40 @@
         return paragraph.closest("article") === article;
       });
       var cursor = -1;
-      var ownsSelection = selectedParagraphs.every(function(text) {
+      var previous = null;
+      var matchedFigures = new Set();
+      var ownsSelection = selectedParagraphs.every(function(selected) {
+        var figure = selected.closest("figure");
+        if (linkedArticleResourceFigure(figure)) {
+          if (matchedFigures.has(figure)) return true;
+          var sourceFigure = sourceOwnedReaderLinkedFigure(figure, article);
+          if (!sourceFigure || !(header.compareDocumentPosition(sourceFigure) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+              (previous && !(previous.compareDocumentPosition(sourceFigure) & Node.DOCUMENT_POSITION_FOLLOWING))) return false;
+          matchedFigures.add(figure);
+          previous = sourceFigure;
+          return true;
+        }
+        var text = normalizeText(selected.textContent);
         var index = paragraphs.findIndex(function(paragraph, position) {
-          return position > cursor && normalizeText(paragraph.textContent) === text;
+          return position > cursor && normalizeText(paragraph.textContent) === text &&
+            (!previous || (previous.compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING));
         });
         if (index < 0) return false;
         cursor = index;
+        previous = paragraphs[index];
         if (!header.contains(paragraphs[index])) {
           if (!(header.compareDocumentPosition(paragraphs[index]) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
         }
         return true;
       });
-      var bodyTexts = paragraphs.filter(function(paragraph) { return !header.contains(paragraph); })
+      var bodyTexts = paragraphs.filter(function(paragraph) { return !header.contains(paragraph) && !paragraph.closest("figure"); })
+        .map(function(paragraph) { return normalizeText(paragraph.textContent); });
+      var selectedTexts = selectedParagraphs.filter(function(paragraph) { return !paragraph.closest("figure"); })
         .map(function(paragraph) { return normalizeText(paragraph.textContent); });
       var bodyMatches = 0;
       Array.from(new Set(bodyTexts)).forEach(function(text) {
         bodyMatches += Math.min(bodyTexts.filter(function(value) { return value === text; }).length,
-          selectedParagraphs.filter(function(value) { return value === text; }).length);
+          selectedTexts.filter(function(value) { return value === text; }).length);
       });
       return ownsSelection && bodyMatches >= 2;
     });

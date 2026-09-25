@@ -125,4 +125,48 @@ RSpec.describe 'Source-owned Reader article headers' do
       end
     end
   end
+
+  it 'proves header ownership across a source-owned linked figure whose blocks became paragraphs' do
+    card = '<figure><a href="https://reference.example/study"><div>Related river study</div>' \
+           '<div>A separate research team reports its findings and supporting measurements.</div></a></figure>'
+    selected_card = card.gsub('<div>', '<p>').gsub('</div>', '</p>')
+    html = reader_header_page.sub(reader_header_body, reader_header_body.sub('</p>', "</p>#{card}"))
+    selected = reader_header_body.sub('</p>', "</p>#{selected_card}")
+    with_url_page('https://reports.example/river', html) do |page|
+      original_body = page.evaluate('document.body.innerHTML')
+      reader_header_probe(page)
+      result = page.evaluate("window.__readerHeader(#{JSON.generate(reader_header_candidate(selected))})")
+      expect(result.fetch('html')).to include('<h1>Restoring the river</h1>', '4 min read', selected_card)
+      expect(result.fetch('html').scan('Related river study').length).to eq(1)
+      expect(result.fetch('html').index('The river restoration')).to be < result.fetch('html').index('Related river study')
+      expect(result.fetch('html').index('Related river study')).to be < result.fetch('html').index('Engineers recorded')
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
+    end
+  end
+
+  it 'rejects foreign, reordered, hidden and ambiguously owned linked figure evidence' do
+    card = '<figure><a href="https://reference.example/study"><div>Related river study</div>' \
+           '<div>A separate research team reports its findings and supporting measurements.</div></a></figure>'
+    selected_card = card.gsub('<div>', '<p>').gsub('</div>', '</p>')
+    html = reader_header_page.sub(reader_header_body, reader_header_body.sub('</p>', "</p>#{card}"))
+    selected = reader_header_body.sub('</p>', "</p>#{selected_card}")
+    variants = [
+      [html, selected.sub('/study', '/another-study')],
+      [html, selected.sub('Related river study', 'Unrelated findings')],
+      [html, selected.sub('https://reference.example/study', 'javascript:void(0)')],
+      [html, "#{selected_card}#{reader_header_body}"],
+      [html, "#{reader_header_body}#{selected_card}"],
+      [html, "#{selected}<p>This prose belongs to a different report.</p>"],
+      [html.sub(card, ''), selected],
+      [html.sub('<figure>', '<figure hidden>'), selected],
+      [html.sub(card, "#{card}#{card}"), selected]
+    ]
+    variants.each do |source, candidate_html|
+      with_url_page('https://reports.example/river', source) do |page|
+        reader_header_probe(page)
+        candidate = reader_header_candidate(candidate_html)
+        expect(page.evaluate("window.__readerHeader(#{JSON.generate(candidate)})")).to eq(candidate.transform_keys(&:to_s))
+      end
+    end
+  end
 end
