@@ -134,6 +134,7 @@
     if (!wordpressDomDetected()) return null;
 
     return wordpressArticleContent(metadata, {
+      includeHeaderContext: true,
       bodySelectors: [
         "article .wp-block-post-content",
         ".wp-block-post-content",

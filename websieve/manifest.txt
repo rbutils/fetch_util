@@ -43,6 +43,7 @@ core/dom/base.js
 core/dom/cleanup.js
 core/article/content_helpers.js
 core/article/root_selection.js
+core/article/wordpress_context.js
 core/article/profile_article.js
 core/simple_article_profile.js
 core/docs_cleanup/roots.js

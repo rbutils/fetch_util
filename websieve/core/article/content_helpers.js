@@ -72,6 +72,7 @@
 
     var body = wordpressArticleBody(options) || wordpressRestArticleBody(options);
     if (!body) return null;
+    if (options.includeHeaderContext) body = wordpressArticleHeaderContext(body);
 
     return profileArticleContent(metadata, body, {
       title: wordpressArticleTitle(metadata, options),
