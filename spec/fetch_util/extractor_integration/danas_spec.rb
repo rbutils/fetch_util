@@ -32,7 +32,7 @@ RSpec.describe 'FetchUtil Danas extraction' do
 
         expect(result).to include(
           'title' => 'Pakao za ministre i putare: Vučić će sve rupe imati "u džepu", ' \
-                     'šta o tome kaže struka? - Društvo - Dnevni list Danas',
+                     'šta o tome kaže struka? - Društvo',
           'canonicalUrl' => url,
           'excerpt' => 'Predsednik Aleksandar Vučić ponovo „preti“ svojim ministrima, ovog puta ' \
                        'pokretanjem aplikacije putem koje će građani moći da prijavljuju rupe na ' \
