@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil NewsIT extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts NewsIT article bodies without false mismatch or multi-topic warnings' do
+  it 'extracts NewsIT through shared WordPress rules with source media, quotations, and links' do
     html = <<~HTML
       <html lang="el">
         <head>
@@ -44,11 +44,18 @@ RSpec.describe 'FetchUtil NewsIT extractor integration' do
 
     extract_from_url(url, html) do |payload|
       expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('Η άφιξη του Ντόναλντ Τραμπ στην Τουρκία')
+      expect(payload['markdown']).to include('Η άφιξη του [Ντόναλντ Τραμπ](https://www.newsit.gr/tags/ntonalnt-tramp/) στην Τουρκία')
       expect(payload['markdown']).to include('Το κλίμα ήταν ιδιαίτερα εγκάρδιο')
       expect(payload['markdown']).not_to include('Προσθήκη του newsit.gr')
       expect(payload['markdown']).not_to include('ΔΙΑΦΗΜΙΣΗ')
-      expect(payload['markdown']).not_to include('JUST IN')
+      expect(payload['markdown']).to include(
+        'JUST IN: President Trump stepped off Air Force One in Turkey.',
+        'https://www.newsit.gr/wp-content/uploads/2026/07/gelia-1200x800.jpg',
+        'REUTERS/Jonathan Ernst'
+      )
+      expect(payload['excerpt']).to eq('Γέλια και χειραψίες ανάμεσα στους δύο ηγέτες - Υποδοχή με ισχυρό συμβολισμό')
+      expect(payload['publishedTime']).to be_nil
+      expect(payload['html']).to include('<h1 class="entry-title">')
       expect(payload['markdown']).not_to include('Άλλη είδηση')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch multi_topic_page consent_interstitial])
       expect(payload['suspect']).to be(false)

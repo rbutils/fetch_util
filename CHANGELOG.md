@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Retire the NewsIT-specific WordPress override in favor of shared extraction that preserves owned leads, media, quotations, links, and reader discussions.
+
 ### Fixed
 
 - Preserve visible external WordPress comments and nested replies when the thread's declared post ID matches the selected article, including author links and timestamps.

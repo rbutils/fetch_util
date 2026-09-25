@@ -28,46 +28,6 @@
       minBodyTextLength: 250
     },
     {
-      hostPattern: /(^|\.)newsit\.gr$/,
-      homepagePath: /^\/?$/,
-      body: function() {
-        return composeProfileArticleRoot({
-          leadSelectors: [".article-excerpt"],
-          bodySelectors: [
-            "article[id^='post-'] .inside-article .entry-content section",
-            "article[id^='post-'] .entry-content section",
-            "article .entry-content section",
-            ".entry-content section"
-          ]
-        });
-      },
-      titleSelectors: [".entry-title", "article h1", "h1"],
-      removalSelectors: [
-        ".advert-block",
-        ".share-inside-the-content",
-        ".share-menu",
-        ".sticky-container",
-        "[id*='div-gpt-ad' i]",
-        "[class*='newsletter' i]",
-        "[class*='google' i]",
-        "figure",
-        "blockquote.twitter-tweet",
-        "[data-twitter-extracted]"
-      ],
-      minBodyTextLength: 180,
-      rewriteRoot: function(root) {
-        root.querySelectorAll("p, div, span, a").forEach(function(el) {
-          var text = normalizeText(el.textContent || "");
-          if (!text || text.length > 220) return;
-          if (/^(διαφήμιση|ακολουθήστε το newsit\.gr|προσθήκη του newsit\.gr ως προτεινόμενη πηγή στην google)$/i.test(text)) el.remove();
-        });
-
-        root.querySelectorAll("a").forEach(function(link) {
-          link.replaceWith(document.createTextNode(link.textContent || ""));
-        });
-      }
-    },
-    {
       hostPattern: /(^|\.)khaosod\.co\.th$/,
       homepagePath: /^\/?$/,
       pathPattern: /\/news_\d+\/?$/i,
