@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the SegmentFault article profile while preserving complete CJK articles, code, images, and source-owned reader comments through shared extraction.
 - Retire the 20minutos live-article profile while preserving every visible update, source order, and complete numeric lead sentences through shared extraction.
 - Retire the Dnevnik article profile while preserving visible public teasers, source language, author attribution, and subscription warnings through shared extraction.
 - Retire the Al Masry Al Youm article profile, preserving complete digest stories and applying normal news-age warnings instead of a documentation exemption.
