@@ -472,8 +472,11 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
 
     expect_generic_scholarly_payload(
       'https://www.cell.com/cell-reports/fulltext/S2211-1247(26)00512-7', html,
-      includes: ['Summary', 'Introduction', 'macrophage-SFRP4 positive stromal interactions'],
-      excludes: ['Highlights', 'Google Scholar', 'Table S1']
+      includes: [
+        'Highlights', 'Macrophage and stromal niches coordinate tissue regeneration', 'Summary',
+        'Introduction', 'macrophage-SFRP4 positive stromal interactions'
+      ],
+      excludes: ['Google Scholar', 'Table S1']
     )
 
     extract_from_url('https://www.cell.com/cell-reports/fulltext/S2211-1247(26)00512-7', html) do |payload|
@@ -483,6 +486,8 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       expect(payload['hostAware']).to eq(true)
       expect(markdown).to include('# Spatial immune interactions in regenerating tissue')
       expect(markdown).to include('## Summary')
+      expect(markdown).to include('## Highlights')
+      expect(markdown).to include('Macrophage and stromal niches coordinate tissue regeneration')
       expect(markdown).to include('## Introduction')
       expect(markdown).to include('macrophage-SFRP4 positive stromal interactions')
       expect(markdown).not_to include('Google Scholar')

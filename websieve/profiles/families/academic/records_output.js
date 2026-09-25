@@ -90,6 +90,28 @@
     return labels.some(function(label) { return /^(?:abstract|summary)\s*:?$/i.test(label); }) ? "" : "Abstract";
   }
 
+  function scholarlyRecordFrontmatterRoots(owner, primaryAbstract) {
+    var frontmatter = primaryAbstract.closest("[data-extent='frontmatter']");
+    if (!frontmatter || !owner.contains(frontmatter)) return [];
+
+    var abstracts = scholarlyRecordAbstracts(frontmatter).filter(function(node) {
+      return node !== primaryAbstract && node.parentElement === primaryAbstract.parentElement &&
+        node.matches("[property='abstract'], [itemprop='abstract'], [role='doc-abstract']") &&
+        !node.closest("aside, nav, footer, [role='navigation'], [role='complementary'], [class*='recommend' i], [id*='recommend' i], [class*='sidebar' i], [id*='sidebar' i]");
+    });
+    var headings = abstracts.map(function(node) {
+      var heading = node.querySelector("h1, h2, h3, [role='heading'], [property='name']");
+      return { node: node, label: normalizeText(heading && heading.textContent || "") };
+    }).filter(function(item) {
+      return item.label && !/^(?:abstract|summary)\s*:?$/i.test(item.label) &&
+        normalizeText(visibilityPrunedClone(item.node, document).textContent || "").length > 0;
+    });
+
+    return headings.filter(function(item) {
+      return headings.filter(function(other) { return other.label.toLowerCase() === item.label.toLowerCase(); }).length === 1;
+    }).map(function(item) { return item.node; });
+  }
+
   function scholarlyRecordContent(metadata) {
     var candidates = scholarlyRecordAbstracts(document).map(function(node) {
       var owner = scholarlyRecordCandidateOwner(node);
@@ -124,7 +146,8 @@
     if (!sourceHeadline && !citationTitle && /\s\|\s/.test(title)) title = normalizeText(title.split(/\s\|\s/)[0]);
 
     var excerpt = candidate.text.replace(/^Abstract:\s*/i, "");
-    var orderedRoots = [candidate.abstract].concat(bodyRoots, ownedNodes);
+    var frontmatterRoots = scholarlyRecordFrontmatterRoots(candidate.owner, candidate.abstract);
+    var orderedRoots = [candidate.abstract].concat(frontmatterRoots, bodyRoots, ownedNodes);
     orderedRoots = orderedRoots.filter(function(node, index) {
       return orderedRoots.indexOf(node) === index && scholarlyRecordVisible(node);
     });

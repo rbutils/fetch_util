@@ -137,8 +137,7 @@ RSpec.describe 'FetchUtil generic scholarly record extraction' do
         </article></body></html>
     HTML
     elsevier_payload = extract_generic_record(elsevier)
-    expect(elsevier_payload.fetch('html')).to include('Summary', 'Discussion')
-    expect(elsevier_payload.fetch('html')).not_to include('Highlights')
+    expect(elsevier_payload.fetch('html')).to include('Highlights', 'measured outcomes', 'Summary', 'Discussion')
 
     acs = <<~HTML
       <html><head><meta name="citation_title" content="Equilibrium observations">

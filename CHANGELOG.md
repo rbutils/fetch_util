@@ -11,6 +11,7 @@
 
 ### Fixed
 
+- Preserve distinct source-owned scholarly highlights alongside the primary abstract without duplicating responsive summaries or unrelated recommendations.
 - Extract scholarly records from shared abstract, article-body, citation, author, and version-history ownership while preserving complete abstracts and source-ordered links.
 - Distinguish Arabic writer labels from author names, retaining named authors and rejecting empty attribution labels.
 - Choose WordPress body prose ahead of caption fields and standalone photo-credit lines for excerpts while retaining all captions, images, and links in the article.
