@@ -1,6 +1,7 @@
   function contentBodyMarkdown(content) {
     var markdown = content.markdown;
-    if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html));
+    if (content.focalPublicPreview && content.html) markdown = markdownFor(sanitizedHtml(content.html, true), true);
+    else if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html));
     return cleanupMarkdownNoise(markdown || content.textContent || "").trim();
   }
 
@@ -15,14 +16,14 @@
     return [heading, details, body].filter(Boolean).join("\n\n");
   }
 
-  function markdownFor(html) {
+  function markdownFor(html, allowSerializedOwnedPublicPreviews) {
     if (typeof TurndownService !== "function") return html;
 
     var root = document.createElement("div");
     root.innerHTML = html;
     preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
-    cleanupAgentRoot(root);
+    cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     normalizeCodeBlocks(root);
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);

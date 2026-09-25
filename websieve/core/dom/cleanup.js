@@ -163,7 +163,8 @@
     });
   }
 
-  function cleanupAgentRoot(root) {
+  function cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews) {
+    var publicPreviews = stashVerifiedPublicPreviews(root, allowSerializedOwnedPublicPreviews);
     cleanupCookieChrome(root);
     stripInlineConsentPrompts(root);
 
@@ -259,6 +260,8 @@
     stripUIWidgets(root);
     stripNavigationLeaks(root);
 
+    restoreVerifiedPublicPreviews(root, publicPreviews);
+
     return root;
   }
 
@@ -275,10 +278,13 @@
     return root;
   }
 
-  function sanitizedHtml(html) {
+  function sanitizedHtml(html, allowSerializedOwnedPublicPreviews) {
     var root = document.createElement("div");
     root.innerHTML = html;
-    cleanupAgentRoot(root);
+    cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
+    if (!allowSerializedOwnedPublicPreviews) {
+      root.querySelectorAll("[data-fetchutil-public-preview-owned]").forEach(function(node) { node.removeAttribute("data-fetchutil-public-preview-owned"); });
+    }
     stripTerminalArticleCollectionMarkers(root);
     return root.innerHTML;
   }

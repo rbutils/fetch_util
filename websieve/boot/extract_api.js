@@ -5,6 +5,7 @@
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
       var focalArticleRoute = articleRouteFocalContent();
+      var articleBodyCollection = independentArticleBodyCollection();
       var content;
       var provisionalHomepageContent = null;
       var provisionalHomepageAlternative = null;
@@ -21,34 +22,9 @@
       }
 
       function strongArticleContent(candidate, medicalArticle) {
+        if (articleBodyCollection && !cachedFocalArticleContent(candidate) && !articleRouteFocalContent(candidate)) return false;
         return cachedFocalArticleContent(candidate) || articleRouteFocalContent(candidate) || medicalArticle ||
           substantialArticleContent(candidate) || strongArticleMetadata(metadata, candidate);
-      }
-
-      function genericListMayReplace(candidate) {
-        return candidate && !candidate.hostAware && !candidate.docsLike &&
-          !cachedFocalArticleContent(candidate) && !articleRouteFocalContent(candidate);
-      }
-
-      function emptyListCandidateLosesContent(current, candidate) {
-        if (!candidate || candidate.contentType !== "list") return false;
-        var candidateText = normalizeText(candidate.markdown || candidate.textContent || "");
-        var currentText = normalizeText(current && (current.markdown || current.textContent) || "");
-        var itemCount = candidate.itemCount || 0;
-        if (candidate.listExtraction && Array.isArray(candidate.listExtraction.items)) {
-          itemCount = Math.max(itemCount, candidate.listExtraction.items.length);
-        }
-        if (Array.isArray(candidate.listSourceItems)) {
-          itemCount = Math.max(itemCount, candidate.listSourceItems.length);
-        }
-        if (!itemCount && candidate.html) {
-          var candidateRoot = document.createElement("div");
-          candidateRoot.innerHTML = candidate.html;
-          itemCount = Array.prototype.filter.call(candidateRoot.querySelectorAll("table a[href], .itemlist a[href]"), function(link) {
-            return !!materializedHttpUrl(link.getAttribute("href"));
-          }).length;
-        }
-        return !candidateText && itemCount === 0 && !!currentText && !!(current && current.readerMode);
       }
 
       function indexListCandidateAllowed(candidate) {
@@ -128,7 +104,7 @@
           content = interstitial;
         } else if (interstitial && interstitialType === "consent_wall") {
           // Try real extraction — consent wall may have been dismissed
-          var realContent = readableOrFallbackContent(options, metadata);
+          var realContent = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
           var realText = normalizeText((realContent && realContent.markdown) || (realContent && realContent.textContent) || "").toLowerCase();
           // Use real content if it's substantial and not consent-dominated
           if (realContent && realText.length > 500 && !consentWallDominates(realText)) {
@@ -154,7 +130,7 @@
         content = pressReleaseContent(metadata);
       }
       if (!content) {
-        content = readableOrFallbackContent(options, metadata);
+        content = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
       }
       if (provisionalHomepageContent) provisionalHomepageAlternative = content;
 
@@ -206,7 +182,7 @@
       if (content === productList) content = mixedHomepageProductListContent(metadata, productList) || content;
 
       var jobList = genericJobListContent(metadata);
-      if (jobList && genericListMayReplace(content) &&
+      if (jobList && genericListMayReplace(content, focalArticleRoute) &&
           (content.contentType === "article" || content.contentType === "list")) {
         content = jobList;
       }
@@ -215,7 +191,7 @@
         (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
       var strongEventList = strongEventListingPage();
-      if (eventList && genericListMayReplace(content) && content.contentType !== "event" &&
+      if (eventList && genericListMayReplace(content, focalArticleRoute) && content.contentType !== "event" &&
           (!eventArticle || strongEventList) && (content.contentType !== "list" || strongEventList)) {
         content = eventList;
       }
@@ -260,7 +236,7 @@
         sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {
         indexListCandidate = listContent(metadata);
-      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content)) &&
+      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection) &&
           (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
           (!strongArticle || sourceOwnedIndex)) {
         indexListCandidate = sourceOwnedIndex || listContent(metadata);

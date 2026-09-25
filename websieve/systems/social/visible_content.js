@@ -27,7 +27,10 @@
     var socialActions = Array.prototype.filter.call(article.querySelectorAll("button, a, [role='button']"), function(node) {
       return /^(?:like|reply|repost|share|comment)$/i.test(normalizeText(node.innerText || node.getAttribute("aria-label") || ""));
     }).length;
-    if (!hasMedia && socialActions < 2 && !/[\d,.]+[KMB]?\s+(?:likes?|comments?|replies?|reposts?|views?)\b/i.test(text)) return null;
+    var engagementCount = /[\d,.]+[KMB]?\s+(?:likes?|comments?|replies?|reposts?|views?)\b/i.test(text);
+    if (!hasMedia && socialActions < 2 && !engagementCount) return null;
+    route.socialActions = socialActions;
+    route.engagementCount = engagementCount;
     return route;
   }
 
@@ -220,6 +223,8 @@
     if (content.contentType !== "article") return content;
     var evidence = socialVisiblePostEvidence();
     if (!evidence) return content;
+    var ownership = fallbackFocalHeadlineOwnership();
+    if (ownership && articleRouteFocalContent(content) && evidence.socialActions < 2 && !evidence.engagementCount) return content;
 
     content.contentType = "social";
     content.socialKind = "post";

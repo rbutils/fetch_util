@@ -163,9 +163,10 @@ RSpec.describe "extract asset bundle" do
       classifiers/warnings/homepage_docs.js
       classifiers/warnings/access.js
       classifiers/warnings/content_integrity.js
+      classifiers/warnings/finalization_paywall_state.js
       classifiers/warnings/index.js
     ]
-    expect(warning_paths.last(4)).to eq(expected_warning_paths)
+    expect(warning_paths.last(5)).to eq(expected_warning_paths)
     expect(warning_paths.uniq).to eq(warning_paths)
     expect(File.read(File.join(source_root, "classifiers/warnings/index.js"))).to include("reasons = reasons.concat(accessWarningReasons")
     expect(File.read(File.join(source_root, "classifiers/warnings/index.js"))).to include("reasons = reasons.concat(contentIntegrityWarningReasons")
@@ -326,6 +327,16 @@ RSpec.describe "extract asset bundle" do
     expect(byline_source).to include("function listPageBylineSourceOwnership", "function listPageByline")
     expect(finalization_source).not_to include("function listPageBylineSourceOwnership")
     expect(finalization_source).to include("byline = listPageByline(byline, metadata, content, markdown)")
+  end
+
+  it "loads the finalization paywall state classifier before result finalization" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    helper_path = "classifiers/warnings/finalization_paywall_state.js"
+    finalization_path = "boot/result_finalization.js"
+
+    expect(manifest.index(helper_path)).to be < manifest.index(finalization_path)
+    expect(File.read(File.join(source_root, finalization_path))).to include("finalizedPaywallState(content, warnings)")
   end
 
   it "loads source-owned adjacent headings before result finalization" do
@@ -1112,6 +1123,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     fallback_paths = %w[
+      extractors/article/fallback/focal_headline_ownership.js
       extractors/article/fallback/focal_ownership.js
       extractors/article/fallback/focal_permalink.js
       extractors/article/fallback/fallback_excerpt.js
@@ -1122,7 +1134,7 @@ RSpec.describe "extract asset bundle" do
     expect(fallback_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
     expect(manifest & fallback_paths).to eq(fallback_paths)
     expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
-    expect(manifest.index(fallback_paths[2])).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
+    expect(manifest.index(fallback_paths[3])).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
   end
 
@@ -1154,6 +1166,7 @@ RSpec.describe "extract asset bundle" do
 
   it "loads article action ownership before the widget cleanup consumer" do
     manifest = File.readlines(File.join(project_root, "websieve/manifest.txt"), chomp: true)
+    expect(manifest.index("core/dom/public_preview_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/widgets/action_prompts.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/article_engagement.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/related_records.js")).to be < manifest.index("core/dom/noise_cleanup.js")
@@ -1218,6 +1231,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     segments = [
+      ["classifiers/list_pages/article_body_collection.js", [], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
       ], "classifiers/list_pages/chrome.js"],
@@ -1247,6 +1261,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/resources.js
         extractors/article/coverage/figure_captions.js
         extractors/article/coverage/main_coverage.js
+        extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/fallback_excerpt.js
@@ -1261,6 +1276,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/readability.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],
+      ["boot/list_candidate_arbitration.js", [], "boot/extract_api.js"],
       ["extractors/lists/relabeling.js", %w[
         extractors/lists/generic/records/card_evidence.js
         extractors/lists/generic/records/duplicate_record_metadata.js

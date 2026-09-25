@@ -43,6 +43,7 @@
       "[itemprop='articleBody']", ".article__body", ".post-content", ".entry-content", "[class*='article-content']", "[class*='amp-article-content' i]", "[class*='amp-article-body' i]", "[class*='mobile-article' i]", "[class*='mobile-content' i]", "[class*='rtl-article' i]",
       "[class*='article-content' i]",
       "[class*='article-body' i]",
+      "[class*='article-detail' i]",
       "[class*='article-main' i]",
       "[class*='article__body' i]",
       "[class*='article__content' i]",

@@ -176,6 +176,7 @@
 
     var template = document.createElement("template");
     template.innerHTML = html;
+    template.content.querySelectorAll("[data-fetchutil-public-preview-owned]").forEach(function(node) { node.removeAttribute("data-fetchutil-public-preview-owned"); });
     materializeHttpAttributes(template.content);
     return template.innerHTML;
   }

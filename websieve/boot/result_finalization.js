@@ -117,9 +117,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
-  var cleanedHtml = sanitizedHtml(content.html);
+  var cleanedHtml = sanitizedHtml(content.html, !!content.focalPublicPreview);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
-  var markdown = cleanupMarkdownNoise(content.markdown || markdownFor(cleanedHtml || content.html));
+  var markdown = cleanupMarkdownNoise(content.markdown && !content.focalPublicPreview ? content.markdown :
+    markdownFor(cleanedHtml || content.html, !!content.focalPublicPreview));
   var contentText = normalizeText(content.textContent || "");
   var normalizedMarkdown = normalizeText(markdown);
   if (!normalizedMarkdown && contentText.length > 40) markdown = cleanupMarkdownNoise(markdownFor(cleanedHtml) || contentText);
@@ -238,11 +239,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;
   var contentFormat = detectContentFormat(metadata, content, markdown);
-  var paywall = paywallSignals();
-  var paywallState = null;
-  if (paywall && !visiblePublicArticleBodyRetained(content, paywall)) {
-    paywallState = warnings.indexOf("subscription_interstitial") !== -1 ? "full_block" : "detected";
-  }
+  var paywallState = finalizedPaywallState(content, warnings);
   if (content.contentType === "interstitial") clearSocialFields(content);
   var socialFields = content.contentType === "social" ? content : {};
   byline = listPageByline(byline, metadata, content, markdown);

@@ -41,6 +41,7 @@ core/dom/deferred_reveals.js
 core/dom/composed.js
 core/dom/clipping.js
 core/dom/base.js
+core/dom/public_preview_cleanup.js
 core/dom/cleanup.js
 core/article/linked_resources.js
 core/article/wordpress_comments.js
@@ -72,6 +73,7 @@ classifiers/challenges/access_error_details.js
 classifiers/challenges/interstitial_pages.js
 classifiers/challenges/not_found_context.js
 classifiers/challenges/index.js
+classifiers/list_pages/article_body_collection.js
 classifiers/list_pages/context.js
 classifiers/list_pages/detail_articles.js
 extractors/article/coverage/code_coverage.js
@@ -89,6 +91,7 @@ classifiers/warnings/content_format.js
 classifiers/warnings/homepage_docs.js
 classifiers/warnings/access.js
 classifiers/warnings/content_integrity.js
+classifiers/warnings/finalization_paywall_state.js
 classifiers/warnings/index.js
 extractors/article/roots.js
 extractors/article/coverage/intro_order.js
@@ -97,6 +100,7 @@ extractors/article/coverage/carousel_coverage.js
 extractors/article/coverage/resources.js
 extractors/article/coverage/figure_captions.js
 extractors/article/coverage/main_coverage.js
+extractors/article/fallback/focal_headline_ownership.js
 extractors/article/fallback/focal_ownership.js
 extractors/article/fallback/focal_permalink.js
 extractors/article/fallback/fallback_excerpt.js
@@ -311,5 +315,6 @@ boot/reader_byline.js
 boot/reader_text_byline.js
 boot/list_byline.js
 boot/result_finalization.js
+boot/list_candidate_arbitration.js
 boot/extract_api.js
 99_outro.js

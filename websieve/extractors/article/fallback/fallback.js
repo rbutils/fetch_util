@@ -50,29 +50,6 @@
     return text + (paragraphs * 70) + (headings * 30) + bonus + ratioBonus - densityPenalty - utilityPenalty;
   }
 
-  function fallbackContainedArticleRecords(records) {
-    var recordsByVisibleNode = new Map();
-    var recordsByNode = new Map();
-    var containedByNode = new Map();
-    records.forEach(function(record) {
-      recordsByVisibleNode.set(record.visibleNode, record);
-      recordsByNode.set(record.node, record);
-    });
-
-    records.forEach(function(record) {
-      var parent = record.node.parentElement;
-      while (parent) {
-        if (recordsByNode.has(parent)) {
-          if (!containedByNode.has(parent)) containedByNode.set(parent, []);
-          containedByNode.get(parent).push(record);
-        }
-        parent = parent.parentElement;
-      }
-    });
-
-    return { recordsByVisibleNode: recordsByVisibleNode, containedByNode: containedByNode };
-  }
-
   function fallbackContent(metadata) {
     if (commentOnlyRoot(document.body) && !fallbackFocalArticleRoot(document.body)) return nonArticleContent();
     var legalProvision = legalProvisionContent();
@@ -125,12 +102,23 @@
       return current;
     }, null);
 
+    var focalOwnership = fallbackFocalHeadlineOwnership();
+    if (focalOwnership) {
+      var focalHeadlineRecord = records.find(function(record) { return record.node === focalOwnership.node; });
+      if (focalHeadlineRecord && !Number.isFinite(focalHeadlineRecord.score) && focalOwnership.body.publicPreview && focalOwnership.body.text.length >= 120) {
+        focalHeadlineRecord.score = 0;
+      }
+      if (focalHeadlineRecord && Number.isFinite(focalHeadlineRecord.score)) best = focalHeadlineRecord;
+    }
+
     var selected = best && best.score > -Infinity ? best : null;
+    if (!selected || !focalOwnership || selected.node !== focalOwnership.node) focalOwnership = null;
     var node = selected ? selected.node : document.body;
     var visibleNode = selected ? selected.visibleNode : visibleBody;
     var markedVisibleNode = safeDeepClone(visibleNode, document);
     markTerminalArticleLinkCollections(markedVisibleNode);
     var clone = cleanClone(markedVisibleNode);
+    if (focalOwnership && focalOwnership.body.publicPreview) focalOwnershipRetainPublicPreview(clone);
     var comments = fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "";
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
@@ -140,9 +128,11 @@
     var text = normalizeText(clone.textContent);
 
     return {
-      title: document.title,
+      title: focalOwnership ? focalOwnership.title : document.title,
       byline: null,
-      excerpt: fallbackArticleExcerpt(visibleNode, text, metadata),
+      excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
+        fallbackArticleExcerpt(visibleNode, text, metadata),
+      focalPublicPreview: !!(focalOwnership && focalOwnership.body.publicPreview),
       siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,
       html: clone.innerHTML,

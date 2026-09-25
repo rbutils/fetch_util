@@ -10,6 +10,29 @@
     ].join(", ");
   }
 
+  function fallbackContainedArticleRecords(records) {
+    var recordsByVisibleNode = new Map();
+    var recordsByNode = new Map();
+    var containedByNode = new Map();
+    records.forEach(function(record) {
+      recordsByVisibleNode.set(record.visibleNode, record);
+      recordsByNode.set(record.node, record);
+    });
+
+    records.forEach(function(record) {
+      var parent = record.node.parentElement;
+      while (parent) {
+        if (recordsByNode.has(parent)) {
+          if (!containedByNode.has(parent)) containedByNode.set(parent, []);
+          containedByNode.get(parent).push(record);
+        }
+        parent = parent.parentElement;
+      }
+    });
+
+    return { recordsByVisibleNode: recordsByVisibleNode, containedByNode: containedByNode };
+  }
+
   function focalOwnershipCandidate(node) {
     if (!node || !node.matches || node.closest("header, nav, footer, aside, [role~='navigation' i], [role~='complementary' i], [role~='comment' i], [class*='comment' i], [id*='comment' i]")) return false;
 
