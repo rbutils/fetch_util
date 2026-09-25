@@ -1,5 +1,6 @@
+  var PRIMARY_COMMENT_THREAD_SELECTOR = "#comments, #comment-area, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread";
   var VISIBLE_COMMENT_THREAD_SELECTOR = [
-    "#comments, #comment-area, .comments, .comments-area, .comment-list, .comments-section, #disqus_thread",
+    PRIMARY_COMMENT_THREAD_SELECTOR,
     "[class*='comments-list' i], [class*='comment-thread' i], [class*='comment-wrap' i]"
   ].join(", ");
   var VISIBLE_COMMENT_RECORD_SELECTOR = "[role~='comment' i], [itemprop~='comment' i], [class*='comment' i], [id*='comment' i], [class*='reply' i], [id*='reply' i]";
@@ -28,6 +29,11 @@
     });
     threads.sort(function(left, right) {
       return left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+    var primaryThreads = threads.filter(function(thread) { return thread.matches(PRIMARY_COMMENT_THREAD_SELECTOR); });
+    threads = threads.filter(function(thread) {
+      if (thread.matches(PRIMARY_COMMENT_THREAD_SELECTOR) || commentRecordMarker(thread)) return true;
+      return !primaryThreads.some(function(primary) { return thread !== primary && thread.contains(primary); });
     });
     return threads.filter(function(thread) {
       return !threads.some(function(parent) { return parent !== thread && parent.contains(thread); });

@@ -13,6 +13,10 @@ RSpec.describe 'FetchUtil generic focal comment ownership' do
         </script>
       </head><body><main><div class="article-page">
         <article><h1>Refund update</h1><p>The published update explains the latest refund information in detail. Readers can review the eligibility rules, the expected schedule, the support channels available during processing, and the steps needed to check an account without repeating a request. The article also clarifies that each case is reviewed individually and that an earlier notification may arrive before funds settle.</p></article>
+        <div class="article-comment-wrap">
+        <section class="card"><h2>Other suggested reading</h2>
+          <a href="/articles/another-report">A separate recommended article</a>
+          <p>This summary belongs to the recommendation, not the discussion.</p></section>
         <section id="comments" class="comments">
           <div class="comment-item" id="comment-one">
             <a class="comment-author" href="/users/reader-one">Reader One</a>
@@ -55,6 +59,7 @@ RSpec.describe 'FetchUtil generic focal comment ownership' do
         <section class="comments-promo"><a href="/sign-in">Sign in</a><p>Join the discussion after signing in.</p></section>
         <form class="comment-form"><textarea placeholder="Write a comment"></textarea><button>Submit</button></form>
         <section id="empty-thread" class="comments"><form><textarea placeholder="No posted comment"></textarea></form></section>
+        </div>
       </div></main></body></html>
     HTML
 
@@ -81,7 +86,8 @@ RSpec.describe 'FetchUtil generic focal comment ownership' do
       )
       expect(payload['markdown']).not_to include(
         'Sidebar reader', 'Hidden reader', 'Join the discussion',
-        'Write a comment', 'This sidebar discussion', 'No posted comment'
+        'Write a comment', 'This sidebar discussion', 'No posted comment',
+        'Other suggested reading', 'A separate recommended article', 'This summary belongs to the recommendation'
       )
       expect(payload['html']).to include('id="comments"')
       expect(payload['markdown']).to include('August 27, 2026', 'https://publisher.example/articles/refund-123456#comments')
