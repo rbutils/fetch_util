@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the IEEE Xplore abstract profile and obsolete publisher registration module in favor of complete shared scholarly records.
 - Retire the Elsevier article profile and its unused configuration pipeline in favor of shared scholarly frontmatter and body ownership.
 - Retire the PLOS article profile while preserving complete source-owned sections through shared scholarly extraction.
 - Retire the ACS abstract profile in favor of shared scholarly ownership and complete abstract excerpts.

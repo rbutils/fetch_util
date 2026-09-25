@@ -496,7 +496,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
-  it 'extracts IEEE Xplore article abstracts without recommendations or account chrome' do
+  it 'extracts IEEE Xplore abstracts through shared scholarly record ownership' do
     html = <<~HTML
       <html>
         <head>

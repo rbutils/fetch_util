@@ -1328,7 +1328,6 @@ RSpec.describe "extract asset bundle" do
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
                           registerBookingProfiles
-                          registerAcademicPublisherProfiles
                           registerAcademicPreprintProfiles
                           registerCsdnProfiles
                           registerSubstackProfiles
