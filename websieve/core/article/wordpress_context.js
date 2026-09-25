@@ -44,7 +44,8 @@
     var article = body && body.closest("article");
     if (!article || !body.isConnected) return body;
 
-    var parts = wordpressArticleHeaderLeads(body, article).concat(wordpressArticleFeaturedMedia(body, article));
+    var leads = wordpressArticleHeaderLeads(body, article);
+    var parts = leads.concat(wordpressArticleFeaturedMedia(body, article));
     if (!parts.length) return body;
     parts = parts.filter(function(node, index) {
       return parts.indexOf(node) === index &&
@@ -55,7 +56,11 @@
     });
 
     var root = document.createElement("article");
-    parts.forEach(function(part) { root.appendChild(visibilityPrunedClone(part, document)); });
+    parts.forEach(function(part) {
+      var clone = visibilityPrunedClone(part, document);
+      if (leads.indexOf(part) !== -1) clone.setAttribute("data-fetchutil-wordpress-lead", "true");
+      root.appendChild(clone);
+    });
     root.appendChild(visibilityPrunedClone(body, document));
     return root;
   }
@@ -74,4 +79,22 @@
     return candidates.filter(function(node) {
       return !candidates.some(function(other) { return other !== node && other.contains(node); });
     });
+  }
+
+  function wordpressArticleExcerpt(metadata, root) {
+    var lead = root.querySelector("[data-fetchutil-wordpress-lead]");
+    if (lead) {
+      var prose = lead.cloneNode(true);
+      removeAll(prose, "figure, figcaption, picture, img, video, audio, iframe");
+      var text = normalizeText(prose.textContent || "");
+      if (text) return text;
+    }
+
+    var paragraphs = Array.from(root.querySelectorAll("p"));
+    for (var index = 0; index < paragraphs.length; index++) {
+      var paragraph = paragraphs[index];
+      if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre")) continue;
+      var value = normalizeText(paragraph.textContent || "");
+      if (value) return value;
+    }
   }

@@ -73,11 +73,14 @@
     var body = wordpressArticleBody(options) || wordpressRestArticleBody(options);
     if (!body) return null;
     if (options.includeHeaderContext) body = wordpressArticleHeaderContext(body);
+    var excerpt = options.excerpt;
+    if (excerpt === undefined && options.includeHeaderContext) excerpt = wordpressArticleExcerpt;
 
     return profileArticleContent(metadata, body, {
       title: wordpressArticleTitle(metadata, options),
       byline: wordpressArticleByline(metadata, options),
       publishedTime: options.publishedTime,
+      excerpt: excerpt,
       minTextLength: options.minBodyTextLength || options.minTextLength || 0,
       contentType: options.contentType || "article",
       extra: options.extra,
