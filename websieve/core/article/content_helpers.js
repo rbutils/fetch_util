@@ -111,7 +111,16 @@
   function wordpressArticleTitle(metadata, options) {
     if (typeof options.title === "function") return options.title(metadata);
     if (options.title !== undefined) return options.title;
-    return firstText(options.titleSelectors || WORDPRESS_ARTICLE_TITLE_SELECTORS) || normalizeText(metadata && metadata.title);
+    var heading = firstText(options.titleSelectors || WORDPRESS_ARTICLE_TITLE_SELECTORS);
+    if (heading) return heading;
+
+    var title = normalizeText(metadata && metadata.title);
+    var publisher = document.querySelector("meta[property='og:site_name' i]");
+    var siteName = normalizeText(publisher && publisher.getAttribute("content"));
+    if (!options.includeHeaderContext || !siteName || !metadata ||
+        siteName.toLowerCase() !== normalizeText(metadata.siteName).toLowerCase()) return title;
+    var parts = title.match(/^(.*\S)\s+[|\u2013\u2014-]\s+(.+)$/);
+    return parts && normalizeText(parts[2]).toLowerCase() === siteName.toLowerCase() ? parts[1] : title;
   }
 
   function wordpressArticleByline(metadata, options) {
