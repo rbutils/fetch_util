@@ -27,7 +27,7 @@
     var header = wordpressArticleHeader(body, article);
     if (!header) return [];
 
-    var heading = header.querySelector("h1");
+    var heading = header.matches("h1") ? header : header.querySelector("h1");
     var leads = Array.from(header.querySelectorAll(
       ".article-excerpt, .entry-summary, .post-excerpt, [itemprop='description']"
     )).filter(function(node) {
@@ -46,6 +46,8 @@
 
     var leads = wordpressArticleHeaderLeads(body, article);
     var parts = leads.concat(wordpressArticleFeaturedMedia(body, article));
+    var header = wordpressArticleHeader(body, article);
+    if (header) parts.push(header.matches("h1") ? header : header.querySelector("h1"));
     if (!parts.length) return body;
     parts = parts.filter(function(node, index) {
       return parts.indexOf(node) === index &&

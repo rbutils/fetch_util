@@ -118,4 +118,16 @@ RSpec.describe 'FetchUtil WordPress article header context' do
       end
     end
   end
+
+  it 'retains a uniquely owned header headline in HTML and Markdown without duplicating the title' do
+    headers = [river_header(lead: ''), '<h1 class="entry-title entry-header">Restoring a river</h1>']
+
+    headers.each do |header|
+      extract_from_url('https://example-blog.test/river-restoration/', wordpress_header_page(header: header)) do |payload|
+        expect(payload['html']).to match(%r{<h1[^>]*>Restoring a river</h1>})
+        expect(payload['markdown'].scan('# Restoring a river').length).to eq(1)
+        expect(payload['excerpt']).to eq('The restoration team returned to the river to measure the effect of removing the concrete barriers.')
+      end
+    end
+  end
 end

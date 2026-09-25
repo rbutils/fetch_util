@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Retain uniquely owned WordPress header headlines in article HTML as well as Markdown and title metadata.
 - Derive shared WordPress excerpts from complete owned header leads or body prose instead of image Markdown and captions.
 - Reject whole article and body containers as visible publication-date fields while retaining localized dates and explicit timestamps.
 - Preserve visible, source-labeled editorial iframe destinations as links when article cleanup removes the embedded frames.

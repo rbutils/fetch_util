@@ -152,8 +152,8 @@
       bylineSelectors: ["[rel='author']", ".author", ".byline", ".post-author", ".wp-block-post-author", "[class*='author' i]"],
       minBodyTextLength: 180,
       removalSelectors: [
-        ".entry-header",
-        ".post-header",
+        ".entry-header:not(h1)",
+        ".post-header:not(h1)",
         ".entry-meta",
         ".post-meta",
         ".author-bio",
