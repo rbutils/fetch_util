@@ -1,5 +1,3 @@
-  function elsevierArticleContent(metadata) { return configuredScholarlyArticleContent(metadata, SCHOLARLY_ARTICLE_CONFIGS.elsevier); }
-
   function ieeeXploreArticleContent(metadata) {
     var component = document.querySelector("xpl-document-abstract, .document-abstract");
     if (!component) return null;
@@ -54,6 +52,5 @@
   }
 
   function registerAcademicPublisherProfiles() {
-    registerHostAwareProfile(true, elsevierArticleContent);
     registerHostAwareProfile(true, ieeeXploreArticleContent);
   }

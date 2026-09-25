@@ -426,7 +426,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
-  it 'extracts Elsevier article bodies instead of citation and supplementary chrome' do
+  it 'extracts Elsevier frontmatter and bodies through shared scholarly ownership' do
     html = <<~HTML
       <html>
         <head>
