@@ -42,7 +42,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     %w[blog.hatenablog.com journal.example].each do |host|
       extract_from_url("https://#{host}/entry/2026/07/06/120000", html) do |payload|
         expect_content_type(payload, "article")
-        expect(payload["markdown"]).to include("# 今週のはてなブログランキング〔2026年7月第1週〕")
+        expect(payload["markdown"]).to include("# [今週のはてなブログランキング〔2026年7月第1週〕](https://#{host}/entry/2026/07/06/120000)")
         expect(payload["markdown"]).to include("はてなブログ独自の集計による人気記事のランキング")
         expect(payload["markdown"]).to include("ClaudeCodeとObsidianで設計・作業メモを残す")
         expect(payload["markdown"]).not_to include("詳しく見る", "You might also like")
