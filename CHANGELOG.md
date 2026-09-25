@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- Keep independently owned directories ahead of canonical introduction metadata on collection routes, without promoting hidden, sidebar, or related record groups.
 - Count prose across writing systems and distinguish linked product offers from digest stories when classifying article formats.
 - Preserve homepage landing copy, service links, and partner media when a visible external heading owns one unambiguous prose article.
 - Restore visible author-profile links for source-owned fallback articles using the same paragraph and identity proof as Reader output.

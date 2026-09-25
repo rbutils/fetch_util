@@ -181,6 +181,7 @@
     var verified = [];
     if (owners.size !== 1) return null;
     owners.forEach(function(owner) {
+      if (independentLinkedArticleCollection(owner.node)) return;
       var body = focalOwnershipVisibleBody(owner.node);
       if (!body) return;
       if (owner.proof === "canonical-article-metadata" &&
