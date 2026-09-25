@@ -227,6 +227,9 @@ function articleEmptyAdPlaceholderNode(node, context) {
 
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
+  root.querySelectorAll("p").forEach(function(node) {
+    if (articleClosedDiscussionNotice(node)) node.remove();
+  });
   root.querySelectorAll("[data-icon]").forEach(function(node) {
     if (articleReactionChip(node)) node.remove();
   });

@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Remove complete inert closed-discussion notices while preserving quoted statements, editorial text, reader comments, links, and media.
 - Normalize WordPress fallback titles against an explicitly declared publisher suffix while preserving actual headlines and unmatched title text.
 - Preserve closed WordPress discussions and replies inside their owning post even when no comment form supplies the post ID, while rejecting conflicting ownership declarations.
 - Preserve Reader article-header ownership across transformed linked cards when their source text, destination, and position agree.
