@@ -36,7 +36,7 @@
     /^end of dialog window\./,
     /^current time\s+\d/,
     /^remaining time\s/,
-    /^duration\s/,
+    /^duration(?:\s+(?:[-\\?:]+|\d{1,2}:\d{2}(?::\d{2})?))?$/,
     /^loaded:\s*\d/,
     /^progress:\s*\d/
   ];

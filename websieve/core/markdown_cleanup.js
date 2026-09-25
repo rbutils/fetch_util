@@ -58,7 +58,7 @@
       .replace(/^\s*Loading comments\.*\s*$/gmi, "")
       // Strip video player UI controls that leaked into content
       .replace(/Current Time\s+\d+:\d+\s*/gi, "")
-      .replace(/Duration\s+[-\\]?:?[-\\]?\s*/gi, "")
+      .replace(/^[ \t]*Duration(?:[ \t]+(?:[-\\?:]+|\d{1,2}:\d{2}(?::\d{2})?))?[ \t]*$/gmi, "")
       .replace(/Remaining Time\s+-?\d+:\d+\s*/gi, "")
       .replace(/Loaded:\s*\d+%?\s*/gi, "")
       .replace(/Progress:\s*\d+%?\s*/gi, "")
