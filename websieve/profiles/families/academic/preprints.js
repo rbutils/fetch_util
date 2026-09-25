@@ -46,7 +46,7 @@
     };
   }
 
-  function genericScholarlyArticleContent(metadata) { return configuredScholarlyArticleContent(metadata, SCHOLARLY_ARTICLE_CONFIGS.generic); }
+  function genericScholarlyArticleContent(metadata) { return scholarlyRecordContent(metadata); }
 
   function registerAcademicPreprintProfiles() {
     registerHostAwareProfile(true, arxivAbstractContent);

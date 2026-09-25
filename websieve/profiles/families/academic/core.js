@@ -12,9 +12,16 @@
     return null;
   }
 
-  function cleanScholarlyClone(node, extraSelector) {
+  function cleanScholarlyClone(node, extraSelector, cloneOptions) {
     if (!node) return null;
-    var clone = cleanClone(node);
+    cloneOptions = cloneOptions || {};
+    var sourceClones = cloneOptions.visibilityAware ? new Map() : null;
+    var clone = cloneOptions.visibilityAware ? visibilityPrunedClone(node, document, sourceClones) : cleanClone(node);
+    (cloneOptions.excludeNodes || []).forEach(function(excluded) {
+      var excludedClone = sourceClones && sourceClones.get(excluded);
+      if (excludedClone && excluded !== node) excludedClone.remove();
+    });
+    if (cloneOptions.visibilityAware) clone = cleanClone(clone);
     var selectors = scholarlyArticleNoiseSelector();
     if (extraSelector) selectors += ", " + extraSelector;
     clone.querySelectorAll(selectors).forEach(function(el) {
@@ -51,9 +58,12 @@
     var metadata = options.metadata || {};
     var abstractRoot = options.abstractRoot || null;
     var sections = [];
-    if (abstractRoot) sections.push(abstractRoot);
-    if (options.bodyRoots) sections = sections.concat(options.bodyRoots.filter(Boolean));
-    else if (options.bodyRoot) sections.push(options.bodyRoot);
+    if (options.orderedRoots) sections = options.orderedRoots.filter(Boolean);
+    else {
+      if (abstractRoot) sections.push(abstractRoot);
+      if (options.bodyRoots) sections = sections.concat(options.bodyRoots.filter(Boolean));
+      else if (options.bodyRoot) sections.push(options.bodyRoot);
+    }
     if (!sections.length && !options.details) return null;
 
     var title = scholarlyTitleFromOptions(options, metadata);
@@ -65,8 +75,19 @@
     }
 
     sections.forEach(function(section) {
-      var clone = cleanScholarlyClone(section, options.extraNoiseSelector);
-      if (clone) root.appendChild(clone);
+      var clone = cleanScholarlyClone(section, options.extraNoiseSelector, {
+        visibilityAware: options.visibilityAware,
+        excludeNodes: options.excludeNodes
+      });
+      if (!clone) return;
+      if (section === options.abstractRootToLabel) {
+        var abstractSection = document.createElement("section");
+        var abstractHeading = document.createElement("h2");
+        abstractHeading.textContent = options.abstractLabel || "Abstract";
+        abstractSection.appendChild(abstractHeading);
+        abstractSection.appendChild(clone);
+        root.appendChild(abstractSection);
+      } else root.appendChild(clone);
     });
 
     if (options.details && options.details.length) {
@@ -91,7 +112,7 @@
     return {
       title: title || metadata.title,
       byline: metadata.byline,
-      excerpt: (options.excerpt || abstractText).slice(0, 280) || metadata.excerpt,
+      excerpt: options.preserveFullExcerpt ? (options.excerpt || abstractText) : (options.excerpt || abstractText).slice(0, 280) || metadata.excerpt,
       siteName: options.siteName || metadata.siteName,
       publishedTime: metadata.publishedTime,
       html: root.innerHTML,

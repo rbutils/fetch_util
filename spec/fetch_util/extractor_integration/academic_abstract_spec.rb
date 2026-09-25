@@ -61,6 +61,31 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     }
   end
 
+  def generic_scholarly_payload(url, html)
+    root = File.expand_path('../../..', __dir__)
+    source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true)
+                 .reject { |line| line.empty? || line.start_with?('#') }
+                 .map { |path| File.read(File.join(root, 'websieve', path)) }.join("\n")
+    source = source.sub('})(window);', <<~JAVASCRIPT)
+      global.probeGenericScholarlyRecord = function() {
+        return genericScholarlyArticleContent(collectMetadata());
+      };
+      })(window);
+    JAVASCRIPT
+    with_url_page(url, html) do |page|
+      page.add_script_tag(content: source)
+      page.evaluate('probeGenericScholarlyRecord()')
+    end
+  end
+
+  def expect_generic_scholarly_payload(url, html, includes:, excludes: [])
+    payload = generic_scholarly_payload(url, html)
+    expect(payload).not_to be_nil
+    content = %w[markdown html textContent excerpt title byline publishedTime].filter_map { |field| payload[field] }.join("\n")
+    Array(includes).each { |text| expect(content).to include(text) }
+    Array(excludes).each { |text| expect(content).not_to include(text) }
+  end
+
   it 'extracts PLOS style open-access article sections from the article text root' do
     html = <<~HTML
       <html>
@@ -108,6 +133,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
         </body>
       </html>
     HTML
+
+    expect_generic_scholarly_payload(
+      'https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0999999', html,
+      includes: ['Abstract', 'Introduction', 'Results', 'higher denitrification potential'],
+      excludes: ['Article metrics', 'Figure chrome only', 'Supporting information']
+    )
 
     extract_from_url('https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0999999', html) do |payload|
       markdown = payload['markdown']
@@ -198,6 +229,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       </html>
     HTML
 
+    expect_generic_scholarly_payload(
+      'https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3002000', html,
+      includes: ['Introduction', 'Microbial response', 'primary assay', 'Discussion'],
+      excludes: ['Article metrics', 'Supporting information']
+    )
+
     extract_from_url('https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3002000', html) do |payload|
       markdown = payload['markdown']
 
@@ -259,6 +296,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       </html>
     HTML
 
+    expect_generic_scholarly_payload(
+      'https://research.example/articles/resilient-retrieval', html,
+      includes: ['References', 'https://doi.org/10.1234/source.one', 'Publisher record'],
+      excludes: ['Export citation']
+    )
+
     with_url_page('https://research.example/articles/resilient-retrieval', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
@@ -302,6 +345,11 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     HTML
 
     %w[www.pnas.org journal.example].each do |host|
+      expect_generic_scholarly_payload(
+        "https://#{host}/doi/10.1073/pnas.2314021121", html,
+        includes: ['Abstract', 'What is Generative AI?', 'Limitations and Possible Dangers'],
+        excludes: ['Total Views', 'Reference list chrome', 'Share on social media']
+      )
       extract_from_url("https://#{host}/doi/10.1073/pnas.2314021121", html) do |payload|
         markdown = payload['markdown']
 
@@ -353,6 +401,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
         </body>
       </html>
     HTML
+
+    expect_generic_scholarly_payload(
+      'https://pubs.acs.org/doi/10.1021/acs.jchemeduc.4c00045', html,
+      includes: ['Learning Chemical Equilibrium with Studio Activities', 'connected equilibrium constants'],
+      excludes: ['Article Views', 'Purchase short-term access', 'Recommended chemistry education']
+    )
 
     extract_from_url('https://pubs.acs.org/doi/10.1021/acs.jchemeduc.4c00045', html) do |payload|
       markdown = payload['markdown']
@@ -415,6 +469,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       </html>
     HTML
 
+    expect_generic_scholarly_payload(
+      'https://www.cell.com/cell-reports/fulltext/S2211-1247(26)00512-7', html,
+      includes: ['Summary', 'Introduction', 'macrophage-SFRP4 positive stromal interactions'],
+      excludes: ['Highlights', 'Google Scholar', 'Table S1']
+    )
+
     extract_from_url('https://www.cell.com/cell-reports/fulltext/S2211-1247(26)00512-7', html) do |payload|
       markdown = payload['markdown']
 
@@ -460,6 +520,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
         </body>
       </html>
     HTML
+
+    expect_generic_scholarly_payload(
+      'https://ieeexplore.ieee.org/document/9405311', html,
+      includes: ['Abstract', 'quantifier allowing measurement of time durations', 'Published in: 2020 International Symposium', '10.1109/TASE49443.2020.00016'],
+      excludes: ['Recommended Articles', 'View Purchased Documents', 'username/password']
+    )
 
     extract_from_url('https://ieeexplore.ieee.org/document/9405311', html) do |payload|
       markdown = payload['markdown']
@@ -511,6 +577,12 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
         </body>
       </html>
     HTML
+
+    expect_generic_scholarly_payload(
+      'https://arxiv.org/abs/1706.03762', html,
+      includes: ['Attention Is All You Need', 'Ashish Vaswani, Noam Shazeer', 'The dominant sequence transduction models'],
+      excludes: ['Bibliographic and Citation Tools', 'arXivLabs is a framework']
+    )
 
     extract_from_url('https://arxiv.org/abs/1706.03762', html) do |payload|
       markdown = payload['markdown']

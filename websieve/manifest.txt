@@ -191,6 +191,8 @@ profiles/media_commerce/search.js
 profiles/media_commerce/index.js
 profiles/news/news_homepages.js
 profiles/families/academic/core.js
+profiles/families/academic/records.js
+profiles/families/academic/records_output.js
 profiles/families/academic/publishers.js
 profiles/families/academic/preprints.js
 profiles/families/scientific_records/iucn.js
