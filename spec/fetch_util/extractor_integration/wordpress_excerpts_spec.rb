@@ -3,11 +3,12 @@
 RSpec.describe 'FetchUtil WordPress prose excerpts' do
   include_context 'extractor integration helpers'
 
-  def wordpress_excerpt_page(lead: '', before_body: '')
+  def wordpress_excerpt_page(lead: '', before_body: '', body_prefix: '')
     <<~HTML
       <html><head><title>Restoring the river</title><meta name="generator" content="WordPress 6.8"></head>
       <body><main><article><header><h1 class="entry-title">Restoring the river</h1>#{lead}</header>
         #{before_body}<div class="entry-content">
+          #{body_prefix}
           <figure><img src="/river.jpg" alt="River photograph"><figcaption>A photographer's credit.</figcaption></figure>
           <blockquote><p>A quoted statement remains part of the complete article.</p></blockquote>
           <p>The restoration team returned to the <a href="/river">river</a> to inspect the restored habitats and measure the water quality.</p>
@@ -34,6 +35,29 @@ RSpec.describe 'FetchUtil WordPress prose excerpts' do
     extract_from_url('https://example-blog.test/restoration/', wordpress_excerpt_page(before_body: media)) do |payload|
       expect(payload['excerpt']).to eq('The restoration team returned to the river to inspect the restored habitats and measure the water quality.')
       expect(payload['markdown']).to include('Featured view', 'Lead credit', 'A quoted statement remains part of the complete article.')
+    end
+  end
+
+  it 'skips image-strip labels for excerpts while retaining the label and images in the article' do
+    strip = '<div><div><p>As seen in:</p></div><div><img src="/partner.svg" alt="News partner"></div></div>'
+
+    extract_from_url('https://example-blog.test/restoration/', wordpress_excerpt_page(body_prefix: strip)) do |payload|
+      expect(payload['excerpt']).to start_with('The restoration team returned to the river')
+      expect(payload['markdown']).to include('As seen in:', 'News partner', 'https://example-blog.test/partner.svg')
+    end
+  end
+
+  it 'preserves short or linked leads and colon-ending prose with an independent body' do
+    prefixes = {
+      '<p>Floods returned.</p>' => 'Floods returned.',
+      '<p>A <a href="/breakthrough">breakthrough</a>.</p>' => 'A breakthrough.',
+      '<p>The results follow:</p>' => 'The results follow:'
+    }
+
+    prefixes.each do |prefix, expected|
+      extract_from_url('https://example-blog.test/restoration/', wordpress_excerpt_page(body_prefix: prefix)) do |payload|
+        expect(payload['excerpt']).to eq(expected)
+      end
     end
   end
 end

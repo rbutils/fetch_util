@@ -107,6 +107,18 @@
       var paragraph = paragraphs[index];
       if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre, [data-fetchutil-publication-time]")) continue;
       var value = normalizeText(paragraph.textContent || "");
-      if (value) return value;
+      if (value && !wordpressArticleMediaLabel(paragraph, root)) return value;
     }
+  }
+
+  function wordpressArticleMediaLabel(paragraph, root) {
+    var text = normalizeText(paragraph.textContent || "");
+    if (!/[:：]$/.test(text)) return false;
+    var scope = paragraph.parentElement;
+    while (scope && scope !== root) {
+      if (normalizeText(scope.textContent || "") !== text) return false;
+      if (scope.querySelector("img, picture, svg")) return true;
+      scope = scope.parentElement;
+    }
+    return false;
   }
