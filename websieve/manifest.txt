@@ -42,6 +42,7 @@ core/dom/composed.js
 core/dom/clipping.js
 core/dom/base.js
 core/dom/cleanup.js
+core/article/wordpress_comments.js
 core/article/content_helpers.js
 core/article/root_selection.js
 core/article/wordpress_context.js
