@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Retain source-owned WordPress featured images and captions before the article body without importing hidden or unrelated media.
 - Preserve separate WordPress article-header leads when unique headline and body ownership establish their relationship, excluding hidden, sidebar, and ambiguous summaries.
 - Exclude complete inert Italian automatic-audio notices from article text and excerpts while preserving quoted notices, additional reporting, links, and recordings.
 

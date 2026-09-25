@@ -68,4 +68,54 @@ RSpec.describe 'FetchUtil WordPress article header context' do
       end
     end
   end
+
+  it 'retains owned featured media and its caption between the lead and the article body' do
+    media = <<~HTML
+      <section class="post-media"><figure class="wp-block-post-featured-image">
+        <img src="/river.jpg" alt="The restored river"><figcaption>Photograph: River Trust</figcaption>
+      </figure></section>
+    HTML
+    html = wordpress_header_page(header: river_header, before_body: media)
+
+    extract_from_url('https://example-blog.test/river-restoration/', html) do |payload|
+      markdown = payload['markdown']
+      expect(markdown.scan('https://example-blog.test/river.jpg').length).to eq(1)
+      expect(markdown.scan('Photograph: River Trust').length).to eq(1)
+      expect(markdown.index('A source-owned lead')).to be < markdown.index('![The restored river]')
+      expect(markdown.index('Photograph: River Trust')).to be < markdown.index('The restoration team')
+      expect(payload['html']).to include('<figcaption>Photograph: River Trust</figcaption>')
+    end
+  end
+
+  it 'does not prepend hidden, related, later, or independently owned featured media' do
+    image = '<figure class="post-thumbnail"><img src="/unrelated.jpg" alt="Unrelated landscape"></figure>'
+    before = <<~HTML
+      <aside>#{image}</aside><div class="related-posts">#{image}</div>
+      <article>#{image}</article><div style="display:none">#{image}</div>
+      <div style="visibility:hidden">#{image}</div>
+    HTML
+    html = wordpress_header_page(header: river_header, before_body: before, after_body: image)
+
+    extract_from_url('https://example-blog.test/river-restoration/', html) do |payload|
+      expect(payload['html']).not_to include('unrelated.jpg', 'Unrelated landscape')
+      expect(payload['markdown']).to include('The restoration team returned to the river')
+    end
+  end
+
+  it 'does not duplicate featured media nested inside an owned lead' do
+    nested = <<~HTML
+      <div class="entry-summary">A source-owned lead explains the river restoration.
+        <figure><img src="/river.jpg" alt="The restored river"><figcaption>River Trust</figcaption></figure>
+      </div>
+    HTML
+    overlapping = '<figure itemprop="description"><img src="/river.jpg" alt="The restored river"><figcaption>River Trust</figcaption></figure>'
+
+    [nested, overlapping].each do |lead|
+      html = wordpress_header_page(header: '', before_body: river_header(lead: lead))
+      extract_from_url('https://example-blog.test/river-restoration/', html) do |payload|
+        expect(payload['markdown'].scan('https://example-blog.test/river.jpg').length).to eq(1)
+        expect(payload['markdown'].scan('River Trust').length).to eq(1)
+      end
+    end
+  end
 end

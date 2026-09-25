@@ -44,11 +44,34 @@
     var article = body && body.closest("article");
     if (!article || !body.isConnected) return body;
 
-    var leads = wordpressArticleHeaderLeads(body, article);
-    if (!leads.length) return body;
+    var parts = wordpressArticleHeaderLeads(body, article).concat(wordpressArticleFeaturedMedia(body, article));
+    if (!parts.length) return body;
+    parts = parts.filter(function(node, index) {
+      return parts.indexOf(node) === index &&
+        !parts.some(function(other) { return other !== node && other.contains(node); });
+    });
+    parts.sort(function(first, second) {
+      return first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
 
     var root = document.createElement("article");
-    leads.forEach(function(lead) { root.appendChild(safeDeepClone(lead, document)); });
+    parts.forEach(function(part) { root.appendChild(safeDeepClone(part, document)); });
     root.appendChild(safeDeepClone(body, document));
     return root;
+  }
+
+  function wordpressArticleFeaturedMedia(body, article) {
+    var candidates = Array.from(article.querySelectorAll(
+      "figure, .wp-block-post-featured-image, .post-thumbnail, .featured-image, .post-media"
+    )).filter(function(node) {
+      if (body.contains(node) || node.contains(body) || node.closest("article") !== article ||
+          elementVisuallyHidden(node) || !(node.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      if (node.closest("aside, nav, [role='complementary'], [role='navigation'], " +
+          "[class*='related' i], [class*='recommend' i], [class*='advert' i], [class*='promo' i]")) return false;
+      var media = node.matches("img, picture, video") ? [node] : Array.from(node.querySelectorAll("img, picture, video"));
+      return media.some(function(item) { return !elementVisuallyHidden(item); });
+    });
+    return candidates.filter(function(node) {
+      return !candidates.some(function(other) { return other !== node && other.contains(node); });
+    });
   }
