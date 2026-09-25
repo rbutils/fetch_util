@@ -47,4 +47,17 @@ RSpec.describe 'FetchUtil structured list table records' do
       expect(payload['markdown']).to include('[Q0](https://discussion.test/topic/0)')
     end
   end
+
+  it 'retains linked table images and charts with readable block-separated labels' do
+    html = discussion_table_page
+           .sub('>Q0</a>', '><img src="data:image/gif;base64,R0lG" data-src="/river.svg" alt="River emblem"><div>River<div>RIV</div></div></a>')
+           .sub('<td>50</td>', '<td><a href="/chart"><img src="/trend.svg" alt="River 7d chart"></a><img src="javascript:alert(1)" alt="Unavailable chart"></td>')
+
+    extract_from_url('https://discussion.test/book/discussions', html) do |payload|
+      expect(payload['markdown']).to include('[![River emblem](https://discussion.test/river.svg) River RIV](https://discussion.test/topic/0)')
+      expect(payload['markdown']).to include('[![River 7d chart](https://discussion.test/trend.svg)](https://discussion.test/chart)')
+      expect(payload['markdown']).to include('Unavailable chart')
+      expect(payload['markdown']).not_to include('javascript:', 'data:image/')
+    end
+  end
 end

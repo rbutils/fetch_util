@@ -42,17 +42,32 @@
 
   function tableCellMarkdown(cell) {
     var clone = removeDuplicatedLeadingCellBlocks(cell);
-    clone.querySelectorAll("a[href]").forEach(function(link) {
-      var href = materializedHttpUrl(link.getAttribute("href"));
-      var label = normalizeText(link.textContent || link.getAttribute("aria-label"));
-      if (href && label) link.replaceWith(document.createTextNode(markdownLink(label, href.replace(/\|/g, "%7C"))));
-    });
     var parts = [];
     Array.prototype.forEach.call(clone.childNodes, function(child) {
-      var text = normalizeText(child.textContent);
+      var text = normalizeText(tableCellNodeMarkdown(child, false));
       if (text) parts.push(text);
     });
     return parts.length ? parts.join(" ") : clone.textContent;
+  }
+
+  function tableCellNodeMarkdown(node, inLink) {
+    if (node.nodeType === Node.TEXT_NODE) return inLink ? escapeMarkdownLinkLabel(node.textContent) : node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+    if (node.tagName === "IMG") {
+      var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
+      var src = materializedHttpUrl(node.getAttribute("src"));
+      return alt && src ? " ![" + alt + "](" + src.replace(/\|/g, "%7C") + ") " : alt;
+    }
+    var link = node.matches("a[href]");
+    var content = Array.from(node.childNodes).map(function(child) {
+      return tableCellNodeMarkdown(child, inLink || link);
+    }).join("");
+    if (link) {
+      var href = materializedHttpUrl(node.getAttribute("href"));
+      var label = normalizeText(content || node.getAttribute("aria-label") || "");
+      return href && label ? markdownLinkWithFormattedLabel(label, href.replace(/\|/g, "%7C")) : label;
+    }
+    return /^(?:BR|DIV|P|LI|SECTION)$/.test(node.tagName) ? " " + content + " " : content;
   }
 
   function compactParameterCell(cell) {
