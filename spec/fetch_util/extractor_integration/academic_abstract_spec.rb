@@ -368,7 +368,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
     end
   end
 
-  it 'extracts ACS abstracts without metrics and access chrome' do
+  it 'extracts complete ACS abstracts through shared scholarly ownership' do
     html = <<~HTML
       <html>
         <head>
@@ -417,6 +417,7 @@ RSpec.describe 'FetchUtil academic abstract extraction' do
       expect(markdown).to include('## Abstract')
       expect(markdown).to include('connected equilibrium constants, reaction quotients')
       expect(markdown).to include('improved explanations of dynamic equilibrium')
+      expect(payload['excerpt']).to end_with('without relying on unrelated metrics widgets.')
       expect(markdown).not_to include('Article Views')
       expect(markdown).not_to include('Purchase short-term access')
       expect(markdown).not_to include('Recommended chemistry education')

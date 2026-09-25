@@ -1,29 +1,3 @@
-  function acsAbstractArticleContent(metadata) {
-    var abstractNode = document.querySelector(".article_abstract, .abstractSection, .article__abstract, .NLM_abstract, #abstract, section[property='abstract'], [property='abstract']");
-    if (!abstractNode) return null;
-
-    var abstractText = normalizeText(abstractNode.textContent || "");
-    if (abstractText.length < 120) return null;
-
-    var signatureText = normalizeText([
-      document.title,
-      metadata && metadata.title,
-      metadata && metadata.siteName,
-      firstText(["meta[name='citation_publisher']", "meta[name='citation_journal_title']"]),
-      document.body && document.body.textContent
-    ].join(" ")).slice(0, 16000);
-    if (!/\b(acs publications|american chemical society|journal of chemical education)\b/i.test(signatureText)) return null;
-
-    return assembleScholarlyArticle({
-      metadata: metadata,
-      abstractRoot: abstractNode,
-      titleSelectors: [".article_header-title", ".citation__title", "h1[property='name']", "h1"],
-      titleCleanup: /\s*-\s*ACS Publications\s*$/i,
-      excerpt: abstractText,
-      minTextLength: 180
-    });
-  }
-
   function plosStyleArticleContent(metadata) {
     function articleParts(source) {
       var candidate = Array.prototype.reduce.call(source.querySelectorAll(".article-content .article-text"), function(best, node) {
@@ -147,7 +121,6 @@
   }
 
   function registerAcademicPublisherProfiles() {
-    registerHostAwareProfile(true, acsAbstractArticleContent);
     registerHostAwareProfile(true, plosStyleArticleContent);
     registerHostAwareProfile(true, elsevierArticleContent);
     registerHostAwareProfile(true, ieeeXploreArticleContent);
