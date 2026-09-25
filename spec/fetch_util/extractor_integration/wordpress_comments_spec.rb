@@ -60,6 +60,39 @@ RSpec.describe 'FetchUtil WordPress article comments' do
     end
   end
 
+  it 'retains a closed discussion and its replies inside the owning post without form IDs' do
+    reply = wordpress_comment(8).sub('comment-body', 'comment_content')
+    comment = wordpress_comment(7, children: "<ol class='children'>#{reply}</ol>").sub('comment-body', 'comment_content')
+    thread = "<section id='comments'><ol class='commentlist'>#{comment}</ol></section>"
+    html = wordpress_discussion_page('').sub('</article>', "#{thread}</article>")
+
+    with_url_page('https://example-blog.test/restoring-a-river/', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      payload = extract_payload(page)
+      expect(payload['markdown'].scan('Reader observation 7 about').length).to eq(1)
+      expect(payload['markdown'].scan('Reader observation 8 about').length).to eq(1)
+      expect(payload['markdown']).to include('https://example-blog.test/readers/7', 'https://example-blog.test/readers/8')
+      expect(payload['markdown'].index('Reader observation 7')).to be < payload['markdown'].index('Reader observation 8')
+      expect(payload['html']).to include('class="children"', 'datetime="2026-09-24T12:00:00Z"')
+      expect(payload['excerpt']).to start_with('The restoration team returned')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
+  it 'rejects conflicting post IDs even when the thread is inside the selected post' do
+    list = "<ol class='commentlist'>#{wordpress_comment(99)}</ol>"
+    variants = [
+      list.sub("class='commentlist'", "class='commentlist' data-post-id='43'"),
+      "<section id='comments'>#{list}<form><input name='comment_post_ID' value='43'></form></section>"
+    ]
+    variants.each do |thread|
+      html = wordpress_discussion_page('').sub('</article>', "#{thread}</article>")
+      extract_from_url('https://example-blog.test/restoring-a-river/', html) do |payload|
+        expect(payload['markdown']).not_to include('Reader observation 99')
+      end
+    end
+  end
+
   it 'retains a post-owned image-only comment' do
     thread = <<~HTML
       <div class="comments-list" data-post-id="42"><div class="comment-item">

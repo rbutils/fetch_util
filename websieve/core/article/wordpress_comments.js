@@ -13,7 +13,7 @@
       var owner = thread.closest("article");
       if (owner && owner !== article) return false;
 
-      var ids = [];
+      var ids = owner === article ? [postId] : [];
       var declared = thread.closest("[data-post-id]");
       if (declared) ids.push(declared.getAttribute("data-post-id"));
       var area = thread.closest("#comments, .comments-area, .wp-block-comments");
@@ -23,7 +23,7 @@
       if (!ids.length || ids.some(function(id) { return id !== postId; })) return false;
 
       return Array.from(thread.querySelectorAll(
-        ".comment-content, .comment-body, .comment-text, .wp-block-comment-content"
+        ".comment-content, .comment_content, .comment-body, .comment-text, .wp-block-comment-content"
       )).some(function(comment) {
         return !elementVisuallyHidden(comment) && hasMaterialCommentContent(comment);
       });

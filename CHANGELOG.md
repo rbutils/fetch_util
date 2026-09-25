@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Preserve closed WordPress discussions and replies inside their owning post even when no comment form supplies the post ID, while rejecting conflicting ownership declarations.
 - Preserve Reader article-header ownership across transformed linked cards when their source text, destination, and position agree.
 - Keep linked resource-card attribution in article content without mistaking it for the article's author.
 - Preserve prose-supported editorial headings whose generated anchor IDs contain newsletter, advertising, or other cleanup keywords.
