@@ -36,7 +36,8 @@
     return sourceOwnedReaderBodyLeadEvidence(html, title, true);
   }
 
-  function sourceOwnedReaderMissingHeadlineContent(content) {
+  function sourceOwnedReaderMissingHeadlineContent(content, metadata) {
+    content = sourceOwnedReaderHeaderContent(content, metadata);
     if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
         !content.html || /^#{1,6}\s/.test(normalizeText(content.title || "")) ||
         (content.markdown && !markdownStartsWithTitle(content.markdown, content.title))) return content;
