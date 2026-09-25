@@ -93,6 +93,7 @@ classifiers/warnings/access.js
 classifiers/warnings/content_integrity.js
 classifiers/warnings/finalization_paywall_state.js
 classifiers/warnings/index.js
+extractors/article/comments.js
 extractors/article/roots.js
 extractors/article/coverage/intro_order.js
 extractors/article/coverage/intro_coverage.js

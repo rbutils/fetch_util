@@ -19,6 +19,7 @@
 
 ### Fixed
 
+- Preserve source-owned article discussions beside verified focal bodies, including short replies, unlinked authors, comment media, footer attribution, and thread destinations.
 - Keep source-owned article bodies and visible public previews ahead of unrelated lists, while preserving surrounding editorial material and rejecting ambiguous, hidden, and social-post content.
 - Preserve distinct source-owned scholarly highlights alongside the primary abstract without duplicating responsive summaries or unrelated recommendations.
 - Extract scholarly records from shared abstract, article-body, citation, author, and version-history ownership while preserving complete abstracts and source-ordered links.

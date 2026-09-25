@@ -119,7 +119,8 @@
     markTerminalArticleLinkCollections(markedVisibleNode);
     var clone = cleanClone(markedVisibleNode);
     if (focalOwnership && focalOwnership.body.publicPreview) focalOwnershipRetainPublicPreview(clone);
-    var comments = fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "";
+    var comments = focalOwnership ? visibleCommentMarkup(document, focalOwnership) :
+      (fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "");
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
     prepareFallbackInlineProse(clone);

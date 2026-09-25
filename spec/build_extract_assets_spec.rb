@@ -1254,6 +1254,7 @@ RSpec.describe "extract asset bundle" do
       ["classifiers/list_pages/detail_articles.js", %w[
         extractors/article/coverage/code_coverage.js
       ], "classifiers/list_pages/dominance.js"],
+      ["extractors/article/comments.js", [], "extractors/article/roots.js"],
       ["extractors/article/roots.js", %w[
         extractors/article/coverage/intro_order.js
         extractors/article/coverage/intro_coverage.js

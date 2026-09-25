@@ -126,22 +126,6 @@
     return commentText > 0 && commentText >= total * 0.7;
   }
 
-  function visibleCommentMarkup(root) {
-    var containers = [];
-    visibleCommentCandidates(root).forEach(function(node) {
-      if (!node.querySelector("p, li, [class*='body' i], [slot='comment']")) return;
-      if (!containers.some(function(parent) { return parent.contains(node); })) containers.push(node);
-    });
-    return containers.map(function(source) {
-      return { source: source, clone: visibilityPrunedClone(source, document) };
-    }).filter(function(entry) {
-      var minimum = /-comment$/.test(String(entry.source.localName || "")) ? 8 : 40;
-      return normalizeText(entry.clone.textContent || "").length >= minimum;
-    }).map(function(entry) {
-      return entry.clone.outerHTML;
-    }).join("");
-  }
-
   function genericArticleAdFurniture(node) {
     if (!node || !node.matches) return false;
     var semanticRoot = "article, main, [role~='main' i], [itemprop~='articleBody' i]";
