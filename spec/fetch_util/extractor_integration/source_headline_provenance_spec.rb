@@ -30,7 +30,9 @@ RSpec.describe 'Reader source headline provenance' do
       '})(window);',
       'window.__retainedReaderHeadline = sourceOwnedReaderRetainedHeadline; ' \
       'window.__stripReaderSourceMarkers = stripReadabilitySourceNodeMarkers; ' \
-      'window.__readerHeader = sourceOwnedReaderHeaderContent; })(window);'
+      'window.__readerHeader = sourceOwnedReaderHeaderContent; ' \
+      'window.__normalizeReaderText = normalizeText; ' \
+      'window.__sourceBreakSegments = sourceParagraphBreakSegments; })(window);'
     ))
   end
 
@@ -45,7 +47,8 @@ RSpec.describe 'Reader source headline provenance' do
         const clonedHeadline = headline.cloneNode(true);
         clonedHeadline.setAttribute('data-fetchutil-reader-source-headline', marker);
         sourceClones.set(headline, clonedHeadline);
-        sourceIdentities.set(headline, {id: headline.id, internalId: false, unique: true});
+        sourceIdentities.set(headline, {id: headline.id, internalId: false, unique: true,
+          visibleText: window.__normalizeReaderText(clonedHeadline.textContent), breakSegments: null});
         const output = document.createElement('div');
         const outputHeadline = document.createElement('h2');
         outputHeadline.id = headline.id;
@@ -60,7 +63,9 @@ RSpec.describe 'Reader source headline provenance' do
           clone.id = id;
           clone.setAttribute('data-fetchutil-reader-source-paragraph', token);
           sourceClones.set(source, clone);
-          sourceIdentities.set(source, {id, internalId: true, unique: true});
+          sourceIdentities.set(source, {id, internalId: true, unique: true,
+            visibleText: window.__normalizeReaderText(clone.textContent),
+            breakSegments: window.__sourceBreakSegments(clone)});
           output.appendChild(clone.cloneNode(true));
           if (#{duplicate_paragraph}) output.appendChild(clone.cloneNode(true));
         });

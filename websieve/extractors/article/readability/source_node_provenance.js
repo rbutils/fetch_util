@@ -17,7 +17,14 @@
         idCounts.set(id, 1);
         internalId = true;
       }
-      return {id: id, internalId: internalId, unique: idCounts.get(id) === 1};
+      var paragraph = source.localName === "p";
+      return {
+        id: id,
+        internalId: internalId,
+        unique: idCounts.get(id) === 1,
+        visibleText: paragraph ? normalizeText(clone.textContent || "") : null,
+        breakSegments: paragraph ? sourceParagraphBreakSegments(clone) : null
+      };
     }
 
     var headlines = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
@@ -51,37 +58,6 @@
       if (!record.startsWith(title)) return false;
       return /^\s*[|·:–—-]\s*\S/u.test(record.slice(title.length));
     });
-  }
-
-  function sourceOwnedReaderSelectedParagraphs(root, sourceClones, sourceIdentities, marker) {
-    var sourceByToken = new Map();
-    var sourceById = new Map();
-    sourceClones.forEach(function(clone, source) {
-      if (clone.nodeType !== Node.ELEMENT_NODE) return;
-      var token = clone.getAttribute("data-fetchutil-reader-source-paragraph");
-      var identity = sourceIdentities.get(source);
-      if (token && token.indexOf(marker + ":") === 0) sourceByToken.set(token, source);
-      if (identity && identity.unique) sourceById.set(identity.id, source);
-    });
-    var selectedNodes = Array.from(root.querySelectorAll("p")).filter(function(node) {
-      return !!normalizeText(node.textContent);
-    });
-    var selected = selectedNodes.map(function(node) {
-      var token = node.getAttribute("data-fetchutil-reader-source-paragraph");
-      var hasMarker = token && token.indexOf(marker + ":") === 0;
-      var source = hasMarker ? sourceByToken.get(token) : sourceById.get(node.getAttribute("id"));
-      return source ? {node: node, source: source} : null;
-    });
-    if (selected.length !== selectedNodes.length || selected.length < 2 || selected.some(function(record) {
-      return !record || !record.source || record.source.localName !== "p" || elementVisuallyHidden(record.source) ||
-        normalizeText(record.node.textContent) !== normalizeText(record.source.textContent);
-    })) return null;
-    var sources = selected.map(function(record) { return record.source; });
-    if (new Set(sources).size !== sources.length) return null;
-    for (var index = 1; index < sources.length; index += 1) {
-      if (!(sources[index - 1].compareDocumentPosition(sources[index]) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
-    }
-    return sources;
   }
 
   function sourceOwnedReaderHeadlineBodyOwner(headline, paragraphs) {

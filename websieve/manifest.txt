@@ -111,6 +111,7 @@ extractors/article/fallback/section_ownership.js
 extractors/article/fallback/fallback.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js
+extractors/article/readability/source_paragraph_mapping.js
 extractors/article/readability/excerpt_chrome.js
 extractors/article/readability/readability_excerpt.js
 extractors/article/readability/caption_credit_excerpt.js

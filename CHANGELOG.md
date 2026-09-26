@@ -21,6 +21,7 @@
 
 ### Fixed
 
+- Preserve source headline hierarchy when Reader splits explicit paragraph breaks, requiring complete, contiguous, source-identified paragraph groups.
 - Restore retained article headlines through exact source-node provenance and ordered body ownership while preserving original anchors and excluding hidden header text.
 - Preserve source-owned repeated collections, short record titles, and linked covers through shared list extraction while keeping distinct destinations and narrative ownership boundaries.
 - Recognize unheaded scholarly records only when a unique journal citation, document title, abstract, and visible scientific sections share one owner.
