@@ -5,5 +5,4 @@
     registerHostAwareProfile(true, structuredLegalProvisionContent);
     registerHostAwareProfile(true, legalTableOfContentsContent);
     registerHostAwareProfile(true, officialStatuteContent);
-    registerHostAwareProfile(true, legalReferenceArticleContent);
   }

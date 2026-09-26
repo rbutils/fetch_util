@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the legal-reference article profile while preserving source-owned encyclopedia headings, complete prose, lists, and linked legal resources through shared extraction.
 - Retire the Xinhua weekly profile in favor of shared list ownership, preserving every visible issue and its linked cover image.
 - Retire the SegmentFault article profile while preserving complete CJK articles, code, images, and source-owned reader comments through shared extraction.
 - Retire the 20minutos live-article profile while preserving every visible update, source order, and complete numeric lead sentences through shared extraction.

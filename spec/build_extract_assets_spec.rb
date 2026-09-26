@@ -1447,6 +1447,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(xinhua_path)
     expect(File).not_to exist(File.join(source_root, xinhua_path))
     expect(source_files.any? { |path| File.read(path).include?("xinhuaWeeklyContent") }).to be(false)
+    expect(source_files.any? { |path| File.read(path).include?("legalReferenceArticleContent") }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
