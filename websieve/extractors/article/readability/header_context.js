@@ -83,7 +83,12 @@
     if (!title) return content;
     var root = document.createElement("div");
     root.innerHTML = content.html;
-    if (root.querySelector("header h1")) return content;
+    if (root.querySelector("header h1")) {
+      var retainedHeader = sourceOwnedReaderHeader(root, title);
+      var retainedExcerpt = retainedHeader && sourceOwnedReaderHeaderExcerpt(visibilityPrunedClone(retainedHeader));
+      return retainedExcerpt && retainedExcerpt !== content.excerpt ?
+        Object.assign({}, content, {excerpt: retainedExcerpt}) : content;
+    }
     var header = sourceOwnedReaderHeader(root, title);
     if (!header) return content;
 

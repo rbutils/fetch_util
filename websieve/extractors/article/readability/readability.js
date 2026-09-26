@@ -4,9 +4,11 @@
     try {
       var comments = visibleCommentMarkup(document);
       var clone = safeReadableDocumentClone();
-      pruneHiddenClone(document.documentElement, clone.documentElement);
+      var sourceClones = new Map();
+      pruneHiddenClone(document.documentElement, clone.documentElement, null, null, null, sourceClones);
       stripPublisherCtaNotes(clone);
       var excerptMarker = markReadabilityExcerptSources(clone);
+      var sourceIdentities = markReadabilitySourceNodeProvenance(clone, sourceClones, excerptMarker);
       normalizeCodeSurfaces(clone);
       if (commentOnlyRoot(clone)) return null;
       prepareInlineArticleProse(clone);
@@ -24,9 +26,11 @@
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
+      article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
+      article.content = stripReadabilitySourceNodeMarkers(article.content, excerptMarker, sourceIdentities);
       article.content += comments;
 
       return {
@@ -38,6 +42,7 @@
         html: article.content,
         textContent: article.textContent || "",
         readerMode: true,
+        sourceOwnedArticleBoundary: article.sourceOwnedArticleBoundary === true,
         contentType: "article"
       };
     } catch (_error) {
