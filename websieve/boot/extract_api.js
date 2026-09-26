@@ -198,7 +198,13 @@
 
        content = applyMedicalContentType(content, metadata);
 
-        var portalRootContent = content && content.browseIndexContent ? null : crediblePortalRootListContent(metadata, content);
+       var repeatedCollectionAssessment = repeatedRecordAssessmentForContent(content, cachedFocalArticleContent);
+       var repeatedCollectionConflict = !!(repeatedCollectionAssessment &&
+         repeatedCollectionAssessment.articleOwnershipConflict);
+        var repeatedCollection = repeatedCollectionAssessment &&
+          !repeatedCollectionAssessment.articleOwnershipConflict ? repeatedCollectionAssessment : null;
+       var portalRootContent = content && !repeatedCollectionAssessment && !content.browseIndexContent ?
+         crediblePortalRootListContent(metadata, content) : null;
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);
        if (ownedDetailArticle) {
          content = ownedDetailArticle;
@@ -222,40 +228,54 @@
         content.hostAware = true;
       }
       if (content.contentType === "article" && !content.browseIndexContent && !content.hostAware && !content.docsLike &&
-          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) &&
+          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) && !repeatedCollectionConflict &&
           legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
         if (normalizeText(footerListFallback.markdown || "").length >= 400 &&
             !listCandidateLosesArticleMaterial(content, footerListFallback) &&
             !listCandidateLosesArticleListMaterial(content, footerListFallback)) content = footerListFallback;
       }
-      if (content.contentType === "article" && !content.docsLike && !content.legalProvision && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) content = relabelAsListContent(content, { strongList: true });
+      if (content.contentType === "article" && !content.docsLike && !content.legalProvision &&
+          !repeatedCollectionConflict && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) {
+        content = relabelAsListContent(content, { strongList: true });
+      }
       var indexListCandidate = null;
-      var indexListAllowed = indexListCandidateAllowed(content);
+      var indexListAllowed = indexListCandidateAllowed(content) && !repeatedCollectionConflict;
       var sourceOwnedIndex = indexListAllowed && strongArticle && !cachedFocalArticleContent(content) &&
         sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {
-        indexListCandidate = listContent(metadata);
-      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection) &&
-          (likelyListPath() || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
-          (!strongArticle || sourceOwnedIndex)) {
-        indexListCandidate = sourceOwnedIndex || listContent(metadata);
+        indexListCandidate = repeatedCollection ? listContent(metadata, {
+           sourceOwner: repeatedCollection.renderOwner,
+           repeatedRecordCollection: repeatedCollection
+        }) : listContent(metadata);
+      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection || repeatedCollection) &&
+          (likelyListPath() || repeatedCollection || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
+          (!strongArticle || sourceOwnedIndex || repeatedCollection)) {
+        indexListCandidate = repeatedCollection ? listContent(metadata, {
+           sourceOwner: repeatedCollection.renderOwner,
+           repeatedRecordCollection: repeatedCollection
+        }) :
+          (sourceOwnedIndex || listContent(metadata));
       }
       if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
           !(supportingProductCollection && content.contentType === "article") &&
           !listCandidateLosesArticleMaterial(content, indexListCandidate) &&
           !sourceOwnedFallbackListLoss(content, indexListCandidate) &&
+          (!repeatedCollection || repeatedRecordCandidateCoversOwner(indexListCandidate, repeatedCollection)) &&
           !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
-      if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike && !content.legalProvision && !strongArticle && thinSearchOrCategoryPage(content)) content = relabelAsListContent(content, { strongList: true });
+      if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike &&
+          !content.legalProvision && !strongArticle && !repeatedCollectionConflict && thinSearchOrCategoryPage(content)) {
+        content = relabelAsListContent(content, { strongList: true });
+      }
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
         if (glossaryListFallback) content = glossaryListFallback;
       }
 
-      var dormantBodyList = dormantBodyRootListContent(content, metadata);
+      var dormantBodyList = repeatedCollectionConflict ? null : dormantBodyRootListContent(content, metadata);
       if (dormantBodyList) content = dormantBodyList;
 
-      var staleOpacityList = staleOpacitySectionListContent(content, metadata);
+      var staleOpacityList = repeatedCollectionConflict ? null : staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
        var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);

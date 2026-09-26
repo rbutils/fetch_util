@@ -12,7 +12,7 @@
     return cleanClone(clone, "[data-fetchutil-editorial-aside]");
   }
 
-  function extractListItems(root) {
+  function extractListItems(root, options) {
     var itemSelector = [
       genericListAnchorCardSelector(),
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
@@ -28,6 +28,9 @@
     var sourceNodes = new Map();
     var acceptedLinks = new Set();
     var context = listPageContext();
+    var repeatedRecordByIdentity = new Map((options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).map(function(record) {
+      return [record.identity, record];
+    }));
     var tableIndexSource = linkedTableIndexRoot();
     context.tableIndexPage = !!tableIndexSource;
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
@@ -37,10 +40,12 @@
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
       var chromeOwnedCard = !!(link && container && container.parentElement &&
         container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
-      var anchorMinimum = minimumListTitleLength(text);
+      var identity = materializedHttpUrl(href);
+      var provenRecord = identity && repeatedRecordByIdentity.has(listCanonicalKey(identity) + "|" + normalizeText(text).toLowerCase());
+      var anchorMinimum = provenRecord ? 1 : minimumListTitleLength(text);
       if (link && genericListImageTitleCard(link)) anchorMinimum = 1;
       else if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
-      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard ? anchorMinimum : (caseRecordContext ? 3 : 18));
+      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard || provenRecord ? anchorMinimum : (caseRecordContext ? 3 : 18));
       if (link && genericListLinkGroup(link, context.linkGroups)) minimumLength = 1;
       if (link && genericListNumberedCollectionLink(link, context.numberedCollections)) minimumLength = 1;
       return text.length < minimumLength ||
@@ -60,6 +65,9 @@
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
+      var recordIdentity = materializedHttpUrl(href) && listCanonicalKey(materializedHttpUrl(href)) + "|" + normalizeText(candidate.text).toLowerCase();
+      var repeatedRecord = recordIdentity && repeatedRecordByIdentity.get(recordIdentity);
+      if (repeatedRecord && repeatedRecord.mediaMarkdown.length) candidate.image = repeatedRecord.mediaMarkdown.join(" ");
       if (pushUniqueListCandidate(candidates, seen, candidate)) {
         sourceNodes.set(candidate, link);
         acceptedLinks.add(link);

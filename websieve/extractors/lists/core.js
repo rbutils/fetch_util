@@ -4,7 +4,7 @@
     cleanupListRoot(root);
     var sectioned = sectionedListExtraction(root);
 
-    var items = extractListItems(root);
+    var items = extractListItems(root, options);
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
     var descText = listDescriptionMarkdown(root);
@@ -90,6 +90,7 @@
 
   function bestListExtraction(metadata, pageTitles, options) {
     options = options || {};
+    if (options.sourceOwner) return buildListExtraction(options.sourceOwner, pageTitles, options);
     var candidates = [];
     function pushCandidate(node) {
       if (!node || candidates.indexOf(node) !== -1) return;

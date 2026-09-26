@@ -27,6 +27,7 @@
 
   function markdownIndexListPage(markdown, content) {
     if (!markdown || articleRouteFocalContent(content)) return false;
+    if (content && content.repeatedRecordArticleOwnershipConflict) return false;
     if (legalJudgmentArticleContent(null, markdown) || legalStatuteArticleContent(null, markdown)) return false;
     if (legalTableOfContentsMarkdown(markdown)) return true;
     if (!likelyListPath() && !queryOrCategoryPage()) return false;
@@ -51,6 +52,7 @@
 
   function searchResultsListPage(content, markdown) {
     if (!content || content.contentType !== "article" || articleRouteFocalContent(content)) return false;
+    if (content.repeatedRecordArticleOwnershipConflict) return false;
 
     var path = (location.pathname || "").toLowerCase();
     var query = (location.search || "").toLowerCase();
