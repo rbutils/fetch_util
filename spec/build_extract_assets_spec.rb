@@ -1443,6 +1443,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include("systems/news_engines/polish_portal_descriptors.js")
     expect(register_source).to include("registerNewsHomepageProfiles();\n  registerBookingProfiles();")
     source_files = Dir[File.join(source_root, "**", "*.js")]
+    xinhua_path = "profiles/news/global/xinhua.js"
+    expect(manifest).not_to include(xinhua_path)
+    expect(File).not_to exist(File.join(source_root, xinhua_path))
+    expect(source_files.any? { |path| File.read(path).include?("xinhuaWeeklyContent") }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
@@ -1553,7 +1557,6 @@ RSpec.describe "extract asset bundle" do
       File.read(File.join(source_root, path)).match?(/(?:^[ \t]*|;[ \t]*)registerHostAwareProfile\(/)
     end
     expected_tail = %w[
-      profiles/news/global/xinhua.js
       profiles/news/middle_east/walla.js
       profiles/news/asia/east/nhk.js
       systems/cms/joomla.js

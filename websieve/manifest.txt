@@ -286,7 +286,6 @@ profiles/social/networks/bluesky.js
 profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
-profiles/news/global/xinhua.js
 profiles/news/middle_east/walla.js
 profiles/news/asia/east/nhk.js
 systems/cms/joomla.js
