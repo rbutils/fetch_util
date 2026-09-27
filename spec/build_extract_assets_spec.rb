@@ -1061,9 +1061,8 @@ RSpec.describe "extract asset bundle" do
 
     unidad_path = "profiles/news/europe/southern/spain/unidad_editorial.js"
     unidad_index = manifest.index(unidad_path)
-    marca_index = manifest.index("profiles/news/europe/southern/spain/marca.js")
     engine_path = "systems/news_engines/unidad_editorial_engine.js"
-    expect(unidad_index).to eq(marca_index - 1)
+    expect(unidad_index).to be > manifest.index(engine_path)
     expect(unidad_index).to be > manifest.index("profiles/register.js")
     expect(File).to exist(File.join(source_root, unidad_path))
     expect(File).to exist(File.join(source_root, engine_path))
@@ -1448,6 +1447,10 @@ RSpec.describe "extract asset bundle" do
     expect(File).not_to exist(File.join(source_root, xinhua_path))
     expect(source_files.any? { |path| File.read(path).include?("xinhuaWeeklyContent") }).to be(false)
     expect(source_files.any? { |path| File.read(path).include?("legalReferenceArticleContent") }).to be(false)
+    marca_path = "profiles/news/europe/southern/spain/marca.js"
+    expect(manifest).not_to include(marca_path)
+    expect(File).not_to exist(File.join(source_root, marca_path))
+    expect(source_files.any? { |path| File.read(path).include?("marcaArticleContent") }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
@@ -1567,7 +1570,6 @@ RSpec.describe "extract asset bundle" do
       profiles/news/middle_east/skynewsarabia.js
       profiles/news/middle_east/turkey/milliyet_live.js
       profiles/news/europe/southern/spain/unidad_editorial.js
-      profiles/news/europe/southern/spain/marca.js
       profiles/news/europe/western/germany/faz.js
       profiles/news/europe/central/poland/agora_wyborcza.js
       profiles/news/asia/east/netease_news.js
