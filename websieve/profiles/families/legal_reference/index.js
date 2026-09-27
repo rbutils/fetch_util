@@ -1,5 +1,4 @@
   function registerLegalReferenceProfiles() {
-    registerHostAwareProfile(true, federalRegisterNoticeContent);
     registerHostAwareProfile(true, govUkGuidanceContent);
     registerHostAwareProfile(true, courtListenerOpinionContent);
     registerHostAwareProfile(true, structuredLegalProvisionContent);

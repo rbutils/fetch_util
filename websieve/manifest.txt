@@ -276,7 +276,6 @@ profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
 profiles/families/legal_reference/conventions.js
 profiles/families/legal_reference/reference_articles.js
-profiles/government/federal_register.js
 profiles/government/gov_uk.js
 profiles/legal/courtlistener.js
 profiles/legal/statutes.js

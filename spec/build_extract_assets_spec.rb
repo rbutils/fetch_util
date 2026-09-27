@@ -1475,6 +1475,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(marca_path)
     expect(File).not_to exist(File.join(source_root, marca_path))
     expect(source_files.any? { |path| File.read(path).include?("marcaArticleContent") }).to be(false)
+    federal_register_path = "profiles/government/federal_register.js"
+    expect(manifest).not_to include(federal_register_path)
+    expect(File).not_to exist(File.join(source_root, federal_register_path))
+    expect(source_files.any? { |path| File.read(path).include?("federalRegisterNoticeContent") }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end

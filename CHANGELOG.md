@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the Federal Register profile in favor of source-owned notice extraction, preserving formal sections, agency and date attribution, complete summaries, and linked document resources.
 - Retire the Marca article profile while preserving complete public reporting and owned media, and retain truthful warnings for explicit premium previews.
 - Retire the legal-reference article profile while preserving source-owned encyclopedia headings, complete prose, lists, and linked legal resources through shared extraction.
 - Retire the Xinhua weekly profile in favor of shared list ownership, preserving every visible issue and its linked cover image.
