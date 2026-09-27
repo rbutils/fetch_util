@@ -135,6 +135,8 @@
       return "liveblog";
     }
 
+    if (content && content.sourceOwnedContentsComponent) return null;
+
     if (content.mediaOwnedTranscript && /\/(?:videos|watch|clip|replay)\b/.test(pathname) &&
         structuredDataNode(["VideoObject"])) return "video";
 

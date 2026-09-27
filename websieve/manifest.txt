@@ -101,6 +101,9 @@ extractors/article/roots.js
 extractors/article/source_record_helpers.js
 extractors/article/source_record_discussion.js
 extractors/article/source_records.js
+extractors/article/contents_component_history.js
+extractors/article/contents_component.js
+extractors/article/contents_component_rendering.js
 extractors/article/coverage/intro_order.js
 extractors/article/coverage/intro_coverage.js
 extractors/article/coverage/carousel_coverage.js
@@ -113,6 +116,7 @@ extractors/article/fallback/focal_permalink.js
 extractors/article/fallback/fallback_excerpt.js
 extractors/article/fallback/section_ownership.js
 extractors/article/fallback/high_confidence_content.js
+extractors/article/fallback/content_cleanup.js
 extractors/article/fallback/fallback.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js
@@ -316,6 +320,7 @@ boot/pipeline_helpers.js
 boot/reader_byline.js
 boot/reader_text_byline.js
 boot/list_byline.js
+boot/contents_component_finalization.js
 boot/result_finalization.js
 boot/list_candidate_arbitration.js
 boot/extract_api.js

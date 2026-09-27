@@ -56,5 +56,15 @@ function collectMetadata() {
     metadata.recordType = sourceRecord.recordType;
   }
 
+  if (!sourceRecord) {
+    var contentsComponent = sourceOwnedContentsComponentOwnership(metadata);
+    if (contentsComponent) {
+      metadata.contentsComponent = contentsComponent;
+      metadata.byline = contentsComponent.byline;
+      metadata.publishedTime = contentsComponent.publishedTime;
+      metadata.excerpt = contentsComponent.lead;
+    }
+  }
+
   return metadata;
 }

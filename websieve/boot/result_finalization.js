@@ -75,6 +75,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = sourceOwnedReaderHeadlineContent(content);
   content = sourceOwnedFigureCaptionContent(content);
   content = sourceOwnedReaderMissingHeadlineContent(content, metadata);
+  content = contentsComponentFinalizationHtml(content);
   if (metadata.mediaOwnedBody && content.contentType === "article" && !content.hostAware) {
     var mediaContext = metadata.mediaOwnedBody;
     if (mediaContext.byline) content.byline = mediaContext.byline;
@@ -234,6 +235,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var warnings = finalizationWarnings(content, metadata, markdown, pageText, signals, primaryTitle);
   markdown = interstitialRequestedContextMarkdown(content, metadata, markdown, warnings);
   markdown = deferredListFinalizationMarkdown(content, metadata, markdown);
+  markdown = contentsComponentFinalizationMarkdown(content, markdown);
   markdown = stripStructuredCardFieldMarkers(markdown);
   content.textContent = stripStructuredCardFieldMarkers(content.textContent);
   var pageTextLength = normalizeText(pageText || "").length;

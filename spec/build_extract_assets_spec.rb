@@ -1114,6 +1114,32 @@ RSpec.describe "extract asset bundle" do
     expect(indices).to eq(indices.sort)
   end
 
+  it "loads Contents ownership modules before their fallback consumer" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    paths = %w[
+      extractors/article/contents_component_history.js
+      extractors/article/contents_component.js
+      extractors/article/contents_component_rendering.js
+      extractors/article/fallback/content_cleanup.js
+      extractors/article/fallback/fallback.js
+      boot/contents_component_finalization.js
+      boot/result_finalization.js
+    ]
+    indices = paths.map { |path| manifest.index(path) }
+
+    expect(indices).not_to include(nil)
+    expect(indices).to eq(indices.sort)
+  end
+
+  it "keeps article source-module directories below ten files" do
+    source_root = File.join(project_root, "websieve", "extractors", "article")
+    directories = [source_root, File.join(source_root, "fallback")]
+    file_counts = directories.map { |directory| Dir.glob(File.join(directory, "*.js")).length }
+
+    expect(file_counts).to all(be < 10)
+  end
+
   it "groups article coverage helpers without changing their load order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
@@ -1276,6 +1302,9 @@ RSpec.describe "extract asset bundle" do
         extractors/article/source_record_helpers.js
         extractors/article/source_record_discussion.js
         extractors/article/source_records.js
+        extractors/article/contents_component_history.js
+        extractors/article/contents_component.js
+        extractors/article/contents_component_rendering.js
         extractors/article/coverage/intro_order.js
         extractors/article/coverage/intro_coverage.js
         extractors/article/coverage/carousel_coverage.js
@@ -1288,6 +1317,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/high_confidence_content.js
+        extractors/article/fallback/content_cleanup.js
         extractors/article/fallback/fallback.js
         extractors/article/readability/header_context.js
         extractors/article/readability/source_headline.js
