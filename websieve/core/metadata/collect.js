@@ -36,7 +36,7 @@ function collectMetadata() {
   var schemaPublishedTime = entityText(schemaArticle && schemaArticle.datePublished);
   var schemaEventTime = schemaEvent && typeof eventDateText === "function" ? eventDateText(schemaEvent.startDate, schemaEvent.endDate) : null;
 
-  return {
+  var metadata = {
     title: metadataValue("og:title", "property") || document.title || firstText(["main h1", "article h1", "h1"]),
     byline: byline,
     declaredByline: declaredByline,
@@ -48,4 +48,13 @@ function collectMetadata() {
     image: materializedMetadataValue("og:image", "property"),
     video: materializedMetadataValue("og:video", "property") || materializedMetadataValue("og:video:url", "property")
   };
+
+  var sourceRecord = structuredSourceRecordOwnership(metadata);
+  if (sourceRecord) {
+    metadata.byline = sourceRecord.byline;
+    metadata.publishedTime = sourceRecord.publishedTime;
+    metadata.recordType = sourceRecord.recordType;
+  }
+
+  return metadata;
 }

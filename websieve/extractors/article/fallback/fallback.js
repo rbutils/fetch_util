@@ -51,10 +51,8 @@
   }
 
   function fallbackContent(metadata) {
-    if (commentOnlyRoot(document.body) && !fallbackFocalArticleRoot(document.body)) return nonArticleContent();
-    var legalProvision = legalProvisionContent();
-    if (legalProvision) return legalProvision;
-
+    var highConfidence = highConfidenceFallbackContent(metadata);
+    if (highConfidence) return highConfidence;
     var selectors = genericArticleSelectors();
     var candidates = new Set();
 
@@ -209,6 +207,7 @@
 
   function preferFallbackContent(primary, fallback) {
     if (!primary) return fallback;
+    if (fallback && fallback.contentType === "notice") return fallback;
     if (!fallback || !primary.readerMode) return primary;
 
     var mediaWikiLike = !!document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");

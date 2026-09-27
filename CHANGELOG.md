@@ -23,6 +23,7 @@
 
 ### Fixed
 
+- Extract formal notices through source-owned headings, agency and publication metadata, preserving complete sections, linked contacts, document resources, and reader discussions.
 - Preserve source headline hierarchy when Reader splits explicit paragraph breaks, requiring complete, contiguous, source-identified paragraph groups.
 - Restore retained article headlines through exact source-node provenance and ordered body ownership while preserving original anchors and excluding hidden header text.
 - Preserve source-owned repeated collections, short record titles, and linked covers through shared list extraction while keeping distinct destinations and narrative ownership boundaries.

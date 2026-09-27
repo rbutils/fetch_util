@@ -44,7 +44,8 @@
       node.data = credentialFreeHttpText(node.data);
     });
     root.querySelectorAll("[href]").forEach(function(el) {
-      var href = materializedHttpUrl(el.getAttribute("href"));
+      var href = el.tagName === "A" && el.namespaceURI === "http://www.w3.org/1999/xhtml" ?
+        materializedLinkUrl(el.getAttribute("href")) : materializedHttpUrl(el.getAttribute("href"));
       if (href) el.setAttribute("href", href);
       else if (!retainUnsafeLinks) el.removeAttribute("href");
     });

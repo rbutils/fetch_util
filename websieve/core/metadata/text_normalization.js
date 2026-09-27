@@ -40,6 +40,26 @@ function materializedHttpUrl(value) {
   }
 }
 
+function materializedLinkUrl(value) {
+  var httpUrl = materializedHttpUrl(value);
+  if (httpUrl) return httpUrl;
+
+  var raw = String(value || "");
+  if (raw !== raw.trim() || /[\u0000-\u001f\u007f-\u009f]/.test(raw)) return null;
+  var match = raw.match(/^mailto:(.+)$/i);
+  if (!match) return null;
+  var decoded;
+  try {
+    decoded = decodeURIComponent(match[1]);
+  } catch (_error) {
+    return null;
+  }
+  if (/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(decoded) || /[?#]/.test(decoded)) return null;
+  var address = decoded.match(/^([A-Za-z0-9.!$&'*+/=_`{|}~-]+)@([A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?)$/);
+  if (!address || address[2].indexOf("..") !== -1) return null;
+  return "mailto:" + decoded;
+}
+
 function credentialFreeHttpUrl(value) {
   var url = absoluteUrl(value);
   if (!url) return null;

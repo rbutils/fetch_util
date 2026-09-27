@@ -2,6 +2,7 @@
 core/metadata/text_normalization.js
 core/metadata/language.js
 core/metadata/visible_metadata.js
+core/metadata/labeled_metadata.js
 core/metadata/visible_dates.js
 core/metadata/structured_data_entities.js
 core/metadata/structured_data.js
@@ -97,6 +98,9 @@ classifiers/warnings/finalization_paywall_state.js
 classifiers/warnings/index.js
 extractors/article/comments.js
 extractors/article/roots.js
+extractors/article/source_record_helpers.js
+extractors/article/source_record_discussion.js
+extractors/article/source_records.js
 extractors/article/coverage/intro_order.js
 extractors/article/coverage/intro_coverage.js
 extractors/article/coverage/carousel_coverage.js
@@ -108,6 +112,7 @@ extractors/article/fallback/focal_ownership.js
 extractors/article/fallback/focal_permalink.js
 extractors/article/fallback/fallback_excerpt.js
 extractors/article/fallback/section_ownership.js
+extractors/article/fallback/high_confidence_content.js
 extractors/article/fallback/fallback.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js

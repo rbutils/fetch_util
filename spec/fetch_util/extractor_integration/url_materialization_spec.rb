@@ -50,6 +50,25 @@ RSpec.describe 'FetchUtil public URL materialization' do
     expect(output).not_to include('javascript:unsafeLabel', 'javascript:unsafeRaw', 'onclick=')
   end
 
+  it 'retains simple contact links without treating mailto destinations as image resources' do
+    markdown = <<~'MARKDOWN'
+      [Contact](mailto:contact@example.gov)
+      ![Contact graphic](mailto:contact@example.gov)
+      ![Referenced contact graphic][contact-image]
+
+      [contact-image]: mailto:contact@example.gov
+    MARKDOWN
+    html = '<p><a href="mailto:contact@example.gov">Contact</a>' \
+      '<img src="mailto:contact@example.gov" alt="Contact graphic"></p>'
+
+    payload = profile_payload(markdown: markdown, html: html)
+
+    expect(payload['markdown']).to include('[Contact](mailto:contact@example.gov)', 'Contact graphic')
+    expect(payload['markdown']).not_to include('![Contact graphic](', '[contact-image]:')
+    expect(payload['html']).to include('href="mailto:contact@example.gov"', 'alt="Contact graphic"')
+    expect(payload['html']).not_to include('src="mailto:')
+  end
+
   it 'removes credential-bearing HTTP destinations while preserving visible labels' do
     markdown = <<~'MARKDOWN'
       [Credential link](https://reader:secret@public.example.test/private)

@@ -1,4 +1,5 @@
   function docsSystemInfo(metadata) {
+    if (structuredSourceRecordOwnership(metadata)) return null;
     var signatureInfo = platformSignature(metadata, [function(_metadata, generator, appName) {
       return [docsHostSignature(metadata), generator, appName].join(" ");
     }]);

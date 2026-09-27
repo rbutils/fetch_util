@@ -1096,6 +1096,24 @@ RSpec.describe "extract asset bundle" do
     expect(oversized).to eq([])
   end
 
+  it "loads shared comment ownership before generic notice discussion" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    paths = %w[
+      extractors/article/comments.js
+      extractors/article/roots.js
+      extractors/article/source_record_helpers.js
+      extractors/article/source_record_discussion.js
+      extractors/article/source_records.js
+      extractors/article/fallback/high_confidence_content.js
+      extractors/article/fallback/fallback.js
+    ]
+    indices = paths.map { |path| manifest.index(path) }
+
+    expect(indices).not_to include(nil)
+    expect(indices).to eq(indices.sort)
+  end
+
   it "groups article coverage helpers without changing their load order" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
@@ -1255,6 +1273,9 @@ RSpec.describe "extract asset bundle" do
       ], "classifiers/list_pages/dominance.js"],
       ["extractors/article/comments.js", [], "extractors/article/roots.js"],
       ["extractors/article/roots.js", %w[
+        extractors/article/source_record_helpers.js
+        extractors/article/source_record_discussion.js
+        extractors/article/source_records.js
         extractors/article/coverage/intro_order.js
         extractors/article/coverage/intro_coverage.js
         extractors/article/coverage/carousel_coverage.js
@@ -1266,13 +1287,16 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
+        extractors/article/fallback/high_confidence_content.js
         extractors/article/fallback/fallback.js
         extractors/article/readability/header_context.js
         extractors/article/readability/source_headline.js
+        extractors/article/readability/source_paragraph_mapping.js
         extractors/article/readability/excerpt_chrome.js
         extractors/article/readability/readability_excerpt.js
         extractors/article/readability/caption_credit_excerpt.js
         extractors/article/readability/compact_body_excerpt.js
+        extractors/article/readability/source_node_provenance.js
         extractors/article/readability/readability.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],

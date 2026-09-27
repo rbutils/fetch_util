@@ -74,7 +74,7 @@ function materializedMarkdown(markdown) {
     var link = inlineMarkdownLinkAt(input, position);
     if (link) {
       var label = materializedMarkdown(link.label);
-      var url = materializedHttpUrl(link.url);
+      var url = link.image ? materializedHttpUrl(link.url) : materializedLinkUrl(link.url);
       output += url ? (link.image ? "!" : "") + "[" + label + "](" + url + link.suffix + ")" : label;
       position = link.end;
       continue;
