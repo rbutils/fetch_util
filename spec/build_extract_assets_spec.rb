@@ -1169,6 +1169,7 @@ RSpec.describe "extract asset bundle" do
       extractors/article/fallback/focal_headline_ownership.js
       extractors/article/fallback/focal_ownership.js
       extractors/article/fallback/focal_permalink.js
+      extractors/article/fallback/source_header_metadata.js
       extractors/article/fallback/fallback_excerpt.js
       extractors/article/fallback/section_ownership.js
       extractors/article/fallback/fallback.js
@@ -1177,7 +1178,7 @@ RSpec.describe "extract asset bundle" do
     expect(fallback_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
     expect(manifest & fallback_paths).to eq(fallback_paths)
     expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
-    expect(manifest.index(fallback_paths[3])).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
+    expect(manifest.index(fallback_paths[4])).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
   end
 
@@ -1314,6 +1315,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
+        extractors/article/fallback/source_header_metadata.js
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/high_confidence_content.js

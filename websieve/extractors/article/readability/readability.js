@@ -27,13 +27,18 @@
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
       article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
+      var sourceParagraphTemplate = document.createElement("template");
+      sourceParagraphTemplate.innerHTML = article.content;
+      var selectedSourceParagraphs = sourceOwnedReaderParagraphIdentitySources(
+        sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker
+      );
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
       article.content = stripReadabilitySourceNodeMarkers(article.content, excerptMarker, sourceIdentities);
       article.content += comments;
 
-      return {
+      var content = {
         title: article.title || null,
         byline: article.byline || null,
         excerpt: excerpt,
@@ -45,6 +50,8 @@
         sourceOwnedArticleBoundary: article.sourceOwnedArticleBoundary === true,
         contentType: "article"
       };
+      Object.defineProperty(content, "sourceOwnedReaderParagraphSources", { value: selectedSourceParagraphs });
+      return content;
     } catch (_error) {
       // Fall through to the shared article/list heuristics instead of aborting.
       return null;

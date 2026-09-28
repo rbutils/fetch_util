@@ -48,6 +48,41 @@
     return null;
   }
 
+  function sourceOwnedReaderParagraphIdentitySources(root, sourceClones, sourceIdentities, marker) {
+    if (!root || !sourceClones || !sourceIdentities || !marker) return null;
+    var sourceByToken = new Map();
+    var sourceById = new Map();
+    sourceClones.forEach(function(clone, source) {
+      if (source.localName !== "p" || clone.nodeType !== Node.ELEMENT_NODE) return;
+      var identity = sourceIdentities.get(source);
+      if (!identity) return;
+      var token = clone.getAttribute("data-fetchutil-reader-source-paragraph");
+      if (token && token.indexOf(marker + ":") === 0) sourceByToken.set(token, source);
+      if (identity.unique) sourceById.set(identity.id, source);
+    });
+
+    var selectedNodes = Array.from(root.querySelectorAll("p")).filter(function(node) {
+      return !!normalizeText(node.textContent);
+    });
+    var sources = [];
+    var seen = new Set();
+    var previousSource = null;
+    for (var index = 0; index < selectedNodes.length; index += 1) {
+      var source = sourceReaderParagraphOrigin(selectedNodes[index], root, sourceByToken, sourceById, marker);
+      if (!source || source.localName !== "p" || elementVisuallyHidden(source) ||
+          (seen.has(source) && source !== previousSource)) return null;
+      if (!seen.has(source)) {
+        seen.add(source);
+        sources.push(source);
+      }
+      previousSource = source;
+    }
+    if (sources.length < 2 || sources.some(function(source, sourceIndex) {
+      return sourceIndex > 0 && !(sources[sourceIndex - 1].compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })) return null;
+    return sources;
+  }
+
   function sourceOwnedReaderSelectedParagraphs(root, sourceClones, sourceIdentities, marker) {
     if (!root || !sourceClones || !sourceIdentities || !marker) return null;
     var sourceByToken = new Map();

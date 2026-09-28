@@ -137,6 +137,7 @@
     cleanupFallbackArticleChrome(clone);
     if (comments) clone.insertAdjacentHTML("beforeend", comments);
     var text = normalizeText(clone.textContent);
+    var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
 
     return {
       title: focalOwnership ? focalOwnership.title : document.title,
@@ -144,6 +145,7 @@
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
         fallbackArticleExcerpt(visibleNode, text, metadata, !!focalOwnership),
       sourceOwnedFocalArticle: !!focalOwnership,
+      sourceOwnedHeaderMetadata: headerMetadata,
       focalPublicPreview: !!(focalOwnership && focalOwnership.body.publicPreview),
       siteName: (metadata && metadata.siteName) || location.hostname,
       publishedTime: null,
@@ -183,6 +185,13 @@
   }
 
   function preferFallbackContent(primary, fallback) {
+    if (primary && primary.contentType === "article" && fallback &&
+        fallback.sourceOwnedHeaderMetadata &&
+        sourceOwnedFallbackHeaderMatchesPrimary(primary, fallback.sourceOwnedHeaderMetadata)) {
+      var headerMetadata = fallback.sourceOwnedHeaderMetadata;
+      if (!primary.byline) primary.byline = headerMetadata.byline;
+      if (!primary.publishedTime) primary.publishedTime = headerMetadata.publishedTime;
+    }
     if (!primary) return fallback;
     if (fallback && (fallback.contentType === "notice" || fallback.sourceOwnedContentsComponent)) return fallback;
     if (!fallback || !primary.readerMode) return primary;

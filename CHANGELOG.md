@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- Recover article author and publication metadata from source-owned headers without attributing lists or mixed-source Reader content to that article.
 - Preserve source-owned Contents navigation, complete guidance sections, publication metadata, and ordered update history without promoting unrelated components over an independently selected article.
 - Extract formal notices through source-owned headings, agency and publication metadata, preserving complete sections, linked contacts, document resources, and reader discussions.
 - Preserve source headline hierarchy when Reader splits explicit paragraph breaks, requiring complete, contiguous, source-identified paragraph groups.
