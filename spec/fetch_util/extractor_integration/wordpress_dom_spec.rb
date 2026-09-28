@@ -84,4 +84,37 @@ RSpec.describe 'FetchUtil WordPress DOM extractor integration' do
       expect_warnings(payload, exclude: %w[short_extraction truncated_content empty_extraction])
     end
   end
+
+  it 'does not treat common article body classes as WordPress evidence on an unknown host' do
+    html = <<~HTML
+      <html lang="en">
+        <head>
+          <title>Independent Article</title>
+          <link rel="canonical" href="https://independent.test/story/42">
+          <meta property="og:type" content="article">
+          <meta property="og:title" content="Independent Article">
+          <meta name="author" content="Reporter">
+        </head>
+        <body>
+          <article>
+            <h1>Independent Article</h1>
+            <div class="entry-content">
+              <time datetime="2026-09-27">September 27, 2026</time>
+              <p>This ordinary article uses a conventional class name and contains its complete authored report.</p>
+              <p>The second paragraph remains part of the same source-owned article body.</p>
+            </div>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://independent.test/story/42', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['hostAware']).to be(false)
+      expect(payload['byline']).to eq('Reporter')
+      expect(payload['publishedTime']).to eq('2026-09-27')
+      expect(payload['markdown']).to include('complete authored report')
+      expect(payload['markdown']).to include('same source-owned article body')
+    end
+  end
 end

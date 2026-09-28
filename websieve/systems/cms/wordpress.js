@@ -2,8 +2,6 @@
     "link[href*='/wp-content/']",
     "script[src*='/wp-content/']",
     "meta[name='generator'][content*='WordPress' i]",
-    ".entry-content",
-    ".post-content",
     ".wp-block-post-content",
     "[class*='wp-block-' i]"
   ];
