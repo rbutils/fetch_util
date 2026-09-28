@@ -1538,6 +1538,13 @@ RSpec.describe "extract asset bundle" do
       %w[jangArticleContent jangDetailArticleContent jangLiveblogStoryContent jangLiveblogSelectedStory jangCleanArticleRoot]
     )
     expect(source_files.any? { |path| File.read(path).match?(retired_jang_pattern) }).to be(false)
+    yle_path = "profiles/news/europe/yle_live.js"
+    expect(manifest).not_to include(yle_path)
+    expect(File).not_to exist(File.join(source_root, yle_path))
+    retired_yle_pattern = Regexp.union(
+      %w[yleLiveArticleContent yleLiveItemPage yleLiveItemMatcher yleLiveItemByline yleLiveItemPublishedTime yleLiveRemovePageLiveBlogData]
+    )
+    expect(source_files.any? { |path| File.read(path).match?(retired_yle_pattern) }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end

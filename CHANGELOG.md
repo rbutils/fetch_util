@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the YLE live-article profile in favor of source-owned liveblog extraction, retaining complete updates and coherent parent attribution when the requested entry is not independently identified.
 - Retire the Jang profile while preserving complete reporting, owned media, explicitly addressed updates, and full liveblog context when update ownership is unproved.
 - Retire the GOV.UK guidance profile while preserving source-owned Contents, plain article layouts, publication precision, complete sections, and public update history through shared extraction.
 - Retire the Federal Register profile in favor of source-owned notice extraction, preserving formal sections, agency and date attribution, complete summaries, and linked document resources.
