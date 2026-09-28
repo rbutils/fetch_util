@@ -130,7 +130,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var originalPrimaryTitle = normalizeText((content.title || metadata.title || "").replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var siteTitle = normalizeText(content.siteName || metadata.siteName || "");
   var primaryTitle = originalPrimaryTitle;
-  if (content.contentType === "article" || content.contentType === "medical") {
+  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true) {
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
@@ -146,7 +146,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       });
     }
   }
-  if ((content.contentType === "article" || content.contentType === "medical") && normalizeText(markdown) && siteTitle && primaryTitle.toLowerCase() === siteTitle.toLowerCase()) {
+  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true && normalizeText(markdown) && siteTitle && primaryTitle.toLowerCase() === siteTitle.toLowerCase()) {
     markdown.split("\n").slice(0, 12).some(function(line) {
       var match = normalizeText(line).match(/^#+\s+(.*)/);
       var heading = normalizeText(match && match[1]).replace(/[`*_]/g, "");

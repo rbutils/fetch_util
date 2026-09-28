@@ -202,7 +202,7 @@ function sourceOwnedLiveblogContent(metadata, ownership) {
   article.appendChild(content);
   appendSourceOwnedLiveblogDiscussions(article, ownership, discussions);
   var text = normalizeText(article.textContent || "");
-  var title = ownership.mode === "parent" ? ownership.context.title : liveblogVisibleText(ownership.heading);
+  var title = ownership.mode === "parent" ? liveblogParentTitle(ownership.context) : liveblogVisibleText(ownership.heading);
   var date = ownership.mode === "entry" ? normalizeText(ownership.date.getAttribute("datetime") || ownership.date.getAttribute("content") || ownership.date.textContent || "") : liveblogParentPublishedTime(ownership.context);
   var byline = ownership.mode === "entry" ? liveblogRecordByline(source) : liveblogParentByline(ownership.context);
   return {

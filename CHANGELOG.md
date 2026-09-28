@@ -26,6 +26,7 @@
 
 ### Fixed
 
+- Keep liveblog titles consistent with the proved parent or update scope, including parent headings corroborated by source descriptions when headline metadata names a child update.
 - Preserve source-owned liveblog parents and explicitly addressed updates, including material links, per-update attribution, and reader discussions without borrowing child metadata for the parent.
 - Preserve complete canonical article bodies, independent header contributions, owned attribution, media, and reader discussions while rejecting ambiguous ownership and unrepresented source material.
 - Prefer visible publication-date values over adjacent section labels while retaining localized, yearless, relative, and existing fallback date formats.

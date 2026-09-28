@@ -1,3 +1,15 @@
+function liveblogParentTitle(context) {
+  var entity = liveblogParentEntity(context);
+  var heading = liveblogVisibleText(context.heading);
+  var normalizedHeading = liveblogComparableHeadline(heading);
+  if (!entity || typeof entity.description !== "string" ||
+      liveblogComparableHeadline(entity.description) !== normalizedHeading) return context.title;
+  var updateHeading = context.records.some(function(record) {
+    return liveblogComparableHeadline(liveblogVisibleText(record.heading)) === normalizedHeading;
+  });
+  return updateHeading ? context.title : heading;
+}
+
 function liveblogParentHeadMetadataValue(selector) {
   if (!document.head) return null;
   var node = document.head.querySelector(selector);
