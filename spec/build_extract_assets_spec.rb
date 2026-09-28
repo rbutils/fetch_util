@@ -1531,6 +1531,13 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(gov_uk_path)
     expect(File).not_to exist(File.join(source_root, gov_uk_path))
     expect(source_files.any? { |path| File.read(path).match?(/govUk(?:GuidanceContent|ContentsMarkdown)/) }).to be(false)
+    jang_path = "profiles/news/asia/south/pakistan/jang.js"
+    expect(manifest).not_to include(jang_path)
+    expect(File).not_to exist(File.join(source_root, jang_path))
+    retired_jang_pattern = Regexp.union(
+      %w[jangArticleContent jangDetailArticleContent jangLiveblogStoryContent jangLiveblogSelectedStory jangCleanArticleRoot]
+    )
+    expect(source_files.any? { |path| File.read(path).match?(retired_jang_pattern) }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
@@ -1646,7 +1653,6 @@ RSpec.describe "extract asset bundle" do
       systems/cms/joomla.js
       systems/cms/wordpress.js
       profiles/news/asia/central/azerbaijan/oxu.js
-      profiles/news/asia/south/pakistan/jang.js
       profiles/news/middle_east/skynewsarabia.js
       profiles/news/middle_east/turkey/milliyet_live.js
       profiles/news/europe/southern/spain/unidad_editorial.js
