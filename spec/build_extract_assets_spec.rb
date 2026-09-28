@@ -1511,6 +1511,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(federal_register_path)
     expect(File).not_to exist(File.join(source_root, federal_register_path))
     expect(source_files.any? { |path| File.read(path).include?("federalRegisterNoticeContent") }).to be(false)
+    gov_uk_path = "profiles/government/gov_uk.js"
+    expect(manifest).not_to include(gov_uk_path)
+    expect(File).not_to exist(File.join(source_root, gov_uk_path))
+    expect(source_files.any? { |path| File.read(path).match?(/govUk(?:GuidanceContent|ContentsMarkdown)/) }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end

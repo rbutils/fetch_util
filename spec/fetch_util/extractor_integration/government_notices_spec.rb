@@ -39,18 +39,22 @@ RSpec.describe 'FetchUtil government notice extraction' do
 
   it 'keeps GOV.UK guidance contents and article body as article content' do
     html = fixture_contents(File.expand_path('../../fixtures/govuk_guidance.html', __dir__))
+    url = 'https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027'
 
-    extract_from_url('https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027', html) do |payload|
+    extract_from_url(url, html) do |payload|
       expect_content_type(payload, 'article')
       expect(payload['title']).to eq('Rates and thresholds for employers 2026 to 2027')
       expect(payload['byline']).to eq('HM Revenue & Customs')
+      expect(payload['publishedTime']).to eq('2026-01-30T10:09:00+00:00')
+      expect(payload['excerpt']).to eq('Use these synthetic rates and thresholds when you configure the example payroll record.')
       expect(payload['markdown']).to include('Contents')
       expect(payload['markdown']).to include('PAYE tax and Class 1 National Insurance contributions')
       expect(payload['markdown']).to include('Tax thresholds, rates and codes')
       expect(payload['markdown']).to include('National Minimum Wage rates apply from 1 April 2026')
-      expect(payload['markdown']).to include(
-        '[PAYE tax and Class 1 National Insurance contributions](https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#paye-tax-and-class-1-national-insurance-contributions)'
-      )
+      contents_link = payload['markdown'].match(/\[PAYE tax and Class 1 National Insurance contributions\]\(([^)]+)\)/)
+      expect(contents_link).not_to be_nil
+      expect(URI.join(url, contents_link[1]).to_s).to eq("#{url}#paye-tax-and-class-1-national-insurance-contributions")
+      expect(payload['html']).to include('id="paye-tax-and-class-1-national-insurance-contributions"')
     end
   end
 end
