@@ -16,6 +16,21 @@ function visiblePublishedTimeField(node) {
   return !node.querySelector(contentSelector + ", h1, h2, h3, h4, h5, h6, figure, blockquote, pre, table");
 }
 
+function visiblePublicationDateLike(value) {
+  var text = normalizeText(value || "");
+  if (!text || text.length > 120) return false;
+
+  var digit = "[0-9\\u0660-\\u0669\\u06f0-\\u06f9]";
+  var number = digit + "+";
+  var monthName = "\\p{L}[\\p{L}\\p{M}.'’\\-]*";
+  if (new RegExp(number + "年\\s*" + number + "月\\s*" + number + "日?", "u").test(text)) return true;
+  if (new RegExp(number + "[./-]" + number + "(?:[./-]" + number + ")?").test(text)) return true;
+  if (new RegExp("(?:^|\\s)" + number + "\\s+" + monthName + "(?:\\s*[,،]?\\s*" + digit + "{2,4})?(?:\\s|$)", "u").test(text)) return true;
+  if (new RegExp("(?:^|\\s)" + monthName + "\\s+" + number + "(?:st|nd|rd|th)?(?:\\s*[,،]?\\s*" + digit + "{2,4})?(?:\\s|$)", "iu").test(text)) return true;
+  if (/(?:\b(?:today|yesterday|tomorrow|now|just now|ago|hace|há|seit|vor|il y a)\b|\b\d+\s*(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago\b|(?:前|前に|منذ))/i.test(text)) return true;
+  return new RegExp("(?:^|\\s)" + number + ":" + number + "(?::" + number + ")?(?:\\s?(?:am|pm|a\\.m\\.|p\\.m\\.))?(?:\\s|$)", "i").test(text);
+}
+
 function visibleInlineHeaderDateFields(header) {
   if (!header || elementVisuallyHidden(header) || header.closest("aside, nav, [role='complementary']")) return [];
   return Array.from(header.querySelectorAll("strong, b, span, time")).map(function(node) {
@@ -54,8 +69,7 @@ function visibleInlinePublishedTime(roots) {
 
 function visiblePublishedTime() {
   var roots = visiblePublishedTimeRoots();
-  return firstScopedText(roots, ["time[datetime]"], "datetime") ||
-    firstScopedText(roots, [
+  var fields = [
       "[itemprop='datePublished']",
       "[itemprop='dateModified']",
       "[class*='pubdate' i]",
@@ -74,5 +88,15 @@ function visiblePublishedTime() {
       "[class*='posted' i]",
       "[data-testid*='date' i]",
       "time"
-    ], null, null, visiblePublishedTimeField) || visibleInlinePublishedTime(roots);
+    ];
+  return firstScopedText(roots, ["time[datetime]"], "datetime", null, function(node) {
+      return visiblePublishedTimeField(node) && visiblePublicationDateLike(node.getAttribute("datetime") || node.textContent || "");
+    }) ||
+    firstScopedText(roots, ["time[datetime]"], "datetime") ||
+    firstScopedText(roots, fields, null, null, function(node) {
+      if (!visiblePublishedTimeField(node)) return false;
+      var value = node.getAttribute("datetime") || node.getAttribute("content") || node.textContent || "";
+      return visiblePublicationDateLike(value);
+    }) ||
+    firstScopedText(roots, fields, null, null, visiblePublishedTimeField) || visibleInlinePublishedTime(roots);
 }

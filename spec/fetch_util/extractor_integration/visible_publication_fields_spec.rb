@@ -35,6 +35,44 @@ RSpec.describe 'FetchUtil visible publication fields' do
     end
   end
 
+  it 'prefers a date value among section labels without discarding other date formats' do
+    labeled_fields = <<~HTML
+      <div class="publication-wrapper">
+        <div class="detail-time">تازہ ترین</div>
+        <div class="detail-time">قومی خبریں</div>
+        <div class="detail-time">26 ستمبر ، 2026</div>
+        <div class="entry-content"><p>#{"A" * 80}</p></div>
+      </div>
+    HTML
+    extract_from_url('https://example-blog.test/restoration/', publication_field_page(labeled_fields)) do |payload|
+      expect(payload['publishedTime']).to eq('26 ستمبر ، 2026')
+    end
+
+    timed_fields = '<time datetime="latest">Latest</time><time datetime="2026-09-28">September 28, 2026</time>'
+    extract_from_url('https://example-blog.test/restoration/', publication_field_page(timed_fields)) do |payload|
+      expect(payload['publishedTime']).to eq('2026-09-28')
+    end
+
+    {
+      '<span class="published-date">13 July</span>' => '13 July',
+      '<span class="published-date">2026年9月27日</span>' => '2026年9月27日',
+      '<span class="published-date">٢٦ سبتمبر ٢٠٢٦</span>' => '٢٦ سبتمبر ٢٠٢٦',
+      '<span class="published-date">3 hours ago</span>' => '3 hours ago',
+      '<span class="published-date">12:30</span>' => '12:30'
+    }.each do |field, expected|
+      extract_from_url('https://example-blog.test/restoration/', publication_field_page(field)) do |payload|
+        expect(payload['publishedTime']).to eq(expected)
+      end
+    end
+  end
+
+  it 'retains the existing first-field fallback when no recognized date format is present' do
+    field = '<span class="published-date">Latest coverage</span><span class="date">Regional news</span>'
+    extract_from_url('https://example-blog.test/restoration/', publication_field_page(field)) do |payload|
+      expect(payload['publishedTime']).to eq('Latest coverage')
+    end
+  end
+
   it 'preserves explicit datetime priority and ignores hidden date fields' do
     field = <<~HTML
       <span class="published" hidden>September 24, 2026</span>
