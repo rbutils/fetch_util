@@ -76,17 +76,13 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = sourceOwnedFigureCaptionContent(content);
   content = sourceOwnedReaderMissingHeadlineContent(content, metadata);
   content = contentsComponentFinalizationHtml(content);
-  if (metadata.mediaOwnedBody && content.contentType === "article" && !content.hostAware) {
-    var mediaContext = metadata.mediaOwnedBody;
-    if (mediaContext.byline) content.byline = mediaContext.byline;
-    if (mediaContext.publishedTime) content.publishedTime = mediaContext.publishedTime;
-    content.mediaOwnedTranscript = mediaContext.transcript;
-  }
+  content = applyMediaOwnedArticleMetadata(content, metadata);
   var contentByline = sanitizeByline(content.byline);
-  var metadataByline = sanitizeByline(metadata.byline);
-  var displayedPublishedTime = visiblePublishedTime();
-  var visibleBylineRaw = visibleByline();
-  var namedAuthorByline = visibleNamedAuthorByline();
+  var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
+  var metadataByline = sourceOwnedLiveblogParent ? null : sanitizeByline(metadata.byline);
+  var displayedPublishedTime = sourceOwnedLiveblogParent ? content.publishedTime : visiblePublishedTime();
+  var visibleBylineRaw = sourceOwnedLiveblogParent ? null : visibleByline();
+  var namedAuthorByline = sourceOwnedLiveblogParent ? null : visibleNamedAuthorByline();
   var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {
     return bylineContainsPublishedTime(value, displayedPublishedTime);
   });
@@ -219,8 +215,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown);
-  if (content.contentType === "article" && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
-  if (content.contentType === "article" && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision &&
+  if (content.sourceOwnedLiveblog && content.contentType === "list") content.contentType = "article";
+  if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
+  if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision &&
       !content.supportingProductCollection && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
   if (legalStatuteArticleContent(null, markdown)) {
@@ -292,6 +289,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     textContent: credentialFreeHttpText(content.textContent),
     url: credentialFreeHttpUrl(location.href)
   };
+  if (content.sourceOwnedLiveblog === true) result.sourceOwnedLiveblog = true;
   Object.keys(result).forEach(function(key) {
     if (key !== "markdown" && key !== "html") result[key] = credentialFreeHttpValue(result[key]);
   });

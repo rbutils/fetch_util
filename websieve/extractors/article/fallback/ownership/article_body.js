@@ -47,11 +47,41 @@ function sourceArticleBodyHasForeignLinkedArticle(ownerRoot, bodyNode, heading, 
   });
 }
 
+function sourceOwnershipHasLiveblogEvidence() {
+  var current = sourceOwnershipPageUrl(location.href);
+  if (typeof structuredDataNodes === "function" && typeof nodeTypes === "function") {
+    var parent = structuredDataNodes().some(function(entity) {
+      if (!nodeTypes(entity).some(function(type) { return /LiveBlogPosting/i.test(type); })) return false;
+      var page = entity.mainEntityOfPage;
+      if (page && typeof page === "object") page = page.url || page["@id"];
+      return [entity.url, page, entity["@id"]].some(function(value) {
+        return sourceOwnershipPageUrl(value) === current;
+      });
+    });
+    if (parent) return true;
+  }
+
+  return Array.from(document.querySelectorAll("[data-liveblog], [id*='liveblog' i], [class*='liveblog' i], [class*='live-updates' i]"))
+    .some(function(marker) {
+      if (elementSubtreeHidden(marker) || sourceOwnershipInChrome(marker)) return false;
+      var records = Array.from(marker.querySelectorAll("li, article, [data-liveblog-update], [itemprop~='liveBlogUpdate' i]")).filter(function(record) {
+        if (elementSubtreeHidden(record) || sourceOwnershipInChrome(record)) return false;
+        var heading = record.querySelector("h2, h3, h4, [itemprop~='headline' i]");
+        var date = record.querySelector("time, [itemprop~='datePublished' i], [class*='update-time' i], [class*='timestamp' i], [class*='date' i]");
+        var prose = normalizeText(Array.from(record.querySelectorAll("p, blockquote")).map(function(node) {
+          return elementVisuallyHidden(node) ? "" : node.textContent || "";
+        }).join(" "));
+        return !!(heading && date && prose.length >= 40);
+      });
+      return records.length >= 2;
+    });
+}
+
 function resolveCanonicalArticleBodyOwnership() {
   var metadata = focalSourceArticleMetadata();
   var currentUrl = sourceOwnershipPageUrl(location.href);
   var canonical = document.querySelector("link[rel~='canonical' i]");
-  if (!metadata || !currentUrl || sourceOwnershipPageUrl(canonical && canonical.getAttribute("href")) !== currentUrl) return null;
+  if (!metadata || !currentUrl || sourceOwnershipPageUrl(canonical && canonical.getAttribute("href")) !== currentUrl || sourceOwnershipHasLiveblogEvidence()) return null;
 
   var headings = Array.from(document.querySelectorAll("h1, [itemprop~='headline' i]")).filter(function(heading) {
     return !elementVisuallyHidden(heading) && metadata.headlines.indexOf(normalizeText(heading.textContent || "")) !== -1;

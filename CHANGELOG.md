@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Preserve source-owned liveblog parents and explicitly addressed updates, including material links, per-update attribution, and reader discussions without borrowing child metadata for the parent.
 - Preserve complete canonical article bodies, independent header contributions, owned attribution, media, and reader discussions while rejecting ambiguous ownership and unrepresented source material.
 - Prefer visible publication-date values over adjacent section labels while retaining localized, yearless, relative, and existing fallback date formats.
 - Require WordPress-specific producer evidence before applying shared WordPress extraction, rather than treating ordinary article body classes as a CMS signature.

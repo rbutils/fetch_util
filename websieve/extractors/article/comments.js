@@ -42,7 +42,7 @@
 
   function focalCommentThreadBelongsToArticle(thread, focalOwnership) {
     if (!focalOwnership || !focalOwnership.node ||
-        !/^(?:same-owner-source-headline|same-owner-repeated-headline|canonical-article-metadata|source-record-container)$/.test(focalOwnership.proof || "")) return false;
+        !/^(?:same-owner-source-headline|same-owner-repeated-headline|canonical-article-metadata|source-record-container|liveblog-parent)$/.test(focalOwnership.proof || "")) return false;
     if (focalOwnership.proof === "source-record-container") {
       var record = focalOwnership.sourceRecord;
       return !!(record && record.recordContainer === focalOwnership.node &&

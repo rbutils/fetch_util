@@ -48,6 +48,15 @@ function bylineWithoutHostIdentity(raw, namedAuthorByline) {
   return hostname && value === hostname ? null : text;
 }
 
+function applyMediaOwnedArticleMetadata(content, metadata) {
+  if (!content || !metadata.mediaOwnedBody || content.contentType !== "article" || content.hostAware) return content;
+  var mediaContext = metadata.mediaOwnedBody;
+  if (mediaContext.byline) content.byline = mediaContext.byline;
+  if (mediaContext.publishedTime) content.publishedTime = mediaContext.publishedTime;
+  content.mediaOwnedTranscript = mediaContext.transcript;
+  return content;
+}
+
 function readableOrFallbackContent(options, metadata) {
   var focalPermalink = focalPermalinkArticleContent(metadata);
   if (focalPermalink) return focalPermalink;

@@ -285,6 +285,7 @@ module FetchUtil
       payload = snapshot.payload
       final_url = snapshot.final_url
       content_type = payload["contentType"] || "article"
+      return "article" if payload["sourceOwnedLiveblog"] == true
       return "article" if content_type == "list" && scholarly_article_markdown?(final_url, snapshot)
       return "article" if content_type == "list" && credible_article_route?(final_url, snapshot)
 

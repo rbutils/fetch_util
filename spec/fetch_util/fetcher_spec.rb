@@ -503,6 +503,37 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('homepage_index_page')
   end
 
+  it 'keeps a source-owned liveblog parent classified as an article' do
+    liveblog_url = 'https://updates.example.test/liveblog/6?story=3591'
+    liveblog_page = page_at(liveblog_url)
+    liveblog_payload = payload_with(
+      title: 'Regional response live updates',
+      canonicalUrl: liveblog_url,
+      contentType: 'list',
+      contentFormat: 'liveblog',
+      sourceOwnedLiveblog: true,
+      markdown: <<~MARKDOWN,
+        # Regional response live updates
+
+        ## Initial response
+
+        Officials published a complete source-owned update for the regional response.
+
+        ## Bridge inspection complete
+
+        The second source-owned update records the inspection and next actions.
+      MARKDOWN
+      warnings: []
+    )
+    stub_browser_extraction(liveblog_url, page: liveblog_page, payload: liveblog_payload)
+
+    result = fetch_with_dependencies(liveblog_url)
+
+    expect(result.content_type).to eq('article')
+    expect(result.content_format).to eq('liveblog')
+    expect(result.warnings).not_to include('homepage_index_page')
+  end
+
   it 'delegates quit to the underlying browser' do
     allow(browser).to receive(:quit)
 

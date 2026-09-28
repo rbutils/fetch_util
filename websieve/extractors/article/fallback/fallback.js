@@ -57,6 +57,8 @@
       var contentsContent = sourceOwnedContentsComponentContent(metadata, metadata.contentsComponent);
       if (contentsContent) return contentsContent;
     }
+    var liveblog = resolveFallbackLiveblogOwnership();
+    if (liveblog) return sourceOwnedLiveblogContent(metadata, liveblog);
     var sourceOwnedPage = genericSourceOwnedPageContent(metadata);
     if (sourceOwnedPage) return sourceOwnedPage;
     var selectors = genericArticleSelectors();

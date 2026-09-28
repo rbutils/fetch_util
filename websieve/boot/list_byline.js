@@ -85,6 +85,7 @@ function listPageByline(byline, metadata, content, markdown) {
 }
 
 function collectionPublishedTime(content, metadata) {
+  if (content.sourceOwnedLiveblog && !content.isolatedLiveblogEntry) return content.publishedTime || null;
   if (content.contentType === "list" || (content.contentType === "social" && content.socialKind === "feed")) {
     return content.publishedTime || null;
   }

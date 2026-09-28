@@ -1171,6 +1171,11 @@ RSpec.describe "extract asset bundle" do
       extractors/article/fallback/ownership/source_content.js
       extractors/article/fallback/ownership/article_coverage.js
       extractors/article/fallback/ownership/article_body.js
+      extractors/article/fallback/ownership/liveblog_records.js
+      extractors/article/fallback/ownership/liveblog_parent_metadata.js
+      extractors/article/fallback/ownership/liveblog_content_links.js
+      extractors/article/fallback/ownership/liveblog_comments.js
+      extractors/article/fallback/ownership/liveblog_addressing.js
       extractors/article/fallback/focal_ownership.js
       extractors/article/fallback/focal_permalink.js
       extractors/article/fallback/fallback_excerpt.js
@@ -1320,6 +1325,11 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/source_content.js
         extractors/article/fallback/ownership/article_coverage.js
         extractors/article/fallback/ownership/article_body.js
+        extractors/article/fallback/ownership/liveblog_records.js
+        extractors/article/fallback/ownership/liveblog_parent_metadata.js
+        extractors/article/fallback/ownership/liveblog_content_links.js
+        extractors/article/fallback/ownership/liveblog_comments.js
+        extractors/article/fallback/ownership/liveblog_addressing.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/fallback_excerpt.js
