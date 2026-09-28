@@ -1,7 +1,11 @@
 function sourceHeaderMetadataDateKey(value) {
+  var calendarDate = contentsComponentDateKey(value);
+  if (calendarDate) return calendarDate;
   var instant = Date.parse(value || "");
-  return Number.isFinite(instant) ? new Date(instant).toISOString().slice(0, 10) :
-    sourceRecordTextKey(value);
+  if (!Number.isFinite(instant)) return sourceRecordTextKey(value);
+  var date = new Date(instant);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")].join("-");
 }
 
 function sourceHeaderMetadataRegion(list, main) {
@@ -98,7 +102,7 @@ function sourceOwnedFallbackHeaderMetadata(selected, title, metadata) {
   var result = {
     title: headline,
     byline: from,
-    publishedTime: published,
+    publishedTime: metadata.publishedTime || published,
     lead: normalizeText(visibleMetadataNodeText(leads[0]))
   };
   Object.defineProperty(result, "bodyRoot", { value: bodyRoots[0] });

@@ -216,6 +216,10 @@ function sourceOwnedContentsComponentOwnership(metadata) {
   var lead = normalizeText(visibleMetadataNodeText(leadNode));
   var schema = contentsComponentSchemaPageIdentity(headline, lead, byline, publishedTime, metadata);
   if (!schema.valid) return null;
+  var declaredDate = contentsComponentDateKey(metadata.publishedTime);
+  if (declaredDate && declaredDate === contentsComponentDateKey(publishedTime)) {
+    publishedTime = metadata.publishedTime;
+  }
   var commentThreads = contentsComponentOwnedComments(main, component, targets.bodyBranch);
   if (!commentThreads) return null;
   var updateHistory = contentsComponentUpdateHistory(component, nav, targets.bodyBranch,

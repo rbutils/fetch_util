@@ -42,7 +42,7 @@ function collectMetadata() {
     declaredByline: declaredByline,
     excerpt: metadataValue("description", "name") || metadataValue("og:description", "property"),
     siteName: metadataValue("og:site_name", "property") || location.hostname,
-    publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || visiblePublishedTime(),
+    publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || metadataValue("govuk:first-published-at", "name") || visiblePublishedTime(),
     canonicalUrl: canonicalUrl || materializedHttpUrl(location.href),
     language: documentLanguage(),
     image: materializedMetadataValue("og:image", "property"),

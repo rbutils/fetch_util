@@ -2,7 +2,9 @@ RSpec.describe 'Source-owned fallback header metadata' do
   include_context 'extractor integration helpers'
 
   let(:guidance_html) do
+    # These ownership cases isolate visible labels from independently declared metadata.
     fixture_contents(File.expand_path('../../fixtures/govuk_guidance.html', __dir__))
+      .sub(/<meta name="govuk:first-published-at"[^>]*>/, '')
       .sub('<div id="contents" data-module="contents-list-with-body"', '<div id="contents"')
       .sub(%r{<nav aria-label="Contents".*?</nav>}m, '')
   end

@@ -12,7 +12,7 @@ RSpec.describe 'Generic ownership of bounded Contents components' do
       expect_content_type(payload, 'article')
       expect(payload['title']).to eq('Rates and thresholds for employers 2026 to 2027')
       expect(payload['byline']).to eq('HM Revenue & Customs')
-      expect(payload['publishedTime']).to eq('30 January 2026')
+      expect(payload['publishedTime']).to eq('2026-01-30T10:09:00+00:00')
       expect(payload['excerpt']).to eq(lead)
       expect(payload['contentFormat']).not_to eq('liveblog')
       expect(payload['markdown']).to include("# Rates and thresholds for employers 2026 to 2027\n\n#{lead}")
@@ -68,7 +68,7 @@ RSpec.describe 'Generic ownership of bounded Contents components' do
 
     extract_from_url(guidance_url, html) do |payload|
       expect(payload['byline']).to eq('HM Revenue & Customs')
-      expect(payload['publishedTime']).to eq('30 January 2026')
+      expect(payload['publishedTime']).to eq('2026-01-30T10:09:00+00:00')
       expect(payload['contentFormat']).not_to eq('liveblog')
       expect(payload['html'].scan('Updates to this page').length).to eq(1)
       expect(payload['html']).to include('datetime="2026-01-30T10:9:00Z"', 'datetime="2026-09-01T00:15:03Z"')
@@ -113,7 +113,7 @@ RSpec.describe 'Generic ownership of bounded Contents components' do
 
     extract_from_url(guidance_url, html) do |payload|
       expect(payload['byline']).to eq('HM Revenue & Customs')
-      expect(payload['publishedTime']).to eq('30 January 2026')
+      expect(payload['publishedTime']).to eq('2026-01-30T10:09:00+00:00')
       expect(payload['html']).to include('Last updated 1 September 2026', 'Show all updates')
       expect(payload['html']).to include('Hidden initial change.', 'Hidden later change.')
       expect(payload['markdown']).to include('Last updated 1 September 2026', 'Show all updates')
@@ -134,7 +134,7 @@ RSpec.describe 'Generic ownership of bounded Contents components' do
 
     extract_from_url(guidance_url, html) do |payload|
       expect(payload['byline']).to eq('HM Revenue & Customs')
-      expect(payload['publishedTime']).to eq('30 January 2026')
+      expect(payload['publishedTime']).to eq('2026-01-30T10:09:00+00:00')
       expect(payload['html']).not_to include('Unrelated Office')
       expect(payload['markdown']).to match(/\[PAYE tax and Class 1 National Insurance contributions\]\([^)]*#paye-tax-and-class-1-national-insurance-contributions\)/)
     end
