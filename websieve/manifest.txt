@@ -111,9 +111,12 @@ extractors/article/coverage/resources.js
 extractors/article/coverage/figure_captions.js
 extractors/article/coverage/main_coverage.js
 extractors/article/fallback/focal_headline_ownership.js
+extractors/article/fallback/ownership/source_header_metadata.js
+extractors/article/fallback/ownership/source_content.js
+extractors/article/fallback/ownership/article_coverage.js
+extractors/article/fallback/ownership/article_body.js
 extractors/article/fallback/focal_ownership.js
 extractors/article/fallback/focal_permalink.js
-extractors/article/fallback/source_header_metadata.js
 extractors/article/fallback/fallback_excerpt.js
 extractors/article/fallback/section_ownership.js
 extractors/article/fallback/high_confidence_content.js

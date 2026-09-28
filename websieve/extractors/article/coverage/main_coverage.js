@@ -152,7 +152,7 @@
     var mediaWikiLike = document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");
     if (mediaWikiLike && normalizeText(content.textContent || "").length >= 800) return content;
 
-    var fallback = fallbackContent();
+    var fallback = fallbackContent(metadata);
     if (!fallback || !fallback.mainContentRoot) return content;
     var primaryRoot = document.createElement("div");
     var fallbackRoot = document.createElement("div");

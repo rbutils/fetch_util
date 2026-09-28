@@ -57,6 +57,8 @@
       var contentsContent = sourceOwnedContentsComponentContent(metadata, metadata.contentsComponent);
       if (contentsContent) return contentsContent;
     }
+    var sourceOwnedPage = genericSourceOwnedPageContent(metadata);
+    if (sourceOwnedPage) return sourceOwnedPage;
     var selectors = genericArticleSelectors();
     var candidates = new Set();
 

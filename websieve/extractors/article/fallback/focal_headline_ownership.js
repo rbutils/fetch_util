@@ -203,5 +203,6 @@
   }
 
   function genericFocalArticleContent(metadata) {
-    return fallbackFocalHeadlineOwnership() ? fallbackContent(metadata) : null;
+    if (!resolveCanonicalArticleBodyOwnership() && !fallbackFocalHeadlineOwnership()) return null;
+    return fallbackContent(metadata);
   }

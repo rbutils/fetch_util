@@ -50,19 +50,23 @@
     }
     var focalNode = focalOwnership.node;
     var article = focalNode.matches("article") ? focalNode : focalNode.closest("article");
-    if (!article || thread.contains(article)) return false;
+    var ownerRoot = article || focalOwnership.ownerRoot;
+    if (!ownerRoot || thread.contains(ownerRoot)) return false;
     var threadArticle = thread.closest("article");
     if (threadArticle && threadArticle !== article && !commentRecordMarker(threadArticle)) return false;
-    if (article.contains(thread)) return true;
+    if (ownerRoot.contains(thread)) {
+      if (article) return true;
+      return !!(focalNode.compareDocumentPosition(thread) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }
 
-    var boundary = article.parentElement;
+    var boundary = ownerRoot.parentElement;
     while (boundary && boundary !== document.body && !boundary.contains(thread)) boundary = boundary.parentElement;
     if (!boundary || boundary === document.body || boundary === document.documentElement) return false;
     var records = Array.prototype.filter.call(boundary.querySelectorAll("article"), function(record) {
-      return record === article || !record.closest(VISIBLE_COMMENT_THREAD_SELECTOR);
+      return record === ownerRoot || !record.closest(VISIBLE_COMMENT_THREAD_SELECTOR);
     });
-    if (records.length !== 1 || records[0] !== article) return false;
-    return !!(article.compareDocumentPosition(thread) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (records.length !== 1 || records[0] !== ownerRoot) return false;
+    return !!(ownerRoot.compareDocumentPosition(thread) & Node.DOCUMENT_POSITION_FOLLOWING);
   }
 
   function commentThreadHasMaterial(thread) {

@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Preserve complete canonical article bodies, independent header contributions, owned attribution, media, and reader discussions while rejecting ambiguous ownership and unrepresented source material.
 - Prefer visible publication-date values over adjacent section labels while retaining localized, yearless, relative, and existing fallback date formats.
 - Require WordPress-specific producer evidence before applying shared WordPress extraction, rather than treating ordinary article body classes as a CMS signature.
 - Preserve declared guidance publication timestamps when they agree with the source-owned publication day, including GOV.UK producer metadata on any host.
