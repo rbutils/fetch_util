@@ -6,9 +6,21 @@
       var clone = safeReadableDocumentClone();
       var sourceClones = new Map();
       pruneHiddenClone(document.documentElement, clone.documentElement, null, null, null, sourceClones);
+      var conflictingSourceBylines = new Set();
       stripPublisherCtaNotes(clone);
       var excerptMarker = markReadabilityExcerptSources(clone);
       var sourceIdentities = markReadabilitySourceNodeProvenance(clone, sourceClones, excerptMarker);
+      var declaredByline = normalizeText(readerTextBylineName(metadata && metadata.declaredByline || ""));
+      if (declaredByline) {
+        sourceClones.forEach(function(_readableClone, source) {
+          if (source.localName !== "p" || elementSubtreeHidden(source)) return;
+          var sourceMarker = [source.getAttribute("class"), source.id, source.getAttribute("itemprop"), source.getAttribute("rel")]
+            .filter(Boolean).join(" ");
+          if (!/(?:^|[\s_-])(?:author|byline|writers?)(?:$|[\s_-])/i.test(sourceMarker)) return;
+          var visible = normalizeText(readerTextBylineName(source.textContent || ""));
+          if (visible && visible.toLowerCase() !== declaredByline.toLowerCase()) conflictingSourceBylines.add(source);
+        });
+      }
       normalizeCodeSurfaces(clone);
       if (commentOnlyRoot(clone)) return null;
       prepareInlineArticleProse(clone);
@@ -37,6 +49,10 @@
       );
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
+      article.content = readerSourceOwnedRestoreConflictingCredits(
+        article, metadata, sourceClones, sourceIdentities, excerptMarker,
+        readerBodyEvidence, conflictingSourceBylines
+      );
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
       article.content = stripReadabilitySourceNodeMarkers(article.content, excerptMarker, sourceIdentities);
       article.content += comments;

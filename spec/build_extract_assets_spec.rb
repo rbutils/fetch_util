@@ -798,8 +798,10 @@ RSpec.describe "extract asset bundle" do
       "profiles/news/news_homepages.js"
     )
     reader_byline = "extractors/article/readability/attribution/header_byline.js"
+    conflicting_credits = "extractors/article/readability/attribution/conflicting_credit_restoration.js"
     expect_manifest_order(
       manifest,
+      conflicting_credits,
       "extractors/article/readability/readability.js",
       reader_byline,
       "boot/result_finalization.js"
@@ -820,6 +822,8 @@ RSpec.describe "extract asset bundle" do
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
     expect(sources.fetch(reader_byline)).to include("function readerSourceOwnedBylineForContent")
+    expect(sources.fetch(reader_byline)).not_to include("readerSourceOwnedRestoreConflictingCredits")
+    expect(sources.fetch(conflicting_credits)).to include("function readerSourceOwnedRestoreConflictingCredits")
   end
 
   it "keeps visibility-pruned cloning in the shared DOM owner" do
@@ -1354,6 +1358,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/caption_credit_excerpt.js
         extractors/article/readability/compact_body_excerpt.js
         extractors/article/readability/source_node_provenance.js
+        extractors/article/readability/attribution/conflicting_credit_restoration.js
         extractors/article/readability/readability.js
         extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js

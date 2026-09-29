@@ -53,6 +53,34 @@ RSpec.describe 'source-owned Reader attribution' do
     HTML
   end
 
+  def conflicting_reader_byline_article(
+    author: 'Synthetic Reporter', visible_byline: 'Mira Reporter', byline_attributes: '', byline_class: 'writers-names',
+    other_visible_headline: ''
+  )
+    <<~HTML
+      <!doctype html>
+      <html><head>
+        <title>River restoration report - Research Journal</title>
+        <meta name="author" content="#{author}">
+        <meta property="og:site_name" content="Research Journal">
+      </head><body><main><article class="story-record">
+        <h1 class="title">River restoration report</h1>
+        <p class="#{byline_class}" #{byline_attributes}>#{visible_byline}</p>
+        <p class="date-and-time-p">Published 6 July 2026</p>
+        <section class="article-content">
+          <h3>Measured results</h3>
+          <p>Source paragraph 1 records the river restoration team measurements after six months of work.</p>
+          <p>Source paragraph 2 explains how engineers documented improved flow throughout the river corridor.</p>
+          <p>Source paragraph 3 links the <a href="https://reports.example/archive/river">complete monitoring record</a> for the published measurements.</p>
+          <p>Source paragraph 4 describes the habitat changes recorded by the independent monitoring team.</p>
+          <p>Source paragraph 5 gives residents the complete chronology of the river restoration project.</p>
+        </section>
+      </article>
+      #{other_visible_headline}
+      </main></body></html>
+    HTML
+  end
+
   def with_source_unchanged_payload(path, html)
     with_url_page("https://news.example.test/#{path}", html) do |page|
       source_before = page.evaluate('document.body.innerHTML')
@@ -116,6 +144,151 @@ RSpec.describe 'source-owned Reader attribution' do
       expect(payload).to include('readerMode' => true, 'contentType' => 'article')
       expect(payload['markdown']).to include('The independent municipal report describes a separate public record')
       expect(payload['byline']).not_to eq('csdnnews')
+    end
+  end
+
+  it 'preserves a visible conflicting source byline while keeping declared-person precedence' do
+    with_source_unchanged_payload('river-restoration-conflicting-byline', conflicting_reader_byline_article) do |payload|
+      expect(payload).to include('readerMode' => true, 'contentType' => 'article', 'byline' => 'Synthetic Reporter')
+      expect(payload['html']).to include('<h1 class="title">River restoration report</h1>', 'Mira Reporter', '<h3>Measured results</h3>')
+      expect(payload['html'].index('River restoration report')).to be < payload['html'].index('Mira Reporter')
+      expect(payload['html'].index('Mira Reporter')).to be < payload['html'].index('Measured results')
+      expect(payload['markdown']).to include(
+        '# River restoration report', 'Mira Reporter', 'Measured results', 'complete monitoring record',
+        'Source paragraph 1', 'Source paragraph 2', 'Source paragraph 3', 'Source paragraph 4', 'Source paragraph 5'
+      )
+      expect(payload['markdown'].index('River restoration report')).to be < payload['markdown'].index('Mira Reporter')
+      expect(payload['markdown'].index('Mira Reporter')).to be < payload['markdown'].index('Measured results')
+      expect(payload['html']).to include('href="https://reports.example/archive/river"')
+      expected_order = [
+        'River restoration report', 'Mira Reporter', 'Measured results', 'Source paragraph 1',
+        'Source paragraph 2', 'Source paragraph 3', 'complete monitoring record',
+        'Source paragraph 4', 'Source paragraph 5'
+      ]
+      [payload['html'], payload['markdown']].each do |article_text|
+        positions = expected_order.map { |text| article_text.index(text) }
+        expect(positions).to all(be_truthy)
+        expect(positions).to eq(positions.sort)
+      end
+    end
+  end
+
+  it 'does not add a duplicate for a matching declared author or attribute hidden and foreign bylines' do
+    matching = conflicting_reader_byline_article(author: 'Mira Reporter', visible_byline: 'Mira Reporter')
+    with_source_unchanged_payload('river-restoration-matching-byline', matching) do |payload|
+      expect(payload).to include('readerMode' => true, 'byline' => 'Mira Reporter')
+      expect(payload['markdown'].scan(/^Mira Reporter$/).length).to eq(1)
+    end
+
+    hidden = conflicting_reader_byline_article(byline_attributes: 'hidden')
+    with_source_unchanged_payload('river-restoration-hidden-byline', hidden) do |payload|
+      expect(payload).to include('readerMode' => true, 'byline' => 'Synthetic Reporter')
+      expect(payload['html']).not_to include('Mira Reporter')
+    end
+
+    multiple = conflicting_reader_byline_article(visible_byline: 'Mira Reporter and Noam Witness')
+    with_source_unchanged_payload('river-restoration-multiple-conflicting-authors', multiple) do |payload|
+      expect(payload['byline']).to eq('Synthetic Reporter')
+      expect(payload['html']).to include('Mira Reporter and Noam Witness')
+      expect(payload['markdown']).to include('Mira Reporter and Noam Witness')
+    end
+
+    foreign = conflicting_reader_byline_article(visible_byline: 'Mira Reporter').sub(
+      '</main>', '<article><h2>Separate report</h2><p class="writers-names">Foreign Reporter</p>' \
+                 '<p>The separate report describes its own independently verified public record and timeline.</p></article></main>'
+    )
+    foreign = foreign.sub('</body>', '<footer><p class="writers-names">Footer Reporter</p></footer></body>')
+    with_source_unchanged_payload('river-restoration-foreign-byline', foreign) do |payload|
+      expect(payload['byline']).to eq('Synthetic Reporter')
+      expect(payload['html']).to include('<h1 class="title">River restoration report</h1>', 'Mira Reporter', '<h3>Measured results</h3>')
+      expect(payload['markdown']).to include('# River restoration report', 'Mira Reporter', 'Measured results')
+      (1..5).each do |number|
+        expect(payload['markdown']).to include("Source paragraph #{number}")
+      end
+      expect(payload['html']).not_to include('Foreign Reporter')
+      expect(payload['html']).not_to include('Footer Reporter')
+      expect(payload['markdown']).not_to include('Foreign Reporter')
+      expect(payload['markdown']).not_to include('Footer Reporter')
+      expect(payload['html']).to include('href="https://reports.example/archive/river"')
+    end
+  end
+
+  it 'preserves source order for retained and restored coauthors without duplicating retained credits' do
+    expected_order = [
+      'River restoration report', 'Mira Reporter', 'Noam Witness', 'Measured results', 'Source paragraph 1',
+      'Source paragraph 2', 'Source paragraph 3', 'complete monitoring record',
+      'Source paragraph 4', 'Source paragraph 5'
+    ]
+    verify_coauthor_order = lambda do |payload, expected_byline|
+      expect(payload).to include('readerMode' => true, 'contentType' => 'article', 'byline' => expected_byline)
+      expect(payload['html']).to include('<h1 class="title">River restoration report</h1>', 'Mira Reporter', 'Noam Witness')
+      expect(payload['html'].scan('Mira Reporter').length).to eq(1)
+      expect(payload['html'].scan('Noam Witness').length).to eq(1)
+      expect(payload['markdown'].scan(/^Mira Reporter$/).length).to eq(1)
+      expect(payload['markdown'].scan(/^Noam Witness$/).length).to eq(1)
+      [payload['html'], payload['markdown']].each do |article_text|
+        positions = expected_order.map { |text| article_text.index(text) }
+        expect(positions).to all(be_truthy)
+        expect(positions).to eq(positions.sort)
+      end
+    end
+
+    # Native Readability retains the unrecognized first class and selects the second author.
+    retained_first = conflicting_reader_byline_article.sub(
+      'Mira Reporter</p>', 'Mira Reporter</p><p class="author-name">Noam Witness</p>'
+    )
+    with_source_unchanged_payload('river-restoration-retained-first-coauthor', retained_first) do |payload|
+      verify_coauthor_order.call(payload, 'Noam Witness')
+    end
+
+    # Swap the classes so the first source credit is removed and the second remains.
+    retained_second = conflicting_reader_byline_article(byline_class: 'author-name').sub(
+      'Mira Reporter</p>', 'Mira Reporter</p><p class="writers-names">Noam Witness</p>'
+    )
+    with_source_unchanged_payload('river-restoration-retained-second-coauthor', retained_second) do |payload|
+      verify_coauthor_order.call(payload, 'Mira Reporter')
+    end
+
+    # When both source credits remain in Reader output, do not duplicate either one.
+    both_retained = conflicting_reader_byline_article.sub(
+      'Mira Reporter</p>', 'Mira Reporter</p><p class="writers-names">Noam Witness</p>'
+    )
+    with_source_unchanged_payload('river-restoration-both-coauthors-retained', both_retained) do |payload|
+      verify_coauthor_order.call(payload, 'Synthetic Reporter')
+    end
+
+    # Native Readability selects the first author and retains the second after its byline is set.
+    marked_coauthors = conflicting_reader_byline_article(byline_class: 'author-name').sub(
+      'Mira Reporter</p>', 'Mira Reporter</p><p class="author-name">Noam Witness</p>'
+    )
+    with_source_unchanged_payload('river-restoration-both-coauthors-removed', marked_coauthors) do |payload|
+      verify_coauthor_order.call(payload, 'Mira Reporter')
+    end
+  end
+
+  it 'keeps native retained coauthors and byline when ambiguous headlines decline restoration' do
+    article = conflicting_reader_byline_article(
+      byline_class: 'author-name',
+      other_visible_headline: '<article class="related-story"><h1>Independent headline outside the story</h1></article>'
+    ).sub(
+      'Mira Reporter</p>', 'Mira Reporter</p><p class="author-name">Noam Witness</p>'
+    )
+    with_url_page('https://news.example.test/river-restoration-ambiguous-headline-control', article) do |page|
+      source_before = page.evaluate('document.body.innerHTML')
+      expect(page.evaluate('document.querySelectorAll("h1").length')).to eq(2)
+      payload = extract_payload(page, reader_mode: true)
+      expect(page.evaluate('document.body.innerHTML')).to eq(source_before)
+      expect(payload).to include('readerMode' => true, 'contentType' => 'article', 'byline' => 'Mira Reporter')
+      expect(payload['html']).to include('<h2>River restoration report</h2>', 'Noam Witness')
+      expect(payload['html']).not_to include('<h1')
+      expect(payload['html']).not_to include('Mira Reporter')
+      expect(payload['html'].scan('Noam Witness').length).to eq(1)
+      expect(payload['markdown']).to include('River restoration report', 'Noam Witness')
+      expect(payload['markdown']).not_to include('Mira Reporter')
+      expect(payload['markdown']).to include(
+        'Source paragraph 1 records the river restoration team measurements after six months of work.',
+        'Source paragraph 5 gives residents the complete chronology of the river restoration project.'
+      )
     end
   end
 
