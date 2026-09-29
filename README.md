@@ -20,6 +20,8 @@ The easiest way to explain `fetch_util` is in three steps:
 
 This is bounded native browser execution, not a custom challenge solver. If the challenge does not resolve within the bound, the result remains an explicit interstitial with warnings.
 
+For an article page with a unique source headline and semantic article record, shared extraction verifies their source relationship before selecting the body. It retains the complete article and its owned media, downloads, and access notices; a separate linked-record group is excluded only when its heading/link structure is complete and leaves no other visible material behind. Ambiguous sibling notes and references remain available.
+
 ## Installation
 
 Add the gem to your Gemfile:

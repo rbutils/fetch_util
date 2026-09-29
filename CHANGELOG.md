@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Select a semantic article body only when its unique headline, matching source description, and owned header establish one source record; preserve complete article material and unclassified sibling prose.
 - Retire the YLE live-article profile in favor of source-owned liveblog extraction, retaining complete updates and coherent parent attribution when the requested entry is not independently identified.
 - Retire the Jang profile while preserving complete reporting, owned media, explicitly addressed updates, and full liveblog context when update ownership is unproved.
 - Retire the GOV.UK guidance profile while preserving source-owned Contents, plain article layouts, publication precision, complete sections, and public update history through shared extraction.

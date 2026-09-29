@@ -148,11 +148,17 @@
     "такође\\s*прочитајте", "още\\s*от", "виж\\s*също", "свързани\\s*новини", "más\\s*de", "noticias\\s*relacionadas", "ver\\s*también", "te\\s*puede\\s*interesar",
     "plus\\s*de", "à\\s*lire\\s*aussi", "lire\\s*aussi", "sur\\s*le\\s*même\\s*sujet", "mehr\\s*aus", "lesen\\s*sie\\s*auch",
     "das\\s*könnte\\s*sie\\s*auch\\s*interessieren", "altre\\s*notizie", "leggi\\s*anche", "ook\\s*interessant", "lees\\s*ook", "läs\\s*också",
-    "relateret", "relaterte\\s*saker", "les\\s*også", "aiheeseen\\s*liittyvät", "lue\\s*myös", "ilgili\\s*haberler", "daha\\s*fazla",
+    "relateret", "relaterte\\s*saker", "les\\s*også", "weitere\\s+meldungen", "aiheeseen\\s*liittyvät", "lue\\s*myös", "ilgili\\s*haberler", "daha\\s*fazla",
     "saistītie", "susijusios\\s*naujienos", "поврзано", "citește\\s*și", "articole\\s*similare", "також\\s*читайте", "схожі\\s*новини",
     "σχετικά\\s*νέα", "διαβάστε\\s*επίσης", "関連記事", "関連ニュース", "おすすめ", "あわせて読みたい", "続きを読む", "更多相关新闻", "相关新闻",
     "相关阅读", "延伸阅读", "관련\\s*기사", "함께\\s*읽기", "اقرأ\\s*أيض[اً]ا", "إقرأ\\s*أيض[اً]ا", "مواضيع\\s*ذات\\s*صلة",
     "أخبار\\s*ذات\\s*صلة", "مطالب\\s*مرتبط", "مطالب\\s*ذات\\s*صلة", "مرتبط", "עוד\\s*כתבות", "כתבות\\s*נוספות",
     "संबंधित\\s*(?:खबरें|लेख)", "और\\s*पढ़ें", "আরও\\s*পড়ুন", "সম্পর্কিত\\s*খবর", "อ่านเพิ่มเติม", "ข่าวที่เกี่ยวข้อง",
     "tin\\s*liên\\s*quan", "đọc\\s*thêm", "baca\\s*juga", "berita\\s*terkait"
+  ];
+
+  var SOURCE_REFERENCE_HEADING_TERMS = [
+    "references", "citations", "bibliography", "bibliographies", "sources", "works cited",
+    "références", "bibliographie", "referencias", "referências", "bibliografía", "bibliografia",
+    "quellen", "referenzen", "fonti", "المراجع", "المصادر", "参考文献", "参考资料", "引用", "참고 문헌", "참고자료"
   ];

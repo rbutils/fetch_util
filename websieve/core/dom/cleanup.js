@@ -191,7 +191,12 @@
 
     root.querySelectorAll("section, div, aside, form, table, ul").forEach(function(el) {
       if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
-      if (utilitySectionNode(el)) el.remove();
+      if (!utilitySectionNode(el)) return;
+      var utilityHeading = normalizeText((el.querySelector("h2, h3, h4, h5, h6, strong, b") || {}).textContent || "");
+      if (SOURCE_REFERENCE_HEADING_PATTERN.test(utilityHeading)) return;
+      if (relatedRecordCollectionHeading(utilityHeading) &&
+          (!relatedRailHasUniqueVisibleArticleOwner() || !relatedHeadingRecordRail(el))) return;
+      el.remove();
     });
 
     stripPromoAdModules(root);

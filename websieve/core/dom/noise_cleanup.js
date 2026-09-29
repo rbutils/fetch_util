@@ -13,6 +13,7 @@
   var SOCIAL_SHARE_AD_SELECTOR = "[class*='share'], [class*='social'], [class*='rating'], [class*='vote'], [class*='like-button'], [class*='dislike'], [data-testid*='share'], [data-testid*='like'], [class*='ad-overlay'], [class*='ad_overlay'], [class*='video-ad'], [class*='adWrapper'], [class*='ad-wrapper'], [class*='ad-container'], [id*='ad-overlay'], [id*='ad_overlay'], [class*='announcement-bar'], [class*='global-alert'], [id*='announcement-bar']";
   var AD_NETWORK_CONTAINER_SELECTOR = NOISE_AD_NETWORK_CONTAINER_SELECTOR;
   var RELATED_SECTION_HEADING_PATTERN = noiseExactTextPattern(NOISE_RELATED_HEADING_TERMS, "i");
+  var SOURCE_REFERENCE_HEADING_PATTERN = noiseExactTextPattern(SOURCE_REFERENCE_HEADING_TERMS, "i");
   var INLINE_CONSENT_PROMPT_PATTERN = noiseExactTextPattern(NOISE_INLINE_CONSENT_PROMPT_SOURCES, "i");
   var navigationWordSegmenter = null;
 
@@ -180,63 +181,53 @@
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
       if (heading.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
+      if (!relatedRailHasUniqueVisibleArticleOwner()) return;
 
       var text = normalizeText(heading.textContent || "").trim();
-      if (!text || !RELATED_SECTION_HEADING_PATTERN.test(text)) return;
+      if (!text || !relatedRecordCollectionHeading(text)) return;
 
-      // Check if the heading is inside an article/main — only strip content after it,
-      // not the whole container
-      var parent = heading.parentElement;
-      if (!parent) return;
-
-      // Remove the heading and all following siblings within the same parent
-      var toRemove = [];
-      var sibling = heading.nextElementSibling;
-      while (sibling) {
-        // Stop if we hit another heading at the same or higher level (don't over-strip)
-        var siblingTag = sibling.tagName;
-        if (/^H[1-4]$/.test(siblingTag) && !RELATED_SECTION_HEADING_PATTERN.test(normalizeText(sibling.textContent || "").trim())) break;
-        if (sibling.matches("p, blockquote") && normalizeText(sibling.textContent || "").length >= 80 &&
-            !sibling.querySelector("a[href]")) break;
-        toRemove.push(sibling);
-        sibling = sibling.nextElementSibling;
+      var block = heading.parentElement;
+      if (!block || block === root) return;
+      if (relatedHeadingRecordRail(block)) {
+        block.remove();
+        return;
       }
-
-      // Only strip if the section after the heading is link-heavy (safety check)
-      var totalLinks = 0;
-      var totalText = 0;
-      toRemove.forEach(function(el) {
-        totalLinks += (el.matches && el.matches("a[href]") ? 1 : 0) + (el.querySelectorAll ? el.querySelectorAll("a[href]").length : 0);
-        totalText += normalizeText(el.textContent || "").length;
-      });
-      // Require at least 2 links and either link-dense content or short total text
-      var compactList = /^em\s+alta:?$/i.test(text) && toRemove.length === 1 && toRemove[0].matches("ul, ol") &&
-        toRemove[0].querySelectorAll("li").length >= 1 && totalText < 500;
-      if ((totalLinks >= 2 && (totalText < 1500 || totalLinks >= 4)) || compactList) {
+      var provenRecords = relatedHeadingProvenFollowingRecords(heading);
+      if (provenRecords.length) {
         heading.remove();
-        toRemove.forEach(function(el) { el.remove(); });
+        provenRecords.forEach(function(node) { node.remove(); });
       }
     });
 
     root.querySelectorAll("div, section, aside").forEach(function(block) {
       if (block.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
-      if (!block.closest("article, main, [role='main']")) return;
+      if (!relatedRailHasUniqueVisibleArticleOwner()) return;
       if (relatedHeadingRecordRail(block)) {
         block.remove();
         return;
       }
 
-      var text = normalizeText(block.textContent || "").trim();
-      if (!text || !RELATED_SECTION_HEADING_PATTERN.test(text.slice(0, 120))) return;
-
-      var linkCount = block.querySelectorAll("a[href]").length;
-      if (linkCount >= 2 && text.length < 5000) block.remove();
     });
+  }
+
+  function relatedHeadingProvenFollowingRecords(heading) {
+    var candidate = document.createElement("div");
+    candidate.appendChild(heading.cloneNode(true));
+    var pending = [];
+    var proven = [];
+    for (var sibling = heading.nextSibling; sibling; sibling = sibling.nextSibling) {
+      if (sibling.nodeType === Node.ELEMENT_NODE && /^H[1-4]$/.test(sibling.tagName || "")) break;
+      var clone = sibling.cloneNode(true);
+      candidate.appendChild(clone);
+      pending.push(sibling);
+      if (relatedHeadingRecordRail(candidate)) proven = pending.slice();
+    }
+    return proven;
   }
 
   function stripNavigationLeaks(root) {
     // ARIA roles: navigation, menubar, menu, toolbar, complementary (sidebar), banner (header), contentinfo (footer)
-    root.querySelectorAll("[role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role='complementary'], [role='banner'], [role='contentinfo'], [aria-label*='navigation' i], [aria-label*='menu' i], [aria-label*='breadcrumb' i], [aria-label*='sidebar' i], [class~='breadcrumb' i], [class~='breadcrumbs' i]").forEach(function(el) {
+    root.querySelectorAll("[role='navigation'], [role='menubar'], [role='menu'], [role='toolbar'], [role~='complementary' i], [role='banner'], [role='contentinfo'], [aria-label*='navigation' i], [aria-label*='menu' i], [aria-label*='breadcrumb' i], [aria-label*='sidebar' i], [class~='breadcrumb' i], [class~='breadcrumbs' i]").forEach(function(el) {
       if (el.matches("aside[data-fetchutil-editorial-aside]")) return;
       el.remove();
     });

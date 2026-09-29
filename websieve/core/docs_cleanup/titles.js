@@ -272,3 +272,20 @@ function compactReferenceText(text) {
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")
     .replace(/([a-z])([A-Z][a-z])/g, "$1 $2");
 }
+
+function preserveUnprovenSourceTitleExtension(markdown, sourceTitle, documentTitle) {
+  var heading = normalizeText(sourceTitle || "");
+  var title = normalizeText(documentTitle || "");
+  if (!heading || !title || title.indexOf(heading) !== 0) return markdown;
+  var suffix = normalizeText(title.slice(heading.length));
+  if (!/^(?:-|\||:|\u2013|\u2014)\s+\S/.test(suffix)) return markdown;
+  var lines = (markdown || "").split("\n");
+  var headingIndex = lines.findIndex(function(line) {
+    var match = normalizeText(line).match(/^(#{1,6})\s+(.*)/);
+    return normalizeText(match && match[2]) === heading;
+  });
+  if (headingIndex < 0) return markdown;
+  var marker = lines[headingIndex].match(/^(#{1,6}\s+)/);
+  lines[headingIndex] = marker[1] + title;
+  return lines.join("\n");
+}

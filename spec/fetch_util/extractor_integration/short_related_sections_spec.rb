@@ -56,6 +56,33 @@ RSpec.describe 'Short related-story sections' do
     end
   end
 
+  it 'preserves undated unlinked editorial headings inside and beside the focal article' do
+    notes = (1..3).map { |index| "<article><h3>Editorial context heading #{index}</h3></article>" }.join
+    section = "<section><h2>Related articles</h2>#{notes}</section>"
+
+    %w[inside beside].each do |placement|
+      html = <<~HTML
+        <html><head><title>Regional transport funding report</title></head><body><main><article>
+          <h1>Regional transport funding report</h1>
+          <p>The report explains the approved funding and records the evidence behind the final regional transport decision.</p>
+          <p>Residents can compare the complete published measurements with the timetable and the council's commitments.</p>
+          #{section if placement == "inside"}
+        </article>#{section if placement == "beside"}</main></body></html>
+      HTML
+
+      with_url_page("https://journal.example/reports/undated-context-#{placement}", html) do |page|
+        before = page.evaluate('document.body.innerHTML')
+        payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+        expect(payload.fetch('markdown')).to include(
+          'approved funding', 'Related articles', 'Editorial context heading 1',
+          'Editorial context heading 2', 'Editorial context heading 3'
+        )
+        expect(page.evaluate('document.body.innerHTML')).to eq(before)
+      end
+    end
+  end
+
   it 'omits Portuguese related and trending rails without matching editorial headings' do
     html = <<~HTML
       <html><head><title>Public health funding report</title></head><body><main><article>
@@ -81,8 +108,10 @@ RSpec.describe 'Short related-story sections' do
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload.fetch('markdown')).not_to include(
-        'LEIA MAIS', 'EM ALTA', 'First unrelated story', 'First trending story'
+        'LEIA MAIS', 'First unrelated story', 'Second unrelated story'
       )
+      # A lone unlinked story has no destination evidence that it is an owned related-record rail.
+      expect(payload.fetch('markdown')).to include('EM ALTA', 'First trending story')
       expect(payload.fetch('markdown')).to include(
         'Leia mais sobre o financiamento público',
         'legal framework behind the funding',

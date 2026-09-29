@@ -103,10 +103,14 @@ function sourceOwnedArticleIndependentLinkedCollection(node, root, ownership) {
     var collectionHeading = node.closest("h1, h2, h3, h4, h5, h6, [class*='title' i], [class*='heading' i]");
     if (!collectionHeading || collectionHeading === (ownership && ownership.heading) || !root.contains(collectionHeading) ||
         elementSubtreeHidden(collectionHeading) || sourceOwnershipInChrome(collectionHeading) ||
-        collectionHeading.querySelector("a[href], img, picture, video, audio, iframe, object, embed, figure, canvas, svg")) return false;
+        collectionHeading.querySelector("a[href], img, picture, video, audio, iframe, object, embed, figure, canvas, svg")) {
+      return sourceOwnedArticleIndependentLinkedHeadingCollection(node, root, ownership);
+    }
     list = collectionHeading.nextElementSibling;
   }
-  if (!list || !list.matches("ul, ol") || !root.contains(list) || elementSubtreeHidden(list) || sourceOwnershipInChrome(list)) return false;
+  if (!list || !list.matches("ul, ol") || !root.contains(list) || elementSubtreeHidden(list) || sourceOwnershipInChrome(list)) {
+    return sourceOwnedArticleIndependentLinkedHeadingCollection(node, root, ownership);
+  }
   var items = Array.from(list.children);
   if (!items.every(function(item) {
     return item.matches("li") && !elementSubtreeHidden(item) || sourceOwnedNonrenderedCollectionPlaceholder(item);
@@ -126,6 +130,19 @@ function sourceOwnedArticleIndependentLinkedCollection(node, root, ownership) {
     return true;
   });
   return independentlyLinked && destinations.length === items.length;
+}
+
+function sourceOwnedArticleIndependentLinkedHeadingCollection(node, root, ownership) {
+  var body = ownership && ownership.body && ownership.body.sourceNode;
+  var headers = sourceOwnedArticleHeaderNodes(ownership && ownership.headerContext);
+  for (var container = node && node.parentElement; container && container !== root; container = container.parentElement) {
+    if (!root.contains(container) || elementSubtreeHidden(container) || sourceOwnershipInChrome(container) ||
+        container === body || (body && body.contains(container)) || headers.some(function(header) {
+          return header === container || header.contains(container);
+        })) return false;
+    if (relatedHeadingLinkedRecordGroup(container) || relatedHeadingLinkedCardGroup(container)) return true;
+  }
+  return false;
 }
 
 function sourceOwnedLinkedCardHasUnownedMaterial(item, destination) {

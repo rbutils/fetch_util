@@ -88,9 +88,28 @@ function sourceOwnedArticleHeaderContext(ownership) {
   return sourceOwnedArticleHeaderPrefix(ownership) || false;
 }
 
+
 function sourceOwnedArticleHeaderNodes(context) {
   if (!context) return [];
   return Array.isArray(context) ? context : [context];
+}
+
+function sourceOwnedArticleAuthorsShareGroup(authors, authorSelector) {
+  if (!Array.isArray(authors) || authors.length < 2) return false;
+  var selector = authorSelector || "[rel~='author' i], [itemprop~='author' i], [class*='author-name' i], " +
+    "[class*='byline' i], [class*='writer' i], [class*='reporter' i]";
+  var leaves = authors.filter(function(author, index) {
+    return authors.indexOf(author) === index && !elementSubtreeHidden(author) &&
+      normalizeText(author.textContent || "") && !author.querySelector(selector);
+  });
+  if (leaves.length !== authors.length) return false;
+  var group = leaves[0].parentElement;
+  if (!group || !group.matches("[class*='author' i], [class*='writer' i], [class*='byline' i]")) return false;
+  if (!leaves.every(function(author) { return author.parentElement === group; })) return false;
+  return Array.from(group.childNodes).every(function(node) {
+    if (node.nodeType === 3) return !normalizeText(node.nodeValue || "").replace(/\band\b|[&|·•,;:/+–—-]/gi, "");
+    return node.nodeType === 1 && leaves.indexOf(node) !== -1;
+  });
 }
 
 function sourceOwnedArticleHeaderPrefix(ownership) {
@@ -105,7 +124,14 @@ function sourceOwnedArticleHeaderPrefix(ownership) {
   var bodyIndex = children.indexOf(bodyBranch);
   if (headingIndex < 0 || bodyIndex <= headingIndex) return null;
 
-  var prefix = children.slice(headingIndex, bodyIndex);
+  var startIndex = headingIndex;
+  var precedingAttributions = children.slice(0, headingIndex).filter(function(node) {
+    return sourceOwnedArticleHeaderHasAttribution([node]);
+  });
+  if (precedingAttributions.length === 1) {
+    startIndex = children.indexOf(precedingAttributions[0]);
+  }
+  var prefix = children.slice(startIndex, bodyIndex);
   if (!prefix.length || prefix.some(function(node) {
     return elementSubtreeHidden(node) || sourceOwnershipInChrome(node) ||
       sourceOwnedHeaderContainsChrome(node) || sourceOwnedHeaderContainsForeignArticle(node);
@@ -152,7 +178,9 @@ function sourceOwnedHeaderContributions(ownership) {
 
 function genericSourceOwnedPageContent(metadata) {
   var ownership = resolveCanonicalArticleBodyOwnership();
-  return ownership ? canonicalArticleBodyContent(metadata, ownership) : null;
+  if (ownership) return canonicalArticleBodyContent(metadata, ownership);
+  var semantic = sourceOwnedSemanticArticleOwnership(metadata);
+  return semantic.ownership ? canonicalArticleBodyContent(metadata, semantic.ownership) : null;
 }
 
 function canonicalArticleBodyContent(metadata, ownership) {
@@ -160,8 +188,9 @@ function canonicalArticleBodyContent(metadata, ownership) {
   var text = normalizeText(article.textContent || "");
   var headerMetadata = sourceOwnedFallbackHeaderMetadata(ownership.body.sourceNode, ownership.title, metadata || {});
   var attribution = headerMetadata || metadata || {};
+  var titleIdentityUnproven = ownership.titleIdentityProven === false;
   return {
-    title: ownership.title,
+    title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
     excerpt: fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true),
     siteName: (metadata && metadata.siteName) || location.hostname,
@@ -171,6 +200,8 @@ function canonicalArticleBodyContent(metadata, ownership) {
     readerMode: false,
     contentType: "article",
     sourceOwnedFocalArticle: true,
+    sourceOwnedTitleIdentityUnproven: titleIdentityUnproven,
+    sourceOwnedHeadingTitle: ownership.title,
     focalPermalinkContent: true
   };
 }

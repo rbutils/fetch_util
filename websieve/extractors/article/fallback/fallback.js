@@ -73,6 +73,7 @@
     var sourceClones = new WeakMap();
     var visibleBody = visibilityPrunedClone(document.body, document, sourceClones);
     var records = Array.from(candidates).map(function(node) {
+      if (elementSubtreeHidden(node) || sourceOwnershipInChrome(node)) return null;
       var visibleNode;
       if (document.body.contains(node)) {
         visibleNode = sourceClones.get(node);

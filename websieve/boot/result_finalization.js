@@ -130,7 +130,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var originalPrimaryTitle = normalizeText((content.title || metadata.title || "").replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var siteTitle = normalizeText(content.siteName || metadata.siteName || "");
   var primaryTitle = originalPrimaryTitle;
-  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true) {
+  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedTitleIdentityUnproven !== true && content.sourceOwnedLiveblog !== true) {
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
@@ -146,7 +146,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       });
     }
   }
-  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true && normalizeText(markdown) && siteTitle && primaryTitle.toLowerCase() === siteTitle.toLowerCase()) {
+  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedTitleIdentityUnproven !== true && content.sourceOwnedLiveblog !== true && normalizeText(markdown) && siteTitle && primaryTitle.toLowerCase() === siteTitle.toLowerCase()) {
     markdown.split("\n").slice(0, 12).some(function(line) {
       var match = normalizeText(line).match(/^#+\s+(.*)/);
       var heading = normalizeText(match && match[1]).replace(/[`*_]/g, "");
@@ -157,7 +157,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       return false;
     });
   }
-  if ((content.contentType === "article" || content.contentType === "medical") && primaryTitle && normalizeText(markdown)) {
+  if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedTitleIdentityUnproven !== true && primaryTitle && normalizeText(markdown)) {
     var lines = markdown.split("\n");
     var titleIndex = -1;
     var primaryTitleLower = primaryTitle.toLowerCase();
@@ -206,7 +206,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       markdown = "# " + primaryTitle + "\n\n" + markdown;
     }
   }
-  markdown = cleanupMarkdownNoise(markdown);
+  markdown = cleanupMarkdownNoise(content.sourceOwnedTitleIdentityUnproven === true ? preserveUnprovenSourceTitleExtension(markdown, content.sourceOwnedHeadingTitle, originalPrimaryTitle) : markdown);
   if (/^(article|podcast)$/i.test(content.contentType || "") && !/\btranscript\b/i.test(markdown)) {
     var transcriptCue = podcastTranscriptMarkdown(document.body || document);
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));

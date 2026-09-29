@@ -124,3 +124,160 @@ function resolveCanonicalArticleBodyOwnership() {
   if (sourceOwnedArticleHasUncoveredMaterial(ownership)) return null;
   return ownership;
 }
+
+function sourceOwnedArticleDescriptionMatchesBody(metadata, article) {
+  var description = normalizeText(metadata && metadata.excerpt || "");
+  if (!description || !article) return false;
+  return Array.from(article.querySelectorAll("p")).some(function(paragraph) {
+    return !elementVisuallyHidden(paragraph) && normalizeText(paragraph.textContent || "") === description;
+  });
+}
+
+function sourceOwnedArticleHeaderDateNodes(headerNodes) {
+  var selector = "time[datetime], time, [itemprop~='datePublished' i], [itemprop~='dateModified' i], " +
+    "[class*='date' i], [class*='time' i], [data-testid*='date' i]";
+  var nodes = [];
+  sourceOwnedArticleHeaderNodes(headerNodes).forEach(function(header) {
+    if (header.matches(selector)) nodes.push(header);
+    nodes = nodes.concat(Array.from(header.querySelectorAll(selector)));
+  });
+  nodes = nodes.filter(function(node, index) {
+    if (nodes.indexOf(node) !== index || elementVisuallyHidden(node) || !visiblePublishedTimeField(node)) return false;
+    if (node.querySelector("a[href], p, h1, h2, h3, h4, article, main, figure, blockquote, pre, table")) return false;
+    var value = node.getAttribute("datetime") || node.getAttribute("content") || node.textContent || "";
+    return visiblePublicationDateLike(value);
+  });
+  return nodes.filter(function(node) {
+    return !nodes.some(function(other) { return other !== node && other.contains(node); });
+  });
+}
+
+function sourceOwnedArticleHeaderHasAttribution(headerNodes) {
+  var roots = sourceOwnedArticleHeaderNodes(headerNodes);
+  if (sourceOwnedArticleHeaderDateNodes(roots).length !== 1) return false;
+  var authorSelector = "[rel~='author' i], [itemprop~='author' i], [class*='author-name' i], " +
+    "[class*='byline' i], [class*='writer' i], [class*='reporter' i]";
+  var authors = [];
+  var authorLinks = [];
+  var paragraphs = [];
+  roots.forEach(function(root) {
+    if (root.matches(authorSelector)) authors.push(root);
+    authors = authors.concat(Array.from(root.querySelectorAll(authorSelector)));
+    if (root.matches("a[href]")) authorLinks.push(root);
+    authorLinks = authorLinks.concat(Array.from(root.querySelectorAll("a[href]")));
+    if (root.matches("p")) paragraphs.push(root);
+    paragraphs = paragraphs.concat(Array.from(root.querySelectorAll("p")));
+  });
+  var hasText = function(node) {
+    return !elementVisuallyHidden(node) && !!normalizeText(node.textContent || "");
+  };
+  authors = authors.filter(function(node, index) {
+    return authors.indexOf(node) === index && hasText(node) && !node.querySelector(authorSelector);
+  });
+  if (authors.length === 1) return true;
+  if (authors.length > 1) return sourceOwnedArticleAuthorsShareGroup(authors, authorSelector);
+  var current = sourceOwnershipPageUrl(location.href);
+  var currentOrigin = current ? new URL(current).origin : "";
+  authorLinks = authorLinks.filter(function(link, index) {
+    if (authorLinks.indexOf(link) !== index || !hasText(link) || link.closest("h1, h2, h3, h4")) return false;
+    var destination = sourceOwnershipPageUrl(link.getAttribute("href"));
+    return !!(destination && destination !== current && currentOrigin && new URL(destination).origin === currentOrigin);
+  });
+  if (authorLinks.length === 1) return true;
+  if (authorLinks.length > 1) return false;
+  paragraphs = paragraphs.filter(function(paragraph, index) {
+    return paragraphs.indexOf(paragraph) === index && hasText(paragraph) &&
+      !paragraph.querySelector("time, [itemprop~='datePublished' i], [itemprop~='dateModified' i]");
+  });
+  return paragraphs.length === 1;
+}
+
+function sourceOwnedSemanticArticleOwnership(metadata) {
+  if (!metadata) return { considered: false, ownership: null };
+  var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading) && !sourceOwnershipInChrome(heading);
+  });
+  if (headings.length !== 1) return { considered: false, ownership: null };
+  var heading = headings[0];
+  var headline = normalizeText(heading.textContent || "");
+  var sourceMetadata = focalSourceArticleMetadata();
+  var titleMatches = articleTitleFromOwnedHeading(heading.outerHTML, metadata.title, metadata.siteName) === headline;
+  var declaredHeadlineMatches = !!(sourceMetadata && sourceMetadata.headlines.indexOf(headline) !== -1);
+  var titleIdentityProven = titleMatches || declaredHeadlineMatches;
+  var pageTitleRemainder = normalizeText(metadata.title || "").slice(headline.length);
+  var brandedPageTitleMatches = normalizeText(metadata.title || "").indexOf(headline) === 0 &&
+    /^\s*(?:-|–|—|:|：|\|)\s*\S/.test(pageTitleRemainder);
+  if (!titleMatches && !declaredHeadlineMatches && !heading.closest("article") && !brandedPageTitleMatches) {
+    return { considered: false, ownership: null };
+  }
+
+  var articles = Array.from(document.querySelectorAll("article")).filter(function(article) {
+    return !article.parentElement.closest("article") && !elementSubtreeHidden(article) &&
+      !sourceOwnershipInChrome(article) && !commentRecordMarker(article) && !article.closest(VISIBLE_COMMENT_THREAD_SELECTOR);
+  });
+  var articleBodies = articles.map(function(article) {
+    var body = focalOwnershipVisibleBody(article);
+    return body && body.text.length >= 120 ? { article: article, body: body } : null;
+  }).filter(Boolean);
+  if (!articleBodies.length) return { considered: false, ownership: null };
+  var focalArticle = heading.closest("article");
+  var candidates = articleBodies.filter(function(record) {
+    return focalArticle ? record.article === focalArticle : sourceOwnedArticleDescriptionMatchesBody(metadata, record.article);
+  });
+  if (candidates.length !== 1) {
+    return { considered: true, ownership: null };
+  }
+
+  var article = candidates[0].article;
+  var body = candidates[0].body;
+  // Keep the established extraction path when serializing this root would make
+  // the shared related-container cleaner discard the selected article itself.
+  if (article.matches(RELATED_CONTAINER_SELECTOR)) return { considered: true, ownership: null };
+  var ownerRoot = sourceOwnedArticleBoundaryRoot(heading, article);
+  if (!ownerRoot || ownerRoot === document.body || ownerRoot === document.documentElement || sourceOwnershipInChrome(ownerRoot)) {
+    return { considered: true, ownership: null };
+  }
+  body.sourceNode = article;
+  var ownership = {
+    node: article,
+    ownerRoot: ownerRoot,
+    heading: heading,
+    title: headline,
+    body: body,
+    proof: "unique-semantic-article-source-identity"
+  };
+  ownership.titleIdentityProven = titleIdentityProven;
+  var headerContext = sourceOwnedArticleHeaderContext(ownership);
+  if (headerContext === false) return { considered: true, ownership: null };
+  ownership.headerContext = headerContext;
+  if (!article.contains(heading)) {
+    var mains = Array.from(document.querySelectorAll("main, [role~='main' i]")).filter(function(main) {
+      return !elementVisuallyHidden(main) && main.contains(heading) && main.contains(article);
+    });
+    var headerNodes = sourceOwnedArticleHeaderNodes(headerContext);
+    if (mains.length > 1 || !sourceOwnedArticleDescriptionMatchesBody(metadata, article) ||
+        !headerNodes.length || !sourceOwnedArticleHeaderHasAttribution(headerNodes)) {
+      return { considered: true, ownership: null };
+    }
+    ownership.titleIdentityProven = true;
+  }
+  if (sourceOwnedArticleHasUncoveredMaterial(ownership)) {
+    return { considered: true, ownership: null };
+  }
+  return { considered: true, ownership: ownership };
+}
+
+function sourceOwnedArticleBoundaryRoot(heading, article) {
+  var mains = Array.from(document.querySelectorAll("main, [role~='main' i]")).filter(function(main) {
+    return !elementVisuallyHidden(main) && main.contains(heading) && main.contains(article);
+  });
+  if (mains.length === 1) return mains[0];
+  if (mains.length > 1) return null;
+  var outermostArticle = article;
+  var parentArticle = outermostArticle.parentElement && outermostArticle.parentElement.closest("article");
+  while (parentArticle) {
+    outermostArticle = parentArticle;
+    parentArticle = outermostArticle.parentElement && outermostArticle.parentElement.closest("article");
+  }
+  return outermostArticle === article ? sourceOwnershipCommonAncestor(heading, article) : outermostArticle;
+}
