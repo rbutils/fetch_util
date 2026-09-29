@@ -1,3 +1,10 @@
+function contentDescriptionForResult(content, metadata) {
+  if (content.description !== undefined && content.description !== null) return content.description;
+  if ((content.contentType || "article") !== "article") return null;
+  var description = metadata.declaredDescription;
+  return description === undefined || description === null ? null : description;
+}
+
 function articleContentFromParts(parts) {
   var sections = [];
   var meta = [];

@@ -24,6 +24,9 @@ function collectMetadata() {
   var canonicalUrl = materializedCanonicalUrl();
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;
+  var declaredDescription = metadataValue("description", "name");
+  if (!normalizeText(declaredDescription)) declaredDescription = metadataValue("og:description", "property");
+  if (!normalizeText(declaredDescription)) declaredDescription = null;
   var schemaAuthor = entityName(schemaArticle && schemaArticle.author);
   var declaredByline = [
     metadataValue("article:author", "name"),
@@ -41,6 +44,7 @@ function collectMetadata() {
     byline: byline,
     declaredByline: declaredByline,
     excerpt: metadataValue("description", "name") || metadataValue("og:description", "property"),
+    declaredDescription: declaredDescription,
     siteName: metadataValue("og:site_name", "property") || location.hostname,
     publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || metadataValue("govuk:first-published-at", "name") || visiblePublishedTime(),
     canonicalUrl: canonicalUrl || materializedHttpUrl(location.href),

@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Preserve declared page descriptions separately from article excerpts while keeping extractor-owned descriptions, including explicitly empty ones, authoritative.
 - Preserve literal bylines from the selected article's owned header without replacing conflicting author attribution, and normalize localized publication digits on the final chosen timestamp.
 - Keep liveblog titles consistent with the proved parent or update scope, including parent headings corroborated by source descriptions when headline metadata names a child update.
 - Preserve source-owned liveblog parents and explicitly addressed updates, including material links, per-update attribution, and reader discussions without borrowing child metadata for the parent.

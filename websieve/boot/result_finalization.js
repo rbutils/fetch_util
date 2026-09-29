@@ -259,7 +259,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     name: content.name || null,
     company: content.company || null,
     location: content.location || null,
-    description: content.description || null,
+    description: contentDescriptionForResult(content, metadata),
     bedrooms: content.bedrooms === undefined ? null : content.bedrooms,
     bathrooms: content.bathrooms === undefined ? null : content.bathrooms,
     areaSqft: content.areaSqft === undefined ? null : content.areaSqft,

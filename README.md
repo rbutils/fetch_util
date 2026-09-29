@@ -112,12 +112,16 @@ fetch_util fetch https://example.com/selected --format json
 Useful result fields:
 
 - `title`
+- `excerpt`
+- `description` — the declared page description for article results, separate from the selected excerpt; extractor-provided descriptions remain authoritative
 - `markdown`
 - `final_url`
 - `canonical_url`
 - `content_type` (`article`, `list`, or `search`)
 - `suspect`
 - `warnings`
+
+For article results, `description` exposes declared page metadata independently of the selected article excerpt. Extractor-owned descriptions remain authoritative for every content type; non-article results do not inherit page descriptions.
 
 ## Common Options
 
