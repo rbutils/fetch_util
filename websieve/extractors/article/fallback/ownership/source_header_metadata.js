@@ -53,6 +53,7 @@ function sourceOwnedFallbackHeaderMatchesPrimary(primary, headerMetadata) {
 
 function sourceOwnedFallbackHeaderMetadata(selected, title, metadata) {
   if (!selected) return null;
+  metadata = metadata || {};
   var mains = Array.prototype.filter.call(document.querySelectorAll("main, [role='main']"), function(main) {
     return !elementVisuallyHidden(main) && main.contains(selected);
   });
