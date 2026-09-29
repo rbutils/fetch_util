@@ -1431,7 +1431,6 @@ RSpec.describe "extract asset bundle" do
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
                           registerBookingProfiles
-                          registerCsdnProfiles
                           registerSubstackProfiles
                           registerPackageRegistryProfiles
                           registerStatuspageProfiles
@@ -1564,6 +1563,10 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(walla_path)
     expect(File).not_to exist(File.join(source_root, walla_path))
     expect(source_files.any? { |path| File.read(path).include?("wallaArticleContent") }).to be(false)
+    csdn_path = "profiles/publishing/csdn.js"
+    expect(manifest).not_to include(csdn_path)
+    expect(File).not_to exist(File.join(source_root, csdn_path))
+    expect(source_files.any? { |path| File.read(path).match?(/csdnContent|registerCsdnProfiles/) }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end

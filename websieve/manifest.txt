@@ -305,7 +305,6 @@ profiles/social/telegram/telegram.js
 profiles/community/forums/discourse.js
 profiles/social/networks/twitter.js
 profiles/social/networks/bluesky.js
-profiles/publishing/csdn.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/asia/east/nhk.js

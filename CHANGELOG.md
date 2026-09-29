@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Retire the CSDN profile in favor of shared article and declared-description extraction, preserving public prose and visible access notices without fabricated fallback text.
 - Retire the Walla article profile in favor of shared extraction that preserves source headings, visible attribution, complete prose, and labelled topic destinations.
 - Select a semantic article body only when its unique headline, matching source description, and owned header establish one source record; preserve complete article material and unclassified sibling prose.
 - Retire the YLE live-article profile in favor of source-owned liveblog extraction, retaining complete updates and coherent parent attribution when the requested entry is not independently identified.

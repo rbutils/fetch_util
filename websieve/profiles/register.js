@@ -8,7 +8,6 @@
   registerBookingProfiles();
   registerHostAwareProfile(true, genericScholarlyArticleContent);
   registerHostAwareProfile(true, scientificRecordContent);
-  registerCsdnProfiles();
   registerSubstackProfiles();
   registerPackageRegistryProfiles();
   registerStatuspageProfiles();

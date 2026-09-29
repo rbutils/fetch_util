@@ -1054,7 +1054,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts public CSDN article bodies from the article container" do
+  it "extracts public CSDN article bodies while preserving the visible access notice" do
     html = <<~HTML
       <html>
         <head>
@@ -1091,7 +1091,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("## 为什么是现在？")
       expect(payload["warnings"]).not_to include("empty_extraction")
       expect(payload["warnings"]).not_to include("url_content_mismatch")
-      expect(payload["markdown"]).not_to include("登录后阅读全文")
+      expect(payload["markdown"]).to include("登录后阅读全文")
       expect(payload["markdown"]).not_to include("相关推荐")
     end
   end
