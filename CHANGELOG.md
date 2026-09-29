@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Preserve independently linked live-update homepage lists while retaining complete inline liveblog parents and same-document update permalinks.
 - Require distinct linked sections before classifying short news subsections as a newsletter, preserving topic tags and measuring prose independently of destination length.
 - Restore Reader bylines only from headers bound to its actual source paragraphs, preserving conflicting author metadata and rejecting foreign or ambiguous paragraph edges.
 - Preserve declared page descriptions separately from article excerpts while keeping extractor-owned descriptions, including explicitly empty ones, authoritative.

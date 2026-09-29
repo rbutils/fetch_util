@@ -172,6 +172,31 @@ function liveblogContextOwners(contexts) {
   return owners;
 }
 
+function liveblogContextIsIndependentLinkedList(context) {
+  if (!context || !homepageRootPath() || !context.parentRoot.matches("main, [role~='main' i]") ||
+      context.records.length < 3 || typeof genericListStructuredCardLink !== "function") return false;
+  if (context.records.some(function(record) { return !record.node.matches("article"); })) return false;
+  var parents = context.records.map(function(record) { return record.node.parentElement; });
+  if (!parents[0] || parents.some(function(parent) { return parent !== parents[0]; })) return false;
+  var markers = liveblogMarkerNodes();
+  if (context.records.some(function(record) {
+    return record.node.matches("[data-liveblog-update], [class*='live-update' i], [class*='minute-container' i]") ||
+      markers.some(function(marker) { return marker === record.node || marker.contains(record.node); });
+  })) return false;
+
+  var current = new URL(location.href);
+  var currentPath = current.origin + current.pathname.replace(/\/$/, "");
+  var destinations = context.records.map(function(record) {
+    var link = genericListStructuredCardLink(record.node, true);
+    var href = link && materializedHttpUrl(link.getAttribute("href"));
+    if (!href) return "";
+    var destination = new URL(href);
+    var path = destination.origin + destination.pathname.replace(/\/$/, "");
+    return path !== currentPath ? path : "";
+  });
+  return destinations.every(Boolean) && new Set(destinations).size === destinations.length;
+}
+
 function fallbackLiveblogPageContext() {
   var entities = liveblogPostingEntities();
   var markers = liveblogMarkerNodes();
@@ -191,5 +216,6 @@ function fallbackLiveblogPageContext() {
   var maxRecords = Math.max.apply(null, contexts.map(function(context) { return context.records.length; }));
   contexts = contexts.filter(function(context) { return context.records.length === maxRecords; });
   var owners = liveblogContextOwners(contexts);
-  return owners.length === 1 ? owners[0] : null;
+  if (owners.length !== 1 || liveblogContextIsIndependentLinkedList(owners[0])) return null;
+  return owners[0];
 }
