@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Remove inert custom share and related-content labels while preserving material custom components, source prose, headings, resources, and shadow content.
 - Recognize named site-link navigation so it does not displace the page's primary list records.
 - Remove unsupported link destinations from generic list HTML without dropping visible labels or changing safe inline article contacts.
 - Preserve independently linked live-update homepage lists while retaining complete inline liveblog parents and same-document update permalinks.

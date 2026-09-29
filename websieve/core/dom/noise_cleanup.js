@@ -95,6 +95,7 @@
   }
 
   function stripUIWidgets(root, options) {
+    stripInertCustomUiElements(root);
     stripArticleWidgets(root);
     root.querySelectorAll("div, section, span").forEach(function(el) {
       if (!/(?:^|[\s_-])refresh[-_](?:button|control|trigger)(?:[\s_-]|$)/i.test(el.getAttribute("class") || "")) return;

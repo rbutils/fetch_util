@@ -1230,6 +1230,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/widgets/action_prompts.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/article_engagement.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/related_records.js")).to be < manifest.index("core/dom/noise_cleanup.js")
+    expect_manifest_order(manifest, "core/dom/cleanup/inert_custom_ui.js", "core/dom/noise_cleanup.js")
   end
 
   it "loads structured detail arbitration before late list dominance" do
