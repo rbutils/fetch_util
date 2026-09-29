@@ -1,3 +1,11 @@
+  function listHtmlWithoutUnsafeDestinations(root) {
+    var clone = safeDeepClone(root, document);
+    clone.querySelectorAll("a[href]").forEach(function(link) {
+      if (!materializedHttpUrl(link.getAttribute("href"))) link.removeAttribute("href");
+    });
+    return clone.innerHTML;
+  }
+
   function buildListExtraction(node, pageTitles, options) {
     options = options || {};
     var root = visibleListClone(node, options.preservedRoots);
@@ -156,7 +164,7 @@
     var result = listItemsContentResult(metadata, {
       title: metadata.title || document.title,
       excerpt: best.items[0] ? best.items[0].text : metadata.excerpt,
-      html: best.root.innerHTML,
+      html: listHtmlWithoutUnsafeDestinations(best.root),
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,

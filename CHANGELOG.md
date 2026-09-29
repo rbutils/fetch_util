@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Remove unsupported link destinations from generic list HTML without dropping visible labels or changing safe inline article contacts.
 - Preserve independently linked live-update homepage lists while retaining complete inline liveblog parents and same-document update permalinks.
 - Require distinct linked sections before classifying short news subsections as a newsletter, preserving topic tags and measuring prose independently of destination length.
 - Restore Reader bylines only from headers bound to its actual source paragraphs, preserving conflicting author metadata and rejecting foreign or ambiguous paragraph edges.

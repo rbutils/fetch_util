@@ -247,7 +247,8 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("article")
       expect(payload["markdown"]).to include("Open interactive comparison", "Email the review team", "Download the legacy archive", "Open embedded report data")
-      expect(payload["markdown"]).not_to include("javascript:", "mailto:", "ftp:", "data:text")
+      expect(payload["markdown"]).to include("[Email the review team](mailto:review@example.test)")
+      expect(payload["markdown"]).not_to include("javascript:", "ftp:", "data:text")
     end
   end
 
