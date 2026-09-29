@@ -1560,6 +1560,10 @@ RSpec.describe "extract asset bundle" do
       %w[yleLiveArticleContent yleLiveItemPage yleLiveItemMatcher yleLiveItemByline yleLiveItemPublishedTime yleLiveRemovePageLiveBlogData]
     )
     expect(source_files.any? { |path| File.read(path).match?(retired_yle_pattern) }).to be(false)
+    walla_path = "profiles/news/middle_east/walla.js"
+    expect(manifest).not_to include(walla_path)
+    expect(File).not_to exist(File.join(source_root, walla_path))
+    expect(source_files.any? { |path| File.read(path).include?("wallaArticleContent") }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
@@ -1670,7 +1674,6 @@ RSpec.describe "extract asset bundle" do
       File.read(File.join(source_root, path)).match?(/(?:^[ \t]*|;[ \t]*)registerHostAwareProfile\(/)
     end
     expected_tail = %w[
-      profiles/news/middle_east/walla.js
       profiles/news/asia/east/nhk.js
       systems/cms/joomla.js
       systems/cms/wordpress.js
