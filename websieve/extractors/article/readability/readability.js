@@ -32,6 +32,9 @@
       var selectedSourceParagraphs = sourceOwnedReaderParagraphIdentitySources(
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker
       );
+      var readerBodyEvidence = sourceOwnedReaderSelectedParagraphs(
+        sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
+      );
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
@@ -51,6 +54,15 @@
         contentType: "article"
       };
       Object.defineProperty(content, "sourceOwnedReaderParagraphSources", { value: selectedSourceParagraphs });
+      Object.defineProperty(content, "sourceOwnedReaderBodyParagraphSources", {
+        value: readerBodyEvidence && readerBodyEvidence.sourceParagraphs
+      });
+      Object.defineProperty(content, "sourceOwnedReaderUnmappedHeaderParagraphs", {
+        value: readerBodyEvidence && readerBodyEvidence.unmappedHeaderParagraphs
+      });
+      Object.defineProperty(content, "sourceOwnedReaderUnmappedTrailingParagraphs", {
+        value: readerBodyEvidence && readerBodyEvidence.unmappedTrailingParagraphs
+      });
       return content;
     } catch (_error) {
       // Fall through to the shared article/list heuristics instead of aborting.

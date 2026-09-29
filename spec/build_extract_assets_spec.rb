@@ -797,6 +797,13 @@ RSpec.describe "extract asset bundle" do
       "systems/news_engines/generic_portal_homepages.js",
       "profiles/news/news_homepages.js"
     )
+    reader_byline = "extractors/article/readability/attribution/header_byline.js"
+    expect_manifest_order(
+      manifest,
+      "extractors/article/readability/readability.js",
+      reader_byline,
+      "boot/result_finalization.js"
+    )
 
     pipeline = sources.fetch("boot/pipeline_helpers.js")
     extract_api = sources.fetch("boot/extract_api.js")
@@ -812,6 +819,7 @@ RSpec.describe "extract asset bundle" do
     expect(generic_portal).not_to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
     expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
+    expect(sources.fetch(reader_byline)).to include("function readerSourceOwnedBylineForContent")
   end
 
   it "keeps visibility-pruned cloning in the shared DOM owner" do
@@ -1346,6 +1354,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/compact_body_excerpt.js
         extractors/article/readability/source_node_provenance.js
         extractors/article/readability/readability.js
+        extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],
       ["boot/list_candidate_arbitration.js", [], "boot/extract_api.js"],

@@ -83,7 +83,7 @@
     return sources;
   }
 
-  function sourceOwnedReaderSelectedParagraphs(root, sourceClones, sourceIdentities, marker) {
+  function sourceOwnedReaderSelectedParagraphs(root, sourceClones, sourceIdentities, marker, allowUnmappedEdges) {
     if (!root || !sourceClones || !sourceIdentities || !marker) return null;
     var sourceByToken = new Map();
     var sourceById = new Map();
@@ -99,22 +99,51 @@
     var selectedNodes = Array.from(root.querySelectorAll("p")).filter(function(node) {
       return !!normalizeText(node.textContent);
     });
+    if (allowUnmappedEdges && !sourceOwnedReaderHasMultipleMappedParagraphs(
+      selectedNodes, root, sourceByToken, sourceById, marker
+    )) return null;
+
     var groups = new Map();
+    var unmappedHeaderParagraphs = [];
+    var unmappedTrailingParagraphs = [];
+    var unmappedParagraphSourcesByText = null;
+    var bodyStarted = false;
+    var bodyEnded = false;
     var previousSource = null;
     for (var index = 0; index < selectedNodes.length; index += 1) {
       var node = selectedNodes[index];
       var source = sourceReaderParagraphOrigin(node, root, sourceByToken, sourceById, marker);
-      if (!source || source.localName !== "p" || elementVisuallyHidden(source)) return null;
+      if (!source) {
+        if (!allowUnmappedEdges) return null;
+        if (!unmappedParagraphSourcesByText) {
+          unmappedParagraphSourcesByText = sourceOwnedReaderUnmappedParagraphSourcesByText(sourceClones);
+        }
+        var edgeSource = sourceOwnedReaderUnmappedParagraphSource(node, unmappedParagraphSourcesByText);
+        if (!edgeSource) return null;
+        var edge = { text: normalizeText(node.textContent), source: edgeSource };
+        if (bodyStarted) {
+          bodyEnded = true;
+          unmappedTrailingParagraphs.push(edge);
+        } else {
+          unmappedHeaderParagraphs.push(edge);
+        }
+        continue;
+      }
+      if (bodyEnded) return null;
+      if (source.localName !== "p" || elementVisuallyHidden(source)) return null;
       if (groups.has(source) && source !== previousSource) return null;
       if (!groups.has(source)) groups.set(source, []);
       groups.get(source).push(normalizeText(node.textContent));
       previousSource = source;
+      bodyStarted = true;
     }
 
     var sources = Array.from(groups.keys());
     if (sources.length < 2) return null;
     for (var sourceIndex = 1; sourceIndex < sources.length; sourceIndex += 1) {
-      if (!(sources[sourceIndex - 1].compareDocumentPosition(sources[sourceIndex]) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
+      if (!(sources[sourceIndex - 1].compareDocumentPosition(sources[sourceIndex]) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        return null;
+      }
     }
 
     for (var groupIndex = 0; groupIndex < sources.length; groupIndex += 1) {
@@ -127,10 +156,55 @@
         for (var segmentIndex = 0; segmentIndex < segments.length; segmentIndex += 1) {
           if (actual[segmentIndex] !== segments[segmentIndex]) return null;
         }
-      } else if (actual.length !== 1 || actual[0] !== identity.visibleText) {
+      } else if (actual.length !== 1 || actual[0] !== identity.visibleText) return null;
+    }
+
+    return allowUnmappedEdges
+      ? {
+          sourceParagraphs: sources,
+          unmappedHeaderParagraphs: unmappedHeaderParagraphs,
+          unmappedTrailingParagraphs: unmappedTrailingParagraphs
+        }
+      : sources;
+  }
+
+  function sourceOwnedReaderHasMultipleMappedParagraphs(nodes, root, sourceByToken, sourceById, marker) {
+    var sources = new Set();
+    for (var index = 0; index < nodes.length; index += 1) {
+      var source = sourceReaderParagraphOrigin(nodes[index], root, sourceByToken, sourceById, marker);
+      if (!source || source.localName !== "p" || elementVisuallyHidden(source)) continue;
+      sources.add(source);
+      if (sources.size >= 2) return true;
+    }
+    return false;
+  }
+
+  function sourceOwnedReaderUnmappedParagraphSourcesByText(sourceClones) {
+    var sourcesByText = new Map();
+    sourceClones.forEach(function(clone, source) {
+      if (!clone || source.nodeType !== Node.ELEMENT_NODE || source.localName === "p" ||
+          elementVisuallyHidden(source) || source.querySelector("p")) return;
+      var text = normalizeText(source.textContent || "");
+      if (!text) return;
+      if (!sourcesByText.has(text)) sourcesByText.set(text, []);
+      sourcesByText.get(text).push(source);
+    });
+    return sourcesByText;
+  }
+
+  function sourceOwnedReaderUnmappedParagraphSource(node, sourcesByText) {
+    var text = normalizeText(node.textContent || "");
+    var candidates = sourcesByText.get(text) || [];
+    var sourceCandidate = null;
+    for (var index = 0; index < candidates.length; index += 1) {
+      var source = candidates[index];
+      if (!sourceCandidate) {
+        sourceCandidate = source;
+      } else if (sourceCandidate.contains(source)) {
+        sourceCandidate = source;
+      } else if (!source.contains(sourceCandidate)) {
         return null;
       }
     }
-
-    return sources;
+    return sourceCandidate;
   }
