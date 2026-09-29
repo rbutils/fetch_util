@@ -325,6 +325,7 @@ profiles/news/mwananchi.js
 boot/pipeline_helpers.js
 boot/reader_byline.js
 boot/reader_text_byline.js
+boot/reader_source_owned_byline.js
 boot/list_byline.js
 boot/contents_component_finalization.js
 boot/result_finalization.js

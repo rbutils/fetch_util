@@ -29,6 +29,19 @@ RSpec.describe 'FetchUtil focal article author links' do
     HTML
   end
 
+  def focal_author_destinations(markdown)
+    markdown.scan(/\[Alex Morgan\]\((\S+?)(?: "Alex Morgan")?\)/).flatten
+  end
+
+  def focal_author_candidate(page, payload)
+    root = File.expand_path('../../../websieve', __dir__)
+    paths = File.readlines(File.join(root, 'manifest.txt'), chomp: true).reject(&:empty?)
+    source = paths.map { |path| File.read(File.join(root, path)) }.join("\n")
+    probe = source.sub('})(window);', 'window.__focalAuthorCandidate = readerBylineSourceAuthorLink; })(window);')
+    page.add_script_tag(content: probe)
+    page.evaluate("window.__focalAuthorCandidate(#{payload.to_json}, 'Alex Morgan')")
+  end
+
   it 'restores the uniquely owned visible author destination without copying a related author' do
     authors = "#{author_widget}<aside>#{author_widget("/authors/unrelated")}</aside>"
     with_url_page('https://publisher.example/articles/housing-review-123456', focal_author_page(authors)) do |page|
@@ -37,25 +50,30 @@ RSpec.describe 'FetchUtil focal article author links' do
       expect(payload['readerMode']).to be(false)
       expect(payload['byline']).to eq('Alex Morgan')
       expect(payload['html']).to include('href="https://publisher.example/authors/alex-morgan"')
-      expect(payload['markdown'].scan('[Alex Morgan](https://publisher.example/authors/alex-morgan)').length).to eq(1)
+      expect(focal_author_destinations(payload['markdown'])).to eq(['https://publisher.example/authors/alex-morgan'])
       expect(payload['markdown']).not_to include('/authors/unrelated')
       expect(page.evaluate('document.body.innerHTML')).to eq(original)
     end
   end
 
-  it 'rejects hidden, related-only, foreign-origin, and ambiguous author destinations' do
+  it 'rejects unsafe author restoration while retaining visible destinations already in the source' do
     [
-      author_widget(attributes: 'hidden'),
-      "<aside>#{author_widget}</aside>",
-      "<div class='related-stories'>#{author_widget}</div>",
-      author_widget('https://other.example/authors/alex-morgan'),
-      "#{author_widget}#{author_widget("/authors/another-alex-morgan")}"
-    ].each do |authors|
+      [author_widget(attributes: 'hidden'), []],
+      ["<aside>#{author_widget}</aside>", []],
+      ["<div class='related-stories'>#{author_widget}</div>", ['https://publisher.example/authors/alex-morgan']],
+      [author_widget('https://other.example/authors/alex-morgan'), ['https://other.example/authors/alex-morgan']],
+      ["#{author_widget}#{author_widget("/authors/another-alex-morgan")}",
+       ['https://publisher.example/authors/alex-morgan', 'https://publisher.example/authors/another-alex-morgan']]
+    ].each do |authors, visible_destinations|
       with_url_page('https://publisher.example/articles/housing-review-123456', focal_author_page(authors)) do |page|
+        original = page.evaluate('document.body.innerHTML')
         payload = extract_payload(page)
         expect(payload['readerMode']).to be(false)
-        expect(payload['markdown']).not_to include('/authors/')
+        expect(payload['byline']).to eq('Alex Morgan')
+        expect(focal_author_candidate(page, payload)).to be_nil
+        expect(focal_author_destinations(payload['markdown'])).to eq(visible_destinations)
         expect(payload['markdown']).to include('Residents reviewed the housing proposal', 'Its report explains the remaining trade-offs')
+        expect(page.evaluate('document.body.innerHTML')).to eq(original)
       end
     end
   end

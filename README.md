@@ -22,6 +22,10 @@ This is bounded native browser execution, not a custom challenge solver. If the 
 
 For an article page with a unique source headline and semantic article record, shared extraction verifies their source relationship before selecting the body. It retains the complete article and its owned media, downloads, and access notices; a separate linked-record group is excluded only when its heading/link structure is complete and leaves no other visible material behind. Ambiguous sibling notes and references remain available.
 
+When that source-owned article also has a uniquely attributed header, extraction preserves its visible author names and publication date. Unambiguous localized numerals in publication timestamps are normalized without changing the source text shown in the article.
+
+A source-visible byline fills a missing or publisher-only author field, or extends the same already identified person. It does not replace a conflicting person name declared for the page. Multiple marked author names are combined only when they share one visibly owned byline group.
+
 ## Installation
 
 Add the gem to your Gemfile:

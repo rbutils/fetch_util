@@ -95,6 +95,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   contentByline = bylineWithoutSiblingActions(contentByline, metadataByline);
+  var sourceOwnedByline = readerSourceOwnedBylineExtension(content, metadata, contentByline, metadataByline);
+  if (sourceOwnedByline) contentByline = metadataByline = sourceOwnedByline;
   var sourceBylineEligible = content.readerMode || (content.contentType === "article" && content.sourceOwnedFocalArticle);
   var readerAuthor = sourceBylineEligible ? readerBylineSourceAuthorLink(content, metadataByline) : null;
   var readerTextByline = content.readerMode && !readerAuthor ? readerTextBylineSource(content, metadataByline) : null;
@@ -251,7 +253,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     byline: byline,
     excerpt: content.excerpt || metadata.excerpt,
     siteName: content.siteName || metadata.siteName,
-    publishedTime: publishedTime,
+    publishedTime: normalizeLocalizedPublicationDigits(publishedTime),
     canonicalUrl: metadata.canonicalUrl,
     language: metadata.language,
     name: content.name || null,

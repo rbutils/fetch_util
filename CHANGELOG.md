@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Preserve literal bylines from the selected article's owned header without replacing conflicting author attribution, and normalize localized publication digits on the final chosen timestamp.
 - Keep liveblog titles consistent with the proved parent or update scope, including parent headings corroborated by source descriptions when headline metadata names a child update.
 - Preserve source-owned liveblog parents and explicitly addressed updates, including material links, per-update attribution, and reader discussions without borrowing child metadata for the parent.
 - Preserve complete canonical article bodies, independent header contributions, owned attribution, media, and reader discussions while rejecting ambiguous ownership and unrepresented source material.

@@ -189,7 +189,7 @@ function canonicalArticleBodyContent(metadata, ownership) {
   var headerMetadata = sourceOwnedFallbackHeaderMetadata(ownership.body.sourceNode, ownership.title, metadata || {});
   var attribution = headerMetadata || metadata || {};
   var titleIdentityUnproven = ownership.titleIdentityProven === false;
-  return {
+  var content = {
     title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
     excerpt: fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true),
@@ -204,4 +204,6 @@ function canonicalArticleBodyContent(metadata, ownership) {
     sourceOwnedHeadingTitle: ownership.title,
     focalPermalinkContent: true
   };
+  Object.defineProperty(content, "sourceOwnedArticleBody", { value: ownership.body.sourceNode });
+  return content;
 }

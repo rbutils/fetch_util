@@ -56,12 +56,16 @@ RSpec.describe 'FetchUtil visible publication fields' do
     {
       '<span class="published-date">13 July</span>' => '13 July',
       '<span class="published-date">2026年9月27日</span>' => '2026年9月27日',
-      '<span class="published-date">٢٦ سبتمبر ٢٠٢٦</span>' => '٢٦ سبتمبر ٢٠٢٦',
+      '<span class="published-date">٢٦ سبتمبر ٢٠٢٦</span>' => '26 سبتمبر 2026',
+      '<span class="published-date">۲۶ سپتامبر ۲۰۲۶</span>' => '26 سپتامبر 2026',
       '<span class="published-date">3 hours ago</span>' => '3 hours ago',
       '<span class="published-date">12:30</span>' => '12:30'
     }.each do |field, expected|
-      extract_from_url('https://example-blog.test/restoration/', publication_field_page(field)) do |payload|
+      with_url_page('https://example-blog.test/restoration/', publication_field_page(field)) do |page|
+        original = page.evaluate('document.body.innerHTML')
+        payload = extract_payload(page)
         expect(payload['publishedTime']).to eq(expected)
+        expect(page.evaluate('document.body.innerHTML')).to eq(original)
       end
     end
   end
