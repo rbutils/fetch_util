@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Require distinct linked sections before classifying short news subsections as a newsletter, preserving topic tags and measuring prose independently of destination length.
 - Restore Reader bylines only from headers bound to its actual source paragraphs, preserving conflicting author metadata and rejecting foreign or ambiguous paragraph edges.
 - Preserve declared page descriptions separately from article excerpts while keeping extractor-owned descriptions, including explicitly empty ones, authoritative.
 - Preserve literal bylines from the selected article's owned header without replacing conflicting author attribution, and normalize localized publication digits on the final chosen timestamp.

@@ -294,6 +294,180 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not classify one unknown-host report with quote sections and topic tags as a newsletter" do
+    title = "President addresses the summit"
+    subtitle = "At the summit, the president described the next steps and answered questions."
+    lead = "The opening report summarizes the press conference and links to the full summit record."
+    quote_sections = [
+      ["We will review the proposal", "The president said officials would review the proposal before making a decision."],
+      ["The talks are continuing", "The delegation confirmed that discussions with regional partners are continuing."],
+      ["We have not reached an agreement", "The press conference made clear that no agreement has yet been reached."],
+      ["There will be another meeting", "Officials said they expect another meeting after the technical review is complete."],
+      ["We will publish the findings", "The final statement said the findings would be published after all parties respond."]
+    ]
+    topic_tags = %w[Summit President Security Region Diplomacy]
+    sections = quote_sections.map do |heading, paragraph|
+      "<section><h3>#{heading}</h3><p>#{paragraph}</p></section>"
+    end.join
+    tags = topic_tags.each_with_index.map do |tag, index|
+      %(<a href="/topics/topic-#{index + 1}">#{tag}</a>)
+    end.join(" ")
+    html = <<~HTML
+      <html><head><title>#{title}</title></head><body><main><article>
+        <header><h1>#{title}</h1><h2>#{subtitle}</h2></header>
+        <p>#{lead} <a href="/reports/summit-record">Summit record</a>.</p>
+        #{sections}
+        <section class="topic-taxonomy"><p>Topics:</p>#{tags}</section>
+      </article></main></body></html>
+    HTML
+    tag_urls = 5.times.map { |index| "/topics/topic-#{index + 1}" }
+
+    with_url_page("https://independent.example/reports/summit", html) do |page|
+      payload = extract(page)
+      markdown = payload.fetch("markdown")
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["contentFormat"]).to be_nil
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(markdown).to include(title, subtitle, lead, *quote_sections.flatten, *topic_tags)
+      expect(payload.fetch("html")).to include(*tag_urls)
+      expect(markdown.index(quote_sections.first.first)).to be < markdown.index(quote_sections.last.first)
+    end
+  end
+
+  it "keeps linked short records as a newsletter on an unknown host" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <h2>Independent report #{index}</h2>
+        <p>Brief summary #{index} describes a separate public development. <a href="/stories/#{index}">Read the full report</a>.</p>
+      RECORD
+    end
+    html = <<~HTML
+      <html><head><title>Independent reports</title></head><body><main><article>
+        <h1>Independent reports</h1>#{records.join}
+      </article></main></body></html>
+    HTML
+    headlines = 6.times.map { |index| "Independent report #{index + 1}" }
+    summaries = 6.times.map { |index| "Brief summary #{index + 1} describes a separate public development." }
+    story_urls = 6.times.map { |index| "/stories/#{index + 1}" }
+
+    with_url_page("https://independent.example/coverage/reports", html) do |page|
+      payload = extract(page)
+      markdown = payload.fetch("markdown")
+
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(markdown).to include(*headlines, *summaries, "Read the full report")
+      expect(payload.fetch("html")).to include(*story_urls)
+    end
+  end
+
+  it "does not count taxonomy links split across paragraphs as linked newsletter records" do
+    sections = (1..5).map do |index|
+      "<section><h3>Conference statement #{index}</h3><p>The speaker described the next step in the negotiations.</p></section>"
+    end.join
+    tags = (1..5).map do |index|
+      %(<p><a rel="tag" href="/topics/topic-#{index}">Topic #{index}</a></p>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Conference statement</title></head><body><main><article>
+        <h1>Conference statement</h1><h2>What officials said</h2>
+        <p>The report covers one press conference and links to <a href="/reports/briefing">the briefing</a>.</p>
+        #{sections}<section class="topic-taxonomy"><h3>Topics</h3>#{tags}</section>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://independent.example/reports/conference", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to be_nil
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload.fetch("markdown")).to include("Conference statement", "Topic 1", "Topic 5")
+      expect(payload.fetch("html")).to include(*5.times.map { |index| "/topics/topic-#{index + 1}" })
+    end
+  end
+
+  it "counts a repeated destination at most once across short headed sections" do
+    sections = (1..5).map do |index|
+      <<~SECTION
+        <h3>Conference statement #{index}</h3>
+        <p>The speaker described the next step in the negotiations. <a href="/reports/shared">Read the same report</a>.</p>
+      SECTION
+    end.join
+    html = <<~HTML
+      <html><head><title>Conference statement</title></head><body><main><article>
+        <h1>Conference statement</h1><h2>What officials said</h2>
+        <p>The report covers one press conference and links to <a href="/reports/shared">the briefing</a>.</p>
+        #{sections}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://independent.example/reports/conference", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to be_nil
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload.fetch("markdown")).to include(*5.times.map { |index| "Conference statement #{index + 1}" })
+      expect(payload.fetch("html")).to include("/reports/shared")
+    end
+  end
+
+  it "does not count fragment or topic navigation as independent linked records" do
+    sections = (1..5).map do |index|
+      <<~SECTION
+        <section id="section-#{index}">
+          <h3>Conference statement #{index}</h3>
+          <p>The speaker described the next step in the negotiations. <a href="#section-#{index}">Jump to this section</a>.</p>
+        </section>
+      SECTION
+    end.join
+    navigation = (1..5).map do |index|
+      %(<a href="/topics/topic-#{index}">Topic #{index}</a>)
+    end.join("\n")
+    html = <<~HTML
+      <html><head><title>Conference statement</title></head><body><main><article>
+        <h1>Conference statement</h1><h2>What officials said</h2>
+        <p>The report covers one press conference and gives readers a topic index.</p>
+        #{sections}<nav aria-label="Topics">#{navigation}</nav>
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://independent.example/reports/conference", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to be_nil
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload.fetch("markdown")).to include(*5.times.map { |index| "Conference statement #{index + 1}" })
+      expect(payload.fetch("html")).to include(*5.times.map { |index| "/topics/topic-#{index + 1}" })
+    end
+  end
+
+  it "keeps short linked records as newsletter when their destinations are long" do
+    long_path = "detail-" * 28
+    urls = (1..6).map { |index| "/stories/#{index}/#{long_path}" }
+    records = urls.each_with_index.map do |url, index|
+      <<~RECORD
+        <h2>Independent report #{index + 1}</h2>
+        <p>Brief summary #{index + 1} describes a separate public development. <a href="#{url}">Read the full report</a>.</p>
+      RECORD
+    end
+    html = <<~HTML
+      <html><head><title>Independent reports</title></head><body><main><article>
+        <h1>Independent reports</h1>#{records.join}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://independent.example/coverage/reports", html) do |page|
+      payload = extract(page)
+
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(payload.fetch("markdown")).to include("Brief summary 1", "Brief summary 6")
+      expect(payload.fetch("html")).to include(*urls)
+    end
+  end
+
   it "does not flag a regular article with a few headings as newsletter" do
     paragraphs = 6.times.map do |i|
       <<~SECTION

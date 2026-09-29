@@ -254,14 +254,16 @@
           if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
           currentBlockLen = 0;
         } else {
-          currentBlockLen += line.length;
+          currentBlockLen += newsletterVisibleMarkdownLength(line);
         }
       }
       if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
 
       // Newsletter/digest: many headings, many links, and most content blocks are short
-      shortBlocks = Math.max(0, shortBlocks - newsletterCommerceCardCount(focalArticleRoot));
-      if (mdHeadings >= 4 && mdLinks.length >= 5 && shortBlocks >= 4 && shortBlocks >= mdHeadings * 0.6) {
+      var commerceCardCount = newsletterCommerceCardCount(focalArticleRoot);
+      shortBlocks = Math.max(0, shortBlocks - commerceCardCount);
+      var linkedSections = Math.max(0, newsletterIndependentLinkedSectionCount(guideRoot) - commerceCardCount);
+      if (mdHeadings >= 4 && mdLinks.length >= 5 && linkedSections >= 4 && shortBlocks >= 4 && shortBlocks >= mdHeadings * 0.6) {
         return "newsletter";
       }
 
