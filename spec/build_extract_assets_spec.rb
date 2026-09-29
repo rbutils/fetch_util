@@ -1567,6 +1567,13 @@ RSpec.describe "extract asset bundle" do
     expect(manifest).not_to include(csdn_path)
     expect(File).not_to exist(File.join(source_root, csdn_path))
     expect(source_files.any? { |path| File.read(path).match?(/csdnContent|registerCsdnProfiles/) }).to be(false)
+    sky_path = "profiles/news/middle_east/skynewsarabia.js"
+    expect(manifest).not_to include(sky_path)
+    expect(File).not_to exist(File.join(source_root, sky_path))
+    retired_sky_pattern = Regexp.union(
+      %w[skyNewsArabiaArticleContent skyNewsArabiaArticlePage skyNewsArabiaArticleBody skyNewsArabiaPublishedTime]
+    )
+    expect(source_files.any? { |path| File.read(path).match?(retired_sky_pattern) }).to be(false)
     combined_symbols = source_files.sum do |path|
       File.read(path).scan(/(?:polishPortalDescriptors|polishPortalDescriptor|registerPolishPortalProfiles)/).length
     end
@@ -1681,7 +1688,6 @@ RSpec.describe "extract asset bundle" do
       systems/cms/joomla.js
       systems/cms/wordpress.js
       profiles/news/asia/central/azerbaijan/oxu.js
-      profiles/news/middle_east/skynewsarabia.js
       profiles/news/middle_east/turkey/milliyet_live.js
       profiles/news/europe/southern/spain/unidad_editorial.js
       profiles/news/europe/western/germany/faz.js
