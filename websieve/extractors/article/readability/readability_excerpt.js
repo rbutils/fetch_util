@@ -236,7 +236,7 @@
     return /\p{Sentence_Terminal}(?:["'’”)\]]*)$/u.test(excerpt) && /^\s/u.test(value.slice(excerpt.length));
   }
 
-  function readabilityArticleExcerpt(article, metadata, marker) {
+  function readabilityArticleExcerpt(article, metadata, marker, readerBodyEvidence) {
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt) return (article && article.excerpt) || null;
 
@@ -259,6 +259,8 @@
 
     var template = readabilityArticleTemplate(article);
     if (!template) return article.excerpt;
+    var ownedBylineExcerpt = readabilityOwnedBylineExcerptValue(article, metadata, template, marker, readerBodyEvidence);
+    if (ownedBylineExcerpt !== null) return ownedBylineExcerpt;
     var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
     if (compactBodyExcerpt) return compactBodyExcerpt;
     if (textCharacters.length < 400) return article.excerpt;

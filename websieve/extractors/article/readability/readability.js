@@ -47,7 +47,7 @@
       var readerBodyEvidence = sourceOwnedReaderSelectedParagraphs(
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
       );
-      var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker);
+      var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = readerSourceOwnedRestoreConflictingCredits(
         article, metadata, sourceClones, sourceIdentities, excerptMarker,
