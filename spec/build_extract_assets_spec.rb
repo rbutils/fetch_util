@@ -354,6 +354,7 @@ RSpec.describe "extract asset bundle" do
       "core/docs_cleanup/article_title_provenance.js",
       "core/docs_cleanup/declared_article_titles.js",
       "core/docs_cleanup/titles.js",
+      "core/docs_cleanup/linked_article_title_markdown.js",
       "core/docs_cleanup/article_title_finalization.js",
       finalization_path
     )

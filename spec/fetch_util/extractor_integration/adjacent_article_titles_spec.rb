@@ -94,7 +94,7 @@ RSpec.describe 'Adjacent source-owned article headings' do
       JS
 
       expect(payload.fetch('title')).to eq(headline)
-      expect(payload.fetch('markdown')).to start_with("# #{headline}\n")
+      expect(payload.fetch('markdown')).to start_with("# [#{headline}](https://journal.example/reports/funding-records)\n")
       expect(payload.fetch('markdown')).not_to include("## [#{headline}]")
       expect(payload.fetch('markdown')).to include('The announced programme also covers maintenance')
     end
@@ -187,6 +187,17 @@ RSpec.describe 'Adjacent source-owned article headings' do
       source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
       page.add_script_tag(content: source)
       selected = "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1><p>#{first}</p><p>#{second}</p></article>"
+      expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+    end
+
+    unlinked_source = source_article.gsub("<a href='/reports/funding-records'>#{headline}</a>", headline)
+    with_url_page('https://journal.example/reports/funding-records', unlinked_source) do |page|
+      source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join('websieve', entry))
+      end.join("\n")
+      source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
+      page.add_script_tag(content: source)
+      selected = "<article><h1>#{headline}</h1><p>#{first}</p><p>#{second}</p></article>"
       expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
     end
   end

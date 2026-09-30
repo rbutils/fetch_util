@@ -171,6 +171,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   }
   markdown = cleanupMarkdownNoise(content.sourceOwnedTitleIdentityUnproven === true && !sourceOwnedTitleIdentityResolved ?
     preserveUnprovenSourceTitleExtension(markdown, content.sourceOwnedHeadingTitle, originalPrimaryTitle) : markdown);
+  if ((content.contentType === "article" || content.contentType === "medical") &&
+      content.sourceOwnedLiveblog !== true && !content.docsLike && !content.legalProvision) {
+    markdown = articleSelfLinkedHeadlineMarkdown(markdown, cleanedHtml, primaryTitle);
+  }
   if (/^(article|podcast)$/i.test(content.contentType || "") && !/\btranscript\b/i.test(markdown)) {
     var transcriptCue = podcastTranscriptMarkdown(document.body || document);
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
