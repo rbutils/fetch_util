@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Score complete list owners before applying repeated-record coverage checks, retaining minority sections, controlled continuations, and source-owned metadata.
 - Preserve the optional-metadata contract when resolving source-owned fallback headers, without changing explicitly supplied attribution.
 - Replace an excerpt proved to be the article's byline with a complete owned summary or first prose paragraph, preserving short leads and rejecting foreign or ambiguous text.
 - Restore removed, source-owned Reader credits in their original order without changing native author selection or dropping already retained coauthors.

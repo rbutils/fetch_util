@@ -245,14 +245,12 @@
         sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {
         indexListCandidate = repeatedCollection ? listContent(metadata, {
-           sourceOwner: repeatedCollection.renderOwner,
            repeatedRecordCollection: repeatedCollection
         }) : listContent(metadata);
       } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection || repeatedCollection) &&
           (likelyListPath() || repeatedCollection || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
           (!strongArticle || sourceOwnedIndex || repeatedCollection)) {
         indexListCandidate = repeatedCollection ? listContent(metadata, {
-           sourceOwner: repeatedCollection.renderOwner,
            repeatedRecordCollection: repeatedCollection
         }) :
           (sourceOwnedIndex || listContent(metadata));
