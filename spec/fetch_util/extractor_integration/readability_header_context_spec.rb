@@ -169,4 +169,61 @@ RSpec.describe 'Source-owned Reader article headers' do
       end
     end
   end
+
+  it 'restores a uniquely owned media header without duplicating selected media or its caption' do
+    header = '<div class="post-header"><h1>Restoring the river</h1><p class="author">By River Desk</p>' \
+             '<figure><img src="/river.jpg" alt="Restored river"><figcaption>The restored river after the project.</figcaption></figure></div>'
+    page_html = reader_header_page.sub(%r{<article><header>.*?</header>}m, "<article>#{header}")
+    with_url_page('https://reports.example/river', page_html) do |page|
+      reader_header_probe(page)
+      result = page.evaluate("window.__readerHeader(#{JSON.generate(reader_header_candidate)})")
+      expect(result.fetch('readerMode')).to be(true)
+      expect(result.fetch('html')).to include('<h1>Restoring the river</h1>', 'By River Desk',
+                                              'The restored river after the project.')
+      expect(result.fetch('html').scan('river.jpg').length).to eq(1)
+      expect(result.fetch('html').scan('The restored river after the project.').length).to eq(1)
+      expect(result.fetch('html').index('<h1>')).to be < result.fetch('html').index('The river restoration')
+
+      retained_media = '<figure><img src="https://reports.example/river.jpg" alt="Restored river">' \
+                       '<figcaption>The restored river after the project.</figcaption></figure>'
+      selected = reader_header_candidate("#{retained_media}#{reader_header_body}")
+      retained = page.evaluate("window.__readerHeader(#{JSON.generate(selected)})")
+      expect(retained.fetch('html').scan('river.jpg').length).to eq(1)
+      expect(retained.fetch('html').scan('The restored river after the project.').length).to eq(1)
+      selected_figure_start = retained.fetch('html').index('<figure>')
+      selected_image_position = retained.fetch('html').index('<img', selected_figure_start)
+      selected_caption_position = retained.fetch('html').index('<figcaption>', selected_figure_start)
+      expect(selected_image_position).to be < selected_caption_position
+      expect(retained.fetch('html').index('</figure>', selected_caption_position)).to be > selected_caption_position
+
+      selected_image = reader_header_candidate("<img src='https://reports.example/river.jpg' alt='Restored river'>#{reader_header_body}")
+      retained_image = page.evaluate("window.__readerHeader(#{JSON.generate(selected_image)})")
+      expect(retained_image).to eq(selected_image.transform_keys(&:to_s))
+
+      repeated_image = reader_header_candidate("#{retained_media}<img src='https://reports.example/river.jpg' alt='Restored river'>#{reader_header_body}")
+      expect(page.evaluate("window.__readerHeader(#{JSON.generate(repeated_image)})")).to eq(repeated_image.transform_keys(&:to_s))
+
+      partial_figure = reader_header_candidate("<figure><img src='https://reports.example/river.jpg' alt='Restored river'></figure>#{reader_header_body}")
+      expect(page.evaluate("window.__readerHeader(#{JSON.generate(partial_figure)})")).to eq(partial_figure.transform_keys(&:to_s))
+    end
+  end
+
+  it 'rejects media headers with ambiguous ownership or foreign selected prose' do
+    header = '<div class="post-header"><h1>Restoring the river</h1>' \
+             '<figure><img src="/river.jpg" alt="Restored river"><figcaption>The restored river.</figcaption></figure></div>'
+    html = reader_header_page.sub(%r{<article><header>.*?</header>}m, "<article>#{header}")
+    [
+      [html, "<p>This belongs to another report and is unrelated evidence.</p>#{reader_header_body}"],
+      [html.sub('</body>', "<article><h1>Restoring the river</h1>#{reader_header_body}</article></body>"), reader_header_body],
+      [html.sub('<h1>Restoring the river</h1>', '<h1>A separate publication</h1>'), reader_header_body],
+      [html, '<figure><img src="https://reports.example/river.jpg" alt="Restored river"></figure>'],
+      [html.sub('</figure></div>', '</figure><img src="/unowned.jpg" alt="Unowned image"></div>'), reader_header_body]
+    ].each do |source, selected|
+      with_url_page('https://reports.example/river', source) do |page|
+        reader_header_probe(page)
+        candidate = reader_header_candidate(selected)
+        expect(page.evaluate("window.__readerHeader(#{JSON.generate(candidate)})")).to eq(candidate.transform_keys(&:to_s))
+      end
+    end
+  end
 end

@@ -22,7 +22,10 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload.fetch('excerpt')).to start_with('A Fifa rejeitou o questionamento da Belgica')
       expect(payload.fetch('excerpt')).to end_with('contra os Estados Unidos.')
       expect(payload.fetch('html')).to include('<h1>Fifa rejeita pedido da Belgica',
-                                               'O presidente da Fifa, Gianni Infantino')
+                                               'O presidente da Fifa, Gianni Infantino',
+                                               'deve explicacoes sobre o caso Balogun',
+                                               'A Federacao Belga confirmou o recebimento da decisao',
+                                               'afirmou ter discutido com Donald Trump')
       [payload.fetch('markdown'), payload.fetch('html')].each do |rendered|
         expect(rendered).not_to include('Compartilhe essa materia', 'LEIA MAIS', 'EM ALTA',
                                         'TUDO SOBRE A COPA', 'Publicidade')
