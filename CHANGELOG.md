@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Select complete, source-owned prose after an explicit photo credit while retaining the credit, media, metadata, and legacy dated-caption behavior.
 - Preserve substantive visible editorial paragraphs inside ad-labelled containers when promotional text and media do not establish an advertisement.
 - Preserve visible, source-owned card headers and their destinations without promoting hidden title or record evidence, or headers inside explicit navigation.
 - Preserve a source-owned headline's actual self-link in article Markdown while rejecting unrelated, hidden, or invented heading destinations.

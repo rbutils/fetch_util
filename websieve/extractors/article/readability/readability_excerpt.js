@@ -252,7 +252,7 @@
     }
     if (readabilityCaptionCreditCandidate(excerpt)) {
       var captionTemplate = readabilityArticleTemplate(article);
-      var bodyLead = captionTemplate && readabilityCaptionCreditExcerpt(captionTemplate, marker, excerpt);
+      var bodyLead = captionTemplate && readabilityCaptionCreditExcerpt(captionTemplate, marker, excerpt, readerBodyEvidence);
       if (bodyLead) return bodyLead;
     }
     if (excerptCharacters.length >= 80) return article.excerpt;
