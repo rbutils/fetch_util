@@ -123,6 +123,32 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
     end
   end
 
+  it 'keeps distinct author and prose context for repeated same-destination occurrences' do
+    html = <<~HTML
+      <html><head><title>Recurring record archive</title></head><body><main><h1>Recurring record archive</h1>
+        <section>
+          <h2>Spring records</h2>
+          <article><h3><a href="/records/recurring">Recurring archive record</a></h3><time datetime="2026-03-01"></time><p>Reporter Alice: the spring edition records the original public filing and its first set of dated amendments.</p></article>
+        </section>
+        <section>
+          <h2>Autumn records</h2>
+          <article><h3><a href="/records/recurring">Recurring archive record</a></h3><time datetime="2026-09-01"></time><p>Reporter Bob: the autumn edition documents the subsequent review and the separate findings published later.</p></article>
+        </section>
+        #{same_root_links(3..8)}
+      </main></body></html>
+    HTML
+
+    with_url_page('https://coverage.example/recurring', html) do |page|
+      payload = extract_payload(page)
+      markdown = payload['markdown']
+
+      expect(markdown.scan('](https://coverage.example/records/recurring)').length).to eq(2)
+      expect(markdown).to include('Reporter Alice:', 'Reporter Bob:', '2026-03-01', '2026-09-01')
+      expect(markdown.index('Reporter Alice:')).to be < markdown.index('Reporter Bob:')
+      expect(markdown.index('Reporter Bob:')).to be < markdown.index('/records/3')
+    end
+  end
+
   it 'rejects additions when an unowned shared-prose wrapper owns half of them' do
     shared_links = (3..4).map do |number|
       "<h3><a href=\"/records/#{number}\">Complete archive record #{number}</a></h3>"

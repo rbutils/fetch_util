@@ -99,6 +99,56 @@ RSpec.describe 'FetchUtil repeated record collection ownership' do
     end
   end
 
+  it 'keeps a focal article with one substantial visible paragraph ahead of related records' do
+    focal_paragraph = [
+      'Focal report: Investigators inspected the signed public filings and verified their sequence against the archive.',
+      'The chronology identifies three separate revisions, each with a named author and published date.',
+      'Residents described how delayed notices changed their application deadlines, while the agency confirmed an independent review remains underway.',
+      'The report traces those verified events from the original filing through the review now requested by affected residents.'
+    ].join(' ')
+    article = <<~HTML
+      <article itemprop="articleBody">
+        <h1>Focal report on the public record</h1>
+        <p>#{focal_paragraph}</p>
+        <p>Editors will publish a later update if the record changes.</p>
+      </article>
+    HTML
+    related = story_cards(4, prefix: "related")
+    html = <<~HTML
+      <html><head><title>Focal report on the public record</title></head><body><main>
+        #{article}
+        <section aria-label="Related records">#{related}</section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://unknown.example/articles/focal-report', html, reader_mode: false) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Focal report on the public record')
+      expect(payload['markdown'].gsub(/\s+/, ' ')).to include(focal_paragraph.gsub(/\s+/, ' '))
+    end
+  end
+
+  it 'keeps one long index introduction while admitting its repeated records' do
+    introduction = [
+      'Catalogue introduction: This archive collects complete public records and explains how each edition is organized.',
+      'Editors describe the source of every entry, identify revisions that affect interpretation, and note where readers can inspect the underlying files.',
+      'The index also preserves older editions so researchers can compare how the public record changed over time.'
+    ].join(' ')
+    html = <<~HTML
+      <html><head><title>Weekly editions</title></head><body><main>
+        <h1>Weekly editions</h1><p>#{introduction}</p>
+        <section id="collection">#{story_cards(4)}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://unknown.example/weekly.htm', html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown']).to include('Weekly issue 04')
+      expect(payload['markdown'].gsub(/\s+/, ' ')).to include(introduction.gsub(/\s+/, ' '))
+    end
+  end
+
   it 'does not combine competing collections or ambiguous multi-destination cards' do
     competing = <<~HTML
       <section aria-label="Regional reports">#{story_cards(4, prefix: "regional")}</section>

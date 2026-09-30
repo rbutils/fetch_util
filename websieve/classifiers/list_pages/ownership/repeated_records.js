@@ -1,12 +1,13 @@
-  function repeatedRecordAssessmentForContent(content, focalArticlePredicate) {
-    if (!content || content.hostAware || content.docsLike || focalArticlePredicate(content) ||
-        articleRouteFocalContent(content)) return null;
-    var collection = repeatedRecordCollectionPage();
+  function repeatedRecordAssessmentForContent(content, selectedFocalArticleOwner) {
+    if (!content || content.hostAware || content.docsLike) return null;
+    var computedFocalArticleOwner = articleRouteFocalContent(content, true);
+    var focalArticleOwner = computedFocalArticleOwner || selectedFocalArticleOwner;
+    var collection = repeatedRecordCollectionPage(focalArticleOwner);
     if (collection && collection.articleOwnershipConflict) content.repeatedRecordArticleOwnershipConflict = true;
     return collection;
   }
 
-  function repeatedRecordCollectionPage() {
+  function repeatedRecordCollectionPage(focalArticleOwner) {
     if (!document.body) return null;
 
     var visibleMainRegions = Array.prototype.filter.call(document.querySelectorAll("main, [role='main']"), function(main) {
@@ -102,10 +103,6 @@
         return link.key === primaryLinks[0].key;
       });
       if (!titleLink) return null;
-      var narrative = linklessText(node);
-      var sentenceEndings = narrative.match(/[.!?](?:\s|$)/g) || [];
-      if (narrative.length >= 180 && (sentenceEndings.length >= 2 || narrative.length >= 300)) return null;
-
       var recordClass = Array.prototype.some.call(node.classList || [], function(name) {
         return /(?:^|[-_])(?:card|item|story|teaser|news|headline|result)(?:$|[-_])/i.test(name);
       });
@@ -150,6 +147,12 @@
       return texts.size >= 3 && characters >= 600;
     }
 
+    // Only a live Article owner returned after the route predicate passed blocks a separate collection.
+    // A page-level introduction or neighboring record is not focal ownership evidence.
+    function focalArticleOutsideCollection(owner) {
+      return !!focalArticleOwner && !owner.contains(focalArticleOwner);
+    }
+
     var owners = [];
     candidateOwners.forEach(function(owner) {
       if (primaryMain && !primaryMain.contains(owner)) return;
@@ -180,7 +183,7 @@
         owner: owner,
         records: records,
         primaryMain: primaryMain,
-        articleOwnershipConflict: !uniqueRecords || substantialProseOutside(owner)
+        articleOwnershipConflict: !uniqueRecords || substantialProseOutside(owner) || focalArticleOutsideCollection(owner)
       });
     });
 
@@ -228,3 +231,5 @@
       return true;
     });
   }
+
+  // These route-local source proofs do not alter the live DOM or persist across extraction.

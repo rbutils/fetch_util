@@ -86,7 +86,7 @@
     return /(?:^|\/)(?:a-[a-z0-9]+|20\d{2}|\d{4}\/\d{2}\/\d{2}|article|articles|blog|blogs|column|columns|archive|archives|news\/[\w-]+|entry|entries|post|posts|view\/[A-Z]{3}\d{15,}|\d{5,}[\w-]*\.html?)(?:\/|\b)/i.test(path);
   }
 
-  function articleRouteFocalContent(content) {
+  function articleRouteFocalContent(content, returnSourceOwner) {
     if (!document.body) return false;
     var homepageLanding = homepageLandingOwnership();
     var semanticCandidates = Array.prototype.filter.call(document.querySelectorAll("[itemprop~='articleBody' i], article[role~='main' i]"), function(node) {
@@ -108,13 +108,38 @@
       var visible = visibilityPrunedClone(article, document);
       return !!(normalizeText(visible.textContent || "") || visible.querySelector("img[src], picture, video, audio, svg"));
     });
-    var mainFocal = topLevelMainArticles[0] || null;
+    var pageArticleTitle = normalizeText((content && content.title) || document.title || "");
+    var matchingTitleArticles = topLevelMainArticles.filter(function(article) {
+      return Array.prototype.some.call(article.querySelectorAll("h1, [itemprop~='headline' i]"), function(heading) {
+        return !elementSubtreeHidden(heading) && heading.closest("article") === article &&
+          normalizeText(heading.textContent || "") === pageArticleTitle;
+      });
+    });
+    var exactTitleFocal = matchingTitleArticles.length === 1 ? matchingTitleArticles[0] : null;
+    var mainFocal = exactTitleFocal || topLevelMainArticles[0] || null;
     if (semanticAmbiguous && !headlineFocal) return false;
-    var focal = (homepageLanding && homepageLanding.main) || headlineFocal || semanticFocal || classFocal || mainFocal;
+    var focal = (homepageLanding && homepageLanding.main) || headlineFocal || semanticFocal || classFocal || exactTitleFocal || mainFocal;
     if (!articleLikePath() && !focal) return false;
-    if (focal === classFocal && !articleLikePath() && focal !== headlineFocal) return false;
+    if (focal === classFocal && !articleLikePath() && focal !== headlineFocal && exactTitleFocal !== focal) return false;
     if (content && content.contentType !== "article" && content.contentType !== "medical" &&
         !(content.contentType === "list" && (focal === headlineFocal || (homepageLanding && focal === homepageLanding.main)))) return false;
+
+    var externalPageTitleHeading = null;
+    if (focal && focal === classFocal) {
+      var pageTitleHeadings = Array.prototype.filter.call(document.querySelectorAll("h1, [role='heading'][aria-level='1']"), function(node) {
+        return !elementSubtreeHidden(node) && normalizeText(node.textContent || "") === pageArticleTitle;
+      });
+      if (pageTitleHeadings.length === 1 && !pageTitleHeadings[0].closest("article") &&
+          pageTitleHeadings[0].parentElement === focal.parentElement) {
+        var intervening = true;
+        var sibling = pageTitleHeadings[0].nextElementSibling;
+        while (sibling && sibling !== focal) {
+          if (!sibling.matches("time")) intervening = false;
+          sibling = sibling.nextElementSibling;
+        }
+        if (sibling === focal && intervening) externalPageTitleHeading = pageTitleHeadings[0];
+      }
+    }
 
     var focalCloneMap = new WeakMap();
     var root = focal ? visibilityPrunedClone(focal, document, focalCloneMap) : document.createElement("div");
@@ -127,6 +152,7 @@
         return !elementSubtreeHidden(node);
       }));
     var ownedTitle = heading && normalizeText(heading.textContent || "") ||
+      (externalPageTitleHeading && pageArticleTitle) ||
       (focal === headlineFocal && headlineOwnership && headlineOwnership.title);
     var clonedLandingBody = homepageLanding && focal === homepageLanding.main
       ? focalCloneMap.get(homepageLanding.body)
@@ -158,7 +184,7 @@
     var effectiveLinkDensity = paragraphlessBody ? paragraphlessLinkText / rootText.length : linkDensity;
     var requiresExclusiveMainOwnership = !!focal && (focal === classFocal || focal === mainFocal ||
       (homepageLanding && focal === homepageLanding.main)) && focal !== headlineFocal;
-    var ownsMainBody = topLevelMainArticles.length === 1 && topLevelMainArticles[0] === focal;
+    var ownsMainBody = (topLevelMainArticles.length === 1 && topLevelMainArticles[0] === focal) || exactTitleFocal === focal;
     var bodyEvidence = homepageLanding && homepageLanding.main === focal
       ? text.length >= 280 && !semanticAmbiguous
       : (requiresExclusiveMainOwnership && !ownsMainBody
@@ -182,8 +208,11 @@
       });
       if (linkedRecordNodes.length >= 3) return false;
     }
-    return !!ownedTitle && bodyEvidence && effectiveLinkDensity < 0.45 &&
+    var ownsFocalArticle = !!ownedTitle && bodyEvidence && effectiveLinkDensity < 0.45 &&
       (!!focal || !!content) && (!!bylineOrTime || (content && (content.byline || content.publishedTime)) || !!focal);
+    if (!ownsFocalArticle) return false;
+    if (!returnSourceOwner) return true;
+    return focal && (!homepageLanding || focal !== homepageLanding.main) ? focal : null;
   }
 
   function articleEntryPath(path) {

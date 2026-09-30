@@ -5,8 +5,10 @@
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
       var focalArticleRoute = articleRouteFocalContent();
+      var focalArticleRouteOwner = focalArticleRoute ? articleRouteFocalContent(null, true) : null;
       var articleBodyCollection = independentArticleBodyCollection();
       var content;
+      var selectedFocalArticleOwner = null;
       var provisionalHomepageContent = null;
       var provisionalHomepageAlternative = null;
 
@@ -30,7 +32,7 @@
       function indexListCandidateAllowed(candidate) {
         return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
           !candidate.focalPermalinkContent &&
-          candidate.contentType !== "medical" && candidate.contentType !== "product" &&
+          candidate.contentType !== "medical" && candidate.contentType !== "press_release" && candidate.contentType !== "product" &&
           candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
           candidate.contentType !== "hotel" && candidate.contentType !== "event" &&
           !sportsTypedContent(candidate) && !candidate.hostAware && !candidate.docsLike &&
@@ -133,6 +135,7 @@
         content = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
       }
       if (provisionalHomepageContent) provisionalHomepageAlternative = content;
+      selectedFocalArticleOwner = articleRouteFocalContent(content, true) || focalArticleRouteOwner || null;
 
       var weatherLikeArticle = content &&
         content.contentType === "article" &&
@@ -198,7 +201,7 @@
 
        content = applyMedicalContentType(content, metadata);
 
-       var repeatedCollectionAssessment = repeatedRecordAssessmentForContent(content, cachedFocalArticleContent);
+        var repeatedCollectionAssessment = repeatedRecordAssessmentForContent(content, selectedFocalArticleOwner);
        var repeatedCollectionConflict = !!(repeatedCollectionAssessment &&
          repeatedCollectionAssessment.articleOwnershipConflict);
         var repeatedCollection = repeatedCollectionAssessment &&
