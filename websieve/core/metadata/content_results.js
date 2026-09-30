@@ -5,6 +5,16 @@ function contentDescriptionForResult(content, metadata) {
   return description === undefined || description === null ? null : description;
 }
 
+function inlineArticleMailtoAllowed(content) {
+  if (!content) return false;
+  var contentType = content.contentType || "article";
+  return contentType === "notice" || (contentType === "article" && !content.docsLike);
+}
+
+function inlineArticleMailtoMaySurviveUntilFinalType(content) {
+  return !!content && (content.contentType === "notice" || !content.docsLike);
+}
+
 function articleContentFromParts(parts) {
   var sections = [];
   var meta = [];

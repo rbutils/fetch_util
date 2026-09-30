@@ -3,10 +3,10 @@
 RSpec.describe 'FetchUtil public URL materialization' do
   include_context 'extractor integration helpers'
 
-  def profile_payload(markdown:, html: '<p>Visible profile content</p>', text_content: 'Visible profile content', overrides: {})
+  def profile_payload(markdown:, html: '<p>Visible profile content</p>', text_content: 'Visible profile content', overrides: {}, url: 'https://materialization.example/result')
     page_html = '<html><head><title>URL materialization</title></head><body><main>Visible page content</main></body></html>'
 
-    with_url_page('https://materialization.example/result', page_html) do |page|
+    with_url_page(url, page_html) do |page|
       inject_standalone_extractor(page, reader_mode: false)
       return page.evaluate(<<~JS)
         (function () {
@@ -67,6 +67,100 @@ RSpec.describe 'FetchUtil public URL materialization' do
     expect(payload['markdown']).not_to include('![Contact graphic](', '[contact-image]:')
     expect(payload['html']).to include('href="mailto:contact@example.gov"', 'alt="Contact graphic"')
     expect(payload['html']).not_to include('src="mailto:')
+  end
+
+  it 'keeps article-owned contact lists while sanitizing raw and opaque HTML contexts' do
+    markdown = '<p><a href="mailto:raw-markdown@example.test">Raw Markdown contact</a></p>' \
+      "\n\n[Inline contact](mailto:inline@example.test)"
+    html = '<ul><li><a href="mailto:list@example.test">List contact</a></li></ul>' \
+      '<dl><dt>Contact</dt><dd><a href="mailto:details@example.test">Details contact</a></dd></dl>' \
+      '<p><a href="mailto:paragraph@example.test">Paragraph contact</a></p>' \
+      '<template><a href="mailto:template@example.test">Template contact</a></template>' \
+      '<iframe srcdoc="<a href=&quot;mailto:frame@example.test&quot;>Frame contact</a>"></iframe>'
+    payload = profile_payload(
+      markdown: markdown,
+      html: html,
+      overrides: { contentType: 'article', hostAware: true }
+    )
+
+    expect(payload['markdown']).to include('Raw Markdown contact', '[Inline contact](mailto:inline@example.test)')
+    expect(payload['markdown']).not_to include('mailto:raw-markdown@example.test')
+    expect(payload['html']).to include(
+      'href="mailto:list@example.test"', 'href="mailto:details@example.test"',
+      'href="mailto:paragraph@example.test"', 'Template contact', 'Frame contact'
+    )
+    expect(payload['html']).not_to include('mailto:template@example.test', 'mailto:frame@example.test')
+  end
+
+  it 'keeps a contact destination when finalization promotes a list to an article' do
+    payload = profile_payload(
+      markdown: [
+        'A substantial detail page describes the subject, its history, and the information readers need to understand its record.',
+        '[Contact](mailto:detail@example.test)'
+      ].join("\n\n"),
+      html: '<p><a href="mailto:detail@example.test">Contact</a></p>',
+      overrides: { contentType: 'list', hostAware: true },
+      url: 'https://materialization.example/title/tt0111161/'
+    )
+
+    expect(payload['contentType']).to eq('article')
+    expect(payload['markdown']).to include('[Contact](mailto:detail@example.test)')
+    expect(payload['html']).to include('href="mailto:detail@example.test"')
+  end
+
+  it 'removes a contact destination when finalization relabels an article as a list' do
+    markdown = <<~MARKDOWN
+      # Search results
+
+      Results 1-3 of 3
+
+      ## [First linked result title](https://materialization.example/first)
+      ## [Second linked result title](https://materialization.example/second)
+      ## [Third linked result title](https://materialization.example/third)
+
+      [Contact](mailto:results@example.test)
+    MARKDOWN
+    payload = profile_payload(
+      markdown: markdown,
+      html: '<p><a href="mailto:results@example.test">Contact</a></p>',
+      overrides: { contentType: 'article', hostAware: true },
+      url: 'https://materialization.example/search?q=records'
+    )
+
+    expect(payload['contentType']).to eq('list')
+    expect(payload['markdown']).to include('Contact')
+    expect(payload['markdown']).not_to include('mailto:results@example.test')
+    expect(payload['html']).to include('Contact')
+    expect(payload['html']).not_to include('mailto:results@example.test')
+  end
+
+  it 'uses article as the effective final type when content type is absent' do
+    payload = profile_payload(
+      markdown: '[Contact](mailto:default@example.test)',
+      html: '<p><a href="mailto:default@example.test">Contact</a></p>',
+      overrides: { contentType: nil }
+    )
+
+    expect(payload['contentType']).to eq('article')
+    expect(payload['markdown']).to include('[Contact](mailto:default@example.test)')
+    expect(payload['html']).to include('href="mailto:default@example.test"')
+  end
+
+  it 'keeps the final content permission when materializing nested Markdown labels' do
+    markdown = '[Record [Contact](mailto:record@example.test)](https://materialization.example/record)'
+    article = profile_payload(markdown: markdown, overrides: { contentType: 'article' })
+    result_links = (1..3).map { |number| "## [Source-backed linked result #{number}](https://materialization.example/#{number})" }
+    search = profile_payload(
+      markdown: (["# Search results\n\nResults 1-3 of 3"] + result_links + [markdown]).join("\n\n"),
+      overrides: { contentType: 'article', hostAware: true },
+      url: 'https://materialization.example/search?q=records'
+    )
+
+    expect(article['contentType']).to eq('article')
+    expect(article['markdown']).to include('[Contact](mailto:record@example.test)')
+    expect(search['contentType']).to eq('list')
+    expect(search['markdown']).to include('Record Contact', 'https://materialization.example/record')
+    expect(search['markdown']).not_to include('mailto:')
   end
 
   it 'removes credential-bearing HTTP destinations while preserving visible labels' do

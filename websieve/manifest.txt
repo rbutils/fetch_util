@@ -16,6 +16,7 @@ extractors/lists/generic/sections/editorial_asides.js
 classifiers/list_pages/chrome.js
 classifiers/list_pages/link_groups.js
 markdown/lists/list_aliases.js
+markdown/lists/finalization.js
 markdown/lists/list_metadata.js
 markdown/lists/list_supplemental.js
 markdown/lists/lists.js

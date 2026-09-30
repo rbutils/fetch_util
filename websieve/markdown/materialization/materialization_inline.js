@@ -126,7 +126,7 @@ function markdownHtmlTagAt(markdown, position) {
   var element = template.content.firstElementChild;
   if (!element) return null;
 
-  materializeHttpAttributes(template.content);
+  materializeHttpAttributes(template.content, false, false);
   element = template.content.firstElementChild;
   if (!element) return { value: "", end: tagEnd + 1 };
   var serialized = element.outerHTML;

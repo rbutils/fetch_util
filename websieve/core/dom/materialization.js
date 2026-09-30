@@ -28,12 +28,12 @@
     });
   }
 
-  function materializeHttpAttributes(root, retainUnsafeLinks) {
+  function materializeHttpAttributes(root, retainUnsafeLinks, allowArticleMailto) {
     if (!root || !root.querySelectorAll) return root;
 
     var svgUrlAttributes = ["fill", "stroke", "filter", "mask", "clip-path", "cursor", "marker", "marker-start", "marker-mid", "marker-end"];
     root.querySelectorAll("template").forEach(function(el) {
-      materializeHttpAttributes(el.content, retainUnsafeLinks);
+      materializeHttpAttributes(el.content, retainUnsafeLinks, false);
     });
     var textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     var textNodes = [];
@@ -44,8 +44,9 @@
       node.data = credentialFreeHttpText(node.data);
     });
     root.querySelectorAll("[href]").forEach(function(el) {
+      var allowMailto = allowArticleMailto !== false && materializedTextAnchor(el);
       var href = el.tagName === "A" && el.namespaceURI === "http://www.w3.org/1999/xhtml" ?
-        materializedLinkUrl(el.getAttribute("href")) : materializedHttpUrl(el.getAttribute("href"));
+        materializedLinkUrl(el.getAttribute("href"), allowMailto) : materializedHttpUrl(el.getAttribute("href"));
       if (href) el.setAttribute("href", href);
       else if (!retainUnsafeLinks) el.removeAttribute("href");
     });
@@ -77,7 +78,7 @@
       el.remove();
     });
     root.querySelectorAll("iframe[srcdoc]").forEach(function(el) {
-      el.setAttribute("srcdoc", materializedHtml(el.getAttribute("srcdoc")));
+      el.setAttribute("srcdoc", materializedHtml(el.getAttribute("srcdoc"), false));
     });
     root.querySelectorAll("img").forEach(function(el) {
       var lazyAttributes = ["data-lazy-src", "data-src", "data-original", "data-lazy"];
@@ -108,6 +109,11 @@
       });
     });
     return root;
+  }
+
+  function materializedTextAnchor(element) {
+    if (!element || element.tagName !== "A" || !normalizeText(element.textContent)) return false;
+    return true;
   }
 
   function materializeHttpAttribute(element, attribute) {
@@ -172,12 +178,12 @@
     return candidates;
   }
 
-  function materializedHtml(html) {
+  function materializedHtml(html, allowArticleMailto) {
     if (typeof html !== "string") return html;
 
     var template = document.createElement("template");
     template.innerHTML = html;
     template.content.querySelectorAll("[data-fetchutil-public-preview-owned]").forEach(function(node) { node.removeAttribute("data-fetchutil-public-preview-owned"); });
-    materializeHttpAttributes(template.content);
+    materializeHttpAttributes(template.content, false, allowArticleMailto === true);
     return template.innerHTML;
   }

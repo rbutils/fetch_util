@@ -155,7 +155,9 @@ RSpec.describe 'Generic ownership of government notices' do
       'mailto:reader%7F@example.gov',
       'mailto:reader%C2%85@example.gov',
       'mailto:reader%0G@example.gov',
-      'mailto:reader%250D%250A@example.gov'
+      'mailto:reader%250D%250A@example.gov',
+      'mailto:reader@example.gov?subject=forged-header',
+      'mailto:reader@example.gov#forged-fragment'
     ]
     links = unsafe_destinations.each_with_index.map do |destination, index|
       %(<a href="#{destination}">unsafe recipient #{index}</a>)
@@ -171,6 +173,21 @@ RSpec.describe 'Generic ownership of government notices' do
         expect(payload['html']).not_to include(destination)
         expect(payload['markdown']).not_to include(destination)
       end
+    end
+  end
+
+  it 'preserves safe formal-notice contacts inside definition-list fields' do
+    html = fixture_contents(File.expand_path('../../fixtures/federal_register_notice_with_document_identity.html', __dir__))
+    html = html.sub(
+      '<p>Email <a class="email" href="mailto:contact@example.gov">contact@example.gov</a>;',
+      '<dl><dt>Contact details</dt><dd><a class="email" href="mailto:contact@example.gov">contact@example.gov</a></dd></dl>;'
+    )
+    url = 'https://example.org/documents/2026/07/09/2026-0001/fy-2026-innovative-coordinated-access'
+
+    extract_from_url(url, html) do |payload|
+      expect_content_type(payload, 'notice')
+      expect(payload['markdown']).to include('[contact@example.gov](mailto:contact@example.gov)')
+      expect(payload['html']).to include('<dd>', 'href="mailto:contact@example.gov"')
     end
   end
 

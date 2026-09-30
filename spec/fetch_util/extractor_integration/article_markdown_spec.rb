@@ -594,9 +594,11 @@ RSpec.describe 'FetchUtil extractor integration' do
         "![Safe diagram](https://example.test/safe-image_%28final%29.png)",
         "Styled text remains visible"
       )
-      expect(markdown).not_to include("javascript:", "mailto:", "ftp:", "data:image")
+      expect(markdown).to include("[Email action](mailto:editor@example.test)")
+      expect(markdown).not_to include("javascript:", "ftp:", "data:image")
       expect(materialized_html).to include("Script action", "Email action", "FTP download", "Unsafe diagram")
       expect(materialized_html).to include(
+        'href="mailto:editor@example.test"',
         'href="https://example.test/safe-reference_%28final%29"',
         'src="https://example.test/safe-image_%28final%29.png"',
         'src="https://example.test/safe-video.mp4"',
@@ -604,7 +606,7 @@ RSpec.describe 'FetchUtil extractor integration' do
         'poster="https://example.test/safe-poster.png"'
       )
       expect(materialized_html).not_to include(
-        "javascript:", "mailto:", "ftp:", "data:image", "zero-width", "zero-density", "data-lazy-src", "ping=", "xlink:href", "/articles/AAAA"
+        "javascript:", "ftp:", "data:image", "zero-width", "zero-density", "data-lazy-src", "ping=", "xlink:href", "/articles/AAAA"
       )
     end
   end

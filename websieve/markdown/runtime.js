@@ -1,7 +1,8 @@
   function contentBodyMarkdown(content) {
     var markdown = content.markdown;
-    if (content.focalPublicPreview && content.html) markdown = markdownFor(sanitizedHtml(content.html, true), true);
-    else if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html));
+    var allowArticleMailto = inlineArticleMailtoMaySurviveUntilFinalType(content);
+    if (content.focalPublicPreview && content.html) markdown = markdownFor(sanitizedHtml(content.html, true), true, allowArticleMailto);
+    else if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html), false, allowArticleMailto);
     return cleanupMarkdownNoise(markdown || content.textContent || "").trim();
   }
 
@@ -16,7 +17,7 @@
     return [heading, details, body].filter(Boolean).join("\n\n");
   }
 
-  function markdownFor(html, allowSerializedOwnedPublicPreviews) {
+  function markdownFor(html, allowSerializedOwnedPublicPreviews, allowArticleMailto) {
     if (typeof TurndownService !== "function") return html;
 
     var root = document.createElement("div");
@@ -28,7 +29,7 @@
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);
     separateAdjacentInlineLinks(root);
-    materializeHttpAttributes(root);
+    materializeHttpAttributes(root, false, allowArticleMailto !== false);
 
     var service = new TurndownService({
       headingStyle: "atx",

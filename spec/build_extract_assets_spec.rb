@@ -204,7 +204,7 @@ RSpec.describe "extract asset bundle" do
     families = [
       %w[markdown/code/code_helpers.js markdown/code/code_surfaces.js],
       %w[
-        markdown/lists/list_aliases.js markdown/lists/list_metadata.js
+        markdown/lists/list_aliases.js markdown/lists/finalization.js markdown/lists/list_metadata.js
         markdown/lists/list_supplemental.js markdown/lists/lists.js
       ],
       %w[
@@ -256,6 +256,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(aliases_path)).to be < manifest.index(list_path)
     expect(manifest.index(metadata_path)).to be < manifest.index(list_path)
     expect(manifest.index(supplemental_path)).to be < manifest.index(list_path)
+    expect_manifest_order(manifest, "markdown/lists/finalization.js", "boot/result_finalization.js")
     expect(supplemental_source).to include("function listClonedCardFields", "function listSupplementalDetail")
     list_definitions = Dir[File.join(source_root, "**", "*.js")].sum do |path|
       File.read(path).scan(/(?:function\s+listMarkdown\s*\(|var\s+listMarkdown\s*=\s*function\s*\()/).length
@@ -1302,6 +1303,7 @@ RSpec.describe "extract asset bundle" do
       ], "classifiers/list_pages/chrome.js"],
       ["classifiers/list_pages/link_groups.js", %w[
         markdown/lists/list_aliases.js
+        markdown/lists/finalization.js
         markdown/lists/list_metadata.js
         markdown/lists/list_supplemental.js
         markdown/lists/lists.js

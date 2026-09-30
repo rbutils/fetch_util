@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Apply contact-link permissions after final content classification, retaining safe article and notice contacts while keeping list, documentation, opaque HTML, and media destinations HTTP-only.
 - Exclude explicitly identified advertisement owners from repeated-list evidence while preserving ordinary editorial cards.
 - Score complete list owners before applying repeated-record coverage checks, retaining minority sections, controlled continuations, and source-owned metadata.
 - Preserve the optional-metadata contract when resolving source-owned fallback headers, without changing explicitly supplied attribution.

@@ -1,4 +1,4 @@
-function materializedMarkdown(markdown) {
+function materializedMarkdown(markdown, allowArticleMailto) {
   var input = String(markdown || "").replace(/\r\n?/g, "\n");
   var output = "";
   var position = 0;
@@ -73,8 +73,8 @@ function materializedMarkdown(markdown) {
 
     var link = inlineMarkdownLinkAt(input, position);
     if (link) {
-      var label = materializedMarkdown(link.label);
-      var url = link.image ? materializedHttpUrl(link.url) : materializedLinkUrl(link.url);
+      var label = materializedMarkdown(link.label, allowArticleMailto);
+      var url = link.image ? materializedHttpUrl(link.url) : materializedLinkUrl(link.url, allowArticleMailto !== false);
       output += url ? (link.image ? "!" : "") + "[" + label + "](" + url + link.suffix + ")" : label;
       position = link.end;
       continue;

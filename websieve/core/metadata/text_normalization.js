@@ -40,9 +40,10 @@ function materializedHttpUrl(value) {
   }
 }
 
-function materializedLinkUrl(value) {
+function materializedLinkUrl(value, allowArticleMailto) {
   var httpUrl = materializedHttpUrl(value);
   if (httpUrl) return httpUrl;
+  if (!allowArticleMailto) return null;
 
   var raw = String(value || "");
   if (raw !== raw.trim() || /[\u0000-\u001f\u007f-\u009f]/.test(raw)) return null;

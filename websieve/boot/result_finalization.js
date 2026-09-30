@@ -36,37 +36,6 @@ function finalizationWarnings(content, metadata, markdown, pageText, signals, pr
   return warnings;
 }
 
-function deferredListFinalizationMarkdown(content, metadata, markdown) {
-  var listLikeContent = content.contentType === "list" ||
-    (content.contentType === "social" && content.socialKind === "feed");
-  var listExtraction = content.listExtraction;
-  var sourceTableMarkdown = listExtraction && listExtraction.sourceTableMarkdown;
-  if (listLikeContent && content.sectionMarkdownWithDescription && !sourceTableMarkdown) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
-    content.textContent = markdown;
-  }
-  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown && !sourceTableMarkdown) {
-    var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
-      listMarkdownWithInlineDescriptions(listExtraction);
-    if (inlineDescriptionMarkdown) {
-      markdown = materializedMarkdown(cleanupMarkdownNoise(inlineDescriptionMarkdown));
-      content.textContent = markdown;
-    }
-  }
-  var controlledPanelMarkdown = listMarkdownWithControlledPanels(content, metadata, markdown);
-  if (controlledPanelMarkdown) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(controlledPanelMarkdown));
-    content.textContent = markdown;
-  }
-  var searchToolsMarkdown = homepageSearchToolsMarkdown(content, markdown);
-  if (searchToolsMarkdown) {
-    markdown = materializedMarkdown(cleanupMarkdownNoise(searchToolsMarkdown));
-    content.textContent = markdown;
-  }
-  if (listLikeContent) markdown = listMarkdownWithPresentationUrls(markdown);
-  return markdown;
-}
-
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
@@ -117,13 +86,16 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
+  var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
   var cleanedHtml = sanitizedHtml(content.html, !!content.focalPublicPreview);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var markdown = cleanupMarkdownNoise(content.markdown && !content.focalPublicPreview ? content.markdown :
-    markdownFor(cleanedHtml || content.html, !!content.focalPublicPreview));
+    markdownFor(cleanedHtml || content.html, !!content.focalPublicPreview, preserveInlineMailtoUntilFinalType));
   var contentText = normalizeText(content.textContent || "");
   var normalizedMarkdown = normalizeText(markdown);
-  if (!normalizedMarkdown && contentText.length > 40) markdown = cleanupMarkdownNoise(markdownFor(cleanedHtml) || contentText);
+  if (!normalizedMarkdown && contentText.length > 40) {
+    markdown = cleanupMarkdownNoise(markdownFor(cleanedHtml, false, preserveInlineMailtoUntilFinalType) || contentText);
+  }
   normalizedMarkdown = normalizeText(markdown);
   if (content.contentType === "list" && referenceTableArticleMarkdown(markdown)) content.contentType = "article";
   if (content.contentType === "article" && !content.secFiling && !content.readerMode && content.html && content.html.length > 50000 && contentText.length >= 1200 && normalizedMarkdown.length < contentText.length * 0.2) {
@@ -216,7 +188,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
   var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
-  markdown = materializedMarkdown(legalChromeMarkdown);
+  markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
   if (content.sourceOwnedLiveblog && content.contentType === "list") content.contentType = "article";
   if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
   if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision &&
@@ -236,6 +208,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   markdown = deferredListFinalizationMarkdown(content, metadata, markdown);
   markdown = contentsComponentFinalizationMarkdown(content, markdown);
   markdown = stripStructuredCardFieldMarkers(markdown);
+  markdown = materializedMarkdown(markdown, inlineArticleMailtoAllowed(content));
   content.textContent = stripStructuredCardFieldMarkers(content.textContent);
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
@@ -263,7 +236,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     bedrooms: content.bedrooms === undefined ? null : content.bedrooms,
     bathrooms: content.bathrooms === undefined ? null : content.bathrooms,
     areaSqft: content.areaSqft === undefined ? null : content.areaSqft,
-    html: materializedHtml(content.html),
+    html: materializedHtml(content.html, inlineArticleMailtoAllowed(content)),
     markdown: markdown,
     readerMode: content.readerMode,
     contentType: content.contentType || "article",
