@@ -349,6 +349,14 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.count(helper_path)).to eq(1)
     expect(manifest.index(helper_path)).to be < manifest.index(finalization_path)
     expect(File.read(File.join(source_root, helper_path))).to include("function articleTitleFromOwnedExternalHeading")
+    expect_manifest_order(
+      manifest,
+      "core/docs_cleanup/article_title_provenance.js",
+      "core/docs_cleanup/declared_article_titles.js",
+      "core/docs_cleanup/titles.js",
+      "core/docs_cleanup/article_title_finalization.js",
+      finalization_path
+    )
   end
 
   it "loads browsable inventories and GitHub thread primitives before their consumers" do

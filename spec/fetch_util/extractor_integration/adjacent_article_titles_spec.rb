@@ -126,6 +126,71 @@ RSpec.describe 'Adjacent source-owned article headings' do
     end
   end
 
+  it 'does not borrow a self-linked title for foreign or ambiguous selected prose' do
+    headline = 'Local researchers publish complete transport funding records for every district'
+    title = "#{headline} | Regional research archive"
+    source_body = '<p>The source article explains the public funding decisions and offers the original records for review by affected residents.</p>' \
+                  '<p>Each section describes the local consultation, the possible route changes, and the dates when the final policy will be announced.</p>'
+    selected_body = '<p>A foreign article describes an unrelated public health decision and the evidence gathered by local clinics.</p>' \
+                    '<p>Its conclusion discusses services, patient access, and findings from a separate investigation.</p>'
+
+    [
+      "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1>#{source_body}</article>",
+      "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1>#{source_body}</article>" \
+        "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1>#{source_body}</article>"
+    ].each do |source_articles|
+      html = "<html><head><title>#{title}</title></head><body>#{source_articles}</body></html>"
+      with_url_page('https://journal.example/reports/funding-records', html) do |page|
+        source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+          File.read(File.join('websieve', entry))
+        end.join("\n")
+        source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
+        page.add_script_tag(content: source)
+        selected = "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1>#{selected_body}</article>"
+
+        expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+      end
+    end
+  end
+
+  it 'rejects a self-linked heading when selected prose is short-foreign, reordered, or has duplicate owners' do
+    headline = 'Local researchers publish complete transport funding records for every district'
+    title = "#{headline} | Regional research archive"
+    first = 'The source article explains the public funding decisions and offers the original records for review by affected residents.'
+    second = 'Each section describes the local consultation, the possible route changes, and the dates when the final policy will be announced.'
+    source_article = "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1><p>#{first}</p><p>#{second}</p></article>"
+    html = "<html><head><title>#{title}</title></head><body>#{source_article}</body></html>"
+
+    with_url_page('https://journal.example/reports/funding-records', html) do |page|
+      source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join('websieve', entry))
+      end.join("\n")
+      source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
+      page.add_script_tag(content: source)
+      selected_bodies = [
+        "<p>#{first}</p><p>foreign short paragraph</p><p>#{second}</p>",
+        "<p>#{second}</p><p>#{first}</p>"
+      ]
+      selected_bodies.each do |body|
+        selected = "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1>#{body}</article>"
+        expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+      end
+      wrong_destination = "<article><h1><a href='/reports/another-story'>#{headline}</a></h1><p>#{first}</p><p>#{second}</p></article>"
+      expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(wrong_destination)}, #{JSON.generate(title)})")).to eq(title)
+    end
+
+    duplicate_source = "<html><head><title>#{title}</title></head><body>#{source_article}#{source_article}</body></html>"
+    with_url_page('https://journal.example/reports/funding-records', duplicate_source) do |page|
+      source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join('websieve', entry))
+      end.join("\n")
+      source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
+      page.add_script_tag(content: source)
+      selected = "<article><h1><a href='/reports/funding-records'>#{headline}</a></h1><p>#{first}</p><p>#{second}</p></article>"
+      expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+    end
+  end
+
   it 'uses the sole visible article heading instead of an unowned site tagline' do
     html = <<~HTML
       <html><head><title>Quickstart | Example • Source documentation</title></head><body><main><article>
@@ -159,6 +224,123 @@ RSpec.describe 'Adjacent source-owned article headings' do
     with_url_page('https://docs.example/quickstart', html) do |page|
       payload = extract_payload(page)
       expect(payload['title']).to eq('Quickstart | Editorial context')
+    end
+  end
+
+  it 'removes a declared brand suffix only when the selected article confirms its exact title' do
+    with_page('<main><article><p>Journalistic report.</p>' \
+              '<p>The article explains the public record and identifies the affected local authority.</p>' \
+              '<p>Readers can review the documented decision and evidence supporting its conclusions.</p></article></main>') do |page|
+      source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join('websieve', entry))
+      end.join("\n")
+      source = source.sub('})(window);', 'global.declaredDescriptionTitleProbe = articleTitleFromDeclaredDescription; })(window);')
+      page.add_script_tag(content: source)
+      selected = '<article><p>Journalistic report.</p>' \
+                 '<p>The article explains the public record and identifies the affected local authority.</p>' \
+                 '<p>Readers can review the documented decision and evidence supporting its conclusions.</p></article>'
+      title = 'Journalistic report - Example Publishing'
+
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+        .to eq('Journalistic report')
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'Example Publishing', 'A different report.')"))
+        .to eq(title)
+      foreign_body = '<article><p>Unrelated article prose.</p></article>'
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(foreign_body)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+        .to eq(title)
+      ambiguous = '<article><p>Journalistic report.</p></article><article><p>Journalistic report.</p></article>'
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(ambiguous)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+        .to eq(title)
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'example-publishing.example', 'Journalistic report.')"))
+        .to eq(title)
+    end
+  end
+
+  it 'requires every selected paragraph to match its unique source article in order for brand proof' do
+    title = 'Journalistic report - Example Publishing'
+    selected = '<article><p>Journalistic report.</p>' \
+               '<p>The article explains the public record and identifies the affected local authority.</p>' \
+               '<p>Readers can review the documented decision and evidence supporting its conclusions.</p></article>'
+    source_article = '<article><p>Journalistic report.</p>' \
+                     '<p>The article explains the public record and identifies the affected local authority.</p>' \
+                     '<p>Readers can review the documented decision and evidence supporting its conclusions.</p></article>'
+    source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+      File.read(File.join('websieve', entry))
+    end.join("\n")
+    source = source.sub('})(window);', 'global.declaredDescriptionTitleProbe = articleTitleFromDeclaredDescription; })(window);')
+    foreign = '<article><p>Unrelated first paragraph provides enough visible detail to look like the beginning of a substantial public investigation.</p>' \
+              '<p>Unrelated second paragraph continues the separate story with more context, evidence, and conclusions for its own readers.</p></article>'
+    mixed = '<article><p>Journalistic report.</p><p>foreign</p>' \
+            '<p>The article explains the public record and identifies the affected local authority.</p>' \
+            '<p>Readers can review the documented decision and evidence supporting its conclusions.</p></article>'
+    reordered = '<article><p>Readers can review the documented decision and evidence supporting its conclusions.</p>' \
+                '<p>The article explains the public record and identifies the affected local authority.</p>' \
+                '<p>Journalistic report.</p></article>'
+
+    with_page("<main>#{source_article}</main>") do |page|
+      page.add_script_tag(content: source)
+      [foreign, mixed, reordered].each do |body|
+        expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(body)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+          .to eq(title)
+      end
+    end
+
+    duplicate_source = "<main>#{source_article}#{source_article}</main>"
+    with_page(duplicate_source) do |page|
+      page.add_script_tag(content: source)
+      expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+        .to eq(title)
+    end
+  end
+
+  it 'rejects hidden, nested, and sidebar paragraphs as title ownership witnesses' do
+    title = 'Journalistic report - Example Publishing'
+    selected = '<article><p>The selected report provides its own detailed account of transport decisions and the evidence behind them.</p>' \
+               '<p>Its final section explains the local responses and the next steps available to affected residents.</p></article>'
+    selected_paragraphs = selected.delete_prefix('<article>').delete_suffix('</article>')
+    public_prose = '<p>The actual outer article discusses a separate investigation and the records available from local authorities.</p>' \
+                   '<p>Its source material and conclusions concern a different set of events and public responsibilities.</p>'
+    source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+      File.read(File.join('websieve', entry))
+    end.join("\n")
+    source = source.sub('})(window);', 'global.declaredDescriptionTitleProbe = articleTitleFromDeclaredDescription; })(window);')
+    owners = [
+      "<article><div hidden>#{selected_paragraphs}</div>#{public_prose}</article>",
+      "<article>#{selected}#{public_prose}</article>",
+      "<aside>#{selected}</aside>",
+      "<article><h1 hidden>Journalistic report</h1>#{selected_paragraphs}</article>"
+    ]
+
+    owners.each do |owner|
+      with_page("<main>#{owner}</main>") do |page|
+        page.add_script_tag(content: source)
+        expect(page.evaluate("declaredDescriptionTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)}, 'Example Publishing', 'Journalistic report.')"))
+          .to eq(title)
+      end
+    end
+  end
+
+  it 'does not use an empty or hidden permalink as a linked headline' do
+    headline = 'Local researchers publish complete transport funding records for every district'
+    title = "#{headline} | Regional research archive"
+    body = '<p>The source article explains the public funding decisions and offers the original records for review by affected residents.</p>' \
+           '<p>Each section describes the local consultation, possible route changes, and the dates when the final policy will be announced.</p>'
+    source = File.readlines('websieve/manifest.txt', chomp: true).reject(&:empty?).map do |entry|
+      File.read(File.join('websieve', entry))
+    end.join("\n")
+    source = source.sub('})(window);', 'global.selfLinkedTitleProbe = articleTitleFromSelfLinkedHeading; })(window);')
+    headings = [
+      "<h1>#{headline}<a href='/reports/funding-records'></a></h1>",
+      "<h1><a style='display:none' href='/reports/funding-records'>#{headline}</a></h1>"
+    ]
+
+    headings.each do |heading|
+      html = "<html><head><title>#{title}</title></head><body><article>#{heading}#{body}</article></body></html>"
+      with_url_page('https://journal.example/reports/funding-records', html) do |page|
+        page.add_script_tag(content: source)
+        selected = "<article><h1>#{headline}</h1>#{body}</article>"
+        expect(page.evaluate("selfLinkedTitleProbe(#{JSON.generate(selected)}, #{JSON.generate(title)})")).to eq(title)
+      end
     end
   end
 

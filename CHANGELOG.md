@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Resolve article titles only from a unique visible source owner whose complete selected prose matches in order, preserving ambiguity and excluding hidden or unrelated title witnesses.
 - Restore uniquely owned Reader media headers without duplicating images, separating captions, or borrowing unrelated article content.
 - Apply contact-link permissions after final content classification, retaining safe article and notice contacts while keeping list, documentation, opaque HTML, and media destinations HTTP-only.
 - Exclude explicitly identified advertisement owners from repeated-list evidence while preserving ordinary editorial cards.

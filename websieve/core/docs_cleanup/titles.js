@@ -152,12 +152,7 @@ function articleTitleFromVisibleArticleHeading(html, title) {
   var suffix = normalizeText(fullTitle.slice(headline.length));
   if (!/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
       normalizeText(source.textContent || "").indexOf(suffix.slice(2)) >= 0) return title;
-  var paragraphs = Array.prototype.map.call(article.querySelectorAll("p"), function(node) {
-    return normalizeText(node.textContent || "");
-  }).filter(function(text) { return text.length >= 60; });
-  if (paragraphs.length < 2) return title;
-  var sourceText = normalizeText(source.textContent || "");
-  return paragraphs.every(function(text) { return sourceText.indexOf(text) !== -1; }) ? headline : title;
+  return sourceArticleForSelectedParagraphs(article) === source ? headline : title;
 }
 
 function sourceOwnedReaderHeadlineContent(content) {
@@ -215,28 +210,14 @@ function articleTitleFromSelfLinkedHeading(html, title) {
   root.innerHTML = html;
   var articles = root.querySelectorAll("article");
   if (articles.length !== 1) return title;
-  var article = articles[0];
-  var firstHeading = article.querySelector("h1, h2");
-  var link = firstHeading && firstHeading.querySelector("a[href]");
-  if (!link || firstHeading !== article.firstElementChild) return title;
-  var heading = normalizeText(link.textContent || "");
-  var fullTitle = normalizeText(title);
-  if (heading.length < 35 || fullTitle.indexOf(heading) !== 0) return title;
-  var suffix = normalizeText(fullTitle.slice(heading.length));
-  if (!/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
-      normalizeText(article.textContent || "").indexOf(suffix.slice(2)) >= 0) return title;
-
-  var ownerLinks = Array.prototype.filter.call(document.querySelectorAll("article h1 a[href], article h2 a[href]"), function(candidate) {
-    if (elementSubtreeHidden(candidate) || normalizeText(candidate.textContent || "") !== heading) return false;
-    var owner = candidate.closest("article");
-    if (!owner || owner.querySelectorAll("p").length < 3 || owner.querySelector("h1, h2") !== candidate.parentElement) return false;
-    var url = materializedHttpUrl(candidate.getAttribute("href"));
-    if (!url) return false;
-    var destination = new URL(url);
-    return destination.origin === location.origin && destination.pathname === location.pathname &&
-      destination.search === location.search;
-  });
-  return ownerLinks.length === 1 ? heading : title;
+  var owner = sourceArticleForSelectedParagraphs(articles[0]);
+  var sourceHeadings = owner && owner.querySelectorAll("h1");
+  var heading = normalizeText(sourceHeadings && sourceHeadings.length === 1 && sourceHeadings[0].textContent || "");
+  if (!heading || !normalizeText(title).startsWith(heading)) return title;
+  var proof = sourceOwnedSelfLinkedArticle(articles[0], heading);
+  if (!proof) return title;
+  var suffix = normalizeText(normalizeText(title).slice(heading.length));
+  return /^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ? heading : title;
 }
 
 function articleSelfLinkedHeadlineMarkdown(markdown, html, title) {
