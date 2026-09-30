@@ -33,6 +33,7 @@ RSpec.describe 'FetchUtil public preview fidelity' do
     HTML
 
     with_url_page('https://publisher.example/story/botash-123456', html) do |page|
+      original_body = page.evaluate('document.body.innerHTML')
       payload = extract_payload(page)
 
       expect_content_type(payload, 'article')
@@ -42,13 +43,18 @@ RSpec.describe 'FetchUtil public preview fidelity' do
                                              'only the used capacity', '/public-methodology', 'Editorial credit')
       expect(payload['markdown']).not_to include('full-access paragraph', 'Another agreement',
                                                  'Sidebar teaser', 'Navigation teaser', 'Hidden teaser')
-      expect(payload['excerpt']).to include('suspend the gas agreement')
+      expect(payload['html']).not_to include('Full-access paragraph', 'Hidden teaser', 'Sidebar teaser', 'Navigation teaser')
+      expect(payload['excerpt']).to eq(
+        'The two governments agreed to suspend the gas agreement for fifteen months. ' \
+        'During that period, only the used capacity of the pipeline will be paid.'
+      )
       expect_warnings(payload, include: 'paywall_partial_content')
       source_order = ['editorial desk introduced', 'public pipeline route', 'suspend the gas agreement',
                       'only the used capacity', 'final public note', 'Editorial credit']
       positions = source_order.map { |text| payload['markdown'].index(text) }
       expect(positions).to all(be_truthy)
       expect(positions).to eq(positions.sort)
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
     end
   end
 end

@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Carry verified public-preview ownership into canonical article rendering and excerpts, preserving surrounding public material while excluding locked and foreign content.
 - Select complete, source-owned prose after an explicit photo credit while retaining the credit, media, metadata, and legacy dated-caption behavior.
 - Preserve substantive visible editorial paragraphs inside ad-labelled containers when promotional text and media do not establish an advertisement.
 - Preserve visible, source-owned card headers and their destinations without promoting hidden title or record evidence, or headers inside explicit navigation.

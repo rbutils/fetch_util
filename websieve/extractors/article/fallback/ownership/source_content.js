@@ -178,13 +178,20 @@ function sourceOwnedHeaderContributions(ownership) {
 
 function genericSourceOwnedPageContent(metadata) {
   var ownership = resolveCanonicalArticleBodyOwnership();
-  if (ownership) return canonicalArticleBodyContent(metadata, ownership);
+  if (ownership) {
+    var preview = fallbackFocalHeadlineOwnership();
+    var article = sourceOwnedArticleMarkup(ownership);
+    var previewRoot = ownership.body.sourceNode === ownership.ownerRoot ? article.firstElementChild : article;
+    var publicPreview = preview && preview.node === ownership.ownerRoot && preview.body.publicPreview &&
+      previewRoot && focalOwnershipRetainPublicPreview(previewRoot) ? preview.body : null;
+    return canonicalArticleBodyContent(metadata, ownership, article, publicPreview);
+  }
   var semantic = sourceOwnedSemanticArticleOwnership(metadata);
   return semantic.ownership ? canonicalArticleBodyContent(metadata, semantic.ownership) : null;
 }
 
-function canonicalArticleBodyContent(metadata, ownership) {
-  var article = sourceOwnedArticleMarkup(ownership);
+function canonicalArticleBodyContent(metadata, ownership, article, publicPreview) {
+  article = article || sourceOwnedArticleMarkup(ownership);
   var text = normalizeText(article.textContent || "");
   var headerMetadata = sourceOwnedFallbackHeaderMetadata(ownership.body.sourceNode, ownership.title, metadata || {});
   var attribution = headerMetadata || metadata || {};
@@ -192,7 +199,7 @@ function canonicalArticleBodyContent(metadata, ownership) {
   var content = {
     title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
-    excerpt: fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true),
+    excerpt: publicPreview ? publicPreview.text : fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true),
     siteName: (metadata && metadata.siteName) || location.hostname,
     publishedTime: attribution.publishedTime || null,
     html: article.innerHTML,
@@ -204,6 +211,7 @@ function canonicalArticleBodyContent(metadata, ownership) {
     sourceOwnedHeadingTitle: ownership.title,
     focalPermalinkContent: true
   };
+  if (publicPreview) content.focalPublicPreview = true;
   Object.defineProperty(content, "sourceOwnedArticleBody", { value: ownership.body.sourceNode });
   return content;
 }
