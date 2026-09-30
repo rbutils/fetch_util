@@ -212,7 +212,19 @@
     return fallback;
   }
 
-  function cleanClone(node, preserveSelector) {
+  function mapDomCloneElements(source, clone, elementMap) {
+    if (!source || !clone || source.nodeType !== clone.nodeType ||
+        (source.nodeType === 1 && source.tagName !== clone.tagName)) return;
+    elementMap.set(source, clone);
+    var sourceChildren = source.childNodes || [];
+    var cloneChildren = clone.childNodes || [];
+    if (sourceChildren.length !== cloneChildren.length) return;
+    for (var index = 0; index < sourceChildren.length; index++) {
+      mapDomCloneElements(sourceChildren[index], cloneChildren[index], elementMap);
+    }
+  }
+
+  function cleanClone(node, preserveSelector, elementMap) {
     if (cookieChromeNode(node)) {
       var empty = document.createElement("div");
       return empty;
@@ -220,6 +232,7 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
+    if (elementMap) mapDomCloneElements(node, clone, elementMap);
     materializeEditorialFrameLinks(node, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {

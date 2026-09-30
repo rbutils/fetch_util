@@ -219,7 +219,10 @@
 
   function repeatedRecordCandidateCoversOwner(candidate, collection) {
     var items = candidate && candidate.listExtraction && candidate.listExtraction.items;
-    if (!items || !collection || !collection.records.length) return false;
+    var extraction = candidate && candidate.listExtraction;
+    if (!items || !collection || !collection.records.length || !collection.primaryMain || !collection.renderOwner ||
+        !extraction || !extraction.primaryMainMapped || extraction.primaryMainSourceNode !== collection.primaryMain ||
+        extraction.renderOwnerSourceNode !== collection.renderOwner) return false;
     var matched = new Set();
     return collection.records.every(function(record) {
       var itemIndex = items.findIndex(function(item, index) {

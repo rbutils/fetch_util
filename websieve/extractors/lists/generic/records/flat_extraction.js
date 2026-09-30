@@ -2,14 +2,25 @@
     return elementSubtreeHidden(node);
   }
 
-  function visibleListClone(node, preservedRoots) {
+  function visibleListClone(node, preservedRoots, elementMap) {
     if (!node || listElementHidden(node)) return document.createElement("div");
     var clone = safeDeepClone(node, document);
     if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
-    pruneHiddenClone(node, clone, preservedRoots);
+    var sourceToVisible = elementMap ? new Map() : null;
+    var visibleToCleaned = elementMap ? new Map() : null;
+    pruneHiddenClone(node, clone, preservedRoots, null, false, sourceToVisible);
     unwrapListOwnedHeaders(clone);
     preserveHomepageListAsides(clone);
-    return cleanClone(clone, "[data-fetchutil-editorial-aside]");
+    var cleaned = cleanClone(clone, "[data-fetchutil-editorial-aside]", visibleToCleaned);
+    if (elementMap) {
+      sourceToVisible.forEach(function(visibleNode, sourceNode) {
+        var cleanedNode = visibleToCleaned.get(visibleNode);
+        if (cleanedNode && (cleanedNode === cleaned || cleaned.contains(cleanedNode))) {
+          elementMap.set(sourceNode, cleanedNode);
+        }
+      });
+    }
+    return cleaned;
   }
 
   function extractListItems(root, options) {

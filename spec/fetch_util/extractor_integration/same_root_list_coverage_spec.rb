@@ -195,4 +195,40 @@ RSpec.describe 'FetchUtil extractor same-root list coverage' do
       expect(payload['markdown']).to include(excerpt)
     end
   end
+
+  it 'maps repeated records and owned context into one cleaned primary-main clone' do
+    records = (101..105).map { |number| same_root_card(number) }.join
+    html = <<~HTML
+      <html><head><title>Mapped archive</title></head><body>
+        <header>
+          <p>Header-only context must not be borrowed.</p>
+          <nav><a href="/header-link">Header navigation destination</a></nav>
+        </header>
+        <p>Adjacent unowned prose outside the primary main must not be borrowed.</p>
+        <main hidden><p>Hidden foreign-main prose must remain excluded.</p></main>
+        <main><h1>Mapped archive</h1>
+          <p>The complete archive introduction remains beside the owned records.</p>
+          <section><h2>Current records</h2>#{records}</section>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page('https://coverage.example/mapped-archive', html) do |page|
+      original_dom = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['markdown'].scan('The complete archive introduction remains beside the owned records.').length).to eq(1)
+      expect(extracted_record_numbers(payload['markdown'])).to eq((101..105).to_a)
+      [
+        'Header-only context',
+        'Header navigation destination',
+        'Adjacent unowned prose',
+        'Hidden foreign-main prose'
+      ].each do |unowned_context|
+        expect(payload['markdown']).not_to include(unowned_context)
+      end
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_dom)
+    end
+  end
 end

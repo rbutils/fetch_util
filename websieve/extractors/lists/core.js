@@ -8,15 +8,39 @@
 
   function buildListExtraction(node, pageTitles, options) {
     options = options || {};
-    var root = visibleListClone(node, options.preservedRoots);
+    var repeatedCollection = options.repeatedRecordCollection;
+    var primaryMainSourceNode = repeatedCollection && repeatedCollection.primaryMain;
+    var renderOwnerSourceNode = repeatedCollection && repeatedCollection.renderOwner;
+    var cloneSource = primaryMainSourceNode &&
+      (node === document.body || node === primaryMainSourceNode || primaryMainSourceNode.contains(node)) ?
+      primaryMainSourceNode : node;
+    var elementMap = repeatedCollection ? new Map() : null;
+    var clonedSourceRoot = visibleListClone(cloneSource, options.preservedRoots, elementMap);
+    var clonedPrimaryMain = elementMap && primaryMainSourceNode && elementMap.get(primaryMainSourceNode);
+    var clonedRenderOwner = elementMap && renderOwnerSourceNode && elementMap.get(renderOwnerSourceNode);
+    var clonedCandidate = elementMap && node !== document.body && node !== primaryMainSourceNode && elementMap.get(node);
+    var candidateMapped = node === document.body || node === primaryMainSourceNode ||
+      (clonedCandidate && clonedPrimaryMain && clonedPrimaryMain.contains(clonedCandidate));
+    var candidateSourceOwned = node === document.body || node === primaryMainSourceNode ||
+      (primaryMainSourceNode && primaryMainSourceNode.contains(node));
+    var primaryMainMapped = !!(primaryMainSourceNode && clonedPrimaryMain && clonedRenderOwner &&
+      (clonedPrimaryMain === clonedSourceRoot || clonedSourceRoot.contains(clonedPrimaryMain)) &&
+      clonedPrimaryMain.contains(clonedRenderOwner) && candidateMapped && candidateSourceOwned);
+    var root = primaryMainMapped ? clonedPrimaryMain : clonedSourceRoot;
+    var extractionRoot = root;
     cleanupListRoot(root);
-    var sectioned = sectionedListExtraction(root);
+    if (primaryMainMapped && clonedCandidate && !root.contains(clonedCandidate)) {
+      primaryMainMapped = false;
+      root = clonedSourceRoot;
+      extractionRoot = root;
+    }
+    var sectioned = sectionedListExtraction(extractionRoot);
 
-    var items = extractListItems(root, options);
+    var items = extractListItems(extractionRoot, options);
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
-    var descText = listDescriptionMarkdown(root);
-    var fallbackItems = extractFallbackHeadlineItems(root, items.__fetchUtilSupportingLinks);
+    var descText = primaryMainMapped ? listDescriptionMarkdown(root, items) : listDescriptionMarkdown(root);
+    var fallbackItems = extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks);
     mergeDuplicateRecordAuthorContext(root, fallbackItems);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
@@ -25,7 +49,7 @@
     }
 
     var flatCoverage = sameRootFlatSectionCoverage(sectioned, items) ||
-      supplementalSameRootSectionCoverage(sectioned, items, fallbackItems, root, pageTitles);
+      supplementalSameRootSectionCoverage(sectioned, items, fallbackItems, extractionRoot, pageTitles);
     if (sectioned && !flatCoverage) {
       var sectionDescriptionParts = listDescriptionParts(root, sectioned.items, {
         excludeRecordCards: true,
@@ -40,6 +64,9 @@
       return {
         sourceNode: node,
         root: root,
+        primaryMainMapped: primaryMainMapped,
+        primaryMainSourceNode: primaryMainMapped ? primaryMainSourceNode : null,
+        renderOwnerSourceNode: primaryMainMapped ? renderOwnerSourceNode : null,
         items: sectioned.items,
         descText: "",
         sectionMarkdownWithDescription: sectionMarkdownWithDescription,
@@ -81,6 +108,9 @@
     return {
       sourceNode: node,
       root: root,
+      primaryMainMapped: primaryMainMapped,
+      primaryMainSourceNode: primaryMainMapped ? primaryMainSourceNode : null,
+      renderOwnerSourceNode: primaryMainMapped ? renderOwnerSourceNode : null,
       items: items,
       descText: descText,
       markdown: markdown,
@@ -98,6 +128,9 @@
 
   function bestListExtraction(metadata, pageTitles, options) {
     options = options || {};
+    if (options.repeatedRecordCollection) {
+      return buildListExtraction(options.repeatedRecordCollection.primaryMain || document.body, pageTitles, options);
+    }
     if (options.sourceOwner) return buildListExtraction(options.sourceOwner, pageTitles, options);
     var candidates = [];
     function pushCandidate(node) {
