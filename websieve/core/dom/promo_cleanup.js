@@ -34,6 +34,15 @@
       var promoMedia = PROMO_MEDIA_PATTERN.test(imageSrcs);
       if (el.matches("p, span") && !(promoAttrs && promoText)) return;
 
+      var editorialParagraphs = Array.prototype.filter.call(el.querySelectorAll("p"), function(paragraph) {
+        return !elementVisuallyHidden(paragraph) && normalizeText(paragraph.textContent || "").length >= 80 &&
+          !paragraph.closest("nav, aside, footer, [role~='navigation' i], [role~='complementary' i]");
+      });
+      var editorialText = editorialParagraphs.reduce(function(total, paragraph) {
+        return total + normalizeText(paragraph.textContent || "").length;
+      }, 0);
+      if (promoAttrs && editorialParagraphs.length >= 2 && editorialText >= 280 && !promoText && !promoMedia) return;
+
       // A layout's detached CTA slot is not promotional content when it owns
       // a visible heading and has no action or other promotional evidence.
       if (promoAttrs && promoCtaOnlyHeading(el, attrs, promoMedia, promoText)) return;

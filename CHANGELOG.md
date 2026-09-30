@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Preserve substantive visible editorial paragraphs inside ad-labelled containers when promotional text and media do not establish an advertisement.
 - Preserve visible, source-owned card headers and their destinations without promoting hidden title or record evidence, or headers inside explicit navigation.
 - Preserve a source-owned headline's actual self-link in article Markdown while rejecting unrelated, hidden, or invented heading destinations.
 - Resolve article titles only from a unique visible source owner whose complete selected prose matches in order, preserving ambiguity and excluding hidden or unrelated title witnesses.
