@@ -82,7 +82,7 @@
     }
 
     function visibleRecord(node) {
-      if (elementSubtreeHidden(node) || listChromeNode(node)) return null;
+      if (elementSubtreeHidden(node) || listChromeNode(node) || listExplicitAdvertisementOwner(node)) return null;
       var destinations = new Set();
       var primaryLinks = [];
       Array.prototype.forEach.call(node.querySelectorAll("a[href]"), function(link) {
