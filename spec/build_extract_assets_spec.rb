@@ -846,7 +846,7 @@ RSpec.describe "extract asset bundle" do
 
     expect(manifest.index(base_path)).to be < manifest.index(list_path)
     expect(base_source).to include("function pruneHiddenClone", "function visibilityPrunedClone")
-    expect(list_source).to include("pruneHiddenClone(node, clone, preservedRoots)")
+    expect(list_source).to include("pruneHiddenClone(node, clone, preservedRoots, null, false, sourceToVisible)")
     expect(list_source).not_to include("function pruneHiddenListClone")
   end
 
@@ -970,6 +970,22 @@ RSpec.describe "extract asset bundle" do
       path if File.exist?(path)
     end
     expect(old_paths).to eq([])
+  end
+
+  it "loads generic list root cleanup after record extraction and before its consumers" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    flat_extraction_path = "extractors/lists/generic/records/flat_extraction.js"
+    cleanup_path = "extractors/lists/generic/cleanup/list_root_cleanup.js"
+    list_core_path = "extractors/lists/core.js"
+    events_path = "extractors/lists/events.js"
+    cleanup_source = File.read(File.join(source_root, cleanup_path))
+
+    expect(manifest.index(cleanup_path)).to eq(manifest.index(flat_extraction_path) + 1)
+    expect(manifest.index(cleanup_path)).to be < manifest.index(list_core_path)
+    expect(manifest.index(cleanup_path)).to be < manifest.index(events_path)
+    expect(cleanup_source).to include("function cleanupListRoot(root, producerProvenCardNodes)")
+    expect(File.read(File.join(source_root, flat_extraction_path))).not_to include("function cleanupListRoot")
   end
 
   it "groups generic list section helpers in dependency order" do
@@ -1385,6 +1401,7 @@ RSpec.describe "extract asset bundle" do
       ], "extractors/lists/description_parts.js"],
       ["extractors/lists/description_parts.js", %w[
         extractors/lists/generic/records/flat_extraction.js
+        extractors/lists/generic/cleanup/list_root_cleanup.js
         extractors/lists/generic/sections/heading_context.js
         extractors/lists/generic/sections/section_rendering.js
         extractors/lists/generic/sections/record_section_fallback.js

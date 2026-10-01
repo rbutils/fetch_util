@@ -160,6 +160,7 @@ extractors/lists/generic/records/nested_coverage.js
 extractors/lists/generic/records/table_records.js
 extractors/lists/description_parts.js
 extractors/lists/generic/records/flat_extraction.js
+extractors/lists/generic/cleanup/list_root_cleanup.js
 extractors/lists/generic/sections/heading_context.js
 extractors/lists/generic/sections/section_rendering.js
 extractors/lists/generic/sections/record_section_fallback.js
