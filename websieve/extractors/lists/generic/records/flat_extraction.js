@@ -24,6 +24,7 @@
   }
 
   function extractListItems(root, options) {
+    var structuredCardTitleLinks = preserveStructuredCardLinks(root);
     var itemSelector = [
       genericListAnchorCardSelector(),
       "tr.athing", "tr[data-id][data-url*='/remote-jobs/']", "article", "li", "section",
@@ -40,6 +41,7 @@
     var acceptedLinks = new Set();
     var context = listPageContext();
     context.producerProvenCardTitles = options && options.producerProvenCardTitles;
+    context.structuredCardTitleLinks = structuredCardTitleLinks;
     var repeatedRecordByIdentity = new Map((options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).map(function(record) {
       return [record.identity, record];
     }));

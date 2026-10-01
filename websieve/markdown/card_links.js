@@ -13,6 +13,9 @@
   function structuredCardLinkEvidence(link) {
     if (!link || !link.matches("a[href]") || !materializedHttpUrl(link.getAttribute("href"))) return null;
     if (link.querySelector("a[href], h1, h2, h3, h4, h5, h6, ul, ol, table, pre, form, button, input, select, textarea")) return null;
+    if (link.closest("nav, footer, menu, [role='navigation'], [role='menu'], [role='toolbar']")) return null;
+    var header = link.closest("header");
+    if (header && !header.closest("article, li, [class*='card' i], [class*='news' i]")) return null;
 
     var fields = Array.from(link.querySelectorAll("[class], [id], [data-field], [itemprop]"));
     var titles = fields.filter(function(node) {
@@ -20,7 +23,7 @@
         .join(" ").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
       var text = normalizeText(node.textContent || "");
       return evidence.some(function(token) { return token === "title" || token === "headline"; }) &&
-        text.length >= 10 && text.length <= 260 && !node.querySelector("div, p, article, section, li");
+        text.length >= 10 && !node.querySelector("div, p, article, section, li");
     });
     var labels = fields.filter(function(node) {
       var evidence = [node.className, node.id, node.getAttribute("data-field"), node.getAttribute("itemprop")]
@@ -38,7 +41,7 @@
       return text.length > 0 && text.length <= 80;
     });
     var images = Array.from(link.querySelectorAll("img[src]"));
-    if (titles.length !== 1 || labels.length !== 1 || dates.length !== 1 || images.length !== 1) return null;
+    if (titles.length !== 1 || labels.length !== 1 || dates.length !== 1 || images.length > 1) return null;
 
     return {
       label: labels[0],
@@ -125,6 +128,7 @@
       if (options.proofOnly) return producerProvenTitles;
     }
     var candidates = [];
+    var structuredTitleLinks = new Set();
     root.querySelectorAll("article > a[href]").forEach(function(link) {
       var article = link.parentElement;
       if (!article || article.children.length !== 1) return;
@@ -162,7 +166,8 @@
         if (declaredTitle) titleLink.setAttribute("title", declaredTitle);
         while (title.firstChild) titleLink.appendChild(title.firstChild);
         title.appendChild(titleLink);
+        structuredTitleLinks.add(titleLink);
       });
     });
-    return new Set();
+    return structuredTitleLinks;
   }

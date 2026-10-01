@@ -179,7 +179,9 @@
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
     var group = genericListLinkGroup(link, context.linkGroups);
     var imageTitleCard = genericListImageTitleCard(link);
-    var producerProvenTitle = !!(context && context.producerProvenCardTitles && context.producerProvenCardTitles.has(link));
+    var structuredCardTitle = !!(context && context.structuredCardTitleLinks && context.structuredCardTitleLinks.has(link));
+    var producerProvenTitle = structuredCardTitle ||
+      !!(context && context.producerProvenCardTitles && context.producerProvenCardTitles.has(link));
     var minimumTitleLength = producerProvenTitle ? 3 : minimumListTitleLength(text);
     if (group || imageTitleCard || genericListNumberedCollectionLink(link, context && context.numberedCollections)) minimumTitleLength = 1;
     else if (tableIndexRow) minimumTitleLength = 2;
@@ -230,6 +232,7 @@
     if (score === -Infinity) return null;
 
     var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    if (structuredCardTitle) candidate.sourceOrderedStructuredCard = true;
     if (ownedAnchorTitle) candidate.displayText = ownedAnchorTitle;
     if (card && card.matches && card.matches("tr")) candidate.tableRowDetail = true;
     if (headings.length > 1) candidate.titleHeadings = headings;

@@ -195,6 +195,9 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
   }).filter(Boolean));
   primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(items);
   return items.map(function(item) {
+    if (item.sourceOrderedStructuredCard && item.card) {
+      return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();
+    }
     var line = "- " + markdownLink(item.displayText || item.text, item.url);
     var context = listItemContextValues(item, primaryUrls, primaryRecordKeys).join(" - ");
     if (context) line += " - " + context;
