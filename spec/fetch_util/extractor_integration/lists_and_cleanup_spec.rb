@@ -3,6 +3,39 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
+  def related_rail_source_article(paragraphs)
+    body = paragraphs.map { |paragraph| "<p>#{paragraph}</p>" }.join
+    "<html><body><article><h1>Article ownership test headline</h1><div itemprop='articleBody'>#{body}</div></article></body></html>"
+  end
+
+  def related_rail_selected_article(paragraphs)
+    body = paragraphs.map { |paragraph| "<p>#{paragraph}</p>" }.join
+    <<~HTML
+      <article>
+        <h1>Article ownership test headline</h1>
+        <div itemprop="articleBody">#{body}</div>
+        <section><h2>関連記事</h2>
+          <a href="/related-one">Another visible article about this subject</a>
+          <a href="/related-two">A second visible article about this subject</a>
+        </section>
+      </article>
+    HTML
+  end
+
+  def clean_selected_related_rail_article(page, html)
+    root = File.expand_path('../../..', __dir__)
+    source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).filter_map do |path|
+      File.read(File.join(root, 'websieve', path)) unless path.empty? || path.start_with?('#')
+    end.join("\n")
+    source.sub!('})(window);', 'window.__cleanSelectedRelatedRailArticle = contentWithoutTerminalArticleFurniture; })(window);')
+    page.add_script_tag(content: source)
+    JSON.parse(page.evaluate(<<~JS))
+      JSON.stringify(window.__cleanSelectedRelatedRailArticle({
+        contentType: 'article', html: #{html.to_json}, textContent: 'The selected article remains material.'
+      }))
+    JS
+  end
+
   it "collapses list pages into agent-friendly bullets" do
     html = <<~HTML
       <html>
@@ -950,6 +983,80 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(markdown).not_to include("観光イベント")
       expect(markdown).not_to include("共有")
       expect(payload["warnings"]).not_to include("multi_topic_page")
+    end
+  end
+
+  it "preserves mixed related sections and prose-only headings" do
+    html = <<~HTML
+      <html lang="ja">
+        <body>
+          <main>
+            <article>
+              <h1>地域の学校で新しい計画を発表</h1>
+              <p>市内の学校では、地域の団体と協力した新しい計画を発表しました。</p>
+              <p>担当者は計画の目的と、参加する住民への説明について話しました。</p>
+              <p>今後も関係者と協議を続け、地域で実施する方法を検討します。</p>
+              <section>
+                <h2>関連記事</h2>
+                <a href="/other-a">独立した別の記事</a>
+                <a href="/other-b">もう一つの別の記事</a>
+                <h3>関連記事</h3>
+                <p>見出しだけでは、この短い本文を関連リンク集とは証明できません。</p>
+              </section>
+            </article>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    with_url_page("https://example.jp/news/school-plan", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload.fetch("markdown")
+
+      expect(markdown).to include("独立した別の記事", "もう一つの別の記事")
+      expect(markdown).to include("関連記事")
+      expect(markdown).to include("見出しだけでは、この短い本文を関連リンク集とは証明できません")
+      expect(payload.fetch("html")).to include("<h2>関連記事</h2>", "<h3>関連記事</h3>")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
+  it 'retains related rails when selected article prose contains a short unmapped paragraph' do
+    first = 'The first source paragraph provides a detailed account of the verified public report and its context.'
+    second = 'The second source paragraph describes the findings and explains how the community will use them.'
+    selected = related_rail_selected_article([first, 'Unowned note.', second])
+
+    with_url_page('https://example.jp/article/ownership', related_rail_source_article([first, second])) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = clean_selected_related_rail_article(page, selected)
+
+      expect(result.fetch('html')).to include('Unowned note.', '関連記事', '/related-one', '/related-two')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'requires selected article prose to follow source DOM order before removing related rails' do
+    first = 'The first source paragraph provides a detailed account of the verified public report and its context.'
+    second = 'The second source paragraph describes the findings and explains how the community will use them.'
+    selected = related_rail_selected_article([second, first])
+
+    with_url_page('https://example.jp/article/ownership-order', related_rail_source_article([first, second])) do |page|
+      result = clean_selected_related_rail_article(page, selected)
+
+      expect(result.fetch('html')).to include(first, second, '関連記事', '/related-one', '/related-two')
+    end
+  end
+
+  it 'rejects ambiguous duplicate source paragraphs when proving related-rail ownership' do
+    repeated = 'This identical source paragraph describes the verified report in substantial detail for readers.'
+    unique = 'The final source paragraph explains the implications and next steps for the community.'
+    selected = related_rail_selected_article([repeated, unique])
+
+    with_url_page('https://example.jp/article/ownership-duplicate', related_rail_source_article([repeated, repeated, unique])) do |page|
+      result = clean_selected_related_rail_article(page, selected)
+
+      expect(result.fetch('html')).to include(repeated, unique, '関連記事', '/related-one', '/related-two')
     end
   end
 

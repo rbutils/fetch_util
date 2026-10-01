@@ -37,21 +37,125 @@ function relatedRecordCollectionHeading(value) {
   return RELATED_SECTION_HEADING_PATTERN.test(text) || /^(?:most\s+read|الأكثر\s+قراءة)$/i.test(text);
 }
 
-function relatedRailHasUniqueVisibleArticleOwner() {
+function relatedRailSourceArticle() {
   var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
     return !elementVisuallyHidden(heading) && !heading.closest("nav, aside, footer, [role~='navigation' i], [role~='complementary' i]");
   });
-  if (headings.length !== 1) return false;
+  if (headings.length !== 1) return null;
 
   var heading = headings[0];
   var article = heading.closest("article");
-  if (!article || elementSubtreeHidden(article)) return false;
+  if (!article || elementSubtreeHidden(article)) return null;
   var paragraphs = Array.from(article.querySelectorAll("p, blockquote")).filter(function(paragraph) {
     return relatedArticleBodyParagraph(paragraph, article);
   });
-  return paragraphs.length >= 2 && paragraphs.reduce(function(total, paragraph) {
+  if (paragraphs.length < 2 || paragraphs.reduce(function(total, paragraph) {
     return total + normalizeText(paragraph.textContent || "").length;
-  }, 0) >= 60;
+  }, 0) < 60) return null;
+  return article;
+}
+
+function relatedRailHasUniqueVisibleArticleOwner() {
+  return !!relatedRailSourceArticle();
+}
+
+function relatedRailRootOwnsArticle(root) {
+  var sourceArticle = relatedRailSourceArticle();
+  var selectedArticle = root && root.matches && root.matches("article") ? root : root && root.querySelector("article");
+  if (!sourceArticle || !selectedArticle || elementSubtreeHidden(selectedArticle)) return false;
+
+  var sourceHeadings = Array.from(sourceArticle.querySelectorAll("h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading);
+  });
+  var selectedHeadings = Array.from(selectedArticle.querySelectorAll("h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading);
+  });
+  if (sourceHeadings.length !== 1 || selectedHeadings.length !== 1 ||
+      normalizeText(sourceHeadings[0].textContent || "") !== normalizeText(selectedHeadings[0].textContent || "")) return false;
+
+  var sourceParagraphs = Array.from(sourceArticle.querySelectorAll("p, blockquote")).filter(function(paragraph) {
+    return relatedArticleOwnedBodyParagraph(paragraph, sourceArticle);
+  }).map(function(paragraph) { return normalizeText(paragraph.textContent || ""); });
+  var selectedParagraphs = Array.from(selectedArticle.querySelectorAll("p, blockquote")).filter(function(paragraph) {
+    return relatedArticleOwnedBodyParagraph(paragraph, selectedArticle);
+  });
+  var recognizedParagraphs = selectedParagraphs.filter(function(paragraph) {
+    return relatedArticleBodyParagraph(paragraph, selectedArticle);
+  });
+  if (recognizedParagraphs.length < 2 || recognizedParagraphs.reduce(function(total, paragraph) {
+    return total + normalizeText(paragraph.textContent || "").length;
+  }, 0) < 60) return false;
+
+  var sourceIndexByText = new Map();
+  sourceParagraphs.forEach(function(text, index) {
+    if (sourceIndexByText.has(text)) sourceIndexByText.set(text, null);
+    else sourceIndexByText.set(text, index);
+  });
+  var previousIndex = -1;
+  return selectedParagraphs.every(function(paragraph) {
+    var text = normalizeText(paragraph.textContent || "");
+    var index = sourceIndexByText.get(text);
+    if (!sourceIndexByText.has(text) || index === null || index <= previousIndex) return false;
+    previousIndex = index;
+    return true;
+  });
+}
+
+function relatedTrailingNestedArticleCardSections(root) {
+  if (!relatedRailRootOwnsArticle(root)) return [];
+  var article = root.matches && root.matches("article") ? root : root.querySelector("article");
+  var sourceArticle = relatedRailSourceArticle();
+  var sourceBodies = Array.from(sourceArticle.querySelectorAll("[itemprop~='articleBody' i]"))
+    .filter(function(body) { return !elementSubtreeHidden(body); });
+  var selectedBodies = Array.from(article.querySelectorAll("[itemprop~='articleBody' i]"))
+    .filter(function(body) { return !elementSubtreeHidden(body); });
+  if (sourceBodies.length !== 1 || selectedBodies.length !== 1 || !selectedBodies[0].isEqualNode(sourceBodies[0])) return [];
+
+  var children = Array.from(article.children);
+  var bodyIndex = children.indexOf(selectedBodies[0]);
+  if (bodyIndex < 0) return [];
+  var sections = children.slice(bodyIndex + 1);
+  if (sections.length < 2) return [];
+
+  var destinations = [];
+  var sourceSections = Array.from(sourceArticle.children);
+  var valid = sections.every(function(section) {
+    if (!section.matches("section") || Array.from(section.childNodes).some(function(node) {
+      return node.nodeType === Node.TEXT_NODE && normalizeText(node.nodeValue || "");
+    })) return false;
+    var elements = Array.from(section.children);
+    if (elements.length !== 2) return false;
+    var labels = elements.filter(function(element) { return element.matches("h2"); });
+    var cards = elements.filter(function(element) { return element.matches("article"); });
+    if (labels.length !== 1 || cards.length !== 1 ||
+        sourceSections.filter(function(source) { return source.isEqualNode(section); }).length !== 1) return false;
+
+    var card = cards[0];
+    var headings = Array.from(card.querySelectorAll("h2, h3, h4")).filter(function(heading) {
+      return !elementVisuallyHidden(heading);
+    });
+    var links = Array.from(card.querySelectorAll("a[href]")).filter(function(link) {
+      return !elementVisuallyHidden(link);
+    });
+    if (headings.length !== 1 || links.length !== 1 || !headings[0].contains(links[0]) ||
+        normalizeText(headings[0].textContent || "") !== normalizeText(links[0].textContent || "")) return false;
+    var destination = sourceOwnershipPageUrl(links[0].getAttribute("href"));
+    if (!destination || destination === sourceOwnershipPageUrl(location.href) ||
+        destinations.indexOf(destination) !== -1 || typeof sourceOwnedLinkedCardHasUnownedMaterial !== "function" ||
+        sourceOwnedLinkedCardHasUnownedMaterial(card, destination)) return false;
+    destinations.push(destination);
+    return true;
+  });
+  return valid ? sections : [];
+}
+
+function relatedArticleOwnedBodyParagraph(paragraph, article) {
+  if (paragraph.closest("article") !== article || elementVisuallyHidden(paragraph) ||
+      !normalizeText(paragraph.textContent || "")) return false;
+  for (var parent = paragraph.parentElement; parent && parent !== article; parent = parent.parentElement) {
+    if (relatedHeadingRecordRail(parent)) return false;
+  }
+  return true;
 }
 
 function relatedArticleBodyParagraph(paragraph, article) {
@@ -127,7 +231,15 @@ function relatedHeadingLinkedCardGroup(block) {
   if (records.length < 2) return false;
   var destinations = [];
   return records.every(function(record) {
-    if (!record.matches("article, div, li, h2, h3, h4") || elementSubtreeHidden(record)) return false;
+    if (!record.matches("a[href], article, div, li, h2, h3, h4") || elementSubtreeHidden(record)) return false;
+    if (record.matches("a[href]")) {
+      var plainText = normalizeText(record.textContent || "");
+      var plainDestination = sourceOwnershipPageUrl(record.getAttribute("href"));
+      if (record.children.length || !plainText || !plainDestination || plainDestination === sourceOwnershipPageUrl(location.href) ||
+          destinations.indexOf(plainDestination) !== -1) return false;
+      destinations.push(plainDestination);
+      return true;
+    }
     var headings = record.matches("h2, h3, h4") ? [record] : Array.from(record.querySelectorAll("h2, h3, h4")).filter(function(heading) {
       return !elementVisuallyHidden(heading);
     });

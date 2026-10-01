@@ -179,9 +179,12 @@
   }
 
   function stripRelatedSectionsByHeading(root) {
+    if (!relatedRailRootOwnsArticle(root)) return;
+    var focalArticle = root.matches && root.matches("article") ? root : root.querySelector("article");
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
       if (heading.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
+      if (heading.closest("article") !== focalArticle) return;
       if (!relatedRailHasUniqueVisibleArticleOwner()) return;
 
       var text = normalizeText(heading.textContent || "").trim();
@@ -202,6 +205,7 @@
 
     root.querySelectorAll("div, section, aside").forEach(function(block) {
       if (block.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
+      if (block.closest("article") !== focalArticle) return;
       if (!relatedRailHasUniqueVisibleArticleOwner()) return;
       if (relatedHeadingRecordRail(block)) {
         block.remove();
@@ -217,11 +221,12 @@
     var pending = [];
     var proven = [];
     for (var sibling = heading.nextSibling; sibling; sibling = sibling.nextSibling) {
-      if (sibling.nodeType === Node.ELEMENT_NODE && /^H[1-4]$/.test(sibling.tagName || "")) break;
+      if (sibling.nodeType === Node.ELEMENT_NODE && /^H[1-4]$/.test(sibling.tagName || "")) return proven.length ? [] : proven;
       var clone = sibling.cloneNode(true);
       candidate.appendChild(clone);
       pending.push(sibling);
       if (relatedHeadingRecordRail(candidate)) proven = pending.slice();
+      else if (proven.length && (sibling.nodeType !== Node.TEXT_NODE || normalizeText(sibling.nodeValue || ""))) return [];
     }
     return proven;
   }

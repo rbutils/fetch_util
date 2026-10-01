@@ -267,12 +267,15 @@
   }
 
   function contentWithoutTerminalArticleFurniture(content) {
-    if (!content || !content.html || Object.prototype.hasOwnProperty.call(content, "markdown") ||
+    if (!content || !content.html || Object.prototype.hasOwnProperty.call(content, "markdown") || content.focalPublicPreview ||
         !/^(?:article|medical)$/i.test(content.contentType || "")) return content;
     var root = document.createElement("div");
     root.innerHTML = content.html;
     var originalHtml = root.innerHTML;
+    markTerminalArticleLinkCollections(root);
     stripTerminalArticleLinkCollections(root);
+    stripRelatedSectionsByHeading(root);
+    relatedTrailingNestedArticleCardSections(root).forEach(function(section) { section.remove(); });
     stripShortRelatedArticleTeasers(root);
     stripPromotedComplementaryArticleSiblings(root);
     stripInlineEmoticonArtwork(root);
