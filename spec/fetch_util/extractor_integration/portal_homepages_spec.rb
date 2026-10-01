@@ -821,7 +821,8 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
         '      var indexListCandidate = {contentType: "list", html: "<main></main>", markdown: "", textContent: "", readerMode: false};'
       ) || raise('index candidate boundary missing')
       source.sub!(
-        '      var indexListAllowed = indexListCandidateAllowed(content);',
+        "      var indexListAllowed = indexListCandidateAllowed(content, !!(repeatedCollection && repeatedCollection.queryDirectoryOverride)) &&\n" \
+          '        !listArticleOwnershipConflict;',
         '      var indexListAllowed = false;'
       ) || raise('index arbitration boundary missing')
       source.sub!(
