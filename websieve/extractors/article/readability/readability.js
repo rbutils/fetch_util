@@ -49,6 +49,15 @@
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
       );
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
+      if (excerpt === article.excerpt && readerBodyEvidence && readerBodyEvidence.sourceParagraphs) {
+        var normalizedExcerpt = normalizeText(excerpt || "");
+        var readerBylineExcerpt = normalizedExcerpt &&
+          (normalizedExcerpt === normalizeText(article.byline || "") ||
+           normalizedExcerpt === normalizeText(metadata && metadata.declaredByline || ""));
+        if (!readerBylineExcerpt) {
+          excerpt = sourceOwnedReaderAdjacentHeaderExcerpt(article, readerBodyEvidence, metadata) || excerpt;
+        }
+      }
       if (!excerpt) excerpt = sourceOwnedReaderMissingExcerpt(article, metadata);
       article.content = readerSourceOwnedRestoreConflictingCredits(
         article, metadata, sourceClones, sourceIdentities, excerptMarker,

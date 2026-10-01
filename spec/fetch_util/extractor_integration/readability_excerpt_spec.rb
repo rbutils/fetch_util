@@ -15,6 +15,7 @@ RSpec.describe 'Readability article excerpts' do
         global.__readabilityArticleExcerpt = readabilityArticleExcerpt;
         global.__readabilityContent = readabilityContent;
         global.__markReadabilityExcerptSources = markReadabilityExcerptSources;
+        global.__sourceOwnedReaderAdjacentHeaderExcerpt = sourceOwnedReaderAdjacentHeaderExcerpt;
       JS
     end.join("\n")
   end
@@ -343,6 +344,138 @@ RSpec.describe 'Readability article excerpts' do
       expect(values.fetch('excerpt')).to eq(lead)
       expect(values.fetch('marked')).to include(lead, later)
       expect(values.fetch('marked')).not_to include('Unrelated recommendation must not become the excerpt.')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
+  it 'uses a complete visible adjacent header summary only for the fully owned Reader article' do
+    title = 'NewsIT report'
+    excerpt = 'Γέλια και χειραψίες ανάμεσα στους δύο ηγέτες - Υποδοχή με ισχυρό συμβολισμό'
+    body = [
+      'The two leaders met at the official welcome ceremony, exchanging greetings and handshakes before the scheduled talks began.',
+      'Officials described the meeting as an important public signal and said the delegations would continue their discussions later that day.',
+      'The reception included a formal ceremony, remarks from both sides, and several meetings attended by senior members of each delegation.'
+    ]
+    html = <<~HTML
+      <html><head><title>#{title}</title><meta name="description" content="Metadata says a different phrase."></head>
+      <body class="single-post">
+        <header><h1 class="entry-title">#{title}</h1><div class="article-excerpt">#{excerpt}</div></header>
+        <main class="main-content column gap-md">
+          <article id="post-4722536" class="post type-post status-publish category-kosmos">
+            <div class="share-inside-the-content">Share Tweet WhatsApp</div>
+            <div class="inside-article column start-center gap-md">
+              <a href="https://www.google.com/preferences/source?q=newsit.gr">Προσθήκη του newsit.gr ως προτεινόμενη πηγή στην Google</a>
+              <div class="entry-content"><section>#{body.map { |text| "<p>#{text}</p>" }.join}</section></div>
+            </div>
+          </article>
+          <article class="round-box"><h2>Άλλη είδηση με διαφορετικό θέμα</h2></article>
+        </main>
+      </body>
+      </html>
+    HTML
+
+    with_url_page('https://www.newsit.gr/politiki/report/', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      vendor = File.read(File.join(File.expand_path('../../..', __dir__), 'lib/fetch_util/assets/vendor/readability.js'))
+      page.add_script_tag(content: vendor)
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var metadata = {title: "NewsIT report", excerpt: "metadata is not visible prose"};
+          var content = window.__readabilityContent(metadata);
+          var paragraphs = content.sourceOwnedReaderBodyParagraphSources || [];
+          var evidence = {
+            sourceParagraphs: paragraphs,
+            unmappedHeaderParagraphs: content.sourceOwnedReaderUnmappedHeaderParagraphs || [],
+            unmappedTrailingParagraphs: content.sourceOwnedReaderUnmappedTrailingParagraphs || []
+          };
+          var choose = window.__sourceOwnedReaderAdjacentHeaderExcerpt;
+          var selectedSummary = choose(content, evidence, metadata);
+          var conflictingTitle = choose(content, evidence, Object.assign({}, metadata, {title: "Different title"}));
+          var reordered = choose(content, Object.assign({}, evidence, {sourceParagraphs: paragraphs.slice().reverse()}), metadata);
+          var foreign = document.createElement("p");
+          foreign.textContent = "Short foreign note.";
+          var otherArticle = document.querySelector(".round-box");
+          otherArticle.appendChild(foreign);
+          var competingRecord = choose(content, evidence, metadata);
+          var mixedRecord = choose(content, Object.assign({}, evidence, {sourceParagraphs: paragraphs.concat([foreign])}), metadata);
+          foreign.remove();
+          var header = document.querySelector("header");
+          var priorStyle = header.getAttribute("style");
+          header.setAttribute("style", "display: none");
+          var hiddenHeader = choose(content, evidence, metadata);
+          if (priorStyle === null) header.removeAttribute("style");
+          else header.setAttribute("style", priorStyle);
+          var summary = header.querySelector(".article-excerpt");
+          var priorSummary = summary.textContent;
+          var longSummary = Array.from({length: 12}, function(_unused, index) {
+            return "Distinct source detail " + (index + 1) + " records a verified point for this report.";
+          }).join(" ");
+          summary.textContent = longSummary;
+          var unbounded = choose(content, evidence, metadata);
+          summary.textContent = priorSummary;
+          var aside = document.createElement("aside");
+          header.insertBefore(aside, summary);
+          aside.appendChild(summary);
+          var asideSummary = choose(content, evidence, metadata);
+          header.insertBefore(summary, aside);
+          aside.remove();
+          var foreignArticle = document.createElement("article");
+          header.insertBefore(foreignArticle, summary);
+          foreignArticle.appendChild(summary);
+          var nestedArticleSummary = choose(content, evidence, metadata);
+          header.insertBefore(summary, foreignArticle);
+          foreignArticle.remove();
+          var controlBranch = document.createElement("div");
+          controlBranch.setAttribute("role", "button");
+          header.insertBefore(controlBranch, summary);
+          controlBranch.appendChild(summary);
+          var controlBranchSummary = choose(content, evidence, metadata);
+          header.insertBefore(summary, controlBranch);
+          controlBranch.remove();
+          summary.innerHTML = "<button>Continue reading</button>";
+          var controlOnlySummary = choose(content, evidence, metadata);
+          summary.textContent = priorSummary;
+          var priorClass = summary.className;
+          summary.className = "unmarked-copy";
+          var labelAlone = choose(content, evidence);
+          summary.className = priorClass;
+          return {
+            excerpt: content.excerpt,
+            heading: document.querySelector("header h1").textContent.trim(),
+            readerMode: content.readerMode,
+            bodyParagraphCount: paragraphs.length,
+            mappedBody: paragraphs.map(function(paragraph) { return paragraph.textContent.trim(); }),
+            selectedSummary: selectedSummary,
+            conflictingTitle: conflictingTitle,
+            reordered: reordered,
+            competingRecord: competingRecord,
+            mixedRecord: mixedRecord,
+            hiddenHeader: hiddenHeader,
+            unbounded: unbounded,
+            asideSummary: asideSummary,
+            nestedArticleSummary: nestedArticleSummary,
+            controlBranchSummary: controlBranchSummary,
+            controlOnlySummary: controlOnlySummary,
+            labelAlone: labelAlone
+          };
+        })())
+      JS
+      expect(values['heading']).to eq(title)
+      expect(values['excerpt']).to eq(excerpt)
+      expect(values['readerMode']).to be(true)
+      expect(values['bodyParagraphCount']).to be >= 2
+      expect(values['mappedBody']).to eq(body)
+      expect(values['selectedSummary']).to eq(excerpt)
+      expect(values['conflictingTitle']).to be_nil
+      expect(values['reordered']).to be_nil
+      expect(values['competingRecord']).to be_nil
+      expect(values['mixedRecord']).to be_nil
+      expect(values['hiddenHeader']).to be_nil
+      expect(values['unbounded']).to eq((1..12).map { |number| "Distinct source detail #{number} records a verified point for this report." }.join(' '))
+      expect(values['unbounded'].length).to be > 280
+      expect(values.values_at('asideSummary', 'nestedArticleSummary', 'controlBranchSummary', 'controlOnlySummary')).to eq([nil, nil, nil, nil])
+      expect(values['labelAlone']).to be_nil
       expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
