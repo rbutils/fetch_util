@@ -39,6 +39,7 @@
     var sourceNodes = new Map();
     var acceptedLinks = new Set();
     var context = listPageContext();
+    context.producerProvenCardTitles = options && options.producerProvenCardTitles;
     var repeatedRecordByIdentity = new Map((options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).map(function(record) {
       return [record.identity, record];
     }));
@@ -177,7 +178,7 @@
     return candidates;
   }
 
-  function cleanupListRoot(root) {
+  function cleanupListRoot(root, producerProvenCardNodes) {
     cleanupCookieChrome(root);
     stripTrackingPixels(root);
     resolveLazyImages(root);
@@ -188,11 +189,23 @@
     });
     root.querySelectorAll("section, div, aside, form, ul, ol").forEach(function(el) {
       if (!listChromeNode(el)) return;
+      if ((producerProvenCardNodes || []).some(function(card) {
+        return card && (card === el || card.contains(el));
+      })) return;
       if (listOwnedHeadingContainer(el)) {
         el.replaceWith.apply(el, Array.from(el.childNodes));
         return;
       }
       var recordRoots = genericListChromeOwnedRecordRoots(el);
+      var missingProducerCard = (producerProvenCardNodes || []).some(function(card) {
+        return card && el.contains(card) && !recordRoots.some(function(recordRoot) {
+          return recordRoot !== el && recordRoot.contains(card);
+        });
+      });
+      if (missingProducerCard) {
+        el.replaceWith.apply(el, Array.from(el.childNodes));
+        return;
+      }
       if (recordRoots.length && el.parentNode) {
         recordRoots.forEach(function(recordRoot) {
           if (!homepageRootPath()) recordRoot.querySelectorAll("ul, ol, [role='list'], [class*='listing' i], [class*='grid' i], [class*='feed' i], [class*='results' i]").forEach(function(collection) {
@@ -214,7 +227,9 @@
     });
     root.querySelectorAll("a, button").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
-      if (/^(sign in|log in|login|register|subscribe|newsletter|follow us|follow|join now|create account|my account|account|menu|search)$/i.test(text)) el.remove();
+      if (/^(sign in|log in|login|register|subscribe|newsletter|follow us|follow|join now|create account|my account|account|menu|search)$/i.test(text)) {
+        el.remove();
+      }
     });
     return root;
   }

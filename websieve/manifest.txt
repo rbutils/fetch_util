@@ -83,6 +83,7 @@ classifiers/challenges/index.js
 classifiers/list_pages/article_body_collection.js
 classifiers/list_pages/ownership/homepage_landing.js
 classifiers/list_pages/context.js
+classifiers/list_pages/case_index.js
 classifiers/list_pages/detail_articles.js
 extractors/article/coverage/code_coverage.js
 classifiers/list_pages/dominance.js

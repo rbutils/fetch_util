@@ -1,3 +1,13 @@
+  function indexListCandidateAllowed(candidate) {
+    return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
+      !candidate.focalPermalinkContent &&
+      candidate.contentType !== "medical" && candidate.contentType !== "press_release" && candidate.contentType !== "product" &&
+      candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
+      candidate.contentType !== "hotel" && candidate.contentType !== "event" &&
+      !sportsTypedContent(candidate) && !candidate.hostAware && !candidate.docsLike &&
+      !candidate.legalProvision;
+  }
+
   function materializedListLinks(root) {
     return Array.prototype.filter.call(root.querySelectorAll("a[href]"), function(link) {
       return !!materializedHttpUrl(link.getAttribute("href"));
@@ -72,8 +82,13 @@
   }
 
   function dominantIndexListPage(content) {
-    if (!document.body || articleRouteFocalContent(content)) return false;
+    if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
+    var pageRoot = pageContentProbe();
+    var institutionalCaseIndex = institutionalCaseRecordListPage(pageRoot, null, true, true);
+    if (institutionalCaseIndex && institutionalCaseIndex.focalArticle) return false;
+    if (institutionalCaseIndex) return true;
+    if (articleRouteFocalContent(content)) return false;
     if (linkedTableIndexPage()) return true;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
@@ -96,7 +111,6 @@
       return total + normalizeText(link.textContent || link.getAttribute("aria-label") || "").length;
     }, 0);
     var linkDensity = text.length > 0 ? linkText / text.length : 0;
-    var pageRoot = pageContentProbe();
     var articleFeedLinks = Math.max(sectionFeedArticleLinks(root), sectionFeedArticleLinks(pageRoot));
 
     if (legalJudgmentArticleContent(root, text) || legalStatuteArticleContent(root, text)) return false;
@@ -131,41 +145,6 @@
     articleRoot.innerHTML = (content && content.html) || "";
     if (listCandidateLosesCodeBlocks(articleRoot, extracted)) return null;
     return extracted.portalRootEvidence ? extracted : null;
-  }
-
-  function institutionalCaseRecordListPage(root, text) {
-    root = root || document.body;
-    text = normalizeText(text || (root && root.textContent) || "");
-    if (!root || articleRouteFocalContent()) return false;
-
-    var context = normalizeText([location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ")).toLowerCase();
-    if (!/\b(?:cases?|defendants?|records?|dockets?|matters?)\b/.test(context)) return false;
-
-    var caseCards = collectCardLinkCandidates(root, {
-      cardSelectors: ".card, [class*='case-card' i], [class*='record-card' i], [class*='result-card' i], article, li",
-      allowMissingUrl: true,
-      dedupe: false,
-      minTitleLength: 3,
-      maxTitleLength: 180,
-      linkBuilder: function(card) {
-        return card.querySelector(".card-header, h2, h3, h4, a[href]");
-      },
-      candidateBuilder: function(card, titleNode) {
-        var cardText = normalizeText(card.textContent || "");
-        var link = titleNode && titleNode.matches && titleNode.matches("a[href]") ? titleNode :
-          titleNode && titleNode.querySelector && titleNode.querySelector("a[href]");
-        if (!link) link = card.querySelector("a[href]");
-        var href = link ? link.getAttribute("href") : "";
-        var url = materializedHttpUrl(href);
-        if (!/\b(?:case|defendant|prosecutor|trial|charges?|warrant|summons|custody|convicted|acquitted|closed|at large|court|record|docket|matter)\b/i.test(cardText)) return null;
-        return { text: normalizeText((titleNode || {}).textContent || ""), url: url, admission: !href || !!url };
-      }
-    });
-    var filterBlocks = root.querySelectorAll("form, [class*='filter' i], [class*='facet' i], [class*='exposed' i], [class*='search' i]").length;
-    var countLabel = /\b\d{1,4}\s+(?:cases?|defendants?|records?|matters?|results?)\b/i.test(text);
-
-    var admittedCards = caseCards.filter(function(card) { return card.admission; }).length;
-    return caseCards.length >= 4 && admittedCards >= 4 && (filterBlocks >= 1 || countLabel);
   }
 
   function sectionFeedArticleLinks(root) {

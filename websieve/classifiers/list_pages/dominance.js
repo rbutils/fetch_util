@@ -179,11 +179,12 @@
     var tableIndexRow = context && context.tableIndexPage && container && container.matches && container.matches("tr");
     var group = genericListLinkGroup(link, context.linkGroups);
     var imageTitleCard = genericListImageTitleCard(link);
-    var minimumTitleLength = minimumListTitleLength(text);
+    var producerProvenTitle = !!(context && context.producerProvenCardTitles && context.producerProvenCardTitles.has(link));
+    var minimumTitleLength = producerProvenTitle ? 3 : minimumListTitleLength(text);
     if (group || imageTitleCard || genericListNumberedCollectionLink(link, context && context.numberedCollections)) minimumTitleLength = 1;
     else if (tableIndexRow) minimumTitleLength = 2;
     else if (directAnchorTitle && genericListWrappedAnchorCard(link)) minimumTitleLength = Math.min(6, minimumTitleLength);
-    if (text.length < minimumTitleLength || text.length > 220) return null;
+    if (text.length < minimumTitleLength || (text.length > 220 && !producerProvenTitle)) return null;
 
     var url = materializedHttpUrl(href);
     if (!url && !retainUnsafeLink) return null;
@@ -198,7 +199,8 @@
     if (genericListControlText(text)) return null;
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
-    if ((!group && looksLikeFooterLink(text, href)) || listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)) return null;
+    if ((!group && looksLikeFooterLink(text, href)) || (!producerProvenTitle &&
+        (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)))) return null;
     if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
     var card = imageTitleCard || listCardRoot(link, container, group, context.figureCollections);

@@ -106,10 +106,24 @@
     return null;
   }
 
-  function preserveStructuredCardLinks(root) {
+  function preserveStructuredCardLinks(root, options) {
+    options = options || {};
     root.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
       node.removeAttribute("data-fetch-util-structured-card-field");
     });
+    if (options.producerProvenTitleLinks) {
+      var producerProvenTitles = new Set();
+      options.producerProvenTitleLinks.forEach(function(link) {
+        if (!link || !root.contains(link) || !link.matches("a[href]") ||
+            !materializedHttpUrl(link.getAttribute("href"))) return;
+        var heading = link.closest("h1, h2, h3, h4, h5, h6");
+        var title = normalizeText(link.textContent || "");
+        if (!heading || !heading.contains(link) || normalizeText(heading.textContent || "") !== title ||
+            title.length < 3 || genericListControlText(title)) return;
+        producerProvenTitles.add(link);
+      });
+      if (options.proofOnly) return producerProvenTitles;
+    }
     var candidates = [];
     root.querySelectorAll("article > a[href]").forEach(function(link) {
       var article = link.parentElement;
@@ -150,4 +164,5 @@
         title.appendChild(titleLink);
       });
     });
+    return new Set();
   }

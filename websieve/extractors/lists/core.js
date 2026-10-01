@@ -14,7 +14,7 @@
     var cloneSource = primaryMainSourceNode &&
       (node === document.body || node === primaryMainSourceNode || primaryMainSourceNode.contains(node)) ?
       primaryMainSourceNode : node;
-    var elementMap = repeatedCollection ? new Map() : null;
+    var elementMap = repeatedCollection || options.institutionalCaseIndex ? new Map() : null;
     var clonedSourceRoot = visibleListClone(cloneSource, options.preservedRoots, elementMap);
     var clonedPrimaryMain = elementMap && primaryMainSourceNode && elementMap.get(primaryMainSourceNode);
     var clonedRenderOwner = elementMap && renderOwnerSourceNode && elementMap.get(renderOwnerSourceNode);
@@ -28,7 +28,21 @@
       clonedPrimaryMain.contains(clonedRenderOwner) && candidateMapped && candidateSourceOwned);
     var root = primaryMainMapped ? clonedPrimaryMain : clonedSourceRoot;
     var extractionRoot = root;
-    cleanupListRoot(root);
+    var producerProvenCardNodes = options.institutionalCaseIndex && elementMap ?
+      options.institutionalCaseIndex.cardNodes.map(function(card) { return elementMap.get(card); }).filter(Boolean) : null;
+    cleanupListRoot(root, producerProvenCardNodes);
+    var extractionOptions = options;
+    if (options.institutionalCaseIndex && elementMap) {
+      var producerTitleLinks = options.institutionalCaseIndex.titleLinks.map(function(link) {
+        return elementMap.get(link);
+      }).filter(Boolean);
+      extractionOptions = Object.assign({}, options, {
+        producerProvenCardTitles: preserveStructuredCardLinks(root, {
+          producerProvenTitleLinks: producerTitleLinks,
+          proofOnly: true
+        })
+      });
+    }
     if (primaryMainMapped && clonedCandidate && !root.contains(clonedCandidate)) {
       primaryMainMapped = false;
       root = clonedSourceRoot;
@@ -36,7 +50,7 @@
     }
     var sectioned = sectionedListExtraction(extractionRoot);
 
-    var items = extractListItems(extractionRoot, options);
+    var items = extractListItems(extractionRoot, extractionOptions);
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
     var descText = primaryMainMapped ? listDescriptionMarkdown(root, items) : listDescriptionMarkdown(root);

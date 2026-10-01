@@ -29,16 +29,6 @@
           substantialArticleContent(candidate) || strongArticleMetadata(metadata, candidate);
       }
 
-      function indexListCandidateAllowed(candidate) {
-        return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
-          !candidate.focalPermalinkContent &&
-          candidate.contentType !== "medical" && candidate.contentType !== "press_release" && candidate.contentType !== "product" &&
-          candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
-          candidate.contentType !== "hotel" && candidate.contentType !== "event" &&
-          !sportsTypedContent(candidate) && !candidate.hostAware && !candidate.docsLike &&
-          !candidate.legalProvision;
-      }
-
       if (!content) {
         var mediaWiki = mediaWikiContent(metadata);
         if (mediaWiki) {
@@ -201,12 +191,13 @@
 
        content = applyMedicalContentType(content, metadata);
 
-        var repeatedCollectionAssessment = repeatedRecordAssessmentForContent(content, selectedFocalArticleOwner);
-       var repeatedCollectionConflict = !!(repeatedCollectionAssessment &&
-         repeatedCollectionAssessment.articleOwnershipConflict);
+        var institutionalCaseIndex = institutionalCaseRecordListPage(document.body, null, true, true);
+        var repeatedCollectionAssessment = institutionalCaseIndex && !institutionalCaseIndex.focalArticle ? null : repeatedRecordAssessmentForContent(content, selectedFocalArticleOwner);
+        var listArticleOwnershipConflict = !!(institutionalCaseIndex && institutionalCaseIndex.focalArticle) ||
+          !!(repeatedCollectionAssessment && repeatedCollectionAssessment.articleOwnershipConflict);
         var repeatedCollection = repeatedCollectionAssessment &&
           !repeatedCollectionAssessment.articleOwnershipConflict ? repeatedCollectionAssessment : null;
-       var portalRootContent = content && !repeatedCollectionAssessment && !content.browseIndexContent ?
+        var portalRootContent = content && !listArticleOwnershipConflict && !repeatedCollectionAssessment && !content.browseIndexContent ?
          crediblePortalRootListContent(metadata, content) : null;
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);
        if (ownedDetailArticle) {
@@ -231,7 +222,7 @@
         content.hostAware = true;
       }
       if (content.contentType === "article" && !content.browseIndexContent && !content.hostAware && !content.docsLike &&
-          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) && !repeatedCollectionConflict &&
+          !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) && !listArticleOwnershipConflict &&
           legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
         if (normalizeText(footerListFallback.markdown || "").length >= 400 &&
@@ -239,24 +230,30 @@
             !listCandidateLosesArticleListMaterial(content, footerListFallback)) content = footerListFallback;
       }
       if (content.contentType === "article" && !content.docsLike && !content.legalProvision &&
-          !repeatedCollectionConflict && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) {
+          !listArticleOwnershipConflict && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) {
         content = relabelAsListContent(content, { strongList: true });
       }
       var indexListCandidate = null;
-      var indexListAllowed = indexListCandidateAllowed(content) && !repeatedCollectionConflict;
+      var indexListAllowed = indexListCandidateAllowed(content) && !listArticleOwnershipConflict;
       var sourceOwnedIndex = indexListAllowed && strongArticle && !cachedFocalArticleContent(content) &&
         sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {
         indexListCandidate = repeatedCollection ? listContent(metadata, {
-           repeatedRecordCollection: repeatedCollection
-        }) : listContent(metadata);
+          repeatedRecordCollection: repeatedCollection
+        }) : listContent(metadata, institutionalCaseIndex ? {
+          sourceOwner: institutionalCaseIndex.root,
+          institutionalCaseIndex: institutionalCaseIndex
+        } : undefined);
       } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection || repeatedCollection) &&
           (likelyListPath() || repeatedCollection || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
           (!strongArticle || sourceOwnedIndex || repeatedCollection)) {
         indexListCandidate = repeatedCollection ? listContent(metadata, {
-           repeatedRecordCollection: repeatedCollection
+          repeatedRecordCollection: repeatedCollection
         }) :
-          (sourceOwnedIndex || listContent(metadata));
+          (sourceOwnedIndex || listContent(metadata, institutionalCaseIndex ? {
+            sourceOwner: institutionalCaseIndex.root,
+            institutionalCaseIndex: institutionalCaseIndex
+          } : undefined));
       }
       if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
           !(supportingProductCollection && content.contentType === "article") &&
@@ -265,7 +262,7 @@
           (!repeatedCollection || repeatedRecordCandidateCoversOwner(indexListCandidate, repeatedCollection)) &&
           !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
       if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike &&
-          !content.legalProvision && !strongArticle && !repeatedCollectionConflict && thinSearchOrCategoryPage(content)) {
+          !content.legalProvision && !strongArticle && !listArticleOwnershipConflict && thinSearchOrCategoryPage(content)) {
         content = relabelAsListContent(content, { strongList: true });
       }
       if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
@@ -273,10 +270,10 @@
         if (glossaryListFallback) content = glossaryListFallback;
       }
 
-      var dormantBodyList = repeatedCollectionConflict ? null : dormantBodyRootListContent(content, metadata);
+      var dormantBodyList = listArticleOwnershipConflict ? null : dormantBodyRootListContent(content, metadata);
       if (dormantBodyList) content = dormantBodyList;
 
-      var staleOpacityList = repeatedCollectionConflict ? null : staleOpacitySectionListContent(content, metadata);
+      var staleOpacityList = listArticleOwnershipConflict ? null : staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
        var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);

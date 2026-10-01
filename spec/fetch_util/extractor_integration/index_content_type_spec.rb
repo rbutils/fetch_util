@@ -294,6 +294,91 @@ RSpec.describe 'FetchUtil extractor integration' do
     extract_from_url('https://www.example-court.int/cases', html) do |payload|
       expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Next steps: the chamber will continue to manage reparations')
+
+      case_names = %w[Abd-Al-Rahman Abu-Garda Al-Hassan Al-Mahdi Al-Bashir Bemba]
+      record_lines = payload['markdown'].lines.grep(%r{\]\(https://www\.example-court\.int/darfur/})
+      expect(record_lines.map { |line| line[/\]\(([^)]+)\)/, 1] }).to eq(
+        case_names.map { |name| "https://www.example-court.int/darfur/#{name.downcase}" }
+      )
+      expect(record_lines.length).to eq(case_names.length)
+
+      case_names.zip(record_lines).each do |name, line|
+        title = name.tr('-', ' ')
+        title_link = "[#{title}](https://www.example-court.int/darfur/#{name.downcase})"
+        status = 'In ICC custody, Convicted'
+        summary = 'The warrant of arrest and charges in this case were addressed by the trial chamber ' \
+                  'after extensive proceedings before the court. This summary is intentionally long enough ' \
+                  'to resemble a case record teaser rather than a short news card.'
+        next_steps = 'Next steps: the chamber will continue to manage reparations, appeals, custody, and other case record matters.'
+        expect(line).to include(title_link, status, summary, next_steps)
+        expect(line.index(title_link)).to be < line.index(status)
+        expect(line.index(status)).to be < line.index(summary)
+        expect(line.index(summary)).to be < line.index(next_steps)
+      end
+    end
+  end
+
+  it 'keeps an unbounded source-owned case heading and all of its fields' do
+    long_suffix = 'and the complete source-owned case heading ' * 7
+    long_title = "International criminal proceedings concerning Bemba #{long_suffix.strip}"
+    cards = [long_title, 'Abd Al Rahman', 'Abu Garda', 'Al Hassan'].map.with_index do |name, index|
+      <<~HTML
+        <div class="card">
+          <div class="card-header"><h3><a href="/cases/#{index + 1}">#{name}</a></h3></div>
+          <div class="card-body">
+            <p>In ICC custody, Convicted</p>
+            <p>The court reviewed the complete trial record and the source-owned appeal filing for this matter.</p>
+            <p>Next steps: the chamber will continue to manage the case proceedings and schedule hearings.</p>
+          </div>
+        </div>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Cases | International Criminal Court</title></head><body>
+        <main><h1>Cases</h1><form class="cases-search">Filter cases</form>
+          <div class="case-list"><h2>34 Cases</h2>#{cards}</div>
+        </main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://www.example-court.int/cases', html) do |payload|
+      expect_content_type(payload, 'list')
+      expect(long_title.length).to be > 260
+      line = payload['markdown'].lines.find { |value| value.include?('https://www.example-court.int/cases/1') }
+      expect(line).to include(
+        "[#{long_title}](https://www.example-court.int/cases/1)", 'In ICC custody, Convicted',
+        'The court reviewed the complete trial record and the source-owned appeal filing for this matter.',
+        'Next steps: the chamber will continue to manage the case proceedings and schedule hearings.'
+      )
+      expect(line.index("[#{long_title}]")).to be < line.index('In ICC custody, Convicted')
+      expect(line.index('In ICC custody, Convicted')).to be < line.index('The court reviewed the complete trial record')
+      expect(line.index('The court reviewed the complete trial record')).to be < line.index('Next steps:')
+    end
+  end
+
+  it 'keeps a focal case article when its long owned prose sits outside the case collection' do
+    cards = %w[Abd-Al-Rahman Abu-Garda Al-Hassan Al-Mahdi].map.with_index do |name, index|
+      <<~HTML
+        <div class="card"><div class="card-header"><h3><a href="/darfur/#{index}">#{name.tr("-", " ")}</a></h3></div>
+          <div class="card-body"><p>In ICC custody, Convicted</p><p>The case and charges were reviewed in court.</p></div>
+        </div>
+      HTML
+    end.join
+    editorial = 'The court published a detailed editorial decision about the case, the evidence, ' \
+                'the procedural history, and the legal reasoning that led the chamber to reach its current conclusion.'
+    html = <<~HTML
+      <html><head><title>Cases | International Criminal Court</title></head><body>
+        <main><h1>Cases</h1><article class="article-content" itemprop="articleBody"><h1>Cases</h1><p>#{editorial}</p>
+          <p>The decision follows the record and sets out the governing legal test.</p></article>
+          <form class="cases-search">Filter cases</form><div class="case-list"><h2>34 Cases</h2>#{cards}</div>
+        </main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://www.example-court.int/cases', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include(editorial)
+      expect(payload['markdown']).not_to include('- [Abd Al Rahman]')
     end
   end
 
