@@ -37,6 +37,7 @@
 - Remove structurally empty article ad placeholders only inside a proven source-owned article body.
 - Remove source-owned Google publisher action prompts without rewriting neighboring Reader text or citations.
 - Preserve a source-owned Reader headline and use a complete, visibly labelled header summary only when its entire article body is source-proven.
+- Remove empty comment-form headings only within a proven article owner, preserving authored headings and published replies.
 - Map repeated-list records and their introduction into one source-owned cleaned main, excluding unrelated page context.
 - Keep verified focal articles and typed detail pages ahead of unrelated repeated records while preserving genuine list introductions and distinct source-record occurrences.
 - Carry verified public-preview ownership into canonical article rendering and excerpts, preserving surrounding public material while excluding locked and foreign content.

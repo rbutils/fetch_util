@@ -1,7 +1,8 @@
-function sourceOwnedContentClone(source, preservedFooterNodes) {
+function sourceOwnedContentClone(source, preservedFooterNodes, ownership) {
   var sourceClones = new WeakMap();
   var clone = visibilityPrunedClone(source, document, sourceClones);
   if (!clone) return document.createElement("div");
+  sourceOwnedCleanCommentFormRoots(source, clone, sourceClones, ownership);
   var editorialHeadings = [];
   if (typeof genericArticleEditorialHeading === "function") {
     Array.from(source.querySelectorAll("h2[id], h3[id], h4[id], h5[id], h6[id]")).forEach(function(node) {
@@ -32,6 +33,82 @@ function sourceOwnedContentClone(source, preservedFooterNodes) {
   });
   clone.querySelectorAll("input, textarea, select, button").forEach(function(node) { node.remove(); });
   return clone;
+}
+
+function sourceOwnedCleanCommentFormRoots(source, clone, sourceClones, ownership) {
+  if (!ownership || !ownership.ownerRoot || !ownership.ownerRoot.contains(source) ||
+      sourceClones.get(source) !== clone) return;
+  var body = ownership.body.sourceNode === source;
+  var selectedHeader = sourceOwnedArticleHeaderNodes(ownership.headerContext).indexOf(source) !== -1;
+  if ((!body && !selectedHeader) || !sourceOwnedCommentFormParagraphsMapExactly(source, clone, sourceClones)) return;
+  if (body && !sourceOwnedCommentFormNoUnprovenParagraphsOutsideBody(source, ownership)) return;
+
+  sourceOwnedCommentFormRoots(source).forEach(function(wrapper) {
+    var wrapperClone = sourceClones.get(wrapper);
+    if (!wrapperClone || !clone.contains(wrapperClone) || !sourceOwnedCommentFormRootHasInterface(wrapper, wrapperClone, sourceClones, ownership)) return;
+    var rootRemoved = stripEmptyCommentUi(wrapperClone);
+    if (rootRemoved && wrapperClone.parentNode && !wrapperClone.children.length &&
+        !normalizeText(wrapperClone.textContent || "")) wrapperClone.remove();
+  });
+}
+
+function sourceOwnedCommentFormParagraphsMapExactly(source, clone, sourceClones) {
+  var paragraphs = Array.from(source.querySelectorAll("p")).filter(function(node) {
+    return !elementVisuallyHidden(node);
+  });
+  if (source.matches("p") && !elementVisuallyHidden(source)) paragraphs.unshift(source);
+  if (!paragraphs.length) return false;
+  var previousClone = null;
+  return paragraphs.every(function(paragraph) {
+    var paragraphClone = sourceClones.get(paragraph);
+    if (!paragraphClone || paragraphClone.localName !== "p" || !clone.contains(paragraphClone)) return false;
+    if (previousClone && !(previousClone.compareDocumentPosition(paragraphClone) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    previousClone = paragraphClone;
+    return true;
+  });
+}
+
+function sourceOwnedCommentFormNoUnprovenParagraphsOutsideBody(source, ownership) {
+  var headers = sourceOwnedArticleHeaderNodes(ownership.headerContext);
+  return !Array.from(ownership.ownerRoot.querySelectorAll("p, blockquote")).some(function(node) {
+    if (elementVisuallyHidden(node) || source.contains(node)) return false;
+    if (headers.some(function(header) { return header === node || header.contains(node); })) return false;
+    return !sourceOwnershipInChrome(node);
+  });
+}
+
+function sourceOwnedCommentFormRoots(source) {
+  var selector = "[class~='comment-form' i], [id='comment-form-div' i]";
+  var roots = Array.from(source.querySelectorAll(selector));
+  if (source.matches(selector)) roots.unshift(source);
+  return roots;
+}
+
+function sourceOwnedCommentFormRootHasInterface(sourceRoot, cloneRoot, sourceClones, ownership) {
+  var sourceForms = sourceRoot.matches("form") ? [sourceRoot] : Array.from(sourceRoot.querySelectorAll("form"));
+  var cloneForms = sourceForms.filter(function(form) {
+    var controls = Array.from(form.querySelectorAll("input, textarea, select")).filter(function(control) {
+      return !elementVisuallyHidden(control);
+    });
+    var formClone = sourceClones.get(form);
+    return controls.length > 0 && formClone && cloneRoot.contains(formClone);
+  });
+  if (!cloneForms.length) return false;
+
+  var headings = Array.from(sourceRoot.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+    return !elementVisuallyHidden(heading) && sourceOwnedCommentFormHeadingMatches(heading, ownership) &&
+      sourceClones.get(heading) && cloneRoot.contains(sourceClones.get(heading));
+  });
+  return headings.length === 1 || hasMarkedCommentContent(sourceRoot);
+}
+
+function sourceOwnedCommentFormHeadingMatches(heading, ownership) {
+  if (heading.closest("blockquote, [itemprop~='comment' i], [data-fetchutil-social-comment], [class~='comment' i], [class~='comments' i], [class~='reply' i], [class~='comment-body' i], [class~='comment-content' i], [class~='reply-body' i], [class~='reply-content' i]")) return false;
+  var article = heading.closest("article");
+  if (article && article !== ownership.ownerRoot && article !== ownership.body.sourceNode) return false;
+  var text = normalizeText(heading.textContent || "");
+  if (text.normalize) text = text.normalize("NFC");
+  return EMPTY_COMMENT_FORM_HEADING_PATTERN.test(text);
 }
 
 function sourceOwnedHeaderShareControl(anchor) {

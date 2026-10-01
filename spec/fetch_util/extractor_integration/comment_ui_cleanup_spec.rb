@@ -58,6 +58,33 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
     end
   end
 
+  def finalize_caller_owned_markdown(content)
+    root = File.expand_path('../../..', __dir__)
+    source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true)
+                 .reject { |line| line.empty? || line.start_with?('#') }
+                 .map { |path| File.read(File.join(root, 'websieve', path)) }.join("\n")
+    outro = File.read(File.join(root, 'websieve/99_outro.js'))
+    source = source.delete_suffix(outro) + <<~JS + outro
+      window.__finalizeCallerOwnedMarkdown = function(input) {
+        var result = contentWithoutTerminalArticleFurniture(input);
+        return {
+          sameObject: result === input,
+          html: result.html,
+          markdown: result.markdown,
+          textContent: result.textContent
+        };
+      };
+    JS
+
+    with_page('<main>Unchanged source page</main>') do |page|
+      before = page.evaluate('document.body.innerHTML')
+      page.add_script_tag(content: source)
+      result = page.evaluate("window.__finalizeCallerOwnedMarkdown(#{JSON.generate(content)})")
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+      result
+    end
+  end
+
   it 'removes explicit comment forms and zero-count continuation controls from article clones' do
     comment_ui = <<~HTML
       <div id="comment-form-div" class="comment-form">
@@ -77,6 +104,67 @@ RSpec.describe 'FetchUtil empty comment UI cleanup' do
       expect(payload.fetch('readerMode')).to be(false)
       expect(after).to eq(before)
     end
+  end
+
+  it 'removes only the selected article-owned empty comment form heading' do
+    owned_form = <<~HTML
+      <div id="comment-form-div" class="comment-form">
+        <h3>Komentari</h3>
+        <form><label>Name<input name="name"></label><textarea name="reply"></textarea><button>Post</button></form>
+      </div>
+    HTML
+    foreign_form = <<~HTML
+      <div id="foreign-comment-form" class="comment-form">
+        <h3>Komentari</h3>
+        <form><label>Name<input name="foreign-name"></label><textarea name="foreign-reply"></textarea><button>Post</button></form>
+      </div>
+    HTML
+    authored_and_published = <<~HTML
+      <h2>Komentari</h2>
+      <p>This short authored paragraph uses the same heading for an editorial note.</p>
+      <section class="reader-replies">
+        <p>A published, unmarked reader reply adds a specific correction to the report.</p>
+        <a href="https://reports.example/archive">The linked source record</a>
+        <figure>
+          <img src="https://reports.example/reply-map.png" alt="Reader supplied map">
+          <figcaption>The map attached to the published reply.</figcaption>
+        </figure>
+      </section>
+    HTML
+    html = comment_cleanup_article("#{authored_and_published}#{owned_form}").sub('</main>', "#{foreign_form}</main>")
+
+    with_url_page('https://reports.example/verified-infrastructure', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      markdown = payload.fetch('markdown')
+
+      expect(payload.fetch('readerMode')).to be(false)
+      expect(markdown.scan(/^## Komentari$/).length).to eq(1)
+      expect(markdown).not_to include('### Komentari', 'Name', 'Post', 'foreign-name', 'foreign-reply')
+      expect(markdown).to include('This short authored paragraph uses the same heading',
+                                  'A published, unmarked reader reply adds a specific correction',
+                                  'The linked source record', 'https://reports.example/archive',
+                                  'Reader supplied map', 'https://reports.example/reply-map.png',
+                                  'The map attached to the published reply.')
+      expect(payload.fetch('html')).not_to include('comment-form-div', 'foreign-comment-form', 'textarea')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'keeps caller-owned Markdown and Markdown-only material byte-exact' do
+    input = {
+      'contentType' => 'article',
+      'html' => '<article><p>Stored HTML paragraph.</p><section><h2>Latest articles</h2><a href="/latest">A visible card</a></section></article>',
+      'markdown' => "# Caller-authored article\n\nThis material exists only in the supplied Markdown.\n",
+      'textContent' => 'Stored HTML paragraph.'
+    }
+
+    result = finalize_caller_owned_markdown(input)
+
+    expect(result.fetch('sameObject')).to be(true)
+    expect(result.fetch('html')).to eq(input.fetch('html'))
+    expect(result.fetch('markdown')).to eq(input.fetch('markdown'))
+    expect(result.fetch('textContent')).to eq(input.fetch('textContent'))
   end
 
   it 'removes only a compact comment subscription prompt, not published replies' do

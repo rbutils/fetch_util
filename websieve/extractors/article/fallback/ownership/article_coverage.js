@@ -10,12 +10,12 @@ function sourceOwnedArticleMarkup(ownership) {
   if (headers.length) {
     headers.forEach(function(header) {
       var headerThreads = threads.filter(function(thread) { return header.contains(thread); });
-      article.appendChild(sourceOwnedArticleHeaderClone(header, sourceOwnedArticleCommentFooters(headerThreads)));
+      article.appendChild(sourceOwnedArticleHeaderClone(header, sourceOwnedArticleCommentFooters(headerThreads), ownership));
     });
   } else if (ownership.heading && !source.contains(ownership.heading)) {
     article.appendChild(sourceOwnedContentClone(ownership.heading));
   }
-  article.appendChild(sourceOwnedContentClone(source, bodyFooters));
+  article.appendChild(sourceOwnedContentClone(source, bodyFooters, ownership));
 
   threads.filter(function(thread) {
     return !source.contains(thread) && !headers.some(function(header) { return header.contains(thread); });
@@ -27,8 +27,8 @@ function sourceOwnedArticleMarkup(ownership) {
   return article;
 }
 
-function sourceOwnedArticleHeaderClone(header, preservedFooters) {
-  var clone = sourceOwnedContentClone(header, preservedFooters);
+function sourceOwnedArticleHeaderClone(header, preservedFooters, ownership) {
+  var clone = sourceOwnedContentClone(header, preservedFooters, ownership);
   Array.from(clone.querySelectorAll("a[href]")).forEach(function(anchor) {
     if (!sourceOwnedHeaderShareControl(anchor)) return;
     var item = anchor.closest("li");
