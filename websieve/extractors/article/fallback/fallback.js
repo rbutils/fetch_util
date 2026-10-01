@@ -130,6 +130,7 @@
     if (!selected || !focalOwnership || selected.node !== focalOwnership.node) focalOwnership = null;
     var node = selected ? selected.node : document.body;
     var visibleNode = selected ? selected.visibleNode : visibleBody;
+    stripSourceOwnedTerminalArticleFurniture(visibleNode, sourceClones);
     var markedVisibleNode = safeDeepClone(visibleNode, document);
     markTerminalArticleLinkCollections(markedVisibleNode);
     var clone = cleanClone(markedVisibleNode);

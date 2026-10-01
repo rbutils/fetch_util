@@ -15,7 +15,9 @@ function sourceOwnedArticleMarkup(ownership) {
   } else if (ownership.heading && !source.contains(ownership.heading)) {
     article.appendChild(sourceOwnedContentClone(ownership.heading));
   }
-  article.appendChild(sourceOwnedContentClone(source, bodyFooters, ownership));
+  var bodySourceClones = new WeakMap();
+  article.appendChild(sourceOwnedContentClone(source, bodyFooters, ownership, bodySourceClones));
+  stripSourceOwnedTerminalArticleFurniture(article, bodySourceClones);
 
   threads.filter(function(thread) {
     return !source.contains(thread) && !headers.some(function(header) { return header.contains(thread); });

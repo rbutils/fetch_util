@@ -858,6 +858,13 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/promo_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/publisher_cta.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/article_action_chrome.js")).to be < manifest.index("core/dom/article_collections.js")
+    expect_manifest_order(
+      manifest,
+      "core/dom/widgets/related_records.js",
+      "core/dom/article_collections.js",
+      "core/dom/terminal_article_furniture.js",
+      "core/dom/cleanup.js"
+    )
     expect(manifest.index("extractors/article/readability/source_headline.js")).to be < manifest.index("extractors/article/readability/readability.js")
   end
 

@@ -1,5 +1,5 @@
-function sourceOwnedContentClone(source, preservedFooterNodes, ownership) {
-  var sourceClones = new WeakMap();
+function sourceOwnedContentClone(source, preservedFooterNodes, ownership, sourceClones) {
+  sourceClones = sourceClones || new WeakMap();
   var clone = visibilityPrunedClone(source, document, sourceClones);
   if (!clone) return document.createElement("div");
   sourceOwnedCleanCommentFormRoots(source, clone, sourceClones, ownership);
