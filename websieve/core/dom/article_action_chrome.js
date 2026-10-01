@@ -80,6 +80,74 @@
     });
   }
 
+  function articleGoogleSourcePreferenceIntent(node) {
+    if (!node || !node.matches || !node.matches("a[href]") || node.children.length ||
+        node.closest("p, blockquote, li, figure, figcaption, h1, h2, h3, h4, h5, h6, pre, code, td, th, dd, dt") ||
+        node.hasAttribute("itemprop") || node.hasAttribute("itemref") || node.hasAttribute("property") ||
+        /(?:^|\s)(?:citation|bookmark|canonical)(?:\s|$)/i.test(node.getAttribute("rel") || "")) return null;
+
+    var label = normalizeText(node.textContent || "");
+    var match = label.match(/^Προσθήκη του (.+) ως προτεινόμενη πηγή στην Google$/iu);
+    if (!match) return null;
+    var publisher = normalizeText(match[1]);
+    if (!domainLikeText(publisher)) return null;
+
+    var destination = materializedHttpUrl(node.getAttribute("href") || "");
+    if (!destination) return null;
+    try {
+      var url = new URL(destination);
+      var parameters = Array.from(url.searchParams.entries());
+      if (url.protocol !== "https:" || !/^(?:www\.)?google\.com$/i.test(url.hostname) ||
+          url.pathname !== "/preferences/source" || url.username || url.password || url.port || url.hash ||
+          parameters.length !== 1 || parameters[0][0] !== "q" ||
+          normalizeText(parameters[0][1]).toLowerCase() !== publisher.toLowerCase()) return null;
+    } catch (_error) {
+      return null;
+    }
+    return publisher;
+  }
+
+  function articleGoogleSourcePreferenceControlContext(node) {
+    if (!node || !node.parentElement || !node.closest("article") ||
+        node.tagName !== "A") return false;
+    var parent = node.parentElement;
+    var visibleChildren = Array.from(parent.children).filter(function(child) { return !elementSubtreeHidden(child); });
+    if (visibleChildren.length !== 2 || visibleChildren.indexOf(node) === -1 ||
+        Array.from(parent.childNodes || []).some(function(child) {
+      return child.nodeType === 3 && normalizeText(child.nodeValue || "");
+    })) return false;
+
+    var bodies = visibleChildren.filter(function(child) { return child !== node; });
+    if (bodies.length !== 1 || bodies[0].matches("a, button, input, select, textarea, form, nav, aside, footer")) return false;
+    var material = Array.from(bodies[0].querySelectorAll("p, blockquote, figure, table, ul, ol, pre, code, h2, h3, h4")).some(function(item) {
+      if (elementSubtreeHidden(item)) return false;
+      return !!(normalizeText(item.textContent || "") || item.querySelector("img, audio, video, a[href], table"));
+    });
+    return material;
+  }
+
+  function articleGoogleSourcePreferenceAnchors(root) {
+    if (!root || !root.querySelectorAll) return [];
+    var anchors = Array.from(root.querySelectorAll("a[href]"));
+    if (root.matches && root.matches("a[href]")) anchors.unshift(root);
+    return anchors.filter(function(anchor) {
+      return !!articleGoogleSourcePreferenceIntent(anchor) && !elementSubtreeHidden(anchor) &&
+        articleGoogleSourcePreferenceControlContext(anchor);
+    });
+  }
+
+  function stripGoogleSourcePreferenceControl(sourceRoot, cloneRoot, sourceClones) {
+    if (!sourceRoot || !cloneRoot) return cloneRoot;
+    var sourceAnchors = articleGoogleSourcePreferenceAnchors(sourceRoot);
+    var cloneAnchors = articleGoogleSourcePreferenceAnchors(cloneRoot);
+    if (sourceAnchors.length !== 1 || cloneAnchors.length !== 1 ||
+        !sourceAnchors[0].isConnected || !sourceAnchors[0].isEqualNode(cloneAnchors[0]) ||
+        (sourceClones && sourceClones.get(sourceAnchors[0]) !== cloneAnchors[0])) return cloneRoot;
+    cloneAnchors[0].remove();
+    if (sourceClones) sourceClones.delete(sourceAnchors[0]);
+    return cloneRoot;
+  }
+
   function stripSourceOwnedArticleActions(root) {
     var sourceOwner = articleActionSourceOwner(root);
     if (!sourceOwner) return root;

@@ -6,6 +6,7 @@
       var clone = safeReadableDocumentClone();
       var sourceClones = new Map();
       pruneHiddenClone(document.documentElement, clone.documentElement, null, null, null, sourceClones);
+      stripGoogleSourcePreferenceControl(document.documentElement, clone.documentElement, sourceClones);
       var conflictingSourceBylines = new Set();
       stripPublisherCtaNotes(clone);
       var excerptMarker = markReadabilityExcerptSources(clone);

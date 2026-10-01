@@ -35,6 +35,7 @@
 - Render complete source-owned structured card headings and fields for named container and block-anchor cards.
 - Remove a related-story rail only when every selected article paragraph and destination is proven source-owned.
 - Remove structurally empty article ad placeholders only inside a proven source-owned article body.
+- Remove source-owned Google publisher action prompts without rewriting neighboring Reader text or citations.
 - Map repeated-list records and their introduction into one source-owned cleaned main, excluding unrelated page context.
 - Keep verified focal articles and typed detail pages ahead of unrelated repeated records while preserving genuine list introductions and distinct source-record occurrences.
 - Carry verified public-preview ownership into canonical article rendering and excerpts, preserving surrounding public material while excluding locked and foreign content.
