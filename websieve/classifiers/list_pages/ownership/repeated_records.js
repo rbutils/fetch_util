@@ -2,12 +2,12 @@
     if (!content || content.hostAware || content.docsLike) return null;
     var computedFocalArticleOwner = articleRouteFocalContent(content, true);
     var focalArticleOwner = computedFocalArticleOwner || selectedFocalArticleOwner;
-    var collection = repeatedRecordCollectionPage(focalArticleOwner);
+    var collection = repeatedRecordCollectionPage(focalArticleOwner, content);
     if (collection && collection.articleOwnershipConflict) content.repeatedRecordArticleOwnershipConflict = true;
     return collection;
   }
 
-  function repeatedRecordCollectionPage(focalArticleOwner) {
+  function repeatedRecordCollectionPage(focalArticleOwner, content) {
     if (!document.body) return null;
 
     var visibleMainRegions = Array.prototype.filter.call(document.querySelectorAll("main, [role='main']"), function(main) {
@@ -196,6 +196,13 @@
 
     var collection = mostSpecificOwners[0];
     if (collection.articleOwnershipConflict) return collection;
+    if (!primaryMain) {
+      var renderContext = pageOwnedRenderContext(collection.owner, content);
+      collection.renderNodes = renderContext ? renderContext.nodes : [collection.owner];
+      collection.contextNodes = collection.renderNodes.filter(function(node) { return node !== collection.owner; });
+      collection.renderOwner = renderContext ? renderContext.owner : collection.owner;
+      return collection;
+    }
     var renderOwner = collection.owner;
     function unlinkedEditorialContext(node) {
       if (node.matches("header, footer, nav, menu, [role='navigation'], [role='banner'], [role='contentinfo']")) return true;
@@ -220,9 +227,12 @@
   function repeatedRecordCandidateCoversOwner(candidate, collection) {
     var items = candidate && candidate.listExtraction && candidate.listExtraction.items;
     var extraction = candidate && candidate.listExtraction;
-    if (!items || !collection || !collection.records.length || !collection.primaryMain || !collection.renderOwner ||
-        !extraction || !extraction.primaryMainMapped || extraction.primaryMainSourceNode !== collection.primaryMain ||
-        extraction.renderOwnerSourceNode !== collection.renderOwner) return false;
+    var mappedOwner = extraction && extraction.collectionOwnerMapped &&
+      extraction.collectionOwnerSourceNode === collection.owner && extraction.renderOwnerSourceNode === collection.renderOwner;
+    var mappedMain = collection && collection.primaryMain && extraction && extraction.primaryMainMapped &&
+      extraction.primaryMainSourceNode === collection.primaryMain;
+    if (!items || !collection || !collection.records.length || !collection.owner || !collection.renderOwner ||
+        !mappedOwner || (collection.primaryMain ? !mappedMain : extraction.primaryMainMapped)) return false;
     var matched = new Set();
     return collection.records.every(function(record) {
       var itemIndex = items.findIndex(function(item, index) {

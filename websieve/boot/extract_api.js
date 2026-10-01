@@ -197,6 +197,7 @@
           !!(repeatedCollectionAssessment && repeatedCollectionAssessment.articleOwnershipConflict);
         var repeatedCollection = repeatedCollectionAssessment &&
           !repeatedCollectionAssessment.articleOwnershipConflict ? repeatedCollectionAssessment : null;
+        content = repeatedRecordListCandidate(content, metadata, repeatedCollection) || content;
         var portalRootContent = content && !listArticleOwnershipConflict && !repeatedCollectionAssessment && !content.browseIndexContent ?
          crediblePortalRootListContent(metadata, content) : null;
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);

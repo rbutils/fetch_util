@@ -984,8 +984,24 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(cleanup_path)).to eq(manifest.index(flat_extraction_path) + 1)
     expect(manifest.index(cleanup_path)).to be < manifest.index(list_core_path)
     expect(manifest.index(cleanup_path)).to be < manifest.index(events_path)
-    expect(cleanup_source).to include("function cleanupListRoot(root, producerProvenCardNodes)")
+    expect(cleanup_source).to include("function cleanupListRoot(root, producerProvenCardNodes, preservedOwnerNodes)")
     expect(File.read(File.join(source_root, flat_extraction_path))).not_to include("function cleanupListRoot")
+  end
+
+  it "loads repeated-list context and candidate ownership before list extraction" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    paths = %w[
+      classifiers/list_pages/ownership/repeated_record_context.js
+      classifiers/list_pages/ownership/repeated_records.js
+      classifiers/list_pages/ownership/repeated_candidate_coverage.js
+      classifiers/list_pages/list_page.js
+    ]
+    expect(manifest & paths).to eq(paths)
+    context_source = File.read(File.join(source_root, paths[0]))
+    candidate_source = File.read(File.join(source_root, paths[2]))
+    expect(context_source).to include("pageOwnedOverviewSection", "pageOwnedHeadingIntro", "pageOwnedRenderContext")
+    expect(candidate_source).to include("repeatedRecordCandidatePreservesExistingList", "repeatedRecordListCandidate")
   end
 
   it "groups generic list section helpers in dependency order" do

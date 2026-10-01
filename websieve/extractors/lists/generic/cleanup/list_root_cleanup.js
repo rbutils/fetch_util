@@ -1,4 +1,4 @@
-  function cleanupListRoot(root, producerProvenCardNodes) {
+  function cleanupListRoot(root, producerProvenCardNodes, preservedOwnerNodes) {
     cleanupCookieChrome(root);
     stripTrackingPixels(root);
     resolveLazyImages(root);
@@ -9,6 +9,7 @@
     });
     root.querySelectorAll("section, div, aside, form, ul, ol").forEach(function(el) {
       if (!listChromeNode(el)) return;
+      if ((preservedOwnerNodes || []).indexOf(el) !== -1) return;
       if ((producerProvenCardNodes || []).some(function(card) {
         return card && (card === el || card.contains(el));
       })) return;

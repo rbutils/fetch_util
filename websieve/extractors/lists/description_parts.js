@@ -104,10 +104,12 @@
       var pageHeading = heading && !el.closest("a[href]") && !el.querySelector("a[href]");
       var weatherOwner = pageHeading && el.closest("[class*='weather' i], [id*='weather' i]");
       if (weatherOwner && weatherModuleText(weatherOwner.textContent)) pageHeading = false;
+      var sourceOwnedDescription = options && options.sourceOwnedDescriptionNodes && options.sourceOwnedDescriptionNodes.has(el);
       // Linked record titles keep their existing admission, not page-label treatment.
       if (heading && !pageHeading && !/^H[1-3]$/.test(el.tagName)) return;
       if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
-      if (!(hasItems && (pageHeading || linkedSectionHeading || inlineProse)) && !(options && options.preserveTextLengths) && (text.length < 30 || text.length > 2000)) return;
+       if (!(hasItems && (pageHeading || linkedSectionHeading || inlineProse)) && !(options && options.preserveTextLengths) &&
+           !sourceOwnedDescription && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;

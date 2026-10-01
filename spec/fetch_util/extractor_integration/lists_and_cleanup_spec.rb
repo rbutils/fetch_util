@@ -1101,6 +1101,127 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "bounds no-main homepage context to the owned grid and headed overview" do
+    cards = 4.times.map do |index|
+      number = index + 1
+      %(<article class="news-card"><h2><a href="/primary/#{number}">Primary report #{number} has its own destination</a></h2>) +
+        %(<p>Owned card summary #{number} remains with its record.</p></article>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Editorial homepage</title></head><body>
+        <header><nav><a href="/privacy">Privacy destination stays chrome.</a></nav></header>
+        <section class="news-grid">#{cards}</section>
+        <p>Unheaded neighboring prose must not be borrowed into the primary list result.</p>
+        <section class="about-box"><h2>Editorial overview</h2>
+          <p>This headed overview is owned by the homepage and remains visible beside its primary record collection.</p>
+        </section>
+        <aside class="sidebar"><section><h2>Foreign sidebar overview</h2>
+          <p>This foreign sidebar paragraph must not be borrowed by the page's independent primary list.</p>
+        </section></aside>
+        <section class="supporting-cards"><h2>Supporting cards</h2>
+          <article><a href="/support/1">Supporting destinations are not primary records.</a></article>
+          <article><a href="/support/2">Another supporting destination stays excluded.</a></article>
+        </section>
+        <section class="methods"><h2>Methods</h2>
+          <p>This independent methods section is substantive prose, but it does not describe the homepage overview or About section.</p>
+        </section>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"]).to include("Editorial overview", "This headed overview is owned by the homepage")
+      4.times do |index|
+        number = index + 1
+        expect(payload["markdown"]).to include("Primary report #{number}", "https://example.com/primary/#{number}", "Owned card summary #{number}")
+      end
+      expect(payload["markdown"]).not_to include(
+        "Unheaded neighboring prose", "Foreign sidebar overview", "Supporting cards", "/support/",
+        "This independent methods section is substantive prose"
+      )
+      expect(payload["markdown"]).not_to include("/privacy")
+    end
+  end
+
+  it "retains short and long paragraphs under an exact page-heading introduction" do
+    cards = 4.times.map do |index|
+      number = index + 1
+      %(<article><h2><a href="/records/#{number}">Owned record #{number} has a distinct destination</a></h2></article>)
+    end.join
+    short_intro = "Brief editorial introduction."
+    long_intro = "This longer page-owned introduction adds the overview context and must follow the " \
+      "short opening paragraph exactly once before the independent record collection."
+    html = <<~HTML
+      <html><head><title>Editorial homepage</title></head><body>
+        <h1>Editorial homepage</h1><p>#{short_intro}</p><p>#{long_intro}</p>
+        <section class="news-grid">#{cards}</section>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["markdown"].scan(short_intro)).to eq([short_intro])
+      expect(payload["markdown"].scan(long_intro)).to eq([long_intro])
+      expect(payload["markdown"].index(short_intro)).to be < payload["markdown"].index(long_intro)
+      expect(payload["markdown"].index(long_intro)).to be < payload["markdown"].index("Owned record 1")
+    end
+  end
+
+  it "retains the complete long exact-heading introduction without a prose cap" do
+    cards = 4.times.map do |index|
+      number = index + 1
+      %(<article><h2><a href="/long-intro/#{number}">Long introduction record #{number} has a distinct destination</a></h2></article>)
+    end.join
+    long_intro = (1..28).map do |number|
+      "Introduction sentence #{number} preserves a distinct editorial fact about the local record and its public context."
+    end.join(" ")
+    expect(long_intro.length).to be > 2200
+    html = <<~HTML
+      <html><head><title>Long editorial page</title></head><body>
+        <h1>Long editorial page</h1><p>#{long_intro}</p>
+        <section class="news-grid">#{cards}</section>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(long_intro)).to eq([long_intro])
+      expect(markdown.index(long_intro)).to be < markdown.index("Long introduction record 1")
+      expect(markdown).to include("Introduction sentence 28")
+    end
+  end
+
+  it "retains a complete long paragraph under a source-owned About section" do
+    cards = 4.times.map do |index|
+      number = index + 1
+      %(<article class="news-card"><h2><a href="/long-about/#{number}">Long About record #{number} has a distinct destination</a></h2></article>)
+    end.join
+    long_about = (1..48).map do |number|
+      "About section sentence #{number} records a distinct newsroom fact and keeps the complete source paragraph intact for readers."
+    end.join(" ")
+    expect(long_about.length).to be > 4000
+    html = <<~HTML
+      <html><head><title>Long About page</title></head><body>
+        <section class="news-grid">#{cards}</section>
+        <section class="about-box"><h2>About the newsroom</h2><p>#{long_about}</p></section>
+      </body></html>
+    HTML
+
+    with_url_page("https://example.com/", html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+      expect(payload["contentType"]).to eq("list")
+      expect(markdown.scan(long_about)).to eq([long_about])
+      expect(markdown.index("Long About record 4")).to be < markdown.index(long_about)
+      expect(markdown).to include("About section sentence 48")
+    end
+  end
+
   it "keeps a structured detail article ahead of distributed portal rails" do
     rails = 2.times.map do |section|
       cards = 5.times.map do |index|

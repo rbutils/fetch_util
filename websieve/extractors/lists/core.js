@@ -10,27 +10,67 @@
     options = options || {};
     var repeatedCollection = options.repeatedRecordCollection;
     var primaryMainSourceNode = repeatedCollection && repeatedCollection.primaryMain;
+    var collectionOwnerSourceNode = repeatedCollection && repeatedCollection.owner;
     var renderOwnerSourceNode = repeatedCollection && repeatedCollection.renderOwner;
     var cloneSource = primaryMainSourceNode &&
       (node === document.body || node === primaryMainSourceNode || primaryMainSourceNode.contains(node)) ?
-      primaryMainSourceNode : node;
+      primaryMainSourceNode : (renderOwnerSourceNode && renderOwnerSourceNode.contains(node) ? renderOwnerSourceNode : node);
     var elementMap = repeatedCollection || options.institutionalCaseIndex ? new Map() : null;
     var clonedSourceRoot = visibleListClone(cloneSource, options.preservedRoots, elementMap);
     var clonedPrimaryMain = elementMap && primaryMainSourceNode && elementMap.get(primaryMainSourceNode);
+    var clonedCollectionOwner = elementMap && collectionOwnerSourceNode && elementMap.get(collectionOwnerSourceNode);
     var clonedRenderOwner = elementMap && renderOwnerSourceNode && elementMap.get(renderOwnerSourceNode);
     var clonedCandidate = elementMap && node !== document.body && node !== primaryMainSourceNode && elementMap.get(node);
     var candidateMapped = node === document.body || node === primaryMainSourceNode ||
-      (clonedCandidate && clonedPrimaryMain && clonedPrimaryMain.contains(clonedCandidate));
+      (clonedCandidate && clonedSourceRoot.contains(clonedCandidate));
     var candidateSourceOwned = node === document.body || node === primaryMainSourceNode ||
-      (primaryMainSourceNode && primaryMainSourceNode.contains(node));
+      (renderOwnerSourceNode && renderOwnerSourceNode.contains(node));
     var primaryMainMapped = !!(primaryMainSourceNode && clonedPrimaryMain && clonedRenderOwner &&
       (clonedPrimaryMain === clonedSourceRoot || clonedSourceRoot.contains(clonedPrimaryMain)) &&
       clonedPrimaryMain.contains(clonedRenderOwner) && candidateMapped && candidateSourceOwned);
+    var collectionOwnerMapped = !!(repeatedCollection && collectionOwnerSourceNode && clonedCollectionOwner && clonedRenderOwner &&
+      clonedSourceRoot.contains(clonedCollectionOwner) && clonedSourceRoot.contains(clonedRenderOwner) &&
+      clonedRenderOwner.contains(clonedCollectionOwner) && candidateMapped && candidateSourceOwned &&
+      (!primaryMainSourceNode || (primaryMainMapped && clonedPrimaryMain.contains(clonedCollectionOwner))));
     var root = primaryMainMapped ? clonedPrimaryMain : clonedSourceRoot;
-    var extractionRoot = root;
+    var extractionRoot = collectionOwnerMapped && !primaryMainMapped ? clonedCollectionOwner : root;
+    var clonedRenderNodes = repeatedCollection && elementMap ?
+      (repeatedCollection.renderNodes || []).map(function(sourceNode) { return elementMap.get(sourceNode); }) : [];
+    var sourceOwnedDescriptionSources = [];
+    (repeatedCollection && repeatedCollection.contextNodes || []).forEach(function(sourceNode) {
+      var paragraphs = sourceNode.matches("p") ? [sourceNode] :
+        (pageOwnedOverviewSection(sourceNode) ? Array.from(sourceNode.querySelectorAll("p")) : []);
+      paragraphs.forEach(function(paragraph) {
+        if (!elementSubtreeHidden(paragraph) && !paragraph.querySelector("a[href]")) {
+          sourceOwnedDescriptionSources.push(paragraph);
+        }
+      });
+    });
+    var clonedSourceOwnedDescriptionNodes = elementMap ? sourceOwnedDescriptionSources.map(function(sourceNode) {
+      return elementMap.get(sourceNode);
+    }).filter(Boolean) : [];
     var producerProvenCardNodes = options.institutionalCaseIndex && elementMap ?
       options.institutionalCaseIndex.cardNodes.map(function(card) { return elementMap.get(card); }).filter(Boolean) : null;
-    cleanupListRoot(root, producerProvenCardNodes);
+    cleanupListRoot(root, producerProvenCardNodes,
+      collectionOwnerMapped && !primaryMainMapped ? clonedRenderNodes : null);
+    if (collectionOwnerMapped && !primaryMainMapped) {
+      var renderNodesMapped = clonedRenderNodes.length === (repeatedCollection.renderNodes || []).length &&
+        clonedRenderNodes.every(function(renderNode) {
+          return renderNode && root.contains(renderNode) &&
+            (renderNode === clonedRenderOwner || renderNode.parentElement === clonedRenderOwner);
+        });
+      if (!renderNodesMapped) {
+        collectionOwnerMapped = false;
+        root = clonedSourceRoot;
+        extractionRoot = root;
+      } else if (clonedRenderOwner !== clonedCollectionOwner) {
+        var boundedRoot = document.createElement("div");
+        clonedRenderNodes.forEach(function(renderNode) { boundedRoot.appendChild(renderNode); });
+        root = boundedRoot;
+      } else {
+        root = clonedCollectionOwner;
+      }
+    }
     var extractionOptions = options;
     if (options.institutionalCaseIndex && elementMap) {
       var producerTitleLinks = options.institutionalCaseIndex.titleLinks.map(function(link) {
@@ -48,12 +88,17 @@
       root = clonedSourceRoot;
       extractionRoot = root;
     }
+    var sourceOwnedDescriptionNodes = new Set(clonedSourceOwnedDescriptionNodes.filter(function(node) {
+      return collectionOwnerMapped && root.contains(node);
+    }));
     var sectioned = sectionedListExtraction(extractionRoot);
 
     var items = extractListItems(extractionRoot, extractionOptions);
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
-    var descText = primaryMainMapped ? listDescriptionMarkdown(root, items) : listDescriptionMarkdown(root);
+    var descText = collectionOwnerMapped ? listDescriptionMarkdown(root, items, {
+      sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
+    }) : listDescriptionMarkdown(root);
     var fallbackItems = extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks);
     mergeDuplicateRecordAuthorContext(root, fallbackItems);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
@@ -71,16 +116,20 @@
         pageTitles: pageTitles,
         preserveTextLengths: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
-        suppressRepresentedText: true
+        suppressRepresentedText: true,
+        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
       });
       var sectionMarkdownWithDescription = sectionedListMarkdownWithDescriptions(sectioned, sectionDescriptionParts);
 
       return {
         sourceNode: node,
         root: root,
+        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
         primaryMainMapped: primaryMainMapped,
         primaryMainSourceNode: primaryMainMapped ? primaryMainSourceNode : null,
-        renderOwnerSourceNode: primaryMainMapped ? renderOwnerSourceNode : null,
+        collectionOwnerMapped: collectionOwnerMapped,
+        collectionOwnerSourceNode: collectionOwnerMapped ? collectionOwnerSourceNode : null,
+        renderOwnerSourceNode: collectionOwnerMapped ? renderOwnerSourceNode : null,
         items: sectioned.items,
         descText: "",
         sectionMarkdownWithDescription: sectionMarkdownWithDescription,
@@ -99,7 +148,8 @@
         includeInlineProse: true, preserveTextLengths: true,
         pageTitles: pageTitles, preserveUnrepresentedText: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
-        suppressRepresentedText: true
+        suppressRepresentedText: true,
+        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
       });
       flatDescriptions = (flatCoverage.headingParts || []).concat(flatDescriptions);
       flatCoverage.renderedSections = {
@@ -122,9 +172,12 @@
     return {
       sourceNode: node,
       root: root,
+      sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
       primaryMainMapped: primaryMainMapped,
       primaryMainSourceNode: primaryMainMapped ? primaryMainSourceNode : null,
-      renderOwnerSourceNode: primaryMainMapped ? renderOwnerSourceNode : null,
+      collectionOwnerMapped: collectionOwnerMapped,
+      collectionOwnerSourceNode: collectionOwnerMapped ? collectionOwnerSourceNode : null,
+      renderOwnerSourceNode: collectionOwnerMapped ? renderOwnerSourceNode : null,
       items: items,
       descText: descText,
       markdown: markdown,
@@ -143,7 +196,8 @@
   function bestListExtraction(metadata, pageTitles, options) {
     options = options || {};
     if (options.repeatedRecordCollection) {
-      return buildListExtraction(options.repeatedRecordCollection.primaryMain || document.body, pageTitles, options);
+      return buildListExtraction(options.repeatedRecordCollection.primaryMain || options.repeatedRecordCollection.owner,
+        pageTitles, options);
     }
     if (options.sourceOwner) return buildListExtraction(options.sourceOwner, pageTitles, options);
     var candidates = [];
@@ -182,7 +236,10 @@
     var best = bestListExtraction(metadata, pageTitles, options);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
-      var descriptions = listDescriptionParts(best.root, best.items, { preserveUnrepresentedText: true });
+      var descriptions = listDescriptionParts(best.root, best.items, {
+        preserveUnrepresentedText: true,
+        sourceOwnedDescriptionNodes: best.sourceOwnedDescriptionNodes
+      });
       best.descText = descriptions.map(function(part) { return part.markdown; }).join("\n\n");
       best.renderedSections = {
         regions: [{ node: best.root, label: "", cards: best.items }]
