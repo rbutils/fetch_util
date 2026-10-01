@@ -218,6 +218,35 @@ RSpec.describe 'Article-owned interface widgets' do
     end
   end
 
+  it 'removes only a complete Bengali e-paper prompt in an article ad leaf' do
+    html = <<~HTML
+      <html><head><title>Transit service records</title></head><body><article>
+      <h1>Transit service records</h1>
+      <p>The opening account reviews the transit service records and explains the effect of the published timetable changes.</p>
+      <div id="epaper-prompt" class="ads">ই-পেপার সাবস্ক্রিপশন</div>
+      <div id="unicode-suffix-ad" class="ads">ই-পেপার সাবস্ক্রিপশনসহ প্রতিবেদন</div>
+      <div id="prose-ad" class="ads">ই-পেপার সাবস্ক্রিপশন<p>The editorial analysis compares the published subscription rules with the new transit records.</p></div>
+      <div id="resource-ad" class="ads"><a href="/subscription-records">ই-পেপার সাবস্ক্রিপশন</a></div>
+      <section id="foreign-context"><h2>Subscription policy findings</h2><p>The editorial section compares the policy with public transit records.</p><div id="foreign-ad" class="ads">ই-পেপার সাবস্ক্রিপশন</div></section>
+      <div id="ordinary-text">ই-পেপার সাবস্ক্রিপশন</div>
+      <p>The closing account identifies the source documents and describes how readers can verify the timetable.</p>
+      </article></body></html>
+    HTML
+
+    with_url_page('https://journal.example/transit-service-records', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(result.fetch('html')).not_to include('id="epaper-prompt"')
+      expect(result.fetch('html')).to include(
+        'id="unicode-suffix-ad"', 'id="prose-ad"', 'id="resource-ad"',
+        'id="foreign-context"', 'id="foreign-ad"', 'id="ordinary-text"'
+      )
+      expect(result.fetch('html')).to include('subscription-records', 'The editorial analysis compares')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'removes an empty ad placeholder owned by an articleBody root' do
     html = <<~HTML
       <html><head><title>Transit records explained</title></head><body>

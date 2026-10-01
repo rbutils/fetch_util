@@ -83,6 +83,28 @@ RSpec.describe 'FetchUtil Kaler Kantho extractor integration' do
     end
   end
 
+  it 'removes only the owned e-paper prompt from the reader-off payload' do
+    with_url_page(article_url, article_html) do |page|
+      payload, mutations, before, after = extract_with_dom_observation(page, reader_mode: false)
+
+      expect(payload).to include(
+        'title' => 'প্রধানমন্ত্রীর সফরের পর খুলল মালয়েশিয়ার শ্রমবাজার',
+        'contentType' => 'article',
+        'contentFormat' => nil,
+        'hostAware' => false,
+        'readerMode' => false,
+        'suspect' => false,
+        'warnings' => []
+      )
+      article_paragraphs.each { |paragraph| expect(payload['markdown']).to include(paragraph) }
+      %w[html markdown textContent].each do |field|
+        expect(payload[field]).not_to include(article_chrome.first)
+      end
+      expect(after).to eq(before)
+      expect(mutations).to eq([])
+    end
+  end
+
   it 'preserves shared Kaler Kantho article ownership in reader mode' do
     with_url_page(article_url, article_html) do |page|
       payload, mutations, before, after = extract_with_dom_observation(page, reader_mode: true)

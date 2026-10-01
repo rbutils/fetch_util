@@ -205,7 +205,8 @@ function articleEmptyAdPlaceholderNode(node, context) {
   if (!node || !node.matches || !node.matches("[data-placeholder-caption]")) return false;
   if (context.nestedPlaceholders.has(node) || !articlePlaceholderOwner(node, context)) return false;
   if (!/^(?:div|span)$/i.test(String(node.localName || ""))) return false;
-  if (String(node.localName || "").indexOf("-") !== -1 || normalizeText(node.textContent || "")) return false;
+  if (String(node.localName || "").indexOf("-") !== -1 || normalizeText(node.textContent || "") ||
+      !articleCompleteAdLabel(node.getAttribute("data-placeholder-caption"))) return false;
 
   var descendants = [node].concat(Array.from(node.querySelectorAll("*")));
   if (node.querySelector("[data-placeholder-caption]")) return false;
@@ -236,13 +237,7 @@ function stripArticleWidgets(root) {
   root.querySelectorAll("div, section, aside").forEach(function(node) {
     if (articleSyntheticSummaryControl(node)) node.remove();
   });
-  var placeholders = Array.from(root.querySelectorAll("[data-placeholder-caption]"));
-  if (root.matches && root.matches("[data-placeholder-caption]")) placeholders.unshift(root);
-  var placeholderContext = placeholders.length ? articlePlaceholderContext(document) : null;
-  if (placeholderContext) placeholderContext.nestedPlaceholders = articleNestedPlaceholderNodes(root);
-  placeholders.forEach(function(node) {
-    if (articleEmptyAdPlaceholderNode(node, placeholderContext)) node.remove();
-  });
+  stripArticleAdWidgets(root);
 
   root.querySelectorAll("[class*='audio' i], [id*='audio' i], [data-component*='audio' i], [data-testid*='audio' i], [data-role*='audio' i], [role*='audio' i], [aria-label*='audio' i]").forEach(function(node) {
     if (articleAudioControlNode(node) || articleAudioFallbackNode(node) || articleAudioPromptNode(node) || articleSyntheticAudioNotice(node)) node.remove();

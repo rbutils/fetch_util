@@ -23,6 +23,7 @@ function sourceOwnedArticleMarkup(ownership) {
     var markup = cleanFocalCommentClone(thread);
     if (markup) article.insertAdjacentHTML("beforeend", markup);
   });
+  stripArticleAdWidgets(article);
   return article;
 }
 
