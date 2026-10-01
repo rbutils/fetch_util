@@ -22,6 +22,32 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
   end
 
+  def source_owned_news_article_parts(title:, canonical_url:, paragraphs:)
+    schema = {
+      '@context' => 'https://schema.org',
+      '@type' => 'NewsArticle',
+      'url' => canonical_url,
+      'headline' => title,
+      'author' => { '@type' => 'Person', 'name' => 'Ava Reporter' },
+      'datePublished' => '2026-09-30'
+    }.to_json
+    head = <<~HTML
+      <link rel="canonical" href="#{canonical_url}">
+      <script type="application/ld+json">#{schema}</script>
+    HTML
+    article = <<~HTML
+      <article class="main-article">
+        <header>
+          <h1>#{title}</h1>
+          <span itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">Ava Reporter</span></span>
+          <time itemprop="datePublished" datetime="2026-09-30">30 September 2026</time>
+        </header>
+        <div itemprop="articleBody">#{paragraphs.map { |paragraph| "<p>#{paragraph}</p>" }.join}</div>
+      </article>
+    HTML
+    [head, article]
+  end
+
   def clean_selected_related_rail_article(page, html)
     root = File.expand_path('../../..', __dir__)
     source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).filter_map do |path|
@@ -1330,6 +1356,40 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["markdown"]).to include("Directory record 1", "Directory record 10")
+    end
+  end
+
+  it "keeps a two-paragraph source-owned NewsArticle ahead of a query directory" do
+    cards = 10.times.map do |index|
+      %(<article><h2><a href="/directory/#{index + 1}">Directory record #{index + 1} with a distinct destination</a></h2></article>)
+    end.join
+    paragraphs = [
+      "The first distinct account confirms the court findings and identifies the source documents reviewed by investigators.",
+      "The second distinct account records the official response and the next steps confirmed for the affected community."
+    ]
+    canonical_url = "https://example.com/news/directory-introduction?q=updates"
+    head_markup, article_markup = source_owned_news_article_parts(
+      title: "Directory introduction", canonical_url: canonical_url, paragraphs: paragraphs
+    )
+    html = <<~HTML
+      <html><head><title>Directory introduction</title>#{head_markup}</head><body><main>
+        #{article_markup}
+        <section class="directory"><h2>Complete directory</h2>#{cards}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page(canonical_url, html) do |page|
+      payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      markdown = payload["markdown"]
+      positions = paragraphs.map do |paragraph|
+        expect(markdown.scan(paragraph)).to eq([paragraph])
+        markdown.index(paragraph)
+      end
+
+      expect(payload["contentType"]).to eq("article")
+      expect(positions).to eq(positions.sort)
+      expect(markdown).to include("Ava Reporter", "30 September 2026")
+      expect(markdown).not_to include("Complete directory", "Directory record 1", "/directory/10")
     end
   end
 

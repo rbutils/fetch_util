@@ -1,6 +1,6 @@
-  function indexListCandidateAllowed(candidate) {
+  function indexListCandidateAllowed(candidate, verifiedQueryDirectoryOwner) {
     return candidate && candidate.contentType !== "list" && candidate.contentType !== "social" &&
-      !candidate.focalPermalinkContent &&
+      (!candidate.focalPermalinkContent || verifiedQueryDirectoryOwner) &&
       candidate.contentType !== "medical" && candidate.contentType !== "press_release" && candidate.contentType !== "product" &&
       candidate.contentType !== "recipe" && candidate.contentType !== "property" &&
       candidate.contentType !== "hotel" && candidate.contentType !== "event" &&

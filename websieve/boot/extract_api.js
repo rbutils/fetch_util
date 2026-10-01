@@ -235,7 +235,8 @@
         content = relabelAsListContent(content, { strongList: true });
       }
       var indexListCandidate = null;
-      var indexListAllowed = indexListCandidateAllowed(content) && !listArticleOwnershipConflict;
+      var indexListAllowed = indexListCandidateAllowed(content, !!(repeatedCollection && repeatedCollection.queryDirectoryOverride)) &&
+        !listArticleOwnershipConflict;
       var sourceOwnedIndex = indexListAllowed && strongArticle && !cachedFocalArticleContent(content) &&
         sourceOwnedListAgainstReader(content, metadata);
       if (indexListAllowed && dominantIndexListPage(content)) {

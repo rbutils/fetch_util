@@ -153,8 +153,32 @@
       return !!focalArticleOwner && !owner.contains(focalArticleOwner);
     }
 
+    function singleLongFocalParagraphOutsideCollection(owner) {
+      if (!focalArticleOwner || owner.contains(focalArticleOwner)) return false;
+      var visibleLongParagraphs = Array.prototype.filter.call(focalArticleOwner.querySelectorAll("p"), function(paragraph) {
+        return !elementSubtreeHidden(paragraph) && !paragraph.closest("nav, header, footer, aside, [role='navigation'], [role='complementary']") &&
+          normalizeText(paragraph.textContent || "").length >= 80;
+      });
+      return visibleLongParagraphs.length === 1;
+    }
+
+    function queryDirectoryOwnsSeparateArticle(owner, records, uniqueRecords) {
+      var queryRoute = /(?:^|[?&])(?:q|query|search|searchtext|keyword|k)=/i.test(location.search || "");
+      var identity = [owner.id || "", owner.getAttribute("class") || ""].join(" ");
+      if (!queryRoute || !primaryMain || !focalArticleOwner || !primaryMain.contains(owner) ||
+          !primaryMain.contains(focalArticleOwner) || owner.contains(focalArticleOwner) || !uniqueRecords || records.length < 4 ||
+          !owner.matches("section") || owner.closest("article, nav, header, footer, aside, [role='navigation'], [role='complementary']") ||
+          !/(?:^|[\s_-])directory(?:$|[\s_-])/i.test(identity)) return false;
+      var headings = Array.prototype.filter.call(owner.children, function(child) {
+        return child.matches("h2, h3, h4") && !elementSubtreeHidden(child) && !child.querySelector("a[href]") &&
+          /\bdirector(?:y|ies)\b/i.test(normalizeText(child.textContent || ""));
+      });
+      return headings.length === 1;
+    }
+
     var owners = [];
     candidateOwners.forEach(function(owner) {
+      var ownerIdentity = [owner.id || "", owner.getAttribute("class") || ""].join(" ");
       if (primaryMain && !primaryMain.contains(owner)) return;
       if (owner.matches("body, html, article, nav, header, footer, aside, [role='navigation'], [role='complementary']") ||
           owner.closest("nav, header, footer, aside, [role='navigation'], [role='complementary']") ||
@@ -179,11 +203,19 @@
         identities.add(record.destination);
         return true;
       });
+      var articleOutside = focalArticleOutsideCollection(owner);
+      var materialOutside = substantialProseOutside(owner);
+      var sourceOwnedPublishedArticle = articleOutside && sourceOwnedRichNewsArticle(content, focalArticleOwner);
+      var directoryOverride = content && content.contentType === "article" && !content.hostAware && !content.docsLike &&
+        !content.legalProvision && !content.focalPublicPreview && !content.sourceOwnedLiveblog && articleOutside &&
+        !materialOutside && !singleLongFocalParagraphOutsideCollection(owner) && !sourceOwnedPublishedArticle &&
+        queryDirectoryOwnsSeparateArticle(owner, records, uniqueRecords);
       owners.push({
         owner: owner,
         records: records,
         primaryMain: primaryMain,
-        articleOwnershipConflict: !uniqueRecords || substantialProseOutside(owner) || focalArticleOutsideCollection(owner)
+        queryDirectoryOverride: directoryOverride,
+        articleOwnershipConflict: !uniqueRecords || materialOutside || (articleOutside && !directoryOverride)
       });
     });
 

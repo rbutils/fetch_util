@@ -109,6 +109,62 @@
     return owner;
   }
 
+  function sourceOwnedRichNewsArticle(content, expectedOwner) {
+    var record = matchingStructuredDetailArticle(content);
+    if (!record || !nodeTypes(record).some(function(type) { return String(type).split(/[\/#]/).pop().toLowerCase() === "newsarticle"; })) return false;
+
+    var canonicalLinks = document.querySelectorAll("link[rel~='canonical'][href]");
+    if (canonicalLinks.length !== 1) return false;
+    var canonicalKey = structuredDataDocumentKey(canonicalLinks[0].href);
+    var currentKey = structuredDataDocumentKey(location.href);
+    if (!canonicalKey || canonicalKey !== currentKey || !detailArticleRecordUrls(record).some(function(url) {
+      return structuredDataDocumentKey(url) === canonicalKey;
+    })) return false;
+
+    var owner = detailArticleSourceOwner(content, record);
+    if (!owner || owner !== expectedOwner) return false;
+    var title = normalizeText(content.title || "");
+    var headers = Array.prototype.filter.call(owner.querySelectorAll("header"), function(header) {
+      return !elementSubtreeHidden(header) && Array.prototype.some.call(header.querySelectorAll("h1"), function(heading) {
+        return normalizeText(heading.textContent || "") === title && !elementSubtreeHidden(heading);
+      });
+    });
+    if (headers.length !== 1) return false;
+    var header = headers[0];
+    var people = Array.prototype.filter.call(header.querySelectorAll("[itemprop~='author' i][itemscope][itemtype]"), function(person) {
+      if (!/(?:^|[\/#])Person$/i.test(person.getAttribute("itemtype") || "") || elementSubtreeHidden(person)) return false;
+      var names = Array.prototype.filter.call(person.querySelectorAll("[itemprop~='name' i]"), function(name) {
+        return !elementSubtreeHidden(name) && normalizeText(name.textContent || name.getAttribute("content") || "");
+      });
+      return names.length === 1;
+    });
+    var times = Array.prototype.filter.call(header.querySelectorAll("time[datetime], [itemprop~='datePublished' i]"), function(time) {
+      return !elementSubtreeHidden(time) && normalizeText(time.getAttribute("datetime") || time.getAttribute("content") || time.textContent || "");
+    });
+    if (people.length !== 1 || times.length !== 1) return false;
+
+    var bodies = Array.prototype.filter.call(owner.querySelectorAll("[itemprop~='articleBody' i]"), function(body) {
+      return !elementSubtreeHidden(body) && (!body.closest("article") || body.closest("article") === owner);
+    });
+    if (bodies.length !== 1) return false;
+    var body = bodies[0];
+    if (!(header.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    var bodyParagraphs = Array.prototype.filter.call(body.querySelectorAll("p"), function(paragraph) {
+      return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent || "");
+    });
+    var bodyTexts = bodyParagraphs.map(function(paragraph) { return normalizeText(paragraph.textContent || ""); });
+    if (bodyTexts.length < 2 || new Set(bodyTexts).size !== bodyTexts.length) return false;
+
+    var selectedRoot = document.createElement("div");
+    selectedRoot.innerHTML = content && content.html || "";
+    var selectedParagraphs = Array.prototype.map.call(selectedRoot.querySelectorAll("p"), function(paragraph) {
+      return normalizeText(paragraph.textContent || "");
+    }).filter(Boolean);
+    return selectedParagraphs.length === bodyTexts.length && bodyTexts.every(function(text, index) {
+      return selectedParagraphs[index] === text;
+    });
+  }
+
   function detailArticleListContainer(node, listRoot, articleOwner) {
     var current = node && node.nodeType === 1 ? node : node && node.parentElement;
     while (current && current !== listRoot && current !== document.body) {

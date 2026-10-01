@@ -1,5 +1,8 @@
 # Changelog
 
+### Fixed
+- Preserve source-owned query directories when a separate focal article is not a fully proven NewsArticle.
+
 ## Unreleased
 
 ### Changed
