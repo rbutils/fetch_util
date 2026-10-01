@@ -180,12 +180,14 @@
 
   function stripRelatedSectionsByHeading(root) {
     if (!relatedRailRootOwnsArticle(root)) return;
+    // This guard already validates the unchanged source page. The loops below
+    // only edit the cloned root, so rebuilding that source assessment per node
+    // repeats a full article/visibility scan without adding new evidence.
     var focalArticle = root.matches && root.matches("article") ? root : root.querySelector("article");
     root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
       if (heading.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
       if (heading.closest("article") !== focalArticle) return;
-      if (!relatedRailHasUniqueVisibleArticleOwner()) return;
 
       var text = normalizeText(heading.textContent || "").trim();
       if (!text || !relatedRecordCollectionHeading(text)) return;
@@ -206,7 +208,6 @@
     root.querySelectorAll("div, section, aside").forEach(function(block) {
       if (block.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (block.closest("article") !== focalArticle) return;
-      if (!relatedRailHasUniqueVisibleArticleOwner()) return;
       if (relatedHeadingRecordRail(block)) {
         block.remove();
         return;

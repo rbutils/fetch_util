@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Avoid repeated source-article ownership scans while pruning related rails from an already-proven clone.
 - Preserve source-owned query directories when a separate focal article is not a fully proven NewsArticle.
 - Remove terminal recommendation furniture only when complete source-to-clone ownership is proven, preserving authored citations, lists, captions, and article prose.
 

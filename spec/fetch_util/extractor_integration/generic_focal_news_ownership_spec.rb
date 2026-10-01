@@ -51,6 +51,38 @@ RSpec.describe 'FetchUtil generic focal news ownership' do
     end
   end
 
+  it 'preserves every ordered section in a large source-owned article' do
+    sections = (1..96).map do |index|
+      <<~HTML
+        <section>
+          <h2>Editorial section #{index}</h2>
+          <p>Source section #{index} contains complete reporting context, verified facts, and the public explanation readers need.</p>
+        </section>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Editorial report</title></head><body><main><article>
+        <h1>Editorial report</h1>
+        <p>The report records the source-owned introduction and explains its complete public context for readers.</p>
+        <p>Its opening account preserves the chronology and the underlying public record in full.</p>
+        #{sections}
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://publisher.example/reports/editorial', html) do |page|
+      payload = extract_payload(page)
+      markdown = payload.fetch('markdown')
+      expected_headings = (1..96).map { |index| "Editorial section #{index}" }
+
+      expect_content_type(payload, 'article')
+      expected_headings.each do |heading|
+        expect(markdown).to include(heading, "Source section #{heading.delete_prefix("Editorial section ")} contains complete reporting context")
+      end
+      positions = expected_headings.map { |heading| markdown.index(heading) }
+      expect(positions).to eq(positions.sort)
+    end
+  end
+
   it 'keeps a multi-record section a list when no record owns the page headline' do
     cards = (1..4).map do |index|
       <<~HTML
