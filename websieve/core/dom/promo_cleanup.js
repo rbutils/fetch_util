@@ -14,7 +14,8 @@
     root.querySelectorAll("aside, section, div, figure, picture, p, span").forEach(function(el) {
       if (el.matches("main, article, [role='main']")) return;
       if (el.querySelector("article, main, [role='main']")) return;
-      if (el.closest("[data-fetchutil-page-overview]") && el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
+      if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-source-owned-primary]") &&
+          el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
 
       var text = normalizeText(el.textContent || "");
       var textLower = text.toLowerCase();

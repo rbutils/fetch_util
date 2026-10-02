@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Preserve source-proved service context, calculator controls, visible FAQ triggers and owned media in order, while declining hidden or unrelated material.
 - Keep proved result counts and continuation controls in source order with their linked records; treat unproved numeric-leading paragraphs as authored context.
 - Render linked cover images from source-owned repeated records alongside their ordered issue metadata when structured-card Markdown drops the image destination.
 - Keep the actual unlinked source H2 as the Markdown heading for its search-history collection, even when record metadata repeats its label.

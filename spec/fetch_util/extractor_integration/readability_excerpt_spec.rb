@@ -21,6 +21,9 @@ RSpec.describe 'Readability article excerpts' do
         global.__genericSourceOwnedPageContent = genericSourceOwnedPageContent;
         global.__readabilityOwnedSelectedPublication = readabilityOwnedSelectedPublication;
         global.__sourceOwnedFallbackPublication = sourceOwnedFallbackPublication;
+        global.__sourceOwnedPrimaryArticleMaterial = sourceOwnedPrimaryArticleMaterial;
+        global.__sourceOwnedPrimaryMarkdown = markdownFor;
+        global.__readabilityMetadata = collectMetadata;
         global.__sourceOwnedReaderAnswerPublicationTime = sourceOwnedReaderAnswerPublicationTime;
         global.__sourceOwnedLeadingQuestionAnswerPublicationTime = sourceOwnedLeadingQuestionAnswerPublicationTime;
         global.__collectMetadata = collectMetadata;
@@ -29,6 +32,188 @@ RSpec.describe 'Readability article excerpts' do
         global.__collectionPublishedTime = collectionPublishedTime;
       JS
     end.join("\n")
+  end
+
+  it 'uses the proved service parent to retain ordered visible context and declines unowned material' do
+    lead = 'A brief service lead retains its inline citation and exact source position.'
+    verified_terms = "Verified service terms remain available in the public record. "
+    primary_detail = "Service offer details document every current limit and option for readers. #{verified_terms * 5}" \
+      '<a href="/documents/service.pdf">Complete service terms</a>.'
+    features = (1..3).map do |index|
+      %(<div><h3>Service feature #{index}</h3><p>Feature #{index} explains a distinct option in the service.</p></div>)
+    end.join
+    html = <<~HTML
+      <!doctype html><html><head><title>Service offer</title></head><body>
+        <div class="service-surface">
+          <main id="primary"><div class="primary-copy">
+            <h1>Service offer</h1><p>#{lead.gsub("citation", '<a href="/sources/brief">citation</a>')}</p>
+            <p>#{primary_detail}</p>
+            <img src="/media/promo-service.png" alt="Service illustration">
+            <table><tbody><tr><th>Limit</th><td>Source table term</td></tr></tbody></table>
+          </div></main>
+          <section class="feature-group">#{features}</section>
+          <section class="calculator"><h1>Payment calculator</h1>
+            <label>Amount<input type="number" value="30"></label>
+            <select aria-label="Payment rate"><option>Monthly</option></select>
+            <button type="button">Calculate</button>
+            <select aria-label="Payment term"><option>Six months</option></select>
+          </section>
+          <section class="service-faq"><h2>Service questions</h2><p>Common question context remains before its controls.</p>
+            <div><a href="javascript:void(0)" class="accordion-header">Question one trigger</a></div>
+            <div><a href="javascript:void(0)" class="accordion-header">Question two trigger</a></div>
+            <div id="answer-one" hidden><p>Collapsed answer body must remain hidden.</p></div>
+            <figure><img src="/media/service-guide.png" alt="Service guide"></figure>
+          </section>
+          <div class="service-diagram"><img src="/media/service-comparison.png" alt=""></div>
+        </div>
+        <section class="public-review"><p>Public reviewer reply outside the service parent is already selected.</p></section>
+        <div class="foreign-sibling"><h2>Unrelated sibling</h2><p>Unrelated material remains outside the service parent.</p></div>
+      </body></html>
+    HTML
+
+    with_url_page('https://unknown.example/service', html) do |page|
+      page.add_script_tag(path: File.expand_path('../../../lib/fetch_util/assets/vendor/turndown.js', __dir__))
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var primary = document.querySelector('#primary');
+          var source = window.__sourceOwnedPrimaryArticleMaterial;
+          var candidate = {
+            contentType: 'article', readerMode: true, title: 'Payment calculator',
+            html: primary.outerHTML,
+            markdown: window.__sourceOwnedPrimaryMarkdown(primary.outerHTML),
+            textContent: primary.textContent
+          };
+          var retained = source(candidate, {title: document.title, siteName: 'unknown.example'});
+          var selectedReview = Object.assign({}, candidate, {
+            html: candidate.html + document.querySelector('.public-review').outerHTML,
+            markdown: window.__sourceOwnedPrimaryMarkdown(candidate.html + document.querySelector('.public-review').outerHTML)
+          });
+          var reviewResult = source(selectedReview, {title: document.title, siteName: 'unknown.example'});
+          var selectedUnknown = ['Visible unowned bare text', '<div>Brief unowned note</div>',
+            '<p>Short unknown note</p>', '<a href="/foreign.pdf">Foreign PDF</a>',
+            '<img src="/foreign.png" alt="Foreign media">', '<input aria-label="Unowned input">'];
+          var unknownDeclined = selectedUnknown.map(function(material) {
+            var selected = Object.assign({}, candidate, {
+              html: candidate.html + material,
+              markdown: window.__sourceOwnedPrimaryMarkdown(candidate.html + material),
+              textContent: primary.textContent + ' ' + material.replace(/<[^>]*>/g, '')
+            });
+            return source(selected, {title: document.title, siteName: 'unknown.example'}) === selected;
+          });
+          var hidden = document.createElement('p');
+          hidden.hidden = true;
+          hidden.textContent = 'Visible selected duplicate must not match hidden source';
+          document.querySelector('.service-surface').appendChild(hidden);
+          var selectedHidden = Object.assign({}, candidate, {
+            html: candidate.html + '<p>Visible selected duplicate must not match hidden source</p>',
+            markdown: window.__sourceOwnedPrimaryMarkdown(candidate.html + '<p>Visible selected duplicate must not match hidden source</p>')
+          });
+          var hiddenDeclined = source(selectedHidden, {title: document.title, siteName: 'unknown.example'}) === selectedHidden;
+          hidden.remove();
+          var foreignMedia = document.createElement('div');
+          foreignMedia.innerHTML = '<img src="https://foreign.example/service-comparison.png" alt="">';
+          document.querySelector('.service-surface').appendChild(foreignMedia);
+          var foreignMediaDeclined = source(candidate, {title: document.title, siteName: 'unknown.example'}) === candidate;
+          foreignMedia.remove();
+          var finalized = window.__finalizeExtractResult(retained, window.__readabilityMetadata(), document.body.textContent, {}, null);
+          return {
+            source_owned: !!retained.sourceOwnedPrimaryPage,
+            title: retained.title,
+            html: retained.html,
+            markdown: retained.markdown,
+            excerpt: retained.excerpt,
+            finalized_html: finalized.html,
+            finalized_markdown: finalized.markdown,
+            review_declined: reviewResult === selectedReview,
+            unknown_declined: unknownDeclined,
+            hidden_declined: hiddenDeclined,
+            foreign_media_declined: foreignMediaDeclined,
+            original_dom_unchanged: document.querySelector('#answer-one').hidden &&
+              document.querySelector('.service-faq').querySelector('a.accordion-header') !== null
+          };
+        })())
+      JS
+
+      expect(values['source_owned']).to be(true)
+      expect(values['title']).to eq('Service offer')
+      expect(values['excerpt']).to eq('A brief service lead retains its inline citation and exact source position.')
+      expect(values['html']).to include('Complete service terms', 'Source table term', 'Service feature 3', 'Question one trigger', 'Service guide')
+      expect(values['html']).not_to include('Collapsed answer body', 'Public reviewer reply', 'Unrelated sibling')
+      expect(values['html']).to include('Question one trigger', 'Question two trigger')
+      expect(values['html']).not_to include('javascript:void(0)')
+      expect(values['markdown']).to include('Service offer details document every current limit')
+      expect(values['markdown']).to include('Complete service terms', 'Service illustration', 'Source table term')
+      expect(values['markdown']).to include('## Service questions', 'Question one trigger')
+      expect(values['markdown']).to include('![Image](https://unknown.example/media/service-comparison.png)')
+      expect(values['finalized_html']).to include('Question one trigger')
+      expect(values['finalized_html']).not_to include('javascript:void(0)', 'Collapsed answer body')
+      expect(values['finalized_markdown']).to include('Question one trigger')
+      expect(values['markdown'].index('Service feature 3')).to be < values['markdown'].index('Payment calculator')
+      expect(values['markdown'].index('Payment calculator')).to be < values['markdown'].index('Service questions')
+      expect(values['review_declined']).to be(true)
+      expect(values['unknown_declined']).to all(be(true))
+      expect(values['hidden_declined']).to be(true)
+      expect(values['foreign_media_declined']).to be(true)
+      expect(values['original_dom_unchanged']).to be(true)
+    end
+  end
+
+  it 'declines a foreign editorial section inside an otherwise plausible service component' do
+    text = 'Service offer verifies complete public terms and source references. ' * 10
+    html = <<~HTML
+      <html><head><title>Service offer</title></head><body><div class="service-surface">
+        <main id="primary"><h1>Service offer</h1><p>#{text}</p><p>#{text}</p>
+          <a href="/terms">Full terms</a><a href="/policy">Policy</a></main>
+        <section><h2>Distinct features</h2><h3>First feature</h3>
+          <p>First feature description.</p><p>Second feature description.</p></section>
+        <section><h1>Payment calculator</h1><form><input type="number"><button>Calculate</button></form></section>
+        <section class="unrelated"><h2>Editorial dispatch</h2><p>Independent article material.</p></section>
+      </div></body></html>
+    HTML
+    with_url_page('https://unknown.example/service', html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      declined = page.evaluate(<<~JS)
+        (function() {
+          var main = document.querySelector('#primary');
+          var selected = {contentType: 'article', readerMode: true, title: document.title,
+            html: main.outerHTML, markdown: window.__sourceOwnedPrimaryMarkdown(main.outerHTML),
+            textContent: main.textContent};
+          return window.__sourceOwnedPrimaryArticleMaterial(selected, {title: document.title,
+            siteName: 'unknown.example'}) === selected;
+        })()
+      JS
+      expect(declined).to be(true)
+    end
+  end
+
+  it 'declines a title-matching main beside an unrelated long section without a unique calculator owner' do
+    unrelated_detail = "Each section remains part of the unrelated container, not the service owner. "
+    detail = "Service offer includes a full public account with source links and verified terms. #{unrelated_detail * 8}"
+    detail += '<a href="/documents/one.pdf">First document</a> <a href="/documents/two.pdf">Second document</a>.'
+    html = <<~HTML
+      <!doctype html><html><head><title>Service offer</title></head><body><div class="outer">
+        <main id="primary"><div><h1>Service offer</h1><p>#{detail}</p></div></main>
+        <section class="foreign"><h2>Unrelated section</h2><p>#{"Foreign material has no calculator relationship. " * 5}</p></section>
+      </div></body></html>
+    HTML
+
+    with_url_page('https://unknown.example/service', html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var primary = document.querySelector('#primary');
+          var candidate = {contentType: 'article', readerMode: true, title: document.title,
+            html: primary.outerHTML, markdown: window.__sourceOwnedPrimaryMarkdown(primary.outerHTML),
+            textContent: primary.textContent};
+          var result = window.__sourceOwnedPrimaryArticleMaterial(candidate, {title: document.title, siteName: 'unknown.example'});
+          return {same_candidate: result === candidate, source_owned: !!result.sourceOwnedPrimaryPage};
+        })())
+      JS
+
+      expect(values['same_candidate']).to be(true)
+      expect(values['source_owned']).to be(false)
+    end
   end
 
   def source_publication_article_html(

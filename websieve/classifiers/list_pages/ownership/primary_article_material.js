@@ -34,76 +34,164 @@ function sourceOwnedPrimaryHasUnownedSibling(root, heading) {
   return false;
 }
 
-function sourceOwnedPrimaryFeatureSection(section) {
-  if (!section || elementSubtreeHidden(section) || sourceOwnershipInChrome(section)) return null;
-  var clone = visibilityPrunedClone(section, document);
-  if (!clone) return null;
-  Array.prototype.forEach.call(clone.querySelectorAll("style, script, noscript"), function(node) {
-    node.remove();
+function sourceOwnedPrimaryCalculatorSibling(primary, sibling) {
+  if (!sibling || sibling === primary || elementSubtreeHidden(sibling) ||
+      sourceOwnershipArticleChrome(sibling, primary.parentElement)) return false;
+  var headings = Array.prototype.filter.call(sibling.querySelectorAll("h1"), function(heading) {
+    return !elementVisuallyHidden(heading);
   });
-  if (clone.querySelector("form, input, select, textarea, button, nav, aside, article, video, audio, iframe, table, blockquote, ul, ol")) return null;
-
-  var headings = Array.prototype.slice.call(clone.querySelectorAll("h3"));
-  var paragraphs = Array.prototype.slice.call(clone.querySelectorAll("p"));
-  if (headings.length < 3 || paragraphs.length !== headings.length) return null;
-
-  var cards = headings.map(function(heading) {
-    for (var owner = heading.parentElement; owner && owner !== clone; owner = owner.parentElement) {
-      var ownerHeadings = owner.querySelectorAll("h3");
-      var ownerParagraphs = owner.querySelectorAll("p");
-      if (ownerHeadings.length === 1 && ownerParagraphs.length === 1 &&
-          normalizeText(ownerParagraphs[0].textContent || "").length >= 40) return owner;
-    }
-    return null;
+  if (headings.length !== 1) return false;
+  var fields = Array.prototype.filter.call(sibling.querySelectorAll("input, select, textarea"), function(field) {
+    return !elementSubtreeHidden(field) && field.type !== "hidden";
   });
-  if (cards.some(function(card) { return !card; }) || new Set(cards).size !== cards.length) return null;
-  if (paragraphs.some(function(paragraph) {
-    return !cards.some(function(card) { return card.contains(paragraph); });
-  })) return null;
-  if (Array.prototype.some.call(clone.querySelectorAll("a[href], img, picture, source, svg, canvas"), function(node) {
-    return !cards.some(function(card) { return card.contains(node); });
-  })) return null;
-
-  var sectionText = normalizeText(clone.textContent || "");
-  var cardText = normalizeText(cards.map(function(card) { return card.textContent || ""; }).join(" "));
-  return sectionText && sectionText === cardText ? { clone: clone, text: sectionText } : null;
+  var actions = Array.prototype.filter.call(sibling.querySelectorAll("button, [role~='button' i], input[type='submit'], input[type='button']"), function(action) {
+    return !elementSubtreeHidden(action) && action.type !== "hidden";
+  });
+  var formOrDistinctControls = !!sibling.querySelector("form") ||
+    (fields.some(function(field) { return field.matches("input"); }) &&
+     fields.filter(function(field) { return field.matches("select"); }).length >= 2);
+  return formOrDistinctControls && fields.length > 0 && actions.length > 0 &&
+    (headings[0].compareDocumentPosition(fields[0]) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+    (fields[0].compareDocumentPosition(actions[0]) & Node.DOCUMENT_POSITION_FOLLOWING);
 }
 
-function sourceOwnedPrimaryInterveningSections(primary, calculator) {
-  var parent = primary.parentElement;
-  if (!parent || calculator.parentElement !== parent) return null;
-  var siblings = Array.prototype.slice.call(parent.children);
-  var primaryIndex = siblings.indexOf(primary);
-  var calculatorIndex = siblings.indexOf(calculator);
-  if (primaryIndex < 0 || calculatorIndex <= primaryIndex) return null;
+function sourceOwnedPrimaryContextSibling(sibling, calculator, pageTitleTerms) {
+  var clone = visibilityPrunedClone(sibling, document);
+  if (!clone || !normalizeText(clone.textContent || "")) return false;
+  if (clone.querySelector("article, [role~='article' i], form, input, select, textarea, button, h1")) return false;
+  var headings = Array.prototype.filter.call(clone.querySelectorAll("h2, h3, h4"), function(node) {
+    return normalizeText(node.textContent || "");
+  });
+  var paragraphs = Array.prototype.filter.call(clone.querySelectorAll("p"), function(node) {
+    return normalizeText(node.textContent || "");
+  });
+  var triggers = Array.prototype.filter.call(sibling.querySelectorAll("a"), sourceOwnedPrimaryCollapsedTrigger);
+  var hasFeature = headings.length >= 2 && (paragraphs.length >= 2 ||
+    headings.filter(function(node) { return normalizeText(node.textContent || "").length >= 80; }).length >= 2);
+  var hasQuestions = headings.length && triggers.length >= 2 && paragraphs.length;
+  // A bare editorial section, a second article, and unrelated controls are not
+  // part of this component merely because they share the calculator's parent.
+  if (!hasFeature && !hasQuestions) return false;
+  if (sibling.compareDocumentPosition(calculator) & Node.DOCUMENT_POSITION_FOLLOWING) return hasFeature;
+  if (!pageTitleTerms.some(function(term) {
+    return normalizeText(clone.textContent || "").toLowerCase().indexOf(term) !== -1;
+  })) return false;
+  return hasFeature || hasQuestions;
+}
 
-  var sections = [];
-  for (var index = primaryIndex + 1; index < calculatorIndex; index += 1) {
-    var sibling = siblings[index];
-    if (elementSubtreeHidden(sibling) || sourceOwnershipInChrome(sibling)) continue;
-    var material = visibilityPrunedClone(sibling, document);
-    if (!material) continue;
-    Array.prototype.forEach.call(material.querySelectorAll("style, script, noscript"), function(node) {
-      node.remove();
+function sourceOwnedPrimaryMediaSibling(sibling, ownedSiblings, pageTitleTerms) {
+  var clone = visibilityPrunedClone(sibling, document);
+  if (!clone || normalizeText(clone.textContent || "") ||
+      clone.querySelector("article, form, input, button, a[href], video, audio, iframe, object, embed")) return false;
+  var images = Array.prototype.slice.call(clone.querySelectorAll("img[src]"));
+  if (images.length !== 1) return false;
+  var url = materializedHttpUrl(images[0].getAttribute("src"));
+  if (!url || !pageTitleTerms.some(function(term) { return url.toLowerCase().indexOf(term) !== -1; })) return false;
+  var host = new URL(url).hostname;
+  return ownedSiblings.some(function(owned) {
+    return Array.prototype.some.call(owned.querySelectorAll("img[src]"), function(image) {
+      var ownedUrl = materializedHttpUrl(image.getAttribute("src"));
+      return ownedUrl && new URL(ownedUrl).hostname === host;
     });
-    if (!normalizeText(material.textContent || "") &&
-        !material.querySelector("h1, h2, h3, h4, h5, h6, a[href], img, picture, video, audio, iframe, table, blockquote, ul, ol, form, input, select, textarea, button")) continue;
+  });
+}
 
-    var section = sourceOwnedPrimaryFeatureSection(sibling);
-    if (!section) return null;
-    sections.push(section.clone);
-  }
-  return sections;
+function sourceOwnedPrimaryServiceOwner(primary, pageTitleTerms) {
+  var owner = primary && primary.parentElement;
+  if (!owner || owner === document.body || owner === document.documentElement ||
+      owner.matches("html, body, main, [role~='main' i]") || sourceOwnershipInChrome(owner)) return null;
+  var children = Array.prototype.slice.call(owner.children);
+  var primaryIndex = children.indexOf(primary);
+  if (primaryIndex < 0 || children.filter(function(child) { return child === primary; }).length !== 1) return null;
+  var calculators = children.filter(function(child, index) {
+    return index > primaryIndex && sourceOwnedPrimaryCalculatorSibling(primary, child);
+  });
+  if (calculators.length !== 1) return null;
+  var calculator = calculators[0];
+  var contextualSiblings = children.filter(function(child) {
+    return child !== primary && child !== calculator && !child.matches("style, script, noscript, template") &&
+      !elementSubtreeHidden(child) &&
+      !sourceOwnershipArticleChrome(child, owner) &&
+      !!normalizeText((visibilityPrunedClone(child, document) || {}).textContent || "");
+  });
+  if (!contextualSiblings.length || !contextualSiblings.every(function(child) {
+    return sourceOwnedPrimaryContextSibling(child, calculator, pageTitleTerms);
+  })) return null;
+  var ownedSiblings = [primary, calculator].concat(contextualSiblings);
+  var otherSiblings = children.filter(function(child) {
+    return ownedSiblings.indexOf(child) < 0 && !child.matches("style, script, noscript, template") &&
+      !elementSubtreeHidden(child) && !sourceOwnershipArticleChrome(child, owner);
+  });
+  if (!otherSiblings.every(function(child) {
+    return sourceOwnedPrimaryMediaSibling(child, ownedSiblings, pageTitleTerms);
+  })) return null;
+  return { node: owner, calculator: calculator };
+}
+
+function sourceOwnedPrimaryCollapsedTrigger(node) {
+  if (!node || node.tagName !== "A" || elementSubtreeHidden(node)) return false;
+  var href = (node.getAttribute("href") || "").trim();
+  var expanded = node.getAttribute("aria-expanded");
+  if (expanded === "true") return false;
+  var identity = node.getAttribute("class") || "";
+  if (/(?:expander|accordion|collapse|disclosure)/i.test(identity) &&
+      (!href || href.charAt(0) === "#" || /^javascript\s*:/i.test(href))) return true;
+  if (href.charAt(0) !== "#") return false;
+  return expanded === "false" || node.getAttribute("role") === "button" || !!node.getAttribute("aria-controls");
+}
+
+function sourceOwnedPrimaryServiceClone(serviceOwner) {
+  var sourceClones = new WeakMap();
+  var clone = visibilityPrunedClone(serviceOwner.node, document, sourceClones);
+  if (!clone) return null;
+  Array.prototype.forEach.call(serviceOwner.node.querySelectorAll("a"), function(node) {
+    if (!sourceOwnedPrimaryCollapsedTrigger(node)) return;
+    var link = sourceClones.get(node);
+    if (!link || !clone.contains(link) || !link.parentNode) return;
+    var sourceParent = node.parentElement;
+    if (sourceParent && /^H[1-6]$/.test(sourceParent.tagName || "")) {
+      while (link.firstChild) link.parentNode.insertBefore(link.firstChild, link);
+      link.remove();
+      return;
+    }
+    if (sourceParent && /^(?:DIV|SECTION)$/.test(sourceParent.tagName || "")) {
+      var label = document.createElement("p");
+      while (link.firstChild) label.appendChild(link.firstChild);
+      link.parentNode.replaceChild(label, link);
+      return;
+    }
+    while (link.firstChild) link.parentNode.insertBefore(link.firstChild, link);
+    link.remove();
+  });
+  Array.prototype.forEach.call(serviceOwner.node.querySelectorAll("style, script, noscript, template"), function(node) {
+    var childClone = sourceClones.get(node);
+    if (childClone) childClone.remove();
+  });
+  Array.prototype.forEach.call(serviceOwner.node.children, function(child) {
+    if (!sourceOwnershipArticleChrome(child, serviceOwner.node)) return;
+    var childClone = sourceClones.get(child);
+    if (childClone) childClone.remove();
+  });
+  return clone;
 }
 
 function sourceOwnedPrimarySectionOutput(clone) {
-  clone.setAttribute("data-fetchutil-page-overview", "true");
+  var primary = clone.querySelector("[id='primary' i]");
+  if (primary) primary.setAttribute("data-fetchutil-source-owned-primary", "");
+  var unlabelledMedia = Array.prototype.filter.call(clone.children, function(child) {
+    return !normalizeText(child.textContent || "") && !child.querySelector("a[href], input, select, button") &&
+      child.querySelectorAll("img[src]").length === 1 &&
+      !normalizeText(child.querySelector("img[src]").getAttribute("alt") || "");
+  }).map(function(child) { return child.querySelector("img[src]"); });
+  unlabelledMedia.forEach(function(image) { image.setAttribute("alt", "Image"); });
+  var markdown = markdownFor(clone.outerHTML);
+  unlabelledMedia.forEach(function(image) { image.removeAttribute("alt"); });
+  if (primary) primary.removeAttribute("data-fetchutil-source-owned-primary");
   var output = {
     html: clone.outerHTML,
-    markdown: markdownFor(clone.outerHTML),
+    markdown: markdown,
     text: normalizeText(clone.textContent || "")
   };
-  clone.removeAttribute("data-fetchutil-page-overview");
   return output;
 }
 
@@ -140,71 +228,24 @@ function sourceOwnedPrimaryArticleMaterial(content, metadata) {
   if (!pageTitleTerms.length) return content;
   var primaryOwner = sourceOwnedPrimaryOwner(primary, headings[0], pageTitleTerms);
   if (!primaryOwner || (primaryOwner.node === primary && sourceOwnedPrimaryHasUnownedSibling(primary, headings[0]))) return content;
-  var primaryClone = primaryOwner.clone;
-  var primaryText = primaryOwner.text;
-  var sourceUrls = primaryOwner.urls;
-
-  var title = normalizeText(content.title || "");
-  if (!title) return content;
-  var displacedHeadings = Array.prototype.filter.call(document.querySelectorAll("h1"), function(heading) {
-    return !primary.contains(heading) && !elementVisuallyHidden(heading) &&
-      normalizeText(heading.textContent || "") === title;
+  var serviceOwner = sourceOwnedPrimaryServiceOwner(primary, pageTitleTerms);
+  if (!serviceOwner || !sourceOwnedPrimaryCandidateCovered(content, serviceOwner.node)) return content;
+  var serviceClone = sourceOwnedPrimaryServiceClone(serviceOwner);
+  if (!serviceClone) return content;
+  var title = pageTitle;
+  var excerpt = sourceOwnedCompleteArticleLead({
+    ownerRoot: serviceOwner.node,
+    body: { sourceNode: serviceOwner.node },
+    title: title
   });
-  if (displacedHeadings.length !== 1 || !(primary.compareDocumentPosition(displacedHeadings[0]) & 4)) return content;
-
-  var interactiveOwner = displacedHeadings[0].parentElement;
-  while (interactiveOwner && interactiveOwner !== document.body &&
-      (primary.contains(interactiveOwner) || interactiveOwner.contains(primary) || elementSubtreeHidden(interactiveOwner) ||
-       !Array.prototype.some.call(interactiveOwner.querySelectorAll("input, select, textarea, button"), function(control) {
-         return !elementSubtreeHidden(control);
-       }))) {
-    interactiveOwner = interactiveOwner.parentElement;
-  }
-  if (!interactiveOwner || interactiveOwner === document.body) return content;
-  var interactiveHeadings = Array.prototype.filter.call(interactiveOwner.querySelectorAll("h1"), function(heading) {
-    return !elementVisuallyHidden(heading);
-  });
-  if (interactiveHeadings.length !== 1 || normalizeText(interactiveHeadings[0].textContent || "") !== title) return content;
-
-  var pageOwner = primary.parentElement;
-  var calculator = displacedHeadings[0];
-  while (calculator && calculator.parentElement !== pageOwner) calculator = calculator.parentElement;
-  if (!calculator || calculator === primary || !calculator.contains(interactiveOwner) ||
-      elementSubtreeHidden(calculator)) return content;
-  var calculatorHeadings = Array.prototype.filter.call(calculator.querySelectorAll("h1"), function(heading) {
-    return !elementVisuallyHidden(heading);
-  });
-  if (calculatorHeadings.length !== 1 || normalizeText(calculatorHeadings[0].textContent || "") !== title) return content;
-  var interveningSections = sourceOwnedPrimaryInterveningSections(primary, calculator);
-  if (!interveningSections) return content;
-
-  var candidateText = normalizeText(content.textContent || content.markdown || "");
-  var leadNodes = Array.prototype.filter.call(primaryClone.querySelectorAll("p, li, blockquote, div"), function(node) {
-    if (node.querySelector("h1, h2, h3, h4, h5, h6, a, form, input, select, textarea, button, img, video, audio, iframe")) return false;
-    return normalizeText(node.textContent || "").length >= 160;
-  });
-  var missingLead = leadNodes.find(function(node) {
-    return !candidateText.includes(normalizeText(node.textContent || ""));
-  });
-  var candidateContainer = document.createElement("div");
-  candidateContainer.innerHTML = content.html || "";
-  var candidateUrls = new Set(Array.prototype.map.call(candidateContainer.querySelectorAll("a[href]"), function(link) {
-    return materializedHttpUrl(link.getAttribute("href"));
-  }).filter(Boolean));
-  var missingPrimaryLink = Array.from(sourceUrls).some(function(url) { return !candidateUrls.has(url); });
-  if (!missingLead || !missingPrimaryLink) return content;
-
-  var pageTitle = normalizeText((metadata && metadata.title) || document.title || "");
-  var sourceSections = [primaryClone].concat(interveningSections, [visibilityPrunedClone(calculator, document)]);
-  if (sourceSections.some(function(section) { return !section; })) return content;
-  var sourceOutputs = sourceSections.map(sourceOwnedPrimarySectionOutput);
-  var existingMarkdown = content.markdown || markdownFor(content.html || "");
+  if (!excerpt) return content;
+  var sourceOutput = sourceOwnedPrimarySectionOutput(serviceClone);
   return Object.assign({}, content, {
-    title: pageTitle || content.title,
-    excerpt: content.excerpt || normalizeText(missingLead.textContent || ""),
-    html: sourceOutputs.map(function(output) { return output.html; }).join("") + (content.html || ""),
-    markdown: sourceOutputs.map(function(output) { return output.markdown; }).concat(existingMarkdown).filter(Boolean).join("\n\n"),
-    textContent: normalizeText(sourceOutputs.map(function(output) { return output.text; }).concat(content.textContent || "").join(" ")),
+    title: title,
+    excerpt: excerpt,
+    html: sourceOutput.html,
+    markdown: sourceOutput.markdown,
+    textContent: sourceOutput.text,
     sourceOwnedPrimaryPage: true
   });
 }
