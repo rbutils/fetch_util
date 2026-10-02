@@ -157,6 +157,7 @@ extractors/article/readability/source_paragraph_mapping.js
 extractors/article/readability/excerpt_chrome.js
 extractors/article/readability/owned_body/owned_body_lead.js
 extractors/article/readability/readability_excerpt.js
+extractors/article/readability/excerpt/markers.js
 extractors/article/readability/caption_credit_excerpt.js
 extractors/article/readability/compact_body_excerpt.js
 extractors/article/readability/source_node_provenance.js
