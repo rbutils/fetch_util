@@ -169,6 +169,70 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     end
   end
 
+  it 'keeps service-page table material when product tabs form a smaller product list' do
+    table_rows = (1..6).map do |index|
+      <<~HTML
+        <tr><th>Service feature #{index}</th><td>Feature #{index} supplies a distinct public news service
+        with detailed source material for analysts and newsroom teams.</td></tr>
+      HTML
+    end.join
+    product_tabs = (1..4).map do |index|
+      %(<a href="/product/service-#{index}">Public news service option #{index}</a>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Global news services</title></head><body><main>
+        <h1>Global news services</h1>
+        <p>Organizations use the service to review accurate reporting, source data, and public information before making time-sensitive decisions. Dedicated editorial teams publish current material across local and international topics.</p>
+        <h2>How the service supports customers</h2>
+        <p>Customers receive verified reporting and clear contextual guidance for their work. The service includes reliable delivery, professional research tools, and a documented process for requesting additional information.</p>
+        <table><tbody>#{table_rows}</tbody></table>
+        <section class="service-options"><h2>Choose a service</h2>#{product_tabs}</section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://publisher.example/product/premium-services', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Feature 1 supplies a distinct public news service')
+      expect(payload['markdown']).to include('Feature 6 supplies a distinct public news service')
+    end
+  end
+
+  it 'protects every owned table cell from a product-list replacement even in a small table' do
+    table_rows = (1..2).map do |index|
+      <<~HTML
+        <tr><th>Service product tab #{index}</th>
+          <td>Eligibility detail #{index} explains a distinct requirement for customers and applicants.</td></tr>
+      HTML
+    end.join
+    product_tabs = (1..4).map do |index|
+      %(<a href="/product/tab-#{index}">Service product tab #{index}</a>)
+    end.join
+    article_paragraphs = (1..3).map do |index|
+      "The public program section #{index} documents the eligibility rules, review history, supporting evidence, " \
+        'and access instructions that customers need before selecting a service option. These published details ' \
+        'explain the scope and limitations of each service.'
+    end
+    html = <<~HTML
+      <html><head><title>Public service options</title>
+        <link rel="canonical" href="https://publisher.example/product/services">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://publisher.example/product/services","headline":"Public service options"}</script>
+      </head><body><main><article><h1>Public service options</h1>
+        #{article_paragraphs.map { |paragraph| "<p>#{paragraph}</p>" }.join}
+        <table><tbody>#{table_rows}</tbody></table>
+      </article>
+        <section>#{product_tabs}</section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://publisher.example/product/services', html) do |payload|
+      expect(payload['contentType']).to eq('article'), payload.slice('contentType', 'title', 'markdown').inspect
+      (1..2).each do |index|
+        expect(payload['markdown']).to include("Service product tab #{index}")
+        expect(payload['markdown']).to include("Eligibility detail #{index} explains a distinct requirement for customers and applicants")
+      end
+    end
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 

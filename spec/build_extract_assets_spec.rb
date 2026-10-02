@@ -1345,7 +1345,10 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     segments = [
-      ["classifiers/list_pages/article_body_collection.js", ["classifiers/list_pages/ownership/homepage_landing.js"], "classifiers/list_pages/context.js"],
+      ["classifiers/list_pages/article_body_collection.js", %w[
+        classifiers/list_pages/ownership/article_table_material.js
+        classifiers/list_pages/ownership/homepage_landing.js
+      ], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
       ], "classifiers/list_pages/chrome.js"],
@@ -1413,7 +1416,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],
-      ["boot/list_candidate_arbitration.js", [], "boot/extract_api.js"],
+      ["boot/list_candidate_arbitration.js", ["boot/source_material_arbitration.js"], "boot/extract_api.js"],
       ["extractors/lists/relabeling.js", %w[
         extractors/lists/generic/records/card_evidence.js
         extractors/lists/generic/records/duplicate_record_metadata.js

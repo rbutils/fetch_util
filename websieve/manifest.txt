@@ -82,6 +82,7 @@ classifiers/challenges/interstitial_pages.js
 classifiers/challenges/not_found_context.js
 classifiers/challenges/index.js
 classifiers/list_pages/article_body_collection.js
+classifiers/list_pages/ownership/article_table_material.js
 classifiers/list_pages/ownership/homepage_landing.js
 classifiers/list_pages/context.js
 classifiers/list_pages/case_index.js
@@ -341,5 +342,6 @@ boot/list_byline.js
 boot/contents_component_finalization.js
 boot/result_finalization.js
 boot/list_candidate_arbitration.js
+boot/source_material_arbitration.js
 boot/extract_api.js
 99_outro.js
