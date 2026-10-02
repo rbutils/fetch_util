@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Preserve the complete summary of a proved focal article while declining related-card, quoted, or contradictory summaries.
 - Use a uniquely attributed external article H1 only when its complete selected body belongs to that local source record.
 - Preserve source-proved service context, calculator controls, visible FAQ triggers and owned media in order, while declining hidden or unrelated material.
 - Keep proved result counts and continuation controls in source order with their linked records; treat unproved numeric-leading paragraphs as authored context.

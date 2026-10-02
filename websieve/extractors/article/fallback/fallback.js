@@ -129,12 +129,13 @@
     var text = normalizeText(clone.textContent);
     var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
     var sourceOwnedPublication = sourceOwnedFallbackPublication(metadata, node, selected);
+    var excerptOwnership = focalOwnership || resolveCanonicalArticleBodyOwnership();
 
     return {
       title: focalOwnership ? focalOwnership.title : document.title,
       byline: null,
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
-        fallbackArticleExcerpt(visibleNode, text, metadata, !!selected),
+        fallbackArticleExcerpt(visibleNode, text, metadata, !!selected, excerptOwnership, sourceClones),
       sourceOwnedFocalArticle: !!focalOwnership,
       sourceOwnedMediaArticle: !!(focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media"),
       sourceOwnedMediaHeadline: focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media" ?

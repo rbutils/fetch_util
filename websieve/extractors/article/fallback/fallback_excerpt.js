@@ -1,5 +1,7 @@
-  function fallbackArticleExcerpt(root, text, metadata, completeParagraph) {
+  function fallbackArticleExcerpt(root, text, metadata, completeParagraph, sourceOwnership, sourceClones) {
     var renderedText = normalizeText(text || "");
+    var ownedSummary = fallbackSourceOwnedSummary(root, renderedText, sourceOwnership, sourceClones);
+    if (ownedSummary) return ownedSummary;
     var repeatedHeadlineLead = fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph);
     if (repeatedHeadlineLead) return repeatedHeadlineLead;
     function ownedParagraph(node) {
@@ -30,6 +32,55 @@
       }
     }
     return Array.from(excerpt).slice(0, 280).join("") || null;
+  }
+
+  function fallbackSourceOwnedSummary(root, renderedText, sourceOwnership, sourceClones) {
+    if (!root || !document.body || !renderedText || root.nodeType !== 1 || !sourceOwnership) return null;
+    var proof = sourceOwnership.proof;
+    if (["canonical-article-metadata", "same-owner-source-headline", "same-owner-source-headline-and-media"].indexOf(proof) === -1) return null;
+    var owner = sourceOwnership.node;
+    var headerRoot = sourceOwnership.ownerRoot || owner;
+    var heading = sourceOwnership.heading;
+    var sourceRoot = sourceOwnership.body && sourceOwnership.body.sourceNode || owner;
+    if (!owner || !headerRoot || !heading || !sourceRoot || owner.nodeType !== 1 ||
+        !owner.contains(heading) || !headerRoot.contains(heading) ||
+        (sourceRoot !== owner && !owner.contains(sourceRoot))) return null;
+
+    var ownerHeadings = Array.prototype.filter.call(headerRoot.querySelectorAll("h1, [itemprop~='headline' i]"), function(node) {
+      return !elementVisuallyHidden(node);
+    });
+    if (ownerHeadings.length !== 1 || ownerHeadings[0] !== heading) return null;
+
+    var summaries = Array.prototype.filter.call(sourceRoot.querySelectorAll(
+      "[itemprop~='description' i], [class~='summary' i], [class~='standfirst' i], [class~='excerpt' i], [data-article-summary]"
+    ), function(node) {
+      var nestedArticle = node.closest("article");
+      var ownerArticle = owner.matches("article") ? owner : owner.closest("article");
+      return !elementSubtreeHidden(node) &&
+        !node.querySelector("p, button, input, select, textarea") &&
+        !node.closest("header, address, nav, footer, aside, blockquote, figure, figcaption, form, menu, " +
+          "[role~='navigation' i], [role~='complementary' i], [role~='toolbar' i], " +
+          "[itemprop~='author' i], [itemprop~='creator' i], [class*='byline' i], [class*='author' i], " +
+          "[class*='related' i], [class*='recommend' i], [class*='sidebar' i], [class*='comment' i]") &&
+        (!nestedArticle || nestedArticle === ownerArticle) &&
+        !fallbackExcerptChromeOwner(sourceRoot, node);
+    });
+    if (summaries.length !== 1) return null;
+
+    var sourceSummary = summaries[0];
+    if (!(heading.compareDocumentPosition(sourceSummary) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
+    var renderedSummary = sourceClones && sourceClones.get(sourceSummary);
+    if (sourceClones) {
+      if (!renderedSummary || (root !== renderedSummary && !root.contains(renderedSummary))) return null;
+    } else if (root !== sourceSummary && !root.contains(sourceSummary)) {
+      return null;
+    }
+
+    var summary = normalizeText(sourceSummary.textContent || "");
+    if (!summary || summary === normalizeText(heading.textContent || "") ||
+        normalizeText(renderedSummary ? renderedSummary.textContent || "" : sourceSummary.textContent || "") !== summary ||
+        renderedText.indexOf(summary) === -1) return null;
+    return summary;
   }
 
   function sourceOwnedCompleteArticleLead(ownership) {

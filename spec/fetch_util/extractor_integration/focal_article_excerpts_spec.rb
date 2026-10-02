@@ -53,4 +53,83 @@ RSpec.describe 'FetchUtil focal article excerpts' do
       expect(payload['excerpt']).not_to include('Community housing review', 'editorial attribution', 'The second paragraph')
     end
   end
+
+  def focal_summary_ownership_page(lead, summary_location: :article, declared_headline: 'Match replay between North City and South United')
+    summary_html = lead.sub('decisive phases', '<strong>decisive phases</strong>')
+    focal_summary = "<div class=\"summary\">#{summary_html}</div>"
+    related_summary = ''
+    quoted_summary = ''
+    rendered_copy = ''
+    case summary_location
+    when :related_card
+      focal_summary = ''
+      related_summary = <<~HTML
+        <section class="cards">
+          <a href="https://sports.example/highlights/other-match"><h2>Another match recap</h2></a>
+          <div class="summary">#{summary_html}</div>
+        </section>
+      HTML
+      rendered_copy = "<h2>#{lead}</h2>"
+    when :quote
+      focal_summary = ''
+      quoted_summary = "<blockquote><div class=\"summary\">#{summary_html}</div></blockquote>"
+      rendered_copy = "<h2>#{lead}</h2>"
+    when :conflicting_headline
+      declared_headline = 'A different structured article headline'
+      rendered_copy = "<h2>#{lead}</h2>"
+    end
+
+    <<~HTML
+      <html><head><title>Match replay</title>
+        <meta property="og:type" content="article">
+        <link rel="canonical" href="https://sports.example/highlights/match-replay">
+        <script type="application/ld+json">
+          {"@type":"NewsArticle","headline":"#{declared_headline}","datePublished":"2026-09-21T09:41:06+07:00",
+           "mainEntityOfPage":"https://sports.example/highlights/match-replay"}
+        </script>
+      </head><body><main><article class="news-content">
+        <h1>Match replay between North City and South United</h1>
+        <div id="match" class="score">North City 2 : 2 South United</div>
+        <div class="embed-responsive"><div id="player"><iframe src="https://ok.ru/videoembed/16302024887023"></iframe></div></div>
+        <p>The match report records the full result, describes the teams' decisive chances, and explains the context readers need to interpret the replay.</p>
+        #{focal_summary}#{quoted_summary}#{rendered_copy}
+      </article>#{related_summary}</main></body></html>
+    HTML
+  end
+
+  it 'selects only a complete summary owned by the proved focal article' do
+    lead = [
+      'The full match summary identifies the teams and competition, then explains the decisive phases of play.',
+      'It preserves the complete source description, including the result, the key chances, and the context needed to interpret the replay.',
+      'The closing sentence remains intact instead of being truncated after a headline, player URL, score, or neighboring fixture.'
+    ].join(' ')
+    html = focal_summary_ownership_page(lead)
+
+    with_url_page('https://sports.example/highlights/match-replay', html) do |page|
+      payload = extract_payload(page, reader_mode: false)
+      expect(payload.fetch('contentType')).to eq('article')
+      expect(payload.fetch('excerpt')).to eq(lead)
+      expect(payload.fetch('publishedTime')).to eq('2026-09-21T09:41:06+07:00')
+      expect(payload.fetch('html')).not_to include('<iframe')
+
+      related = focal_summary_ownership_page(lead, summary_location: :related_card)
+      page.go_to('about:blank')
+      page.content = related
+      related_card = extract_payload(page, reader_mode: false)
+      expect(related_card.fetch('contentType')).to eq('article')
+      expect(related_card.fetch('excerpt')).not_to eq(lead)
+
+      quoted = focal_summary_ownership_page(lead, summary_location: :quote)
+      page.go_to('about:blank')
+      page.content = quoted
+      quoted_summary = extract_payload(page, reader_mode: false)
+      expect(quoted_summary.fetch('excerpt')).not_to eq(lead)
+
+      conflicting = focal_summary_ownership_page(lead, summary_location: :conflicting_headline)
+      page.go_to('about:blank')
+      page.content = conflicting
+      mismatched = extract_payload(page, reader_mode: false)
+      expect(mismatched.fetch('excerpt')).not_to eq(lead)
+    end
+  end
 end
