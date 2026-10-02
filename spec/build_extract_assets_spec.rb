@@ -1237,6 +1237,7 @@ RSpec.describe "extract asset bundle" do
       extractors/article/fallback/media_ownership/focal_media_ownership.js
       extractors/article/fallback/focal_headline_ownership.js
       extractors/article/fallback/ownership/source_header_metadata.js
+      extractors/article/fallback/ownership/content/canonical_body.js
       extractors/article/fallback/ownership/source_content.js
       extractors/article/fallback/ownership/article_coverage.js
       extractors/article/fallback/ownership/article_body.js
@@ -1261,8 +1262,12 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, "extractors/article/fallback/fallback_excerpt.js"))).to include(
       "function sourceOwnedCompleteArticleLead"
     )
-    expect(File.read(File.join(source_root, "extractors/article/fallback/ownership/source_content.js"))).to include(
+    expect(File.read(File.join(source_root, "extractors/article/fallback/ownership/content/canonical_body.js"))).to include(
+      "function canonicalArticleBodyContent",
       "sourceOwnedCompleteArticleLead(ownership)"
+    )
+    expect(File.read(File.join(source_root, "extractors/article/fallback/ownership/source_content.js"))).to include(
+      "canonicalArticleBodyContent(metadata, ownership, article, publicPreview)"
     )
     expect(manifest.index("extractors/article/fallback/fallback_excerpt.js")).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
@@ -1315,6 +1320,7 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     publication_path = "extractors/article/fallback/ownership/publication/owned_publication.js"
+    canonical_body_path = "extractors/article/fallback/ownership/content/canonical_body.js"
     source_content_path = "extractors/article/fallback/ownership/source_content.js"
     fallback_path = "extractors/article/fallback/fallback.js"
     readability_path = "extractors/article/readability/readability.js"
@@ -1324,6 +1330,7 @@ RSpec.describe "extract asset bundle" do
     publication_fields_source = File.read(File.join(source_root, publication_fields_path))
     article_body_source = File.read(File.join(source_root, "extractors/article/fallback/ownership/article_body.js"))
 
+    expect(manifest.index(canonical_body_path)).to be < manifest.index(source_content_path)
     expect(manifest.index(source_content_path)).to be < manifest.index(publication_path)
     expect(manifest.index("extractors/article/fallback/ownership/liveblog_addressing.js")).to be < manifest.index(publication_path)
     expect(manifest.index("extractors/article/fallback/ownership/article_body.js")).to be < manifest.index(publication_path)
@@ -1343,7 +1350,7 @@ RSpec.describe "extract asset bundle" do
     expect(File.read(File.join(source_root, fallback_path))).to include(
       "sourceOwnedFallbackPublication(metadata, node, selected)"
     )
-    expect(File.read(File.join(source_root, source_content_path))).to include(
+    expect(File.read(File.join(source_root, canonical_body_path))).to include(
       "sourceOwnedArticlePublicationFields(metadata, ownership, article)"
     )
     expect(File.read(File.join(source_root, readability_path))).to include(
@@ -1481,6 +1488,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/media_ownership/focal_media_ownership.js
         extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/ownership/source_header_metadata.js
+        extractors/article/fallback/ownership/content/canonical_body.js
         extractors/article/fallback/ownership/source_content.js
         extractors/article/fallback/ownership/article_coverage.js
         extractors/article/fallback/ownership/article_body.js
