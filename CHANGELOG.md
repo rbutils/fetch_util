@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Preserve complete source-owned article body leads, including short Reader paragraphs with unique article and body proof.
 - Preserve complete query-bound material results and decline list takeover when any visible owner material is unaccounted for.
 - Preserve every source-owned search-history occurrence in order, including repeated destinations, and decline incomplete histories.
 - Preserve sparse focal media articles with their complete independently owned related collections and media resources.

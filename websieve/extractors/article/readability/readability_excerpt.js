@@ -1,19 +1,3 @@
-  function readabilityExcerptIsVisibleLead(article, excerpt) {
-    if (!article || !article.content) return false;
-
-    var template = document.createElement("template");
-    template.innerHTML = article.content;
-    return Array.from(template.content.querySelectorAll("p")).some(function(paragraph) {
-      if (normalizeText(paragraph.textContent || "") !== excerpt) return false;
-
-      var range = document.createRange();
-      range.setStart(template.content, 0);
-      range.setEndBefore(paragraph);
-      var prefix = normalizeText(range.toString());
-      return Array.from(prefix).length < 40 && !/\p{Sentence_Terminal}/u.test(prefix);
-    });
-  }
-
   function readabilityExcerptUnits(text) {
     var value = normalizeText(text || "");
     if (typeof Intl === "undefined" || !Intl.Segmenter) return null;
@@ -263,6 +247,8 @@
     if (ownedBylineExcerpt !== null) return ownedBylineExcerpt;
     var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
     if (compactBodyExcerpt) return compactBodyExcerpt;
+    var ownedLead = readabilityOwnedArticleLeadExcerpt(article, metadata, marker, readerBodyEvidence);
+    if (ownedLead) return ownedLead;
     if (textCharacters.length < 400) return article.excerpt;
     if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
     var summaryExcerpt = readabilitySummaryExcerpt(template, excerpt, marker);

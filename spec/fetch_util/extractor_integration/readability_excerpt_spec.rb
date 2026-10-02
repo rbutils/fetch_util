@@ -16,6 +16,9 @@ RSpec.describe 'Readability article excerpts' do
         global.__readabilityContent = readabilityContent;
         global.__markReadabilityExcerptSources = markReadabilityExcerptSources;
         global.__sourceOwnedReaderAdjacentHeaderExcerpt = sourceOwnedReaderAdjacentHeaderExcerpt;
+        global.__sourceOwnedReaderSelectedParagraphs = sourceOwnedReaderSelectedParagraphs;
+        global.__readabilityOwnedArticleLeadExcerpt = readabilityOwnedArticleLeadExcerpt;
+        global.__genericSourceOwnedPageContent = genericSourceOwnedPageContent;
       JS
     end.join("\n")
   end
@@ -345,6 +348,176 @@ RSpec.describe 'Readability article excerpts' do
       expect(values.fetch('marked')).to include(lead, later)
       expect(values.fetch('marked')).not_to include('Unrelated recommendation must not become the excerpt.')
       expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
+  it 'uses short Reader leads only when the complete selected paragraphs share a proved article body' do
+    short_lead = 'Officials confirmed the shipment cleared inspection.'
+    long_body = 'The report describes the verified findings and their consequences for local residents. ' * 12
+    title = 'Source-owned report'
+    html = <<~HTML
+      <main><article>
+        <header><h1>#{title}</h1></header>
+        <div class="article-body"><p>#{short_lead}</p><p>#{long_body}</p></div>
+      </article></main>
+    HTML
+    byline_html = <<~HTML
+      <main><article>
+        <header><h1>#{title}</h1><p class="byline">By Reporter Name</p></header>
+        <div class="article-body"><p>#{long_body}</p></div>
+      </article></main>
+    HTML
+    credit_html = <<~HTML
+      <main><article>
+        <header><h1>#{title}</h1></header>
+        <figure><figcaption><p class="photo-credit">Photo credit: Staff</p></figcaption></figure>
+        <div class="article-body"><p>#{long_body}</p></div>
+      </article></main>
+    HTML
+    narrative_html = <<~HTML
+      <main><article>
+        <header><h1>#{title}</h1></header>
+        <div class="article-body">
+          <div class="related-story"><p>Background material from a separate story is not this report's body lead.</p></div>
+          <p>#{long_body}</p>
+        </div>
+      </article></main>
+    HTML
+
+    with_url_page('https://publisher.example/source-owned-lead', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      page.add_script_tag(content: readability_excerpt_source)
+      positive = JSON.parse(page.evaluate(<<~JS))
+        (function() {
+          var marker = 'short-source-lead';
+          var title = #{title.to_json};
+          var sourceParagraphs = Array.from(document.querySelectorAll('article p'));
+          var selected = document.createElement('div');
+          var sourceClones = new Map();
+          var sourceIdentities = new Map();
+          sourceParagraphs.forEach(function(source, index) {
+            var clone = source.cloneNode(true);
+            clone.setAttribute('data-fetchutil-reader-source-paragraph', marker + ':' + index);
+            clone.setAttribute('data-fetchutil-excerpt-body', marker);
+            selected.appendChild(clone);
+            sourceClones.set(source, clone);
+            sourceIdentities.set(source, {
+              id: marker + ':' + index,
+              unique: true,
+              visibleText: (source.textContent || '').replace(/\s+/g, ' ').trim(),
+              breakSegments: null
+            });
+          });
+          var evidence = window.__sourceOwnedReaderSelectedParagraphs(
+            selected, sourceClones, sourceIdentities, marker, true
+          );
+          var article = {
+            title: title,
+            excerpt: 'More material from the latest coverage.',
+            content: selected.innerHTML,
+            textContent: selected.textContent
+          };
+          var metadata = {title: title};
+          return JSON.stringify({
+            evidenceCount: evidence && evidence.sourceParagraphs.length,
+            excerpt: window.__readabilityArticleExcerpt(article, metadata, marker, evidence),
+            ownedLead: window.__readabilityOwnedArticleLeadExcerpt(article, metadata, marker, evidence)
+          });
+        })()
+      JS
+
+      expect(positive).to include(
+        'evidenceCount' => 2,
+        'excerpt' => short_lead,
+        'ownedLead' => short_lead
+      )
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
+
+      negatives = JSON.parse(page.evaluate(<<~JS))
+        (function() {
+          var marker = 'short-source-lead-negative';
+          var title = #{title.to_json};
+          var cases = #{[byline_html, credit_html, narrative_html].to_json};
+          return JSON.stringify(cases.map(function(markup) {
+            document.body.innerHTML = markup;
+            var sourceParagraphs = Array.from(document.querySelectorAll('article p'));
+            var selected = document.createElement('div');
+            var sourceClones = new Map();
+            var sourceIdentities = new Map();
+            sourceParagraphs.forEach(function(source, index) {
+              var clone = source.cloneNode(true);
+              clone.setAttribute('data-fetchutil-reader-source-paragraph', marker + ':' + index);
+              clone.setAttribute('data-fetchutil-excerpt-body', marker);
+              selected.appendChild(clone);
+              sourceClones.set(source, clone);
+              sourceIdentities.set(source, {
+                id: marker + ':' + index,
+                unique: true,
+                visibleText: (source.textContent || '').replace(/\s+/g, ' ').trim(),
+                breakSegments: null
+              });
+            });
+            var evidence = window.__sourceOwnedReaderSelectedParagraphs(
+              selected, sourceClones, sourceIdentities, marker, true
+            );
+            return window.__readabilityOwnedArticleLeadExcerpt({
+              title: title,
+              excerpt: 'More material from the latest coverage.',
+              content: selected.innerHTML,
+              textContent: selected.textContent
+            }, {title: title}, marker, evidence);
+          }));
+        })()
+      JS
+
+      expect(negatives).to eq([nil, nil, nil])
+    end
+  end
+
+  it 'uses the complete first source-owned fallback body paragraph without truncating it' do
+    title = 'Complete source article'
+    url = 'https://publisher.example/complete-body-lead'
+    lead = ('The verified report explains the full source-owned development and its consequences for affected communities. ' * 8).strip
+    continuation = ('Officials said the review will continue with additional public findings. ' * 4).strip
+    schema = {
+      '@context' => 'https://schema.org',
+      '@type' => 'NewsArticle',
+      'url' => url,
+      'headline' => title,
+      'articleBody' => "#{lead} #{continuation}"
+    }.to_json
+    html = <<~HTML
+      <html><head>
+        <link rel="canonical" href="#{url}">
+        <script type="application/ld+json">#{schema}</script>
+      </head><body><main><article>
+        <header><h1>#{title}</h1></header>
+        <div class="article-body" itemprop="articleBody">
+          <figure><figcaption><p>Photo credit: Staff image archive.</p></figcaption></figure>
+          <p>#{lead}</p><p>#{continuation}</p>
+        </div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page(url, html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        (function() {
+          var content = window.__genericSourceOwnedPageContent({
+            title: #{title.to_json},
+            siteName: 'publisher.example'
+          });
+          return JSON.stringify({
+            excerpt: content && content.excerpt,
+            unchanged: document.body.outerHTML === #{before.to_json}
+          });
+        })()
+      JS
+
+      expect(values['excerpt']).to eq(lead)
+      expect(values['excerpt'].length).to be > 280
+      expect(values['unchanged']).to be(true)
     end
   end
 

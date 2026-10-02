@@ -1258,6 +1258,12 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
     expect(File.read(File.join(source_root, "extractors/article/fallback/fallback_scoring.js"))).to include("function scoreNode")
     expect(File.read(File.join(source_root, "extractors/article/fallback/fallback.js"))).not_to include("function scoreNode")
+    expect(File.read(File.join(source_root, "extractors/article/fallback/fallback_excerpt.js"))).to include(
+      "function sourceOwnedCompleteArticleLead"
+    )
+    expect(File.read(File.join(source_root, "extractors/article/fallback/ownership/source_content.js"))).to include(
+      "sourceOwnedCompleteArticleLead(ownership)"
+    )
     expect(manifest.index("extractors/article/fallback/fallback_excerpt.js")).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
   end
@@ -1266,21 +1272,29 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     excerpt_path = "extractors/article/readability/readability_excerpt.js"
+    owned_lead_path = "extractors/article/readability/owned_body/owned_body_lead.js"
     caption_path = "extractors/article/readability/caption_credit_excerpt.js"
     compact_path = "extractors/article/readability/compact_body_excerpt.js"
     runtime_path = "extractors/article/readability/readability.js"
     excerpt_source = File.read(File.join(source_root, excerpt_path))
     runtime_source = File.read(File.join(source_root, runtime_path))
+    owned_lead_source = File.read(File.join(source_root, owned_lead_path))
 
+    expect(manifest.index(owned_lead_path)).to be < manifest.index(excerpt_path)
     expect(manifest.index(excerpt_path)).to be < manifest.index(caption_path)
     expect(manifest.index(caption_path)).to be < manifest.index(compact_path)
     expect(manifest.index(compact_path)).to be < manifest.index(runtime_path)
     expect(File.read(File.join(source_root, caption_path))).to include("function readabilityCaptionCreditExcerpt")
     expect(File.read(File.join(source_root, compact_path))).to include("function readabilityCompactBodyExcerpt")
+    expect(owned_lead_source).to include(
+      "function readabilityExcerptIsVisibleLead",
+      "function readabilityOwnedArticleLeadExcerpt"
+    )
     expect(excerpt_source).to include(
       "function readabilityArticleExcerpt",
       "function stripReadabilityExcerptMarkers"
     )
+    expect(excerpt_source).not_to include("function readabilityExcerptIsVisibleLead")
     expect(runtime_source).to include("function readabilityContent")
     expect(runtime_source).not_to include(
       "function readabilityArticleExcerpt",
@@ -1429,6 +1443,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/source_headline.js
         extractors/article/readability/source_paragraph_mapping.js
         extractors/article/readability/excerpt_chrome.js
+        extractors/article/readability/owned_body/owned_body_lead.js
         extractors/article/readability/readability_excerpt.js
         extractors/article/readability/caption_credit_excerpt.js
         extractors/article/readability/compact_body_excerpt.js

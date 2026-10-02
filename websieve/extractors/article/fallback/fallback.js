@@ -133,7 +133,7 @@
       title: focalOwnership ? focalOwnership.title : document.title,
       byline: null,
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
-        fallbackArticleExcerpt(visibleNode, text, metadata, !!focalOwnership),
+        fallbackArticleExcerpt(visibleNode, text, metadata, !!selected),
       sourceOwnedFocalArticle: !!focalOwnership,
       sourceOwnedMediaArticle: !!(focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media"),
       sourceOwnedMediaHeadline: focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media" ?

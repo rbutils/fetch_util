@@ -32,6 +32,26 @@
     return Array.from(excerpt).slice(0, 280).join("") || null;
   }
 
+  function sourceOwnedCompleteArticleLead(ownership) {
+    if (!ownership || !ownership.ownerRoot || !ownership.body || !ownership.body.sourceNode ||
+        !ownership.ownerRoot.contains(ownership.body.sourceNode)) return null;
+    var root = ownership.body.sourceNode;
+    var paragraphs = Array.from(root.querySelectorAll("p")).filter(function(paragraph) {
+      var nestedArticle = paragraph.closest("article");
+      return !elementSubtreeHidden(paragraph) &&
+        (!nestedArticle || nestedArticle === root || !root.contains(nestedArticle)) &&
+        !paragraph.closest("header, address, nav, footer, aside, form, figure, figcaption, menu, " +
+          "[role~='navigation' i], [role~='complementary' i], " +
+          "[itemprop~='author' i], [itemprop~='creator' i], " +
+          "[class*='byline' i], [class*='author' i], [class*='credit' i], [class*='caption' i], " +
+          "[class*='related' i], [class*='sidebar' i], [class*='recommend' i]") &&
+        !paragraph.querySelector("button, input, select, textarea");
+    });
+    if (!paragraphs.length) return null;
+    var lead = normalizeText(paragraphs[0].textContent || "");
+    return lead && lead !== normalizeText(ownership.title || "") ? lead : null;
+  }
+
   function fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph) {
     if (!root || !root.matches || !root.matches("article") || !metadata || !metadata.siteName) return null;
     var headline = articleTitleFromOwnedExternalHeading(root.innerHTML, document.title, metadata.siteName);

@@ -273,10 +273,12 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
   var headerMetadata = sourceOwnedFallbackHeaderMetadata(ownership.body.sourceNode, ownership.title, metadata || {});
   var attribution = headerMetadata || metadata || {};
   var titleIdentityUnproven = ownership.titleIdentityProven === false;
+  var completeArticleLead = sourceOwnedCompleteArticleLead(ownership);
   var content = {
     title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
-    excerpt: publicPreview ? publicPreview.text : fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true),
+    excerpt: publicPreview ? publicPreview.text :
+      (completeArticleLead || fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true)),
     siteName: (metadata && metadata.siteName) || location.hostname,
     publishedTime: attribution.publishedTime || null,
     html: article.innerHTML,
