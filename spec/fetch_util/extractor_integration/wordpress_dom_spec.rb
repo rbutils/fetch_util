@@ -117,4 +117,35 @@ RSpec.describe 'FetchUtil WordPress DOM extractor integration' do
       expect(payload['markdown']).to include('same source-owned article body')
     end
   end
+
+  it 'keeps a resolved null publication date when only conflicting body dates are visible' do
+    html = <<~HTML
+      <html lang="en">
+        <head>
+          <title>Independent Article</title>
+          <link rel="canonical" href="https://independent.test/story/conflicting-dates">
+          <meta property="og:type" content="article">
+          <meta property="og:title" content="Independent Article">
+        </head>
+        <body>
+          <article>
+            <h1>Independent Article</h1>
+            <div class="entry-content">
+              <time datetime="2026-09-27">September 27, 2026</time>
+              <time datetime="2026-09-28">September 28, 2026</time>
+              <p>This ordinary article explains the source-owned report and its complete factual context for readers.</p>
+              <p>The second paragraph preserves the remaining article body and confirms its source ownership.</p>
+            </div>
+          </article>
+        </body>
+      </html>
+    HTML
+
+    extract_from_url('https://independent.test/story/conflicting-dates', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['hostAware']).to be(false)
+      expect(payload['publishedTime']).to be_nil
+      expect(payload['markdown']).to include('complete factual context', 'remaining article body')
+    end
+  end
 end

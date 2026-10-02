@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Preserve publication labels only when independently confirmed as body-owned dates; retain surrounding complete article prose and reject conflicting or foreign date values.
 - Return the uniquely matched visible source H1 for article titles, requiring linked source proof before borrowing a publisher-owned heading.
 - Keep complete source-owned excerpt paragraphs beneath publication actions; preserve short authored introductions and standfirsts while declining hidden or unrelated prose.
 - Recognize a complete, source-owned primary headline collection as a credible generic homepage list when it has no editorial section wrapper; retain mismatch warnings for incidental navigation and error pages.

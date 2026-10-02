@@ -38,6 +38,20 @@ function sourceOwnedMappedPublicationBodyOwner(paragraphs, metadata) {
   return { root: root, ownerRoot: ownerRoot, heading: headings[0], body: root, firstParagraph: paragraphs[0], headline: headline };
 }
 
+function sourceOwnedArticleBodyPublicationDates(body, ownerRoot, heading, firstParagraph) {
+  if (!body || !ownerRoot || !heading || !firstParagraph || !body.contains(firstParagraph) ||
+      !ownerRoot.contains(heading) || !document.body.contains(body)) return [];
+  var selector = "time, [itemprop~='datePublished' i], [class*='date' i], [class*='published' i]";
+  return Array.from(body.querySelectorAll(selector)).filter(function(node) {
+    if (elementVisuallyHidden(node) || !visiblePublishedTimeField(node) || visiblePublicationSchedule(node) ||
+        sourceOwnershipArticleChrome(node, ownerRoot) || node.closest("blockquote, form, [role='note']") ||
+        (node.closest("article") && node.closest("article") !== ownerRoot)) return false;
+    if (!(heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+        !(node.compareDocumentPosition(firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    return visiblePublicationDateLike(sourceOwnedPublicationNodeDate(node));
+  });
+}
+
 function sourceOwnedReaderMappedParagraphRoot(paragraphs) {
   var root = paragraphs[0];
   for (var index = 1; index < paragraphs.length; index += 1) {

@@ -16,8 +16,11 @@ function readabilityOwnedSelectedPublication(article, metadata, bodyEvidence) {
   visibleDates = visibleDates.filter(function(node) {
     return !!(node.compareDocumentPosition(owner.firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
+  visibleDates = visibleDates.concat(sourceOwnedArticleBodyPublicationDates(
+    owner.root, owner.ownerRoot, owner.heading, owner.firstParagraph
+  ));
   var readerHeaderDate = sourceOwnedReaderHeaderPublicationTime(paragraphs, owner);
-  if (readerHeaderDate) return { publishedTime: readerHeaderDate };
+  if (readerHeaderDate) visibleDates.push(readerHeaderDate);
   return sourceOwnedSelectedPublicationTime(owner.headline, pageUrl, visibleDates) || { publishedTime: null };
 }
 
@@ -73,6 +76,13 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
   });
   var firstParagraph = paragraphs[0];
   var visibleDates = headerContext && headerContext !== false ? sourceOwnedPublicationDateNodes(headerContext) : [];
+  visibleDates = visibleDates.concat(sourceOwnedArticleBodyPublicationDates(
+    bodyOwner, articleOwnerRoot, headings[0], firstParagraph
+  ));
+  var readerHeaderDate = sourceOwnedReaderHeaderPublicationTime(paragraphs, {
+    heading: headings[0], ownerRoot: articleOwnerRoot
+  });
+  if (readerHeaderDate) visibleDates.push(readerHeaderDate);
   var publication = sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDates);
   return publication || { publishedTime: null };
 }
@@ -193,7 +203,9 @@ function sourceOwnedRepairHeadlineJson(source, headline) {
 function sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDateNodes) {
   var publicationRecords = sourceOwnedPublicationRecords(headline, pageUrl);
   var records = publicationRecords.records;
-  var visibleValues = visibleDateNodes.map(sourceOwnedPublicationNodeDate).filter(Boolean);
+  var visibleValues = visibleDateNodes.map(function(node) {
+    return typeof node === "string" ? normalizeText(node) : sourceOwnedPublicationNodeDate(node);
+  }).filter(Boolean);
   var visible = sourceOwnedUniquePublicationValue(visibleValues);
   var head = sourceOwnedHeadPublicationTime();
   if (visible.ambiguous) return null;

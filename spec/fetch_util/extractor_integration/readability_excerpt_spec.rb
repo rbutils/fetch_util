@@ -217,9 +217,12 @@ RSpec.describe 'Readability article excerpts' do
   end
 
   def source_publication_article_html(
-    headline:, canonical_url:, structured_data:, header_date: nil, schedule_date: nil, aside_date: nil
+    headline:, canonical_url:, structured_data:, header_date: nil, body_date: nil, second_body_date: nil,
+    schedule_date: nil, aside_date: nil
   )
     header_date_markup = header_date ? %(<time datetime="#{header_date}">#{header_date}</time>) : ""
+    body_date_markup = body_date ? %(<time datetime="#{body_date}">#{body_date}</time>) : ""
+    second_body_date_markup = second_body_date ? %(<time datetime="#{second_body_date}">#{second_body_date}</time>) : ""
     schedule_markup = schedule_date ? %(<div class="event-schedule"><time datetime="#{schedule_date}">#{schedule_date}</time></div>) : ""
     aside_markup = aside_date ? %(<aside class="related-card"><time datetime="#{aside_date}">#{aside_date}</time></aside>) : ""
 
@@ -228,7 +231,7 @@ RSpec.describe 'Readability article excerpts' do
       <html><head><title>#{headline}</title><link rel="canonical" href="#{canonical_url}">
       <script type="application/ld+json">#{structured_data}</script></head>
       <body><main><article><header><h1>#{headline}</h1>#{header_date_markup}#{schedule_markup}</header>
-      <div class="article-body" itemprop="articleBody">
+      <div class="article-body" itemprop="articleBody">#{body_date_markup}#{second_body_date_markup}
         <p>The source-owned article states its primary findings and explains the verified reporting context in a complete paragraph for readers.</p>
         <p>A second source-owned paragraph supplies additional reporting detail and confirms that the visible body is complete and ordered.</p>
       </div>#{aside_markup}</article></main></body></html>
@@ -1027,6 +1030,69 @@ RSpec.describe 'Readability article excerpts' do
         })())
       JS
       expect(values).to eq('reader' => visible_date, 'fallback' => visible_date)
+    end
+  end
+
+  it 'uses a visible date at the start of the source-owned article body' do
+    headline = 'Body-owned publication report'
+    body_date = '2026-09-27'
+    canonical_url = 'https://publisher.example/articles/body-owned-date'
+    structured_data = JSON.generate('@type' => 'NewsArticle', 'url' => canonical_url, 'headline' => headline)
+    html = source_publication_article_html(
+      headline: headline, canonical_url: canonical_url, structured_data: structured_data, body_date: body_date
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = 'Body-owned publication report';
+          var article = document.querySelector('article');
+          var paragraphs = Array.from(article.querySelectorAll('[itemprop="articleBody"] p'));
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var evidence = {sourceParagraphs: paragraphs};
+          var reader = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          var fallback = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return {reader: reader && reader.publishedTime, fallback: fallback && fallback.publishedTime};
+        })())
+      JS
+      expect(values).to eq('reader' => body_date, 'fallback' => body_date)
+    end
+  end
+
+  it 'keeps conflicting dates inside the owned article body unresolved' do
+    headline = 'Article with conflicting body dates'
+    canonical_url = 'https://publisher.example/articles/conflicting-body-dates'
+    structured_data = JSON.generate('@type' => 'NewsArticle', 'url' => canonical_url, 'headline' => headline)
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data,
+      body_date: '2026-09-27',
+      second_body_date: '2026-09-28',
+      schedule_date: '2026-10-01',
+      aside_date: '2026-10-02'
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = 'Article with conflicting body dates';
+          var article = document.querySelector('article');
+          var paragraphs = Array.from(article.querySelectorAll('[itemprop="articleBody"] p'));
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var evidence = {sourceParagraphs: paragraphs};
+          var reader = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          var fallback = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return {reader: reader && reader.publishedTime, fallback: fallback && fallback.publishedTime};
+        })())
+      JS
+      expect(values).to eq('reader' => nil, 'fallback' => nil)
     end
   end
 
