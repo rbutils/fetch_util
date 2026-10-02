@@ -126,6 +126,7 @@
       }
       if (provisionalHomepageContent) provisionalHomepageAlternative = content;
       selectedFocalArticleOwner = articleRouteFocalContent(content, true) || focalArticleRouteOwner || null;
+      content = sourceOwnedPrimaryArticleMaterial(content, metadata);
 
       var weatherLikeArticle = content &&
         content.contentType === "article" &&

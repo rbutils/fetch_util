@@ -1347,6 +1347,7 @@ RSpec.describe "extract asset bundle" do
     segments = [
       ["classifiers/list_pages/article_body_collection.js", %w[
         classifiers/list_pages/ownership/article_table_material.js
+        classifiers/list_pages/ownership/primary_article_material.js
         classifiers/list_pages/ownership/homepage_landing.js
       ], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[

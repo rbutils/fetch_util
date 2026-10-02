@@ -233,6 +233,148 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     end
   end
 
+  it 'restores a primary service owner displaced by an interactive article heading' do
+    service_details = [
+      'Instalments provide a reusable service account for customers who want to spread eligible purchase costs',
+      'across predictable monthly payments. Applicants review the terms before checkout, and the provider explains',
+      'eligibility, approval, repayment limits, and how the account can be reused. This public introduction describes',
+      'the service itself and its customer-facing terms, including who can apply, where customers can find help,',
+      'and how payment schedules relate to the separate credit limit.'
+    ].join(' ')
+    reader_details = [
+      'The service guide explains how customers can review their payment plan, understand the credit limit, and see',
+      'how repayments release available credit for future purchases. Customers should read the provider terms and',
+      'confirm their own eligibility before using the service.'
+    ].join(' ')
+    html = <<~HTML
+      <html><head><title>Amazon.co.uk: Instalments</title>
+        <meta property="og:site_name" content="Amazon.co.uk"></head><body>
+        <main><section class="service-owner"><h1>No hidden fees, no surprises</h1>
+          <p>#{service_details}</p>
+          <a href="/apply">Continue to checkout</a>
+          <a href="/service-terms">Read service terms</a>
+        </section><section class="unrelated-main-sibling"><h2>Regional travel report</h2>
+          <p>This separate regional travel report describes rail routes, survey methods, visitor trends, and unrelated destinations for readers.</p>
+          <a href="/travel/rail-report">Read the rail report</a>
+        </section></main>
+        <section class="calculator-panel"><article>
+          <h1>See how much you might pay</h1>
+          <p>Use this estimator to compare an example purchase amount and repayment schedule before applying.</p>
+          <form><label>Purchase amount <input type="number" value="400"></label>
+            <button type="button">Calculate estimate</button></form>
+        </article></section>
+        <section id="service-guide"><h2>How the instalment service works</h2>
+          <p>#{reader_details}</p>
+          <h2>Credit limit</h2>
+          <p>The provider sets a total credit limit and a monthly payment limit for each customer.</p>
+          <a href="/repayment-guide">Review repayment guidance</a>
+        </section>
+        <aside><h2>Separate travel coverage</h2>
+          <p>This independently published travel feature does not describe the instalment service or its customers.</p>
+          <a href="/travel/feature">Read the travel feature</a>
+        </aside>
+      </body></html>
+    HTML
+
+    extract_from_url('https://finance.example/instalments', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['title']).to eq('Amazon.co.uk: Instalments')
+      expect(payload['markdown']).to include(service_details)
+      expect(payload['markdown']).to include('Continue to checkout', '/service-terms')
+      expect(payload['markdown']).to include(reader_details)
+      expect(payload['markdown']).not_to include(
+        'Separate travel coverage', 'independently published travel feature',
+        'Regional travel report', 'regional travel report describes rail routes'
+      )
+    end
+  end
+
+  it 'does not promote a short primary header over a separate authored article' do
+    article_details = (1..3).map do |index|
+      [
+        "Section #{index} explains the public program, its documented service workflow, and the practical guidance",
+        'readers need to understand the independently authored report.'
+      ].join(' ')
+    end.join(' ')
+    html = <<~HTML
+      <html><head><title>Research report on public services</title></head><body>
+        <header id="primary"><h1>Publisher introduction</h1><p>Welcome to our service.</p></header>
+        <main><article><h1>Research report on public services</h1><p>#{article_details}</p>
+          <a href="/research/source">Read the report source</a>
+        </article></main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://research.example/reports/service-study', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['title']).to eq('Research report on public services')
+      expect(payload['markdown']).to include(article_details)
+      expect(payload['markdown']).not_to include('Publisher introduction')
+    end
+  end
+
+  it 'does not recover a hidden primary page owner' do
+    hidden_details = [
+      'Hidden service guidance is not public source material and must not replace the visible authored article,',
+      'even when it contains several links and a long description that resembles a complete page.'
+    ].join(' ')
+    article_details = [
+      'This visible report explains the public service rules, the evidence available to readers, and how the independent',
+      'team reached its conclusions. The complete authored text remains the selected article rather than hidden content',
+      'from a neighboring page component.'
+    ].join(' ')
+    html = <<~HTML
+      <html><head><title>Public service report</title></head><body>
+        <div id="primary" style="display:none"><h1>Hidden service overview</h1>
+          <p>#{hidden_details}</p><a href="/hidden/terms">Hidden terms</a>
+          <a href="/hidden/start">Hidden application</a>
+        </div>
+        <main><article><h1>Public service report</h1><p>#{article_details}</p>
+          <a href="/reports/evidence">Read the supporting evidence</a>
+        </article></main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://reports.example/service', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include(article_details)
+      expect(payload['markdown']).not_to include('Hidden service overview')
+      expect(payload['markdown']).not_to include(hidden_details)
+    end
+  end
+
+  it 'does not borrow an unrelated primary service root for a mismatched page title' do
+    article_details = (1..3).map do |index|
+      "Section #{index} analyzes regional transport evidence, published routes, and recommendations for independent readers."
+    end.join(' ')
+    service_details = [
+      'Customer services section one explains account-holder support, service requests, contact information, published forms,',
+      'and account documentation. Section two describes a separate access workflow for account holders, service agents,',
+      'and customers who need to review their documents. Section three explains contact methods, operating hours, account',
+      'support boundaries, and where readers can locate the public service application materials.'
+    ].join(' ')
+    html = <<~HTML
+      <html><head><title>Regional transport report</title>
+        <link rel="canonical" href="https://research.example/reports/transport">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"https://research.example/reports/transport","headline":"Regional transport report"}</script>
+      </head><body>
+        <div id="primary"><h1>Customer services</h1><p>#{service_details}</p>
+          <a href="/account">Open the account portal</a><a href="/support">Contact account support</a>
+        </div>
+        <article><h1>Regional transport report</h1><p>#{article_details}</p>
+          <form><label>Choose a route <input type="text" value="A12"></label><button type="button">Check route</button></form>
+        </article>
+      </body></html>
+    HTML
+
+    extract_from_url('https://research.example/reports/transport', html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['title']).to eq('Regional transport report')
+      expect(payload['markdown']).to include(article_details)
+      expect(payload['markdown']).not_to include('Customer services', service_details, '/account', '/support')
+    end
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 
