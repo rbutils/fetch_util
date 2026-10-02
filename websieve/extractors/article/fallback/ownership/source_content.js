@@ -272,6 +272,7 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
   var text = normalizeText(article.textContent || "");
   var headerMetadata = sourceOwnedFallbackHeaderMetadata(ownership.body.sourceNode, ownership.title, metadata || {});
   var attribution = headerMetadata || metadata || {};
+  var publicationFields = sourceOwnedArticlePublicationFields(metadata, ownership, article);
   var titleIdentityUnproven = ownership.titleIdentityProven === false;
   var completeArticleLead = sourceOwnedCompleteArticleLead(ownership);
   var content = {
@@ -280,7 +281,7 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
     excerpt: publicPreview ? publicPreview.text :
       (completeArticleLead || fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true)),
     siteName: (metadata && metadata.siteName) || location.hostname,
-    publishedTime: attribution.publishedTime || null,
+    publishedTime: publicationFields.sourceOwnedArticlePublicationResolved ? publicationFields.publishedTime : attribution.publishedTime || null,
     html: article.innerHTML,
     textContent: text,
     readerMode: false,
@@ -292,5 +293,6 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
   };
   if (publicPreview) content.focalPublicPreview = true;
   Object.defineProperty(content, "sourceOwnedArticleBody", { value: ownership.body.sourceNode });
+  content.sourceOwnedArticlePublicationResolved = publicationFields.sourceOwnedArticlePublicationResolved;
   return content;
 }

@@ -21,6 +21,14 @@ function sourceOwnershipInChrome(node) {
   return !node || node.closest("nav, aside, footer, form, menu, [role~='navigation' i], [role~='menu' i], [role~='complementary' i], [class*='sidebar' i], [id*='sidebar' i], [class*='sidemenu' i], [id*='sidemenu' i], [class*='side-menu' i], [id*='side-menu' i], [class*='recommend' i], [id*='recommend' i], [class*='related-posts' i], [id*='related-posts' i]");
 }
 
+function sourceOwnershipArticleChrome(node, ownerRoot) {
+  if (!node || node.closest("nav, aside, footer, form, menu, [role~='navigation' i], [role~='menu' i], [role~='complementary' i]")) return true;
+  var classChrome = node.closest("[class*='sidebar' i], [id*='sidebar' i], [class*='sidemenu' i], [id*='sidemenu' i], [class*='side-menu' i], [id*='side-menu' i], [class*='recommend' i], [id*='recommend' i], [class*='related-posts' i], [id*='related-posts' i]");
+  if (!classChrome) return false;
+  if (classChrome === node || (ownerRoot && ownerRoot.contains(classChrome))) return true;
+  return !(ownerRoot && classChrome.contains(ownerRoot));
+}
+
 function sourceArticleBodyCandidates() {
   return Array.from(document.querySelectorAll([
     "article", "[itemprop~='articleBody' i]", "[data-article-body]",

@@ -50,8 +50,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = applyMediaOwnedArticleMetadata(content, metadata);
   var contentByline = sanitizeByline(content.byline);
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
+  var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var metadataByline = sourceOwnedLiveblogParent ? null : sanitizeByline(metadata.byline);
-  var displayedPublishedTime = sourceOwnedLiveblogParent ? content.publishedTime : visiblePublishedTime();
+  var displayedPublishedTime = sourceOwnedLiveblogParent || sourceOwnedArticlePublication ? content.publishedTime : visiblePublishedTime();
   var visibleBylineRaw = sourceOwnedLiveblogParent ? null : visibleByline();
   var namedAuthorByline = sourceOwnedLiveblogParent ? null : visibleNamedAuthorByline();
   var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {

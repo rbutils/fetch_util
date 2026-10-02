@@ -49,6 +49,7 @@
       var readerBodyEvidence = sourceOwnedReaderSelectedParagraphs(
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
       );
+      var sourceOwnedPublication = readabilityOwnedSelectedPublication(article, metadata, readerBodyEvidence);
       var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
       if (excerpt === article.excerpt && readerBodyEvidence && readerBodyEvidence.sourceParagraphs) {
         var normalizedExcerpt = normalizeText(excerpt || "");
@@ -73,13 +74,14 @@
         byline: article.byline || null,
         excerpt: excerpt,
         siteName: article.siteName || null,
-        publishedTime: article.publishedTime || null,
+        publishedTime: sourceOwnedPublication ? sourceOwnedPublication.publishedTime : article.publishedTime || null,
         html: article.content,
         textContent: article.textContent || "",
         readerMode: true,
         sourceOwnedArticleBoundary: article.sourceOwnedArticleBoundary === true,
         contentType: "article"
       };
+      content.sourceOwnedArticlePublicationResolved = !!sourceOwnedPublication;
       Object.defineProperty(content, "sourceOwnedReaderParagraphSources", { value: selectedSourceParagraphs });
       Object.defineProperty(content, "sourceOwnedReaderBodyParagraphSources", {
         value: readerBodyEvidence && readerBodyEvidence.sourceParagraphs

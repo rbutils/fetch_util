@@ -128,6 +128,7 @@
     if (comments) clone.insertAdjacentHTML("beforeend", comments);
     var text = normalizeText(clone.textContent);
     var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
+    var sourceOwnedPublication = sourceOwnedFallbackPublication(metadata, node, selected);
 
     return {
       title: focalOwnership ? focalOwnership.title : document.title,
@@ -143,7 +144,8 @@
       sourceOwnedHeaderMetadata: headerMetadata,
       focalPublicPreview: !!(focalOwnership && focalOwnership.body.publicPreview),
       siteName: (metadata && metadata.siteName) || location.hostname,
-      publishedTime: null,
+      publishedTime: sourceOwnedPublication ? sourceOwnedPublication.publishedTime : null,
+      sourceOwnedArticlePublicationResolved: !!sourceOwnedPublication,
       html: clone.innerHTML,
       textContent: text,
       readerMode: false,

@@ -137,6 +137,8 @@ extractors/article/fallback/ownership/liveblog_parent_metadata.js
 extractors/article/fallback/ownership/liveblog_content_links.js
 extractors/article/fallback/ownership/liveblog_comments.js
 extractors/article/fallback/ownership/liveblog_addressing.js
+extractors/article/fallback/ownership/publication/owned_publication.js
+extractors/article/fallback/ownership/publication/article_fields.js
 extractors/article/fallback/focal_ownership.js
 extractors/article/fallback/focal_permalink.js
 extractors/article/fallback/fallback_excerpt.js

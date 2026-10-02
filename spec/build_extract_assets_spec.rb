@@ -1311,6 +1311,49 @@ RSpec.describe "extract asset bundle" do
     expect_manifest_order(manifest, "core/dom/cleanup/inert_custom_ui.js", "core/dom/noise_cleanup.js")
   end
 
+  it "loads source-owned article publication proof before its fallbacks" do
+    source_root = File.join(project_root, "websieve")
+    manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    publication_path = "extractors/article/fallback/ownership/publication/owned_publication.js"
+    source_content_path = "extractors/article/fallback/ownership/source_content.js"
+    fallback_path = "extractors/article/fallback/fallback.js"
+    readability_path = "extractors/article/readability/readability.js"
+    byline_path = "boot/list_byline.js"
+    publication_source = File.read(File.join(source_root, publication_path))
+    publication_fields_path = "extractors/article/fallback/ownership/publication/article_fields.js"
+    publication_fields_source = File.read(File.join(source_root, publication_fields_path))
+    article_body_source = File.read(File.join(source_root, "extractors/article/fallback/ownership/article_body.js"))
+
+    expect(manifest.index(source_content_path)).to be < manifest.index(publication_path)
+    expect(manifest.index("extractors/article/fallback/ownership/liveblog_addressing.js")).to be < manifest.index(publication_path)
+    expect(manifest.index("extractors/article/fallback/ownership/article_body.js")).to be < manifest.index(publication_path)
+    expect(manifest.index(publication_path)).to be < manifest.index(publication_fields_path)
+    expect(manifest.index(publication_fields_path)).to be < manifest.index("extractors/article/fallback/focal_ownership.js")
+    expect(manifest.index(publication_fields_path)).to be < manifest.index(fallback_path)
+    expect(manifest.index(publication_fields_path)).to be < manifest.index(readability_path)
+    expect(publication_source).to include(
+      "function readabilityOwnedSelectedPublication",
+      "function sourceOwnedFallbackPublication",
+      "function sourceOwnedPublicationDateNodes",
+      "function sourceOwnedRepairHeadlineJson"
+    )
+    expect(publication_source).not_to include("sourceOwnedCompleteArticleLead", "excerpt:")
+    expect(publication_fields_source).to include("function sourceOwnedArticlePublicationFields")
+    expect(article_body_source).to include("function sourceOwnershipArticleChrome")
+    expect(File.read(File.join(source_root, fallback_path))).to include(
+      "sourceOwnedFallbackPublication(metadata, node, selected)"
+    )
+    expect(File.read(File.join(source_root, source_content_path))).to include(
+      "sourceOwnedArticlePublicationFields(metadata, ownership, article)"
+    )
+    expect(File.read(File.join(source_root, readability_path))).to include(
+      "readabilityOwnedSelectedPublication(article, metadata, readerBodyEvidence)"
+    )
+    expect(File.read(File.join(source_root, byline_path))).to include(
+      "content.sourceOwnedArticlePublicationResolved === true"
+    )
+  end
+
   it "loads structured detail arbitration before late list dominance" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
@@ -1431,6 +1474,8 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/liveblog_content_links.js
         extractors/article/fallback/ownership/liveblog_comments.js
         extractors/article/fallback/ownership/liveblog_addressing.js
+        extractors/article/fallback/ownership/publication/owned_publication.js
+        extractors/article/fallback/ownership/publication/article_fields.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/fallback_excerpt.js

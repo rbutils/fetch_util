@@ -19,8 +19,31 @@ RSpec.describe 'Readability article excerpts' do
         global.__sourceOwnedReaderSelectedParagraphs = sourceOwnedReaderSelectedParagraphs;
         global.__readabilityOwnedArticleLeadExcerpt = readabilityOwnedArticleLeadExcerpt;
         global.__genericSourceOwnedPageContent = genericSourceOwnedPageContent;
+        global.__readabilityOwnedSelectedPublication = readabilityOwnedSelectedPublication;
+        global.__sourceOwnedFallbackPublication = sourceOwnedFallbackPublication;
+        global.__finalizeExtractResult = finalizeExtractResult;
+        global.__collectionPublishedTime = collectionPublishedTime;
       JS
     end.join("\n")
+  end
+
+  def source_publication_article_html(
+    headline:, canonical_url:, structured_data:, header_date: nil, schedule_date: nil, aside_date: nil
+  )
+    header_date_markup = header_date ? %(<time datetime="#{header_date}">#{header_date}</time>) : ""
+    schedule_markup = schedule_date ? %(<div class="event-schedule"><time datetime="#{schedule_date}">#{schedule_date}</time></div>) : ""
+    aside_markup = aside_date ? %(<aside class="related-card"><time datetime="#{aside_date}">#{aside_date}</time></aside>) : ""
+
+    <<~HTML
+      <!doctype html>
+      <html><head><title>#{headline}</title><link rel="canonical" href="#{canonical_url}">
+      <script type="application/ld+json">#{structured_data}</script></head>
+      <body><main><article><header><h1>#{headline}</h1>#{header_date_markup}#{schedule_markup}</header>
+      <div class="article-body" itemprop="articleBody">
+        <p>The source-owned article states its primary findings and explains the verified reporting context in a complete paragraph for readers.</p>
+        <p>A second source-owned paragraph supplies additional reporting detail and confirms that the visible body is complete and ordered.</p>
+      </div>#{aside_markup}</article></main></body></html>
+    HTML
   end
 
   it 'expands only short excerpts backed by substantial parsed article text' do
@@ -650,6 +673,202 @@ RSpec.describe 'Readability article excerpts' do
       expect(values.values_at('asideSummary', 'nestedArticleSummary', 'controlBranchSummary', 'controlOnlySummary')).to eq([nil, nil, nil, nil])
       expect(values['labelAlone']).to be_nil
       expect(page.evaluate('document.body.outerHTML')).to eq(before)
+    end
+  end
+
+  it 'preserves a matching source Article publication date without requiring a record URL' do
+    headline = 'Coin research report'
+    published = '2026-04-14T00:00:00Z'
+    structured_data = JSON.generate('@type' => 'NewsArticle', 'headline' => headline, 'datePublished' => published)
+    canonical_url = 'https://publisher.example/articles/coin-research'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = "Coin research report";
+          var metadata = {title: headline, canonicalUrl: location.href, siteName: "publisher.example"};
+          var article = document.querySelector("article");
+          var paragraphs = Array.from(article.querySelectorAll("[itemprop='articleBody'] p"));
+          var reader = window.__readabilityOwnedSelectedPublication(
+            {title: headline}, metadata, {sourceParagraphs: paragraphs, unmappedTrailingParagraphs: []}
+          );
+          var fallback = window.__genericSourceOwnedPageContent(metadata);
+          return {
+            reader: reader && reader.publishedTime,
+            fallback: fallback && fallback.publishedTime,
+            fallbackResolved: fallback && fallback.sourceOwnedArticlePublicationResolved
+          };
+        })())
+      JS
+      expect(values).to eq('reader' => published, 'fallback' => published, 'fallbackResolved' => true)
+    end
+  end
+
+  it 'repairs malformed publication JSON only when its headline exactly matches the visible source H1' do
+    headline = 'LiveTV says "Exact source headline"'
+    malformed_json = %({"@type":"NewsArticle","headline":"LiveTV says "Exact source headline"","datePublished":"2026-09-22 23:35:38"})
+    canonical_url = 'https://publisher.example/articles/livetv-report'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: malformed_json
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = 'LiveTV says "Exact source headline"';
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var article = document.querySelector("article");
+          var paragraphs = Array.from(article.querySelectorAll("[itemprop='articleBody'] p"));
+          var evidence = {sourceParagraphs: paragraphs, unmappedTrailingParagraphs: []};
+          var matching = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          document.querySelector("h1").textContent = 'LiveTV says "Different headline"';
+          metadata.title = document.querySelector("h1").textContent;
+          var changedH1 = window.__readabilityOwnedSelectedPublication({title: metadata.title}, metadata, evidence);
+          return {
+            matching: matching && matching.publishedTime,
+            changedH1: changedH1 && changedH1.publishedTime,
+            changedH1Resolved: !!changedH1
+          };
+        })())
+      JS
+      expect(values).to eq(
+        'matching' => '2026-09-22 23:35:38',
+        'changedH1' => nil,
+        'changedH1Resolved' => true
+      )
+    end
+  end
+
+  it 'keeps the exact owned header time and ignores a foreign card date' do
+    headline = 'Visible publication report'
+    visible_date = '2026-09-23T02:35:38+03:00'
+    structured_data = JSON.generate(
+      '@type' => 'NewsArticle',
+      'headline' => headline,
+      'datePublished' => '2026-09-22T23:35:38Z'
+    )
+    canonical_url = 'https://publisher.example/articles/visible-publication'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data,
+      header_date: visible_date,
+      aside_date: '2026-08-26T00:00:00Z'
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = "Visible publication report";
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var article = document.querySelector("article");
+          var paragraphs = Array.from(article.querySelectorAll("[itemprop='articleBody'] p"));
+          var reader = window.__readabilityOwnedSelectedPublication(
+            {title: headline}, metadata, {sourceParagraphs: paragraphs}
+          );
+          var fallback = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return {reader: reader && reader.publishedTime, fallback: fallback && fallback.publishedTime};
+        })())
+      JS
+      expect(values).to eq('reader' => visible_date, 'fallback' => visible_date)
+    end
+  end
+
+  it 'declines conflicting or nested Article publication records' do
+    headline = 'Conflicting article record'
+    canonical_url = 'https://publisher.example/articles/conflicting-record'
+    foreign_record = JSON.generate(
+      '@type' => 'NewsArticle',
+      'url' => 'https://other.example/articles/foreign-record',
+      'headline' => headline,
+      'datePublished' => '2026-06-12'
+    )
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: foreign_record
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = "Conflicting article record";
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var article = document.querySelector("article");
+          var paragraphs = Array.from(article.querySelectorAll("[itemprop='articleBody'] p"));
+          var evidence = {sourceParagraphs: paragraphs};
+          var foreignUrl = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          var script = document.querySelector("script[type='application/ld+json']");
+          script.textContent = JSON.stringify({"@graph": [
+            {"@type": "NewsArticle", "headline": headline, "datePublished": "2026-06-12"},
+            {"@type": "Article", "headline": headline, "datePublished": "2026-06-12"}
+          ]});
+          var nestedRecords = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          return {foreignUrl: foreignUrl, nestedRecords: nestedRecords};
+        })())
+      JS
+      expect(values).to eq(
+        'foreignUrl' => { 'publishedTime' => nil },
+        'nestedRecords' => { 'publishedTime' => nil }
+      )
+    end
+  end
+
+  it 'does not replace a proven null article date with an event schedule or foreign card date' do
+    headline = 'Article without publication date'
+    structured_data = JSON.generate('@type' => 'NewsArticle', 'headline' => headline)
+    canonical_url = 'https://publisher.example/articles/no-publication-date'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data,
+      schedule_date: '2026-07-01T00:00:00Z',
+      aside_date: '2026-08-26T00:00:00Z'
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = "Article without publication date";
+          var metadata = {
+            title: headline, canonicalUrl: location.href, siteName: "publisher.example",
+            publishedTime: "August 26, 2026", byline: null
+          };
+          var article = document.querySelector("article");
+          var publication = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          var content = {
+            title: headline, byline: null, excerpt: "The article has a complete source-owned body.",
+            siteName: "publisher.example", publishedTime: publication && publication.publishedTime,
+            html: article.outerHTML, textContent: article.textContent,
+            markdown: "# " + headline + "\\n\\n" + article.textContent,
+            readerMode: false, contentType: "article", sourceOwnedFocalArticle: true,
+            sourceOwnedArticlePublicationResolved: !!publication
+          };
+          var result = window.__finalizeExtractResult(content, metadata, document.body.textContent, {}, false);
+          return {
+            resolved: content.sourceOwnedArticlePublicationResolved,
+            helperDate: publication && publication.publishedTime,
+            finalDate: result.publishedTime
+          };
+        })())
+      JS
+      expect(values).to eq('resolved' => true, 'helperDate' => nil, 'finalDate' => nil)
     end
   end
 end
