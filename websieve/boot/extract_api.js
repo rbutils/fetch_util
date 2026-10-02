@@ -125,6 +125,12 @@
       if (!content) {
         content = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
       }
+      if (content && content.contentType === "article" && !content.hostAware && !content.docsLike) {
+        sourceOwnedSearchHistoryContent(metadata, content);
+      }
+      if (content && content.sourceOwnedSearchHistoryArticleVeto) {
+        return finalizeExtractResult(content, metadata, pageText, signals, null);
+      }
       if (provisionalHomepageContent) provisionalHomepageAlternative = content;
       selectedFocalArticleOwner = articleRouteFocalContent(content, true) || focalArticleRouteOwner || null;
       content = sourceOwnedPrimaryArticleMaterial(content, metadata);
@@ -269,7 +275,14 @@
       var staleOpacityList = materialResultsOwner || listArticleOwnershipConflict ? null : staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
-       var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);
+      if (content && !content.hostAware && !content.docsLike &&
+          (content.contentType === "article" || content.contentType === "list")) {
+        content = sourceOwnedSearchHistoryContent(metadata, content) || content;
+      }
+      if (content && content.sourceOwnedSearchHistoryArticleVeto) {
+        return finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
+      }
+      var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);
        var result = finalizeExtractResult(content, metadata, pageText, signals, medicalArticle);
        if (!hiddenMainArticle || result.contentType !== "article") return result;
 

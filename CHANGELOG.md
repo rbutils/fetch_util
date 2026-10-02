@@ -2,6 +2,7 @@
 
 ### Fixed
 - Preserve complete query-bound material results and decline list takeover when any visible owner material is unaccounted for.
+- Preserve every source-owned search-history occurrence in order, including repeated destinations, and decline incomplete histories.
 - Preserve sparse focal media articles with their complete independently owned related collections and media resources.
 - Restore source-owned primary-service and calculator sections when interactive headings displace the article.
 - Avoid repeated source-article ownership scans while pruning related rails from an already-proven clone.
