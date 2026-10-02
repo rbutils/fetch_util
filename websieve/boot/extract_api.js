@@ -171,7 +171,7 @@
         var currentText = normalizeText(content.markdown || content.textContent || "").toLowerCase();
         var commerceContext = normalizeText([document.title, location.pathname, location.search, metadata && metadata.siteName].join(" ")).toLowerCase();
         var commerceLikePage = queryOrCategoryPage() || /\b(?:shop|shopping|store|marketplace|catalog|products?|furniture|search results?)\b|\/p\/|\/sb\d*\//.test(commerceContext);
-        if (productListLosesArticleMaterial(content, productList, strongArticle, commerceLikePage)) {
+        if (productListLosesArticleMaterial(content, productList, strongArticle, commerceLikePage, metadata)) {
           productList = null;
         } else if (content.contentType !== "list" && (commerceLikePage || productList.itemCount >= 4 || consentWallDominates(currentText))) {
           content = productList;
@@ -209,7 +209,7 @@
         var repeatedCollection = repeatedCollectionAssessment &&
           !repeatedCollectionAssessment.articleOwnershipConflict ? repeatedCollectionAssessment : null;
           var repeatedListCandidate = repeatedRecordListCandidate(content, metadata, repeatedCollection);
-          if (!materialResultsOwner && repeatedListCandidate && !sourceMaterialBlocksListCandidate(content, repeatedListCandidate)) content = repeatedListCandidate;
+          if (!materialResultsOwner && repeatedListCandidate && !sourceMaterialBlocksListCandidate(content, repeatedListCandidate, metadata)) content = repeatedListCandidate;
         var portalRootContent = content && !materialResultsOwner && !listArticleOwnershipConflict && !repeatedCollectionAssessment && !content.browseIndexContent ?
          crediblePortalRootListContent(metadata, content) : null;
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);

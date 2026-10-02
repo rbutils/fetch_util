@@ -233,6 +233,27 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     end
   end
 
+  it 'does not let an unowned record-index table block list extraction' do
+    rows = (1..8).map do |index|
+      <<~HTML
+        <tr class="athing"><td><a href="https://example.com/story-#{index}">Story #{index} about public reporting and useful information</a></td></tr>
+        <tr><td>#{120 - (index * 7)} points | #{45 - index} comments</td></tr>
+      HTML
+    end.join
+    html = <<~HTML
+      <html><head><title>Example News</title></head><body>
+        <main><table class="itemlist"><tbody>#{rows}</tbody></table></main>
+      </body></html>
+    HTML
+
+    extract_from_url('https://example.com/news', html) do |payload|
+      expect(payload['contentType']).to eq('list')
+      (1..8).each do |index|
+        expect(payload['markdown']).to include("Story #{index} about public reporting and useful information")
+      end
+    end
+  end
+
   it 'restores a primary service owner displaced by an interactive article heading' do
     service_details = [
       'Instalments provide a reusable service account for customers who want to spread eligible purchase costs',

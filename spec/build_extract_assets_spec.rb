@@ -1415,6 +1415,17 @@ RSpec.describe "extract asset bundle" do
   it "keeps reorganized source families in their release pipeline slots" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    article_table_path = File.join(source_root, "classifiers/list_pages/ownership/article_table_material.js")
+    article_table_material = File.read(article_table_path)
+
+    expect(article_table_material).to include(
+      "content.sourceOwnedArticleBody",
+      "content.sourceOwnedReaderBodyParagraphSources",
+      "sourceOwnedSemanticArticleOwnership(metadata || {}).ownership",
+      "normalizeText(headings[0].textContent || \"\") !== title",
+      "sourceOwnedArticleTableCells(sourceTable, true)"
+    )
+
     segments = [
       ["classifiers/list_pages/article_body_collection.js", %w[
         classifiers/list_pages/ownership/article_table_material.js

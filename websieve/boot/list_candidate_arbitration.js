@@ -77,7 +77,7 @@
 
     if (candidate && !emptyListCandidateLosesContent(content, candidate) &&
         !(options.supportingProductCollection && content.contentType === "article") &&
-        !sourceMaterialBlocksListCandidate(content, candidate) &&
+        !sourceMaterialBlocksListCandidate(content, candidate, metadata) &&
         !sourceOwnedFallbackListLoss(content, candidate) &&
         (!repeatedCollection || repeatedRecordCandidateCoversOwner(candidate, repeatedCollection) ||
           materialResultsCandidateOwnershipProven(candidate)) &&

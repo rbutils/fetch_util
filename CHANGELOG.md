@@ -17,7 +17,7 @@
 
 - Require source-owned linked summaries and editorial context for inferred list digests, bind article context to its visible source owner, and preserve independent multi-topic warnings.
 - Preserve distinct source result records that share one destination URL.
-- Keep every owned article table cell when a product or repeated-record list would omit table material.
+- Keep every table cell from a proven source-owned article body when a product or repeated-record list would omit it.
 - Preserve complete source-owned About and page-introduction paragraphs in repeated-record list results without borrowing neighboring prose.
 - Retire the Sky News Arabia profile while preserving owned Arabic reporting, complete prose excerpts, literal attribution, media, and truthful news-age warnings through shared extraction.
 - Retire the CSDN profile in favor of shared article and declared-description extraction, preserving public prose and visible access notices without fabricated fallback text.
