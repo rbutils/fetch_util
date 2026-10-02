@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Preserve sparse focal media articles with their complete independently owned related collections and media resources.
 - Restore source-owned primary-service and calculator sections when interactive headings displace the article.
 - Avoid repeated source-article ownership scans while pruning related rails from an already-proven clone.
 - Preserve source-owned query directories when a separate focal article is not a fully proven NewsArticle.

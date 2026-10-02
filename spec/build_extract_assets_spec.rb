@@ -1195,7 +1195,13 @@ RSpec.describe "extract asset bundle" do
 
   it "keeps article source-module directories below ten files" do
     source_root = File.join(project_root, "websieve", "extractors", "article")
-    directories = [source_root, File.join(source_root, "fallback")]
+    directories = [source_root]
+    Dir.glob(File.join(source_root, "**", "*"), File::FNM_DOTMATCH).each do |path|
+      next unless File.directory?(path)
+
+      expanded = File.expand_path(path)
+      directories << expanded unless directories.include?(expanded)
+    end
     file_counts = directories.map { |directory| Dir.glob(File.join(directory, "*.js")).length }
 
     expect(file_counts).to all(be < 10)
@@ -1227,6 +1233,8 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     fallback_paths = %w[
+      extractors/article/fallback/media_ownership/focal_related_collections.js
+      extractors/article/fallback/media_ownership/focal_media_ownership.js
       extractors/article/fallback/focal_headline_ownership.js
       extractors/article/fallback/ownership/source_header_metadata.js
       extractors/article/fallback/ownership/source_content.js
@@ -1241,12 +1249,15 @@ RSpec.describe "extract asset bundle" do
       extractors/article/fallback/focal_permalink.js
       extractors/article/fallback/fallback_excerpt.js
       extractors/article/fallback/section_ownership.js
+      extractors/article/fallback/fallback_scoring.js
       extractors/article/fallback/fallback.js
     ]
 
     expect(fallback_paths).to all(satisfy { |path| File.exist?(File.join(source_root, path)) })
     expect(manifest & fallback_paths).to eq(fallback_paths)
     expect(manifest.index(fallback_paths[0])).to be > manifest.index("extractors/article/coverage/main_coverage.js")
+    expect(File.read(File.join(source_root, "extractors/article/fallback/fallback_scoring.js"))).to include("function scoreNode")
+    expect(File.read(File.join(source_root, "extractors/article/fallback/fallback.js"))).not_to include("function scoreNode")
     expect(manifest.index("extractors/article/fallback/fallback_excerpt.js")).to be < manifest.index("extractors/article/readability/readability_excerpt.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/{fallback,fallback_excerpt,focal_ownership}.js"))).to eq([])
   end
@@ -1387,6 +1398,8 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/resources.js
         extractors/article/coverage/figure_captions.js
         extractors/article/coverage/main_coverage.js
+        extractors/article/fallback/media_ownership/focal_related_collections.js
+        extractors/article/fallback/media_ownership/focal_media_ownership.js
         extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/ownership/source_header_metadata.js
         extractors/article/fallback/ownership/source_content.js
@@ -1403,6 +1416,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/high_confidence_content.js
         extractors/article/fallback/content_cleanup.js
+        extractors/article/fallback/fallback_scoring.js
         extractors/article/fallback/fallback.js
         extractors/article/readability/header_context.js
         extractors/article/readability/source_headline.js

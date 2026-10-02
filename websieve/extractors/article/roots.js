@@ -202,7 +202,7 @@
     });
     cleanupGenericArticleFlowNote(root);
     root.querySelectorAll("#comments, #respond, .comments-area, .comment-list, .comments-section, .post-comments, .disqus-comment-count, [class*='comment-respond'], [class*='comentario' i], [class*='comentarios' i], [class*='commentaire' i], [class*='komentar' i], [class*='komentarze' i], [class*='yorum' i], .sharedaddy, .share, .share-links, .share-buttons, .social-sharing, .social-buttons, [class*='share' i], [id*='share' i], [class*='compartir' i], [class*='partager' i], [class*='teilen' i], [class*='paylas' i], [class*='paylaş' i], [class*='related' i], [id*='related' i], [class*='recommend' i], [id*='recommend' i], [class*='relacionad' i], [class*='relacionados' i], [class*='recomendad' i], [class*='recomendados' i], [class*='similares' i], [class*='newsletter' i], [id*='newsletter' i], [class*='subscribe' i], [id*='subscribe' i], [class*='advert' i], [id*='advert' i], [class*='promo' i], [id*='promo' i], [class*='adslot' i], [id*='adslot' i], [data-ad], [data-ads]").forEach(function(node) {
-      if (!genericArticleEditorialHeading(node)) node.remove();
+      if (!genericArticleEditorialHeading(node) && !node.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) node.remove();
     });
     stripNavigationLeaks(root);
     stripRelatedSectionsByHeading(root);

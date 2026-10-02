@@ -123,6 +123,8 @@ extractors/article/coverage/carousel_coverage.js
 extractors/article/coverage/resources.js
 extractors/article/coverage/figure_captions.js
 extractors/article/coverage/main_coverage.js
+extractors/article/fallback/media_ownership/focal_related_collections.js
+extractors/article/fallback/media_ownership/focal_media_ownership.js
 extractors/article/fallback/focal_headline_ownership.js
 extractors/article/fallback/ownership/source_header_metadata.js
 extractors/article/fallback/ownership/source_content.js
@@ -139,6 +141,7 @@ extractors/article/fallback/fallback_excerpt.js
 extractors/article/fallback/section_ownership.js
 extractors/article/fallback/high_confidence_content.js
 extractors/article/fallback/content_cleanup.js
+extractors/article/fallback/fallback_scoring.js
 extractors/article/fallback/fallback.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js

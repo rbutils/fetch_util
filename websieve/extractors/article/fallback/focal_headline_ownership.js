@@ -38,14 +38,24 @@
     if (!pageUrl || pageUrl !== focalCanonicalUrl(location.href)) return null;
 
     var headlines = [];
+    var typedArticles = [];
     if (typeof structuredDataNodes === "function" && typeof nodeTypes === "function") {
       structuredDataNodes().forEach(function(node) {
-        if (!nodeTypes(node).some(function(type) { return /(?:NewsArticle|ReportageNewsArticle|LiveBlogPosting|BlogPosting|Article)/i.test(type); })) return;
+        var types = nodeTypes(node).filter(function(type) {
+          return /(?:NewsArticle|ReportageNewsArticle|LiveBlogPosting|BlogPosting|Article)/i.test(type);
+        });
+        if (!types.length) return;
         var mainEntity = node.mainEntityOfPage;
         if (mainEntity && typeof mainEntity === "object") mainEntity = mainEntity["@id"] || mainEntity.url;
         if (focalCanonicalUrl(node.url || mainEntity) !== pageUrl) return;
         var headline = normalizeText(node.headline || "");
-        if (headline && headlines.indexOf(headline) === -1) headlines.push(headline);
+        var identity = normalizeText(node["@id"] || node.url || pageUrl);
+        var datePublished = normalizeText(node.datePublished || node.dateCreated || "");
+        if (!typedArticles.some(function(article) { return article.id === identity && article.headline === headline; })) {
+          typedArticles.push({ id: identity, headline: headline, types: types, url: pageUrl, datePublished: datePublished });
+        }
+        if (!headline) return;
+        if (headlines.indexOf(headline) === -1) headlines.push(headline);
       });
     }
 
@@ -73,7 +83,7 @@
       });
     });
     if (ogTitle && headlines.indexOf(ogTitle) === -1) headlines.push(ogTitle);
-    return { headlines: headlines, pageUrl: pageUrl, ogTitle: ogTitle };
+    return { headlines: headlines, pageUrl: pageUrl, ogTitle: ogTitle, typedArticles: typedArticles };
   }
 
   function focalOwnershipArticleRoot(node) {
@@ -178,11 +188,17 @@
       if (!owners.has(candidate)) owners.set(candidate, { node: candidate, heading: null, title: metadata.ogTitle, proof: "canonical-article-metadata" });
     });
 
+    var mediaArticle = focalOwnershipMediaArticle(metadata);
+    if (mediaArticle) owners.set(mediaArticle.node, mediaArticle);
+
     var verified = [];
     if (owners.size !== 1) return null;
     owners.forEach(function(owner) {
       if (independentLinkedArticleCollection(owner.node)) return;
       var body = focalOwnershipVisibleBody(owner.node);
+      if (!body && owner.proof === "same-owner-source-headline-and-media" && owner.mediaUrl) {
+        body = { visible: visibilityPrunedClone(owner.node, document), text: "", paragraphs: 0, publicPreview: false, sourceMediaOnly: true };
+      }
       if (!body) return;
       if (owner.proof === "canonical-article-metadata" &&
           (body.paragraphs !== 1 || !owner.node.querySelector("figure, img, picture"))) return;

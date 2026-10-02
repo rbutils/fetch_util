@@ -24,6 +24,7 @@
       }
 
       function strongArticleContent(candidate, medicalArticle) {
+        if (candidate && candidate.sourceOwnedMediaArticle) return true;
         if (articleBodyCollection && !cachedFocalArticleContent(candidate) && !articleRouteFocalContent(candidate)) return false;
         return cachedFocalArticleContent(candidate) || articleRouteFocalContent(candidate) || medicalArticle ||
           substantialArticleContent(candidate) || strongArticleMetadata(metadata, candidate);
@@ -182,7 +183,7 @@
       }
 
       var eventArticle = content && content.contentType === "article" &&
-        (substantialArticleContent(content) || strongArticleMetadata(metadata, content));
+        (content.sourceOwnedMediaArticle || substantialArticleContent(content) || strongArticleMetadata(metadata, content));
       var eventList = genericEventListContent(metadata);
       var strongEventList = strongEventListingPage();
       if (eventList && genericListMayReplace(content, focalArticleRoute) && content.contentType !== "event" &&

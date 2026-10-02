@@ -675,4 +675,186 @@ RSpec.describe 'FetchUtil article/list arbitration' do
       expect(payload['contentType']).to eq('list')
     end
   end
+
+  it 'keeps a canonically owned sparse video article and its separate schedule collection' do
+    canonical = 'https://publisher.example/highlight/champions-league-recap'
+    html = <<~HTML
+      <html><head><title>Champions League Match Recap</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","headline":"Champions League Match Recap","mainEntityOfPage":{"@id":"#{canonical}"}}</script>
+      </head><body><main>
+        <div class="video-story"><h1>Champions League Match Recap</h1>
+          <iframe src="https://video.example/embed/match-recap" width="720" height="405"></iframe>
+        </div>
+        <section class="fixture-list"><p>These fixture records form a source-owned schedule with its own editorial introduction.</p>
+          <h2>Related fixtures</h2><ul>
+          #{(1..4).map { |index| %(<li><h3><a href="/fixtures/#{index}">Fixture #{index} schedule and match details</a></h3><a href="/fixtures/#{index}" aria-label="Fixture #{index} image"><img src="/fixtures/#{index}.jpg" alt="Fixture #{index} image"></a></li>) }.join}
+        </ul></section>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['contentType']).to eq('article'), payload.slice('contentType', 'title', 'markdown').inspect
+      expect(payload['markdown']).to include('https://video.example/embed/match-recap')
+      expect(payload['markdown']).to include('[https://video.example/embed/match-recap](https://video.example/embed/match-recap)')
+      expect(payload['markdown']).not_to include('Watch video')
+      (1..4).each do |index|
+        expect(payload['markdown']).to include("Fixture #{index} schedule and match details", "/fixtures/#{index}")
+      end
+      expect(payload['markdown']).to include('source-owned schedule with its own editorial introduction')
+    end
+  end
+
+  it 'does not attach an unrelated media embed to a canonical article headline' do
+    canonical = 'https://publisher.example/highlight/champions-league-recap'
+    html = <<~HTML
+      <html><head><title>Champions League Match Recap</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","headline":"Champions League Match Recap","mainEntityOfPage":{"@id":"#{canonical}"}}</script>
+      </head><body><main>
+        <div class="story-heading"><h1>Champions League Match Recap</h1></div>
+        <div class="related-video"><iframe src="https://video.example/embed/related-match" width="720" height="405"></iframe></div>
+        <section class="fixture-list"><h2>Upcoming fixtures</h2><ul>
+          #{(1..4).map { |index| %(<li><a href="/fixtures/#{index}">Fixture #{index} schedule and match details</a></li>) }.join}
+        </ul></section>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['markdown']).not_to include('https://video.example/embed/related-match')
+    end
+  end
+
+  it 'does not use a mismatched headline and video as the owner of typed article metadata' do
+    canonical = 'https://publisher.example/reports/community-budget'
+    article_details = (1..3).map do |index|
+      "Section #{index} reports verified community-budget findings, public spending context, and source documents for readers."
+    end.join(' ')
+    html = <<~HTML
+      <html><head><title>Inter Miami San Diego FC Highlight 21/09/2026</title>
+        <link rel="canonical" href="#{canonical}">
+        <meta property="og:title" content="Inter Miami San Diego FC Highlight 21/09/2026">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"#{canonical}","headline":"Inter Miami San Diego FC Highlight 21/09/2026","datePublished":"2026-09-21T09:41:06+07:00"}</script>
+      </head><body><main>
+        <article><p>#{article_details}</p></article>
+        <section class="unrelated-video"><h1>City council budget review 21/09/2026</h1>
+          <iframe src="https://video.example/embed/unrelated-budget" width="720" height="405"></iframe>
+        </section>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['markdown']).to include('verified community-budget findings')
+      expect(payload['markdown']).not_to include('https://video.example/embed/unrelated-budget')
+      expect(payload['title']).not_to eq('City council budget review 21/09/2026')
+    end
+  end
+
+  it 'does not promote a video from a sidebar beside a source-owned article' do
+    canonical = 'https://publisher.example/reports/urban-water'
+    details = (1..3).map do |index|
+      "Section #{index} reports the public water-supply findings, the independent evidence, and the council response."
+    end.join(' ')
+    html = <<~HTML
+      <html><head><title>Urban water supply report</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"#{canonical}","headline":"Urban water supply report"}</script>
+      </head><body><main><article><h1>Urban water supply report</h1><p>#{details}</p>
+        <a href="/reports/water-source">Read the supporting water report</a>
+      </article><aside><h2>Related video</h2>
+        <iframe src="https://video.example/embed/water-sidebar" width="720" height="405"></iframe>
+      </aside></main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include(details, '/reports/water-source')
+      expect(payload['markdown']).not_to include('https://video.example/embed/water-sidebar')
+    end
+  end
+
+  it 'keeps a focal video from hiding records outside a nested main' do
+    canonical = 'https://publisher.example/highlight/city-final'
+    html = <<~HTML
+      <html><head><title>City United Final Report 2026</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"#{canonical}","headline":"City United Final Report 2026"}</script>
+      </head><body><main id="outer-main">
+        <div class="primary-frame"><main id="inner-main"><article class="focal">
+          <h1>City United Final Report 2026</h1>
+          <iframe src="https://video.example/embed/city-final" width="720" height="405"></iframe>
+        </article></main></div>
+        <section><h2>Related fixtures</h2><ul>
+          #{(1..4).map { |index| %(<li><article><h3><a href="/records/#{index}">Public match record #{index} source and result details</a></h3></article></li>) }.join}
+        </ul></section>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['markdown']).to include('https://video.example/embed/city-final')
+      (1..4).each do |index|
+        expect(payload['markdown']).to include("Public match record #{index} source and result details", "/records/#{index}")
+      end
+    end
+  end
+
+  it 'does not claim a sparse video owner when the main has an unowned list and prose' do
+    canonical = 'https://publisher.example/highlight/city-final'
+    unrelated = 'An independent municipal report follows the video and must remain visible alongside the linked records.'
+    html = <<~HTML
+      <html><head><title>City United Final Report 2026</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"#{canonical}","headline":"City United Final Report 2026"}</script>
+      </head><body><main>
+        <article class="focal"><h1>City United Final Report 2026</h1>
+          <iframe src="https://video.example/embed/city-final" width="720" height="405"></iframe>
+        </article>
+        <p>#{unrelated}</p>
+        <section><h2>Public match records</h2><ul>
+          #{(1..4).map { |index| %(<li><h3><a href="/records/#{index}">Public match record #{index} source and result details</a></h3></li>) }.join}
+        </ul></section>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['markdown']).to include(unrelated)
+      (1..4).each do |index|
+        expect(payload['markdown']).to include("Public match record #{index} source and result details", "/records/#{index}")
+      end
+    end
+  end
+
+  it 'preserves authored video sources, poster, track, caption, and fallback links' do
+    canonical = 'https://publisher.example/reports/civic-economy-video'
+    details = (1..3).map do |index|
+      "Section #{index} explains the civic economy findings, review method, and evidence available to the public."
+    end.join(' ')
+    html = <<~HTML
+      <html><head><title>Civic Economy Review 2026</title>
+        <link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","url":"#{canonical}","headline":"Civic Economy Review 2026"}</script>
+      </head><body><main><article><h1>Civic Economy Review 2026</h1>
+        <p>#{details}</p>
+        <figure><video controls poster="/media/civic-poster.jpg" title="Civic economy documentary">
+          <source src="/media/civic-main.mp4" type="video/mp4">
+          <source src="/media/civic-alternate.webm" type="video/webm">
+          <track kind="captions" src="/media/civic-en.vtt" srclang="en" label="English captions">
+          <a href="/media/civic-download.mp4">Download the original civic recording</a>
+          <p>Fallback note: the original civic recording remains available to all readers.</p>
+        </video><figcaption>Civic economy documentary, recorded during the public review.</figcaption></figure>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url(canonical, html) do |payload|
+      expect(payload['contentType']).to eq('article')
+      expect(payload['markdown']).to include('Civic economy documentary, recorded during the public review')
+      expect(payload['markdown']).to include('Download the original civic recording')
+      expect(payload['markdown']).to include('English captions')
+      expect(payload['html']).to include('poster="https://publisher.example/media/civic-poster.jpg"')
+      expect(payload['html']).to include('src="https://publisher.example/media/civic-main.mp4"')
+      expect(payload['html']).to include('src="https://publisher.example/media/civic-alternate.webm"')
+      expect(payload['html']).to include('src="https://publisher.example/media/civic-en.vtt"')
+      expect(payload['html']).to include('Fallback note: the original civic recording remains available to all readers.')
+    end
+  end
 end

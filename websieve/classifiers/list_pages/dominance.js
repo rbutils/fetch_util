@@ -15,6 +15,7 @@
 
   function listCandidateLosesArticleMaterial(content, candidate) {
     if (!content || !candidate || content.contentType !== "article" || candidate.contentType !== "list") return false;
+    if (content.sourceOwnedMediaArticle) return true;
 
     var root = document.createElement("div");
     root.innerHTML = content.html || "";
