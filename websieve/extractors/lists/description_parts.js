@@ -72,6 +72,7 @@
     var primaryReferences = new Set((items || []).map(function(item) {
       return materializedHttpUrl(item.url || "");
     }).filter(Boolean));
+    var sourceOwnedResultCountNodes = options && options.sourceOwnedResultCountNodes;
     var itemValues = items && items.map(function(item) {
       return listDescriptionItemValues(item, primaryUrls, primaryRecordKeys);
     });
@@ -80,6 +81,11 @@
     }).filter(Boolean);
     var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote" : "h1, h2, h3, p, blockquote";
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
+      if (sourceOwnedResultCountNodes && sourceOwnedResultCountNodes.has(el)) {
+        var resultCountMarkdown = markdownFor(el.outerHTML).trim();
+        if (resultCountMarkdown) descParts.push({ node: el, markdown: resultCountMarkdown });
+        return;
+      }
       if (el.parentElement && el.parentElement.closest("blockquote")) return;
       var quote = el.tagName === "BLOCKQUOTE";
       var inlineProse = el.tagName === "DIV";

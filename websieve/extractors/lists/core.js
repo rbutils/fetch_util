@@ -74,6 +74,14 @@
         root = clonedCollectionOwner;
       }
     }
+    var sourceOwnedResultStatusNodes = sourceOwnedResultStatusClones(repeatedCollection, elementMap);
+    if (collectionOwnerMapped) {
+      root = sourceOwnedResultStatusRoot(root, repeatedCollection, clonedCollectionOwner,
+        clonedRenderNodes, sourceOwnedResultStatusNodes, elementMap);
+    }
+    var sourceOwnedResultCountNodeSet = collectionOwnerMapped ?
+      sourceOwnedResultCountDescriptionNodes(sourceOwnedResultStatusNodes, root) : null;
+    var sourceOwnedStatusDescriptions = sourceOwnedResultStatusDescriptionParts(sourceOwnedResultStatusNodes, root);
     var extractionOptions = options;
     if (repeatedCollection && elementMap) {
       var mappedRecords = repeatedCollection.records.map(function(record) {
@@ -116,7 +124,8 @@
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
     var descText = collectionOwnerMapped ? listDescriptionMarkdown(root, items, {
-      sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
+      sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
+      sourceOwnedResultCountNodes: sourceOwnedResultCountNodeSet
     }) : listDescriptionMarkdown(root);
     var fallbackItems = materialResultsRetainProvenItems(
       extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks), materialResultsProof);
@@ -137,8 +146,10 @@
         preserveTextLengths: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
         suppressRepresentedText: true,
-        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
+        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
+        sourceOwnedResultCountNodes: sourceOwnedResultCountNodeSet
       });
+      sectionDescriptionParts = sectionDescriptionParts.concat(sourceOwnedStatusDescriptions);
       var sectionMarkdownWithDescription = sectionedListMarkdownWithDescriptions(sectioned, sectionDescriptionParts);
 
       return {
@@ -153,6 +164,8 @@
         items: sectioned.items,
         descText: "",
         sectionMarkdownWithDescription: sectionMarkdownWithDescription,
+        sourceOwnedResultStatusNodes: sourceOwnedResultStatusNodes,
+        sourceOwnedResultCountNodeSet: sourceOwnedResultCountNodeSet,
         renderedSections: sectioned,
         renderedDescriptions: sectionDescriptionParts,
         markdown: sectioned.markdown,
@@ -169,9 +182,11 @@
         pageTitles: pageTitles, preserveUnrepresentedText: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),
         suppressRepresentedText: true,
-        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
+        sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
+        sourceOwnedResultCountNodes: sourceOwnedResultCountNodeSet
       });
       flatDescriptions = (flatCoverage.headingParts || []).concat(flatDescriptions);
+      flatDescriptions = flatDescriptions.concat(sourceOwnedStatusDescriptions);
       flatCoverage.renderedSections = {
         regions: [{ node: root, label: "", cards: items }]
       };
@@ -201,6 +216,8 @@
       items: items,
       descText: descText,
       markdown: markdown,
+      sourceOwnedResultStatusNodes: sourceOwnedResultStatusNodes,
+      sourceOwnedResultCountNodeSet: sourceOwnedResultCountNodeSet,
       renderedSections: flatCoverage && flatCoverage.renderedSections,
       renderedDescriptions: flatCoverage && flatCoverage.renderedDescriptions,
       score: flatCoverage ? sectioned.score :
@@ -222,8 +239,10 @@
     if (!best.sectionCount) {
       var descriptions = listDescriptionParts(best.root, best.items, {
         preserveUnrepresentedText: true,
-        sourceOwnedDescriptionNodes: best.sourceOwnedDescriptionNodes
+        sourceOwnedDescriptionNodes: best.sourceOwnedDescriptionNodes,
+        sourceOwnedResultCountNodes: best.sourceOwnedResultCountNodeSet
       });
+      descriptions = descriptions.concat(sourceOwnedResultStatusDescriptionParts(best.sourceOwnedResultStatusNodes, best.root));
       best.descText = descriptions.map(function(part) { return part.markdown; }).join("\n\n");
       best.renderedSections = {
         regions: [{ node: best.root, label: "", cards: best.items }]

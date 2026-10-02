@@ -242,6 +242,7 @@
       collection.renderNodes = renderContext ? renderContext.nodes : [collection.owner];
       collection.contextNodes = collection.renderNodes.filter(function(node) { return node !== collection.owner; });
       collection.renderOwner = renderContext ? renderContext.owner : collection.owner;
+      collection.resultCountNodes = sourceOwnedResultCountNodes(collection.owner, collection.records);
       return collection;
     }
     var renderOwner = collection.owner;
@@ -262,6 +263,7 @@
       if (parent.matches("main, [role='main']")) break;
     }
     collection.renderOwner = renderOwner;
+    collection.resultCountNodes = sourceOwnedResultCountNodes(collection.owner, collection.records);
     return collection;
   }
 

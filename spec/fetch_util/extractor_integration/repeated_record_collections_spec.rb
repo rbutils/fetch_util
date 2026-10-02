@@ -149,6 +149,97 @@ RSpec.describe 'FetchUtil repeated record collection ownership' do
     end
   end
 
+  it 'retains authored numeric-leading prose when the collection has no proved result status' do
+    context = '100 results were examined against the original archive, and the editors explain how each edition was verified for this public catalogue.'
+    html = <<~HTML
+      <html><head><title>Weekly editions</title></head><body><main>
+        <h1>Weekly editions</h1><p>#{context}</p>
+        <section class="records">#{story_cards(4, images: true)}</section>
+        <p>The editions below remain available for independent inspection.</p>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://unknown.example/weekly.htm', html) do |page|
+      payload = extract_payload(page)
+      expect(payload['contentType']).to eq('list')
+      markdown = payload['markdown'].gsub(/\s+/, ' ')
+      positions = [context, 'Weekly issue 01', 'Weekly issue 04', 'The editions below'].map { |part| markdown.index(part) }
+      expect(positions).to all(be_a(Integer))
+      expect(positions).to eq(positions.sort)
+      expect(payload['html']).to include(context)
+      (1..4).each { |index| expect(markdown).to include("https://unknown.example/covers/#{index}.jpg") }
+    end
+  end
+
+  it 'keeps source-bound result status around linked collection context without borrowing a foreign count' do
+    cards = story_cards(4)
+    authored_context = '100 results were examined against the original archive, and the editors explain how each edition was verified for this public catalogue.'
+    html = <<~HTML
+      <html><head><title>Weekly editions</title></head><body>
+        <aside><p>999 matches</p></aside>
+        <main>
+          <h1>Weekly editions</h1>
+          <h2>Research archive</h2>
+          <p>Browse the <a href="/guide">research guide</a> before choosing an edition.</p>
+          <section class="result-component">
+            <div class="search-controls">
+              <form class="search-form" role="search"><input type="search" aria-label="Search editions"></form>
+              <p class="result-count"><strong>47</strong> matches</p>
+            </div>
+            <p class="editorial-context">#{authored_context}</p>
+            <section class="records">#{cards}</section>
+            <p class="list-note">Each listed edition remains available for inspection.</p>
+            <div class="result-actions"><button aria-label="31 more found">31 more found</button></div>
+            <p class="closing-context">The archive resumes with explanatory guidance for later editions.</p>
+          </section>
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page('https://unknown.example/weekly.htm', html) do |page|
+      original_body = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      expect(payload['contentType']).to eq('list')
+      markdown = payload['markdown'].gsub(/\s+/, ' ')
+      expected = [
+        '## Research archive', '[research guide](https://unknown.example/guide)',
+        '**47** matches', authored_context, 'Weekly issue 01', 'Each listed edition', '31 more found', 'The archive resumes'
+      ].map { |part| markdown.index(part) }
+      expect(expected).to all(be_a(Integer))
+      expect(expected).to eq(expected.sort)
+      expect(payload['html']).to include('<strong>47</strong> matches', authored_context, '31 more found', '/guide')
+      expect(payload['html']).not_to include('999 matches')
+      expect(markdown).not_to include('999 matches')
+      expect(page.evaluate('document.body.innerHTML')).to eq(original_body)
+
+      page.evaluate <<~JS
+        (function() {
+          var duplicateCount = document.createElement('p');
+          duplicateCount.textContent = '48 results';
+          document.querySelector('.search-controls').appendChild(duplicateCount);
+        })()
+      JS
+      ambiguous_payload = extract_payload(page)
+      expect(ambiguous_payload['contentType']).to eq('list')
+      expect(ambiguous_payload['markdown']).not_to include('**47** matches', '31 more found')
+      expect(ambiguous_payload['markdown']).to include(authored_context)
+      expect((1..4).map { |index| ambiguous_payload['markdown'].include?("Weekly issue #{format("%02d", index)}") }).to all(be(true))
+
+      page.evaluate <<~JS
+        (function() {
+          document.querySelector('.search-controls p:last-child').remove();
+          var foreign = document.createElement('article');
+          foreign.innerHTML = '<h2>Foreign editorial record</h2><button>20 more found</button>';
+          document.querySelector('.result-component').appendChild(foreign);
+        })()
+      JS
+      foreign_payload = extract_payload(page)
+      expect(foreign_payload['markdown']).not_to include('**47** matches', '31 more found')
+      expect(foreign_payload['markdown']).to include(authored_context)
+      (1..4).each { |index| expect(foreign_payload['markdown']).to include("Weekly issue #{format("%02d", index)}") }
+    end
+  end
+
   it 'does not combine competing collections or ambiguous multi-destination cards' do
     competing = <<~HTML
       <section aria-label="Regional reports">#{story_cards(4, prefix: "regional")}</section>
