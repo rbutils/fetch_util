@@ -13,7 +13,7 @@
       if (readabilityBodyExcerptNode(node, structuredOwner)) node.setAttribute("data-fetchutil-excerpt-body", marker);
     });
     var summaryContainers = Array.prototype.filter.call(root.querySelectorAll(readabilitySummarySelector()), function(container) {
-      return readabilityExcerptNode(container);
+      return readabilityExcerptNode(container) && readabilityExcerptOwner(container, structuredOwner);
     });
     var summaryStack = [];
     var topLevelSummaryContainers = [];

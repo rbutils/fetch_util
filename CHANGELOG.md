@@ -1,6 +1,8 @@
 # Changelog
 
 ### Fixed
+- Scope Reader summaries to the proved article body and header even with a publisher-suffixed document title or an independent neighboring section.
+- Keep complete source-owned Reader article summaries independent of byline classification while excluding summary copies in neighboring or nested articles.
 - Retain original same-page headline links only when the complete selected article body matches the source owner.
 - Bind standalone static-generator title brands only to a source-owned article heading, preserving genuine title extensions.
 - Preserve publication dates only when the uniquely owned source article, header, and publication records agree.

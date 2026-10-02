@@ -72,3 +72,15 @@
     if (!body) return article.excerpt;
     return body;
   }
+
+  function readabilityExcerptOwner(node, structuredOwner) {
+    if (!node || !node.closest) return false;
+    if (structuredOwner && structuredOwner.owner.contains(node) &&
+        (structuredOwner.heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+      return readabilityExcerptSameArticleOwner(node, structuredOwner);
+    }
+    if (node.closest("article")) return readabilityDistinctArticleOwner(node);
+    var main = node.closest("main, [role='main']");
+    var externalOwner = readabilityExternalArticleBodyOwner(node);
+    return !!main && externalOwner !== false && (externalOwner === true || !main.querySelector("article"));
+  }

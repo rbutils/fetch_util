@@ -90,15 +90,6 @@
     return paragraphs.length >= 2 ? {heading: heading, owner: owner} : null;
   }
 
-  function readabilityExcerptOwner(node, structuredOwner) {
-    if (!node || !node.closest) return false;
-    if (structuredOwner && structuredOwner.owner.contains(node) &&
-        (structuredOwner.heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) return true;
-    if (node.closest("article")) return true;
-    var main = node.closest("main, [role='main']");
-    return !!main && !main.querySelector("article");
-  }
-
   function readabilityBodyExcerptNode(node, structuredOwner) {
     if (!node || !node.matches || !node.matches("p")) return false;
     if (structuredOwner && structuredOwner.owner.contains(node)) {

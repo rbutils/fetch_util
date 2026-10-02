@@ -14,8 +14,77 @@ function readabilityExcerptIsVisibleLead(article, excerpt) {
   });
 }
 
+function readabilityExcerptSameArticleOwner(node, structuredOwner) {
+  return node.closest("article") === structuredOwner.heading.closest("article");
+}
+
+function readabilityDistinctArticleOwner(node) {
+  var article = node.closest("article");
+  return !article.matches("article article") && readabilityExternalArticleBodyOwner(node) !== false;
+}
+
+function readabilityOwnedArticleParagraphs(article, bodyEvidence) {
+  var sources = bodyEvidence && bodyEvidence.sourceParagraphs;
+  if (!Array.isArray(sources)) return null;
+  if (sources.some(function(node) { return readabilityExternalArticleBodyOwner(node) === false; })) return null;
+  var paragraphs = sources;
+  var headings = Array.from(document.querySelectorAll("article h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading) &&
+      normalizeText(heading.textContent || "") === normalizeText(article.title || "");
+  });
+  if (headings.length === 1) {
+    var owner = headings[0].closest("article");
+    if (!paragraphs.every(function(node) { return node.closest("article") === owner; })) return null;
+  }
+  return paragraphs;
+}
+
+function readabilityExternalArticleBodyOwner(node) {
+  var main = node.closest("main, [role='main']");
+  if (!main) return null;
+  var headings = Array.from(main.querySelectorAll("h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading);
+  });
+  if (headings.length !== 1 || headings[0].closest("article")) return null;
+  var headline = normalizeText(headings[0].textContent || "");
+  var title = normalizeText(document.title || "");
+  if (title !== headline) {
+    var publisher = document.querySelector("meta[property='og:site_name' i]");
+    var siteName = normalizeText(publisher && publisher.getAttribute("content"));
+    if (!headline || !title.startsWith(headline) ||
+        !sourceOwnedTitleSuffixMatchesPublisher(normalizeText(title.slice(headline.length)), siteName)) return null;
+  }
+
+  var bodySelector = "[itemprop~='articleBody' i], [data-article-body], [class*='article-body' i], " +
+    "[class*='article-content' i], [class*='entry-content' i], [class*='post-content' i], [class*='story-content' i]";
+  var bodies = Array.from(main.querySelectorAll(bodySelector)).filter(function(body) {
+    if (body.closest("article") || !(headings[0].compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+      return false;
+    }
+    return Array.from(body.querySelectorAll("p")).filter(function(paragraph) {
+      return !paragraph.closest("article") && readabilityExcerptNode(paragraph);
+    }).length >= 2;
+  });
+  var innermost = bodies.filter(function(body) {
+    return !bodies.some(function(other) { return other !== body && body.contains(other); });
+  });
+  if (innermost.length !== 1) return null;
+  var foreignArticle = node.closest("article");
+  if (foreignArticle && main.contains(foreignArticle) && !innermost[0].contains(foreignArticle)) return false;
+  if (!main.contains(node) || foreignArticle) return null;
+  if (innermost[0].contains(node)) return true;
+  var section = node.closest("section");
+  var separateSection = section && Array.from(section.querySelectorAll("h1, h2, h3")).some(function(heading) {
+    return !elementVisuallyHidden(heading);
+  });
+  if (!(headings[0].compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+      !(node.compareDocumentPosition(innermost[0]) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+      node.closest("aside, form") || separateSection) return false;
+  return true;
+}
+
 function readabilityOwnedArticleLeadExcerpt(article, metadata, marker, bodyEvidence) {
-  var paragraphs = bodyEvidence && bodyEvidence.sourceParagraphs;
+  var paragraphs = readabilityOwnedArticleParagraphs(article, bodyEvidence);
   var sourceEvidence = Array.isArray(paragraphs) && paragraphs.length >= 2;
   var metadataExcerpt = normalizeText(metadata && metadata.excerpt || "");
   var lead = sourceEvidence ? paragraphs[0] : null;
