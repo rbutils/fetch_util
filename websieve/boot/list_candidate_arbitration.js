@@ -25,3 +25,65 @@
     }
     return !candidateText && itemCount === 0 && !!currentText && !!(current && current.readerMode);
   }
+
+  function cachedFocalArticleContent(candidate, focalArticleRoute) {
+    return !!(candidate && (candidate.focalPermalinkContent || focalArticleRoute) &&
+      (candidate.contentType === "article" || candidate.contentType === "medical"));
+  }
+
+  function selectIndexListCandidate(content, metadata, options) {
+    options = options || {};
+    var repeatedCollection = options.repeatedCollection;
+    var materialResultsOwner = options.materialResultsOwner;
+    var institutionalCaseIndex = options.institutionalCaseIndex;
+    var indexListAllowed = indexListCandidateAllowed(content,
+      !!(repeatedCollection && repeatedCollection.queryDirectoryOverride) || !!materialResultsOwner) &&
+      !options.listArticleOwnershipConflict;
+    var sourceOwnedIndex = indexListAllowed && options.strongArticle &&
+      !cachedFocalArticleContent(content, options.focalArticleRoute) && sourceOwnedListAgainstReader(content, metadata);
+    var candidate = null;
+
+    if (indexListAllowed && materialResultsOwner) {
+      candidate = listContent(metadata, {
+        sourceOwner: materialResultsOwner.owner,
+        materialResultsOwner: materialResultsOwner
+      });
+    } else if (indexListAllowed && dominantIndexListPage(content)) {
+      candidate = repeatedCollection ? listContent(metadata, {
+        repeatedRecordCollection: repeatedCollection
+      }) : listContent(metadata, institutionalCaseIndex ? {
+        sourceOwner: institutionalCaseIndex.root,
+        institutionalCaseIndex: institutionalCaseIndex
+      } : undefined);
+    } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || options.articleBodyCollection || repeatedCollection) &&
+        (likelyListPath() || repeatedCollection ||
+          (!cachedFocalArticleContent(content, options.focalArticleRoute) && !articleRouteFocalContent(content))) &&
+        (!options.strongArticle || sourceOwnedIndex || repeatedCollection)) {
+      candidate = repeatedCollection ? listContent(metadata, {
+        repeatedRecordCollection: repeatedCollection
+      }) : (sourceOwnedIndex || listContent(metadata, institutionalCaseIndex ? {
+        sourceOwner: institutionalCaseIndex.root,
+        institutionalCaseIndex: institutionalCaseIndex
+      } : undefined));
+    }
+
+    var materialResultsCoverage = null;
+    function materialResultsCandidateOwnershipProven(value) {
+      if (materialResultsCoverage === null) {
+        materialResultsCoverage = !!(materialResultsOwner && materialResultsCandidateCoversSource(materialResultsOwner, value));
+      }
+      return materialResultsCoverage;
+    }
+
+    if (candidate && !emptyListCandidateLosesContent(content, candidate) &&
+        !(options.supportingProductCollection && content.contentType === "article") &&
+        !sourceMaterialBlocksListCandidate(content, candidate) &&
+        !sourceOwnedFallbackListLoss(content, candidate) &&
+        (!repeatedCollection || repeatedRecordCandidateCoversOwner(candidate, repeatedCollection) ||
+          materialResultsCandidateOwnershipProven(candidate)) &&
+        !selectedArticleHasExplicitDetailOwnership(content, metadata, candidate) &&
+        (!materialResultsOwner || materialResultsCandidateOwnershipProven(candidate))) {
+      return { content: candidate, materialResultsCandidateAccepted: !!materialResultsOwner };
+    }
+    return { content: content, materialResultsCandidateAccepted: false };
+  }

@@ -1302,16 +1302,19 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     detail_path = "classifiers/list_pages/detail_articles.js"
     dominance_path = "classifiers/list_pages/dominance.js"
+    arbitration_path = "boot/list_candidate_arbitration.js"
     boot_path = "boot/extract_api.js"
 
     expect(manifest.index(detail_path)).to be < manifest.index(dominance_path)
     expect(manifest.index(detail_path)).to be < manifest.index(boot_path)
+    expect(manifest.index(arbitration_path)).to be < manifest.index(boot_path)
     expect(File.read(File.join(source_root, detail_path))).to include(
       "function selectedArticleHasExplicitDetailOwnership",
       "function lateListHasIndependentRoot"
     )
-    expect(File.read(File.join(source_root, boot_path))).to include(
-      "selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)"
+    expect(File.read(File.join(source_root, boot_path))).to include("selectIndexListCandidate(content, metadata")
+    expect(File.read(File.join(source_root, arbitration_path))).to include(
+      "selectedArticleHasExplicitDetailOwnership(content, metadata, candidate)"
     )
   end
 
@@ -1364,6 +1367,10 @@ RSpec.describe "extract asset bundle" do
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
       ], "classifiers/list_pages/chrome.js"],
+      ["classifiers/list_pages/list_page.js", %w[
+        classifiers/list_pages/material_results_owner.js
+        classifiers/list_pages/material_results/cards.js
+      ], "classifiers/warnings/url_mismatch.js"],
       ["classifiers/list_pages/link_groups.js", %w[
         markdown/lists/list_aliases.js
         markdown/lists/finalization.js
@@ -1448,6 +1455,7 @@ RSpec.describe "extract asset bundle" do
         extractors/lists/generic/sections/record_section_fallback.js
         extractors/lists/generic/sections/section_discovery.js
       ], "extractors/lists/card_visibility.js"],
+      ["extractors/lists/card_visibility.js", ["extractors/lists/list_candidate_selection.js"], "extractors/lists/core.js"],
       ["extractors/lists/core.js", %w[
         extractors/lists/homepage/search_tools.js
         extractors/lists/homepage/homepage_lead_mapping.js

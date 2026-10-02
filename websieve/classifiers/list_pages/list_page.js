@@ -136,7 +136,7 @@
     if (!content && !homepageRootPath()) return null;
     if (content && (content.hostAware || content.docsLike)) return null;
     if (typeof consentWallDominates === "function" && consentWallDominates(document.body.textContent || "")) return null;
-    if (content && typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
+    if (!visibleMaterialResultsOwner(content, metadata) && content && typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
     if (content && document.querySelector("article h1, article [itemprop='articleBody']") &&
         (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime() || ""))) return null;
 

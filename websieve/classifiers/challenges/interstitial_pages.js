@@ -13,6 +13,7 @@ function notFoundInterstitialPattern() {
 
 function notFoundInterstitialEvidence(title, text, options) {
   options = options || {};
+  if (options.requireInterstitialPage && visibleMaterialResultsOwner()) return null;
   var normalizedText = normalizeText(text || "").toLowerCase();
   var normalizedTitle = normalizeText(title || "").toLowerCase();
   var pattern = notFoundInterstitialPattern();

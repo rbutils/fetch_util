@@ -6,7 +6,8 @@ function finalizationWarnings(content, metadata, markdown, pageText, signals, pr
   });
   if (content.spaDataGuard && warnings.indexOf("spa_data_traversal_guard") === -1) warnings.push("spa_data_traversal_guard");
   var normalizedMarkdown = normalizeText(markdown);
-  if (notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdown, { maxTextLength: 1800, checkStructured: true })) {
+  if (!visibleMaterialResultsOwner(content, metadata) &&
+      notFoundInterstitialEvidence(primaryTitle || metadata.title, normalizedMarkdown, { maxTextLength: 1800, checkStructured: true })) {
     if (warnings.indexOf("not_found_interstitial") === -1) warnings.push("not_found_interstitial");
   }
   var errorContext = normalizeText([primaryTitle, metadata.title, metadata.siteName, location.hostname, location.pathname, markdown].join(" "));
@@ -37,6 +38,7 @@ function finalizationWarnings(content, metadata, markdown, pageText, signals, pr
 }
 
 function finalizeExtractResult(content, metadata, pageText, signals, medicalArticle) {
+  var materialResultsOwnerCandidateRejected = !!(content && content.materialResultsOwnerCandidateRejected);
   // Additional material must not change the preceding root-selection decision.
   content = enrichMainArticleContent(content, metadata);
   content = supplementNotFoundTickerRecords(content, metadata, pageText);
@@ -184,9 +186,14 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
   if (content.sourceOwnedLiveblog && content.contentType === "list") content.contentType = "article";
-  if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && searchResultsListPage(content, markdown)) content = relabelAsListContent(content, { strongList: true });
+  if (content.contentType === "article" && !materialResultsOwnerCandidateRejected &&
+      !content.sourceOwnedLiveblog && !medicalArticle && searchResultsListPage(content, markdown)) {
+    content = relabelAsListContent(content, { strongList: true });
+  }
   if (content.contentType === "article" && !content.sourceOwnedLiveblog && !medicalArticle && !content.hostAware && !content.docsLike && !content.legalProvision &&
-      !content.supportingProductCollection && markdownIndexListPage(markdown, content)) content = relabelAsListContent(content, { strongList: true });
+      !materialResultsOwnerCandidateRejected && !content.supportingProductCollection && markdownIndexListPage(markdown, content)) {
+    content = relabelAsListContent(content, { strongList: true });
+  }
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
   if (legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";

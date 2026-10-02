@@ -191,17 +191,20 @@
         content = eventList;
       }
 
-       content = applyMedicalContentType(content, metadata);
+        content = applyMedicalContentType(content, metadata);
 
+        var materialResultsOwner = visibleMaterialResultsOwner(content, metadata, selectedFocalArticleOwner);
+        var materialResultsReaderOwner = !!(materialResultsOwner && materialResultsOwner.complete) &&
+          materialResultsReaderContentOwnedByQuery(materialResultsOwner, content, metadata);
         var institutionalCaseIndex = institutionalCaseRecordListPage(document.body, null, true, true);
         var repeatedCollectionAssessment = institutionalCaseIndex && !institutionalCaseIndex.focalArticle ? null : repeatedRecordAssessmentForContent(content, selectedFocalArticleOwner);
         var listArticleOwnershipConflict = !!(institutionalCaseIndex && institutionalCaseIndex.focalArticle) ||
-          !!(repeatedCollectionAssessment && repeatedCollectionAssessment.articleOwnershipConflict);
+          !!(repeatedCollectionAssessment && repeatedCollectionAssessment.articleOwnershipConflict && !materialResultsReaderOwner);
         var repeatedCollection = repeatedCollectionAssessment &&
           !repeatedCollectionAssessment.articleOwnershipConflict ? repeatedCollectionAssessment : null;
-         var repeatedListCandidate = repeatedRecordListCandidate(content, metadata, repeatedCollection);
-         if (repeatedListCandidate && !sourceMaterialBlocksListCandidate(content, repeatedListCandidate)) content = repeatedListCandidate;
-        var portalRootContent = content && !listArticleOwnershipConflict && !repeatedCollectionAssessment && !content.browseIndexContent ?
+          var repeatedListCandidate = repeatedRecordListCandidate(content, metadata, repeatedCollection);
+          if (!materialResultsOwner && repeatedListCandidate && !sourceMaterialBlocksListCandidate(content, repeatedListCandidate)) content = repeatedListCandidate;
+        var portalRootContent = content && !materialResultsOwner && !listArticleOwnershipConflict && !repeatedCollectionAssessment && !content.browseIndexContent ?
          crediblePortalRootListContent(metadata, content) : null;
        var ownedDetailArticle = portalRootContent && ownedStructuredDetailArticleContent(content, metadata, portalRootContent);
        if (ownedDetailArticle) {
@@ -225,7 +228,7 @@
       if (content && !content.hostAware && hostMatches(/(^|\.)gitlab\.com$/) && /data-testid=["']blob-viewer-content["']/.test(content.html || "")) {
         content.hostAware = true;
       }
-      if (content.contentType === "article" && !content.browseIndexContent && !content.hostAware && !content.docsLike &&
+       if (content.contentType === "article" && !materialResultsOwner && !content.browseIndexContent && !content.hostAware && !content.docsLike &&
           !cachedFocalArticleContent(content) && !articleRouteFocalContent(content) && !listArticleOwnershipConflict &&
           legalFooterText(content.textContent || content.markdown || "")) {
         var footerListFallback = listContent(metadata);
@@ -233,52 +236,37 @@
             !listCandidateLosesArticleMaterial(content, footerListFallback) &&
             !listCandidateLosesArticleListMaterial(content, footerListFallback)) content = footerListFallback;
       }
-      if (content.contentType === "article" && !content.docsLike && !content.legalProvision &&
+       if (content.contentType === "article" && !materialResultsOwner && !content.docsLike && !content.legalProvision &&
           !listArticleOwnershipConflict && legalTableOfContentsPage(null, content.textContent || content.markdown || "")) {
         content = relabelAsListContent(content, { strongList: true });
       }
-      var indexListCandidate = null;
-      var indexListAllowed = indexListCandidateAllowed(content, !!(repeatedCollection && repeatedCollection.queryDirectoryOverride)) &&
-        !listArticleOwnershipConflict;
-      var sourceOwnedIndex = indexListAllowed && strongArticle && !cachedFocalArticleContent(content) &&
-        sourceOwnedListAgainstReader(content, metadata);
-      if (indexListAllowed && dominantIndexListPage(content)) {
-        indexListCandidate = repeatedCollection ? listContent(metadata, {
-          repeatedRecordCollection: repeatedCollection
-        }) : listContent(metadata, institutionalCaseIndex ? {
-          sourceOwner: institutionalCaseIndex.root,
-          institutionalCaseIndex: institutionalCaseIndex
-        } : undefined);
-      } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || articleBodyCollection || repeatedCollection) &&
-          (likelyListPath() || repeatedCollection || (!cachedFocalArticleContent(content) && !articleRouteFocalContent(content))) &&
-          (!strongArticle || sourceOwnedIndex || repeatedCollection)) {
-        indexListCandidate = repeatedCollection ? listContent(metadata, {
-          repeatedRecordCollection: repeatedCollection
-        }) :
-          (sourceOwnedIndex || listContent(metadata, institutionalCaseIndex ? {
-            sourceOwner: institutionalCaseIndex.root,
-            institutionalCaseIndex: institutionalCaseIndex
-          } : undefined));
+        var materialResultsListSelection = selectIndexListCandidate(content, metadata, {
+        repeatedCollection: repeatedCollection,
+        materialResultsOwner: materialResultsOwner,
+        institutionalCaseIndex: institutionalCaseIndex,
+        listArticleOwnershipConflict: listArticleOwnershipConflict,
+        supportingProductCollection: supportingProductCollection,
+        strongArticle: strongArticle,
+        articleBodyCollection: articleBodyCollection,
+        focalArticleRoute: focalArticleRoute
+        });
+        content = materialResultsListSelection.content;
+      if (materialResultsOwner && !materialResultsListSelection.materialResultsCandidateAccepted && content) {
+        content.materialResultsOwnerCandidateRejected = true;
       }
-      if (indexListCandidate && !emptyListCandidateLosesContent(content, indexListCandidate) &&
-          !(supportingProductCollection && content.contentType === "article") &&
-          !sourceMaterialBlocksListCandidate(content, indexListCandidate) &&
-          !sourceOwnedFallbackListLoss(content, indexListCandidate) &&
-          (!repeatedCollection || repeatedRecordCandidateCoversOwner(indexListCandidate, repeatedCollection)) &&
-          !selectedArticleHasExplicitDetailOwnership(content, metadata, indexListCandidate)) content = indexListCandidate;
-      if ((content.contentType === "article" || content.contentType === "medical") && !content.docsLike &&
+      if (!materialResultsOwner && (content.contentType === "article" || content.contentType === "medical") && !content.docsLike &&
           !content.legalProvision && !strongArticle && !listArticleOwnershipConflict && thinSearchOrCategoryPage(content)) {
         content = relabelAsListContent(content, { strongList: true });
       }
-      if (content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
+      if (!materialResultsOwner && content.contentType === "list" && queryParam("q") && glossaryLikePage(metadata)) {
         var glossaryListFallback = glossaryMetadataContent(metadata);
         if (glossaryListFallback) content = glossaryListFallback;
       }
 
-      var dormantBodyList = listArticleOwnershipConflict ? null : dormantBodyRootListContent(content, metadata);
+      var dormantBodyList = materialResultsOwner || listArticleOwnershipConflict ? null : dormantBodyRootListContent(content, metadata);
       if (dormantBodyList) content = dormantBodyList;
 
-      var staleOpacityList = listArticleOwnershipConflict ? null : staleOpacitySectionListContent(content, metadata);
+      var staleOpacityList = materialResultsOwner || listArticleOwnershipConflict ? null : staleOpacitySectionListContent(content, metadata);
       if (staleOpacityList) content = staleOpacityList;
 
        var hiddenMainArticle = hiddenSubstantiveMainContent(content, metadata, pageText);

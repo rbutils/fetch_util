@@ -15,7 +15,7 @@
     var cloneSource = primaryMainSourceNode &&
       (node === document.body || node === primaryMainSourceNode || primaryMainSourceNode.contains(node)) ?
       primaryMainSourceNode : (renderOwnerSourceNode && renderOwnerSourceNode.contains(node) ? renderOwnerSourceNode : node);
-    var elementMap = repeatedCollection || options.institutionalCaseIndex ? new Map() : null;
+    var elementMap = repeatedCollection || options.institutionalCaseIndex || options.materialResultsOwner ? new Map() : null;
     var clonedSourceRoot = visibleListClone(cloneSource, options.preservedRoots, elementMap);
     var clonedPrimaryMain = elementMap && primaryMainSourceNode && elementMap.get(primaryMainSourceNode);
     var clonedCollectionOwner = elementMap && collectionOwnerSourceNode && elementMap.get(collectionOwnerSourceNode);
@@ -34,6 +34,8 @@
       (!primaryMainSourceNode || (primaryMainMapped && clonedPrimaryMain.contains(clonedCollectionOwner))));
     var root = primaryMainMapped ? clonedPrimaryMain : clonedSourceRoot;
     var extractionRoot = collectionOwnerMapped && !primaryMainMapped ? clonedCollectionOwner : root;
+    var materialResultsProof = options.materialResultsOwner && node === options.materialResultsOwner.owner ?
+      materialResultsCloneProof(options.materialResultsOwner, elementMap, root) : null;
     var clonedRenderNodes = repeatedCollection && elementMap ?
       (repeatedCollection.renderNodes || []).map(function(sourceNode) { return elementMap.get(sourceNode); }) : [];
     var sourceOwnedDescriptionSources = [];
@@ -51,6 +53,7 @@
     }).filter(Boolean) : [];
     var producerProvenCardNodes = options.institutionalCaseIndex && elementMap ?
       options.institutionalCaseIndex.cardNodes.map(function(card) { return elementMap.get(card); }).filter(Boolean) : null;
+    if (materialResultsProof) producerProvenCardNodes = (producerProvenCardNodes || []).concat(materialResultsProof.cardNodes);
     cleanupListRoot(root, producerProvenCardNodes,
       collectionOwnerMapped && !primaryMainMapped ? clonedRenderNodes : null);
     if (collectionOwnerMapped && !primaryMainMapped) {
@@ -94,6 +97,11 @@
         })
       });
     }
+    if (materialResultsProof) {
+      extractionOptions = Object.assign({}, extractionOptions, {
+        producerProvenCardTitles: materialResultsProof.titleLinks
+      });
+    }
     if (primaryMainMapped && clonedCandidate && !root.contains(clonedCandidate)) {
       primaryMainMapped = false;
       root = clonedSourceRoot;
@@ -104,13 +112,14 @@
     }));
     var sectioned = sectionedListExtraction(extractionRoot);
 
-    var items = extractListItems(extractionRoot, extractionOptions);
+    var items = materialResultsRetainProvenItems(extractListItems(extractionRoot, extractionOptions), materialResultsProof);
     mergeDuplicateRecordAuthorContext(root, items);
     var itemQuality = listItemsQualityScore(items);
     var descText = collectionOwnerMapped ? listDescriptionMarkdown(root, items, {
       sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes
     }) : listDescriptionMarkdown(root);
-    var fallbackItems = extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks);
+    var fallbackItems = materialResultsRetainProvenItems(
+      extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks), materialResultsProof);
     mergeDuplicateRecordAuthorContext(root, fallbackItems);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {
@@ -202,43 +211,6 @@
       portalEvidenceItemCount: flatCoverage ? sectioned.items.length : null,
       portalEvidenceMaterializedItemCount: flatCoverage ? materializedListItemCount(sectioned.items) : null
     };
-  }
-
-  function bestListExtraction(metadata, pageTitles, options) {
-    options = options || {};
-    if (options.repeatedRecordCollection) {
-      return buildListExtraction(options.repeatedRecordCollection.primaryMain || options.repeatedRecordCollection.owner,
-        pageTitles, options);
-    }
-    if (options.sourceOwner) return buildListExtraction(options.sourceOwner, pageTitles, options);
-    var candidates = [];
-    function pushCandidate(node) {
-      if (!node || candidates.indexOf(node) !== -1) return;
-      candidates.push(node);
-    }
-
-    pushCandidate(listCandidateRoot(metadata));
-    contextualListCandidates(metadata).forEach(pushCandidate);
-    pushCandidate(document.querySelector("main, [role='main']"));
-    pushCandidate(document.body);
-
-    var tableIndexRoot = linkedTableIndexRoot();
-    if (tableIndexRoot) return buildListExtraction(tableIndexRoot, pageTitles, options);
-
-    var extractions = [];
-    var best = candidates.reduce(function(current, node) {
-      var result = buildListExtraction(node, pageTitles, options);
-      extractions.push(result);
-      return nestedListMaterialCoverage(current, result) || (listExtractionIsBetter(current, result) ? result : current);
-    }, null) || buildListExtraction(document.body, pageTitles, options);
-    var ancestorDescription = extractions.find(function(extraction) {
-      return extraction !== best && extraction.descText && extraction.sourceNode.contains(best.sourceNode);
-    });
-    if (ancestorDescription) {
-      best.ancestorDescription = ancestorDescription.descText;
-      best.ancestorDescriptionSourceNode = ancestorDescription.sourceNode;
-    }
-    return best;
   }
 
   function listContent(metadata, options) {

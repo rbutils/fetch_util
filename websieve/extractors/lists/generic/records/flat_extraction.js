@@ -64,7 +64,9 @@
       var anchorMinimum = provenRecord ? 1 : minimumListTitleLength(text);
       if (link && genericListImageTitleCard(link)) anchorMinimum = 1;
       else if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
-      var minimumLength = tableRow ? 2 : (directAnchorCard || chromeOwnedCard || provenRecord ? anchorMinimum : (caseRecordContext ? 3 : 18));
+      var producerProvenTitle = link && context.producerProvenCardTitles && context.producerProvenCardTitles.has(link);
+      var minimumLength = producerProvenTitle ? 1 :
+        (tableRow ? 2 : (directAnchorCard || chromeOwnedCard || provenRecord ? anchorMinimum : (caseRecordContext ? 3 : 18)));
       if (link && genericListLinkGroup(link, context.linkGroups)) minimumLength = 1;
       if (link && genericListNumberedCollectionLink(link, context.numberedCollections)) minimumLength = 1;
       return text.length < minimumLength ||

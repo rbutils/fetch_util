@@ -97,6 +97,8 @@ classifiers/list_pages/ownership/repeated_record_context.js
 classifiers/list_pages/ownership/repeated_records.js
 classifiers/list_pages/ownership/repeated_candidate_coverage.js
 classifiers/list_pages/list_page.js
+classifiers/list_pages/material_results_owner.js
+classifiers/list_pages/material_results/cards.js
 classifiers/warnings/url_mismatch.js
 classifiers/warnings/language.js
 classifiers/warnings/paywalls.js
@@ -174,6 +176,7 @@ extractors/lists/generic/sections/section_rendering.js
 extractors/lists/generic/sections/record_section_fallback.js
 extractors/lists/generic/sections/section_discovery.js
 extractors/lists/card_visibility.js
+extractors/lists/list_candidate_selection.js
 extractors/lists/core.js
 extractors/lists/homepage/search_tools.js
 extractors/lists/homepage/homepage_lead_mapping.js
