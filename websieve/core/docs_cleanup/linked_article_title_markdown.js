@@ -5,7 +5,7 @@ function articleSelfLinkedHeadlineMarkdown(markdown, html, title) {
   var articles = root.querySelectorAll("article");
   if (articles.length !== 1) return markdown;
   var proof = sourceOwnedSelfLinkedArticle(articles[0], title);
-  if (!proof) return markdown;
+  if (!proof || proof.completeBody !== true) return markdown;
 
   var lines = markdown.split("\n");
   var first = lines.findIndex(function(line) { return !!normalizeText(line); });

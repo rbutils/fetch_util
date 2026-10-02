@@ -105,6 +105,32 @@ RSpec.describe 'Owned article titles' do
     end
   end
 
+  it 'does not retain a source self-link when the selected article omits owned body material' do
+    first = 'Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.'
+    second = 'The report describes the practical limitations, complete methodology, and conclusions drawn from those records.'
+    omitted = 'A final section preserves the source article evidence and explains its conclusion for readers.'
+    html = <<~HTML
+      <html><head><title>Research across borders</title></head><body><main><article>
+        <header><h1><a href="https://journal.example/reports/borders">Research across borders</a></h1></header>
+        <p>#{first}</p><p>#{second}</p><p>#{omitted}</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/borders', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      probe_source = source.sub('})(window);', 'global.partialSelfLinkProbe = articleSelfLinkedHeadlineMarkdown; })(window);')
+      page.add_script_tag(content: probe_source)
+      markdown = "# Research across borders\n\n#{first}\n\n#{second}"
+      selected = "<article><p>#{first}</p><p>#{second}</p></article>"
+      result = page.evaluate("partialSelfLinkProbe(#{JSON.generate(markdown)}, #{JSON.generate(selected)}, 'Research across borders')")
+
+      expect(result).to eq(markdown)
+    end
+  end
+
   it 'binds a publisher-suffixed title to the selected article heading inside its cloned header' do
     html = <<~HTML
       <html><head><title>Research across borders | Journal.example</title></head><body><main>

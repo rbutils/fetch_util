@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Retain original same-page headline links only when the complete selected article body matches the source owner.
 - Bind standalone static-generator title brands only to a source-owned article heading, preserving genuine title extensions.
 - Preserve publication dates only when the uniquely owned source article, header, and publication records agree.
 - Preserve complete source-owned article body leads, including short Reader paragraphs with unique article and body proof.

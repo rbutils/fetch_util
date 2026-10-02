@@ -175,46 +175,6 @@ function articleTitleFromVisibleArticleHeading(html, title, siteName) {
   return owners.length === 1 ? normalizeText(owners[0].heading.textContent || "") : title;
 }
 
-function sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName, source, headline) {
-  if (!suffix) return false;
-  var match = normalizeText(suffix).match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
-  if (!match) return false;
-  var firstComponent = normalizeText(match[1].split(/\s*[|·•]\s*/)[0]).replace(/^www\./i, "").toLowerCase();
-  var publisher = normalizeText(siteName || "").split(/\s*[|·•]\s*/)[0].replace(/^www\./i, "").toLowerCase();
-  var hostParts = (location.hostname || "").replace(/^www\./i, "").toLowerCase().split(".").filter(function(part) {
-    return part.length >= 3 && !/^(?:com|net|org|gov|edu|co)$/.test(part);
-  });
-  if (firstComponent && (firstComponent === publisher || hostParts.indexOf(firstComponent) !== -1)) return true;
-  if (!source || !source.matches("article") || !headline ||
-      !sourceOwnedGeneratorBrandMatches(firstComponent, source)) return false;
-  var pageUrl = sourceOwnershipPageUrl(materializedCanonicalUrl() || location.href);
-  return !!pageUrl && !sourceOwnedTitleMetadataConflictsWithHeading(headline, pageUrl);
-}
-
-function sourceOwnedGeneratorBrandMatches(publisher, source) {
-  if (!publisher || !source) return false;
-  var generators = document.querySelectorAll('meta[name="generator" i]');
-  if (generators.length !== 1) return false;
-  var generator = normalizeText(generators[0].getAttribute("content") || "").split(/\s+/)[0];
-  return normalizeText(generator).replace(/^www\./i, "").toLowerCase() === publisher;
-}
-
-function sourceOwnedTitleMetadataConflictsWithHeading(headline, pageUrl) {
-  if (typeof sourceOwnedParsedPublicationRecords !== "function" ||
-      typeof sourceOwnedArticlePublicationRecord !== "function" ||
-      typeof sourceOwnedPublicationRecordUrls !== "function") return false;
-  var records = sourceOwnedParsedPublicationRecords(headline).records || [];
-  return records.some(function(record) {
-    if (!sourceOwnedArticlePublicationRecord(record)) return false;
-    var recordHeadline = normalizeText(entityText(record.headline) || "");
-    if (!recordHeadline) return false;
-    var urls = sourceOwnedPublicationRecordUrls(record);
-    if (!urls.present) return false;
-    return urls.values.indexOf(pageUrl) === -1 ? recordHeadline === normalizeText(headline) :
-      recordHeadline !== normalizeText(headline);
-  });
-}
-
 function sourceOwnedReaderHeadlineContent(content) {
   if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
       !content.html || content.markdown || !document.body) return content;
@@ -283,21 +243,4 @@ function compactReferenceText(text) {
   return normalizeText(text || "")
     .replace(/([a-z0-9])((?:Default:|Can be one of:|For more information:|Example:|Required))/g, "$1 $2")
     .replace(/([a-z])([A-Z][a-z])/g, "$1 $2");
-}
-
-function preserveUnprovenSourceTitleExtension(markdown, sourceTitle, documentTitle) {
-  var heading = normalizeText(sourceTitle || "");
-  var title = normalizeText(documentTitle || "");
-  if (!heading || !title || title.indexOf(heading) !== 0) return markdown;
-  var suffix = normalizeText(title.slice(heading.length));
-  if (!/^(?:-|\||:|\u2013|\u2014)\s+\S/.test(suffix)) return markdown;
-  var lines = (markdown || "").split("\n");
-  var headingIndex = lines.findIndex(function(line) {
-    var match = normalizeText(line).match(/^(#{1,6})\s+(.*)/);
-    return normalizeText(match && match[2]) === heading;
-  });
-  if (headingIndex < 0) return markdown;
-  var marker = lines[headingIndex].match(/^(#{1,6}\s+)/);
-  lines[headingIndex] = marker[1] + title;
-  return lines.join("\n");
 }

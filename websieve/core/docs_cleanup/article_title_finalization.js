@@ -29,7 +29,7 @@ function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markd
     primaryTitle = articleTitleFromOwnedExternalHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromSelfLinkedHeading(cleanedHtml, primaryTitle);
     if (!content.docsLike && !content.legalProvision) {
-      markdown = articleSelfLinkedHeadlineMarkdown(markdown, cleanedHtml, primaryTitle);
+      markdown = articleSelfLinkedHeadlineMarkdown(markdown, content.html || cleanedHtml, primaryTitle);
     }
     if (primaryTitle !== originalPrimaryTitle) {
       var removedBrandedHeading = false;

@@ -36,6 +36,8 @@ RSpec.describe 'FetchUtil extractor integration - generic static site articles' 
       expect(payload['title']).to eq('Quickstart')
       expect(payload['excerpt']).to start_with('Jekyll is static site generator.')
       expect(payload['html']).to include('<h1>Quickstart</h1>')
+      expect(payload['markdown']).to start_with("# Quickstart\n")
+      expect(payload['markdown']).not_to start_with('# [Quickstart]')
       ['Jekyll is static site generator.', 'To create a new site, install Jekyll'].each do |paragraph|
         expect(payload['markdown'].scan(paragraph).length).to eq(1)
       end
