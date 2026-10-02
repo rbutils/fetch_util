@@ -1429,12 +1429,16 @@ RSpec.describe "extract asset bundle" do
     segments = [
       ["classifiers/list_pages/article_body_collection.js", %w[
         classifiers/list_pages/ownership/article_table_material.js
+        classifiers/list_pages/ownership/primary_article_coverage.js
         classifiers/list_pages/ownership/primary_article_material.js
         classifiers/list_pages/ownership/homepage_landing.js
       ], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
       ], "classifiers/list_pages/chrome.js"],
+      ["classifiers/list_pages/ownership/repeated_records.js", [
+        "classifiers/list_pages/ownership/runtime_detail_ownership.js"
+      ], "classifiers/list_pages/ownership/repeated_candidate_coverage.js"],
       ["classifiers/list_pages/list_page.js", %w[
         classifiers/list_pages/material_results_owner.js
         classifiers/list_pages/material_results/cards.js
@@ -1486,6 +1490,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/liveblog_comments.js
         extractors/article/fallback/ownership/liveblog_addressing.js
         extractors/article/fallback/ownership/publication/owned_publication.js
+        extractors/article/fallback/ownership/publication/selected_reader_date.js
         extractors/article/fallback/ownership/publication/article_fields.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
@@ -1526,7 +1531,10 @@ RSpec.describe "extract asset bundle" do
         extractors/lists/generic/sections/record_section_fallback.js
         extractors/lists/generic/sections/section_discovery.js
       ], "extractors/lists/card_visibility.js"],
-      ["extractors/lists/card_visibility.js", ["extractors/lists/list_candidate_selection.js"], "extractors/lists/core.js"],
+      ["extractors/lists/card_visibility.js", %w[
+        extractors/lists/list_candidate_selection.js
+        extractors/lists/result_status_context.js
+      ], "extractors/lists/core.js"],
       ["extractors/lists/core.js", %w[
         extractors/lists/homepage/search_tools.js
         extractors/lists/generic/search_history.js
