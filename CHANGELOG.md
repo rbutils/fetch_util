@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Keep a typed runtime detail record ahead of a list candidate only when its URL-bound record evidence would otherwise be lost.
 - Preserve the complete summary of a proved focal article while declining related-card, quoted, or contradictory summaries.
 - Use a uniquely attributed external article H1 only when its complete selected body belongs to that local source record.
 - Preserve source-proved service context, calculator controls, visible FAQ triggers and owned media in order, while declining hidden or unrelated material.

@@ -1,5 +1,6 @@
   function sourceMaterialBlocksListCandidate(content, candidate, metadata) {
-    return listCandidateLosesArticleMaterial(content, candidate) ||
+    return sourceOwnedTypedRuntimeDetailListLoss(content, candidate) ||
+      listCandidateLosesArticleMaterial(content, candidate) ||
       listCandidateLosesArticleTableMaterial(content, candidate, metadata);
   }
 
