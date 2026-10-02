@@ -15,7 +15,7 @@ function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markd
   }
   if ((content.contentType === "article" || content.contentType === "medical") &&
       content.sourceOwnedTitleIdentityUnproven === true && content.sourceOwnedFocalArticle === true && content.sourceOwnedLiveblog !== true) {
-    var selectedHeadingTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
+    var selectedHeadingTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle, siteTitle);
     if (selectedHeadingTitle === normalizeText(content.sourceOwnedHeadingTitle || "") && selectedHeadingTitle !== primaryTitle) {
       primaryTitle = selectedHeadingTitle;
       identityResolved = true;
@@ -24,7 +24,7 @@ function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markd
   if ((content.contentType === "article" || content.contentType === "medical") &&
       (content.sourceOwnedTitleIdentityUnproven !== true || identityResolved) && content.sourceOwnedLiveblog !== true) {
     primaryTitle = articleTitleFromOwnedHeading(cleanedHtml, primaryTitle, siteTitle);
-    primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle);
+    primaryTitle = articleTitleFromVisibleArticleHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromAdjacentHeading(cleanedHtml, primaryTitle);
     primaryTitle = articleTitleFromOwnedExternalHeading(cleanedHtml, primaryTitle, siteTitle);
     primaryTitle = articleTitleFromSelfLinkedHeading(cleanedHtml, primaryTitle);

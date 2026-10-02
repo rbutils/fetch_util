@@ -68,7 +68,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["excerpt"]).to include("毎日の食卓に使いやすい定番品が中心")
       expect(payload["excerpt"]).not_to include("テーマ：")
       expect(payload["hostAware"]).to be(false)
-      expect(payload["markdown"]).to include("# 【2026】久世福商店 夏の福袋を徹底紹介！人気商品8点入りのお得な中身とは？")
+      expect(payload["markdown"]).to include("# [【2026】久世福商店 夏の福袋を徹底紹介！人気商品8点入りのお得な中身とは？](https://ameblo.jp/happy-happybag/entry-12971651517.html)")
       expect(payload["markdown"]).to include("2026年07月04日 04時00分17秒", "テーマ：2026 夏の福袋")
       expect(payload["markdown"]).to include("久世福商店で人気の定番商品に、夏限定らしい爽やかな商品")
       expect(payload["markdown"]).to include("オンライン限定で数量には限りがあります")

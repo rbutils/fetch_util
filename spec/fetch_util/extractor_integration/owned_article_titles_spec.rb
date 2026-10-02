@@ -39,6 +39,125 @@ RSpec.describe 'Owned article titles' do
     end
   end
 
+  it 'does not resolve a self-linked source heading against a conflicting declared article record' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Journal.example</title>
+        <script type="application/ld+json">{"@type":"Article","headline":"A different report","url":"https://journal.example/reports/borders"}</script>
+      </head><body><main><article>
+        <header><h1><a href="https://journal.example/reports/borders">Research across borders</a></h1></header>
+        <div class="entry-content"><p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+          <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p></div>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url('https://journal.example/reports/borders', html) do |result|
+      expect(result['title']).to eq('Research across borders | Journal.example')
+    end
+  end
+
+  it 'keeps the primary article title when an unrelated nested article is present' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Journal.example</title></head><body><main><article>
+        <header><h1><a href="https://journal.example/reports/borders">Research across borders</a></h1></header>
+        <div class="entry-content"><p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+          <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p></div>
+        <article><h1>Related report</h1><p>Separate related article.</p></article>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url('https://journal.example/reports/borders', html) do |result|
+      expect(result['title']).to eq('Research across borders')
+    end
+  end
+
+  it 'ignores a conflicting Article record for a different URL when binding the current self-linked heading' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Journal.example</title>
+        <meta property="og:site_name" content="Journal.example">
+        <script type="application/ld+json">{"@type":"NewsArticle","headline":"A different report","url":"https://journal.example/reports/another"}</script>
+      </head><body><main><article>
+        <h1><a href="https://journal.example/reports/borders">Research across borders</a></h1>
+        <div class="entry-content"><p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+          <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p></div>
+      </article><aside><article><h2>Related report</h2><p>A separate article discusses another publication.</p></article></aside></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/borders', html) do |page|
+      result = FetchUtil::Extractor.new(reader_mode: true).extract(page)
+      expect(result['title']).to eq('Research across borders')
+    end
+  end
+
+  it 'does not use hidden duplicate paragraphs to prove the self-linked source article' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Independent Press</title>
+        <meta property="og:site_name" content="Journal.example"></head><body><main><article>
+        <h1><a href="https://journal.example/reports/hidden">Research across borders</a></h1>
+        <p hidden>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+        <p hidden>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p>
+        <p>Only this short visible paragraph belongs to the source article body.</p>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/hidden', html) do |page|
+      result = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expect(result['title']).to eq('Research across borders | Independent Press')
+    end
+  end
+
+  it 'binds a publisher-suffixed title to the selected article heading inside its cloned header' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Journal.example</title></head><body><main>
+        <article><header class="article-header"><div><h1>Research across borders</h1></div></header>
+          <div class="entry-content"><p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+            <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p></div>
+        </article>
+        <aside><h1>Unrelated sidebar heading</h1></aside>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/borders', html) do |page|
+      result = FetchUtil::Extractor.new(reader_mode: true).extract(page)
+      expect(result['title']).to eq('Research across borders')
+      expect(result['markdown']).to start_with('# Research across borders')
+      expect(result['markdown']).to include('complete methodology')
+    end
+  end
+
+  it 'returns the exact visible source heading that proved article-title ownership' do
+    html = <<~HTML
+      <html><head><title>Research across borders | Journal.example</title>
+        <meta property="og:site_name" content="Journal.example"></head><body><main><article>
+        <h1 hidden>Stale hidden headline</h1>
+        <header><h1>Research across borders</h1></header>
+        <div class="entry-content">
+          <p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+          <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p>
+        </div>
+      </article></main></body></html>
+    HTML
+
+    with_url_page('https://journal.example/reports/borders', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub(
+        '})(window);', 'global.visibleArticleTitleProbe = articleTitleFromVisibleArticleHeading; })(window);'
+      ))
+      selected = <<~HTML
+        <article><h1>Research across borders</h1>
+          <p>Researchers compared independent measurements from several regions and documented the evidence behind each conclusion.</p>
+          <p>The report describes the practical limitations, complete methodology, and conclusions drawn from those records.</p>
+        </article>
+      HTML
+      result = page.evaluate(
+        "visibleArticleTitleProbe(#{JSON.generate(selected)}, 'Research across borders | Journal.example', 'Journal.example')"
+      )
+      expect(result).to eq('Research across borders')
+    end
+  end
+
   it 'does not leave an enrichment-generated publication suffix as article prose' do
     html = <<~HTML
       <html><head><title>League match review - Sports.example</title>

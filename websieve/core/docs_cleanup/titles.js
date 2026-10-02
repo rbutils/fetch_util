@@ -122,6 +122,8 @@ function articleTitleFromOwnedHeading(html, title, siteName) {
   var headingNode = articleTitleHeading(root);
   if (!headingNode) return title;
   var heading = normalizeText(headingNode.textContent || "");
+  var currentPageUrl = sourceOwnershipPageUrl(materializedCanonicalUrl() || location.href);
+  if (sourceOwnedSelfLinkedArticleHasConflictingRecord(headingNode, heading, currentPageUrl)) return title;
   if (!heading || title.toLowerCase().indexOf(heading.toLowerCase()) !== 0) return title;
   var suffix = normalizeText(title.slice(heading.length));
   var match = suffix.match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
@@ -129,30 +131,62 @@ function articleTitleFromOwnedHeading(html, title, siteName) {
   return brand(match[1]) === brand(siteName) ? heading : title;
 }
 
-function articleTitleFromVisibleArticleHeading(html, title) {
+function articleTitleFromVisibleArticleHeading(html, title, siteName) {
   if (!document.body || !html || !title) return title;
   var selected = document.createElement("div");
   selected.innerHTML = html;
   var selectedArticles = selected.querySelectorAll("article");
-  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("main article"), function(article) {
-    return !elementSubtreeHidden(article) && !article.parentElement.closest("article");
-  });
-  if (selectedArticles.length !== 1 || sourceArticles.length !== 1) return title;
-
-  var source = sourceArticles[0];
-  var article = selectedArticles[0];
-  var heading = source.firstElementChild;
-  if (!heading || !heading.matches("h1") || source.querySelectorAll("h1").length !== 1 ||
-      !article.firstElementChild || !article.firstElementChild.matches("h1") ||
-      article.querySelectorAll("h1").length !== 1 || elementSubtreeHidden(heading)) return title;
-  var headline = normalizeText(heading.textContent || "");
+  if (selectedArticles.length > 1) return title;
+  var article = selectedArticles.length === 1 ? selectedArticles[0] : selected;
   var fullTitle = normalizeText(title);
-  if (headline.length < 8 || normalizeText(article.firstElementChild.textContent || "") !== headline ||
-      fullTitle.indexOf(headline) !== 0) return title;
-  var suffix = normalizeText(fullTitle.slice(headline.length));
-  if (!/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
-      normalizeText(source.textContent || "").indexOf(suffix.slice(2)) >= 0) return title;
-  return sourceArticleForSelectedParagraphs(article) === source ? headline : title;
+  var sourceArticles = Array.prototype.filter.call(document.querySelectorAll("article"), function(source) {
+    return !elementSubtreeHidden(source) && !sourceOwnershipInChrome(source);
+  });
+  var owners = sourceArticles.map(function(source) {
+    var headings = Array.prototype.filter.call(source.querySelectorAll("h1"), function(heading) {
+      return heading.closest("article") === source && !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading);
+    });
+    if (headings.length !== 1) return null;
+    var heading = headings[0];
+    var headline = normalizeText(heading.textContent || "");
+    var suffix = normalizeText(fullTitle.slice(headline.length));
+    if (headline.length < 8 || fullTitle.indexOf(headline) !== 0 ||
+        !/^(?:-|\||\u2013|\u2014)\s+\S/.test(suffix) ||
+        normalizeText(source.textContent || "").indexOf(suffix.slice(2)) >= 0) return null;
+
+    var selectedH1s = article.querySelectorAll("h1");
+    var selectedHeading = selectedH1s.length === 1 ? selectedH1s[0] : null;
+    if (selectedHeading && !elementSubtreeHidden(selectedHeading) &&
+        normalizeText(selectedHeading.textContent || "") === headline) {
+      var proof = sourceOwnedSelfLinkedArticle(article, headline);
+      if (proof ? proof.owner !== source :
+          !sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName) || sourceArticleForSelectedParagraphs(article) !== source) return null;
+      return { source: source, heading: heading };
+    }
+    var linkedHeadings = Array.prototype.filter.call(article.querySelectorAll("h2"), function(candidate) {
+      var links = candidate.querySelectorAll("a[href]");
+      return normalizeText(candidate.textContent || "") === headline && links.length === 1 &&
+        materializedHttpUrl(links[0].getAttribute("href")) === materializedHttpUrl(location.href);
+    });
+    if (selectedH1s.length || linkedHeadings.length !== 1) return null;
+    var proof = sourceOwnedSelfLinkedArticle(article, headline);
+    return proof && proof.owner === source ? { source: source, heading: heading } : null;
+  }).filter(Boolean);
+  return owners.length === 1 ? normalizeText(owners[0].heading.textContent || "") : title;
+}
+
+function sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName) {
+  if (!suffix || !siteName) return false;
+  var match = normalizeText(suffix).match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
+  if (!match) return false;
+  var publisher = normalizeText(siteName).replace(/^www\./i, "").toLowerCase();
+  var hostParts = (location.hostname || "").replace(/^www\./i, "").toLowerCase().split(".").filter(function(part) {
+    return part.length >= 3 && !/^(?:com|net|org|gov|edu|co)$/.test(part);
+  });
+  return match[1].split(/\s*[|·•]\s*/).some(function(part) {
+    var component = normalizeText(part).replace(/^www\./i, "").toLowerCase();
+    return component === publisher || hostParts.indexOf(component) !== -1;
+  });
 }
 
 function sourceOwnedReaderHeadlineContent(content) {
@@ -189,11 +223,10 @@ function sourceOwnedReaderHeadlineContent(content) {
   if (!heading || !heading.matches("h2") || selected.querySelectorAll("h1, h2").length !== 1 ||
       title.length < 8 || normalizeText(heading.textContent || "") !== title ||
       !titleOwned) return content;
-  var sourceText = normalizeText(source.textContent || "");
   var paragraphs = Array.prototype.map.call(selected.querySelectorAll("p"), function(node) {
     return normalizeText(node.textContent || "");
   }).filter(Boolean);
-  if (paragraphs.length < 2 || !paragraphs.every(function(text) { return sourceText.indexOf(text) !== -1; })) return content;
+  if (paragraphs.length < 2 || sourceArticleForSelectedParagraphs(selected) !== source) return content;
 
   var restored = document.createElement("h1");
   Array.prototype.forEach.call(heading.attributes, function(attribute) {
