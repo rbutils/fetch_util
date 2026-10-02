@@ -89,7 +89,9 @@ RSpec.describe 'FetchUtil extractor integration' do
       before = page.evaluate("document.body.innerHTML")
       payload = extract_payload(page, reader_mode: false)
 
-      expect(payload.fetch("excerpt")).to eq(opening)
+      # The visible short paragraph is unlabelled article prose; adjacent chrome does not make it foreign.
+      expect(payload.fetch("excerpt")).to start_with("Short standfirst.")
+      expect(payload.fetch("excerpt")).to include(opening)
       expect(payload.fetch("excerpt")).not_to include("Fallback excerpt report", "Verified Reporter", "Related coverage", "Promotional metadata")
       expect(payload.fetch("markdown")).to include(
         "[Jane Doe](https://reports.example/authors/jane-doe)",
@@ -196,9 +198,8 @@ RSpec.describe 'FetchUtil extractor integration' do
       excerpt = extract_payload(page, reader_mode: true).fetch("excerpt")
 
       expect(excerpt).to start_with("The health overview explains prevention")
-      expect(excerpt.length).to be <= 280
-      expect(lead).to start_with(excerpt)
-      expect(excerpt).to end_with(/[.!?]/)
+      # This is one fully mapped source paragraph, not a Reader-generated fragment.
+      expect(excerpt).to eq(lead)
     end
   end
 
@@ -417,7 +418,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_url_page("https://example.test/health/family-care", html) do |page|
       excerpt = extract_payload(page, reader_mode: true).fetch("excerpt")
 
-      expect(excerpt.scan(/\X/).length).to be <= 280
+      expect(excerpt).to eq((sentence * 5).strip)
       expect(excerpt).to end_with("support.")
       expect(excerpt).not_to end_with("\u200D")
       expect(sentence * 5).to start_with(excerpt)
@@ -440,18 +441,19 @@ RSpec.describe 'FetchUtil extractor integration' do
   end
 
   it "does not truncate long excerpts when grapheme segmentation is unavailable" do
+    lead = ("Family care 👨‍👩‍👧‍👦 remains coordinated across services. " * 10).strip
     html = <<~HTML
       <html><head><title>Fallback report</title></head><body><main><article>
         <h1>Fallback report</h1>
         <p class="published-date">Jan. 2, 2026, visit link for details.</p>
-        <p>#{"Family care 👨‍👩‍👧‍👦 remains coordinated across services. " * 10}</p>
+        <p>#{lead}</p>
       </article></main></body></html>
     HTML
 
     with_url_page("https://example.test/health/fallback-report", html) do |page|
       page.evaluate("Object.defineProperty(Intl, 'Segmenter', {value: undefined, configurable: true})")
 
-      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq("Jan. 2, 2026, visit link for details.")
+      expect(extract_payload(page, reader_mode: true).fetch("excerpt")).to eq(lead)
     end
   end
 

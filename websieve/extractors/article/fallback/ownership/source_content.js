@@ -279,7 +279,9 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
     title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
     excerpt: publicPreview ? publicPreview.text :
-      (completeArticleLead || fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true, ownership)),
+      (fallbackSourceOwnedSummary(ownership.body.sourceNode, text, ownership) ||
+        sourceOwnedArticleHeaderLead(ownership) || completeArticleLead ||
+        fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true, ownership)),
     siteName: (metadata && metadata.siteName) || location.hostname,
     publishedTime: publicationFields.sourceOwnedArticlePublicationResolved ? publicationFields.publishedTime : attribution.publishedTime || null,
     html: article.innerHTML,

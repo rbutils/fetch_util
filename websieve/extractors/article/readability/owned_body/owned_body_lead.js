@@ -19,6 +19,14 @@ function readabilityOwnedArticleLeadExcerpt(article, metadata, marker, bodyEvide
   var sourceEvidence = Array.isArray(paragraphs) && paragraphs.length >= 2;
   var metadataExcerpt = normalizeText(metadata && metadata.excerpt || "");
   var lead = sourceEvidence ? paragraphs[0] : null;
+  var publicationAction = sourceEvidence && paragraphs.some(function(paragraph) {
+    return normalizeText(paragraph.textContent || "") === normalizeText(article.excerpt || "") &&
+      sourceOwnedPublicationField(paragraph);
+  });
+  if (publicationAction) lead = paragraphs.find(function(paragraph) {
+    return !sourceOwnedPublicationField(paragraph);
+  });
+  publicationAction = publicationAction && readabilityOwnedPublicationActionLead(article, metadata, marker, bodyEvidence, lead);
   if (sourceEvidence && metadataExcerpt) {
     var describedLead = paragraphs.find(function(paragraph) {
       return readabilityMetadataExcerptOwned(paragraph, metadataExcerpt);
@@ -47,9 +55,8 @@ function readabilityOwnedArticleLeadExcerpt(article, metadata, marker, bodyEvide
   var excerptMatchesSourceParagraph = sourceEvidence && paragraphs.some(function(paragraph) {
     return readabilityMetadataExcerptOwned(paragraph, excerpt);
   });
-
-  if (readabilityExcerptLength(value) < 80 && !metadataOwnsLead && !shortLeadHasArticleOwner) return null;
-  if (!excerptContainsLead && !metadataOwnsLead &&
+  if (readabilityExcerptLength(value) < 80 && !metadataOwnsLead && !shortLeadHasArticleOwner && !publicationAction) return null;
+  if (!excerptContainsLead && !metadataOwnsLead && !publicationAction &&
       (!shortLeadHasArticleOwner || (excerptMatchesSourceParagraph && excerpt !== value))) return null;
 
   return value;
@@ -117,5 +124,76 @@ function readabilityOwnedShortSourceArticleLead(article, metadata, marker, bodyE
   });
   return markedParagraphs.length === paragraphs.length && markedParagraphs.every(function(paragraph, index) {
     return normalizeText(paragraph.textContent || "") === normalizeText(paragraphs[index].textContent || "");
+  });
+}
+
+function readabilityForeignMetadataBodyExcerpt(article, metadata, marker, bodyEvidence) {
+  var paragraphs = bodyEvidence && bodyEvidence.sourceParagraphs;
+  if (!Array.isArray(paragraphs) || paragraphs.length < 2 ||
+      (bodyEvidence.unmappedHeaderParagraphs || []).length ||
+      (bodyEvidence.unmappedTrailingParagraphs || []).length) return null;
+  var proof = sourceOwnedSemanticArticleOwnership(metadata);
+  var ownership = proof && proof.ownership;
+  if (!ownership || !ownership.titleIdentityProven || !ownership.node ||
+      !ownership.node.matches("article") || !ownership.heading ||
+      ownership.heading.closest("article") !== ownership.node ||
+      normalizeText(ownership.heading.textContent || "") !== normalizeText(article.title || "")) return null;
+  var matchingHeadings = Array.from(document.querySelectorAll("article h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading) &&
+      normalizeText(heading.textContent || "") === normalizeText(article.title || "");
+  });
+  if (matchingHeadings.length !== 1 || matchingHeadings[0] !== ownership.heading) return null;
+  var owner = ownership.node;
+  var template = readabilityArticleTemplate(article);
+  if (!template) return null;
+  var readerParagraphs = Array.from(template.content.querySelectorAll("p")).filter(function(node) {
+    return node.getAttribute("data-fetchutil-excerpt-body") === marker;
+  });
+  var owned = paragraphs.filter(function(node) {
+    return node.closest("article") === owner && readabilityExcerptNode(node) &&
+      readabilityBodyExcerptNode(node, null) && !node.querySelector("button, input, select, textarea");
+  });
+  if (owned.length !== readerParagraphs.length || !owned.every(function(node, index) {
+    return normalizeText(node.textContent || "") === normalizeText(readerParagraphs[index].textContent || "");
+  })) return null;
+  var lead = owned.find(function(node) {
+    var value = normalizeText(node.textContent || "");
+    return value !== normalizeText(article.excerpt || "") && readabilityExcerptLength(value) >= 80;
+  });
+  if (lead && Array.from(owner.querySelectorAll("p")).filter(function(node) {
+    return normalizeText(node.textContent || "") === normalizeText(lead.textContent || "");
+  }).length !== 1) return null;
+  return lead ? normalizeText(lead.textContent || "") : null;
+}
+
+function readabilityOwnedPublicationActionLead(article, metadata, marker, bodyEvidence, lead) {
+  if (!lead || !/\p{Sentence_Terminal}/u.test(lead.textContent || "") || !metadata || !bodyEvidence ||
+      (bodyEvidence.unmappedHeaderParagraphs || []).length ||
+      (bodyEvidence.unmappedTrailingParagraphs || []).length) return false;
+  var proof = sourceOwnedSemanticArticleOwnership(metadata);
+  var ownership = proof && proof.ownership;
+  if (!ownership || !ownership.titleIdentityProven || !ownership.node ||
+      !ownership.node.matches("article") || !ownership.heading ||
+      ownership.heading.closest("article") !== ownership.node ||
+      normalizeText(ownership.heading.textContent || "") !== normalizeText(article.title || "")) return false;
+  var sources = bodyEvidence.sourceParagraphs.filter(function(node) {
+    return !sourceOwnedPublicationField(node);
+  });
+  var publication = bodyEvidence.sourceParagraphs[0];
+  if (!sources.length || sources[0] !== lead ||
+      !sourceOwnedPublicationField(publication) ||
+      normalizeText(publication.textContent || "") !== normalizeText(article.excerpt || "")) return false;
+  var template = readabilityArticleTemplate(article);
+  if (!template) return false;
+  var selected = Array.from(template.content.querySelectorAll("p")).filter(function(node) {
+    return node.getAttribute("data-fetchutil-excerpt-body") === marker;
+  });
+  if (!selected.length || normalizeText(selected[0].textContent || "") !==
+      normalizeText(publication.textContent || "")) return false;
+  selected.shift();
+  return selected.length === sources.length && selected.every(function(node, index) {
+    return sources[index].closest("article") === ownership.node && readabilityExcerptNode(sources[index]) &&
+      readabilityBodyExcerptNode(sources[index], null) &&
+      normalizeText(node.textContent || "") === normalizeText(sources[index].textContent || "");
   });
 }

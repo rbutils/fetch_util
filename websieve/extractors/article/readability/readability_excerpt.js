@@ -245,15 +245,7 @@
     if (!template) return article.excerpt;
     var ownedBylineExcerpt = readabilityOwnedBylineExcerptValue(article, metadata, template, marker, readerBodyEvidence);
     if (ownedBylineExcerpt !== null) return ownedBylineExcerpt;
-    var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
-    if (compactBodyExcerpt) return compactBodyExcerpt;
     var ownedLead = readabilityOwnedArticleLeadExcerpt(article, metadata, marker, readerBodyEvidence);
-    if (ownedLead) return ownedLead;
-    if (textCharacters.length < 400) return article.excerpt;
-    if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
-    var summaryExcerpt = readabilitySummaryExcerpt(template, excerpt, marker);
-    if (summaryExcerpt) return summaryExcerpt;
-
     var metadataExcerpt = normalizeText((metadata && metadata.excerpt) || "");
     var leadNodes = Array.prototype.filter.call(template.content.querySelectorAll("p"), function(node) {
       return node.getAttribute("data-fetchutil-excerpt-body") === marker;
@@ -261,8 +253,31 @@
     var metadataOwned = readabilityExcerptLength(metadataExcerpt) >= 40 && leadNodes.some(function(node) {
       return readabilityMetadataExcerptOwned(node, metadataExcerpt);
     });
+    var sourceDescriptionParagraphs = Array.prototype.filter.call(document.querySelectorAll("article p, main p"), function(paragraph) {
+      return normalizeText(paragraph.textContent || "") === metadataExcerpt;
+    });
+    if (metadataExcerpt && sourceDescriptionParagraphs.length &&
+        sourceDescriptionParagraphs.every(function(paragraph) { return !readabilityExcerptNode(paragraph); })) {
+      var sourceBody = readabilityForeignMetadataBodyExcerpt(article, metadata, marker, readerBodyEvidence);
+      if (sourceBody) return sourceBody;
+    }
     if (metadataOwned) return metadata.excerpt;
 
+    var summaryExcerpt = readabilitySummaryExcerpt(template, excerpt, marker);
+    if (summaryExcerpt) return summaryExcerpt;
+    var firstSource = readerBodyEvidence && readerBodyEvidence.sourceParagraphs && readerBodyEvidence.sourceParagraphs[0];
+    if (ownedLead && (readabilityPublicationLabelExcerpt(excerpt) ||
+        (firstSource && sourceOwnedPublicationField(firstSource) &&
+          normalizeText(firstSource.textContent || "") === excerpt &&
+          readabilityOwnedPublicationActionLead(article, metadata, marker, readerBodyEvidence,
+            readerBodyEvidence.sourceParagraphs.find(function(node) { return !sourceOwnedPublicationField(node); }))))) {
+      return ownedLead;
+    }
+    var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
+    if (compactBodyExcerpt) return compactBodyExcerpt;
+    if (ownedLead) return ownedLead;
+    if (textCharacters.length < 400) return article.excerpt;
+    if (!readabilityExcerptIsVisibleLead(article, excerpt)) return article.excerpt;
     return readabilityBodyExcerpt(template, excerpt, marker) || article.excerpt;
   }
 

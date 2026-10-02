@@ -12,7 +12,7 @@
       var headings = document.querySelectorAll("h1");
       if (headings.length === 1 && normalizeText(headings[0].textContent || "") === value) return false;
       if (node.matches("[itemprop~='description']") && node.querySelector("p, [itemprop~='description']")) return false;
-      if (node.closest("address, nav, footer, aside, form, menu, [role='banner'], [role='navigation'], [role='complementary'], [role='menu'], [role='toolbar'], [role='contentinfo'], [role='search']")) return false;
+      if (node.closest("address, nav, footer, aside, form, menu, time, [role='banner'], [role='navigation'], [role='complementary'], [role='menu'], [role='toolbar'], [role='contentinfo'], [role='search']") || sourceOwnedPublicationField(node)) return false;
       if (node.closest("header") && !fallbackExplicitHeaderLead(node)) return false;
       if (node.closest("[itemprop~='author'], [itemprop~='creator']")) return false;
       if (articleIntroFurniture(node, root)) return false;
@@ -23,7 +23,14 @@
 
     var paragraph = root && Array.prototype.find.call(root.querySelectorAll("p, [itemprop~='description']"), ownedParagraph);
     var excerpt = normalizeText((paragraph && paragraph.textContent) || renderedText);
-    if (completeParagraph && paragraph) return excerpt;
+    if (completeParagraph && paragraph) {
+      var continuation = paragraph.nextElementSibling;
+      if (continuation && continuation.matches("p") && continuation.parentElement === paragraph.parentElement &&
+          ownedParagraph(continuation)) {
+        excerpt = sourceOwnedIntroParagraphText(paragraph, continuation);
+      }
+      return excerpt;
+    }
     if (paragraph && Array.from(excerpt).length < 280 &&
         !paragraph.closest("[itemprop~='description'], [class*='summary' i], [class*='standfirst' i], [class*='excerpt' i]")) {
       var continuation = paragraph.nextElementSibling;
@@ -83,24 +90,87 @@
     return summary;
   }
 
+  function sourceOwnedPublicationField(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (node.matches("time[datetime], [itemprop~='datePublished' i]")) return true;
+    if (node.localName !== "p" || !Array.from(node.classList).some(function(token) {
+      return /(?:^|[-_])(?:date|published|publication)(?:$|[-_])/i.test(token);
+    })) return false;
+    var value = normalizeText(node.textContent || "");
+    var date = "(?:\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}|" +
+      "[A-Za-z]{3,9}\\.? \\d{1,2},? \\d{4}|\\d{1,2} [A-Za-z]{3,9} \\d{4})";
+    return new RegExp("^(?:(?:published|updated|posted|publication date|date)(?: on)?\\s*[:：-]?\\s*)?" +
+      date + "(?:[,.;]\\s*(?:visit|read|click|follow)\\b[^.!?]*)?[.!?]?$", "i").test(value);
+  }
+
   function sourceOwnedCompleteArticleLead(ownership) {
     if (!ownership || !ownership.ownerRoot || !ownership.body || !ownership.body.sourceNode ||
         !ownership.ownerRoot.contains(ownership.body.sourceNode)) return null;
     var root = ownership.body.sourceNode;
     var paragraphs = Array.from(root.querySelectorAll("p")).filter(function(paragraph) {
       var nestedArticle = paragraph.closest("article");
-      return !elementSubtreeHidden(paragraph) &&
+      var value = normalizeText(paragraph.textContent || "");
+      return value && /\p{L}/u.test(value) && !elementSubtreeHidden(paragraph) &&
         (!nestedArticle || nestedArticle === root || !root.contains(nestedArticle)) &&
-        !paragraph.closest("header, address, nav, footer, aside, form, figure, figcaption, menu, " +
+        !paragraph.closest("header, address, nav, footer, aside, form, figure, figcaption, menu, time, " +
           "[role~='navigation' i], [role~='complementary' i], " +
           "[itemprop~='author' i], [itemprop~='creator' i], " +
           "[class*='byline' i], [class*='author' i], [class*='credit' i], [class*='caption' i], " +
           "[class*='related' i], [class*='sidebar' i], [class*='recommend' i]") &&
-        !paragraph.querySelector("button, input, select, textarea");
+        !paragraph.querySelector("button, input, select, textarea") &&
+        !sourceOwnedPublicationField(paragraph) && !fallbackExcerptChromeOwner(root, paragraph) &&
+        !articleIntroFurniture(paragraph, root);
     });
     if (!paragraphs.length) return null;
     var lead = normalizeText(paragraphs[0].textContent || "");
-    return lead && lead !== normalizeText(ownership.title || "") ? lead : null;
+    if (lead === normalizeText(ownership.title || "")) {
+      paragraphs.shift();
+      if (!paragraphs.length) return null;
+      lead = normalizeText(paragraphs[0].textContent || "");
+    }
+    var next = paragraphs[1];
+    if (next && !fallbackExcerptChromeOwner(root, next) && !articleIntroFurniture(next, root)) {
+      lead = sourceOwnedIntroParagraphText(paragraphs[0], next);
+    }
+    return lead;
+  }
+
+  function sourceOwnedIntroParagraphText(first, next) {
+    var lead = normalizeText(first.textContent || "");
+    var continuation = normalizeText(next.textContent || "");
+    if (!lead || !continuation || !/\p{L}/u.test(continuation) ||
+        first.parentElement !== next.parentElement || first.nextElementSibling !== next ||
+        elementSubtreeHidden(first) || elementSubtreeHidden(next) ||
+        next.closest("aside, nav, footer, form, figure, figcaption, [role='complementary']") ||
+        fallbackExcerptChromeOwner(first.parentElement, next) || articleIntroFurniture(next, first.parentElement) ||
+        next.querySelector("button, input, select, textarea") ||
+        first.querySelector("a[href]") ||
+        !/[\p{L}\p{N}][.!?。！？]["'”’]?$/u.test(lead) ||
+        (lead.match(/[.!?。！？]/gu) || []).length !== 1) return lead;
+    var cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+    return cjk.test(lead) === cjk.test(continuation) ? normalizeText(lead + " " + continuation) : lead;
+  }
+
+  function sourceOwnedArticleHeaderLead(ownership) {
+    var headers = sourceOwnedArticleHeaderNodes(ownership.headerContext);
+    if (!headers.length && ownership.ownerRoot && ownership.heading &&
+        ownership.ownerRoot.contains(ownership.heading)) {
+      headers = Array.from(ownership.ownerRoot.querySelectorAll("header")).filter(function(header) {
+        return header.contains(ownership.heading) && !sourceOwnershipInChrome(header);
+      });
+    }
+    var leads = headers.flatMap(function(header) {
+      return Array.from(header.querySelectorAll("p")).filter(function(paragraph) {
+        return !elementSubtreeHidden(paragraph) && fallbackExplicitHeaderLead(paragraph) &&
+          !fallbackExcerptChromeOwner(header, paragraph) &&
+          !paragraph.closest("aside, nav, footer, form, figure, figcaption, [role='complementary']") &&
+          !paragraph.querySelector("aside, nav, footer, form, figure, figcaption, article, button, input, select, textarea") &&
+          paragraph.closest("article") === ownership.heading.closest("article");
+      });
+    });
+    if (leads.length !== 1) return null;
+    var visible = visibilityPrunedClone(leads[0], document);
+    return visible ? normalizeText(visible.textContent || "") || null : null;
   }
 
   function fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph) {
@@ -111,18 +181,25 @@
     var paragraphs = Array.prototype.slice.call(root.querySelectorAll("p"));
     if (paragraphs.length < 3 || normalizeText(paragraphs[0].textContent || "") !== headline) return null;
     var prose = paragraphs.slice(1).filter(function(paragraph) {
-      return !paragraph.closest("aside, nav, footer, form, menu, [role='complementary']") &&
+      return !paragraph.closest("aside, nav, footer, form, menu, time, [role='complementary']") &&
+        !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent || "") &&
         !paragraph.querySelector("button, input, select, textarea") &&
-        !fallbackExcerptChromeOwner(root, paragraph) && !articleIntroFurniture(paragraph, root);
-    }).map(function(paragraph) { return normalizeText(paragraph.textContent || ""); }).filter(Boolean);
+        !sourceOwnedPublicationField(paragraph) && !fallbackExcerptChromeOwner(root, paragraph) &&
+        !articleIntroFurniture(paragraph, root);
+    });
     if (prose.length < 2) return null;
     if (completeParagraph) {
-      return prose.find(function(value) {
+      var first = prose.find(function(paragraph) {
+        var value = normalizeText(paragraph.textContent || "");
         var minimum = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(value) ? 40 : 80;
         return Array.from(value).length >= minimum;
-      }) || null;
+      });
+      var firstIndex = prose.indexOf(first);
+      var next = prose[firstIndex + 1];
+      return first && next ? sourceOwnedIntroParagraphText(first, next) :
+        first && normalizeText(first.textContent || "") || null;
     }
-    var lead = normalizeText(prose.join(" "));
+    var lead = normalizeText(prose.map(function(paragraph) { return paragraph.textContent || ""; }).join(" "));
     return Array.from(lead).length >= 80 ? Array.from(lead).slice(0, 280).join("") : null;
   }
 
@@ -150,7 +227,7 @@
     while (current && current.nodeType === 1) {
       if (current === root && current.matches("article, main, [role='main'], body")) break;
       var className = typeof current.className === "string" ? current.className : "";
-      var hints = [current.id || "", className, current.getAttribute("aria-label") || "",
+      var hints = [current.id || "", className, current.getAttribute("role") || "", current.getAttribute("aria-label") || "",
         current.getAttribute("data-component") || "", current.getAttribute("data-testid") || ""]
         .join(" ").replace(/([a-z\d])([A-Z])/g, "$1 $2");
       var tokens = hints.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);

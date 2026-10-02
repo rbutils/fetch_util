@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Keep complete source-owned excerpt paragraphs beneath publication actions; preserve short authored introductions and standfirsts while declining hidden or unrelated prose.
 - Recognize a complete, source-owned primary headline collection as a credible generic homepage list when it has no editorial section wrapper; retain mismatch warnings for incidental navigation and error pages.
 - Retain linked image, label, title and date fields for every proven repeated article card in generic lists without flattening source context.
 - Keep a typed runtime detail record ahead of a list candidate only when its URL-bound record evidence would otherwise be lost.
