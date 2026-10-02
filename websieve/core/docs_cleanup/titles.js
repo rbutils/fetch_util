@@ -160,7 +160,7 @@ function articleTitleFromVisibleArticleHeading(html, title, siteName) {
         normalizeText(selectedHeading.textContent || "") === headline) {
       var proof = sourceOwnedSelfLinkedArticle(article, headline);
       if (proof ? proof.owner !== source :
-          !sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName) || sourceArticleForSelectedParagraphs(article) !== source) return null;
+          !sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName, source, headline) || sourceArticleForSelectedParagraphs(article) !== source) return null;
       return { source: source, heading: heading };
     }
     var linkedHeadings = Array.prototype.filter.call(article.querySelectorAll("h2"), function(candidate) {
@@ -175,17 +175,43 @@ function articleTitleFromVisibleArticleHeading(html, title, siteName) {
   return owners.length === 1 ? normalizeText(owners[0].heading.textContent || "") : title;
 }
 
-function sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName) {
-  if (!suffix || !siteName) return false;
+function sourceOwnedTitleSuffixMatchesPublisher(suffix, siteName, source, headline) {
+  if (!suffix) return false;
   var match = normalizeText(suffix).match(/^(?:-|\||\u2013|\u2014)\s+(.+)$/);
   if (!match) return false;
-  var publisher = normalizeText(siteName).replace(/^www\./i, "").toLowerCase();
+  var firstComponent = normalizeText(match[1].split(/\s*[|·•]\s*/)[0]).replace(/^www\./i, "").toLowerCase();
+  var publisher = normalizeText(siteName || "").split(/\s*[|·•]\s*/)[0].replace(/^www\./i, "").toLowerCase();
   var hostParts = (location.hostname || "").replace(/^www\./i, "").toLowerCase().split(".").filter(function(part) {
     return part.length >= 3 && !/^(?:com|net|org|gov|edu|co)$/.test(part);
   });
-  return match[1].split(/\s*[|·•]\s*/).some(function(part) {
-    var component = normalizeText(part).replace(/^www\./i, "").toLowerCase();
-    return component === publisher || hostParts.indexOf(component) !== -1;
+  if (firstComponent && (firstComponent === publisher || hostParts.indexOf(firstComponent) !== -1)) return true;
+  if (!source || !source.matches("article") || !headline ||
+      !sourceOwnedGeneratorBrandMatches(firstComponent, source)) return false;
+  var pageUrl = sourceOwnershipPageUrl(materializedCanonicalUrl() || location.href);
+  return !!pageUrl && !sourceOwnedTitleMetadataConflictsWithHeading(headline, pageUrl);
+}
+
+function sourceOwnedGeneratorBrandMatches(publisher, source) {
+  if (!publisher || !source) return false;
+  var generators = document.querySelectorAll('meta[name="generator" i]');
+  if (generators.length !== 1) return false;
+  var generator = normalizeText(generators[0].getAttribute("content") || "").split(/\s+/)[0];
+  return normalizeText(generator).replace(/^www\./i, "").toLowerCase() === publisher;
+}
+
+function sourceOwnedTitleMetadataConflictsWithHeading(headline, pageUrl) {
+  if (typeof sourceOwnedParsedPublicationRecords !== "function" ||
+      typeof sourceOwnedArticlePublicationRecord !== "function" ||
+      typeof sourceOwnedPublicationRecordUrls !== "function") return false;
+  var records = sourceOwnedParsedPublicationRecords(headline).records || [];
+  return records.some(function(record) {
+    if (!sourceOwnedArticlePublicationRecord(record)) return false;
+    var recordHeadline = normalizeText(entityText(record.headline) || "");
+    if (!recordHeadline) return false;
+    var urls = sourceOwnedPublicationRecordUrls(record);
+    if (!urls.present) return false;
+    return urls.values.indexOf(pageUrl) === -1 ? recordHeadline === normalizeText(headline) :
+      recordHeadline !== normalizeText(headline);
   });
 }
 

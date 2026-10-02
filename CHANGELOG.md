@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Bind standalone static-generator title brands only to a source-owned article heading, preserving genuine title extensions.
 - Preserve publication dates only when the uniquely owned source article, header, and publication records agree.
 - Preserve complete source-owned article body leads, including short Reader paragraphs with unique article and body proof.
 - Preserve complete query-bound material results and decline list takeover when any visible owner material is unaccounted for.

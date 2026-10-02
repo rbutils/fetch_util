@@ -45,4 +45,45 @@ RSpec.describe 'FetchUtil extractor integration - generic static site articles' 
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'preserves a source-owned title extension before a static generator brand' do
+    html = fixture_contents(File.expand_path('../../fixtures/jekyll_docs.html', __dir__))
+    branded_title = 'Quickstart — Additional setup notes | Jekyll • Simple, blog-aware, static sites'
+    html = html.sub('<title>Quickstart | Jekyll • Simple, blog-aware, static sites</title>', "<title>#{branded_title}</title>")
+
+    with_url_page('https://jekyllrb.com/docs/', html) do |page|
+      payload = extract_payload(page)
+
+      expect(payload['title']).to eq(branded_title)
+      expect(payload['markdown']).to include('bundle exec jekyll serve')
+    end
+  end
+
+  it 'does not bind a generator suffix through foreign or conflicting Article records' do
+    html = fixture_contents(File.expand_path('../../fixtures/jekyll_docs.html', __dir__))
+    foreign_record = '<script type="application/ld+json">{"@type":"Article","headline":"Quickstart","url":"https://other.example/guide"}</script>'
+    conflicting_record = '<script type="application/ld+json">{"@type":"Article","headline":"Different guide","url":"https://jekyllrb.com/docs/"}</script>'
+
+    [foreign_record, conflicting_record].each do |record|
+      with_url_page('https://jekyllrb.com/docs/', html.sub('</head>', "#{record}</head>")) do |page|
+        payload = extract_payload(page)
+
+        expect(payload['title']).to eq('Quickstart | Jekyll • Simple, blog-aware, static sites')
+      end
+    end
+  end
+
+  it 'does not bind a generator suffix to a foreign or hidden H1' do
+    html = fixture_contents(File.expand_path('../../fixtures/jekyll_docs.html', __dir__))
+    foreign = html.sub('<h1>Quickstart</h1>', '<h1>Reference manual</h1><aside><h1>Quickstart</h1></aside>')
+    hidden = html.sub('<h1>Quickstart</h1>', '<h1>Reference manual</h1><div hidden><h1>Quickstart</h1></div>')
+
+    [foreign, hidden].each do |source|
+      with_url_page('https://jekyllrb.com/docs/', source) do |page|
+        payload = extract_payload(page)
+
+        expect(payload['title']).to eq('Quickstart | Jekyll • Simple, blog-aware, static sites')
+      end
+    end
+  end
 end
