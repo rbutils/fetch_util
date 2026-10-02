@@ -817,14 +817,14 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
         File.read(File.join(root, 'websieve', entry))
       end.join("\n")
       source.sub!(
-        '      var indexListCandidate = null;',
-        '      var indexListCandidate = {contentType: "list", html: "<main></main>", markdown: "", textContent: "", readerMode: false};'
+        "    var candidate = null;\n\n    if (indexListAllowed",
+        "    var candidate = {contentType: 'list', html: '<main></main>', markdown: '', textContent: '', readerMode: false};\n" \
+          "    indexListAllowed = false;\n\n    if (indexListAllowed"
       ) || raise('index candidate boundary missing')
       source.sub!(
-        "      var indexListAllowed = indexListCandidateAllowed(content, !!(repeatedCollection && repeatedCollection.queryDirectoryOverride)) &&\n" \
-          '        !listArticleOwnershipConflict;',
-        '      var indexListAllowed = false;'
-      ) || raise('index arbitration boundary missing')
+        '    if (candidate && !emptyListCandidateLosesContent(content, candidate) &&',
+        '    if (candidate && !(window.__emptyIndexCandidateChecked = true, emptyListCandidateLosesContent(content, candidate)) &&'
+      ) || raise('empty index guard boundary missing')
       source.sub!(
         '"fetch-util:standalone-api:v1"',
         '(function(api) { global.FetchUtilExtract = api; })'
@@ -832,6 +832,7 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
       page.add_script_tag(content: source)
       payload = page.evaluate('window.FetchUtilExtract.extract({reader_mode: true})')
 
+      expect(page.evaluate('window.__emptyIndexCandidateChecked')).to eq(true)
       expect(payload['contentType']).to eq('article')
       expect(payload['markdown']).to include('Compare public routes', 'Search dates and destinations')
       expect(payload['warnings']).not_to include('empty_extraction')
