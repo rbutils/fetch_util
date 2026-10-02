@@ -46,6 +46,7 @@
 
 ### Fixed
 
+- Keep the actual unlinked source H2 as the Markdown heading for its search-history collection, even when record metadata repeats its label.
 - Bind article and question-answer publication dates to their local source owner, preserving article headlines beside related cards and declining ambiguous or unrelated answer records.
 - Recognize source-owned institutional case indexes with complete case-card fields while preserving long legal titles and focal articles.
 - Render complete source-owned structured card headings and fields for named container and block-anchor cards.

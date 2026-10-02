@@ -47,6 +47,10 @@ RSpec.describe 'Source-owned search history' do
 
       expect(payload['contentType']).to eq('list')
       expect(payload['excerpt']).to eq('Alpha')
+      expect(payload['html']).to include('<h2>Search history</h2>')
+      expect(payload['markdown']).to include("## Search history\n\n")
+      expect(payload['markdown'].index('## Search history')).to be < payload['markdown'].index('Alpha')
+      expect(payload['textContent']).to start_with('Search history Alpha')
       expect(payload['markdown'].lines.grep(/^- /).length).to eq(4)
       positions = entries.map { |entry| payload['markdown'].index(entry[:text]) }
       expect(positions).to all(be_a(Integer))

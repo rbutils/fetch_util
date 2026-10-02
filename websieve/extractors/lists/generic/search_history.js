@@ -137,7 +137,10 @@
       excerpt: match.records[0].text,
       html: html.innerHTML,
       items: match.records,
-      markdown: listMarkdown(match.records)
+      markdown: [markdownFor(match.heading.outerHTML), listMarkdown(match.records)].filter(Boolean).join("\n\n"),
+      textContent: [normalizeText(match.heading.textContent || "")].concat(
+        match.records.map(function(record) { return record.text; })
+      ).filter(Boolean).join(" ")
     });
     output.sourceOwnedSearchHistory = true;
     output.sourceOwnedSearchHistoryCoverage = match.records.length;
