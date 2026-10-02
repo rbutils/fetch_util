@@ -191,6 +191,144 @@ RSpec.describe 'Owned article titles' do
     end
   end
 
+  it 'uses an external H1 only when it owns the complete selected article body' do
+    root = File.expand_path('../../..', __dir__)
+    html = File.read(File.join(root, 'spec/fixtures/focal_title_csdn_060.html'))
+
+    with_url_page('https://blog.csdn.net/csdnnews/article/details/162627987', html) do |page|
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      probe_source = source.sub(
+        '})(window);', 'global.externalTitleProbe = articleTitleFromSelectedExternalBodyHeading;'
+      )
+      page.add_script_tag(content: "#{probe_source} })(window);")
+      diagnostics = page.evaluate <<~JS
+        (() => {
+          const metadata = {
+            title: document.title,
+            siteName: location.hostname,
+            excerpt: document.querySelector('meta[name="description"]').content
+          };
+          const content = {contentType: 'article', html: document.querySelector('main article').outerHTML};
+          return externalTitleProbe(content, metadata, document.title);
+        })()
+      JS
+      expect(diagnostics).to eq('Java即将放弃Intel Mac：JDK 27起不再续命')
+
+      payload = extract_payload(page)
+      expect(payload.fetch('title')).to eq('Java即将放弃Intel Mac：JDK 27起不再续命')
+      expect(payload.fetch('markdown')).to start_with('# Java即将放弃Intel Mac：JDK 27起不再续命')
+      expect(payload.fetch('markdown')).to include('Intel 版 Mac 的退场', '现代硬件')
+      expect(payload.fetch('siteName')).to eq('blog.csdn.net')
+      expect(payload.fetch('publishedTime')).to include('2026-07-06')
+      expect(payload.fetch('byline')).to eq('csdnnews')
+      expect(payload.fetch('markdown')).to include('登录后阅读全文')
+      expect(payload.fetch('html')).to include('登录后阅读全文')
+
+      selected_html = page.evaluate <<~JS
+        (() => {
+          const selected = document.querySelector('main article').cloneNode(true);
+          const gate = selected.querySelector('.readall_box');
+          const paragraph = document.createElement('p');
+          paragraph.textContent = gate.textContent;
+          gate.replaceWith(paragraph);
+          return selected.outerHTML;
+        })()
+      JS
+      metadata = {
+        title: 'Java即将放弃Intel Mac：JDK 27起不再续命-CSDN博客',
+        siteName: 'blog.csdn.net',
+        excerpt: 'Intel 版 Mac 的退场又迎来一个标志性节点。'
+      }
+      selected_content = { contentType: 'article', html: selected_html }
+      expected_title = 'Java即将放弃Intel Mac：JDK 27起不再续命'
+      declared_title = 'Java即将放弃Intel Mac：JDK 27起不再续命-CSDN博客'
+      expect(page.evaluate("externalTitleProbe(#{JSON.generate(selected_content)}, #{JSON.generate(metadata)}, #{JSON.generate(declared_title)})"))
+        .to eq(expected_title)
+
+      selected_with_foreign_material = selected_content.merge(
+        html: selected_html.sub('</article>', '<aside>Unowned recommendation material</aside></article>')
+      )
+      expect(page.evaluate("externalTitleProbe(#{JSON.generate(selected_with_foreign_material)}, #{JSON.generate(metadata)}, #{JSON.generate(declared_title)})"))
+        .to eq(declared_title)
+    end
+  end
+
+  it 'requires a local attributed article header and a matching declared title prefix' do
+    html = <<~HTML
+      <html><head><title>Owned article title - Publisher</title></head><body><main>
+        <div class="title-box"><h1>Owned article title</h1></div>
+        <div class="article-bar-top"><time datetime="2026-10-02">October 2, 2026</time>
+          <a rel="author" href="/authors/reporter">Reporter</a></div>
+        <article><p>First complete source paragraph records the verified event, its context, and the details needed to understand the report.</p>
+          <p>Second complete source paragraph preserves the remaining evidence, the source attribution, and the consequences for readers.</p></article>
+      </main></body></html>
+    HTML
+    with_url_page('https://publisher.example/articles/report', html) do |page|
+      root = File.expand_path('../../..', __dir__)
+      source = File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, 'websieve', entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub('})(window);', 'global.externalTitleProbe = articleTitleFromSelectedExternalBodyHeading; })(window);'))
+      selected = page.evaluate('document.querySelector("main article").outerHTML')
+      content = { contentType: 'article', html: selected }
+      metadata = {
+        canonicalUrl: nil,
+        title: 'Owned article title - Publisher',
+        siteName: 'Publisher',
+        excerpt: 'First complete source paragraph records the verified event, its context, and the details needed to understand the report.'
+      }
+      probe = lambda do |declared_title = metadata.fetch(:title)|
+        page.evaluate("externalTitleProbe(#{JSON.generate(content)}, #{JSON.generate(metadata)}, #{JSON.generate(declared_title)})")
+      end
+      expect(probe.call).to eq('Owned article title')
+
+      page.evaluate <<~JS
+        (() => {
+          document.querySelector('.title-box').remove();
+          document.querySelector('main').insertAdjacentHTML(
+            'beforeend', '<aside><h1>Owned article title</h1></aside>'
+          );
+        })()
+      JS
+      expect(probe.call).to eq('Owned article title - Publisher')
+      page.evaluate <<~JS
+        (() => {
+          const aside = document.querySelector('main > aside');
+          if (aside) aside.remove();
+          document.querySelector('main').insertAdjacentHTML(
+            'afterbegin', '<div class="title-box"><h1>Owned article title</h1></div>'
+          );
+        })()
+      JS
+
+      page.evaluate("document.querySelector('main').insertAdjacentHTML('beforeend', '<aside><h1>Unrelated navigation</h1></aside>')")
+      expect(probe.call).to eq('Owned article title - Publisher')
+      page.evaluate("(() => { const aside = document.querySelector('main > aside'); if (aside) aside.remove(); })()")
+
+      page.evaluate("document.querySelector('main').insertAdjacentHTML('beforeend', '<article><h1>Related article</h1><p>Separate material.</p></article>')")
+      expect(probe.call).to eq('Owned article title - Publisher')
+      page.evaluate("document.querySelector('main > article:last-of-type').remove()")
+
+      page.evaluate(
+        "document.querySelector('main > .article-bar-top').insertAdjacentHTML('beforebegin', " \
+        "'<section><h2>Editorial note</h2><p>This material belongs to another record.</p></section>')"
+      )
+      expect(probe.call).to eq('Owned article title - Publisher')
+      page.evaluate("document.querySelector('main > section').remove()")
+
+      page.evaluate(
+        "document.querySelector('main article').insertAdjacentHTML('beforeend', " \
+        "'<article><h1>Nested foreign record</h1><p>Separate record content.</p></article>')"
+      )
+      expect(probe.call).to eq('Owned article title - Publisher')
+      page.evaluate("document.querySelector('main article article').remove()")
+
+      expect(probe.call('Contradictory title - Publisher')).to eq('Contradictory title - Publisher')
+    end
+  end
+
   it 'does not promote an H2 when multiple articles or a different title undermine ownership' do
     html = <<~HTML
       <html><head><title>Getting started</title></head><body><main>
