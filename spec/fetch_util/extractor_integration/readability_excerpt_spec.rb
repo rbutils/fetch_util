@@ -21,6 +21,10 @@ RSpec.describe 'Readability article excerpts' do
         global.__genericSourceOwnedPageContent = genericSourceOwnedPageContent;
         global.__readabilityOwnedSelectedPublication = readabilityOwnedSelectedPublication;
         global.__sourceOwnedFallbackPublication = sourceOwnedFallbackPublication;
+        global.__sourceOwnedReaderAnswerPublicationTime = sourceOwnedReaderAnswerPublicationTime;
+        global.__sourceOwnedLeadingQuestionAnswerPublicationTime = sourceOwnedLeadingQuestionAnswerPublicationTime;
+        global.__collectMetadata = collectMetadata;
+        global.__sourceOwnedPublicationDatesEquivalent = sourceOwnedPublicationDatesEquivalent;
         global.__finalizeExtractResult = finalizeExtractResult;
         global.__collectionPublishedTime = collectionPublishedTime;
       JS
@@ -710,6 +714,67 @@ RSpec.describe 'Readability article excerpts' do
     end
   end
 
+  it 'preserves the declared head timestamp when its owned Article record adds a timezone' do
+    headline = 'Wall-clock publication report'
+    published = '2026-01-30 10:09:00'
+    structured_data = JSON.generate(
+      '@type' => 'NewsArticle',
+      'url' => 'https://publisher.example/articles/wall-clock',
+      'headline' => headline,
+      'datePublished' => '2026-01-30T10:09:00+00:00'
+    )
+    canonical_url = 'https://publisher.example/articles/wall-clock'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data
+    ).sub(
+      "<link rel=\"canonical\" href=\"#{canonical_url}\">",
+      "<link rel=\"canonical\" href=\"#{canonical_url}\"><meta property=\"article:published_time\" content=\"#{published}\">"
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var headline = "Wall-clock publication report";
+          var article = document.querySelector("article");
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var publication = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return publication && publication.publishedTime;
+        })()
+      JS
+      expect(value).to eq(published)
+    end
+  end
+
+  it 'does not equate zoned natural-language dates with unzoned dates without recognized wall clocks' do
+    canonical_url = 'https://publisher.example/articles/date-equivalence'
+    html = source_publication_article_html(
+      headline: 'Date equivalence report', canonical_url: canonical_url, structured_data: '{}'
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = page.evaluate(<<~JS)
+        ({
+          naturalLanguageDifferentDays: window.__sourceOwnedPublicationDatesEquivalent(
+            'Tue, 22 Sep 2026 15:20:42 GMT', '23 Sep 2026 15:20:42'
+          ),
+          matchingIsoWallClock: window.__sourceOwnedPublicationDatesEquivalent(
+            '2026-09-22T15:20:42Z', '2026-09-22 15:20:42'
+          )
+        })
+      JS
+      expect(values).to eq(
+        'naturalLanguageDifferentDays' => false,
+        'matchingIsoWallClock' => true
+      )
+    end
+  end
+
   it 'repairs malformed publication JSON only when its headline exactly matches the visible source H1' do
     headline = 'LiveTV says "Exact source headline"'
     malformed_json = %({"@type":"NewsArticle","headline":"LiveTV says "Exact source headline"","datePublished":"2026-09-22 23:35:38"})
@@ -748,6 +813,80 @@ RSpec.describe 'Readability article excerpts' do
     end
   end
 
+  it 'keeps an owned visible header date when optional publication JSON is invalid' do
+    headline = 'Visible date with invalid optional data'
+    visible_date = '2026-09-23T02:35:38+03:00'
+    invalid_data = %({"@type":"NewsArticle","headline":"A different record",)
+    canonical_url = 'https://publisher.example/articles/invalid-optional-data'
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: invalid_data,
+      header_date: visible_date
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var headline = "Visible date with invalid optional data";
+          var article = document.querySelector("article");
+          var paragraphs = Array.from(article.querySelectorAll("[itemprop='articleBody'] p"));
+          var metadata = {title: headline, canonicalUrl: location.href};
+          var evidence = {sourceParagraphs: paragraphs};
+          var reader = window.__readabilityOwnedSelectedPublication({title: headline}, metadata, evidence);
+          var fallback = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return {reader: reader && reader.publishedTime, fallback: fallback && fallback.publishedTime};
+        })())
+      JS
+      expect(values).to eq('reader' => visible_date, 'fallback' => visible_date)
+    end
+  end
+
+  it 'keeps a matching Article date despite unrelated and malformed JSON-LD records' do
+    headline = 'Article with an unrelated malformed record'
+    published = '2026-07-07T12:47:18+02:00'
+    canonical_url = 'https://publisher.example/articles/matching-record'
+    structured_data = JSON.generate(
+      '@type' => 'NewsArticle',
+      'mainEntityOfPage' => { '@id' => canonical_url },
+      'headline' => headline,
+      'datePublished' => published
+    )
+    unrelated_record = JSON.generate(
+      '@type' => 'NewsArticle',
+      'url' => 'https://publisher.example/articles/unrelated',
+      'headline' => 'Unrelated child article',
+      'datePublished' => '2026-07-01'
+    )
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data
+    ).sub(
+      '</head>',
+      "<script type=\"application/ld+json\">#{unrelated_record}</script>" \
+      '<script type="application/ld+json">{"@type":"Thing",</script></head>'
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var headline = "Article with an unrelated malformed record";
+          var article = document.querySelector("article");
+          var metadata = {title: headline, canonicalUrl: location.href};
+          return window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          }).publishedTime;
+        })()
+      JS
+      expect(value).to eq(published)
+    end
+  end
+
   it 'keeps the exact owned header time and ignores a foreign card date' do
     headline = 'Visible publication report'
     visible_date = '2026-09-23T02:35:38+03:00'
@@ -783,6 +922,72 @@ RSpec.describe 'Readability article excerpts' do
         })())
       JS
       expect(values).to eq('reader' => visible_date, 'fallback' => visible_date)
+    end
+  end
+
+  it 'prefers the owned header date when an exact Article URL has a conflicting secondary URL and date' do
+    headline = 'Article with one authoritative page URL'
+    visible_date = '2026-09-23T02:35:38+03:00'
+    canonical_url = 'https://publisher.example/articles/authoritative-url'
+    structured_data = JSON.generate(
+      '@type' => 'NewsArticle',
+      'url' => canonical_url,
+      'mainEntityOfPage' => { 'url' => 'https://publisher.example/articles/another-story' },
+      'headline' => headline,
+      'datePublished' => '2026-09-21T18:10:00Z'
+    )
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data,
+      header_date: visible_date
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var headline = "Article with one authoritative page URL";
+          var article = document.querySelector("article");
+          var metadata = {title: headline, canonicalUrl: location.href};
+          return window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          }).publishedTime;
+        })()
+      JS
+      expect(value).to eq(visible_date)
+    end
+  end
+
+  it 'accepts an exact main-entity URL when the Article omits its direct URL' do
+    headline = 'Article with a main-entity page URL'
+    published = '2026-07-07T12:47:18+02:00'
+    canonical_url = 'https://publisher.example/articles/main-entity-url'
+    structured_data = JSON.generate(
+      '@type' => 'NewsArticle',
+      'mainEntityOfPage' => { '@id' => canonical_url },
+      'headline' => headline,
+      'datePublished' => published
+    )
+    html = source_publication_article_html(
+      headline: headline,
+      canonical_url: canonical_url,
+      structured_data: structured_data
+    )
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var headline = "Article with a main-entity page URL";
+          var article = document.querySelector("article");
+          var metadata = {title: headline, canonicalUrl: location.href};
+          return window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          }).publishedTime;
+        })()
+      JS
+      expect(value).to eq(published)
     end
   end
 
@@ -869,6 +1074,182 @@ RSpec.describe 'Readability article excerpts' do
         })())
       JS
       expect(values).to eq('resolved' => true, 'helperDate' => nil, 'finalDate' => nil)
+    end
+  end
+
+  it 'preserves a visible publication date in a source-owned reader header without a semantic body selector' do
+    headline = 'Reader-owned header date'
+    canonical_url = 'https://publisher.example/reader-owned-date'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head>
+      <body><main><header><h1>#{headline}</h1><p class="c-heading-date">September 10, 2026</p></header>
+      <div><p>The first complete source paragraph identifies the selected article and its reporting context.</p>
+      <p>The second complete source paragraph continues the same article body in source order.</p></div></main></body></html>
+    HTML
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var paragraphs = Array.from(document.querySelectorAll("main > div p"));
+          return window.__readabilityOwnedSelectedPublication(
+            {title: "Reader-owned header date"},
+            {title: "Reader-owned header date", canonicalUrl: location.href},
+            {sourceParagraphs: paragraphs}
+          );
+        })()
+      JS
+      expect(value).to eq('publishedTime' => 'September 10, 2026')
+    end
+  end
+
+  it 'binds a relative answer timestamp to the exact reader-selected answer body' do
+    headline = 'Which language is this?'
+    canonical_url = 'https://publisher.example/questions/language'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><h1>#{headline}</h1>
+      <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/selected">8y</a>
+      <p>The selected answer explains the question in its first complete source paragraph.</p>
+      <p>The same answer continues in this second complete paragraph in source order.</p></div>
+      <div class="answer-record"><a class="answer_timestamp" href="https://publisher.example/questions/biology/answer/foreign">Sep 17</a>
+      <p>A different question has a foreign answer with its own publication timestamp.</p></div></main></body></html>
+    HTML
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          var paragraphs = Array.from(document.querySelector(".answer-record").querySelectorAll("p"));
+          return window.__readabilityOwnedSelectedPublication(
+            {title: "Which language is this?"},
+            {title: "Which language is this?", canonicalUrl: location.href},
+            {sourceParagraphs: paragraphs}
+          );
+        })()
+      JS
+      expect(value).to eq('publishedTime' => '8y')
+    end
+  end
+
+  it 'does not assign a leading answer date to an empty reader body' do
+    headline = 'Which language is this?'
+    canonical_url = 'https://publisher.example/questions/language'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><h1>#{headline}</h1>
+      <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/leading">8y</a>
+      <p>The first complete answer paragraph establishes the answer's topic and selected owner.</p>
+      <p>The second complete answer paragraph continues its explanation with substantial source prose.</p></div>
+      <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/later">4y</a>
+      <p>A later answer to the same question has a separate date and distinct prose.</p>
+      <p>Its body is not the leading source answer represented by this page result.</p></div>
+      <div class="answer-record"><a class="answer_timestamp" href="https://publisher.example/questions/biology/answer/foreign">Sep 17</a>
+      <p>A different question has a foreign answer with its own publication timestamp.</p></div>
+      </main></body></html>
+    HTML
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      value = page.evaluate(<<~JS)
+        (function() {
+          return {
+            selected: window.__readabilityOwnedSelectedPublication(
+              {title: "Which language is this?"},
+              {title: "Which language is this?", canonicalUrl: location.href},
+              {sourceParagraphs: []}
+            ),
+            conflictingTitle: window.__readabilityOwnedSelectedPublication(
+              {title: "Another question"},
+              {title: "Which language is this?", canonicalUrl: location.href},
+              {sourceParagraphs: []}
+            )
+          };
+        })()
+      JS
+      expect(value['selected']).to be_nil
+      expect(value['conflictingTitle']).to be_nil
+    end
+  end
+
+  it 'binds a selected answer date to every source paragraph and lets a selected later answer win' do
+    headline = 'Which language is this?'
+    canonical_url = 'https://publisher.example/questions/language'
+    html = <<~HTML
+      <!doctype html><html><head><title>#{headline}</title>
+      <link rel="canonical" href="#{canonical_url}"></head><body><main><section class="question-region">
+      <h1>#{headline}</h1>
+      <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/leading">8y</a>
+        <p>The leading answer explains the language's design and history in its first source-owned paragraph.</p>
+        <p>It continues with another substantial paragraph belonging to that same selected answer record.</p></div>
+      <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/later">4y</a>
+        <p>The second answer has a different date and a separate first paragraph in its own record.</p>
+        <p>This paragraph remains part of the later selected answer rather than the leading answer.</p></div>
+      <div class="answer-record"><a class="answer_timestamp" href="https://publisher.example/questions/biology/answer/foreign">Sep 17</a>
+        <p>A foreign question answer has its own first paragraph and date.</p>
+        <p>Its second paragraph belongs to that other question and must not be selected.</p></div>
+      <aside><a class="answer_timestamp" href="#{canonical_url}/answer/aside">2y</a>
+        <p>Aside timestamp context paragraph one.</p><p>Aside timestamp context paragraph two.</p></aside>
+      <blockquote><a class="answer_timestamp" href="#{canonical_url}/answer/quoted">3y</a>
+        <p>Quoted example paragraph one.</p><p>Quoted example paragraph two.</p></blockquote>
+      <div hidden><a class="answer_timestamp" href="#{canonical_url}/answer/hidden">1y</a>
+        <p>Hidden paragraph one.</p><p>Hidden paragraph two.</p></div>
+      </section></main></body></html>
+    HTML
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = page.evaluate(<<~JS)
+        (function() {
+          var canonical = location.href;
+          var region = document.querySelector('.question-region');
+          var answers = Array.from(region.querySelectorAll('.answer-record'));
+          var first = Array.from(answers[0].querySelectorAll('p'));
+          var second = Array.from(answers[1].querySelectorAll('p'));
+          var foreign = Array.from(answers[2].querySelectorAll('p'));
+          var metadata = __collectMetadata();
+          var selected = __readabilityOwnedSelectedPublication(
+            {title: "Which language is this?"}, metadata, {sourceParagraphs: second}
+          );
+          var content = {
+            title: "Which language is this?", byline: null, excerpt: "Selected answer prose.",
+            siteName: "publisher.example", publishedTime: selected.publishedTime,
+            html: answers[1].outerHTML, textContent: answers[1].textContent,
+            markdown: "Selected answer prose.", readerMode: true, contentType: "article",
+            sourceOwnedArticlePublicationResolved: true
+          };
+          Object.defineProperty(content, "sourceOwnedReaderBodyParagraphSources", {value: second});
+          var finalResult = __finalizeExtractResult(content, metadata, document.body.textContent, {}, false);
+          return {
+            metadataDate: metadata.publishedTime,
+            metadataOwnerDate: metadata.sourceOwnedQuestionAnswerPublicationTime,
+            first: __sourceOwnedReaderAnswerPublicationTime(first, canonical),
+            second: __sourceOwnedReaderAnswerPublicationTime(second, canonical),
+            mixed: __sourceOwnedReaderAnswerPublicationTime([first[0], second[0]], canonical),
+            foreign: __sourceOwnedReaderAnswerPublicationTime([first[0], foreign[0]], canonical),
+            hidden: __sourceOwnedReaderAnswerPublicationTime(
+              first.concat(Array.from(region.querySelector('[hidden]').querySelectorAll('p'))), canonical
+            ),
+            nonParagraph: __sourceOwnedReaderAnswerPublicationTime([first[0], answers[0].querySelector('a'), first[1]], canonical),
+            aside: __sourceOwnedReaderAnswerPublicationTime(
+              Array.from(region.querySelector('aside').querySelectorAll('p')), canonical
+            ),
+            quoted: __sourceOwnedReaderAnswerPublicationTime(
+              Array.from(region.querySelector('blockquote').querySelectorAll('p')), canonical
+            ),
+            emptyBody: __readabilityOwnedSelectedPublication(
+              {title: "Which language is this?"}, metadata, {sourceParagraphs: []}
+            ),
+            selectedLater: selected && selected.publishedTime,
+            finalLater: finalResult.publishedTime
+          };
+        })()
+      JS
+      expect(values).to eq(
+        'metadataDate' => '8y', 'metadataOwnerDate' => '8y', 'first' => '8y', 'second' => '4y',
+        'mixed' => '', 'foreign' => '', 'hidden' => '', 'nonParagraph' => '', 'aside' => '', 'quoted' => '',
+        'emptyBody' => nil, 'selectedLater' => '4y', 'finalLater' => '4y'
+      )
     end
   end
 end

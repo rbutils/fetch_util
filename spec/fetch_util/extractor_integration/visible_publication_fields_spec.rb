@@ -22,6 +22,69 @@ RSpec.describe 'FetchUtil visible publication fields' do
     end
   end
 
+  it 'uses the first linked answer timestamp only when it belongs to the current question' do
+    canonical_url = 'https://publisher.example/questions/language'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head>
+      <body><main><h1>Which language is this?</h1>
+        <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/leading">8y</a>
+          <p>The first answer explains the language's design and initial historical context at length.</p>
+          <p>It continues with a second substantial paragraph that completes the leading answer.</p></div>
+        <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/later">4y</a>
+          <p>A later answer has its own date and separate explanatory content for this question.</p>
+          <p hidden>This hidden paragraph cannot establish another publication record.</p></div>
+        <div class="answer-record"><a class="answer_timestamp" href="https://publisher.example/questions/biology/answer/foreign">Sep 17</a>
+          <p>A different question's answer and its publication time do not belong to this page.</p></div>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to eq('8y')
+    end
+  end
+
+  it 'does not use answer timestamps in an unrelated article under the same main' do
+    canonical_url = 'https://publisher.example/reference/language-history'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><h1>Language history reference</h1>
+        <article class="reference-entry"><h2>Related answer collection</h2>
+          <a class="answer_timestamp" href="#{canonical_url}/answer/one">8y</a>
+          <p>This reference discusses a related question but does not own the page publication date.</p>
+          <p>Its separate article body contains two paragraphs and a linked answer timestamp.</p>
+        </article>
+        <article class="reference-entry"><h2>Another answer collection</h2>
+          <a class="answer_timestamp" href="#{canonical_url}/answer/two">4y</a>
+          <p>This second reference entry also contains substantial prose and an answer link.</p>
+          <p>Neither linked entry belongs to the page's unique heading or publication record.</p>
+        </article>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to be_nil
+    end
+  end
+
+  it 'does not promote answer timestamps inside form, aside, or quoted contexts' do
+    canonical_url = 'https://publisher.example/questions/river'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><section class="question-region"><h1>How does the river recover?</h1>
+        <form><a class="answer_timestamp" href="#{canonical_url}/answer/form">8y</a>
+          <p>Form context paragraph one.</p><p>Form context paragraph two.</p></form>
+        <aside><a class="answer_timestamp" href="#{canonical_url}/answer/aside">4y</a>
+          <p>Aside context paragraph one.</p><p>Aside context paragraph two.</p></aside>
+        <blockquote><a class="answer_timestamp" href="#{canonical_url}/answer/quoted">2y</a>
+          <p>Quoted context paragraph one.</p><p>Quoted context paragraph two.</p></blockquote>
+      </section></main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to be_nil
+    end
+  end
+
   it 'finds localized publication fields after rejecting a matching body wrapper' do
     fields = {
       '<div class="published"><p>Δημοσιεύτηκε: 25 Σεπτεμβρίου 2026</p></div>' => 'Δημοσιεύτηκε: 25 Σεπτεμβρίου 2026',
@@ -137,6 +200,171 @@ RSpec.describe 'FetchUtil visible publication fields' do
       expect(payload['publishedTime']).to eq('14/09/2026 às 13:36')
       expect(payload['markdown']).to include('Atualizado em **14/09/2026 às 13:36**')
       expect(payload['excerpt']).to start_with('The restoration team returned to the river')
+    end
+  end
+
+  it 'does not borrow dates from an author listing calendar or linked child stories' do
+    html = <<~HTML
+      <html><head><title>Denis Cosnard - Contributions</title>
+      <link rel="canonical" href="https://example-blog.test/author/denis-cosnard"></head>
+      <body><main><h1>Denis Cosnard</h1>
+        <aside class="calendar"><p class="insert-date">Wednesday 23 September 2026</p></aside>
+        <section class="teaser"><a href="/stories/first"><h2>First reported story</h2></a>
+          <p class="published-date">Published September 21, 2026</p>
+          <p>First source-owned story summary with enough text to establish a complete article card.</p>
+        </section>
+        <section class="teaser"><a href="/stories/second"><h2>Second reported story</h2></a>
+          <p class="published-date">Published September 19, 2026</p>
+          <p>Second source-owned story summary with enough text to establish a complete article card.</p>
+        </section>
+        <div class="event-schedule"><time datetime="2026-09-30">September 30, 2026</time></div>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://example-blog.test/author/denis-cosnard', html) do |payload|
+      expect(payload['publishedTime']).to be_nil
+    end
+  end
+
+  it 'keeps an owned article header date when separate related records have foreign dates' do
+    canonical_url = 'https://publisher.example/reports/river-restoration'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><article class="prevent-scroll event-report">
+        <header class="article-header"><h1>River restoration progress report</h1>
+          <time datetime="2026-09-24T08:15:00Z">September 24, 2026</time></header>
+        <div class="entry-content">
+          <p>The restoration team returned to the river to measure the effect of removing concrete barriers.</p>
+          <p>Engineers compared water levels and wildlife counts before discussing the next phase with residents.</p>
+          <p>The public report records the findings and explains how the project will continue through autumn.</p>
+        </div>
+        <aside class="related-rail">
+          <article class="event-analysis"><h2><a href="/events/river-workshop">River restoration workshop</a></h2>
+            <time itemprop="startDate" datetime="2026-10-04T09:00:00Z">October 4, 2026</time></article>
+          <article class="related-card"><h2><a href="/reports/wetlands">Wetlands report</a></h2>
+            <time class="published-date" datetime="2026-09-18">September 18, 2026</time></article>
+        </aside>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to eq('2026-09-24T08:15:00Z')
+    end
+  end
+
+  it 'keeps an unwrapped article date beside related cards with foreign linked headlines' do
+    canonical_url = 'https://publisher.example/reports/water-restoration'
+    html = <<~HTML
+      <!doctype html><html><head><title>Water restoration progress report</title>
+      <link rel="canonical" href="#{canonical_url}"></head><body><main>
+        <article class="story">
+          <h1>Water restoration progress report</h1>
+          <time datetime="2026-09-24T08:15:00Z">September 24, 2026</time>
+          <div class="entry-content">
+            <p>The restoration team returned to the river to measure the effect of removing the concrete barriers.</p>
+            <p>Engineers compared water levels and wildlife counts before discussing the next stage with residents.</p>
+          </div>
+          <aside class="related-rail">
+            <article class="card"><h2><a href="/reports/wetlands">Wetlands report</a></h2>
+              <time datetime="2026-09-18">September 18, 2026</time></article>
+            <article class="card"><h2><a href="/reports/river-plan">River plan</a></h2>
+              <time datetime="2026-09-19">September 19, 2026</time></article>
+          </aside>
+        </article>
+      </main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to eq('2026-09-24T08:15:00Z')
+    end
+  end
+
+  it 'accepts the unique question proof in a role main just as in a semantic main' do
+    canonical_url = 'https://publisher.example/questions/river-restoration'
+    html = <<~HTML
+      <!doctype html><html><head><title>How did the river recover?</title>
+      <link rel="canonical" href="#{canonical_url}"></head><body>
+      <div role="main"><h1>How did the river recover?</h1>
+        <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/first">8y</a>
+          <p>The leading answer explains the restoration work and its long-term effect on the waterway.</p>
+          <p>It continues with a second source-owned paragraph describing the recovery process.</p></div>
+        <div class="answer-record"><a class="answer_timestamp" href="#{canonical_url}/answer/second">4y</a>
+          <p>A separate answer contains its own publication age and independent explanation.</p></div>
+      </div></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to eq('8y')
+    end
+  end
+
+  it 'rejects a contradictory role-main article with answer-shaped reference links' do
+    canonical_url = 'https://publisher.example/reports/river-restoration'
+    html = <<~HTML
+      <!doctype html><html><head><title>River restoration reference</title>
+      <link rel="canonical" href="#{canonical_url}"></head><body>
+      <article role="main"><h1>River restoration reference</h1>
+        <h2>Questions answered by another article</h2>
+        <div><a class="answer_timestamp" href="#{canonical_url}/answer/first">8y</a>
+          <p>This reference entry discusses the river without being the current question page.</p>
+          <p>Its independent article prose does not establish the publication date of this document.</p></div>
+        <div><a class="answer_timestamp" href="#{canonical_url}/answer/second">4y</a>
+          <p>A second reference entry has separate prose and a different answer destination.</p></div>
+      </article></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to be_nil
+    end
+  end
+
+  it 'declines a date inside one foreign card and an ambiguous shared wrapper' do
+    canonical_url = 'https://publisher.example/reports/current'
+    cases = [
+      <<~HTML,
+        <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+        <main><h1>Current report</h1><article class="card">
+          <h2><a href="/reports/child">A related child report</a></h2>
+          <time class="published-date" datetime="2026-09-18">September 18, 2026</time>
+          <p>This linked child record contains a summary and its own publication date.</p>
+          <p>The record remains a separate item rather than the current page's publication.</p>
+        </article></main></body></html>
+      HTML
+      <<~HTML
+        <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+        <main><h1>Reports index</h1><section class="shared-records">
+          <time class="published-date" datetime="2026-09-18">September 18, 2026</time>
+          <article class="card"><h2><a href="/reports/one">First report</a></h2>
+            <p>The first linked report has a complete independent summary and source owner.</p></article>
+          <article class="card"><h2><a href="/reports/two">Second report</a></h2>
+            <p>The second linked report has another complete independent summary and owner.</p></article>
+        </section></main></body></html>
+      HTML
+    ]
+
+    cases.each do |html|
+      extract_from_url(canonical_url, html) do |payload|
+        expect(payload['publishedTime']).to be_nil
+      end
+    end
+  end
+
+  it 'does not promote explicit event start dates or calendar-widget dates' do
+    canonical_url = 'https://publisher.example/reports/no-publication-date'
+    html = <<~HTML
+      <!doctype html><html><head><link rel="canonical" href="#{canonical_url}"></head><body>
+      <main><article><header><h1>River restoration announcement</h1></header>
+        <div class="entry-content"><p>The article explains the restoration plan and its community impact.</p>
+          <p>It describes the research and explains how the team will share its findings.</p></div>
+        <div class="event-start-date"><time datetime="2026-10-04T09:00:00Z">October 4, 2026</time></div>
+        <div role="grid" aria-label="Event calendar">
+          <time datetime="2026-10-05">October 5, 2026</time>
+        </div>
+      </article></main></body></html>
+    HTML
+
+    extract_from_url(canonical_url, html) do |payload|
+      expect(payload['publishedTime']).to be_nil
     end
   end
 end

@@ -4,6 +4,8 @@ function readabilityOwnedSelectedPublication(article, metadata, bodyEvidence) {
   if (!pageUrl || pageUrl !== sourceOwnershipPageUrl(materializedCanonicalUrl())) return null;
 
   var paragraphs = bodyEvidence.sourceParagraphs;
+  var answerDate = sourceOwnedReaderAnswerPublicationTime(paragraphs, pageUrl, article.title || metadata.title);
+  if (answerDate) return { publishedTime: answerDate };
   var owner = sourceOwnedMappedPublicationBodyOwner(paragraphs, metadata);
   if (!owner) return null;
 
@@ -14,46 +16,9 @@ function readabilityOwnedSelectedPublication(article, metadata, bodyEvidence) {
   visibleDates = visibleDates.filter(function(node) {
     return !!(node.compareDocumentPosition(owner.firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
+  var readerHeaderDate = sourceOwnedReaderHeaderPublicationTime(paragraphs, owner);
+  if (readerHeaderDate) return { publishedTime: readerHeaderDate };
   return sourceOwnedSelectedPublicationTime(owner.headline, pageUrl, visibleDates) || { publishedTime: null };
-}
-
-function sourceOwnedMappedPublicationBodyOwner(paragraphs, metadata) {
-  if (!Array.isArray(paragraphs) || paragraphs.length < 2 || !metadata) return null;
-  if (paragraphs.some(function(paragraph, index) {
-    return !paragraph || paragraph.localName !== "p" || elementVisuallyHidden(paragraph) ||
-      (index > 0 && !(paragraphs[index - 1].compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING));
-  })) return null;
-
-  var pageUrl = sourceOwnershipPageUrl(metadata.canonicalUrl);
-  var pageTitle = sourceOwnedComparableHeadline(metadata.title || "");
-  if (!pageUrl || pageUrl !== sourceOwnershipPageUrl(materializedCanonicalUrl()) || !pageTitle) return null;
-  var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
-    if (elementVisuallyHidden(heading)) return false;
-    var title = sourceOwnedComparableHeadline(heading.textContent || "");
-    return title === pageTitle || (pageTitle.indexOf(title) === 0 &&
-      /^\s*(?:-|–|—|:|：|\/|\|)\s*\S/.test(pageTitle.slice(title.length)));
-  });
-  if (headings.length !== 1) return null;
-
-  var headline = normalizeText(headings[0].textContent || "");
-  var comparableHeadline = sourceOwnedComparableHeadline(headline);
-  var bodyCandidates = sourceArticleBodyCandidates().filter(function(candidate) {
-    return paragraphs.every(function(paragraph) { return candidate.contains(paragraph); }) &&
-      !elementSubtreeHidden(candidate) && !sourceOwnershipArticleChrome(candidate, candidate);
-  });
-  var innermost = bodyCandidates.filter(function(candidate) {
-    return !bodyCandidates.some(function(other) { return other !== candidate && candidate.contains(other); });
-  });
-  if (innermost.length !== 1) return null;
-
-  var root = innermost[0];
-  if (Array.from(root.querySelectorAll("h1")).some(function(heading) {
-    return !elementVisuallyHidden(heading) &&
-      sourceOwnedComparableHeadline(heading.textContent || "") !== comparableHeadline;
-  })) return null;
-  var ownerRoot = sourceOwnershipCommonAncestor(headings[0], root);
-  if (!ownerRoot || ownerRoot === document.body || ownerRoot === document.documentElement) return null;
-  return { root: root, ownerRoot: ownerRoot, heading: headings[0], body: root, firstParagraph: paragraphs[0], headline: headline };
 }
 
 function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
@@ -72,7 +37,6 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
   var comparableHeadline = sourceOwnedComparableHeadline(headline);
   if (pageTitle.indexOf(comparableHeadline) !== 0 || (pageTitle.length > comparableHeadline.length &&
       !/^\s*(?:-|–|—|:|：|\/|\|)\s*\S/.test(pageTitle.slice(comparableHeadline.length)))) return null;
-
   var paragraphs = Array.from(sourceRoot.querySelectorAll("p")).filter(function(paragraph) {
     return sourceOwnedFallbackProseParagraph(paragraph) &&
       (!paragraph.closest("article") || paragraph.closest("article") === sourceRoot);
@@ -80,6 +44,8 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
   if (paragraphs.length < 2 || paragraphs.some(function(paragraph, index) {
     return index > 0 && !(paragraphs[index - 1].compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING);
   })) return null;
+  var answerDate = sourceOwnedReaderAnswerPublicationTime(paragraphs, pageUrl, headline);
+  if (answerDate) return { publishedTime: answerDate };
   var body = paragraphs.reduce(function(root, paragraph) {
     return root ? sourceOwnershipCommonAncestor(root, paragraph) : paragraph;
   }, null);
@@ -98,6 +64,10 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
   if (sourceArticleBodyHasForeignLinkedArticle(sourceRoot, bodyOwner, headings[0], pageUrl)) return null;
 
   var articleOwnerRoot = bodyOwner.contains(headings[0]) ? bodyOwner : sourceRoot;
+  var readerHeaderDate = sourceOwnedReaderHeaderPublicationTime(paragraphs, {
+    heading: headings[0], ownerRoot: articleOwnerRoot
+  });
+  if (readerHeaderDate) return { publishedTime: readerHeaderDate };
   var headerContext = sourceOwnedArticleHeaderContext({
     heading: headings[0], ownerRoot: articleOwnerRoot, body: { sourceNode: bodyOwner }
   });
@@ -118,14 +88,15 @@ function sourceOwnedPublicationDateNodes(headerNodes) {
 
 function sourceOwnedPublicationRecords(headline, pageUrl) {
   var scanned = sourceOwnedParsedPublicationRecords(headline);
-  if (scanned.ambiguous) return null;
-  var records = scanned.records;
-  if (records.length > 1) return null;
-  if (!records.length || entityText(records[0].headline) !== headline) return [];
+  var records = scanned.records.filter(function(record) { return entityText(record.headline) === headline; });
+  if (records.length > 1) return { records: null };
+  if (!records.length) {
+    return scanned.ambiguous ? { records: null, optionalDataInvalid: true } : { records: [] };
+  }
 
   var urls = sourceOwnedPublicationRecordUrls(records[0]);
-  if (urls.invalid || urls.values.some(function(url) { return url !== pageUrl; })) return null;
-  return records;
+  if (urls.present && !urls.values.includes(pageUrl)) return { records: null };
+  return { records: records };
 }
 
 function sourceOwnedArticlePublicationRecord(record) {
@@ -136,16 +107,16 @@ function sourceOwnedArticlePublicationRecord(record) {
 }
 
 function sourceOwnedPublicationRecordUrls(record) {
-  var mainEntity = record && record.mainEntityOfPage;
-  var values = [record && record.url];
-  if (mainEntity && typeof mainEntity === "object") {
-    values.push(mainEntity.url, mainEntity["@id"]);
-  } else {
-    values.push(mainEntity);
+  var directUrl = normalizeText(record && record.url);
+  if (directUrl) {
+    var normalizedDirectUrl = sourceOwnershipPageUrl(directUrl);
+    return { values: normalizedDirectUrl ? [normalizedDirectUrl] : [], present: true };
   }
-  values = values.filter(function(value) { return !!normalizeText(value); });
-  var urls = values.map(sourceOwnershipPageUrl);
-  return { values: urls.filter(Boolean), invalid: urls.some(function(url) { return !url; }) };
+
+  var mainEntity = record && record.mainEntityOfPage;
+  var mainEntityUrl = mainEntity && typeof mainEntity === "object" ? mainEntity.url || mainEntity["@id"] : mainEntity;
+  var normalizedMainEntityUrl = sourceOwnershipPageUrl(mainEntityUrl);
+  return { values: normalizedMainEntityUrl ? [normalizedMainEntityUrl] : [], present: !!normalizeText(mainEntityUrl) };
 }
 
 function sourceOwnedParsedPublicationRecords(headline) {
@@ -220,22 +191,25 @@ function sourceOwnedRepairHeadlineJson(source, headline) {
 }
 
 function sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDateNodes) {
-  var records = sourceOwnedPublicationRecords(headline, pageUrl);
-  if (!records) return null;
+  var publicationRecords = sourceOwnedPublicationRecords(headline, pageUrl);
+  var records = publicationRecords.records;
   var visibleValues = visibleDateNodes.map(sourceOwnedPublicationNodeDate).filter(Boolean);
   var visible = sourceOwnedUniquePublicationValue(visibleValues);
   var head = sourceOwnedHeadPublicationTime();
-  if (visible.ambiguous || head.ambiguous) return null;
+  if (visible.ambiguous) return null;
+  if (visible.value) return { publishedTime: visible.value };
+  if (publicationRecords.optionalDataInvalid) {
+    return { publishedTime: head.value || null };
+  }
+  if (!records) return { publishedTime: head.value || null };
 
   var recordDate = records.length ? entityText(records[0].datePublished) : "";
-  var values = [visible.value, recordDate, head.value].filter(Boolean);
-  if (values.some(function(value, index) {
-    return values.slice(index + 1).some(function(other) {
-      return !sourceOwnedPublicationDatesEquivalent(value, other);
-    });
-  })) return null;
+  if (head.ambiguous) return null;
+  if (head.value && recordDate && !sourceOwnedPublicationDatesEquivalent(head.value, recordDate)) {
+    return { publishedTime: head.value };
+  }
 
-  return { publishedTime: visible.value || recordDate || head.value || null };
+  return { publishedTime: head.value || recordDate || null };
 }
 
 function sourceOwnedPublicationNodeDate(node) {
@@ -271,11 +245,20 @@ function sourceOwnedPublicationDatesEquivalent(left, right) {
   var leftDate = Date.parse(left);
   var rightDate = Date.parse(right);
   if (!Number.isFinite(leftDate) || !Number.isFinite(rightDate)) return false;
+  if (leftZoned !== rightZoned) {
+    var leftWallClock = sourceOwnedPublicationWallClock(left);
+    var rightWallClock = sourceOwnedPublicationWallClock(right);
+    return !!leftWallClock && !!rightWallClock && leftWallClock === rightWallClock;
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(left) || /^\d{4}-\d{2}-\d{2}$/.test(right)) {
     return new Date(leftDate).toISOString().slice(0, 10) === new Date(rightDate).toISOString().slice(0, 10);
   }
-  if (leftZoned !== rightZoned) return false;
   return leftDate === rightDate;
+}
+
+function sourceOwnedPublicationWallClock(value) {
+  var match = normalizeText(value).match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)/);
+  return match ? match[1] + "T" + match[2] : "";
 }
 
 function sourceOwnedComparableHeadline(value) {

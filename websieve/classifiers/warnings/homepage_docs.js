@@ -26,7 +26,7 @@
     if (content.contentType === "search" || content.contentType === "press_release" ||
         content.contentType === "social" || content.packagePage || content.isolatedLiveblogEntry) return false;
     if (normalizeText(content.byline || metadata.byline || visibleByline() || "") ||
-        normalizeText(content.publishedTime || metadata.publishedTime || visiblePublishedTime() || "")) return false;
+        normalizeText(content.publishedTime || metadata.publishedTime || visiblePublishedTime(content) || "")) return false;
 
     var text = normalizeText(markdown || body || "");
     var title = normalizeText((content.title || metadata.title || "")).toLowerCase();

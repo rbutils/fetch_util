@@ -38,6 +38,11 @@ function collectMetadata() {
   var byline = declaredByline || sanitizeByline(visibleByline()) || null;
   var schemaPublishedTime = entityText(schemaArticle && schemaArticle.datePublished);
   var schemaEventTime = schemaEvent && typeof eventDateText === "function" ? eventDateText(schemaEvent.startDate, schemaEvent.endDate) : null;
+  var visibleHeadings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
+    return !elementVisuallyHidden(heading);
+  });
+  var sourceOwnedQuestionAnswerDate = visibleHeadings.length ?
+    sourceOwnedLeadingQuestionAnswerPublicationTime(visibleHeadings[0].textContent || "", canonicalUrl) : "";
 
   var metadata = {
     title: metadataValue("og:title", "property") || document.title || firstText(["main h1", "article h1", "h1"]),
@@ -69,6 +74,10 @@ function collectMetadata() {
       metadata.excerpt = contentsComponent.lead;
     }
   }
+
+  Object.defineProperty(metadata, "sourceOwnedQuestionAnswerPublicationTime", {
+    value: metadata.publishedTime === sourceOwnedQuestionAnswerDate ? sourceOwnedQuestionAnswerDate : null
+  });
 
   return metadata;
 }

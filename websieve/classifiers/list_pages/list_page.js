@@ -138,7 +138,7 @@
     if (typeof consentWallDominates === "function" && consentWallDominates(document.body.textContent || "")) return null;
     if (!visibleMaterialResultsOwner(content, metadata) && content && typeof notFoundInterstitialEvidence === "function" && notFoundInterstitialEvidence(content.title || document.title || "", document.body.textContent || "", { maxTextLength: 1400 })) return null;
     if (content && document.querySelector("article h1, article [itemprop='articleBody']") &&
-        (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime() || ""))) return null;
+        (normalizeText(content.byline || visibleByline() || "") || normalizeText(content.publishedTime || visiblePublishedTime(content) || ""))) return null;
 
     var extracted = listContent(metadata, { portalRoot: true });
     var articleRoot = document.createElement("div");

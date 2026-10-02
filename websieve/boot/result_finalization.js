@@ -52,7 +52,13 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var metadataByline = sourceOwnedLiveblogParent ? null : sanitizeByline(metadata.byline);
-  var displayedPublishedTime = sourceOwnedLiveblogParent || sourceOwnedArticlePublication ? content.publishedTime : visiblePublishedTime();
+  var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
+  var readerAnswerTime = Array.isArray(readerParagraphs) ?
+    sourceOwnedReaderAnswerPublicationTime(readerParagraphs, metadata.canonicalUrl, content.title || metadata.title) : null;
+  var metadataQuestionAnswerTime = !Array.isArray(readerParagraphs) && metadata.publishedTime &&
+    metadata.sourceOwnedQuestionAnswerPublicationTime === metadata.publishedTime ? metadata.publishedTime : null;
+  var displayedPublishedTime = sourceOwnedLiveblogParent || sourceOwnedArticlePublication ? content.publishedTime :
+    readerAnswerTime || metadataQuestionAnswerTime || visiblePublishedTime(content);
   var visibleBylineRaw = sourceOwnedLiveblogParent ? null : visibleByline();
   var namedAuthorByline = sourceOwnedLiveblogParent ? null : visibleNamedAuthorByline();
   var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {

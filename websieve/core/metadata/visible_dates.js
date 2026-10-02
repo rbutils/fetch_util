@@ -12,8 +12,72 @@ function visiblePublishedTimeRoots() {
 
 function visiblePublishedTimeField(node) {
   var contentSelector = "article, main, [role='main'], [itemprop='articleBody'], .entry-content, .post-content";
-  if (node.matches(contentSelector)) return false;
+  if (node.matches(contentSelector) || node.matches("a.answer_timestamp[href]") ||
+      node.closest("aside, [role='complementary']") ||
+      visiblePublicationSchedule(node) || visibleForeignPublicationCard(node)) return false;
   return !node.querySelector(contentSelector + ", h1, h2, h3, h4, h5, h6, figure, blockquote, pre, table");
+}
+
+function visiblePublicationSchedule(node) {
+  return node.matches(
+    "[itemprop~='startDate' i], [itemprop~='endDate' i], " +
+    "[class~='event-start-date' i], [class~='event-end-date' i]"
+  ) || !!node.closest(
+    "[itemprop~='startDate' i], [itemprop~='endDate' i], " +
+    "[class~='event-start-date' i], [class~='event-end-date' i], " +
+    "[itemtype$='Event' i], [role='calendar' i], [role='grid'][aria-label*='calendar' i], " +
+    "date-calendar-component, [class~='event-schedule' i], [id='event-schedule' i], " +
+    "[class~='calendar-widget' i], [data-widget='calendar' i]"
+  );
+}
+
+function visibleForeignPublicationCard(node) {
+  var recordSelectors = [
+    "article", "[itemtype*='Article' i]", "[class*='teaser' i]", "[class*='card' i]",
+    "[class*='story' i]", "[class*='news-item' i]", "[class*='record' i]"
+  ].join(", ");
+  var canonical;
+  try {
+    canonical = new URL(materializedCanonicalUrl() || location.href);
+  } catch (_error) {
+    return false;
+  }
+
+  var record = node.closest(recordSelectors);
+  if (record) {
+    var localHeadings = Array.from(record.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+      return !elementVisuallyHidden(heading) && heading.closest(recordSelectors) === record;
+    });
+    var pageHeadings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
+      return !elementVisuallyHidden(heading) && normalizeText(heading.textContent || "");
+    });
+    var localPageHeadline = pageHeadings.length === 1 && localHeadings.indexOf(pageHeadings[0]) !== -1 &&
+      record.contains(pageHeadings[0]) ? pageHeadings[0] : null;
+    if (localPageHeadline && !visibleForeignPublicationHeading(localPageHeadline, canonical)) return false;
+    if (localHeadings.length === 1 && visibleForeignPublicationHeading(localHeadings[0], canonical)) return true;
+  }
+
+  var records = new Set();
+  var scope = node.closest("main, [role='main']");
+  if (!scope) return false;
+  Array.from(scope.querySelectorAll("h1, h2, h3, h4, h5, h6")).forEach(function(heading) {
+    var owner = heading.closest(recordSelectors);
+    if (!owner || owner === record || elementVisuallyHidden(heading) ||
+        !visibleForeignPublicationHeading(heading, canonical)) return;
+    records.add(owner);
+  });
+  return records.size > 1 && !Array.from(records).some(function(owner) { return owner.contains(node); });
+}
+
+function visibleForeignPublicationHeading(heading, canonical) {
+  var link = heading.matches("a[href]") ? heading : heading.closest("a[href]") || heading.querySelector("a[href]");
+  if (!link) return false;
+  try {
+    var target = new URL(link.getAttribute("href"), canonical.href);
+    return target.origin !== canonical.origin || target.pathname !== canonical.pathname;
+  } catch (_error) {
+    return true;
+  }
 }
 
 function visiblePublicationDateLike(value) {
@@ -67,7 +131,22 @@ function visibleInlinePublishedTime(roots) {
   return fields.length ? fields[0].value : null;
 }
 
-function visiblePublishedTime() {
+function visiblePublishedTime(content) {
+  var readerParagraphs = content && content.sourceOwnedReaderBodyParagraphSources;
+  if (Array.isArray(readerParagraphs)) {
+    var selectedAnswerDate = sourceOwnedReaderAnswerPublicationTime(
+      readerParagraphs, materializedCanonicalUrl(), content.title || ""
+    );
+    if (selectedAnswerDate) return selectedAnswerDate;
+  } else if (!content) {
+    var questionHeadline = Array.from(document.querySelectorAll("h1")).filter(function(node) {
+      return !elementVisuallyHidden(node);
+    })[0];
+    var leadingAnswerDate = questionHeadline &&
+      sourceOwnedLeadingQuestionAnswerPublicationTime(questionHeadline.textContent || "", materializedCanonicalUrl());
+    if (leadingAnswerDate) return leadingAnswerDate;
+  }
+
   var roots = visiblePublishedTimeRoots();
   var fields = [
       "[itemprop='datePublished']",
@@ -92,7 +171,7 @@ function visiblePublishedTime() {
   return firstScopedText(roots, ["time[datetime]"], "datetime", null, function(node) {
       return visiblePublishedTimeField(node) && visiblePublicationDateLike(node.getAttribute("datetime") || node.textContent || "");
     }) ||
-    firstScopedText(roots, ["time[datetime]"], "datetime") ||
+    firstScopedText(roots, ["time[datetime]"], "datetime", null, visiblePublishedTimeField) ||
     firstScopedText(roots, fields, null, null, function(node) {
       if (!visiblePublishedTimeField(node)) return false;
       var value = node.getAttribute("datetime") || node.getAttribute("content") || node.textContent || "";
