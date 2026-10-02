@@ -1,3 +1,24 @@
+  function sourceOwnedRecordMediaForItems(collection, extraction) {
+    if (!collection || !extraction || !extraction.collectionOwnerMapped ||
+        extraction.collectionOwnerSourceNode !== collection.owner) return;
+    var items = extraction.items || [];
+    var used = new Set();
+    collection.records.forEach(function(record) {
+      if (!record.mediaMarkdown || !record.mediaMarkdown.length) return;
+      var item = items.find(function(candidate) {
+        return !used.has(candidate) && listCanonicalKey(materializedHttpUrl(candidate.url) || "") === record.destination &&
+          (candidate.repeatedRecordIdentity === record.identity || normalizeText(candidate.text) === record.title);
+      });
+      if (!item) return;
+      used.add(item);
+      var sourceAlt = normalizeText((record.node.querySelector("a[href] img[src]") || {}).alt || "");
+      if (normalizeText(item.image || "") === sourceAlt) item.image = "";
+      if (!record.mediaMarkdown.some(function(media) { return (item.image || "").includes(media); })) {
+        item.image = [item.image, record.mediaMarkdown.join(" ")].filter(Boolean).join(" ");
+      }
+    });
+  }
+
   function pageOwnedOverviewSection(node) {
     var identity = [node.className || "", node.id || "", node.getAttribute("aria-label") || "",
       node.getAttribute("itemprop") || "", node.getAttribute("data-section") || "", node.getAttribute("data-type") || ""].join(" ");

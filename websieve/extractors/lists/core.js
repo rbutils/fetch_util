@@ -217,6 +217,7 @@
     options = options || {};
     var pageTitles = [metadata.title, document.title];
     var best = bestListExtraction(metadata, pageTitles, options);
+    sourceOwnedRecordMediaForItems(options.repeatedRecordCollection, best);
     var rankedMarkdown = best.markdown;
     if (!best.sectionCount) {
       var descriptions = listDescriptionParts(best.root, best.items, {
