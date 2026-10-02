@@ -47,7 +47,9 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["markdown"]).to include("Les Français n’ont presque pas eu le temps de ranger les ventilateurs")
       expect(payload["markdown"]).not_to include("Cet article vous est offert")
       expect(payload["markdown"]).not_to include("La suite est réservée")
-      expect(payload["html"]).to include("<h1>La France bascule dans une nouvelle vague de chaleur caniculaire")
+      headline = "La France bascule dans une nouvelle vague de chaleur caniculaire, avec des pics à 40 °C"
+      headings = payload.fetch("html").scan(%r{<h1(?:\s[^>]*)?>(.*?)</h1>}m).flatten
+      expect(headings).to eq([headline])
       expect(payload["html"]).to include("A Bordeaux, le 6 juillet 2026")
       expect(payload["markdown"]).to include("CHRISTOPHE ARCHAMBAULT/AFP")
       expect(payload["html"]).not_to include("Cet article vous est offert", "La suite est réservée")
