@@ -363,6 +363,136 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
+  it "does not classify a titled single article with focal sections as a newsletter" do
+    sections = (1..6).map do |index|
+      <<~SECTION
+        <section>
+          <h2>Part #{index}: Reporting detail</h2>
+          <p>The article's reporting explains this development and its context for readers. <a href="/related/#{index}">Related report #{index}</a>.</p>
+        </section>
+      SECTION
+    end.join
+    title = "A single report about an unfolding public event"
+    html = <<~HTML
+      <html><head><title>#{title}</title>
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="#{title}">
+      </head><body><main><article>
+        <h1>#{title}</h1>
+        <p>The source identifies this as one report, despite its related linked sections.</p>
+        #{sections}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/public-event", html) do |page|
+      payload = extract(page)
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["markdown"]).to include("Part 1: Reporting detail", "Part 6: Reporting detail")
+    end
+  end
+
+  it "does not infer newsletter from linked list entries without authored digest summaries" do
+    entries = (1..8).map do |index|
+      day = format("%02d", index)
+      %(<article><h2><a href="/news/#{index}">Independent newsroom report #{index}</a></h2>
+        <time datetime="2026-09-#{day}">September #{index}</time></article>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Independent newsroom</title></head><body><main>
+        <h1>Independent newsroom</h1>#{entries}
+      </main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/news/", html) do |page|
+      payload = extract(page)
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(payload["markdown"]).to include("Independent newsroom report 1", "Independent newsroom report 8")
+    end
+  end
+
+  it "keeps the multi-topic warning for product feature modules without newsletter format" do
+    modules = (1..8).map do |index|
+      <<~MODULE
+        <article>
+          <h2><a href="/features/#{index}">Platform feature #{index}</a></h2>
+          <p>This module explains a distinct platform capability and how teams apply it in their daily work.</p>
+        </article>
+      MODULE
+    end.join
+    html = <<~HTML
+      <html><head><title>Platform features</title>
+        <meta property="og:type" content="website">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Platform"}</script>
+      </head><body><header><h1>Platform features</h1></header><section class="features">#{modules}</section></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/platform/features", html) do |page|
+      payload = extract(page)
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(payload["markdown"]).to include("Platform feature 1", "Platform feature 8")
+    end
+  end
+
+  it "detects an anonymous digest from an owned editorial introduction and independent list records" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <article>
+          <h2><a href="/reports/#{index}">Independent public report #{index}</a></h2>
+          <p>Summary #{index} explains a separate development and why it matters to readers.</p>
+        </article>
+      RECORD
+    end.join
+    html = <<~HTML
+      <html><head><title>Independent reports</title></head><body><main>
+        <h1>Independent reports</h1>
+        <p>Our editors selected six separate reports and added context on the developments that matter across policy, science, and community life.</p>
+        #{records}
+      </main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/selection", html) do |page|
+      payload = extract(page)
+      markdown = payload.fetch("markdown")
+      expect(payload["contentType"]).to eq("list")
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(markdown).to include("Our editors selected six separate reports", "Independent public report 1", "Independent public report 6")
+      expect(payload.fetch("html")).to include(*6.times.map { |index| "/reports/#{index + 1}" })
+    end
+  end
+
+  it "does not infer newsletter from linked topic sections outside a focal article" do
+    sections = (1..6).map do |index|
+      <<~SECTION
+        <section>
+          <h2>Research area #{index}</h2>
+          <p>Our teams investigate this area and publish work for practitioners and policy makers.</p>
+          <p><a href="/research/reports/#{index}">Reports</a> <a href="/research/projects/#{index}">Projects</a></p>
+        </section>
+      SECTION
+    end.join
+    title = "Research"
+    html = <<~HTML
+      <html><head><title>#{title}</title>
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="#{title}">
+      </head><body><main>
+        <article><h1>#{title}</h1><p>Research across natural environments, production, technology, space, and health.</p></article>
+        #{sections}
+      </main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/research", html) do |page|
+      payload = extract(page)
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["markdown"]).to include("Research area 1", "Research area 6", "/research/reports/1", "/research/projects/6")
+      expect(payload.fetch("markdown").index("Research area 1")).to be < payload.fetch("markdown").index("Research area 6")
+    end
+  end
+
   it "does not count taxonomy links split across paragraphs as linked newsletter records" do
     sections = (1..5).map do |index|
       "<section><h3>Conference statement #{index}</h3><p>The speaker described the next step in the negotiations.</p></section>"
@@ -865,6 +995,190 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
       JS
 
       expect(format).to be_nil
+    end
+  end
+
+  it "keeps an owned anonymous digest despite unrelated sidebar product and application entities" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <article><h2><a href="/reports/#{index}">Independent public report #{index}</a></h2>
+          <p>Summary #{index} explains a separate development and why it matters to readers.</p>
+        </article>
+      RECORD
+    end.join
+    html = <<~HTML
+      <html><head><title>Independent reports</title></head><body>
+        <aside class="related-software">
+          <script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+            {"@type":"SoftwareApplication","name":"Unrelated publisher tool"},
+            {"@type":"Product","name":"Unrelated catalog item"}
+          ]}</script>
+        </aside>
+        <main><h1>Independent reports</h1>
+          <p>Our editors selected six separate reports and added context on developments that matter across policy, science, and community life.</p>
+          #{records}
+        </main>
+      </body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/selection", html) do |page|
+      payload = extract(page)
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["markdown"]).to include("Our editors selected six separate reports", "Independent public report 1", "Independent public report 6")
+    end
+  end
+
+  it "does not borrow newsletter context from a footer or linked story headline" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <article>
+          <h2><a href="/stories/#{index}">Newsletter coverage: report #{index}</a></h2>
+          <p>Newsroom report #{index} records the public decision and its immediate local consequences.</p>
+        </article>
+      RECORD
+    end.join
+    html = <<~HTML
+      <html><head><title>Independent newsroom</title></head><body><main>
+        <h1>Independent newsroom</h1>
+        #{records}
+      </main><footer><h2>Newsletter</h2><p>Subscribe for updates.</p></footer></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/news/", html) do |page|
+      payload = extract(page)
+      expect(payload["contentFormat"]).not_to eq("newsletter")
+      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(payload["markdown"]).to include("Newsletter coverage: report 1", "Newsletter coverage: report 6")
+    end
+  end
+
+  it "does not borrow an editorial introduction from a nested foreign record" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <article><h2><a href="/reports/#{index}">Independent report #{index}</a></h2>
+          <p>Report #{index} explains the public development and its effect on local communities.</p>
+        </article>
+      RECORD
+    end.join
+    foreign_records = (1..4).map do |index|
+      <<~RECORD
+        <h2><a href="/features/selected-#{index}">Selected editorial feature #{index}</a></h2>
+        <p>This separate feature record summarizes its own source material and reader context without selecting the surrounding report collection.</p>
+      RECORD
+    end.join
+    foreign_record = <<~FOREIGN
+      <article class="foreign-feature">
+        <p>Our editors selected this individual feature after reviewing its reporting and reader interest in the subject.</p>
+        #{foreign_records}
+      </article>
+    FOREIGN
+    html = <<~HTML
+      <html><head><title>Independent reports</title></head><body><main>
+        <h1>Independent reports</h1>
+        #{foreign_record}
+        #{records}
+      </main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/", html) do |page|
+      root = File.expand_path("../../..", __dir__)
+      source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, "websieve", entry))
+      end.join("\n")
+      page.add_script_tag(content: File.read(File.join(root, "lib/fetch_util/assets/vendor/turndown.js")))
+      page.add_script_tag(content: source.sub(
+        "})(window);",
+        "global.newsletterIntroProbe = { owned: newsletterOwnedEditorialIntro, detect: detectContentFormat, markdown: markdownFor }; })(window);"
+      ))
+      result = page.evaluate(<<~JS)
+        (() => {
+          const owner = document.querySelector("main");
+          return {
+            ownedIntro: newsletterIntroProbe.owned(owner, { title: document.title }, { title: document.title }),
+            format: newsletterIntroProbe.detect(
+              { title: document.title },
+              { contentType: "list", title: document.title, html: owner.innerHTML, textContent: owner.textContent },
+              newsletterIntroProbe.markdown(owner.innerHTML)
+            )
+          };
+        })()
+      JS
+
+      expect(result).to eq("ownedIntro" => false, "format" => nil)
+    end
+  end
+
+  it "binds article identity and focal ownership to the visible selected headline" do
+    title = "A separate foreign article headline"
+    html = <<~HTML
+      <html><head><title>Selected source report</title>
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="#{title}">
+      </head><body>
+        <h1 hidden>#{title}</h1>
+        <aside class="sidebar"><h1>#{title}</h1></aside>
+        <main><article><h1>Selected source report</h1>
+          <p>The visible article body belongs to a different selected source record and provides its own reporting context.</p>
+        </article><article class="secondary-publication">
+          <h2><a href="/stories/foreign">#{title}</a></h2>
+          <p>This separate linked story card has a different selected owner and article body.</p>
+        </article></main>
+      </body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/selected", html) do |page|
+      root = File.expand_path("../../..", __dir__)
+      source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
+        File.read(File.join(root, "websieve", entry))
+      end.join("\n")
+      page.add_script_tag(content: source.sub(
+        "})(window);",
+        "global.newsletterOwnershipProbe = { singleArticle: newsletterSingleArticleIdentity, focalArticle: newsletterFocalArticleRoot }; })(window);"
+      ))
+      result = page.evaluate(<<~JS)
+        (() => {
+          const selected = document.createElement('div');
+          selected.innerHTML = '<main><article><h2><a href="/stories/foreign">A separate foreign article headline</a></h2><p>This separate linked story card has a different selected owner and article body.</p></article></main>';
+          return {
+            singleArticle: newsletterOwnershipProbe.singleArticle(selected),
+            borrowedFocalRoot: !!newsletterOwnershipProbe.focalArticle(
+              { title: #{title.to_json} },
+              { contentType: 'article', title: #{title.to_json} },
+              selected
+            )
+          };
+        })()
+      JS
+
+      expect(result).to eq("singleArticle" => false, "borrowedFocalRoot" => false)
+    end
+  end
+
+  it "recognizes authored digest records inside an identified article body" do
+    records = (1..6).map do |index|
+      <<~RECORD
+        <section>
+          <h2>Selected report #{index}</h2>
+          <p>This authored digest record summarizes a distinct verified public development for readers. <a href="/reports/#{index}">Read the full source report</a>.</p>
+        </section>
+      RECORD
+    end.join
+    title = "A source-authored report collection"
+    html = <<~HTML
+      <html><head><title>#{title}</title>
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="#{title}">
+      </head><body><main><article>
+        <h1>#{title}</h1>
+        #{records}
+      </article></main></body></html>
+    HTML
+
+    with_url_page("https://unknown.example/reports/collection", html) do |page|
+      payload = extract(page)
+      expect(payload["contentType"]).to eq("article")
+      expect(payload["contentFormat"]).to eq("newsletter")
+      expect(payload["markdown"]).to include("Selected report 1", "Selected report 6", "Read the full source report")
     end
   end
 

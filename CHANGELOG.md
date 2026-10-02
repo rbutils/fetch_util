@@ -11,6 +11,7 @@
 
 ### Changed
 
+- Require source-owned linked summaries and editorial context for inferred list digests, bind article context to its visible source owner, and preserve independent multi-topic warnings.
 - Preserve distinct source result records that share one destination URL.
 - Keep every owned article table cell when a product or repeated-record list would omit table material.
 - Preserve complete source-owned About and page-introduction paragraphs in repeated-record list results without borrowing neighboring prose.

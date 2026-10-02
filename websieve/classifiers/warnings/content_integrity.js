@@ -102,9 +102,10 @@
       var formatView = multiTopicExtractionView(content, markdown);
       var formatMarkdown = formatView.markdown || markdown || "";
       var format = detectContentFormat(metadata, content, formatMarkdown);
+      var unclassifiedMultiTopicList = !format && newsletterHasMultiTopicListStructure(content, formatMarkdown, formatView.root);
       var credibleDocsIndex = credibleDocsIndexReferenceList(metadata, content, formatMarkdown, body);
       var shortNewsArticle = !!structuredDataNode(["NewsArticle", "ReportageNewsArticle", "AnalysisNewsArticle", "OpinionNewsArticle"]) && body.length < 1000;
-      if (format && !content.threadConversation && !credibleListFeed && !credibleDocsIndex && !(format === "video" && content.hostAware) && !shortNewsArticle && !strongSingleTopicPage(metadata, content, formatMarkdown, body) && !scientificRecordContext(metadata, content, markdown, body) && !legalInstrumentContext(title, body)) reasons.push("multi_topic_page");
+      if ((format || unclassifiedMultiTopicList) && !content.threadConversation && !credibleListFeed && !credibleDocsIndex && !(format === "video" && content.hostAware) && !shortNewsArticle && !strongSingleTopicPage(metadata, content, formatMarkdown, body) && !scientificRecordContext(metadata, content, markdown, body) && !legalInstrumentContext(title, body)) reasons.push("multi_topic_page");
     }
 
     // Paywall partial content: paywall detected and content appears truncated

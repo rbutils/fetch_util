@@ -75,40 +75,49 @@
     return (value.match(/[\p{L}\p{N}]+/gu) || []).length;
   }
 
-  function newsletterFocalArticleRoot(metadata, content, root) {
-    if (!content || content.contentType !== "article" || !root) return null;
-    var focalHeading = root.querySelector("h1, [itemprop='headline']") || root.querySelector("h2");
-    var pageTitle = normalizeText((content && content.title) || (metadata && metadata.title) || "");
-    var focalTitle = normalizeText(focalHeading && focalHeading.textContent);
-    var hasFocalTitle = focalTitle === pageTitle ||
-      (focalTitle.length >= 6 && pageTitle.indexOf(focalTitle) === 0 && /^[\s|:–—-]/.test(pageTitle.slice(focalTitle.length)));
-    if (!focalHeading || !pageTitle || !hasFocalTitle) return null;
-    return focalHeading.closest("article, [itemprop='articleBody']") || null;
-  }
+  function newsletterStructuralEvidence(content, markdown, root, focalArticleRoot) {
+    if (!markdown || !content || !content.html || !root) return { dense: false, linkDominated: false };
 
-  function newsletterCommerceCardCount(root) {
-    if (!root) return 0;
-    var cards = root.querySelectorAll(
-      "[itemtype*='Product' i], [itemtype*='Offer' i], [itemprop='offers'], [data-product-id], [data-item-id][data-detail-setting]"
-    );
-    var destinationsSeen = [];
-    for (var i = 0; i < cards.length; i++) {
-      var card = cards[i];
-      var links = [];
-      if (card.matches("a[href]")) links.push(card);
-      Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) { links.push(link); });
-      var destinations = [];
-      var linkedImage = false;
-      for (var j = 0; j < links.length; j++) {
-        var destination = links[j].href || links[j].getAttribute("href");
-        if (destination && destinations.indexOf(destination) === -1) destinations.push(destination);
-        if (links[j].querySelector("img")) linkedImage = true;
-      }
-      if (destinations.length === 1 && linkedImage && destinationsSeen.indexOf(destinations[0]) === -1) {
-        destinationsSeen.push(destinations[0]);
+    var mdLines = markdown.split("\n").filter(function(line) { return line.trim().length > 0; });
+    var mdLinks = (markdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
+    var mdHeadings = (markdown.match(/^#{1,3}\s+/gm) || []).length;
+    var shortBlocks = 0;
+    var currentBlockLen = 0;
+    for (var lineIndex = 0; lineIndex < mdLines.length; lineIndex++) {
+      var line = mdLines[lineIndex];
+      if (/^#{1,3}\s+/.test(line)) {
+        if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
+        currentBlockLen = 0;
+      } else {
+        currentBlockLen += newsletterVisibleMarkdownLength(line);
       }
     }
-    return destinationsSeen.length;
+    if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
+
+    var commerceCardCount = newsletterCommerceCardCount(focalArticleRoot);
+    shortBlocks = Math.max(0, shortBlocks - commerceCardCount);
+    var linkedSections = Math.max(0, newsletterIndependentLinkedSectionCount(root) - commerceCardCount);
+    var dense = mdHeadings >= 4 && mdLinks.length >= 5 && linkedSections >= 4 &&
+      shortBlocks >= 4 && shortBlocks >= mdHeadings * 0.6;
+    var proseText = markdown.replace(/\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/^#{1,6}\s+.*$/gm, "");
+    var proseWordCount = unicodeWordCount(proseText);
+    var linkDominated = !!(focalArticleRoot && mdLinks.length >= 8 && mdHeadings >= 4 &&
+      proseWordCount < mdLinks.length * 5);
+
+    return { dense: dense, linkDominated: linkDominated };
+  }
+
+  function newsletterHasMultiTopicListStructure(content, markdown, root) {
+    if (!content || content.contentType !== "list") return false;
+    var evidence = newsletterStructuralEvidence(content, markdown, root, root);
+    return evidence.dense || evidence.linkDominated;
+  }
+
+  function newsletterFocalArticleRoot(metadata, content, root) {
+    if (!content || content.contentType !== "article" || !root) return null;
+    var pageTitle = normalizeText((content && content.title) || (metadata && metadata.title) || "");
+    var titleOwner = newsletterSelectedSourceTitleOwner(root, pageTitle, false);
+    return titleOwner ? titleOwner.selectedOwner : null;
   }
 
   // Detect liveblog / multi-topic / briefing content format
@@ -190,6 +199,20 @@
     var formatView = multiTopicExtractionView(content, markdown);
     var formatMarkdown = formatView.markdown || markdown || "";
     var guideRoot = formatView.root;
+    var editionContext = newsletterEditionContext(metadata, content, guideRoot);
+    var singleArticleIdentity = newsletterSingleArticleIdentity(guideRoot);
+    var focalArticleRoot = newsletterFocalArticleRoot(metadata, content, guideRoot);
+    var authoredDigestRecords = newsletterIndependentLinkedSectionCount(guideRoot, true);
+    var focalArticleDigestRecords = focalArticleRoot ? newsletterIndependentLinkedSectionCount(focalArticleRoot, true) : 0;
+    var structuralNewsletter = newsletterStructuralEvidence(content, formatMarkdown, guideRoot, focalArticleRoot);
+    // Extracted topic pages can contain article cards without owning a focal article or digest.
+    var articleDigestEvidence = content && content.contentType === "article" &&
+      (focalArticleRoot || authoredDigestRecords >= 4) &&
+      (!singleArticleIdentity || (focalArticleDigestRecords >= 4 &&
+        (editionContext || newsletterIndependentLinkedSectionCount(focalArticleRoot, true, true) >= 4)));
+    var listDigestEvidence = content && content.contentType === "list" && authoredDigestRecords >= 4 &&
+      editionContext && !newsletterNonEditorialList(guideRoot);
+    var newsletterEvidence = !!(articleDigestEvidence || listDigestEvidence);
     var codeRichGuide = content && content.contentType === "article" && guideRoot &&
       /\b(?:guides?|docs?|documentation|reference|tutorials?|manual)\b/i.test([
         document.title, location.pathname, location.hostname
@@ -239,39 +262,16 @@
     // matches specific title patterns — this catches structural layout patterns.
     // A proved alphabet/year browse index is a directory, even when its links
     // satisfy the short-block and link-density heuristics for a digest.
-    if (formatMarkdown && content && content.html && !credibleRootHomepageList && !content.browseIndexEvidence) {
-      var mdLines = formatMarkdown.split("\n").filter(function(l) { return l.trim().length > 0; });
-      var mdLinks = (formatMarkdown.replace(/!\[[^\]]*\]\([^)]+\)/g, "").match(/\[([^\]]*)\]\([^)]+\)/g) || []);
-      var mdHeadings = (formatMarkdown.match(/^#{1,3}\s+/gm) || []).length;
-      var focalArticleRoot = newsletterFocalArticleRoot(metadata, content, guideRoot);
-
-      // Count short text blocks (< 200 chars between headings/links) as before.
-      var shortBlocks = 0;
-      var currentBlockLen = 0;
-      for (var li = 0; li < mdLines.length; li++) {
-        var line = mdLines[li];
-        if (/^#{1,3}\s+/.test(line)) {
-          if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
-          currentBlockLen = 0;
-        } else {
-          currentBlockLen += newsletterVisibleMarkdownLength(line);
-        }
-      }
-      if (currentBlockLen > 0 && currentBlockLen < 200) shortBlocks++;
-
-      // Newsletter/digest: many headings, many links, and most content blocks are short
-      var commerceCardCount = newsletterCommerceCardCount(focalArticleRoot);
-      shortBlocks = Math.max(0, shortBlocks - commerceCardCount);
-      var linkedSections = Math.max(0, newsletterIndependentLinkedSectionCount(guideRoot) - commerceCardCount);
-      if (mdHeadings >= 4 && mdLinks.length >= 5 && linkedSections >= 4 && shortBlocks >= 4 && shortBlocks >= mdHeadings * 0.6) {
+    if (formatMarkdown && content && content.html && guideRoot &&
+        (!credibleRootHomepageList || newsletterEvidence) && (!content.browseIndexEvidence || newsletterEvidence)) {
+      // Newsletter format requires source-owned editorial evidence as well as this structure.
+      if (newsletterEvidence && structuralNewsletter.dense) {
         return "newsletter";
       }
 
       // Hub/index page: dominated by links with very little prose relative to link count
       // (e.g. news hub pages listing story headlines as links)
-      var proseText = formatMarkdown.replace(/\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/^#{1,6}\s+.*$/gm, "");
-      var proseWordCount = unicodeWordCount(proseText);
-      if (mdLinks.length >= 8 && mdHeadings >= 4 && proseWordCount < mdLinks.length * 5) {
+      if (newsletterEvidence && structuralNewsletter.linkDominated) {
         return "newsletter";
       }
     }
