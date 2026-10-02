@@ -135,7 +135,11 @@ RSpec.describe 'Source-owned semantic article panels' do
     )
 
     expect(payload.fetch('html')).to include(article_title, 'Measured river levels', 'monitoring-data.csv')
-    expect(payload.fetch('html')).not_to include(long_title, '/media/world/one.jpg')
+    html = payload.fetch('html')
+    expect(html).to include(long_title, '/media/world/one.jpg', '/news/world/one', 'District report two', 'District report three')
+    expect(html.index(long_title)).to be < html.index('District report two')
+    expect(html.index('District report two')).to be < html.index('District report three')
+    expect(payload.fetch('markdown')).to include(long_title, 'District report two', 'District report three')
   end
 
   it 'retains prose outside nested image-bearing related cards' do
