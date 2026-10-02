@@ -91,6 +91,7 @@ RSpec.describe FetchUtil::Extractor do
     expect(markdown.scan(/^Research$/).length).to eq(4)
     expect(markdown).not_to include("\uE000fetch-util-card-field:", 'data-fetch-util-structured-card-field')
     expect(result.fetch('textContent')).not_to include("\uE000fetch-util-card-field:")
+    expect(result.fetch('html')).not_to include('data-fetch-util-structured-card-field', "\uE000fetch-util-card-field:")
   end
 
   it 'leaves ambiguous and incomplete block-label links on the established compact path' do

@@ -1,5 +1,8 @@
   function listHtmlWithoutUnsafeDestinations(root) {
     var clone = safeDeepClone(root, document);
+    clone.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
+      node.removeAttribute("data-fetch-util-structured-card-field");
+    });
     clone.querySelectorAll("a[href]").forEach(function(link) {
       if (!materializedHttpUrl(link.getAttribute("href"))) link.removeAttribute("href");
     });
@@ -253,6 +256,9 @@
     if (structuredListTables(best.root).length) {
       best.sourceTableMarkdown = markdownFor(best.root.innerHTML);
       best.markdown = best.sourceTableMarkdown;
+    }
+    if (best.items.length >= 2 && best.items.every(function(item) { return item.sourceOrderedStructuredCard; })) {
+      best.markdown = markdownFor(best.root.innerHTML);
     }
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");

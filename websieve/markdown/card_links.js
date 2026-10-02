@@ -112,7 +112,9 @@
   function preserveStructuredCardLinks(root, options) {
     options = options || {};
     root.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
-      node.removeAttribute("data-fetch-util-structured-card-field");
+      if (node.getAttribute("data-fetch-util-structured-card-field") !== STRUCTURED_CARD_FIELD_MARKER) {
+        node.removeAttribute("data-fetch-util-structured-card-field");
+      }
     });
     if (options.producerProvenTitleLinks) {
       var producerProvenTitles = new Set();
@@ -153,7 +155,7 @@
 
       records.forEach(function(record) {
         var link = record.link;
-        record.evidence.label.setAttribute("data-fetch-util-structured-card-field", "");
+        record.evidence.label.setAttribute("data-fetch-util-structured-card-field", STRUCTURED_CARD_FIELD_MARKER);
         var title = record.evidence.title;
         var parent = link.parentNode;
         var href = link.getAttribute("href");
