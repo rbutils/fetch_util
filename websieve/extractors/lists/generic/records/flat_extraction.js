@@ -42,9 +42,14 @@
     var context = listPageContext();
     context.producerProvenCardTitles = options && options.producerProvenCardTitles;
     context.structuredCardTitleLinks = structuredCardTitleLinks;
-    var repeatedRecordByIdentity = new Map((options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).map(function(record) {
-      return [record.identity, record];
-    }));
+    var repeatedRecordByLink = new Map();
+    (options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).forEach(function(record) {
+      if (!record.node || !record.node.querySelectorAll) return;
+      Array.prototype.forEach.call(record.node.querySelectorAll("a[href]"), function(link) {
+        if (listCanonicalKey(materializedHttpUrl(link.getAttribute("href")) || "") !== record.destination) return;
+        repeatedRecordByLink.set(link, repeatedRecordByLink.has(link) ? null : record);
+      });
+    });
     var tableIndexSource = linkedTableIndexRoot();
     context.tableIndexPage = !!tableIndexSource;
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
@@ -55,7 +60,7 @@
       var chromeOwnedCard = !!(link && container && container.parentElement &&
         container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
       var identity = materializedHttpUrl(href);
-      var provenRecord = identity && repeatedRecordByIdentity.has(listCanonicalKey(identity) + "|" + normalizeText(text).toLowerCase());
+      var provenRecord = identity && repeatedRecordByLink.get(link);
       var anchorMinimum = provenRecord ? 1 : minimumListTitleLength(text);
       if (link && genericListImageTitleCard(link)) anchorMinimum = 1;
       else if (directAnchorCard && genericListWrappedAnchorCard(link)) anchorMinimum = Math.min(6, anchorMinimum);
@@ -79,9 +84,14 @@
       if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
-      var recordIdentity = materializedHttpUrl(href) && listCanonicalKey(materializedHttpUrl(href)) + "|" + normalizeText(candidate.text).toLowerCase();
-      var repeatedRecord = recordIdentity && repeatedRecordByIdentity.get(recordIdentity);
-      if (repeatedRecord && repeatedRecord.mediaMarkdown.length) candidate.image = repeatedRecord.mediaMarkdown.join(" ");
+      var repeatedRecord = repeatedRecordByLink.get(link);
+      if (repeatedRecord) {
+        candidate.text = repeatedRecord.title;
+        candidate.repeatedRecordIdentity = repeatedRecord.identity;
+        candidate.dedupeKey = repeatedRecord.identity;
+        candidate.rankScore = candidate.text.length + normalizeText(candidate.detail || "").length;
+        if (repeatedRecord.mediaMarkdown.length) candidate.image = repeatedRecord.mediaMarkdown.join(" ");
+      }
       if (pushUniqueListCandidate(candidates, seen, candidate)) {
         sourceNodes.set(candidate, link);
         acceptedLinks.add(link);

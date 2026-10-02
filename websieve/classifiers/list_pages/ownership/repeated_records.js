@@ -103,17 +103,23 @@
         return link.key === primaryLinks[0].key;
       });
       if (!titleLink) return null;
+      var headings = Array.prototype.filter.call(node.querySelectorAll("h1, h2, h3, h4"), function(heading) {
+        var title = normalizeText(heading.textContent || "");
+        return !elementSubtreeHidden(heading) && !listChromeNode(heading) &&
+          !heading.closest("nav, header, footer, aside, [role='navigation'], [role='complementary']") &&
+          title.length >= 4 && title.length <= 220 && !genericListControlText(title);
+      });
       var recordClass = Array.prototype.some.call(node.classList || [], function(name) {
         return /(?:^|[-_])(?:card|item|story|teaser|news|headline|result)(?:$|[-_])/i.test(name);
       });
       if (!node.matches("article, li") && !recordClass && !node.querySelector("img[src], h1, h2, h3, h4, p, time, [datetime]")) return null;
 
-      var title = titleLink.title;
+      var title = headings.length === 1 ? normalizeText(headings[0].textContent || "") : titleLink.title;
       return {
         node: node,
         destination: titleLink.key,
         title: title,
-        identity: titleLink.key + "|" + title.toLowerCase(),
+        identity: "",
         mediaMarkdown: Array.prototype.reduce.call(node.querySelectorAll("a[href] img[src]"), function(media, image) {
           if (elementSubtreeHidden(image)) return media;
           var imageLink = image.closest("a[href]");
@@ -199,9 +205,12 @@
 
       var identities = new Set();
       var uniqueRecords = records.every(function(record) {
-        if (identities.has(record.destination)) return false;
-        identities.add(record.destination);
+        if (identities.has(record.node)) return false;
+        identities.add(record.node);
         return true;
+      });
+      records.forEach(function(record, index) {
+        record.identity = record.destination + "|record:" + index;
       });
       var articleOutside = focalArticleOutsideCollection(owner);
       var materialOutside = substantialProseOutside(owner);
@@ -269,7 +278,8 @@
     return collection.records.every(function(record) {
       var itemIndex = items.findIndex(function(item, index) {
         if (matched.has(index) || listCanonicalKey(materializedHttpUrl(item.url) || "") !== record.destination) return false;
-        return normalizeText(item.text || "").toLowerCase().indexOf(record.title.toLowerCase()) !== -1;
+        return item.repeatedRecordIdentity === record.identity ||
+          normalizeText(item.text || "").toLowerCase().indexOf(record.title.toLowerCase()) !== -1;
       });
       if (itemIndex < 0) return false;
       matched.add(itemIndex);

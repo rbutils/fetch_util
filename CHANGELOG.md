@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Preserve distinct source result records that share one destination URL.
 - Preserve complete source-owned About and page-introduction paragraphs in repeated-record list results without borrowing neighboring prose.
 - Retire the Sky News Arabia profile while preserving owned Arabic reporting, complete prose excerpts, literal attribution, media, and truthful news-age warnings through shared extraction.
 - Retire the CSDN profile in favor of shared article and declared-description extraction, preserving public prose and visible access notices without fabricated fallback text.

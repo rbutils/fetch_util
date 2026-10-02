@@ -72,11 +72,22 @@
       }
     }
     var extractionOptions = options;
+    if (repeatedCollection && elementMap) {
+      var mappedRecords = repeatedCollection.records.map(function(record) {
+        var mappedNode = elementMap.get(record.node);
+        return mappedNode ? Object.assign({}, record, { node: mappedNode }) : null;
+      });
+      if (mappedRecords.every(Boolean)) {
+        extractionOptions = Object.assign({}, options, {
+          repeatedRecordCollection: Object.assign({}, repeatedCollection, { records: mappedRecords })
+        });
+      }
+    }
     if (options.institutionalCaseIndex && elementMap) {
       var producerTitleLinks = options.institutionalCaseIndex.titleLinks.map(function(link) {
         return elementMap.get(link);
       }).filter(Boolean);
-      extractionOptions = Object.assign({}, options, {
+      extractionOptions = Object.assign({}, extractionOptions, {
         producerProvenCardTitles: preserveStructuredCardLinks(root, {
           producerProvenTitleLinks: producerTitleLinks,
           proofOnly: true

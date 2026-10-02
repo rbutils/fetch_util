@@ -134,6 +134,41 @@ RSpec.describe 'FetchUtil article/list arbitration' do
     JS
   end
 
+  it 'keeps distinct source records that share the same destination' do
+    shared_url = '/unodc/treaties/CTOC/CTOC-COP-session13.html'
+    records = [
+      ['Thirteenth session records in Arabic', 'Arabic', '22 September 2021', 'Arab-language proceedings and outcomes', shared_url],
+      ['Thirteenth session records in Chinese', 'Chinese', '22 September 2021', 'Chinese-language proceedings and outcomes', shared_url],
+      ['Thirteenth session records in Spanish', 'Spanish', '22 September 2021', 'Spanish-language proceedings and outcomes', shared_url],
+      ['Convention implementation report', 'English', '10 October 2024', 'Implementation findings for national authorities', '/unodc/treaties/implementation-report.html']
+    ]
+    rows = records.map do |title, language, date, detail, url|
+      %(<article class="search-result"><h2>#{title}</h2><p>#{language} · #{date} · #{detail}</p><a href="#{url}">#{url}</a></article>)
+    end.join
+    html = <<~HTML
+      <html><head><title>Search results</title></head><body><main>
+        <h1>Search results</h1><section class="results">#{rows}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://search.example/unodc/search', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload.fetch('markdown')
+
+      expect(payload['contentType']).to eq('list')
+      records.each do |title, language, date, detail, _url|
+        expect(markdown).to include(title)
+        expect(markdown).to include(language)
+        expect(markdown).to include(date)
+        expect(markdown).to include(detail)
+      end
+      expect(markdown.scan("](https://search.example#{shared_url})").length).to eq(3), markdown
+      expect(markdown).to include('https://search.example/unodc/treaties/implementation-report.html')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'keeps a DW-style detail with twelve related links as an article' do
     url = 'https://www.dw.com/en/newsroom-report/a-77898335'
 
