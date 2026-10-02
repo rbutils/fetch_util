@@ -1,3 +1,27 @@
+  function completePrimaryHeadlineCollection(content, markdown) {
+    var extraction = content.listExtraction;
+    var items = extraction && extraction.items;
+    var main = document.querySelector("main");
+    if (!main || document.querySelectorAll("main").length !== 1 || !items || items.length < 3) return false;
+
+    var links = Array.prototype.filter.call(main.querySelectorAll("h2 a[href], h3 a[href]"), function(link) {
+      return !elementSubtreeHidden(link) && !link.closest("nav, aside, footer, article, [role='navigation']") &&
+        !!materializedHttpUrl(link.getAttribute("href"));
+    });
+    var cards = links.map(function(link) { return link.closest("section, li"); });
+    if (cards.length !== items.length || cards.some(function(card) { return !card; })) return false;
+    var owner = cards[0].parentElement;
+    if (!owner || !main.contains(owner) || owner.closest("nav, aside, footer, article, [role='navigation']") ||
+        cards.some(function(card) { return card.parentElement !== owner; })) return false;
+
+    var sourceUrls = links.map(function(link) { return materializedHttpUrl(link.getAttribute("href")); });
+    if (new Set(sourceUrls).size !== sourceUrls.length) return false;
+    return items.every(function(item, index) {
+      return item.url === sourceUrls[index] && normalizeText(links[index].textContent) === item.text &&
+        markdown.indexOf(item.url) !== -1 && markdown.indexOf(item.text) !== -1;
+    });
+  }
+
   function credibleHomepageListFeed(content, markdown, body, page) {
     if (!content || content.contentType === "search") return false;
 
@@ -12,7 +36,8 @@
     if (accessWall || notFoundInterstitialEvidence(content.title || "", body, { maxTextLength: 1100 })) return false;
 
     if (content.contentType === "list") {
-      return (listPath && editorialSections) || portalRoot;
+      return (listPath && editorialSections) || portalRoot ||
+        (rootPage && completePrimaryHeadlineCollection(content, markdown));
     }
 
     if (content.contentType !== "social" || content.socialKind !== "feed" ||

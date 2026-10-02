@@ -100,12 +100,53 @@ RSpec.describe "Wykop social feeds" do
 
   it "keeps an interaction-free headline collection as a credible generic list" do
     with_url_page("https://wykop.pl/", wykop_headline_fixture) do |page|
+      source = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["socialKind"]).to be_nil
+      (1..5).each do |number|
+        expect(payload.fetch("markdown")).to include("https://wykop.pl/link/#{number}/headline-#{number}")
+      end
       expect(payload["warnings"]).not_to include("url_content_mismatch")
       expect(payload["suspect"]).to eq(false)
+      expect(page.evaluate('document.body.innerHTML')).to eq(source)
+    end
+  end
+
+  it "does not treat incidental navigation as a primary headline collection" do
+    links = (1..5).map do |number|
+      %(<h2><a href="/menu/#{number}">English navigation resource #{number}</a></h2>)
+    end.join
+    html = <<~HTML
+      <html lang="pl"><head><title>Wykop</title></head><body><main>
+        <nav>#{links}</nav>
+        <p>English account navigation, search instructions, and site controls fill this shell without any primary news records.</p>
+        <p>These links are secondary routes, while the main public headline collection has not loaded on this page.</p>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://wykop.pl/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      expect(payload["warnings"]).to include("url_content_mismatch")
+    end
+  end
+
+  it "keeps the not-found warning for a short response with misleading headline links" do
+    html = <<~HTML
+      <html lang="pl"><head><title>Page not found</title></head><body><main>
+        <h1>Page not found</h1><p>Sorry, we could not find the page you were looking for.</p>
+        <section>
+          <h2><a href="/link/1">Recent news entry one</a></h2>
+          <h2><a href="/link/2">Recent news entry two</a></h2>
+          <h2><a href="/link/3">Recent news entry three</a></h2>
+        </section>
+      </main></body></html>
+    HTML
+
+    with_url_page("https://wykop.pl/", html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      expect(payload["warnings"]).to include("not_found_interstitial")
     end
   end
 
