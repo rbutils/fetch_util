@@ -1440,6 +1440,7 @@ RSpec.describe "extract asset bundle" do
     segments = [
       ["classifiers/list_pages/article_body_collection.js", %w[
         classifiers/list_pages/ownership/article_table_material.js
+        classifiers/list_pages/ownership/complete_section_loss.js
         classifiers/list_pages/ownership/primary_article_coverage.js
         classifiers/list_pages/ownership/primary_article_material.js
         classifiers/list_pages/ownership/homepage_landing.js
@@ -1507,6 +1508,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/publication/article_fields.js
         extractors/article/fallback/focal_ownership.js
         extractors/article/fallback/focal_permalink.js
+        extractors/article/fallback/ownership/content/selected_article_lead.js
         extractors/article/fallback/fallback_excerpt.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/high_confidence_content.js
