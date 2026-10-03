@@ -29,6 +29,7 @@ RSpec.describe 'Readability article excerpts' do
         global.__collectMetadata = collectMetadata;
         global.__sourceOwnedPublicationDatesEquivalent = sourceOwnedPublicationDatesEquivalent;
         global.__sourceOwnedDisplayAgreesWithPreciseDate = sourceOwnedDisplayAgreesWithPreciseDate;
+        global.__sourceOwnedReaderContributorPublicationTime = sourceOwnedReaderContributorPublicationTime;
         global.__finalizeExtractResult = finalizeExtractResult;
         global.__collectionPublishedTime = collectionPublishedTime;
       JS
@@ -1138,6 +1139,48 @@ RSpec.describe 'Readability article excerpts' do
       expect(values).to eq([precise, 'Published onSeptember 23, 2026 11:05 AM',
                             'Updated onSeptember 22, 2026', 'Published on2026-09-23T11:00:00+08:00',
                             'Published onSeptember 23, 2026 11:00 +unknown', true, false, false, true, false, true])
+    end
+  end
+
+  it 'binds a contributor date to the unique heading and selected Reader body' do
+    url = 'https://publisher.example/articles/owned-contributor'
+    html = <<~HTML
+      <!doctype html><html><head><title>Owned contributor report</title><link rel="canonical" href="#{url}"></head><body>
+      <main><div class="two-column">
+        <div class="article-header"><h1>Owned contributor report</h1></div>
+        <div class="article-body">
+          <div class="contributors"><p class="contributors-date">September 18, 2026</p></div>
+          <div class="content-module">
+            <p>The verified article opens with a complete report covering the source topic and establishing its own body.</p>
+            <p>The next selected paragraph supplies independent details about the same report and its publication context.</p>
+          </div>
+          <aside class="related-card"><p class="related-date">September 22, 2026</p></aside>
+        </div>
+      </div></main></body></html>
+    HTML
+    with_url_page(url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var metadata = {title: document.title, canonicalUrl: location.href};
+          var paragraphs = Array.from(document.querySelectorAll('.content-module p'));
+          function publication() {
+            var selected = window.__readabilityOwnedSelectedPublication(
+              {title: document.title}, metadata, {sourceParagraphs: paragraphs}
+            );
+            return selected && selected.publishedTime;
+          }
+          var owned = publication();
+          document.querySelector('.contributors').appendChild(
+            document.querySelector('.related-date')
+          );
+          var conflicting = publication();
+          document.querySelector('.contributors').replaceChildren();
+          var foreign = publication();
+          return [owned, conflicting, foreign];
+        })())
+      JS
+      expect(values).to eq(['September 18, 2026', nil, nil])
     end
   end
 

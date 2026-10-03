@@ -79,6 +79,10 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
     heading: headings[0], ownerRoot: articleOwnerRoot
   });
   if (readerHeaderDate) visibleDates.push(readerHeaderDate);
+  var contributorDate = sourceOwnedReaderContributorPublicationTime(paragraphs, {
+    heading: headings[0], ownerRoot: articleOwnerRoot, root: bodyOwner, firstParagraph: firstParagraph
+  });
+  if (contributorDate) visibleDates.push(contributorDate);
   var publication = sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDates);
   return publication || { publishedTime: null };
 }

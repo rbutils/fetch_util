@@ -201,3 +201,27 @@ function sourceOwnedReaderHeaderPublicationTime(paragraphs, owner) {
   });
   return sourceOwnedUniquePublicationValue(values).value;
 }
+function sourceOwnedReaderContributorPublicationTime(paragraphs, owner) {
+  if (!Array.isArray(paragraphs) || !paragraphs.length || !owner || !owner.ownerRoot ||
+      !owner.heading || !owner.root || !owner.firstParagraph) return "";
+  var heading = owner.heading;
+  var root = owner.ownerRoot;
+  var first = owner.firstParagraph;
+  if (!root.contains(heading) || !root.contains(first) ||
+      Array.from(root.querySelectorAll("h1")).filter(function(node) { return !elementVisuallyHidden(node); }).length !== 1) return "";
+
+  var dates = Array.from(root.querySelectorAll("time, [itemprop~='datePublished' i], [class*='date' i]")).filter(function(node) {
+    var contributors = node.closest("[class*='contributor' i], [class*='byline' i], [itemprop~='author' i]");
+    if (!contributors || !root.contains(contributors) || contributors.contains(heading) ||
+        contributors.contains(first) || elementSubtreeHidden(node) || visiblePublicationSchedule(node) ||
+        node.matches("article, main, [role='main']") ||
+        node.querySelector("article, main, h1, h2, h3, h4, figure, blockquote, pre, table, a[href]") ||
+        sourceOwnershipArticleChrome(node, root) ||
+        node.closest("aside, nav, footer, blockquote, form, [role='note'], [role='complementary']") ||
+        node.closest("article") !== heading.closest("article")) return false;
+    if (!(heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+        !(node.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    return visiblePublicationDateLike(sourceOwnedPublicationNodeDate(node));
+  });
+  return dates.length === 1 ? sourceOwnedPublicationNodeDate(dates[0]) : "";
+}
