@@ -5,17 +5,18 @@
       /(?:^|\s)liên\s+quan$/i.test(text);
   }
 
-  function focalOwnershipDetachRelatedCollection(root, marker) {
+  function focalOwnershipDetachRelatedCollection(root, marker, slotMarker) {
     if (!root || !marker) return null;
     var collection = Array.prototype.find.call(root.querySelectorAll("[data-fetchutil-page-overview]"), function(node) {
       return node.getAttribute("data-fetchutil-page-overview") === marker;
     });
     if (!collection || !collection.parentNode) return null;
+    if (slotMarker) collection.parentNode.insertBefore(document.createComment(slotMarker), collection);
     collection.parentNode.removeChild(collection);
     return collection;
   }
 
-  function focalOwnershipRestoreRelatedCollection(root, collection, sourceCollection, sourceArticle) {
+  function focalOwnershipRestoreRelatedCollection(root, collection, sourceCollection, sourceArticle, slotMarker) {
     if (!root || !collection || !sourceCollection || !sourceArticle) return false;
     collection.querySelectorAll("script, style, noscript, template, form, button, input, select, textarea").forEach(function(node) {
       node.remove();
@@ -27,8 +28,19 @@
     });
     materializeHttpAttributes(collection, true);
 
+    var nestedOwner = sourceArticle.contains(sourceCollection) && root.querySelector("article");
     var collectionPrecedesArticle = !!(sourceCollection.compareDocumentPosition(sourceArticle) & Node.DOCUMENT_POSITION_FOLLOWING);
-    if (!collectionPrecedesArticle) {
+    if (nestedOwner) {
+      var iterator = document.createNodeIterator(nestedOwner, NodeFilter.SHOW_COMMENT);
+      var slots = [];
+      for (var comment = iterator.nextNode(); comment; comment = iterator.nextNode()) {
+        if (comment.nodeValue === slotMarker) slots.push(comment);
+      }
+      if (slots.length !== 1 || !slotMarker) return false;
+      slots[0].parentNode.replaceChild(collection, slots[0]);
+    } else if (slotMarker) {
+      return false;
+    } else if (!collectionPrecedesArticle) {
       root.appendChild(collection);
     } else {
       var heading = normalizeText((sourceArticle.querySelector("h1") || {}).textContent || "");
@@ -94,6 +106,28 @@
       return !valid.some(function(other) { return other !== owner && owner.contains(other); });
     });
     return mostSpecific.length === 1 ? mostSpecific[0] : null;
+  }
+
+  function focalOwnershipEmbeddedRelatedCollection(root, media) {
+    var article = media.closest("article");
+    if (!article || !root.contains(article)) return null;
+    var collections = Array.prototype.filter.call(article.querySelectorAll("[class*='related' i], [class*='recommend' i]"), function(node) {
+      if (elementSubtreeHidden(node) || node.contains(media)) return false;
+      var list = Array.prototype.filter.call(node.children, function(child) { return child.matches("ul, ol"); });
+      var labels = Array.prototype.filter.call(node.children, function(child) {
+        return child.matches("p, h2, h3, h4") &&
+          (focalOwnershipRelatedHeading(child.textContent || "") || /^view more related$/i.test(normalizeText(child.textContent || "")));
+      });
+      if (labels.length !== 1 || list.length !== 1 || list[0].children.length < 2) return false;
+      return Array.prototype.every.call(list[0].children, function(item) {
+        if (!item.matches("li")) return false;
+        var links = item.querySelectorAll("a[href]");
+        if (links.length !== 1 || !normalizeText(links[0].textContent || "")) return false;
+        var url = materializedHttpUrl(links[0].getAttribute("href") || "");
+        return !!url && focalCanonicalUrl(url) !== focalCanonicalUrl(location.href);
+      });
+    });
+    return collections.length === 1 ? collections[0] : null;
   }
 
   function focalOwnershipPageMaterialIsAccountedFor(root, articleOwner, relatedCollection) {

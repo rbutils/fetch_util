@@ -84,6 +84,7 @@
     var node = selected ? selected.node : document.body;
     var visibleNode = selected ? selected.visibleNode : visibleBody;
     var relatedCollectionMarker = null;
+    var relatedSlotMarker = null;
     var renderVisibleNode = visibleNode;
     if (focalOwnership && focalOwnership.relatedCollection) {
       var relatedCollectionClone = sourceClones.get(focalOwnership.relatedCollection);
@@ -91,14 +92,19 @@
       if (relatedCollectionClone && focalOwnerClone) {
         relatedCollectionMarker = "media-related-" + Math.random().toString(36).slice(2);
         relatedCollectionClone.setAttribute("data-fetchutil-page-overview", relatedCollectionMarker);
-        var ownedRoots = [
-          { source: focalOwnership.node, clone: focalOwnerClone },
-          { source: focalOwnership.relatedCollection, clone: relatedCollectionClone }
-        ].sort(function(left, right) {
-          return left.source.compareDocumentPosition(right.source) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-        });
-        renderVisibleNode = document.createElement("div");
-        ownedRoots.forEach(function(entry) { renderVisibleNode.appendChild(entry.clone.cloneNode(true)); });
+        if (focalOwnership.node.contains(focalOwnership.relatedCollection)) {
+          relatedSlotMarker = "fetchutil-media-related-slot-" + Math.random().toString(36).slice(2);
+        }
+        if (!focalOwnership.node.contains(focalOwnership.relatedCollection)) {
+          var ownedRoots = [
+            { source: focalOwnership.node, clone: focalOwnerClone },
+            { source: focalOwnership.relatedCollection, clone: relatedCollectionClone }
+          ].sort(function(left, right) {
+            return left.source.compareDocumentPosition(right.source) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+          });
+          renderVisibleNode = document.createElement("div");
+          ownedRoots.forEach(function(entry) { renderVisibleNode.appendChild(entry.clone.cloneNode(true)); });
+        }
       } else {
         focalOwnership = null;
       }
@@ -112,7 +118,9 @@
         var rect = media.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
       })) : [];
-    var preservedRelatedCollection = focalOwnershipDetachRelatedCollection(markedVisibleNode, relatedCollectionMarker);
+    var preservedRelatedCollection = focalOwnershipDetachRelatedCollection(markedVisibleNode, relatedCollectionMarker,
+      relatedSlotMarker);
+    if (relatedCollectionMarker && !preservedRelatedCollection) return null;
     var clone = cleanClone(markedVisibleNode);
     if (focalOwnership && focalOwnership.body.publicPreview) focalOwnershipRetainPublicPreview(clone);
     var comments = focalOwnership ? visibleCommentMarkup(document, focalOwnership) :
@@ -122,20 +130,23 @@
     prepareFallbackInlineProse(clone);
     cleanupFallbackArticleChrome(clone);
     if (preservedRelatedCollection && focalOwnership) {
-      focalOwnershipRestoreRelatedCollection(clone, preservedRelatedCollection, focalOwnership.relatedCollection, focalOwnership.node);
+      if (!focalOwnershipRestoreRelatedCollection(clone, preservedRelatedCollection, focalOwnership.relatedCollection,
+        focalOwnership.node, relatedSlotMarker)) return null;
     }
     ownedMedia.forEach(function(media) { focalOwnershipPreserveMediaResources(clone, media); });
     if (comments) clone.insertAdjacentHTML("beforeend", comments);
     var text = normalizeText(clone.textContent);
     var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
-    var sourceOwnedPublication = sourceOwnedFallbackPublication(metadata, node, selected);
+    var sourceOwnedPublication = sourceOwnedMedia ?
+      sourceOwnedMediaPublication(focalOwnership, metadata) : sourceOwnedFallbackPublication(metadata, node, selected);
     var excerptOwnership = focalOwnership || resolveCanonicalArticleBodyOwnership();
 
     return {
       title: focalOwnership ? focalOwnership.title : document.title,
       byline: null,
       excerpt: focalOwnership && focalOwnership.body.publicPreview ? focalOwnership.body.text :
-        fallbackArticleExcerpt(visibleNode, text, metadata, !!selected, excerptOwnership, sourceClones),
+        sourceOwnedMedia ? fallbackOwnedMediaExcerpt(visibleNode, text, focalOwnership, sourceClones) :
+          fallbackArticleExcerpt(visibleNode, text, metadata, !!selected, excerptOwnership, sourceClones),
       sourceOwnedFocalArticle: !!focalOwnership,
       sourceOwnedMediaArticle: !!(focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media"),
       sourceOwnedMediaHeadline: focalOwnership && focalOwnership.proof === "same-owner-source-headline-and-media" ?

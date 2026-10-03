@@ -12,12 +12,37 @@
   }
 
   function focalOwnershipMediaOwner(root, heading, media) {
+    if (heading.parentElement === root) {
+      var articles = Array.prototype.filter.call(root.querySelectorAll("article"), function(article) {
+        return !article.parentElement.closest("article") && !elementSubtreeHidden(article);
+      });
+      if (articles.length !== 1 || !articles[0].contains(media) ||
+          !focalOwnershipExternalMediaHeader(root, heading, articles[0])) return null;
+      return root;
+    }
     var owner = heading.parentElement;
     while (owner && owner !== root) {
       if (owner.contains(media)) return owner;
       owner = owner.parentElement;
     }
     return null;
+  }
+
+  function focalOwnershipExternalMediaHeader(root, heading, article) {
+    if (!(heading.compareDocumentPosition(article) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    return Array.prototype.every.call(root.children, function(child) {
+      if (child === heading || child === article || elementSubtreeHidden(child)) return true;
+      if (child.matches("figure") &&
+          (child.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        return child.querySelectorAll("img").length === 1 &&
+          !child.querySelector("h1, h2, h3, h4, p, li, figcaption, video, iframe") &&
+          child.querySelectorAll("a[href]").length <= 1;
+      }
+      if (child.matches("[class~='breadcrumbs' i], [class~='breadcrumb' i], nav[aria-label*='breadcrumb' i]")) {
+        return !child.querySelector("h1, h2, h3, h4, p, li, figure, video, a[href]");
+      }
+      return false;
+    });
   }
 
   function focalOwnershipMediaUrls(media) {
@@ -104,7 +129,7 @@
 
     var owners = focalOwnershipVisibleMedia(main).map(function(media) {
       var owner = focalOwnershipMediaOwner(main, heading, media);
-      if (!owner || owner === main || focalOwnershipVisibleMedia(owner).length !== 1 ||
+      if (!owner || focalOwnershipVisibleMedia(owner).length !== 1 ||
           independentLinkedArticleCollection(owner)) return null;
       var ownerHeadings = Array.prototype.filter.call(owner.querySelectorAll("h1"), function(candidate) {
         return !elementVisuallyHidden(candidate);
@@ -115,7 +140,8 @@
     if (owners.length !== 1) return null;
 
     var focalOwner = owners[0];
-    var relatedCollection = focalOwnershipRelatedCollection(main, focalOwner.node);
+    var relatedCollection = focalOwnershipRelatedCollection(main, focalOwner.node) ||
+      (focalOwner.node === main && focalOwnershipEmbeddedRelatedCollection(main, focalOwner.media));
     if (independentLinkedArticleCollection(main) && !relatedCollection) return null;
     if (!focalOwnershipPageMaterialIsAccountedFor(main, focalOwner.node, relatedCollection)) return null;
     return {

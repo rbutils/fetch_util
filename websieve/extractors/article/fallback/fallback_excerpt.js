@@ -90,6 +90,23 @@
     return summary;
   }
 
+  function fallbackOwnedMediaExcerpt(renderedRoot, renderedText, ownership, sourceClones) {
+    var summary = fallbackSourceOwnedSummary(renderedRoot, renderedText, ownership, sourceClones);
+    if (summary) return summary;
+    var root = ownership.media.closest("article") || ownership.node;
+    var paragraphs = Array.prototype.filter.call(root.querySelectorAll("p"), function(paragraph) {
+      var mapped = sourceClones && sourceClones.get(paragraph);
+      return !elementSubtreeHidden(paragraph) && paragraph.closest("article") === root.closest("article") &&
+        mapped && (renderedRoot === mapped || renderedRoot.contains(mapped)) &&
+        !paragraph.closest("nav, aside, footer, form, menu, figure, figcaption, [role='complementary'], " +
+          "[class*='related' i], [class*='recommend' i], [class*='sidebar' i]") &&
+        !paragraph.querySelector("button, input, select, textarea") &&
+        !sourceOwnedPublicationField(paragraph) && !fallbackExcerptChromeOwner(root, paragraph);
+    });
+    var lead = paragraphs[0];
+    return lead ? normalizeText(lead.textContent || "") || null : null;
+  }
+
   function sourceOwnedPublicationField(node) {
     if (!node || node.nodeType !== 1) return false;
     if (node.matches("time[datetime], [itemprop~='datePublished' i]")) return true;

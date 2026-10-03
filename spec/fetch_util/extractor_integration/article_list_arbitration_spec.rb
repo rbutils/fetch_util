@@ -3,6 +3,29 @@
 RSpec.describe 'FetchUtil article/list arbitration' do
   include_context 'extractor integration helpers'
 
+  def focal_media_ownership_source
+    @focal_media_ownership_source ||= begin
+      root = File.expand_path('../../..', __dir__)
+      File.readlines(File.join(root, 'websieve/manifest.txt'), chomp: true).filter_map do |path|
+        next if path.empty? || path.start_with?('#')
+
+        content = File.read(File.join(root, 'websieve', path))
+        path == '99_outro.js' ? <<~JS + content : content
+          global.__focalMediaOwnership = function() {
+            var main = document.querySelector('main');
+            var heading = main.querySelector('h1');
+            var media = focalOwnershipVisibleMedia(main);
+            var owner = media[0] && focalOwnershipMediaOwner(main, heading, media[0]);
+            var metadata = focalSourceArticleMetadata();
+            return {owned: !!(metadata && focalOwnershipMediaArticle(metadata)), typed: metadata && metadata.typedArticles.length,
+              media: media.length, owner: !!owner, related: !!(owner && focalOwnershipEmbeddedRelatedCollection(main, media[0])),
+              independent: independentLinkedArticleCollection(main)};
+          };
+        JS
+      end.join("\n")
+    end
+  end
+
   def body_present_fixture
     File.expand_path('../../fixtures/article_route_body_present.html', __dir__)
   end
@@ -723,6 +746,170 @@ RSpec.describe 'FetchUtil article/list arbitration' do
         expect(payload['markdown']).to include("Fixture #{index} schedule and match details", "/fixtures/#{index}")
       end
       expect(payload['markdown']).to include('source-owned schedule with its own editorial introduction')
+    end
+  end
+
+  it 'owns a direct main headline and its one media article without borrowing recommendations for the excerpt' do
+    canonical = 'https://publisher.example/reports/civic-video'
+    lead = 'The council published the civic transport review and its evidence.'
+    html = <<~HTML
+      <html><head><title>Civic transport video review</title><link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","url":"#{canonical}","headline":"Civic transport video review","datePublished":"2026-09-22T09:10:48+08:00"}</script>
+      </head><body><main>
+        <figure><a href="/images/cover"><img src="/images/cover.jpg" alt="Published cover"></a></figure>
+        <h1>Civic transport video review</h1>
+        <div class="breadcrumbs"><iframe></iframe></div>
+        <article><div class="entry-content"><p>#{lead}</p>
+          <figure><video src="/media/review.mp4" controls poster="/images/poster.jpg" width="720" height="405">
+            <source src="/media/review.mp4" type="video/mp4"><track src="/media/captions.vtt" kind="captions" label="English">
+          </video><figcaption>The public review recording and captions.</figcaption></figure>
+        </div><div class="related-records"><p>View More Related</p><ul>
+          <li><a href="/reports/rail">Rail assessment and source records</a></li>
+          <li><a href="/reports/roads">Road assessment and source records</a></li>
+        </ul></div></article>
+      </main></body></html>
+    HTML
+
+    with_url_page(canonical, html) do |page|
+      page.add_script_tag(content: focal_media_ownership_source)
+      proof = page.evaluate('window.__focalMediaOwnership()')
+      expect(proof['owned']).to be(true), proof.inspect
+      payload = extract_payload(page)
+      expect(payload['contentType']).to eq('article')
+      expect(payload['publishedTime']).to eq('2026-09-22T09:10:48+08:00')
+      expect(payload['excerpt']).to eq(lead)
+      expect(payload['html']).to include('poster="https://publisher.example/images/poster.jpg"')
+      expect(payload['html']).to include('src="https://publisher.example/media/review.mp4"')
+      expect(payload['html']).to include('src="https://publisher.example/media/captions.vtt"')
+      expect(payload['markdown']).to include('The public review recording and captions.',
+                                             'Rail assessment and source records', 'Road assessment and source records'), payload.inspect
+    end
+  end
+
+  it 'retains an entire section-owned media summary and then a genuine short lead without borrowing a foreign summary' do
+    canonical = 'https://publisher.example/reports/civic-recording'
+    summary = 'The civic recording presents the public review with its complete supporting context. ' * 5
+    lead = 'Watch video.'
+    html = <<~HTML
+      <html><head><title>Civic recording report</title><link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@type":"Article","url":"#{canonical}","headline":"Civic recording report"}</script>
+      </head><body><main><section class="recording-story"><h1>Civic recording report</h1>
+        <div class="summary">#{summary}</div><p>#{lead}</p>
+        <iframe src="https://media.example/embed/civic-recording" width="720" height="405"></iframe>
+      </section></main><aside><div class="summary">Foreign account of unrelated proceedings.</div></aside></body></html>
+    HTML
+    with_url_page(canonical, html) do |page|
+      first = extract_payload(page)
+      expect(first['contentType']).to eq('article')
+      expect(first['excerpt']).to eq(summary.strip), first.inspect
+      expect(first['excerpt'].length).to be > 280
+      page.evaluate("document.querySelector('.recording-story .summary').remove()")
+      second = extract_payload(page)
+      expect(second['excerpt']).to eq(lead), second.inspect
+      expect(second['excerpt']).not_to include('Foreign account')
+    end
+  end
+
+  it 'uses only the focal media record publication time when typed metadata omits its date' do
+    canonical = 'https://publisher.example/reports/civic-recording-date'
+    html = <<~HTML
+      <html><head><title>Civic recording date</title><link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@type":"Article","url":"#{canonical}","headline":"Civic recording date"}</script>
+      </head><body><main><h1>Civic recording date</h1><article class="updated-story">
+        <header class="entry-meta"><time datetime="2026-09-22T09:10:48+08:00">Published September 22, 2026</time></header>
+        <p>The background report cites <time datetime="2026-09-20T07:00:00+08:00">a prior event</time>.</p>
+        <figure><video src="/media/civic-recording.mp4" width="720" height="405"></video>
+          <figcaption>Recorded <time datetime="2026-09-21T08:00:00+08:00">a day earlier</time>.</figcaption></figure>
+        <div class="related-records"><p>View More Related</p><ul>
+          <li><a href="/reports/rail">Rail assessment</a></li><li><a href="/reports/roads">Road assessment</a></li>
+        </ul></div>
+      </article></main><aside><time datetime="2026-09-25T09:00:00+08:00">Published September 25</time></aside></body></html>
+    HTML
+    with_url_page(canonical, html) do |page|
+      page.add_script_tag(content: focal_media_ownership_source)
+      expect(page.evaluate('window.__focalMediaOwnership().owned')).to be(true)
+      payload = extract_payload(page)
+      expect(payload['publishedTime']).to eq('2026-09-22T09:10:48+08:00'), payload.inspect
+      page.evaluate("document.querySelector('article header time').setAttribute('datetime', '2026-09-23T09:10:48+08:00')")
+      page.evaluate(<<~JS)
+        document.querySelector('head script[type="application/ld+json"]').textContent =
+          JSON.stringify({"@type":"Article",url:location.href,headline:"Civic recording date",
+            datePublished:"2026-09-22T09:10:48+08:00"});
+      JS
+      expect(extract_payload(page)['publishedTime']).to be_nil
+      page.evaluate("document.querySelector('article header time').remove()")
+      expect(extract_payload(page)['publishedTime']).to eq('2026-09-22T09:10:48+08:00')
+      page.evaluate(<<~JS)
+        document.querySelector('head script[type="application/ld+json"]').textContent =
+          JSON.stringify({"@type":"Article",url:location.href,headline:"Civic recording date"});
+        document.querySelector('.related-records').insertAdjacentHTML('beforeend',
+          '<time datetime="2026-09-25T09:00:00+08:00">Published September 25</time>');
+        document.querySelector('article').insertAdjacentHTML('beforeend',
+          '<time itemprop="startDate" datetime="2026-09-26T09:00:00+08:00">September 26 schedule</time>' +
+          '<time datetime="2026-09-27T09:00:00+08:00">Updated September 27</time>');
+      JS
+      expect(extract_payload(page)['publishedTime']).to be_nil
+    end
+  end
+
+  it 'keeps nested recommendations before the following owned media closing paragraph and resource' do
+    canonical = 'https://publisher.example/reports/civic-recording-order'
+    html = <<~HTML
+      <html><head><title>Civic recording order</title><link rel="canonical" href="#{canonical}">
+        <script type="application/ld+json">{"@type":"Article","url":"#{canonical}","headline":"Civic recording order"}</script>
+      </head><body><main><h1>Civic recording order</h1><article>
+        <p>The source recording has a complete authored introductory paragraph.</p>
+        <video src="/media/civic-recording.mp4" width="720" height="405"></video>
+        <div class="related-records"><p>View More Related</p><ul>
+          <li><a href="/reports/rail">Rail assessment</a></li>
+          <li><a href="/reports/roads">Road assessment</a></li>
+        </ul></div>The closing note is retained.
+        <div class="widget" hidden>Discard this hidden widget.</div>
+        <p data-fetchutil-related-next="source-authored">The closing analysis and <a href="/resources/report.pdf">full report PDF</a> remain after the recommendations.</p>
+      </article></main></body></html>
+    HTML
+    with_url_page(canonical, html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+      output_html = payload.fetch('html')
+      markdown = payload.fetch('markdown')
+      expect(payload['contentType']).to eq('article')
+      expect(output_html.index('Rail assessment')).to be < output_html.index('The closing note')
+      expect(output_html.index('The closing note')).to be < output_html.index('The closing analysis')
+      expect(markdown.index('Road assessment')).to be < markdown.index('The closing note')
+      expect(markdown.index('The closing note')).to be < markdown.index('The closing analysis')
+      expect(markdown).to include('full report PDF', '/resources/report.pdf')
+      expect(output_html).to include('data-fetchutil-related-next="source-authored"')
+      expect(output_html).not_to include('fetchutil-media-related-slot-', 'Discard this hidden widget')
+      expect(output_html.scan('href="https://publisher.example/reports/rail"').size).to eq(1)
+      expect(output_html.scan('href="https://publisher.example/reports/roads"').size).to eq(1)
+    end
+  end
+
+  it 'requires a single bounded focal media owner instead of claiming unrelated main material or foreign publication dates' do
+    canonical = 'https://publisher.example/reports/civic-video'
+    scenarios = [
+      { canonical: 'https://publisher.example/reports/different-video', extras: '' },
+      { canonical: canonical, extras: '<section><h2>Independent municipal report</h2><p>The neighboring report records unrelated findings.</p></section>' }
+    ]
+    scenarios.each do |scenario|
+      html = <<~HTML
+        <html><head><title>Civic transport video review</title><link rel="canonical" href="#{scenario[:canonical]}">
+          <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","url":"#{canonical}","headline":"Civic transport video review","datePublished":"2026-09-22T09:10:48+08:00"}</script>
+        </head><body><main><h1>Civic transport video review</h1>
+          <article><figure><video src="/media/review.mp4" width="720" height="405"></video></figure>
+            <p>Download video</p><div class="related-records"><a href="/reports/rail">Independent rail assessment</a></div>
+          </article>#{scenario[:extras]}
+        </main></body></html>
+      HTML
+      with_url_page(canonical, html) do |page|
+        page.add_script_tag(content: focal_media_ownership_source)
+        expect(page.evaluate('window.__focalMediaOwnership().owned')).to be(false)
+        payload = extract_payload(page)
+        expect(payload['markdown']).not_to include('Independent rail assessment') if scenario[:canonical] != canonical
+        expect(payload['markdown']).to include('Independent municipal report') if scenario[:extras] != ''
+      end
     end
   end
 
