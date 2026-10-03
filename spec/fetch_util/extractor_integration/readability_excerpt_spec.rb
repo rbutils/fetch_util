@@ -187,6 +187,116 @@ RSpec.describe 'Readability article excerpts' do
     end
   end
 
+  it 'joins complete product-linked reviews only within a proved service scope' do
+    product = 'product-serial-2026'
+    detail = 'Service offer documents the complete available credit terms for customers. ' * 9
+    html = <<~HTML
+      <!doctype html><html><head><title>Service offer</title></head><body>
+        <div class="product-scope"><div class="service-surface">
+          <main id="primary"><h1>Service offer</h1><p>Service offer explains public terms in detail.</p>
+            <p>#{detail}</p><p>#{detail}</p>
+            <a href="/product-reviews/#{product}">Customer ratings</a>
+            <a href="/terms">Full terms</a><a href="/support">Service support</a></main>
+          <section><h2>Features</h2><h3>Flexible payment</h3><p>Public details on payments.</p>
+            <h3>Payment terms</h3><p>Public details on duration.</p></section>
+          <section><h1>Payment calculator</h1><form><input type="number"><button>Calculate</button></form></section>
+          <section><h2>Service offer common questions</h2><p>Payment context is available.</p>
+            <a class="accordion-header" href="#answer-one">Question one</a>
+            <a class="accordion-header" href="#answer-two">Question two</a>
+            <div id="answer-one" hidden><p>Private expanded answer.</p></div></section>
+        </div>
+        <section id="customer-reviews"><h2>Customer reviews</h2>
+          <a href="/product-reviews/#{product}">All product reviews</a>
+          <div class="review-gallery"><button type="button"><img src="/review-gallery.jpg" alt="Customer gallery photograph"></button></div>
+          <div class="review" data-product-id="#{product}"><h3>First verified experience</h3>
+            <p>Complete first review body and rating: five stars.</p>
+            <a href="/people/one">First reviewer</a><img src="/review-one.jpg" alt="First review photograph"></div>
+          <div class="review" data-product-id="#{product}"><h3>Second verified experience</h3>
+            <p>Complete second review body and its reply remain together.</p>
+            <p>Reply: all payments arrived on schedule.</p>
+            <a href="/people/two">Second reviewer</a><img src="/review-two.jpg" alt="Second review photograph"></div>
+          <div class="review" hidden><p>Hidden review body must stay hidden.</p></div>
+        </section></div>
+        <aside><section id="other-reviews"><h2>Foreign sidebar reviews</h2>
+            <a href="/product-reviews/#{product}">Foreign navigation</a><div class="review">Foreign sidebar body</div></section></aside>
+      </body></html>
+    HTML
+    with_url_page("https://unknown.example/dp/#{product}", html) do |page|
+      page.add_script_tag(path: File.expand_path('../../../lib/fetch_util/assets/vendor/turndown.js', __dir__))
+      page.add_script_tag(content: readability_excerpt_source)
+      result = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var primary = document.querySelector('#primary');
+          var candidate = {contentType: 'article', readerMode: true, title: document.title,
+            html: primary.outerHTML, markdown: window.__sourceOwnedPrimaryMarkdown(primary.outerHTML),
+            textContent: primary.textContent};
+          var before = document.documentElement.outerHTML;
+          var extract = window.__sourceOwnedPrimaryArticleMaterial;
+          var metadata = {title: document.title, siteName: 'unknown.example'};
+          var owned = extract(candidate, metadata);
+          var unchanged = before === document.documentElement.outerHTML;
+          var serviceLink = document.querySelector('#primary a[href*="product-reviews"]');
+          serviceLink.hidden = true;
+          var hiddenServiceLinkDeclined = extract(candidate, metadata) === candidate;
+          serviceLink.hidden = false;
+          var collectionLink = document.querySelector('#customer-reviews > a');
+          collectionLink.hidden = true;
+          var hiddenCollectionLinkDeclined = extract(candidate, metadata) === candidate;
+          collectionLink.hidden = false;
+          collectionLink.setAttribute('href', '/product-reviews/other-product');
+          var citation = document.createElement('a');
+          citation.href = '/product-reviews/#{product}';
+          citation.textContent = 'Citation to another product';
+          document.querySelector('#customer-reviews .review').appendChild(citation);
+          var incidentalCitationDeclined = extract(candidate, metadata) === candidate;
+          citation.remove();
+          collectionLink.setAttribute('href', '/product-reviews/#{product}');
+          var reviewRoot = document.querySelector('#customer-reviews');
+          reviewRoot.setAttribute('data-product-id', 'other-product');
+          var foreignRootDeclined = extract(candidate, metadata) === candidate;
+          reviewRoot.removeAttribute('data-product-id');
+          var hiddenForeign = document.createElement('span');
+          hiddenForeign.hidden = true;
+          hiddenForeign.setAttribute('data-asin', 'other-product');
+          reviewRoot.appendChild(hiddenForeign);
+          var hiddenForeignPreserved = extract(candidate, metadata).sourceOwnedPrimaryPage === true;
+          hiddenForeign.remove();
+          document.querySelector('#customer-reviews .review').setAttribute('data-product-id', 'foreign-product');
+          var foreignRecordDeclined = extract(candidate, metadata) === candidate;
+          document.querySelector('#customer-reviews .review').setAttribute('data-product-id', '#{product}');
+          var foreign = document.createElement('article');
+          foreign.innerHTML = '<h2>Independent story</h2><p>Unrelated material.</p>';
+          document.querySelector('#customer-reviews').appendChild(foreign);
+          var embeddedArticleDeclined = extract(candidate, metadata) === candidate;
+          foreign.remove();
+          document.querySelector('.product-scope').appendChild(foreign);
+          var secondArticleDeclined = extract(candidate, metadata) === candidate;
+          return {owned: owned.sourceOwnedPrimaryPage, html: owned.html, markdown: owned.markdown,
+            text: owned.textContent, unchanged: unchanged,
+            hiddenServiceLinkDeclined: hiddenServiceLinkDeclined,
+            hiddenCollectionLinkDeclined: hiddenCollectionLinkDeclined,
+            incidentalCitationDeclined: incidentalCitationDeclined, foreignRootDeclined: foreignRootDeclined,
+            hiddenForeignPreserved: hiddenForeignPreserved,
+            foreignRecordDeclined: foreignRecordDeclined, embeddedArticleDeclined: embeddedArticleDeclined,
+            secondArticleDeclined: secondArticleDeclined};
+        })())
+      JS
+      expect(result['owned']).to be(true)
+      expect(result['unchanged']).to be(true)
+      %w[html markdown text].each do |field|
+        expect(result[field]).to include('First verified experience', 'Second verified experience', 'Reply: all payments')
+        expect(result[field]).not_to include('Hidden review body', 'Foreign sidebar body')
+      end
+      expect(result['html']).to include('review-one.jpg', 'review-two.jpg', 'review-gallery.jpg', '/people/one', '/people/two')
+      expect(result['markdown']).to include('review-gallery.jpg')
+      expect(result.values_at('hiddenServiceLinkDeclined', 'hiddenCollectionLinkDeclined',
+                              'incidentalCitationDeclined', 'foreignRootDeclined', 'hiddenForeignPreserved')).to all(be(true))
+      expect(result['foreignRecordDeclined']).to be(true)
+      expect(result['embeddedArticleDeclined']).to be(true)
+      expect(result['secondArticleDeclined']).to be(true)
+    end
+  end
+
   it 'declines a title-matching main beside an unrelated long section without a unique calculator owner' do
     unrelated_detail = "Each section remains part of the unrelated container, not the service owner. "
     detail = "Service offer includes a full public account with source links and verified terms. #{unrelated_detail * 8}"

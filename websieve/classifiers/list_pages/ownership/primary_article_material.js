@@ -232,6 +232,9 @@ function sourceOwnedPrimaryArticleMaterial(content, metadata) {
   if (!serviceOwner || !sourceOwnedPrimaryCandidateCovered(content, serviceOwner.node)) return content;
   var serviceClone = sourceOwnedPrimaryServiceClone(serviceOwner);
   if (!serviceClone) return content;
+  var reviews = sourceOwnedPrimaryServiceReviews(serviceOwner);
+  if (reviews === false) return content;
+  if (reviews) serviceClone.appendChild(reviews);
   var title = pageTitle;
   var excerpt = sourceOwnedCompleteArticleLead({
     ownerRoot: serviceOwner.node,

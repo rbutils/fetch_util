@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Keep complete visible product-service reviews only when the selected service and review collection have matching, visible product-review links; decline foreign or ambiguous review owners.
 - Scope Reader summaries to the proved article body and header even with a publisher-suffixed document title or an independent neighboring section.
 - Keep complete source-owned Reader article summaries independent of byline classification while excluding summary copies in neighboring or nested articles.
 - Retain original same-page headline links only when the complete selected article body matches the source owner.
