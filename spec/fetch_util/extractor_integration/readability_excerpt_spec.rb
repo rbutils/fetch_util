@@ -1142,14 +1142,14 @@ RSpec.describe 'Readability article excerpts' do
     end
   end
 
-  it 'binds a contributor date to the unique heading and selected Reader body' do
+  it 'binds a contributor date between the unique heading and selected Reader body' do
     url = 'https://publisher.example/articles/owned-contributor'
     html = <<~HTML
       <!doctype html><html><head><title>Owned contributor report</title><link rel="canonical" href="#{url}"></head><body>
       <main><div class="two-column">
         <div class="article-header"><h1>Owned contributor report</h1></div>
+        <div class="contributors"><p class="Contributors-Date">September 18, 2026</p></div>
         <div class="article-body">
-          <div class="contributors"><p class="contributors-date">September 18, 2026</p></div>
           <div class="content-module">
             <p>The verified article opens with a complete report covering the source topic and establishing its own body.</p>
             <p>The next selected paragraph supplies independent details about the same report and its publication context.</p>
@@ -1171,11 +1171,13 @@ RSpec.describe 'Readability article excerpts' do
             return selected && selected.publishedTime;
           }
           var owned = publication();
-          document.querySelector('.contributors').appendChild(
-            document.querySelector('.related-date')
-          );
+          var otherDate = document.querySelector('.related-date');
+          var foreignDate = otherDate.cloneNode(true);
+          otherDate.className = 'Contributors-Date';
+          document.querySelector('.contributors').appendChild(otherDate);
           var conflicting = publication();
           document.querySelector('.contributors').replaceChildren();
+          document.querySelector('.related-card').appendChild(foreignDate);
           var foreign = publication();
           return [owned, conflicting, foreign];
         })())

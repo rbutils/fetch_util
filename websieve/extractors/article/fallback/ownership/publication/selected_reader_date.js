@@ -201,6 +201,7 @@ function sourceOwnedReaderHeaderPublicationTime(paragraphs, owner) {
   });
   return sourceOwnedUniquePublicationValue(values).value;
 }
+
 function sourceOwnedReaderContributorPublicationTime(paragraphs, owner) {
   if (!Array.isArray(paragraphs) || !paragraphs.length || !owner || !owner.ownerRoot ||
       !owner.heading || !owner.root || !owner.firstParagraph) return "";
