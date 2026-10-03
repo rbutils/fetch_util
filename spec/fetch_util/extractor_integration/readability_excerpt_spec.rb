@@ -28,6 +28,7 @@ RSpec.describe 'Readability article excerpts' do
         global.__sourceOwnedLeadingQuestionAnswerPublicationTime = sourceOwnedLeadingQuestionAnswerPublicationTime;
         global.__collectMetadata = collectMetadata;
         global.__sourceOwnedPublicationDatesEquivalent = sourceOwnedPublicationDatesEquivalent;
+        global.__sourceOwnedDisplayAgreesWithPreciseDate = sourceOwnedDisplayAgreesWithPreciseDate;
         global.__finalizeExtractResult = finalizeExtractResult;
         global.__collectionPublishedTime = collectionPublishedTime;
       JS
@@ -1045,6 +1046,98 @@ RSpec.describe 'Readability article excerpts' do
         })()
       JS
       expect(value).to eq(published)
+    end
+  end
+
+  it 'retains a precise owned head timestamp when the visible publication label cannot be parsed' do
+    headline = 'Local reporting on community visits'
+    canonical_url = 'https://publisher.example/articles/community-visits'
+    precise = '2026-09-22T17:05:00+08:00'
+    data = JSON.generate('@type' => 'NewsArticle', 'url' => canonical_url, 'headline' => headline, 'datePublished' => precise)
+    html = source_publication_article_html(
+      headline: headline, canonical_url: canonical_url, structured_data: data,
+      header_date: 'PUBLISHED ONSeptember 22, 2026 11:05 AM'
+    ).sub('</head>', %(<meta property="article:published_time" content="#{precise}"></head>))
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = JSON.parse(page.evaluate(<<~JS))
+        JSON.stringify((function() {
+          var article = document.querySelector('article');
+          var metadata = {title: document.title, canonicalUrl: location.href};
+          var paragraphs = Array.from(article.querySelectorAll('[itemprop="articleBody"] p'));
+          var reader = window.__readabilityOwnedSelectedPublication(
+            {title: document.title}, metadata, {sourceParagraphs: paragraphs}
+          );
+          var fallback = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          document.querySelector('script[type="application/ld+json"]').textContent = JSON.stringify({
+            '@type': 'NewsArticle', url: location.href, headline: document.title,
+            datePublished: '2026-09-21T17:05:00+08:00'
+          });
+          var conflicting = window.__sourceOwnedFallbackPublication(metadata, article, {
+            node: article, visibleNode: article.cloneNode(true)
+          });
+          return [reader && reader.publishedTime, fallback && fallback.publishedTime,
+            conflicting && conflicting.publishedTime];
+        })())
+      JS
+      expect(values).to eq([precise, precise, nil])
+    end
+  end
+
+  it 'does not replace a recoverable conflicting publication day or an updated label with the head timestamp' do
+    headline = 'Local publication report'
+    canonical_url = 'https://publisher.example/articles/local-publication'
+    precise = '2026-09-22T17:05:00+08:00'
+    data = JSON.generate('@type' => 'NewsArticle', 'url' => canonical_url, 'headline' => headline, 'datePublished' => precise)
+    html = source_publication_article_html(
+      headline: headline, canonical_url: canonical_url, structured_data: data,
+      header_date: 'PUBLISHED ONSeptember 22, 2026 11:05 AM'
+    ).sub('</head>', %(<meta property="article:published_time" content="#{precise}"></head>))
+
+    with_url_page(canonical_url, html) do |page|
+      page.add_script_tag(content: readability_excerpt_source)
+      values = page.evaluate(<<~JS)
+        (function() {
+          var metadata = {title: document.title, canonicalUrl: location.href};
+          var article = document.querySelector('article');
+          var date = article.querySelector('.article-date, time, [class*="date" i]');
+          function publication() {
+            var value = window.__sourceOwnedFallbackPublication(metadata, article, {
+              node: article, visibleNode: article.cloneNode(true)
+            });
+            return value && value.publishedTime;
+          }
+          var sameDay = publication();
+          date.textContent = 'Published onSeptember 23, 2026 11:05 AM';
+          date.setAttribute('datetime', date.textContent);
+          var differentDay = publication();
+          date.textContent = 'Updated onSeptember 22, 2026';
+          date.setAttribute('datetime', date.textContent);
+          var updated = publication();
+          date.textContent = 'Published on2026-09-23T11:00:00+08:00';
+          date.setAttribute('datetime', date.textContent);
+          var differentIsoDay = publication();
+          date.textContent = 'Published onSeptember 23, 2026 11:00 +unknown';
+          date.setAttribute('datetime', date.textContent);
+          var unsupportedTail = publication();
+          return [sameDay, differentDay, updated, differentIsoDay, unsupportedTail,
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published on2026-09-22T17:05:00+08:00', '#{precise}'),
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published on2026-09-23T11:00:00+08:00', '#{precise}'),
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published onSeptember 22, 2026 11:05 AM +08:00',
+              '2026-09-22T17:05:00+08:00'),
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published onSeptember 22, 2026 17:05 +08:00',
+              '2026-09-22T17:05:00+08:00'),
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published onSeptember 22, 2026 17:06',
+              '2026-09-22T17:05:00'),
+            window.__sourceOwnedDisplayAgreesWithPreciseDate('Published onFebruary 30, 2026', '#{precise}')];
+        })()
+      JS
+      expect(values).to eq([precise, 'Published onSeptember 23, 2026 11:05 AM',
+                            'Updated onSeptember 22, 2026', 'Published on2026-09-23T11:00:00+08:00',
+                            'Published onSeptember 23, 2026 11:00 +unknown', true, false, false, true, false, true])
     end
   end
 

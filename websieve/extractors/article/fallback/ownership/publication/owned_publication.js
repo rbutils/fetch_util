@@ -67,10 +67,6 @@ function sourceOwnedFallbackPublication(metadata, sourceRoot, selected) {
   if (sourceArticleBodyHasForeignLinkedArticle(sourceRoot, bodyOwner, headings[0], pageUrl)) return null;
 
   var articleOwnerRoot = bodyOwner.contains(headings[0]) ? bodyOwner : sourceRoot;
-  var readerHeaderDate = sourceOwnedReaderHeaderPublicationTime(paragraphs, {
-    heading: headings[0], ownerRoot: articleOwnerRoot
-  });
-  if (readerHeaderDate) return { publishedTime: readerHeaderDate };
   var headerContext = sourceOwnedArticleHeaderContext({
     heading: headings[0], ownerRoot: articleOwnerRoot, body: { sourceNode: bodyOwner }
   });
@@ -209,7 +205,20 @@ function sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDateNodes)
   var visible = sourceOwnedUniquePublicationValue(visibleValues);
   var head = sourceOwnedHeadPublicationTime();
   if (visible.ambiguous) return null;
-  if (visible.value) return { publishedTime: visible.value };
+  if (visible.value) {
+    // A publisher's concatenated display label is not a timestamp. A precise,
+    // unambiguous publication meta value still belongs to this proven owner.
+    if ((!Number.isFinite(Date.parse(visible.value)) ||
+        /^(?:published|posted)\s+on(?=[A-Z])/i.test(visible.value)) && head.value && !head.ambiguous &&
+        sourceOwnedDisplayAgreesWithPreciseDate(visible.value, head.value)) {
+      if (records && records.length && records[0].datePublished &&
+          !sourceOwnedPublicationDatesEquivalent(head.value, entityText(records[0].datePublished))) {
+        return { publishedTime: null };
+      }
+      return { publishedTime: head.value };
+    }
+    return { publishedTime: visible.value };
+  }
   if (publicationRecords.optionalDataInvalid) {
     return { publishedTime: head.value || null };
   }
