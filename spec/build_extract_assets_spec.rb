@@ -1501,6 +1501,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/liveblog_content_links.js
         extractors/article/fallback/ownership/liveblog_comments.js
         extractors/article/fallback/ownership/liveblog_addressing.js
+        extractors/article/fallback/ownership/publication/display_date_agreement.js
         extractors/article/fallback/ownership/publication/owned_publication.js
         extractors/article/fallback/ownership/publication/selected_reader_date.js
         extractors/article/fallback/ownership/publication/article_fields.js
