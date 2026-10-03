@@ -1,5 +1,5 @@
   function listCandidateLosesCompleteOwnedSections(content, candidate, rendered) {
-    if (!content.readerMode) return false;
+    if (!content || !content.readerMode) return false;
     var sourceNamed = Array.from(document.querySelectorAll("[id]"));
     var namedRoots = Array.from(rendered.querySelectorAll("[id]")).filter(function(node) {
       return node.id && sourceNamed.some(function(sourceNode) {
