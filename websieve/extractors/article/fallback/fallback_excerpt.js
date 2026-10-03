@@ -4,6 +4,8 @@
     if (ownedSummary) return ownedSummary;
     var repeatedHeadlineLead = fallbackRepeatedHeadlineExcerpt(root, renderedText, metadata, completeParagraph);
     if (repeatedHeadlineLead) return repeatedHeadlineLead;
+    var selectedArticleLead = fallbackSelectedArticleLead(root, renderedText, sourceOwnership, sourceClones, metadata);
+    if (selectedArticleLead) return selectedArticleLead;
     function ownedParagraph(node) {
       var value = normalizeText(node.textContent || "");
       var characters = Array.from(value).length;

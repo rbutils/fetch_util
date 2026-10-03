@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Select complete authored opening paragraphs only from the mapped article owner when a broader fallback root preserves the article body.
 - Keep a complete source-mapped service article when a product-tab list would drop its owned sections, prose, features and media; require unique source ownership and compare encoded image URLs by DOM identity.
 - Keep complete visible product-service reviews only when the selected service and review collection have matching, visible product-review links; decline foreign or ambiguous review owners.
 - Preserve a precise source-owned publication timestamp only when its calendar day agrees with the visible date, without guessing timezone conversions.

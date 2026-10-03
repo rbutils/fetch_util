@@ -80,6 +80,7 @@
         focalOwnership = null;
       }
     }
+    var excerptArticleOwner = focalOwnership;
     if (!selected || !focalOwnership || selected.node !== focalOwnership.node) focalOwnership = null;
     var node = selected ? selected.node : document.body;
     var visibleNode = selected ? selected.visibleNode : visibleBody;
@@ -139,7 +140,7 @@
     var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
     var sourceOwnedPublication = sourceOwnedMedia ?
       sourceOwnedMediaPublication(focalOwnership, metadata) : sourceOwnedFallbackPublication(metadata, node, selected);
-    var excerptOwnership = focalOwnership || resolveCanonicalArticleBodyOwnership();
+    var excerptOwnership = focalOwnership || resolveCanonicalArticleBodyOwnership() || excerptArticleOwner;
 
     return {
       title: focalOwnership ? focalOwnership.title : document.title,
