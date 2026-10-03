@@ -1,6 +1,7 @@
 # Changelog
 
 ### Fixed
+- Keep a complete source-mapped service article when a product-tab list would drop its owned sections, prose, features and media; require unique source ownership and compare encoded image URLs by DOM identity.
 - Keep complete visible product-service reviews only when the selected service and review collection have matching, visible product-review links; decline foreign or ambiguous review owners.
 - Preserve a precise source-owned publication timestamp only when its calendar day agrees with the visible date, without guessing timezone conversions.
 - Keep contributor-header dates only when they belong to the uniquely selected article body and do not conflict with other owned dates.

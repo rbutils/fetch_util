@@ -144,7 +144,7 @@
     var articleRoot = document.createElement("div");
     articleRoot.innerHTML = (content && content.html) || "";
     if (listCandidateLosesCodeBlocks(articleRoot, extracted)) return null;
-    return extracted.portalRootEvidence ? extracted : null;
+    return extracted.portalRootEvidence && !sourceMaterialBlocksListCandidate(content, extracted, metadata) ? extracted : null;
   }
 
   function sectionFeedArticleLinks(root) {
