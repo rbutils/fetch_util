@@ -53,6 +53,17 @@ the separate existing stage budgets, and native extraction keeps its 60-second
 minimum evaluation allowance. A public total timeout requires demonstrated
 in-flight interruption and bounded cleanup before it can be promised.
 
+## Frozen native replay
+
+[`script/native_replay/README.md`](../script/native_replay/README.md) documents the
+versioned manifest and a runnable smoke example. The runner uses the real compiled
+`Extractor#extract` path, blank navigation at the captured final URL, blocked
+secondary network traffic, explicit runtime restoration, full by-value snapshots,
+and immediate native-payload persistence. Each case has its own Ruby process and
+browser. A Linux `/proc` supervisor discovers the separate Chromium process group
+and terminates the owned groups at the case deadline; this is a development
+watchdog, not a new in-process fetch timeout.
+
 ## Repeated-failure resource probe
 
 Run the same probe in separate processes for a pinned baseline library and the

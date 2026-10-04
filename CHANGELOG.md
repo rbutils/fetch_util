@@ -15,6 +15,7 @@
 
 ### Development
 
+- Add a native replay runner with pinned package/source/browser identities and process-isolated case watchdogs.
 - Add loopback acquisition fixtures and a reproducible repeated-failure browser resource probe.
 - Extend search contract coverage for difficult valid query forms, advisory mismatches, provider failures, redirect and response-size boundaries, deduplication, and normal versus verbose output.
 

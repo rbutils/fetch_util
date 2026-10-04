@@ -217,7 +217,7 @@ Browser-profile normalization is intentionally limited to reducing obvious runti
 ## Development
 
 See [development verification](docs/verification.md) for opt-in phase observation
-and controlled acquisition and browser-failure resource measurements.
+and controlled acquisition, native replay, and browser-failure resource measurements.
 
 Run from `/srv/code/rbutils/fetch_util`:
 
