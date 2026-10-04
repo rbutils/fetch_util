@@ -6,6 +6,7 @@
 
 - Preserve source-owned article bodies inside mixed article/sidebar layout wrappers, including supplemental author prose and article calls to action, while excluding independently owned recommendation sidebars.
 - Close partially acquired browser tabs after setup failures, retire unusable browser processes, and preserve the primary result or error when cleanup also fails.
+- Describe `--include-html` as extracted HTML in CLI help.
 
 ### Changed
 

@@ -70,7 +70,7 @@ module FetchUtil
     class_option :concurrency, type: :numeric, default: 4
     class_option :reader_mode, type: :boolean, default: true
     class_option :wait_for_idle, type: :boolean, default: true
-    class_option :include_html, type: :boolean, default: false, desc: "Include raw html in fetch output"
+    class_option :include_html, type: :boolean, default: false, desc: "Include extracted HTML in fetch output"
     class_option :include_urls, type: :boolean, default: false, desc: "Include URL fields in fetch output"
 
     desc "version", "Display fetch_util version"
