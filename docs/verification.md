@@ -1,5 +1,40 @@
 # Development verification
 
+## Opt-in phase observation
+
+For development diagnostics, `FetchUtil::Fetcher.new(phase_observer: callback)`
+accepts a callable receiving frozen event hashes. This is a diagnostic seam;
+normal `Result`, CLI and append-only request-log schemas do not gain these fields.
+
+```ruby
+events = []
+fetcher = FetchUtil::Fetcher.new(phase_observer: ->(event) { events << event })
+begin
+  result = fetcher.fetch("https://example.com/article")
+ensure
+  fetcher.quit
+end
+```
+
+Events identify `request_id`, credential-redacted `url`, `phase`, `edge`, and
+`attempt`. Finish events also contain monotonic `duration`, `outcome`, and
+`error_class`. The observed phases cover normalization, PDF probing, browser
+launch/reuse, setup, navigation, stabilization, pre-extraction settling,
+extraction, retry waiting, fallback work, and page cleanup. Injected browser
+implementations keep their existing `with_page(url)` interface and get aggregate
+browser observation instead of owned-browser internals.
+
+Events can nest; do not sum inclusive phase times into total latency. Callbacks
+run synchronously, outside the browser lifecycle mutex, and their work can affect
+observed timing. Callback `StandardError`s do not alter the fetch result. The
+disabled observer creates no events and reads no phase clock. Keep callbacks
+lightweight; concurrent fetchers need a thread-safe sink.
+
+This instrumentation does not create a whole-fetch deadline. `timeout:` retains
+the separate existing stage budgets, and native extraction keeps its 60-second
+minimum evaluation allowance. A public total timeout requires demonstrated
+in-flight interruption and bounded cleanup before it can be promised.
+
 ## Repeated-failure resource probe
 
 Run the same probe in separate processes for a pinned baseline library and the

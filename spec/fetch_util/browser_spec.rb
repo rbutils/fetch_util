@@ -171,6 +171,21 @@ RSpec.describe FetchUtil::Browser do
     browser.with_page('https://ja.wikipedia.org/wiki/日本') {}
   end
 
+  it 'preserves the one-page block contract for strict lambdas without observation' do
+    browser = browser_without_idle
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage')
+    stub_ferrum_page_creation(ferrum, page)
+    stub_page_navigation(page)
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
+    allow(browser).to receive(:stabilize_page)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+    allow(page).to receive(:close)
+
+    expect(browser.with_page('https://example.com', &->(loaded_page) { loaded_page })).to equal(page)
+    expect(page).to have_received(:close).once
+  end
+
   it 'stabilizes and settles against the final redirected url' do
     browser = browser_without_idle
     ferrum = instance_double(Ferrum::Browser)
@@ -381,6 +396,30 @@ RSpec.describe FetchUtil::Browser do
     expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
     expect(failed).to have_received(:quit).twice
     expect(Ferrum::Browser).to have_received(:new).twice
+  end
+
+  it 'cleans up a real tab after extraction failure and reuses Chromium on the next URL' do
+    browser_path = ENV['BROWSER_PATH'] || described_class::BROWSER_CANDIDATES.find { |path| File.executable?(path) }
+    skip 'Chromium is unavailable' if !browser_path && ENV['FETCH_UTIL_ALLOW_MISSING_CHROMIUM'] == '1'
+    browser = described_class.new(browser_path: browser_path, wait: 0, wait_for_idle: false)
+    events = []
+    observation = FetchUtil.const_get(:PhaseObservation, false).new(
+      url: 'data:text/html,<title>test</title>', callback: ->(event) { events << event }
+    )
+
+    expect do
+      browser.with_page('data:text/html,<title>failed</title>', observation: observation) do
+        raise IOError, 'extraction failed'
+      end
+    end.to raise_error(IOError, 'extraction failed')
+    pages_after_failure = browser.instance_variable_get(:@ferrum).pages.length
+    expect(browser.with_page('data:text/html,<title>recovered</title>', observation: observation) do |page|
+      page.evaluate('document.title')
+    end).to eq('recovered')
+    expect(browser.instance_variable_get(:@ferrum).pages.length).to eq(pages_after_failure)
+    expect(events.map { |event| event[:phase] }.uniq).to include(:browser_launch, :navigation, :stabilization, :cleanup)
+  ensure
+    browser&.quit
   end
 
   it 'shuts down the browser process on quit' do

@@ -10,6 +10,7 @@
 ### Changed
 
 - Move bounded PDF header probing and title derivation into a cohesive private component.
+- Add opt-in per-request phase observation without changing normal result, CLI, or request-log schemas.
 - Isolate documentation-URL classification while preserving the public helper and existing classifier constants.
 
 ### Development

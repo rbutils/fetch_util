@@ -80,6 +80,43 @@ RSpec.describe FetchUtil::Browser do
     expect(page3).to have_received(:go_to).once
   end
 
+  it 'reports page setup and browser retry attempts without holding its mutex in callbacks' do
+    ferrum = instance_double(Ferrum::Browser)
+    page1 = instance_double('FerrumPage')
+    page2 = instance_double('FerrumPage')
+    stub_ferrum_page_creation(ferrum, page1, page2)
+    stub_page_navigation(page1)
+    stub_page_navigation(page2)
+    allow(page1).to receive(:go_to).and_raise(Ferrum::PendingConnectionsError, 'pending')
+    allow(page1).to receive(:close)
+    allow(page2).to receive(:close)
+    browser = browser_with_idle
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
+    allow(browser).to receive(:stabilize_page).and_return(true)
+    allow(browser).to receive(:heavy_script_page?).and_return(false)
+    allow(browser).to receive(:sleep)
+    events = []
+    mutex = browser.instance_variable_get(:@mutex)
+    observation = FetchUtil.const_get(:PhaseObservation, false).new(
+      url: 'https://example.com/',
+      callback: lambda do |event|
+        expect(mutex.owned?).to be(false)
+        events << event
+      end
+    )
+
+    page_attempt = nil
+    browser.with_page('https://example.com/', observation: observation) do |_page, attempt|
+      page_attempt = attempt
+    end
+
+    expect(events.select { |event| event[:edge] == :start && event[:phase] == :setup }.map { |event| event[:attempt] }).to eq([1, 2])
+    expect(events.select { |event| event[:edge] == :start && event[:phase] == :navigation }.map { |event| event[:attempt] }).to eq([1, 2])
+    expect(events.select { |event| event[:edge] == :start && event[:phase] == :retry_wait }.map { |event| event[:attempt] }).to eq([1])
+    expect(events.select { |event| event[:edge] == :start && event[:phase] == :cleanup }.map { |event| event[:attempt] }).to eq([1, 2])
+    expect(page_attempt).to eq(2)
+  end
+
   it 'settles briefly before extraction on heavy-script pages' do
     page = instance_double('FerrumPage')
     browser = browser_with_idle

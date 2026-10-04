@@ -175,10 +175,13 @@ module FetchUtil
     def initialize(browser: nil, extractor: nil, **options)
       @timeout = options.fetch(:timeout, 20)
       @browser = browser || Browser.new(**browser_options(options))
+      @owned_browser = browser.nil?
       @extractor = extractor || Extractor.new(reader_mode: options.fetch(:reader_mode, true))
       @raw_docs_fallback = options[:raw_docs_fallback] || RawDocsFallback.new(timeout: @timeout)
       @request_log = options[:request_log]
       @pdf_probe = PdfProbe.new(timeout: @timeout, header_probe: options[:pdf_header_probe])
+      @phase_observer = options[:phase_observer]
+      raise InputError, "phase_observer must respond to call" if @phase_observer && !@phase_observer.respond_to?(:call)
     end
 
     def quit
@@ -189,38 +192,56 @@ module FetchUtil
       requested_url = url.dup.freeze
       t0 = monotonic_now
       pending_connection_retries = 0
+      observation = if @phase_observer
+                      PhaseObservation.new(url: request_log_url(requested_url), callback: @phase_observer)
+                    else
+                      PhaseObservation.disabled
+                    end
 
       begin
-        transport_url = FetchUtil.normalize_url(requested_url)
+        attempt = pending_connection_retries + 1
+        transport_url = observation.measure(:normalization, attempt: attempt) do
+          FetchUtil.normalize_url(requested_url)
+        end
         parse_http_uri(transport_url)
 
-        if (pdf_result = direct_pdf_result(transport_url, requested_url: requested_url))
+        pdf_result = observation.measure(:pdf_probe, attempt: attempt) do
+          direct_pdf_result(transport_url, requested_url: requested_url)
+        end
+        if pdf_result
           return pdf_result
         end
 
-        result = @browser.with_page(transport_url) do |page|
-          payload = @extractor.extract(page)
-          if telegram_focal_preview?(transport_url) && payload["contentType"] == "article"
-            sleep Browser::PRE_EXTRACTION_SETTLE_WAIT
-            payload = @extractor.extract(page)
-          end
-          build_result(requested_url, page.current_url, payload)
+        result_attempt = attempt
+        result = with_browser_page(transport_url, observation, attempt) do |page, browser_attempt|
+          result_attempt = browser_attempt || attempt
+          build_page_result(page, requested_url, transport_url, observation, result_attempt)
         end
-        fallback = seznam_cmp_redirect_fallback_candidate?(transport_url, result) ? @raw_docs_fallback.fetch(transport_url) : nil
-        fallback ||= docs_fallback_candidate?(transport_url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(transport_url) : nil
-        fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
-        result = fallback_result(requested_url, fallback) if fallback
+        attempt = result_attempt
+        fallback = observation.measure(:fallback, attempt: attempt) do
+          select_fallback(transport_url, result)
+        end
+        if fallback
+          result = observation.measure(:normalization, attempt: attempt) do
+            fallback_result(requested_url, fallback)
+          end
+        end
         result
       rescue BrowserError, ExtractionError => e
         if e.is_a?(BrowserError) && pending_connections_error?(e) && pending_connection_retries < PENDING_CONNECTIONS_FETCH_RETRIES
           pending_connection_retries += 1
-          sleep PENDING_CONNECTIONS_FETCH_RETRY_WAIT
+          observation.measure(:retry_wait, attempt: pending_connection_retries) do
+            sleep PENDING_CONNECTIONS_FETCH_RETRY_WAIT
+          end
           retry
         end
 
-        fallback = docs_fallback_candidate?(transport_url) ? @raw_docs_fallback.fetch(transport_url) : nil
+        attempt = pending_connection_retries + 1
+        fallback = observation.measure(:fallback, attempt: attempt) { docs_fallback(transport_url) }
         if fallback
-          result = fallback_result(requested_url, fallback)
+          result = observation.measure(:normalization, attempt: attempt) do
+            fallback_result(requested_url, fallback)
+          end
           return result
         end
 
@@ -238,6 +259,31 @@ module FetchUtil
     end
 
     private
+
+    def with_browser_page(url, observation, attempt, &block)
+      if @owned_browser
+        @browser.with_page(url, observation: observation, attempt: attempt, &block)
+      else
+        observation.measure(:browser, attempt: attempt) do
+          @browser.with_page(url) { |page| block.call(page, attempt) }
+        end
+      end
+    end
+
+    def build_page_result(page, requested_url, transport_url, observation, attempt)
+      payload = observation.measure(:extraction, attempt: attempt) { @extractor.extract(page) }
+      if telegram_focal_preview?(transport_url) && payload["contentType"] == "article"
+        observation.measure(:pre_extraction_sleep, attempt: attempt) { sleep Browser::PRE_EXTRACTION_SETTLE_WAIT }
+        payload = observation.measure(:extraction, attempt: attempt) { @extractor.extract(page) }
+      end
+      observation.measure(:normalization, attempt: attempt) do
+        build_result(requested_url, page.current_url, payload)
+      end
+    end
+
+    def docs_fallback(url)
+      @raw_docs_fallback.fetch(url) if docs_fallback_candidate?(url)
+    end
 
     def telegram_focal_preview?(url)
       uri = URI.parse(url)
@@ -865,6 +911,13 @@ module FetchUtil
 
     def fallback_result(url, fallback)
       build_result(url, *fallback)
+    end
+
+    def select_fallback(url, result)
+      fallback = seznam_cmp_redirect_fallback_candidate?(url, result) ? @raw_docs_fallback.fetch(url) : nil
+      fallback ||= docs_fallback_candidate?(url, result) && poor_docs_result?(result) ? @raw_docs_fallback.fetch(url) : nil
+      fallback ||= article_body_fallback_candidate?(result) ? @raw_docs_fallback.fetch(result.final_url) : nil
+      fallback
     end
 
     def network_error_result(url, error)

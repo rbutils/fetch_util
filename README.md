@@ -136,6 +136,10 @@ For article results, `description` exposes declared page metadata independently 
 - `accept_language:` override request language headers
 - `browser_path:` explicit Chromium path
 
+`timeout:` is not a whole-fetch deadline: PDF probing, browser navigation and
+stabilization, native extraction, and HTTP fallbacks have distinct existing
+budgets. The extractor retains its minimum 60-second evaluation allowance.
+
 ## Output Shape
 
 Structured `fetch` output is compact JSON intended for downstream agent/tool consumption. The default payload keeps the fields that are usually most useful in practice:
@@ -212,8 +216,8 @@ Browser-profile normalization is intentionally limited to reducing obvious runti
 
 ## Development
 
-See [development verification](docs/verification.md) for controlled browser-failure
-resource measurements.
+See [development verification](docs/verification.md) for opt-in phase observation
+and controlled browser-failure resource measurements.
 
 Run from `/srv/code/rbutils/fetch_util`:
 

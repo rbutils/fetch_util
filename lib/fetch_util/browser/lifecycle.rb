@@ -5,7 +5,8 @@ module FetchUtil
     module Lifecycle
       private
 
-      # Keep ownership of a partially initialized browser until it is shut down.
+      # Register the navigator patch once per process; Ferrum applies it to
+      # each new page. A failed startup stays owned until shutdown succeeds.
       def ensure_browser
         @mutex.synchronize do
           shutdown_pending_browser
@@ -40,16 +41,19 @@ module FetchUtil
         @pending_shutdown = nil
       end
 
-      # A failed tab close poisons the owned process. Keep the operation's
-      # primary result/error while preventing the leaked tab from being reused.
-      def close_page(page, browser: nil)
+      # Cleanup must preserve the primary extraction/setup exception. Retire a
+      # process whose tab could not be closed rather than reusing a leaked tab.
+      def close_page(page, observation: nil, attempt: 1, browser: nil)
         return true unless page
 
-        page.close
-        true
-      rescue StandardError
-        retire_browser(browser)
-        false
+        observation ||= PhaseObservation.disabled
+        begin
+          observation.measure(:cleanup, attempt: attempt) { page.close }
+          true
+        rescue StandardError
+          retire_browser(browser)
+          false
+        end
       end
 
       def retire_browser(browser)

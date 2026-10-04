@@ -7,8 +7,8 @@ require "uri"
 
 module FetchUtil
   class Browser
-    autoload :Lifecycle, "fetch_util/browser/lifecycle"
     autoload :InteractionHelpers, "fetch_util/browser/interaction_helpers"
+    autoload :Lifecycle, "fetch_util/browser/lifecycle"
     autoload :Navigation, "fetch_util/browser/navigation"
     autoload :SiteStabilization, "fetch_util/browser/site_stabilization"
     autoload :Stabilization, "fetch_util/browser/stabilization"
@@ -84,18 +84,23 @@ module FetchUtil
     # the +Ferrum::Page+ to the caller. The page is closed after the block
     # returns (or on error), but the underlying Chromium process is kept alive
     # for reuse by subsequent calls.
-    def with_page(url)
+    def with_page(url, observation: nil, attempt: 1)
+      include_attempt = !observation.nil?
+      observation ||= PhaseObservation.disabled
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
       normalized_url = FetchUtil.normalize_url(url)
-      ferrum = ensure_browser
-      page = load_page_with_retry(ferrum, normalized_url)
-      sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, loaded_page_url(page, normalized_url))
-      yield page
+      ferrum = observation.measure(:browser_launch, attempt: attempt) { ensure_browser }
+      page, page_attempt = load_page_with_retry(ferrum, normalized_url, observation: observation, attempt: attempt)
+      page_attempt ||= attempt
+      if heavy_script_page?(page, loaded_page_url(page, normalized_url))
+        observation.measure(:pre_extraction_sleep, attempt: page_attempt) { sleep PRE_EXTRACTION_SETTLE_WAIT }
+      end
+      include_attempt ? yield(page, page_attempt) : yield(page)
     rescue Ferrum::Error => e
       raise BrowserError, e.message
     ensure
-      close_page(page, browser: ferrum) if page
+      close_page(page, observation: observation, attempt: page_attempt || attempt, browser: ferrum)
     end
 
     # Shut down the underlying Chromium process. Safe to call multiple times or
@@ -153,10 +158,6 @@ module FetchUtil
       end
     end
 
-    # Lazily start the shared Chromium process on first use. The
-    # +evaluate_on_new_document+ call registers the navigator patch once;
-    # Ferrum automatically applies it to every new page/context created
-    # afterwards.
     def host_matches?(url, host)
       normalized_host = FetchUtil.strip_www_host(url)
       normalized_host == host || normalized_host.end_with?(".#{host}")
@@ -185,39 +186,48 @@ module FetchUtil
       current_url.to_s.empty? ? fallback : current_url
     end
 
-    def load_page_with_retry(ferrum, url)
+    def load_page_with_retry(ferrum, url, observation: nil, attempt: 1)
+      observation ||= PhaseObservation.disabled
       retries = 0
       successful = false
       page = nil
 
       begin
-        page = ferrum.create_page
-        page.headers.set(@default_headers)
-        page.bypass_csp
-        begin
-          page.go_to(url)
-        rescue Ferrum::TimeoutError
-          raise unless page_loaded_enough?(page)
+        observation.measure(:setup, attempt: attempt + retries) do
+          page = ferrum.create_page
+          page.headers.set(@default_headers)
+          page.bypass_csp
         end
-        stabilize_page(page, loaded_page_url(page, url))
+        observation.measure(:navigation, attempt: attempt + retries) do
+          begin
+            page.go_to(url)
+          rescue Ferrum::TimeoutError
+            raise unless page_loaded_enough?(page)
+          end
+        end
+        observation.measure(:stabilization, attempt: attempt + retries) do
+          stabilize_page(page, loaded_page_url(page, url))
+        end
         if page.current_url == "about:blank" && url != "about:blank"
           raise Ferrum::Error, "Request to #{url} finished on about:blank without a public page"
         end
         successful = true
-        page
+        [page, attempt + retries]
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
         retire_browser(ferrum) if e.is_a?(Ferrum::DeadBrowserError)
-        cleanup_succeeded = close_page(page, browser: ferrum)
-        page = nil
-        raise e unless cleanup_succeeded
         raise unless retryable_navigation_error?(e)
         raise if retries >= NAVIGATION_MAX_RETRIES
 
         retries += 1
-        sleep NAVIGATION_RETRY_WAIT * (2**(retries - 1))
+        cleanup_succeeded = close_page(page, observation: observation, attempt: attempt + retries - 1, browser: ferrum)
+        page = nil
+        raise e unless cleanup_succeeded
+
+        delay = NAVIGATION_RETRY_WAIT * (2**(retries - 1))
+        observation.measure(:retry_wait, attempt: attempt + retries - 1) { sleep delay }
         retry
       ensure
-        close_page(page, browser: ferrum) unless successful || page.nil?
+        close_page(page, observation: observation, attempt: attempt + retries, browser: ferrum) unless successful || page.nil?
       end
     end
   end

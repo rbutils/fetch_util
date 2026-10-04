@@ -26,6 +26,7 @@ module FetchUtil
   autoload :Fetcher, "fetch_util/fetcher"
   autoload :ParallelFetcher, "fetch_util/parallel_fetcher"
   autoload :PdfProbe, "fetch_util/pdf_probe"
+  autoload :PhaseObservation, "fetch_util/phase_observation"
   autoload :Regulatory, "fetch_util/regulatory"
   autoload :RawDocsFallback, "fetch_util/raw_docs_fallback"
   autoload :RequestLog, "fetch_util/request_log"

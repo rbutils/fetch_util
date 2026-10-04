@@ -5,6 +5,69 @@ require 'spec_helper'
 RSpec.describe FetchUtil::Fetcher do
   include_context 'fetcher spec helpers'
 
+  it 'keeps opt-in observer URLs redacted and result projections unchanged' do
+    url = 'https://user:secret@example.test/report.pdf'
+    baseline = fetch_with_dependencies(url)
+    events = []
+
+    observed = fetch_with_dependencies(url, phase_observer: ->(event) { events << event })
+
+    expect(observed.to_h).to eq(baseline.to_h)
+    expect(events.map { |event| event[:url] }.uniq).to eq(['https://example.test/report.pdf'])
+    expect(events.map { |event| event[:phase] }.uniq).to match_array(%i[normalization pdf_probe])
+    expect(events.map { |event| event[:edge] }).to eq(%i[start finish start finish])
+    expect(events).to all(be_frozen)
+    expect(events.to_s).not_to include('secret')
+  end
+
+  it 'isolates observer failures from successful fetches' do
+    url = 'https://user:secret@example.test/report.pdf'
+    result = fetch_with_dependencies(url, phase_observer: ->(_event) { raise 'observer failure' })
+
+    expect(result.content_type).to eq('pdf_document')
+    expect(result.title).to eq('report.pdf')
+  end
+
+  it 'observes runtime phases without changing injected browser calls or result output' do
+    url = 'https://example.test/articles/observed'
+    stub_browser_extraction(url, page: page_at(url), payload: payload)
+    events = []
+
+    result = fetch_with_dependencies(url, pdf_header_probe: ->(_candidate) { nil }, phase_observer: ->(event) { events << event })
+
+    expect(result.content_type).to eq('article')
+    expect(events.map { |event| event[:phase] }.uniq).to include(:pdf_probe, :browser, :extraction, :normalization, :fallback)
+    expect(events.map { |event| event[:url] }.uniq).to eq([url])
+  end
+
+  it 'distinguishes simultaneous fetch observations for the same URL' do
+    events = Queue.new
+    observed_browser = Object.new
+    observed_browser.define_singleton_method(:with_page) do |url, &block|
+      block.call(Struct.new(:current_url).new(url))
+    end
+    observed_extractor = Object.new
+    common_payload = payload
+    observed_extractor.define_singleton_method(:extract) { |_page| common_payload }
+    fetcher = described_class.new(
+      browser: observed_browser,
+      extractor: observed_extractor,
+      raw_docs_fallback: raw_docs_fallback,
+      pdf_header_probe: ->(_url) { nil },
+      phase_observer: ->(event) { events << event }
+    )
+    urls = %w[https://same.example.test/a https://same.example.test/a]
+
+    results = urls.map { |url| Thread.new { fetcher.fetch(url) } }.map(&:value)
+    captured = []
+    captured << events.pop until events.empty?
+
+    expect(results.map(&:url)).to eq(urls)
+    expect(captured.map { |event| event[:url] }.uniq).to eq([urls.first])
+    expect(captured.group_by { |event| event[:request_id] }.values.map(&:length)).to eq([12, 12])
+    expect(captured.map { |event| event[:request_id] }.uniq.length).to eq(2)
+  end
+
   it 'returns a result object with metadata' do
     stub_browser_extraction('https://example.com/input', page: page, payload: payload)
 
@@ -50,7 +113,11 @@ RSpec.describe FetchUtil::Fetcher do
     second_payload = payload_with(contentType: 'social', socialKind: 'post', platform: 'Telegram')
     allow(browser).to receive(:with_page).with(telegram_url).and_yield(telegram_page)
     allow(extractor).to receive(:extract).with(telegram_page).and_return(first_payload, second_payload)
-    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+    events = []
+    fetcher = described_class.new(
+      browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback,
+      phase_observer: ->(event) { events << event }
+    )
     allow(fetcher).to receive(:sleep)
 
     result = fetcher.fetch(telegram_url)
@@ -59,6 +126,7 @@ RSpec.describe FetchUtil::Fetcher do
     expect(fetcher).to have_received(:sleep).with(FetchUtil::Browser::PRE_EXTRACTION_SETTLE_WAIT)
     expect(result.content_type).to eq('social')
     expect(result.social_kind).to eq('post')
+    expect(events.map { |event| event[:phase] }).to include(:pre_extraction_sleep)
   end
 
   it 'retains pdf_document? whole-array invalid URL behavior while recognizing valid PDF URLs' do
