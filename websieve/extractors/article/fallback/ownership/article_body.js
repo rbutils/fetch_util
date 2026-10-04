@@ -18,7 +18,10 @@ function sourceOwnershipCommonAncestor(left, right) {
 }
 
 function sourceOwnershipInChrome(node) {
-  return !node || node.closest("nav, aside, footer, form, menu, [role~='navigation' i], [role~='menu' i], [role~='complementary' i], [class*='sidebar' i], [id*='sidebar' i], [class*='sidemenu' i], [id*='sidemenu' i], [class*='side-menu' i], [id*='side-menu' i], [class*='recommend' i], [id*='recommend' i], [class*='related-posts' i], [id*='related-posts' i]");
+  if (!node) return true;
+  if (node.closest("nav, aside, footer, form, menu, [role~='navigation' i], [role~='menu' i], [role~='complementary' i]")) return true;
+  var sidebar = node.closest("[class*='sidebar' i], [id*='sidebar' i], [class*='sidemenu' i], [id*='sidemenu' i], [class*='side-menu' i], [id*='side-menu' i], [class*='recommend' i], [id*='recommend' i], [class*='related-posts' i], [id*='related-posts' i]");
+  return !!sidebar && !(typeof sourceOwnedMixedSidebarLayoutBody === "function" && sourceOwnedMixedSidebarLayoutBody(node, sidebar));
 }
 
 function sourceOwnershipArticleChrome(node, ownerRoot) {
@@ -113,11 +116,13 @@ function resolveCanonicalArticleBodyOwnership() {
   });
   if (innermost.length !== 1) return null;
 
-  var node = innermost[0];
+  var primarySourceNode = innermost[0];
+  var node = sourceOwnedMixedSidebarArticleRoot(candidates, primarySourceNode, heading) || primarySourceNode;
   var body = focalOwnershipVisibleBody(node);
   var ownerRoot = sourceOwnershipCommonAncestor(heading, node);
   if (!body || !ownerRoot) return null;
   body.sourceNode = node;
+  body.primarySourceNode = primarySourceNode;
   var ownership = {
     node: node,
     ownerRoot: ownerRoot,

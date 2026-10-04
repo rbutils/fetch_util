@@ -15,6 +15,12 @@ function sourceOwnedContentClone(source, preservedFooterNodes, ownership, source
   materializeEditorialFrameLinks(source, clone);
   normalizeCodeSurfaces(clone);
   cleanupCookieChrome(clone);
+  var mixedSidebarWrappers = new WeakSet();
+  var sidebarSelector = sourceOwnedMixedSidebarSelector();
+  if (clone.matches(sidebarSelector) && sourceOwnedMixedSidebarLayoutWrapper(clone)) mixedSidebarWrappers.add(clone);
+  Array.from(clone.querySelectorAll(sidebarSelector)).forEach(function(node) {
+    if (sourceOwnedMixedSidebarLayoutWrapper(node)) mixedSidebarWrappers.add(node);
+  });
   clone.querySelectorAll("script, style, noscript, template, nav, aside, form, dialog, [role~='navigation' i], [role~='complementary' i], [role='toolbar' i]").forEach(function(node) {
     node.remove();
   });
@@ -28,7 +34,7 @@ function sourceOwnedContentClone(source, preservedFooterNodes, ownership, source
     var retainedHeading = editorialHeadings.some(function(heading) {
       return node.id === heading.id && node.tagName === heading.tag && normalizeText(node.textContent || "") === heading.text;
     });
-    if (retainedHeading) return;
+    if (retainedHeading || mixedSidebarWrappers.has(node)) return;
     node.remove();
   });
   clone.querySelectorAll("input, textarea, select, button").forEach(function(node) { node.remove(); });

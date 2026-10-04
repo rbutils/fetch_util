@@ -1494,6 +1494,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/ownership/source_header_metadata.js
         extractors/article/fallback/ownership/content/canonical_body.js
+        extractors/article/fallback/ownership/content/mixed_sidebar_layout.js
         extractors/article/fallback/ownership/source_content.js
         extractors/article/fallback/ownership/article_coverage.js
         extractors/article/fallback/ownership/article_body.js

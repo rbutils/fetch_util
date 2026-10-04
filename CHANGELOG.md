@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Preserve source-owned article bodies inside mixed article/sidebar layout wrappers, including supplemental author prose and article calls to action, while excluding independently owned recommendation sidebars.
+
 ### Changed
 
 - Isolate documentation-URL classification while preserving the public helper and existing classifier constants.

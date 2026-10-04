@@ -125,7 +125,7 @@
   function sourceOwnedCompleteArticleLead(ownership) {
     if (!ownership || !ownership.ownerRoot || !ownership.body || !ownership.body.sourceNode ||
         !ownership.ownerRoot.contains(ownership.body.sourceNode)) return null;
-    var root = ownership.body.sourceNode;
+    var root = ownership.body.primarySourceNode || ownership.body.sourceNode;
     var paragraphs = Array.from(root.querySelectorAll("p")).filter(function(paragraph) {
       var nestedArticle = paragraph.closest("article");
       var value = normalizeText(paragraph.textContent || "");
@@ -254,7 +254,9 @@
       if (tokens.some(function(token) {
         var chrome = ["author", "byline", "credit", "caption", "comment", "comments", "related", "recommended", "recommendation", "recommendations", "share", "promo", "advertisement", "newsletter", "subscription", "paywall", "reporter", "contributor", "navigation", "breadcrumb", "footer", "header", "masthead", "branding", "sidebar", "menu", "toolbar", "search"].indexOf(token) >= 0;
         var consent = ["cookie", "consent", "privacy", "gdpr", "ccpa"].indexOf(token) >= 0;
-        return chrome || (consent && !semanticContentOwner);
+        var ownedMixedSidebarBody = token === "sidebar" &&
+          typeof sourceOwnedMixedSidebarLayoutBody === "function" && sourceOwnedMixedSidebarLayoutBody(node, current);
+        return (chrome && !ownedMixedSidebarBody) || (consent && !semanticContentOwner);
       })) return true;
       if (current.matches("[itemprop~='author'], [itemprop~='creator']")) return true;
       current = current.parentElement;
