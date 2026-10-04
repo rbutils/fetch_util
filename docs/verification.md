@@ -1,5 +1,23 @@
 # Development verification
 
+## Focused checks and the final gate
+
+Build changed Websieve sources with `bundle exec rake build_extract_assets` before
+running affected integration specs. The final `bundle exec rake` verifies assets,
+runs RSpec and RuboCop. The minimum SimpleCov threshold applies to narrow runs as
+well: report passing examples separately from a coverage-only exit 2.
+
+`spec/fetch_util/browser_acquisition_spec.rb` exercises real Chromium against an
+ephemeral loopback HTTP server: redirect/hydration, an open background request,
+navigation failure followed by recovery, and cookie scope across pages/browsers.
+Browser unit contracts additionally inject partial-page setup, dead-browser,
+close and shutdown failures. These controlled fixtures complement frozen replay;
+they do not emulate every live site's acquisition behavior.
+
+Chromium is required for native checks. Set `BROWSER_PATH` explicitly when needed.
+`FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1` is an explicit limited-environment opt-out,
+not a release-gate pass.
+
 ## Opt-in phase observation
 
 For development diagnostics, `FetchUtil::Fetcher.new(phase_observer: callback)`

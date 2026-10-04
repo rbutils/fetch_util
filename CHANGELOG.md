@@ -15,7 +15,7 @@
 
 ### Development
 
-- Add a reproducible repeated-failure browser resource probe.
+- Add loopback acquisition fixtures and a reproducible repeated-failure browser resource probe.
 - Extend search contract coverage for difficult valid query forms, advisory mismatches, provider failures, redirect and response-size boundaries, deduplication, and normal versus verbose output.
 
 ## v0.9.0 - 2026-10-04
