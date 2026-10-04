@@ -28,7 +28,7 @@ RSpec.describe "native replay runner" do
     expect(stderr).to include("refusing to overwrite run output")
   end
 
-  it "kills the actual Chromium group on deadline and continues to the next case" do
+  it "kills the actual Chromium group on deadline, validates both failed runs, then continues" do
     manifest = NativeReplay::Support.read_json(@manifest_path)
     manifest["case_deadline_seconds"] = 5
     manifest["cases"].unshift(
@@ -38,27 +38,40 @@ RSpec.describe "native replay runner" do
     )
     watchdog_manifest = File.join(@temporary_root, "watchdog-manifest.json")
     NativeReplay::Support.write_json(watchdog_manifest, manifest)
-    output = File.join(@temporary_root, "watchdog-run.json")
-    stdout, stderr, status = Open3.capture3(
-      RbConfig.ruby, File.join(@project_root, "script/native_replay.rb"), watchdog_manifest, "candidate", output,
-      chdir: @project_root
-    )
-    run = NativeReplay::Support.read_json(output)
-    expect(status.exitstatus).to eq(1), "#{stdout}\n#{stderr}"
-    expect(run.fetch("rows").map { |row| row.fetch("case_id") }).to eq(%w[hung-script local-article])
-    failed = run.fetch("rows").first
-    expect(failed.fetch("deadline_exceeded")).to be(true)
-    expect(failed.fetch("runtime_state_sha256")).to match(/\A[0-9a-f]{64}\z/)
-    expect(failed.fetch("review_required")).to be(false)
-    expect(failed.fetch("elapsed_seconds")).to be >= 4.5
-    expect(run.fetch("rows").last["error"]).to be_nil
-    expect([nil, "Z"]).to include(process_state(run.fetch("worker_pids").first))
-    browser_group = failed.fetch("observed_process_groups").find do |group|
-      File.realpath(group.fetch("executable")) == File.realpath(@browser_path)
+    outputs = %w[baseline candidate].to_h do |variant|
+      output = File.join(@temporary_root, "watchdog-#{variant}.json")
+      stdout, stderr, status = Open3.capture3(
+        RbConfig.ruby, File.join(@project_root, "script/native_replay.rb"), watchdog_manifest, variant, output,
+        chdir: @project_root
+      )
+      run = NativeReplay::Support.read_json(output)
+      expect(status.exitstatus).to eq(1), "#{stdout}\n#{stderr}"
+      expect(run.fetch("rows").map { |row| row.fetch("case_id") }).to eq(%w[hung-script local-article])
+      failed = run.fetch("rows").first
+      expect(failed.fetch("deadline_exceeded")).to be(true)
+      expect(failed.fetch("runtime_state_sha256")).to match(/\A[0-9a-f]{64}\z/)
+      expect(failed.fetch("review_required")).to be(false)
+      expect(failed.fetch("elapsed_seconds")).to be >= 4.5
+      expect(run.fetch("rows").last["error"]).to be_nil
+      expect([nil, "Z"]).to include(process_state(run.fetch("worker_pids").first))
+      browser_group = failed.fetch("observed_process_groups").find do |group|
+        File.realpath(group.fetch("executable")) == File.realpath(@browser_path)
+      end
+      expect(browser_group).not_to be_nil
+      expect(NativeReplay::ProcessSupervisor.live_members(browser_group)).to be_empty
+      expect([nil, "Z"]).to include(process_state(browser_group.fetch("pid")))
+      [variant, output]
     end
-    expect(browser_group).not_to be_nil
-    expect(NativeReplay::ProcessSupervisor.live_members(browser_group)).to be_empty
-    expect([nil, "Z"]).to include(process_state(browser_group.fetch("pid")))
+
+    comparison = File.join(@temporary_root, "watchdog-comparison.json")
+    _, stderr, status = Open3.capture3(
+      RbConfig.ruby, File.join(@project_root, "script/validate_replay_evidence.rb"), watchdog_manifest,
+      outputs.fetch("baseline"), outputs.fetch("candidate"), comparison, chdir: @project_root
+    )
+    expect(status.success?).to be(true), stderr
+    result = NativeReplay::Support.read_json(comparison)
+    expect(result.dig("rows", 0, "status")).to eq("inconclusive")
+    expect(result.dig("rows", 1, "status")).to eq("review_required")
   end
 
   it "rejects package bytes that differ from the selected library tree" do

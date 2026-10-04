@@ -216,9 +216,6 @@ Browser-profile normalization is intentionally limited to reducing obvious runti
 
 ## Development
 
-See [development verification](docs/verification.md) for opt-in phase observation
-and controlled acquisition, native replay, and browser-failure resource measurements.
-
 Run from `/srv/code/rbutils/fetch_util`:
 
 ```sh
@@ -239,3 +236,9 @@ bundle exec rake
 - Direct `bundle exec rspec` runs still check bundle freshness through `spec/build_extract_assets_spec.rb` and enforce the repo-wide SimpleCov minimum.
 
 Do not hand-edit `lib/fetch_util/assets/extract.js`; edit the source files under `websieve/` and rebuild.
+
+See [development verification](docs/verification.md) for opt-in phase observations,
+local acquisition/fault fixtures, immutable native replay, and the reproducible
+browser-resource probe. Replay uses the compiled bundle and records source,
+runtime, and artifact identities; an integrity-valid comparison still requires
+source-content review.

@@ -100,6 +100,39 @@ RSpec.shared_context "native replay runs" do
     { "path" => path, "sha256" => NativeReplay::Support.file_sha(path) }
   end
 
+  def review_row(baseline, candidate)
+    evidence = File.join(@temporary_root, "review-evidence.json")
+    NativeReplay::Support.write_json(evidence, { "evidence" => "spec assertion" })
+    row = {
+      "case_id" => "local-article", "decision" => "reviewed_tie", "reviewer" => "spec",
+      "evidence" => [{ "path" => "review-evidence.json", "sha256" => NativeReplay::Support.file_sha(evidence) }],
+      "manifest_sha256" => NativeReplay::Support.file_sha(@manifest_path),
+      "input_sha256" => baseline.fetch("input_sha256"),
+      "runtime_state_sha256" => baseline.fetch("runtime_state_sha256"),
+      "source_snapshot_sha256" => baseline.dig("source_snapshot", "sha256"),
+      "baseline_payload_sha256" => baseline.dig("payload", "value_sha256"),
+      "candidate_payload_sha256" => candidate.dig("payload", "value_sha256")
+    }
+    %w[before_snapshot after_snapshot payload].each do |key|
+      row["baseline_#{key}_file_sha256"] = baseline.dig(key, "sha256")
+      row["candidate_#{key}_file_sha256"] = candidate.dig(key, "sha256")
+    end
+    row
+  end
+
+  def write_review(path, row)
+    evidence = File.join(@temporary_root, "review-evidence.json")
+    NativeReplay::Support.write_json(evidence, { "evidence" => "spec assertion" })
+    row["evidence"] = [{ "path" => "review-evidence.json", "sha256" => NativeReplay::Support.file_sha(evidence) }]
+    NativeReplay::Support.write_json(
+      path,
+      {
+        "schema_version" => 1, "run_id" => "native-replay-spec",
+        "manifest_sha256" => NativeReplay::Support.file_sha(@manifest_path), "rows" => [row]
+      }
+    )
+  end
+
   def process_state(pid)
     stat = File.read("/proc/#{pid}/stat")
     stat[(stat.rindex(")") + 2)..].split.fetch(0)

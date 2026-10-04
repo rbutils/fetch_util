@@ -13,6 +13,7 @@ export BROWSER_PATH="$(command -v chromium || command -v chromium-browser)"
 rtk bundle exec ruby script/native_replay/example_manifest.rb tmp/native-replay-example
 rtk bundle exec ruby script/native_replay.rb tmp/native-replay-example/manifest.json baseline tmp/native-replay-example/baseline.json
 rtk bundle exec ruby script/native_replay.rb tmp/native-replay-example/manifest.json candidate tmp/native-replay-example/candidate.json
+rtk bundle exec ruby script/validate_replay_evidence.rb tmp/native-replay-example/manifest.json tmp/native-replay-example/baseline.json tmp/native-replay-example/candidate.json tmp/native-replay-example/comparison.json
 ```
 
 The example uses the same current source tree for both labels as a wiring smoke test; it does not represent a baseline/candidate release comparison. Its source-snapshot metadata is intentionally synthetic and is marked as a source-state difference, so output remains `review_required`. For real evidence, replace the baseline with an actual pinned gem or immutable source tree and provide acquisition-bound source snapshot/runtime metadata from the audited case.
@@ -21,4 +22,6 @@ The example uses the same current source tree for both labels as a wiring smoke 
 
 Each variant uses either `identity_mode: "gem"` with a package whose extracted `lib/fetch_util` file tree matches the selected library and assets, or `identity_mode: "source_tree"` with an explicit whole-tree SHA-256. The worker verifies the selected autoload paths and version before replay and checks the extractor source again after extraction. Browser path and SHA-256 are required manifest pins and are rechecked by each worker.
 
-The focused browser spec requires Chromium and fails if it is unavailable. Set `FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1` only when an explicitly limited environment should skip that browser example.
+The validator checks artifact hashes, manifest/input bindings, full before/after snapshots, package/source identity, runtime/browser identity, row completeness, and hashed review references. Its successful exit means only that the evidence is internally consistent. It is **not** a semantic acceptance or release decision: successful comparisons remain `review_required`, and this tooling does not adjudicate content quality, source equivalence, or shadow-DOM completeness.
+
+The focused browser specs require Chromium and fail if it is unavailable. Set `FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1` only when an explicitly limited environment should skip those browser examples; a skipped run does not verify native replay or watchdog behavior.

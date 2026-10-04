@@ -55,14 +55,26 @@ in-flight interruption and bounded cleanup before it can be promised.
 
 ## Frozen native replay
 
-[`script/native_replay/README.md`](../script/native_replay/README.md) documents the
-versioned manifest and a runnable smoke example. The runner uses the real compiled
-`Extractor#extract` path, blank navigation at the captured final URL, blocked
-secondary network traffic, explicit runtime restoration, full by-value snapshots,
-and immediate native-payload persistence. Each case has its own Ruby process and
-browser. A Linux `/proc` supervisor discovers the separate Chromium process group
-and terminates the owned groups at the case deadline; this is a development
-watchdog, not a new in-process fetch timeout.
+[The replay guide](../script/native_replay/README.md) includes a runnable manifest
+example. The runner uses the actual selected `FetchUtil::Extractor#extract`,
+compiled assets and vendor files. It restores immutable HTML/runtime state at the
+captured final URL, blocks secondary traffic, saves the native payload before
+diagnostics, and records complete before/after snapshots.
+
+The tooling's hard per-case watchdog requires Linux `/proc`. Ruby workers and
+Ferrum's independently created Chromium process groups are tracked separately;
+deadline termination is followed by bounded cleanup and a check for survivors.
+This process-isolated test harness is separate from the in-process product API.
+
+The validator rejects altered artifacts, mismatched loaded sources, missing or
+duplicate cases, incomplete successful rows, and stale review bindings. Its
+successful exit means **evidence integrity**, not content acceptance. Preserve
+errors, deadlines, acquisition failures, source-state differences and shadow-DOM
+limitations in the denominator. Equal payloads do not prove source completeness.
+Use the existing fidelity-contract helpers for record identity, ownership, order,
+links, media and attribution; review every changed native payload against its
+single immutable acquisition. `--include-html` returns extracted HTML and is not
+an acquisition snapshot.
 
 ## Repeated-failure resource probe
 
