@@ -1,30 +1,12 @@
 # Changelog
 
-### Fixed
-- Select complete authored opening paragraphs only from the mapped article owner when a broader fallback root preserves the article body.
-- Keep a complete source-mapped service article when a product-tab list would drop its owned sections, prose, features and media; require unique source ownership and compare encoded image URLs by DOM identity.
-- Keep complete visible product-service reviews only when the selected service and review collection have matching, visible product-review links; decline foreign or ambiguous review owners.
-- Preserve a precise source-owned publication timestamp only when its calendar day agrees with the visible date, without guessing timezone conversions.
-- Keep contributor-header dates only when they belong to the uniquely selected article body and do not conflict with other owned dates.
-- Preserve uniquely owned focal media articles, their complete summaries, publication times and related records at the original source position.
-- Scope Reader summaries to the proved article body and header even with a publisher-suffixed document title or an independent neighboring section.
-- Keep complete source-owned Reader article summaries independent of byline classification while excluding summary copies in neighboring or nested articles.
-- Retain original same-page headline links only when the complete selected article body matches the source owner.
-- Bind standalone static-generator title brands only to a source-owned article heading, preserving genuine title extensions.
-- Preserve publication dates only when the uniquely owned source article, header, and publication records agree.
-- Preserve complete source-owned article body leads, including short Reader paragraphs with unique article and body proof.
-- Preserve complete query-bound material results and decline list takeover when any visible owner material is unaccounted for.
-- Preserve every source-owned search-history occurrence in order, including repeated destinations, and decline incomplete histories.
-- Preserve sparse focal media articles with their complete independently owned related collections and media resources.
-- Restore source-owned primary-service and calculator sections when interactive headings displace the article.
-- Avoid repeated source-article ownership scans while pruning related rails from an already-proven clone.
-- Preserve source-owned query directories when a separate focal article is not a fully proven NewsArticle.
-- Remove terminal recommendation furniture only when complete source-to-clone ownership is proven, preserving authored citations, lists, captions, and article prose.
-
 ## Unreleased
+
+## v0.9.0 - 2026-10-04
 
 ### Changed
 
+- Replace 25 runtime host-profile handlers with shared extraction, leaving 70 registrations. This includes the Index.hu, Sabah, Interia and Abril handlers alongside the families listed below; WordPress host-override removals are counted separately.
 - Require source-owned linked summaries and editorial context for inferred list digests, bind article context to its visible source owner, and preserve independent multi-topic warnings.
 - Preserve distinct source result records that share one destination URL.
 - Keep every table cell from a proven source-owned article body when a product or repeated-record list would omit it.
@@ -56,6 +38,26 @@
 
 ### Fixed
 
+- Select uniquely source-owned posts for permalink URLs.
+- Select complete authored opening paragraphs only from the mapped article owner when a broader fallback root preserves the article body.
+- Keep a complete source-mapped service article when a product-tab list would drop its owned sections, prose, features and media; require unique source ownership and compare encoded image URLs by DOM identity.
+- Keep complete visible product-service reviews only when the selected service and review collection have matching, visible product-review links; decline foreign or ambiguous review owners.
+- Preserve a precise source-owned publication timestamp only when its calendar day agrees with the visible date, without guessing timezone conversions.
+- Keep contributor-header dates only when they belong to the uniquely selected article body and do not conflict with other owned dates.
+- Preserve uniquely owned focal media articles, their complete summaries, publication times and related records at the original source position.
+- Scope Reader summaries to the proved article body and header even with a publisher-suffixed document title or an independent neighboring section.
+- Keep complete source-owned Reader article summaries independent of byline classification while excluding summary copies in neighboring or nested articles.
+- Retain original same-page headline links only when the complete selected article body matches the source owner.
+- Bind standalone static-generator title brands only to a source-owned article heading, preserving genuine title extensions.
+- Preserve publication dates only when the uniquely owned source article, header, and publication records agree.
+- Preserve complete source-owned article body leads, including short Reader paragraphs with unique article and body proof.
+- Preserve complete query-bound material results and decline list takeover when any visible owner material is unaccounted for.
+- Preserve every source-owned search-history occurrence in order, including repeated destinations, and decline incomplete histories.
+- Preserve sparse focal media articles with their complete independently owned related collections and media resources.
+- Restore source-owned primary-service and calculator sections when interactive headings displace the article.
+- Avoid repeated source-article ownership scans while pruning related rails from an already-proven clone.
+- Preserve source-owned query directories when a separate focal article is not a fully proven NewsArticle.
+- Remove terminal recommendation furniture only when complete source-to-clone ownership is proven, preserving authored citations, lists, captions, and article prose.
 - Preserve publication labels only when independently confirmed as body-owned dates; retain surrounding complete article prose and reject conflicting or foreign date values.
 - Return the uniquely matched visible source H1 for article titles, requiring linked source proof before borrowing a publisher-owned heading.
 - Keep complete source-owned excerpt paragraphs beneath publication actions; preserve short authored introductions and standfirsts while declining hidden or unrelated prose.
@@ -146,6 +148,12 @@
 - Retain source-owned WordPress featured images and captions before the article body without importing hidden or unrelated media.
 - Preserve separate WordPress article-header leads when unique headline and body ownership establish their relationship, excluding hidden, sidebar, and ambiguous summaries.
 - Exclude complete inert Italian automatic-audio notices from article text and excerpts while preserving quoted notices, additional reporting, links, and recordings.
+
+### Known Limitations
+
+- The 2026-10-04 frozen-source comparison of 300 requested website hosts against the published v0.8.0 found 101 reviewed improvements, 180 ties, 15 mixed outcomes with confirmed regressions, zero release-better outcomes, and four inconclusive cases. Of the improvements, 46 are description-only metadata additions. Strict no-regression acceptance did not pass; gains do not offset the confirmed losses.
+- Remaining regressions include focal-story and tutorial-body selection, missing Markdown paragraphs, FAQ and service records, media links and bibliographic details, publication dates, author attribution, and article/list/newsletter/liveblog classification.
+- Both versions reached the benchmark's 120-second native-extraction deadline on WeWorkRemotely and Rezultati. GogoRoyal and Aktuality remain inconclusive because substantive shadow content was not fully represented in the frozen replay.
 
 ## v0.8.0 - 2026-09-24
 
