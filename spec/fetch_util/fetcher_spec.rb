@@ -61,6 +61,14 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.social_kind).to eq('post')
   end
 
+  it 'retains pdf_document? whole-array invalid URL behavior while recognizing valid PDF URLs' do
+    fetcher = described_class.new(browser: browser, extractor: extractor, raw_docs_fallback: raw_docs_fallback)
+
+    expect(fetcher.send(:pdf_document?, 'http://[', 'https://example.test/file.pdf', {})).to be(false)
+    expect(fetcher.send(:pdf_document?, 'https://example.test/article', 'https://example.test/file.pdf', {})).to be(true)
+    expect(fetcher.send(:pdf_document?, 'http://[', nil, { 'contentType' => 'pdf' })).to be(true)
+  end
+
   it 'does not retry generic article extraction for non-Telegram focal routes' do
     focal_url = 'https://example.com/s/examplechannel/42'
     focal_page = page_at(focal_url)

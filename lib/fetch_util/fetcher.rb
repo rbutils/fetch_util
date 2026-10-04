@@ -44,9 +44,6 @@ module FetchUtil
     LINKED_MARKDOWN_HEADING_PATTERN = /(?:^|\s)(?:(?:\d+\.|[-*])\s+)?\#{1,4}\s+\[[^\]]{8,220}\]\(/
     LINKED_MARKDOWN_ITEM_PATTERN = /(?:^|\s)(?:\d+\.|[-*])\s+\[[^\]]{8,220}\]\(/
     INDEX_QUERY_PATTERN = /(?:^|[&?])(?:q|query|search|searchtext|keyword|k)=/i
-    PDF_PATH_PATTERN = %r{(?:\.pdf\z|/pdf(?:/|\z)|[?&](?:format|download)=pdf\b)}i
-    PDF_CONTENT_TYPE_PATTERN = %r{\Aapplication/(?:pdf|x-pdf)\b}i
-    PDF_REDIRECT_LIMIT = 3
     LEGAL_STATUTE_TITLE_PATTERN = Regexp.new(
       "constitution|constitutional|constitui[cç]?[aã]o|c[oó]digo|codigo|code|statute|act|law|" \
       "regulation|ordinance|decree|treaty|convention",
@@ -181,7 +178,7 @@ module FetchUtil
       @extractor = extractor || Extractor.new(reader_mode: options.fetch(:reader_mode, true))
       @raw_docs_fallback = options[:raw_docs_fallback] || RawDocsFallback.new(timeout: @timeout)
       @request_log = options[:request_log]
-      @pdf_header_probe = options[:pdf_header_probe]
+      @pdf_probe = PdfProbe.new(timeout: @timeout, header_probe: options[:pdf_header_probe])
     end
 
     def quit
@@ -604,10 +601,7 @@ module FetchUtil
     def pdf_document?(requested_url, final_url, payload)
       return true if payload["contentType"].to_s == "pdf"
 
-      [requested_url, final_url].compact.any? do |url|
-        parsed = URI.parse(url)
-        [parsed.path, parsed.query].compact.join("?").match?(PDF_PATH_PATTERN)
-      end
+      [requested_url, final_url].compact.any? { |url| PdfProbe.pdf_url?(url) }
     rescue URI::InvalidURIError
       false
     end
@@ -880,11 +874,7 @@ module FetchUtil
     end
 
     def direct_pdf_result(url, requested_url: url)
-      pdf_info = if pdf_url?(url)
-                   { final_url: url, headers: {} }
-                 else
-                   pdf_header_info(url)
-                 end
+      pdf_info = @pdf_probe.probe(url)
       return nil unless pdf_info
 
       final_url = normalized_result_url(pdf_info.fetch(:final_url, url))
@@ -894,7 +884,7 @@ module FetchUtil
         final_url: final_url,
         canonical_url: nil,
         payload: {
-          "title" => pdf_title(final_url, headers),
+          "title" => @pdf_probe.title(final_url, headers),
           "markdown" => "",
           "contentType" => "pdf_document",
           "warnings" => ["pdf_document"]
@@ -905,82 +895,11 @@ module FetchUtil
       )
     end
 
-    def pdf_header_info(url)
-      info = @pdf_header_probe ? @pdf_header_probe.call(url) : probe_pdf_headers(url)
-      return nil unless info && pdf_content_type?(info[:headers])
-
-      info
-    rescue URI::InvalidURIError, ArgumentError, FetchUtil::Error, IOError, SocketError, SystemCallError, Timeout::Error,
-           OpenSSL::SSL::SSLError
-      nil
-    end
-
-    def probe_pdf_headers(url, limit = PDF_REDIRECT_LIMIT, deadline: nil)
-      deadline ||= monotonic_now + @timeout
-      uri = parse_http_uri(url)
-      remaining = deadline - monotonic_now
-      return nil unless remaining.positive?
-
-      response = request_head(uri, timeout: remaining)
-      return nil unless deadline > monotonic_now
-
-      if response.is_a?(Net::HTTPRedirection) && limit.positive? && response["location"].to_s.strip != ""
-        return probe_pdf_headers(uri.merge(response["location"]).to_s, limit - 1, deadline: deadline)
-      end
-      return nil unless response.is_a?(Net::HTTPSuccess)
-
-      { final_url: uri.to_s, headers: response.to_hash.transform_keys(&:downcase) }
-    end
-
-    def request_head(uri, timeout: @timeout)
-      Timeout.timeout(timeout) do
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: timeout, read_timeout: timeout) do |http|
-          request = Net::HTTP::Head.new(uri.request_uri.empty? ? "/" : uri.request_uri)
-          http.request(request)
-        end
-      end
-    end
-
     def parse_http_uri(url)
       uri = URI.parse(url.to_s)
       raise URI::InvalidURIError, "unsupported url: #{url}" unless uri.is_a?(URI::HTTP) && !uri.host.to_s.empty?
 
       uri
-    end
-
-    def pdf_url?(url)
-      URI.parse(url.to_s).then do |uri|
-        [uri.path, uri.query && "?#{uri.query}"].compact.join.match?(PDF_PATH_PATTERN)
-      end
-    rescue URI::InvalidURIError
-      false
-    end
-
-    def pdf_content_type?(headers)
-      Array(headers&.fetch("content-type", nil)).any? { |value| value.to_s.match?(PDF_CONTENT_TYPE_PATTERN) }
-    end
-
-    def pdf_title(url, headers)
-      title_from_content_disposition(headers) || title_from_url(url)
-    end
-
-    def title_from_content_disposition(headers)
-      value = Array(headers["content-disposition"]).first.to_s
-      filename = value[/filename\*=UTF-8''([^;]+)/i, 1] || value[/filename="?([^";]+)"?/i, 1]
-      return nil if filename.to_s.strip.empty?
-
-      URI::DEFAULT_PARSER.unescape(filename).strip
-    rescue ArgumentError
-      filename.to_s.strip
-    end
-
-    def title_from_url(url)
-      path = URI.parse(url.to_s).path.to_s
-      basename = File.basename(path)
-      title = basename.empty? || basename == "/" ? URI.parse(url.to_s).host.to_s : basename
-      URI::DEFAULT_PARSER.unescape(title).strip
-    rescue URI::InvalidURIError, ArgumentError
-      url.to_s
     end
 
     def network_error?(error)
