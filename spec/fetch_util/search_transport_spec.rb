@@ -346,6 +346,51 @@ RSpec.describe FetchUtil::SearchTransport do
     expect(result).to have_attributes(status: "ok", reason: nil)
   end
 
+  it "keeps difficult valid query classes healthy when organic cards share their terms" do
+    cases = [
+      ['"octopuses three hearts"', "Octopuses have three hearts"],
+      ["site:biology.example octopuses hearts", "Octopuses have three hearts"],
+      ["NASA Artemis mission", "NASA Artemis mission overview"],
+      ["Ruby 3.4.5 release", "Ruby 3.4.5 release notes"],
+      ["C++ std::vector API", "C++ std::vector API reference"],
+      ["東京 京都 文化", "東京 京都 文化 guide"],
+      ["cafe\u0301 crème brûlée culture", "Café crème brûlée culture guide"]
+    ]
+
+    cases.each do |query, title|
+      html = <<~HTML
+        <ol id="b_results">
+          <li class="b_algo"><h2><a href="https://results.example/relevant">#{title}</a></h2>
+            <div class="b_caption"><p>Reference and practical details.</p></div>
+          </li>
+        </ol>
+      HTML
+      client = FixtureSearchClient.new({ "www.bing.com" => response(html) })
+
+      result = described_class.new(sources: ["bing"], http_client: client).search(query).first
+
+      expect(result).to have_attributes(status: "ok", reason: nil)
+      expect(result.candidates.map(&:title)).to eq([title])
+    end
+  end
+
+  it "retains weak-overlap candidates while marking their source health as uncertain" do
+    html = <<~HTML
+      <ol id="b_results">
+        <li class="b_algo"><h2><a href="https://results.example/possible">A possible specialist result</a></h2>
+          <div class="b_caption"><p>Useful details for a specialized search.</p></div>
+        </li>
+      </ol>
+    HTML
+    client = FixtureSearchClient.new({ "www.bing.com" => response(html) })
+
+    searcher = described_class.new(sources: ["bing"], http_client: client)
+    result = searcher.search('"rare package" site:docs.example compiler release notes').first
+
+    expect(result).to have_attributes(status: "ok", reason: "query_mismatch")
+    expect(result.candidates.map(&:url)).to eq(["https://results.example/possible"])
+  end
+
   it "matches a relevant title when the candidate has no snippet" do
     candidate = described_class::Candidate.new(
       source: "bing", title: "Octopuses have three hearts", url: "https://biology.example/octopuses", snippet: nil, source_rank: 1
@@ -683,6 +728,33 @@ RSpec.describe FetchUtil::SearchTransport do
       expect(http.last_request["User-Agent"]).to eq("fetch_util")
     end
 
+    it "allows exactly four redirects and rejects a fifth without another request" do
+      [[4, true], [5, false]].each do |redirect_count, succeeds|
+        requests = 0
+        client = described_class.new(net_http: lambda { |_uri|
+          requests += 1
+          status = succeeds && requests == redirect_count + 1 ? Net::HTTPOK : Net::HTTPFound
+          response = if status == Net::HTTPOK
+                       http_response(status, 200, chunks: ["done"])
+                     else
+                       http_response(status, 302, headers: { "location" => "/redirect-#{requests}" }, chunks: [""])
+                     end
+          FakeSearchHttp.new(response)
+        })
+
+        result = client.get(
+          "https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"]
+        )
+
+        if succeeds
+          expect(result).to have_attributes(body: "done", final_url: "https://www.google.com/redirect-4")
+        else
+          expect(result).to have_attributes(reason: "redirect")
+        end
+        expect(requests).to eq(5)
+      end
+    end
+
     it "follows allowed relative redirects and rejects redirected hosts outside the allowlist" do
       redirect = http_response(Net::HTTPFound, 302, headers: { "location" => "/next" })
       success = http_response(Net::HTTPOK, 200, chunks: ["<html></html>"])
@@ -720,6 +792,56 @@ RSpec.describe FetchUtil::SearchTransport do
 
       result = client.get("https://www.google.com/search", deadline: Float::INFINITY, allowed_hosts: ["www.google.com"])
       expect(result.reason).to eq("redirect")
+    end
+
+    it "accepts raw response bodies exactly at the byte limit and rejects the next byte" do
+      [{ body: "abcd", reason: nil }, { body: "abcde", reason: "size" }].each do |test_case|
+        body = test_case.fetch(:body)
+        reason = test_case.fetch(:reason)
+        response = http_response(Net::HTTPOK, 200, chunks: [body])
+        client = described_class.new(max_response_bytes: 4, net_http: ->(_uri) { FakeSearchHttp.new(response) })
+
+        result = client.get(
+          "https://www.google.com/search",
+          deadline: Float::INFINITY,
+          allowed_hosts: ["www.google.com"]
+        )
+
+        expect(result.is_a?(FetchUtil::SearchTransport::HttpFailure) ? result.reason : nil).to eq(reason)
+        expect(result.body).to eq(body) unless reason
+      end
+    end
+
+    it "accepts inflated bodies exactly at the decoded byte limit and rejects the next byte" do
+      [{ body: "abcd", too_large: false }, { body: "abcde", too_large: true }].each do |test_case|
+        compressed = StringIO.new
+        Zlib::GzipWriter.wrap(compressed) { |writer| writer.write(test_case.fetch(:body)) }
+        client = described_class.new(max_response_bytes: 4)
+
+        if test_case.fetch(:too_large)
+          expect do
+            client.send(:inflate, compressed.string, "gzip", Float::INFINITY)
+          end.to raise_error(described_class::ResponseTooLarge)
+        else
+          expect(client.send(:inflate, compressed.string, "gzip", Float::INFINITY)).to eq(test_case.fetch(:body))
+        end
+      end
+    end
+
+    it "maps malformed compressed streams to a finite parse failure" do
+      response = http_response(Net::HTTPOK, 200,
+                               headers: { "content-encoding" => "gzip" }, chunks: ["not a gzip stream"])
+      client = described_class.new(net_http: ->(_uri) { FakeSearchHttp.new(response) })
+
+      result = client.get(
+        "https://www.google.com/search",
+        deadline: Float::INFINITY,
+        allowed_hosts: ["www.google.com"]
+      )
+
+      expect(result).to eq(
+        FetchUtil::SearchTransport::HttpFailure.new(reason: "parse", final_url: "https://www.google.com/search")
+      )
     end
 
     it "enforces compressed and decoded response size ceilings" do

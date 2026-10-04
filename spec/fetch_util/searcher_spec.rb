@@ -199,6 +199,44 @@ RSpec.describe FetchUtil::Searcher do
     expect(results.map { |item| item[:url] }).to eq(["https://example.test/bing"])
   end
 
+  it "keeps the structured-query union when Yahoo is mismatched and preserves dropout, order, provenance, and post-dedupe limit" do
+    shared = "https://example.test/shared/"
+    responses = [
+      response("brave", status: "failed", reason: "timeout"),
+      response(
+        "bing",
+        candidates: [
+          candidate("bing", 1, title: "Shared first", url: shared, snippet: "First configured detail."),
+          candidate("bing", 2, title: "Bing second", url: "https://example.test/bing-second")
+        ]
+      ),
+      response(
+        "yahoo",
+        reason: "query_mismatch",
+        candidates: [
+          candidate("yahoo", 1, title: "Yahoo first", url: "https://example.test/yahoo-first"),
+          candidate("yahoo", 2, title: "Shared later", url: shared, snippet: "Later detail.")
+        ]
+      )
+    ]
+    allow(transport).to receive(:search).and_return(responses)
+
+    searcher = described_class.new(transport: transport, request_log: request_log, limit: 3, verbose: true)
+    payload = searcher.search('site:example.test "specialized query"')
+
+    expect(payload[:results]).to eq(
+      [
+        { title: "Shared first", url: "https://example.test/shared", snippet: "First configured detail.",
+          sources: %w[bing yahoo], ranks: { "bing" => 1, "yahoo" => 2 } },
+        { title: "Yahoo first", url: "https://example.test/yahoo-first", sources: ["yahoo"], ranks: { "yahoo" => 1 } },
+        { title: "Bing second", url: "https://example.test/bing-second", sources: ["bing"], ranks: { "bing" => 2 } }
+      ]
+    )
+    expect(payload[:diagnostics].map { |item| item[:source] }).to eq(%w[brave bing yahoo])
+    expect(payload[:diagnostics].map { |item| item[:status] }).to eq(%w[failed ok ok])
+    expect(payload[:diagnostics].last).to include(reason: "query_mismatch", result_count: 2)
+  end
+
   it "preserves the requested union when structured-query sources are explicit" do
     responses = [
       response("bing", candidates: [candidate("bing", 1, url: "https://example.test/bing")]),
@@ -290,6 +328,22 @@ RSpec.describe FetchUtil::Searcher do
         final_url: "https://www.google.com/sorry", reason: "challenge" }
     ]
     expect(payload[:diagnostics]).to eq(expected_diagnostics)
+  end
+
+  it "keeps diagnostics and provenance out of the normal payload and adds them only in verbose mode" do
+    responses = [response("brave", candidates: [candidate("brave", 1, title: "Ruby", url: "https://example.test/ruby")])]
+    allow(transport).to receive(:search).with("ruby").and_return(responses)
+
+    normal = described_class.new(transport: transport, request_log: request_log, sources: ["brave"]).search("ruby")
+    verbose_searcher = described_class.new(transport: transport, request_log: request_log, sources: ["brave"], verbose: true)
+    verbose = verbose_searcher.search("ruby")
+
+    expect(normal).to eq(query: "ruby", results: [{ title: "Ruby", url: "https://example.test/ruby" }])
+    expect(verbose).to eq(
+      query: "ruby",
+      results: [{ title: "Ruby", url: "https://example.test/ruby", sources: ["brave"], ranks: { "brave" => 1 } }],
+      diagnostics: [{ source: "brave", transport: "http", status: "ok", result_count: 1, elapsed_ms: 12 }]
+    )
   end
 
   it "keeps successful peers on partial failure and returns an empty verbose payload when all sources fail" do

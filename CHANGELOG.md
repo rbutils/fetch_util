@@ -10,6 +10,10 @@
 
 - Isolate documentation-URL classification while preserving the public helper and existing classifier constants.
 
+### Development
+
+- Extend search contract coverage for difficult valid query forms, advisory mismatches, provider failures, redirect and response-size boundaries, deduplication, and normal versus verbose output.
+
 ## v0.9.0 - 2026-10-04
 
 ### Changed
