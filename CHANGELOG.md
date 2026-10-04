@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Isolate documentation-URL classification while preserving the public helper and existing classifier constants.
+
 ## v0.9.0 - 2026-10-04
 
 ### Changed
