@@ -265,29 +265,122 @@ RSpec.describe FetchUtil::Browser do
   it 'preserves a successful result when page cleanup fails' do
     browser = browser_without_idle
     page = instance_double('FerrumPage')
+    ferrum = instance_double(Ferrum::Browser, quit: nil)
 
-    allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
+    browser.instance_variable_set(:@ferrum, ferrum)
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
     allow(browser).to receive(:load_page_with_retry).and_return(page)
     allow(page).to receive(:current_url).and_return('https://example.com')
     allow(browser).to receive(:heavy_script_page?).and_return(false)
-    allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
+    allow(page).to receive(:close).and_raise(IOError, 'close failed')
 
     expect(browser.with_page('https://example.com') { :result }).to eq(:result)
+    expect(ferrum).to have_received(:quit).once
   end
 
   it 'preserves a block error when page cleanup also fails' do
     browser = browser_without_idle
     page = instance_double('FerrumPage')
+    ferrum = instance_double(Ferrum::Browser, quit: nil)
 
-    allow(browser).to receive(:ensure_browser).and_return(instance_double(Ferrum::Browser))
+    browser.instance_variable_set(:@ferrum, ferrum)
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
     allow(browser).to receive(:load_page_with_retry).and_return(page)
     allow(page).to receive(:current_url).and_return('https://example.com')
     allow(browser).to receive(:heavy_script_page?).and_return(false)
-    allow(page).to receive(:close).and_raise(Ferrum::Error, 'close failed')
+    allow(page).to receive(:close).and_raise(IOError, 'close failed')
 
     expect do
       browser.with_page('https://example.com') { raise 'block failed' }
     end.to raise_error(RuntimeError, 'block failed')
+    expect(ferrum).to have_received(:quit).once
+  end
+
+  it 'closes a partially acquired page after non-Ferrum navigation setup failure' do
+    ferrum = instance_double(Ferrum::Browser)
+    page = instance_double('FerrumPage')
+    stub_ferrum_page_creation(ferrum, page)
+    browser = browser_without_idle
+    allow(browser).to receive(:ensure_browser).and_return(ferrum)
+    allow(page).to receive(:headers).and_return(double(set: nil))
+    allow(page).to receive(:bypass_csp).and_raise(IOError, 'header setup failed')
+    allow(page).to receive(:close)
+
+    expect { browser.with_page('https://example.com') {} }.to raise_error(IOError, 'header setup failed')
+    expect(page).to have_received(:close).once
+  end
+
+  it 'retires a dead browser and opens a fresh one for the next URL' do
+    dead = instance_double(Ferrum::Browser)
+    fresh = instance_double(Ferrum::Browser)
+    page = instance_double('DeadFerrumPage')
+    fresh_page = instance_double('FreshFerrumPage')
+    allow(Ferrum::Browser).to receive(:new).and_return(dead, fresh)
+    allow(dead).to receive(:evaluate_on_new_document)
+    allow(dead).to receive(:create_page).and_return(page)
+    allow(dead).to receive(:quit)
+    allow(page).to receive(:headers).and_return(double(set: nil))
+    allow(page).to receive(:bypass_csp)
+    allow(page).to receive(:go_to).and_raise(Ferrum::DeadBrowserError, 'browser disconnected')
+    allow(page).to receive(:close)
+    allow(fresh).to receive(:evaluate_on_new_document)
+    allow(fresh).to receive(:create_page).and_return(fresh_page)
+    stub_page_navigation(fresh_page)
+    stub_page_network(fresh_page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(fresh_page, false)
+    browser = browser_with_idle
+
+    expect { browser.with_page('https://example.com') {} }
+      .to raise_error(FetchUtil::BrowserError, 'browser disconnected')
+    expect(browser.with_page('https://example.org') { |result| result }).to equal(fresh_page)
+    expect(dead).to have_received(:quit).once
+    expect(Ferrum::Browser).to have_received(:new).twice
+  end
+
+  it 'discards a dead browser when page creation fails' do
+    dead = instance_double(Ferrum::Browser)
+    fresh = instance_double(Ferrum::Browser)
+    fresh_page = instance_double('FreshFerrumPage')
+    allow(Ferrum::Browser).to receive(:new).and_return(dead, fresh)
+    allow(dead).to receive(:evaluate_on_new_document)
+    allow(dead).to receive(:create_page).and_raise(Ferrum::DeadBrowserError, 'browser disconnected')
+    allow(dead).to receive(:quit)
+    allow(fresh).to receive(:evaluate_on_new_document)
+    allow(fresh).to receive(:create_page).and_return(fresh_page)
+    stub_page_navigation(fresh_page)
+    stub_page_network(fresh_page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(fresh_page, false)
+    browser = browser_with_idle
+
+    expect { browser.with_page('https://example.com') {} }
+      .to raise_error(FetchUtil::BrowserError, 'browser disconnected')
+    expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
+    expect(dead).to have_received(:quit).once
+    expect(Ferrum::Browser).to have_received(:new).twice
+  end
+
+  it 'keeps pending shutdown ahead of a fresh browser after ordinary setup and quit errors' do
+    failed = instance_double(Ferrum::Browser)
+    fresh = instance_double(Ferrum::Browser)
+    fresh_page = instance_double('FreshFerrumPage')
+    quit_count = 0
+    allow(Ferrum::Browser).to receive(:new).and_return(failed, fresh)
+    allow(failed).to receive(:evaluate_on_new_document).and_raise(IOError, 'navigator setup failed')
+    allow(failed).to receive(:quit) do
+      quit_count += 1
+      raise IOError, 'shutdown failed' if quit_count == 1
+    end
+    allow(fresh).to receive(:evaluate_on_new_document)
+    allow(fresh).to receive(:create_page).and_return(fresh_page)
+    stub_page_navigation(fresh_page)
+    stub_page_network(fresh_page, instance_double('FerrumNetwork', idle?: true))
+    stub_page_evaluate_and_close(fresh_page, false)
+    browser = browser_with_idle
+
+    expect { browser.with_page('https://example.com') {} }.to raise_error(IOError, 'navigator setup failed')
+    expect(browser.with_page('https://example.org') { |page| page }).to equal(fresh_page)
+    expect(failed).to have_received(:quit).twice
+    expect(Ferrum::Browser).to have_received(:new).twice
   end
 
   it 'shuts down the browser process on quit' do
@@ -326,6 +419,37 @@ RSpec.describe FetchUtil::Browser do
     expect { browser.with_page('https://example.org') {} }.to raise_error(FetchUtil::BrowserError, 'shutdown failed')
     expect(stale_ferrum).to have_received(:quit).twice
     expect(Ferrum::Browser).to have_received(:new).once
+  end
+
+  it 'retains a pending browser after repeated shutdown failures' do
+    stale_ferrum = instance_double(Ferrum::Browser)
+    fresh_ferrum = instance_double(Ferrum::Browser)
+    stale_page = instance_double('StaleFerrumPage')
+    fresh_page = instance_double('FreshFerrumPage')
+    quit_count = 0
+    allow(Ferrum::Browser).to receive(:new).and_return(stale_ferrum, fresh_ferrum)
+    allow(stale_ferrum).to receive(:evaluate_on_new_document)
+    allow(stale_ferrum).to receive(:create_page).and_return(stale_page)
+    allow(stale_ferrum).to receive(:quit) do
+      quit_count += 1
+      raise Ferrum::Error, 'shutdown failed' if quit_count < 3
+    end
+    allow(fresh_ferrum).to receive(:evaluate_on_new_document)
+    allow(fresh_ferrum).to receive(:create_page).and_return(fresh_page)
+    [stale_page, fresh_page].each do |page|
+      stub_page_navigation(page)
+      stub_page_network(page, instance_double('FerrumNetwork', idle?: true))
+      stub_page_evaluate_and_close(page, false)
+    end
+    browser = browser_with_idle
+    browser.with_page('https://example.com') {}
+
+    expect { browser.quit }.to raise_error(Ferrum::Error, 'shutdown failed')
+    expect { browser.with_page('https://example.org') {} }
+      .to raise_error(FetchUtil::BrowserError, 'shutdown failed')
+    expect(browser.with_page('https://example.net') { |page| page }).to equal(fresh_page)
+    expect(quit_count).to eq(3)
+    expect(Ferrum::Browser).to have_received(:new).twice
   end
 
   it 'finishes a pending shutdown before launching a fresh browser' do

@@ -7,12 +7,14 @@ require "uri"
 
 module FetchUtil
   class Browser
+    autoload :Lifecycle, "fetch_util/browser/lifecycle"
     autoload :InteractionHelpers, "fetch_util/browser/interaction_helpers"
     autoload :Navigation, "fetch_util/browser/navigation"
     autoload :SiteStabilization, "fetch_util/browser/site_stabilization"
     autoload :Stabilization, "fetch_util/browser/stabilization"
 
     include InteractionHelpers
+    include Lifecycle
     include Navigation
     include SiteStabilization
     include Stabilization
@@ -86,13 +88,14 @@ module FetchUtil
       raise BrowserError, "No Chromium browser found. Set BROWSER_PATH or install Chromium." unless @browser_path
 
       normalized_url = FetchUtil.normalize_url(url)
-      page = load_page_with_retry(ensure_browser, normalized_url)
+      ferrum = ensure_browser
+      page = load_page_with_retry(ferrum, normalized_url)
       sleep PRE_EXTRACTION_SETTLE_WAIT if heavy_script_page?(page, loaded_page_url(page, normalized_url))
       yield page
     rescue Ferrum::Error => e
       raise BrowserError, e.message
     ensure
-      close_page(page)
+      close_page(page, browser: ferrum) if page
     end
 
     # Shut down the underlying Chromium process. Safe to call multiple times or
@@ -154,38 +157,6 @@ module FetchUtil
     # +evaluate_on_new_document+ call registers the navigator patch once;
     # Ferrum automatically applies it to every new page/context created
     # afterwards.
-    def ensure_browser
-      @mutex.synchronize do
-        shutdown_pending_browser
-        return @ferrum if @ferrum
-
-        browser = Ferrum::Browser.new(
-          headless: true,
-          browser_path: @browser_path,
-          timeout: @timeout,
-          window_size: [@viewport.fetch(:width), @viewport.fetch(:height)],
-          browser_options: @browser_options
-        )
-        browser.evaluate_on_new_document(navigator_patch)
-        @ferrum = browser
-      rescue Ferrum::Error
-        @pending_shutdown = browser
-        begin
-          shutdown_pending_browser
-        rescue Ferrum::Error
-          nil
-        end
-        raise
-      end
-    end
-
-    def shutdown_pending_browser
-      return unless @pending_shutdown
-
-      @pending_shutdown.quit
-      @pending_shutdown = nil
-    end
-
     def host_matches?(url, host)
       normalized_host = FetchUtil.strip_www_host(url)
       normalized_host == host || normalized_host.end_with?(".#{host}")
@@ -209,12 +180,6 @@ module FetchUtil
       false
     end
 
-    def close_page(page)
-      page&.close
-    rescue Ferrum::Error
-      nil
-    end
-
     def loaded_page_url(page, fallback)
       current_url = page.current_url
       current_url.to_s.empty? ? fallback : current_url
@@ -222,6 +187,8 @@ module FetchUtil
 
     def load_page_with_retry(ferrum, url)
       retries = 0
+      successful = false
+      page = nil
 
       begin
         page = ferrum.create_page
@@ -236,15 +203,21 @@ module FetchUtil
         if page.current_url == "about:blank" && url != "about:blank"
           raise Ferrum::Error, "Request to #{url} finished on about:blank without a public page"
         end
+        successful = true
         page
       rescue Ferrum::PendingConnectionsError, Ferrum::TimeoutError, Ferrum::Error => e
-        close_page(page)
+        retire_browser(ferrum) if e.is_a?(Ferrum::DeadBrowserError)
+        cleanup_succeeded = close_page(page, browser: ferrum)
+        page = nil
+        raise e unless cleanup_succeeded
         raise unless retryable_navigation_error?(e)
         raise if retries >= NAVIGATION_MAX_RETRIES
 
         retries += 1
         sleep NAVIGATION_RETRY_WAIT * (2**(retries - 1))
         retry
+      ensure
+        close_page(page, browser: ferrum) unless successful || page.nil?
       end
     end
   end

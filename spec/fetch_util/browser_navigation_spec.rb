@@ -5,22 +5,17 @@ require 'spec_helper'
 RSpec.describe FetchUtil::Browser do
   include_context 'browser spec helpers'
 
-  it 'retries full navigation once when pending connections hit network idle' do
+  it 'preserves the navigation error and retires the browser when page cleanup fails' do
     ferrum = instance_double(Ferrum::Browser)
     page1 = instance_double('FerrumPage')
-    page2 = instance_double('FerrumPage')
     network1 = instance_double('FerrumNetwork')
-    network2 = instance_double('FerrumNetwork')
 
-    stub_ferrum_page_creation(ferrum, page1, page2)
+    stub_ferrum_page_creation(ferrum, page1)
+    allow(ferrum).to receive(:quit)
     stub_page_navigation(page1)
-    stub_page_navigation(page2)
     stub_page_network(page1, network1, idle: true, wait_for_idle: true)
-    stub_page_network(page2, network2, idle: true, wait_for_idle: true)
     allow(page1).to receive(:evaluate).and_return(false)
-    allow(page2).to receive(:evaluate).and_return(false)
     allow(page1).to receive(:close).and_raise(Ferrum::Error, 'close failed')
-    allow(page2).to receive(:close)
     browser = browser_with_idle
     allow(browser).to receive(:sleep)
     allow(browser).to receive(:accept_cookie_consent).and_return(true)
@@ -35,14 +30,11 @@ RSpec.describe FetchUtil::Browser do
       raise Ferrum::PendingConnectionsError,
             'Request to https://example.com reached server, but there are still pending connections'
     end
-    allow(network2).to receive(:idle?).and_return(true)
+    expect { browser.with_page('https://example.com') {} }
+      .to raise_error(FetchUtil::BrowserError, /pending connections/)
 
-    yielded = nil
-
-    browser.with_page('https://example.com') { |result| yielded = result }
-
-    expect(yielded).to be(page2)
-    expect(ferrum).to have_received(:create_page).twice
+    expect(ferrum).to have_received(:create_page).once
+    expect(ferrum).to have_received(:quit).once
   end
 
   it 'bubbles pending connections from network idle without retrying them' do

@@ -5,6 +5,7 @@
 ### Fixed
 
 - Preserve source-owned article bodies inside mixed article/sidebar layout wrappers, including supplemental author prose and article calls to action, while excluding independently owned recommendation sidebars.
+- Close partially acquired browser tabs after setup failures, retire unusable browser processes, and preserve the primary result or error when cleanup also fails.
 
 ### Changed
 
@@ -13,6 +14,7 @@
 
 ### Development
 
+- Add a reproducible repeated-failure browser resource probe.
 - Extend search contract coverage for difficult valid query forms, advisory mismatches, provider failures, redirect and response-size boundaries, deduplication, and normal versus verbose output.
 
 ## v0.9.0 - 2026-10-04

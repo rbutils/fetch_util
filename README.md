@@ -212,6 +212,9 @@ Browser-profile normalization is intentionally limited to reducing obvious runti
 
 ## Development
 
+See [development verification](docs/verification.md) for controlled browser-failure
+resource measurements.
+
 Run from `/srv/code/rbutils/fetch_util`:
 
 ```sh
