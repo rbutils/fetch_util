@@ -83,6 +83,7 @@
     primaryRoot.innerHTML = content.html;
     var visibleOwner = cleanClone(visibilityPrunedClone(owner, document));
     visibleOwner.querySelectorAll("[aria-hidden='true'], [inert]").forEach(function(node) { node.remove(); });
+    stripInertCustomUiElements(visibleOwner);
     prepareFallbackInlineProse(visibleOwner);
     cleanupGenericArticleRoot(visibleOwner);
     prepareFallbackInlineProse(visibleOwner);

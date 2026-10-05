@@ -151,6 +151,10 @@ RSpec.describe "Reader structured material fidelity" do
       <section hidden><pre>FD01-HIDDEN-CODE</pre><table><tr><td>FD01-HIDDEN-TABLE</td></tr></table></section>
       <section aria-hidden="true"><pre>FD01-ARIA-HIDDEN-CODE</pre></section>
       <section style="opacity:0"><pre>FD01-OPAQUE-HIDDEN-CODE</pre></section>
+      <demo-share>Share</demo-share>
+      <x-related-article>أخبار ذات صلة</x-related-article>
+      <supplement-share>Share the full field review, including its method, complete observations, and results.</supplement-share>
+      <material-related-article><a href="/material-context">FD01 contextual field record</a></material-related-article>
     HTML
     source_document.at_css("main").add_child(Nokogiri::HTML.fragment(<<~HTML))
       <nav><pre>FD01-NAV-CODE</pre><a href="/nav">FD01 navigation</a></nav>
@@ -164,6 +168,9 @@ RSpec.describe "Reader structured material fidelity" do
       output = Nokogiri::HTML.fragment(payload.fetch("html"))
       expect(payload['contentType']).to eq('article')
       expect(output.text).to include("CODE-CELL-001", "TABLE-ROW-001")
+      expect(output.css("demo-share, x-related-article")).to be_empty
+      expect(output.text).to include("Share the full field review", "FD01 contextual field record")
+      expect(output.at_css('a[href="https://fd01.test/material-context"]')).not_to be_nil
       expect(payload['markdown']).not_to include(
         'FD01-INNER-NAV-CODE', 'FD01-INNER-ASIDE-TABLE', 'FD01-INNER-FOOTER-CODE', 'FD01-INNER-FORM-TABLE',
         'FD01-HIDDEN-CODE', 'FD01-HIDDEN-TABLE', 'FD01-ARIA-HIDDEN-CODE',
