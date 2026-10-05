@@ -105,3 +105,13 @@ thresholds. Retain p50/p95/max, failure and timeout counts, cleanup costs and ra
 samples. Compare uninstrumented end-to-end runs under matched conditions;
 diagnostic serialization time and selectively excluded timeouts cannot count as
 product speedups. A timing gain is acceptable only with preserved source fidelity.
+
+For related-heading work elimination, compare the correctness-complete Reader
+baseline with the optimization, using the full structured-material fixture plus
+medium and small article controls. Freeze the paired order, five cold and five
+warm observations per variant/case, one excluded warm-up per warm cell, and noise
+thresholds before measuring. Time the official native extraction call separately
+from browser launch, page preparation and diagnostics. Full payload equality and
+the paragraph/code/table/link source oracle are required alongside timing gains.
+Five observations make nearest-rank p95 the observed maximum; report its limited
+sample size rather than claiming a population-tail or universal website speedup.

@@ -3,8 +3,9 @@ function relatedHeadingRecordRail(block) {
   if (relatedHeadingLinkedRecordGroup(block)) return true;
   if (relatedHeadingLinkedCardGroup(block)) return true;
   var directHeadings = Array.from(block.children).filter(function(child) {
+    if (!child.matches("h2, h3, h4")) return false;
     var text = normalizeText(child.textContent || "").replace(/[:：]\s*$/, "");
-    return child.matches("h2, h3, h4") && RELATED_SECTION_HEADING_PATTERN.test(text);
+    return RELATED_SECTION_HEADING_PATTERN.test(text);
   });
   if (directHeadings.length !== 1 || block.firstElementChild !== directHeadings[0]) return false;
 
