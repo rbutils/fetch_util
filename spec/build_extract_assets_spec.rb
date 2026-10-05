@@ -1216,6 +1216,8 @@ RSpec.describe "extract asset bundle" do
       extractors/article/coverage/intro_coverage.js
       extractors/article/coverage/carousel_coverage.js
       extractors/article/coverage/resources.js
+      extractors/article/coverage/figure_captions.js
+      extractors/article/coverage/structured_material.js
       extractors/article/coverage/main_coverage.js
       extractors/article/coverage/hidden_substantive_main.js
     ]
@@ -1225,7 +1227,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(coverage_paths[0])).to be < manifest.index("classifiers/list_pages/dominance.js")
     expect(manifest.index(coverage_paths[1])).to be > manifest.index("extractors/article/roots.js")
     expect(manifest.index(coverage_paths[4])).to be < manifest.index(coverage_paths[5])
-    expect(manifest.index(coverage_paths[6])).to be > manifest.index("extractors/article/readability/readability.js")
+    expect(manifest.index(coverage_paths.last)).to be > manifest.index("extractors/article/readability/readability.js")
     expect(Dir.glob(File.join(source_root, "extractors/article/*_coverage.js"))).to eq([])
   end
 
@@ -1488,6 +1490,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/carousel_coverage.js
         extractors/article/coverage/resources.js
         extractors/article/coverage/figure_captions.js
+        extractors/article/coverage/structured_material.js
         extractors/article/coverage/main_coverage.js
         extractors/article/fallback/media_ownership/focal_related_collections.js
         extractors/article/fallback/media_ownership/focal_media_ownership.js

@@ -142,6 +142,7 @@
   function enrichMainArticleContent(content, metadata) {
     if (!content || content.contentType !== "article" || content.markdown ||
         content.hostAware || content.docsLike || content.legalProvision) return content;
+    content = supplementOwnedReaderStructuredMaterial(content);
     content = supplementOwnedArticleResources(content);
     if (!content.readerMode) return content;
     var selectedContent = content;
