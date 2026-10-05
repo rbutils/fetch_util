@@ -27,6 +27,12 @@ module FetchUtil
 end
 
 RSpec.configure do |config|
+  config.after(:context) do
+    next unless self.class.superclass == RSpec::Core::ExampleGroup
+
+    FetchUtil::ExtractorIntegrationResources.close(RSpec.configuration)
+  end
+
   config.after(:suite) do
     FetchUtil::ExtractorIntegrationResources.close(RSpec.configuration)
   end

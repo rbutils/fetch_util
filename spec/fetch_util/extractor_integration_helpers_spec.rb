@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'open3'
+require 'rbconfig'
 
 RSpec.describe 'extractor integration helpers' do
   include_context 'extractor integration helpers'
@@ -17,6 +19,43 @@ RSpec.describe 'extractor integration helpers' do
     expect { FetchUtil::ExtractorIntegrationResources.close(configuration) }.not_to raise_error
     expect(configuration.instance_variable_defined?(:@fetch_util_extractor_page)).to be(false)
     expect(configuration.instance_variable_defined?(:@fetch_util_extractor_browser)).to be(false)
+  end
+
+  it 'reuses fixture resources inside a group and releases them before the next group' do
+    helper = File.expand_path('../support/extractor_integration_helpers.rb', __dir__)
+    source = <<~RUBY
+      require 'rspec'
+      load #{helper.inspect}
+      calls = []
+      RSpec.describe 'fixture owner' do
+        before(:context) do
+          page = Object.new
+          page.define_singleton_method(:close) { calls << :close }
+          browser = Object.new
+          browser.define_singleton_method(:quit) { calls << :quit }
+          RSpec.configuration.instance_variable_set(:@fetch_util_extractor_page, page)
+          RSpec.configuration.instance_variable_set(:@fetch_util_extractor_browser, browser)
+        end
+        context 'first nested context' do
+          it('keeps the session') { expect(calls).to be_empty }
+        end
+        context 'second nested context' do
+          it('still keeps the session') { expect(calls).to be_empty }
+        end
+      end
+      RSpec.describe 'next fixture owner' do
+        it 'starts without the previous resources' do
+          expect(calls).to eq([:close, :quit])
+          expect(RSpec.configuration.instance_variable_defined?(:@fetch_util_extractor_page)).to be(false)
+          expect(RSpec.configuration.instance_variable_defined?(:@fetch_util_extractor_browser)).to be(false)
+        end
+      end
+      exit RSpec::Core::Runner.run(['--options', #{File::NULL.inspect}, '--format', 'progress', '--order', 'defined'])
+    RUBY
+    stdout, stderr, status = Open3.capture3(RbConfig.ruby, '-e', source)
+
+    expect(status.success?).to be(true), "#{stdout}\n#{stderr}"
+    expect(stdout).to include('3 examples, 0 failures')
   end
 
   it 'disables request interception after serving a URL fixture' do

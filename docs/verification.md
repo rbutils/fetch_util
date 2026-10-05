@@ -1,5 +1,17 @@
 # Development verification
 
+## Resource-bounded browser verification
+
+Run browser-heavy validation serially inside an explicit resource envelope when workstation capacity is constrained. Scheduling priority alone does not bound CPU or memory. On a systemd host, this example permits half one logical CPU, at most 768 MiB RAM, and no swap for the command and all its descendants:
+
+```sh
+systemd-run --scope --unit=fetch-util-verification \
+  -p CPUQuota=50% -p MemoryMax=768M -p MemorySwapMax=0 \
+  nice rtk bundle exec rake
+```
+
+Verify the scope's actual `cpu.max`, `memory.max` and `memory.swap.max` values before relying on the envelope. Set budgets for the available machine, retain resource-limit failures, and never trim source records to make a workload fit. Timing comparisons must share the same resource conditions; results from different envelopes remain separate. The integration harness reuses a fixture session within each top-level example group and closes it before the next group, with suite teardown as a final fallback.
+
 ## Focused checks and the final gate
 
 Build changed Websieve sources with `bundle exec rake build_extract_assets` before
