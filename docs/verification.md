@@ -12,6 +12,8 @@ systemd-run --scope --unit=fetch-util-verification \
 
 Verify the scope's actual `cpu.max`, `memory.max` and `memory.swap.max` values before relying on the envelope. Set budgets for the available machine, retain resource-limit failures, and never trim source records to make a workload fit. Timing comparisons must share the same resource conditions; results from different envelopes remain separate. The integration harness reuses a fixture session within each top-level example group and closes it before the next group, with suite teardown as a final fallback.
 
+The replay watchdog regression defaults to a five-second per-case allowance. Under deliberate CPU throttling, set `FETCH_UTIL_TEST_REPLAY_DEADLINE=12` when that allowance also times out the healthy continuation fixture. This changes only the test manifest: it still requires a real hard deadline, complete Chromium cleanup, valid failed-run evidence, and a successful following case. Preserve the original failed attempt and record the selected allowance with the run.
+
 ## Focused checks and the final gate
 
 Build changed Websieve sources with `bundle exec rake build_extract_assets` before

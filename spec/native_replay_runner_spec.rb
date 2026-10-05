@@ -30,7 +30,8 @@ RSpec.describe "native replay runner" do
 
   it "kills the actual Chromium group on deadline, validates both failed runs, then continues" do
     manifest = NativeReplay::Support.read_json(@manifest_path)
-    manifest["case_deadline_seconds"] = 5
+    deadline = Float(ENV.fetch("FETCH_UTIL_TEST_REPLAY_DEADLINE", "5"))
+    manifest["case_deadline_seconds"] = deadline
     manifest["cases"].unshift(
       manifest.fetch("cases").first.merge(
         "case_id" => "hung-script", "frozen_html" => file_reference(File.join(@project_root, "spec/fixtures/native_replay/infinite.html"))
@@ -51,7 +52,7 @@ RSpec.describe "native replay runner" do
       expect(failed.fetch("deadline_exceeded")).to be(true)
       expect(failed.fetch("runtime_state_sha256")).to match(/\A[0-9a-f]{64}\z/)
       expect(failed.fetch("review_required")).to be(false)
-      expect(failed.fetch("elapsed_seconds")).to be >= 4.5
+      expect(failed.fetch("elapsed_seconds")).to be >= deadline * 0.9
       expect(run.fetch("rows").last["error"]).to be_nil
       expect([nil, "Z"]).to include(process_state(run.fetch("worker_pids").first))
       browser_group = failed.fetch("observed_process_groups").find do |group|

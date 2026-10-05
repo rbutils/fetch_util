@@ -19,6 +19,7 @@
 
 ### Development
 
+- Make the replay watchdog fixture's deadline explicitly configurable for CPU-throttled verification while preserving its hard-timeout, cleanup and healthy-continuation assertions.
 - Release shared Chromium fixture sessions after each top-level example group while retaining reuse within nested contexts.
 - Add immutable native replay and evidence validation with pinned source/package/assets, isolated variant workers, Linux process-group deadline cleanup, and hash-bound reviews.
 - Add loopback acquisition fixtures and a reproducible repeated-failure browser resource probe.
