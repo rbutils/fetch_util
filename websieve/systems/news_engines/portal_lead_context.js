@@ -2,6 +2,53 @@
     return normalizeText(node.getAttribute("role") || "").toLowerCase().split(/\s+/).indexOf(role) !== -1;
   }
 
+  function sourceOwnedPortalPath(metadata) {
+    if (homepageRootPath()) return true;
+    var signature = normalizeText([
+      metadata && metadata.title, metadata && metadata.excerpt, document.title
+    ].filter(Boolean).join(" "));
+    if (!/\b(news|headlines|top stories|latest|breaking)\b/i.test(signature)) return false;
+    var roots = Array.from(document.querySelectorAll("main, [role='main']")).filter(function(root) {
+      return !elementSubtreeHidden(root) && !root.parentElement.closest("main, [role='main']");
+    });
+    if (roots.length !== 1) return false;
+    var root = roots[0];
+    if (root.querySelector("article h1, [itemprop~='articleBody'], [role='article'] h1")) return false;
+    var cards = new Set();
+    root.querySelectorAll("a[href]").forEach(function(link) {
+      if (!leadTitle(link)) return;
+      var card = link.closest("article, section, li, [class~='card'], [class~='story'], [role='listitem']");
+      if (card && card !== root && root.contains(card)) cards.add(card);
+    });
+    var independentCards = Array.from(cards).filter(function(card) {
+      var parent = card.parentElement;
+      while (parent && parent !== root) {
+        if (cards.has(parent)) return false;
+        parent = parent.parentElement;
+      }
+      return true;
+    });
+    if (independentCards.length < 4) return false;
+    var independentSet = new Set(independentCards);
+    function cardOwns(node) {
+      while (node && node !== root) {
+        if (independentSet.has(node)) return true;
+        node = node.parentElement;
+      }
+      return false;
+    }
+    var declaredSection = Array.from(root.querySelectorAll("h2, h3")).some(function(heading) {
+      return !elementSubtreeHidden(heading) && !cardOwns(heading);
+    });
+    if (declaredSection) return false;
+    return !Array.from(root.querySelectorAll("p, pre, table, blockquote")).some(function(node) {
+      if (elementSubtreeHidden(node) || node.closest("nav, aside, footer, [role='navigation']")) return false;
+      if (cardOwns(node)) return false;
+      var text = normalizeText(node.textContent || "");
+      return !!text && text !== normalizeText(metadata && metadata.excerpt || "");
+    });
+  }
+
   function homepageLeadButton(node) {
     return node.tagName === "BUTTON" || homepageLeadRole(node, "button");
   }

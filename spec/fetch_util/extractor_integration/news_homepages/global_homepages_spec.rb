@@ -152,7 +152,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts bloomberg regional homepages into compact story bullets" do
+  it "extracts Bloomberg regional records through source-owned shared portals" do
     longest_title = 'B' * 220
     overlong_title = 'C' * 221
     html = <<~HTML
@@ -189,11 +189,13 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload).to include("title" => "Bloomberg Europe", "siteName" => "www.bloomberg.com")
-      expect(markdown).to include("- [Market Outlook Improves as Regional Trade Routes Reopen](https://www.bloomberg.com/news/articles/2026-03-22/market-outlook)")
-      expect(markdown).to include("- [A Measured Bloomberg Outlook for Regional Markets](https://www.bloomberg.com/opinion/articles/2026-03-22/shared-outlook-one)")
+      expect(markdown).to include("- [AP Photo Market Outlook Improves as Regional Trade Routes Reopen](https://www.bloomberg.com/news/articles/2026-03-22/market-outlook)")
+      expect(markdown).to include("- [Opinion A Measured Bloomberg Outlook for Regional Markets](https://www.bloomberg.com/opinion/articles/2026-03-22/shared-outlook-one)")
       expect(markdown).to include("- [A Separate Bloomberg Feature Tracks Changing Trade Routes](https://www.bloomberg.com/features/2026-shared-outlook-two/)")
       expect(markdown).to include("- [#{longest_title}](https://www.bloomberg.com/graphics/2026-boundary-title/)")
-      expect(markdown).not_to include("Duplicate Bloomberg", "overlong-title", "businessweek-label")
+      expect(markdown).to include("- [#{overlong_title}](https://www.bloomberg.com/news/articles/2026-03-22/overlong-title)")
+      expect(markdown).to include('[Bloomberg Businessweek](https://www.bloomberg.com/news/articles/2026-03-22/businessweek-label)')
+      expect(markdown).not_to include("Duplicate Bloomberg")
       expect(markdown.index("market-outlook")).to be < markdown.index("shared-outlook-one")
       expect(markdown.index("shared-outlook-one")).to be < markdown.index("shared-outlook-two")
       expect(markdown.index("shared-outlook-two")).to be < markdown.index("boundary-title")

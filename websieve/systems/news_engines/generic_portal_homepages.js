@@ -1,6 +1,6 @@
   function genericHomepageLeadRoot(metadata, options) {
     options = options || {};
-    if (!document.body || !homepageRootPath()) return null;
+    if (!document.body || !sourceOwnedPortalPath(metadata)) return null;
     if (homepageHasEditorialSections(document)) return null;
     if (typeof articleRouteFocalContent === "function" && articleRouteFocalContent()) return null;
     if (document.querySelector("article h1, article [itemprop='articleBody'], [type='application/ld+json']")) {
