@@ -420,7 +420,15 @@ RSpec.describe 'FetchUtil extractor integration' do
     extract_from_url('https://www.legislation.gov.uk/ukpga/1998/42/contents', html) do |payload|
       expect_content_type(payload, 'list')
       expect_warnings(payload, exclude: 'truncated_content')
-      expect(payload['markdown']).to include('Example section 8 rights and duties')
+      expect(payload['title']).to eq('Human Rights Act 1998')
+      expect(payload['legalProvision']).to be(false)
+      markdown = payload.fetch('markdown')
+      destinations = (1..8).map { |index| "https://www.legislation.gov.uk/ukpga/1998/42/section/#{index}" }
+      offsets = destinations.map { |url| markdown.index(url) }
+      expect(offsets).to all(be_a(Integer))
+      expect(offsets).to eq(offsets.sort)
+      (1..8).each { |index| expect(markdown).to include("Example section #{index} rights and duties.") }
+      expect(markdown).to include('/introduction)', '/crossheading/introduction)', '/schedule/1)')
     end
   end
 

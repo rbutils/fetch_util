@@ -326,7 +326,6 @@ profiles/families/financial/links.js
 profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
 profiles/families/legal_reference/conventions.js
-profiles/families/legal_reference/reference_articles.js
 profiles/legal/courtlistener.js
 profiles/legal/statutes.js
 profiles/families/legal_reference/index.js
