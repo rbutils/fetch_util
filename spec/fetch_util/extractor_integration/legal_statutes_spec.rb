@@ -91,6 +91,16 @@ Temporal application')
       expect(markdown).to start_with('# 17 U.S. Code § 107')
       expect(markdown).to include('Notwithstanding the provisions of sections 106 and 106A')
       expect(markdown).to include('the purpose and character of the use')
+      clauses = [
+        'the purpose and character of the use',
+        'the nature of the copyrighted work',
+        'the amount and substantiality of the portion used',
+        'the effect of the use upon the potential market'
+      ]
+      offsets = clauses.map { |clause| markdown.index(clause) }
+      expect(offsets).to all(be_a(Integer))
+      expect(offsets).to eq(offsets.sort)
+      expect(markdown).to include('The fact that a work is unpublished shall not itself bar a finding of fair use')
       expect(markdown).not_to include('Historical and Revision Notes')
       expect(markdown).not_to include('General Background of the Problem')
     end

@@ -91,27 +91,3 @@
       extra: { legalProvision: true }
     });
   }
-
-  function structuredLegalProvisionContent(metadata) {
-    var root = document.querySelector("text .text .section, text .section, [class~='text'] > .section");
-    if (!root) return null;
-
-    var sourceText = normalizeText(root.textContent || "");
-    var hasSupplementaryNotes = !!document.querySelector("notes, [id*='notes' i], [class*='notes' i]");
-    var title = normalizeText(((document.querySelector("#page_title, #pageTitle, h1") || {}).textContent) || metadata.title || document.title);
-    var titleContext = normalizeText([title, document.title, location.pathname].join(" "));
-    var legalContext = legalProvisionContext({ text: sourceText, title: titleContext, path: location.pathname || "" });
-    var provisionSignature = /\b(?:U\.S\.\s+Code|Code|Statute|Act|Section|§)\b/i.test(titleContext) || legalContext.sectionOrArticleMarker;
-
-    if (sourceText.length < 250 || !hasSupplementaryNotes || !provisionSignature || legalContext.numberedClauses < 2) return null;
-
-    return profileHtmlContent(metadata, root, {
-      title: title || metadata.title || document.title,
-      byline: null,
-      excerpt: function(_metadata, _root, _node, _markdown, text) { return metadata.excerpt || text.slice(0, 280); },
-      siteName: metadata.siteName || location.hostname,
-      publishedTime: metadata.publishedTime || null,
-      minTextLength: 250,
-      extra: { legalProvision: true }
-    });
-  }
