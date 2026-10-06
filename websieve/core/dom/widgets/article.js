@@ -235,7 +235,7 @@ function stripArticleWidgets(root) {
     if (articleReactionChip(node)) node.remove();
   });
   root.querySelectorAll("div, section, aside").forEach(function(node) {
-    if (articleSyntheticSummaryControl(node)) node.remove();
+    if (articleSyntheticSummaryControl(node) || articleAvailabilityModalNode(node)) node.remove();
   });
   stripArticleAdWidgets(root);
 

@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the TV Tropes callback through shared article extraction; remove only source-proven leaf availability modals while preserving authored modal content and complete linked example lists.
 - Retire the Milliyet live article profile through source-owned shared liveblogs, preserving structured declarations, complete ordered updates and parent-page identity.
 - Retire the eBay search profile through shared repeated records and consent handling, preserving prices, shipping details, ordered destinations and requested-page summaries.
 - Retire the CourtListener opinion profile through shared focal-header contributors and source-owned citation action cleanup, preserving authored citations and declared author precedence.

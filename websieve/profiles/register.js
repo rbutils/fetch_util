@@ -1,4 +1,3 @@
-  registerTvTropesProfiles();
   registerPinterestSearchProfile();
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();

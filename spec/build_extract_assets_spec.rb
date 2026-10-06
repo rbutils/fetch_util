@@ -526,7 +526,6 @@ RSpec.describe "extract asset bundle" do
       profiles/community/q_and_a/stack_exchange.js
       profiles/community/shared/thread_entries.js
       profiles/community/social_news/hacker_news.js
-      profiles/community/wikis/tv_tropes.js
     ]
     expected_community_specs = %w[
       community/forums/discourse_topics_spec.rb
@@ -1097,7 +1096,6 @@ RSpec.describe "extract asset bundle" do
     expect(combined_source.scan(/function\s+mediaWikiContent\s*\(/).length).to eq(1)
     expect(combined_source.scan(/registerHostAwareProfile\(true, mediaWikiContent\);/).length).to eq(0)
     community_sources = [
-      sources.fetch("profiles/community/wikis/tv_tropes.js"),
       sources.fetch("profiles/community/q_and_a/stack_exchange.js")
     ].join
     expect(community_sources).not_to include("mediaWikiContent")
@@ -1601,7 +1599,6 @@ RSpec.describe "extract asset bundle" do
     calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
     expect(calls).to eq(%w[
-                          registerTvTropesProfiles
                           registerPinterestSearchProfile
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
