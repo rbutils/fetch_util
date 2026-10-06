@@ -6,6 +6,11 @@
       var clone = safeReadableDocumentClone();
       var sourceClones = new Map();
       pruneHiddenClone(document.documentElement, clone.documentElement, null, null, null, sourceClones);
+      var ownership = resolveCanonicalArticleBodyOwnership() || sourceOwnedSemanticArticleOwnership(metadata).ownership;
+      var selectedOwner = ownership && sourceClones.get(ownership.ownerRoot);
+      if (selectedOwner && clone.body && selectedOwner !== clone.body && clone.body.contains(selectedOwner)) {
+        clone.body.replaceChildren(selectedOwner);
+      }
       stripSourceOwnedTerminalArticleFurniture(clone.documentElement, sourceClones);
       stripGoogleSourcePreferenceControl(document.documentElement, clone.documentElement, sourceClones);
       var conflictingSourceBylines = new Set();
