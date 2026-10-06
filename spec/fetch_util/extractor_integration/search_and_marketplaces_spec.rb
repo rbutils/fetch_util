@@ -383,8 +383,14 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Programming Ruby](https://www.ebay.com/itm/1) - $39.99 Free shipping")
+      expect(payload["markdown"]).to include("- [Programming Ruby](https://www.ebay.com/itm/1) - $39.99 - Free shipping")
       expect(payload["markdown"]).to include("- [Metaprogramming Ruby](https://www.ebay.com/itm/4) - $24.00")
+      destinations = (1..4).map { |index| "https://www.ebay.com/itm/#{index}" }
+      offsets = destinations.map { |url| payload.fetch('markdown').index(url) }
+      expect(offsets).to all(be_a(Integer))
+      expect(offsets).to eq(offsets.sort)
+      expect(payload.fetch('markdown')).to include('$31.50', '$27.10')
+      expect(payload['warnings']).to include('url_content_mismatch')
       expect(payload["warnings"]).not_to include("consent_interstitial")
     end
   end

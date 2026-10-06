@@ -964,7 +964,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "summarizes eBay cookie prompts from metadata instead of cookie copy" do
+  it "preserves the requested eBay summary alongside the real shared consent state" do
     html = <<~HTML
       <html>
         <head>
@@ -983,8 +983,14 @@ RSpec.describe 'FetchUtil extractor integration' do
     with_page(html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
 
-      expect_payload(payload, includes: ["# Ruby Programming for sale | eBay", "Get the best deals for Ruby Programming at eBay.com."],
-                              excludes: ["We use cookies and other technologies"], warnings_include: ["consent_interstitial"])
+      expect_payload(
+        payload,
+        content_type: 'interstitial',
+        includes: ['# Ruby Programming for sale | eBay', 'Get the best deals for Ruby Programming at eBay.com.',
+                   'We use cookies and other technologies', 'Accept all'],
+        warnings_include: ['consent_interstitial']
+      )
+      expect(payload['excerpt']).to eq('We use cookies and other technologies that are essential to provide you our services and site functionality.')
     end
   end
 

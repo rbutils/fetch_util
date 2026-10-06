@@ -1,6 +1,5 @@
   registerTvTropesProfiles();
   registerPinterestSearchProfile();
-  registerEbaySearchProfile();
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerHostAwareProfile(true, softwareProjectHomepageContent);
