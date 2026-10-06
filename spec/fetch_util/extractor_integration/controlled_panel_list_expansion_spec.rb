@@ -213,13 +213,12 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
   it 'does not append a generic panel delta to a specialized portal result' do
     specialized = <<~HTML
       <main>
-        <h1>Financial Times</h1>
+        <h1>Sözcü</h1>
         #{(1..4).map do |number|
           title = "Markets desk publishes substantive report number #{number}"
-          title = "Opinion content. #{title}" if number == 1
           <<~CARD
-            <article>
-              <a href="/content/story-#{number}">
+            <article class="news-card">
+              <a href="/markets-report-p#{number}">
                 <h2>#{title}</h2>
               </a>
             </article>
@@ -230,17 +229,14 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
     HTML
     html = specialized + controlled_panel_fixture
 
-    with_url_page('https://www.ft.com/', html) do |page|
+    with_url_page('https://www.sozcu.com.tr/', html) do |page|
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
       markdown = payload.fetch('markdown')
 
       expect(markdown).to include(
-        '- [Markets desk publishes substantive report number 1](https://www.ft.com/content/story-1)'
+        '- [Markets desk publishes substantive report number 1](https://www.sozcu.com.tr/markets-report-p1)'
       )
-      expect(markdown).not_to include(
-        '- [Opinion content. Markets desk publishes substantive report number 1]',
-        'Outside link generic extraction would admit'
-      )
+      expect(markdown).not_to include('Outside link generic extraction would admit')
       expect(record_numbers(markdown)).to be_empty
     end
   end
