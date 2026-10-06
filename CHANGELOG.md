@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Milliyet live article profile through source-owned shared liveblogs, preserving structured declarations, complete ordered updates and parent-page identity.
 - Retire the eBay search profile through shared repeated records and consent handling, preserving prices, shipping details, ordered destinations and requested-page summaries.
 - Retire the CourtListener opinion profile through shared focal-header contributors and source-owned citation action cleanup, preserving authored citations and declared author precedence.
 - Retire the Bloomberg homepage profile through source-owned regional portals, preserving visible headline context and full long titles without hostname or regional-route tables.

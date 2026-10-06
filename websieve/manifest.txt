@@ -342,7 +342,6 @@ profiles/news/asia/east/nhk.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/asia/central/azerbaijan/oxu.js
-profiles/news/middle_east/turkey/milliyet_live.js
 profiles/news/middle_east/turkey/sozcu.js
 profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/news/europe/western/germany/faz.js

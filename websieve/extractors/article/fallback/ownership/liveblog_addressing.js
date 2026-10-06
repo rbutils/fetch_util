@@ -195,6 +195,7 @@ function sourceOwnedLiveblogContent(metadata, ownership) {
   var discussions = sourceOwnedLiveblogDiscussionRoots(ownership);
   var footers = sourceOwnedLiveblogAttributionFooters(ownership).concat(sourceOwnedLiveblogCommentFooters(ownership, discussions));
   var content = sourceOwnedContentClone(source, footers);
+  sourceOwnedLiveblogRemoveHeaderChrome(content, ownership);
   content.querySelectorAll("a").forEach(function(anchor) {
     if (liveblogStandaloneShareControl(anchor)) anchor.remove();
     else liveblogSanitizeCredentialPermalink(anchor);
@@ -208,7 +209,7 @@ function sourceOwnedLiveblogContent(metadata, ownership) {
   return {
     title: title,
     byline: byline,
-    excerpt: fallbackArticleExcerpt(source, text, metadata, true),
+    excerpt: fallbackArticleExcerpt(content, text, metadata, true),
     siteName: (metadata && metadata.siteName) || location.hostname,
     publishedTime: date,
     html: article.innerHTML,
@@ -218,8 +219,24 @@ function sourceOwnedLiveblogContent(metadata, ownership) {
     sourceOwnedFocalArticle: true,
     sourceOwnedLiveblog: true,
     isolatedLiveblogEntry: ownership.mode === "entry",
+    singleTopicPage: ownership.mode === "parent" && ownership.context.singleTopicPage === true,
     focalPermalinkContent: true
   };
+}
+
+function sourceOwnedLiveblogRemoveHeaderChrome(root, ownership) {
+  if (!root || !ownership || ownership.mode !== "parent") return;
+  var selector = "[class*='sticky' i], [id*='sticky' i]";
+  root.querySelectorAll(selector).forEach(function(node) {
+    if (node.children.length || /[.!?。！？]/.test(normalizeText(node.textContent || ""))) return;
+    var sources = Array.from(ownership.node.querySelectorAll(selector)).filter(function(source) {
+      return source.className === node.className && source.id === node.id &&
+        normalizeText(source.textContent || "") === normalizeText(node.textContent || "");
+    });
+    if (sources.length !== 1 || !sourceRecordBefore(sources[0], ownership.context.heading)) return;
+    if (ownership.context.records.some(function(record) { return record.node.contains(sources[0]); })) return;
+    node.remove();
+  });
 }
 
 function sourceOwnedLiveblogAttributionFooters(ownership) {

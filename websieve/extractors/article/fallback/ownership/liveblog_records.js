@@ -80,7 +80,7 @@ function liveblogRecordParts(record) {
 
 function liveblogRecordCandidates(container, structuredParent) {
   var selector = "[itemprop~='liveBlogUpdate' i], [data-liveblog-update], [class*='live-update' i], [class*='minute-container' i], li, article";
-  if (structuredParent) selector += ", [role~='article' i]";
+  if (structuredParent) selector += ", [role~='article' i], div";
   var candidates = Array.from(container.querySelectorAll(selector)).map(function(node) {
     return liveblogRecordParts(node);
   }).filter(Boolean);
@@ -217,5 +217,17 @@ function fallbackLiveblogPageContext() {
   contexts = contexts.filter(function(context) { return context.records.length === maxRecords; });
   var owners = liveblogContextOwners(contexts);
   if (owners.length !== 1 || liveblogContextIsIndependentLinkedList(owners[0])) return null;
+  owners[0].singleTopicPage = liveblogContextHasSinglePageIdentity(owners[0]);
   return owners[0];
+}
+
+function liveblogContextHasSinglePageIdentity(context) {
+  if (!context || context.entities.length !== 1 || !context.heading || !context.title) return false;
+  var entity = context.entities[0];
+  var current = liveblogComparableUrl(location.href);
+  var canonical = liveblogComparableUrl((document.querySelector("link[rel~='canonical' i]") || {}).href);
+  var ownsPage = liveblogEntityPageUrls(entity).some(function(url) {
+    return url === current || (!!canonical && url === canonical);
+  });
+  return ownsPage && liveblogComparableHeadline(entity.headline) === liveblogComparableHeadline(context.title);
 }
