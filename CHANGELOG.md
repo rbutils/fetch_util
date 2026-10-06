@@ -19,6 +19,7 @@
 
 ### Development
 
+- Preserve complete Reader article bodies instead of replacing them with focal-owner clones that add only unrelated furniture, while still recovering missing material and removing unowned Reader chrome.
 - Retire the TV Tropes callback through shared article extraction; remove only source-proven leaf availability modals while preserving authored modal content and complete linked example lists.
 - Retire the Milliyet live article profile through source-owned shared liveblogs, preserving structured declarations, complete ordered updates and parent-page identity.
 - Retire the eBay search profile through shared repeated records and consent handling, preserving prices, shipping details, ordered destinations and requested-page summaries.
