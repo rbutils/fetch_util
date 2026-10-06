@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Financial Times homepage profile through shared source-owned lists, preserving headline context and materialized titles beyond the old character cutoff.
 - Retire the Joomla article profile in favor of proved shared focal ownership, preserving authored module-like sections and visible accordion content.
 - Retire the redundant structured statutory-provision profile in favor of shared legal extraction, preserving ordered operative clauses and statutory classification.
 - Make the replay watchdog fixture's deadline explicitly configurable for CPU-throttled verification while preserving its hard-timeout, cleanup and healthy-continuation assertions.

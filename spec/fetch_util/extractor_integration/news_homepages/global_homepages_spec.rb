@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
-  it "extracts financial times homepages into compact lead-story lists" do
+  it "extracts Financial Times headlines through shared source-owned lists without a title cap" do
     longest_title = 'F' * 180
     overlong_title = 'G' * 181
     html = <<~HTML
@@ -48,11 +48,14 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload).to include("title" => "Home - Financial Times", "siteName" => "Financial Times")
-      expect(markdown).to include("- [Harbor repairs continue after a late coastal alert Subscriber analysis](https://www.ft.com/content/a1)")
+      expect(markdown).to include("- [Opinion Content. Harbor repairs continue after a late coastal alert](https://www.ft.com/content/a1)")
+      expect(markdown).to include('Officials say the response now focuses on restoring local services.', 'Subscriber analysis')
       expect(markdown).to include("- [Regional freight schedules tighten as vessels reach port](https://www.ft.com/content/a2)")
       expect(markdown).to include("- [A separate freight outlook keeps its distinct destination](https://www.ft.com/content/a3)")
       expect(markdown).to include("- [#{longest_title}](https://www.ft.com/content/a4)")
-      expect(markdown).not_to include("Duplicate headline", "https://www.ft.com/content/a5", "https://www.ft.com/content/a6")
+      expect(markdown).to include("- [#{overlong_title}](https://www.ft.com/content/a5)")
+      expect(markdown).to include('[More Technology](https://www.ft.com/content/a6)')
+      expect(markdown).not_to include("Duplicate headline")
       expect(markdown.index("/content/a1")).to be < markdown.index("/content/a2")
       expect(markdown.index("/content/a2")).to be < markdown.index("/content/a3")
       expect(markdown.index("/content/a3")).to be < markdown.index("/content/a4")

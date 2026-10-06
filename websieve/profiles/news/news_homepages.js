@@ -1,26 +1,3 @@
-  function financialTimesContent(metadata) {
-    var signature = docsHostSignature(metadata);
-    if (!/(^|\b)ft\.com\b|financial times/i.test(signature)) return null;
-    if (location.pathname && location.pathname !== "/") return null;
-
-    return newsHomepageListContent(metadata, {
-      linkSelector: "main a[href*='/content/'], main a[href*='/stream/']",
-      cardSelector: "article, section, .story-group__article, .story-group-slice, .o-teaser",
-      minItems: 4,
-      minTitleLength: 18,
-      maxTitleLength: 180,
-      titleBuilder: function(link) {
-        return normalizeText(link.textContent);
-      },
-      transformTitle: function(title) {
-        return title.replace(/^opinion content\.?\s*/i, "");
-      },
-      rejectTitle: /^(top stories|news|opinion|companies|markets news|video|life & arts|spotlight|most read|must-reads you missed|more opinion|more companies|more europe news|more markets news|more technology)$/i,
-      siteName: location.hostname,
-      defaultTitle: ""
-    });
-  }
-
   function economistContent(metadata) {
     var signature = docsHostSignature(metadata);
     if (!hostMatches(/(^|\.)economist\.com$/) && !/economist/i.test(signature)) return null;
@@ -68,6 +45,5 @@
   function registerNewsHomepageProfiles() {
     registerHostAwareProfile(true, bloombergContent);
     registerHostAwareProfile(true, economistContent);
-    registerHostAwareProfile(true, financialTimesContent);
     registerGenericPortalHomepageProfiles();
   }
