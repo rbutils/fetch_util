@@ -342,7 +342,6 @@ profiles/social/networks/bluesky.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 profiles/news/asia/east/nhk.js
-systems/cms/joomla.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/asia/central/azerbaijan/oxu.js

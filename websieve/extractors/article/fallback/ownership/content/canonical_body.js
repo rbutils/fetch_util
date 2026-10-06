@@ -29,3 +29,14 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
   content.sourceOwnedArticlePublicationResolved = publicationFields.sourceOwnedArticlePublicationResolved;
   return content;
 }
+
+function sourceOwnedReaderFallback(primary, fallback) {
+  if (!primary || !primary.readerMode || !fallback || !fallback.sourceOwnedFocalArticle) return null;
+  var sourceBody = fallback.sourceOwnedArticleBody;
+  if (!sourceBody || !sourceBody.querySelector("h1")) return null;
+  primary.html = fallback.html;
+  primary.textContent = fallback.textContent;
+  var excerpt = normalizeText(primary.excerpt || "");
+  if (excerpt && normalizeText(fallback.textContent || "").indexOf(excerpt) === -1) primary.excerpt = fallback.excerpt;
+  return primary;
+}

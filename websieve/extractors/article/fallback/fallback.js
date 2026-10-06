@@ -207,6 +207,8 @@
     if (fallback && fallback.sourceOwnedMediaArticle &&
         (!primary || primary.contentType === "article" || primary.contentType === "list")) return fallback;
     if (!fallback || !primary.readerMode) return primary;
+    var ownedReaderFallback = sourceOwnedReaderFallback(primary, fallback);
+    if (ownedReaderFallback) return ownedReaderFallback;
 
     var mediaWikiLike = !!document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output");
     var primaryText = normalizeText(primary.markdown || primary.textContent || "");
