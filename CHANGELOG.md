@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Economist homepage profile through shared portal records, preserving subscriber context, source order and materialized long headlines.
 - Retire the Financial Times homepage profile through shared source-owned lists, preserving headline context and materialized titles beyond the old character cutoff.
 - Retire the Joomla article profile in favor of proved shared focal ownership, preserving authored module-like sections and visible accordion content.
 - Retire the redundant structured statutory-provision profile in favor of shared legal extraction, preserving ordered operative clauses and statutory classification.

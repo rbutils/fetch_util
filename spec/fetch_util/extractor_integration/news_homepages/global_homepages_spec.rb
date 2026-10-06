@@ -200,7 +200,7 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
-  it "extracts economist homepages into compact story bullets" do
+  it "extracts Economist headlines through complete shared portal records" do
     longest_title = 'E' * 180
     overlong_title = 'H' * 181
     html = <<~HTML
@@ -241,10 +241,13 @@ RSpec.describe 'FetchUtil extractor integration' do
       expect(payload["contentType"]).to eq("list")
       expect(payload).to include("title" => "The Economist | Go beyond breaking news", "siteName" => "www.economist.com")
       expect(markdown).to include("- [A measured outlook for regional economic recovery](https://www.economist.com/the-americas/2026/03/19/first-outlook)")
+      expect(markdown).to include('Subscriber label')
       expect(markdown).to include("- [A durable Economist outlook for international trade](https://www.economist.com/leaders/2026/03/19/shared-outlook-one)")
       expect(markdown).to include("- [An interactive Economist report on changing demographics](https://www.economist.com/interactive/1843/2026/03/19/shared-outlook-two)")
       expect(markdown).to include("- [#{longest_title}](https://www.economist.com/science-and-technology/2026/03/18/boundary-title)")
-      expect(markdown).not_to include("Duplicate Economist", "overlong-title", "navigation-label")
+      expect(markdown).to include("- [#{overlong_title}](https://www.economist.com/leaders/2026/03/19/overlong-title)")
+      expect(markdown).to include('[Business & Economics](https://www.economist.com/leaders/2026/03/19/navigation-label)')
+      expect(markdown).not_to include("Duplicate Economist")
       expect(markdown.index("first-outlook")).to be < markdown.index("shared-outlook-one")
       expect(markdown.index("shared-outlook-one")).to be < markdown.index("shared-outlook-two")
       expect(markdown.index("shared-outlook-two")).to be < markdown.index("boundary-title")
