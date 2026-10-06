@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the CourtListener opinion profile through shared focal-header contributors and source-owned citation action cleanup, preserving authored citations and declared author precedence.
 - Retire the Bloomberg homepage profile through source-owned regional portals, preserving visible headline context and full long titles without hostname or regional-route tables.
 - Retire the legal table-of-contents profile through shared list extraction, preserving nested section labels, ordered destinations and list classification.
 - Retire the Economist homepage profile through shared portal records, preserving subscriber context, source order and materialized long headlines.

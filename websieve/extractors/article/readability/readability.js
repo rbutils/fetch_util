@@ -31,6 +31,7 @@
       var mediaWikiLike = !!document.querySelector("#mw-content-text .mw-parser-output, #bodyContent .mw-parser-output, .mw-parser-output");
       if (!mediaWikiLike) cleanupAgentRoot(clone);
       cleanupGenericArticleRoot(clone);
+      stripSourceOwnedCitationActions(clone.documentElement);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
       // Readability removes accepted bylines; linked records own their own attribution.

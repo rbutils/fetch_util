@@ -234,8 +234,36 @@ function visibleByline() {
     "[data-testid*='author' i]"
   ], null, /^(?:author information|authors? and affiliations?)$/i, articleBylineNode);
   if (!value) value = visibleLocalizedAuthor(roots);
+  if (!value) value = visibleHeaderContributor();
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
+}
+
+function visibleHeaderContributor() {
+  var articles = Array.from(document.querySelectorAll("article, [role='article']")).filter(function(article) {
+    return !elementSubtreeHidden(article) && !article.parentElement.closest("article, [role='article']");
+  });
+  if (articles.length !== 1) return null;
+  var article = articles[0];
+  var headings = Array.from(article.querySelectorAll("h1")).filter(function(heading) {
+    return !elementSubtreeHidden(heading);
+  });
+  if (headings.length !== 1) return null;
+  var header = headings[0].closest("header");
+  if (!header || !article.contains(header)) return null;
+  var values = [];
+  header.querySelectorAll("p, span, div").forEach(function(node) {
+    if (elementSubtreeHidden(node) || !articleBylineNode(node) || node.closest("nav, aside, footer")) return;
+    if (!/\b(?:judges?|justices?|contributors?|editors?)\b/.test(visibleMetadataOwnerText(node))) return;
+    var value = normalizeText(node.textContent || "");
+    if (!/^(?:opinion|decision|judgment|report|review|analysis|article|written|prepared)\s+by\s+\S/i.test(value)) return;
+    if (!sourceRecordBefore(headings[0], node)) return;
+    var follows = Array.from(article.querySelectorAll("p")).some(function(paragraph) {
+      return !header.contains(paragraph) && !elementSubtreeHidden(paragraph) && sourceRecordBefore(node, paragraph);
+    });
+    if (follows && values.indexOf(value) === -1) values.push(value);
+  });
+  return values.length === 1 ? values[0] : null;
 }
 
 function manyTexts(selectors, limit) {

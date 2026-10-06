@@ -157,9 +157,43 @@
     });
     root.querySelectorAll("p, div, span, a").forEach(function(node) {
       if (articlePublicationPromoControl(node, sourceOwner)) node.remove();
+      else if (articleCitationActionControl(node, sourceOwner)) node.remove();
     });
     root.querySelectorAll("a[href]").forEach(function(node) {
       if (articleNewsFollowControl(node, sourceOwner)) node.remove();
+    });
+    return root;
+  }
+
+  function articleCitationActionControl(node, sourceOwner) {
+    if (node.children.length || !node.matches("p, div, span") ||
+        !/\b(?:citation|citations|download|downloads|document actions)\b/.test(visibleMetadataOwnerText(node))) return false;
+    var text = normalizeText(node.textContent || "");
+    var parts = text.split(/\s*\|\s*/);
+    var action = /^(?:download\s+(?:pdf|text|word|docx?)|cited by\s+[\d,]+)$/i;
+    if (parts.filter(function(part) { return action.test(part); }).length < 2) return false;
+    if (!parts.every(function(part) {
+      return action.test(part) || /^\d+\s+[A-Z][A-Za-z.\s]*\s+\d+(?:\s+\(\d{4}\))?$/.test(part);
+    })) return false;
+    var sources = Array.from(sourceOwner.querySelectorAll(node.tagName.toLowerCase())).filter(function(source) {
+      return !elementSubtreeHidden(source) && source.className === node.className &&
+        normalizeText(source.textContent || "") === text;
+    });
+    if (sources.length !== 1) return false;
+    var paragraphs = Array.from(sourceOwner.querySelectorAll("p")).filter(function(paragraph) {
+      return !elementSubtreeHidden(paragraph) && paragraph !== sources[0] &&
+        normalizeText(paragraph.textContent || "").length >= 50;
+    });
+    return paragraphs.length >= 3 && paragraphs.every(function(paragraph) {
+      return sourceRecordBefore(sources[0], paragraph) || paragraph.closest("header");
+    });
+  }
+
+  function stripSourceOwnedCitationActions(root) {
+    var sourceOwner = articleActionSourceOwner(root);
+    if (!sourceOwner) return root;
+    root.querySelectorAll("p, div, span").forEach(function(node) {
+      if (articleCitationActionControl(node, sourceOwner)) node.remove();
     });
     return root;
   }
