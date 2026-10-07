@@ -1518,15 +1518,18 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/content_cleanup.js
         extractors/article/fallback/fallback_scoring.js
         extractors/article/fallback/fallback.js
+        extractors/article/readability/owned_body/adjacent_context.js
         extractors/article/readability/header_context.js
         extractors/article/readability/source_headline.js
         extractors/article/readability/source_paragraph_mapping.js
         extractors/article/readability/excerpt_chrome.js
         extractors/article/readability/owned_body/owned_body_lead.js
+        extractors/article/readability/owned_body/marked_intro.js
         extractors/article/readability/readability_excerpt.js
         extractors/article/readability/excerpt/markers.js
         extractors/article/readability/caption_credit_excerpt.js
         extractors/article/readability/compact_body_excerpt.js
+        extractors/article/readability/owned_body/alternative_headline.js
         extractors/article/readability/source_node_provenance.js
         extractors/article/readability/attribution/conflicting_credit_restoration.js
         extractors/article/readability/readability.js
