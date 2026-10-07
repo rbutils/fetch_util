@@ -106,6 +106,50 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload["title"]).to eq("Building a Small Service")
+      positions = 7.times.map do |index|
+        destination = "https://guides.rubyonrails.org/getting_started.html#example-#{index}"
+        expect(payload["markdown"]).to include("[working example](#{destination})")
+        payload["markdown"].index(destination)
+      end
+      expect(positions).to eq(positions.sort)
+    end
+  end
+
+  it "keeps authored guide fragment links and code on an independent docs host" do
+    html = <<~HTML
+      <html><head><title>Building a Queue — Independent Documentation</title></head><body>
+        <main><h1>Building a Queue</h1><p>This guide explains the queue and its <a href="#example">working example</a>.</p>
+          <section><h2>Example</h2><p>Use the <a href="#drain">drain operation</a> after accepting work.</p>
+            <pre><code>queue.drain</code></pre></section>
+        </main>
+      </body></html>
+    HTML
+    with_url_page("https://manual.example/start", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract(page)
+      expect(payload["title"]).to eq("Building a Queue")
+      expect(payload["markdown"]).to include(
+        "[working example](https://manual.example/start#example)",
+        "[drain operation](https://manual.example/start#drain)", "queue.drain"
+      )
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
+  it "does not claim a guide when the visible heading conflicts with the document title" do
+    html = <<~HTML
+      <html><head><title>Different Topic — Independent Documentation</title></head><body>
+        <main><h1>Building a Queue</h1><p>Authored guide material remains available for ordinary extraction.</p>
+          <h2>Example</h2><p>A second paragraph explains the operation without declaring title ownership.</p>
+        </main>
+      </body></html>
+    HTML
+    with_url_page("https://manual.example/conflicting", html) do |page|
+      payload = extract(page)
+      expect(payload["docsLike"]).not_to eq(true)
+      expect(payload["markdown"]).to include("Authored guide material remains available")
     end
   end
 

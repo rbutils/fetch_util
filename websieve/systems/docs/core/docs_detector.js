@@ -81,6 +81,7 @@
     if (document.querySelector("[class*='elastic-docs'], [data-elastic-docs]") || (/elastic/i.test(signature) && document.querySelector("[class*='docBody'], article[class*='doc']"))) {
       return docsSystemResult("elastic_docs", signatureInfo);
     }
+    if (sourceOwnedGuideDocsContext(metadata)) return docsSystemResult("guide_docs", signatureInfo);
     if (document.querySelector("main .markdown-body, main article, main [data-pagefind-body], main .prose")) {
       return docsSystemResult("generic_docs", signatureInfo);
     }

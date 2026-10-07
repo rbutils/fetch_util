@@ -13,6 +13,7 @@ function samePageFragmentLink(href) {
 }
 
 function tocLikeNode(node) {
+  if (node.querySelector("p, pre, code, table, dl")) return false;
   var links = Array.prototype.slice.call(node.querySelectorAll("a[href]"));
   if (links.length < 4 || links.length > 30) return false;
 
@@ -132,6 +133,9 @@ function cleanupDocsRoot(root, options) {
     var wrappedHeading = el.querySelector("h1, h2, h3, h4, h5, h6");
     if (wrappedHeading && normalizeText(wrappedHeading.textContent)) return;
     if (el.closest("h1, h2, h3, h4, h5, h6") && text.length >= 8) return;
+    var prose = el.closest("p, li, dd, td, th");
+    if (prose && !/^(?:¶|↑|#)$/.test(text) &&
+        normalizeText(prose.textContent.replace(el.textContent, ""))) return;
     if (samePageFragmentLink(el.getAttribute("href")) && (!text || text.length < 40 || /link for this heading/i.test(title) || /^skip to (?:main )?content$/i.test(text))) el.remove();
   });
 

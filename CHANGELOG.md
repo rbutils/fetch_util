@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Rails Guides callback through source-owned guide documentation handling, preserving authored inline fragment links and distinguishing prose sections from navigation contents.
 - Retire the SEC filing callback through shared article extraction, preserving complete filing Markdown, ordered paragraphs and financial tables without SEC-specific selectors.
 - Keep the specialized-portal panel-expansion regression on a retained publisher after retiring the Financial Times profile.
 - Keep Reader input unchanged when the shared focal owner's title identity is explicitly unproved.

@@ -227,6 +227,7 @@ systems/content_types/properties.js
 systems/social/visible_content.js
 systems/social/profile_content.js
 systems/social/content_type.js
+systems/docs/core/source_guides.js
 systems/docs/core/docs_detector.js
 systems/docs/stldocs/methods.js
 systems/docs/stldocs/schemas.js
