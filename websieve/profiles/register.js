@@ -10,7 +10,6 @@
   registerPackageRegistryProfiles();
   registerStatuspageProfiles();
   registerLegalReferenceProfiles();
-  registerHostAwareProfile(/(^|\.)sec\.gov$/i, secEdgarFilingContent);
   registerHostAwareProfile(true, institutionalPlatformContent);
   registerHostAwareProfile(true, docsHostContent);
   registerRailsRdocProfiles();

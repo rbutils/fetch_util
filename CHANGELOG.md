@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the SEC filing callback through shared article extraction, preserving complete filing Markdown, ordered paragraphs and financial tables without SEC-specific selectors.
 - Keep the specialized-portal panel-expansion regression on a retained publisher after retiring the Financial Times profile.
 - Keep Reader input unchanged when the shared focal owner's title identity is explicitly unproved.
 - Apply proved focal ownership to Readability's detached input before cleanup and parsing, retaining its author-link and chrome-filtering contracts instead of replacing the finished Reader body with raw fallback markup.

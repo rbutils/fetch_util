@@ -323,7 +323,6 @@ profiles/forges/gerrit/resources/entries.js
 profiles/forges/gerrit/resources/index.js
 profiles/forges/gerrit/threads.js
 profiles/families/financial/links.js
-profiles/financial/sec_edgar.js
 profiles/families/legal_reference/shared.js
 profiles/families/legal_reference/conventions.js
 profiles/legal/statutes.js

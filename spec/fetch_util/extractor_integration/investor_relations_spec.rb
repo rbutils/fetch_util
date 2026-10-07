@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'nokogiri'
 
 RSpec.describe 'Investor relations extraction' do
   include_context 'extractor integration helpers'
@@ -94,10 +95,19 @@ RSpec.describe 'Investor relations extraction' do
 
     extract_from_url('https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250628.htm', html) do |payload|
       expect(payload['contentType']).to eq('article')
-      expect(payload['hostAware']).to be(true)
       expect(payload['markdown']).to include('FORM 10-Q')
       expect(payload['markdown']).to include('Management\'s Discussion and Analysis')
       expect(payload['markdown']).to include('| Products net sales | Three Months Ended |')
+      expect(payload['markdown']).to include('| iPhone | $44,582 |', '| Mac | $8,046 |')
+      filing = Nokogiri::HTML(html).at_css('#formDiv')
+      expect(payload['title']).to eq(filing.at_css('h1').text)
+      paragraphs = filing.css('p').map(&:text)
+      positions = paragraphs.map do |paragraph|
+        expect(payload['markdown']).to include(paragraph)
+        payload['markdown'].index(paragraph)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(payload['excerpt']).to eq(paragraphs.first)
       expect_warnings(payload, exclude: %w[url_content_mismatch truncated_content empty_extraction short_extraction])
     end
   end
