@@ -234,6 +234,7 @@ systems/docs/stldocs/schemas.js
 systems/docs/stldocs/index.js
 systems/docs/generic/antora.js
 systems/docs/reference/reference_engines.js
+systems/docs/reference/rdoc.js
 systems/docs/generic/core_frameworks.js
 systems/docs/generic/modern_frameworks.js
 systems/docs/generic/api_engines.js
@@ -245,7 +246,6 @@ systems/docs/hosted/stripe.js
 systems/docs/hosted/platforms.js
 systems/docs/hosted/baselinker.js
 systems/docs/hosted/ruby_api.js
-systems/docs/hosted/rails_rdoc.js
 systems/docs/hosted/index.js
 systems/media/player_pages.js
 systems/news_engines/portal_lead_records.js

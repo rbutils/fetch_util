@@ -238,6 +238,30 @@ RSpec.describe 'FetchUtil extractor integration' do
     end
   end
 
+  it "keeps visible generated reference source and method destinations on an independent host" do
+    html = <<~HTML
+      <html><head><title>class Socket — RDoc Documentation</title><meta name="generator" content="RDoc 6.13"></head>
+        <body><main><h1>class Socket</h1><p>Socket connects to a service using the <a href="#connect">connection operation</a>.</p>
+          <h2>Connections<a href="#connections">¶</a></h2>
+          <div class="panel"><p>Authored implementation notes remain useful reference content.</p></div>
+          <section><a href="#connect"><h4>connect! → socket</h4></a><p>The connection operation accepts its target and returns the socket.</p>
+            <pre class="method-source-code"><code>def connect!\n  socket.connect(target)\nend</code></pre></section>
+        </main></body>
+      </html>
+    HTML
+    with_url_page("https://reference.example/socket", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      payload = extract(page)
+      expect(payload["title"]).to eq("Socket")
+      expect(payload["markdown"]).to include(
+        "[connection operation](https://reference.example/socket#connect)",
+        "connect! → socket", "socket.connect(target)", "Authored implementation notes"
+      )
+      expect(payload["markdown"]).not_to include("¶")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+    end
+  end
+
   it "extracts rubyapi landing pages into compact class lists" do
     html = <<~HTML
       <html>

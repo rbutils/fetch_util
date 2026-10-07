@@ -1108,10 +1108,11 @@ RSpec.describe "extract asset bundle" do
   it "keeps docs and Unidad Editorial modules in their ownership slots" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
-    rails_source = File.read(File.join(source_root, "systems/docs/hosted/rails_rdoc.js"))
+    rdoc_source = File.read(File.join(source_root, "systems/docs/reference/rdoc.js"))
 
-    expect(rails_source).to include("function rdocDocsContent(metadata)")
-    expect(rails_source).not_to include("railsApiContent")
+    expect(rdoc_source).to include("function rdocDocsContent(metadata, info)")
+    expect(rdoc_source).not_to include("registerHostAwareProfile", "hostMatches")
+    expect(manifest).not_to include("systems/docs/hosted/rails_rdoc.js")
 
     antora_index = manifest.index("systems/docs/generic/antora.js")
     expect(antora_index).to be < manifest.index("systems/docs/generic/index.js")
@@ -1608,7 +1609,6 @@ RSpec.describe "extract asset bundle" do
                           registerPackageRegistryProfiles
                           registerStatuspageProfiles
                           registerLegalReferenceProfiles
-                          registerRailsRdocProfiles
                           registerRepoHostProfiles
                           registerGitHubThreadProfiles
                           registerGitHubPullResourceProfiles

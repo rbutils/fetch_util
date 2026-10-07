@@ -72,6 +72,7 @@
     if (/readthedocs/.test(signature) || document.querySelector(".rst-content, .wy-nav-content, .wy-nav-side")) {
       return docsSystemResult("readthedocs", signatureInfo);
     }
+    if (rdocSystemPresent(generator, signature)) return docsSystemResult("rdoc", signatureInfo);
     if (/sphinx/.test(generator) || document.querySelector("body[class*='sphinx'], .document, .sphinxsidebar, [role='navigation'] .sphinxsidebarwrapper, div.body[role='main'], dt.sig, a.headerlink, div.highlight")) {
       return docsSystemResult("sphinx", signatureInfo);
     }

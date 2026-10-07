@@ -12,7 +12,6 @@
   registerLegalReferenceProfiles();
   registerHostAwareProfile(true, institutionalPlatformContent);
   registerHostAwareProfile(true, docsHostContent);
-  registerRailsRdocProfiles();
   registerRepoHostProfiles();
   registerGitHubThreadProfiles();
   registerGitHubPullResourceProfiles();
