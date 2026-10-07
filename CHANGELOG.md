@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the RCS article callback through shared Reader extraction, preserving complete reporting, literal attribution and publication metadata; remove only source-proven unrelated leaf score widgets while retaining authored and subject-owned scores.
 - Retire the Folha callback through source-owned Reader recovery of declared alternative-headline lists and their inline destinations.
 - Retire the standalone RDoc callback through shared generator detection and docs-engine dispatch, preserving visible method source, inline reference links and authored panel content.
 - Retire the Rails Guides callback through source-owned guide documentation handling, preserving authored inline fragment links and distinguishing prose sections from navigation contents.
