@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Folha callback through source-owned Reader recovery of declared alternative-headline lists and their inline destinations.
 - Retire the standalone RDoc callback through shared generator detection and docs-engine dispatch, preserving visible method source, inline reference links and authored panel content.
 - Retire the Rails Guides callback through source-owned guide documentation handling, preserving authored inline fragment links and distinguishing prose sections from navigation contents.
 - Retire the SEC filing callback through shared article extraction, preserving complete filing Markdown, ordered paragraphs and financial tables without SEC-specific selectors.

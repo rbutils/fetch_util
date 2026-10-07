@@ -167,6 +167,7 @@ extractors/article/readability/readability_excerpt.js
 extractors/article/readability/excerpt/markers.js
 extractors/article/readability/caption_credit_excerpt.js
 extractors/article/readability/compact_body_excerpt.js
+extractors/article/readability/alternative_headline.js
 extractors/article/readability/source_node_provenance.js
 extractors/article/readability/attribution/conflicting_credit_restoration.js
 extractors/article/readability/readability.js
@@ -349,7 +350,6 @@ profiles/news/europe/central/poland/agora_wyborcza.js
 profiles/news/asia/east/netease_news.js
 profiles/news/europe/southern/rcs_corriere.js
 profiles/news/europe/central/czech/idnes.js
-profiles/news/americas/south/brazil/folha.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js
 boot/pipeline_helpers.js

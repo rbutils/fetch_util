@@ -32,11 +32,40 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = extract_payload(page)
       retained_text = Nokogiri::HTML.fragment(payload.fetch('html')).text.gsub(/\s+/, ' ').strip
 
-      expect(payload).to include('contentType' => 'article', 'hostAware' => true)
+      expect(payload).to include('contentType' => 'article')
       (subtitles + paragraphs).each do |text|
         expect(retained_text.scan(text).length).to eq(1)
       end
       expect(payload.fetch('markdown')).not_to include('Leia resumo', 'A newsletter da Folha')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'retains an owned alternative-headline list and its destinations on an independent host' do
+    html = <<~HTML
+      <html><head><title>Source-owned summary</title></head><body>
+        <article><h1>Source-owned summary</h1>
+          <ul itemprop="alternativeHeadline">
+            <li>The first authored summary includes a <a href="/source">named source</a>.</li>
+            <li>The second authored summary preserves its independent context.</li>
+          </ul>
+          <div itemprop="articleBody">
+            <p>The first body paragraph explains the investigation in detail and preserves its complete findings for readers who need the substantive account.</p>
+            <p>The second body paragraph provides additional evidence and a complete explanation of the independent observations without borrowing unrelated headlines.</p>
+            <p>The final body paragraph records the outcome and keeps the article's final conclusion together with the material that precedes it.</p>
+          </div>
+        </article>
+        <aside><ul itemprop="alternativeHeadline"><li>An unrelated sidebar summary must not be imported.</li></ul></aside>
+      </body></html>
+    HTML
+    with_url_page('https://summary-owner.example/report', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      markdown = payload.fetch('markdown')
+
+      expect(markdown).to include('[named source](https://summary-owner.example/source)', 'The second authored summary')
+      expect(markdown).not_to include('An unrelated sidebar summary')
+      expect(markdown.index('The first authored summary')).to be < markdown.index('The first body paragraph')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end

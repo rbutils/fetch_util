@@ -147,6 +147,10 @@
     if (sourceHeader && sourceHeader.closest("article") === owner) {
       article.excerpt = sourceOwnedReaderHeaderExcerpt(visibilityPrunedClone(sourceHeader)) || article.excerpt;
     }
+    if (sourceOwnedReaderAlternativeHeadline(template.content, sourceHeadline, owner, paragraphs, heading)) {
+      article.content = template.innerHTML;
+      article.textContent = normalizeText(template.content.textContent || "");
+    }
     if (!heading) return article;
     if (heading.localName !== "h1") {
       var promoted = document.createElement("h1");
