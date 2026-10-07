@@ -53,6 +53,9 @@ function sourceOwnedCleanCommentFormRoots(source, clone, sourceClones, ownership
     var wrapperClone = sourceClones.get(wrapper);
     if (!wrapperClone || !clone.contains(wrapperClone) || !sourceOwnedCommentFormRootHasInterface(wrapper, wrapperClone, sourceClones, ownership)) return;
     var rootRemoved = stripEmptyCommentUi(wrapperClone);
+    if (wrapperClone.matches("form") && hasMaterialCommentContent(wrapperClone)) {
+      preserveMaterialCommentForm(clone, wrapperClone);
+    }
     if (rootRemoved && wrapperClone.parentNode && !wrapperClone.children.length &&
         !normalizeText(wrapperClone.textContent || "")) wrapperClone.remove();
   });
@@ -105,7 +108,7 @@ function sourceOwnedCommentFormRootHasInterface(sourceRoot, cloneRoot, sourceClo
     return !elementVisuallyHidden(heading) && sourceOwnedCommentFormHeadingMatches(heading, ownership) &&
       sourceClones.get(heading) && cloneRoot.contains(sourceClones.get(heading));
   });
-  return headings.length === 1 || hasMarkedCommentContent(sourceRoot);
+  return headings.length === 1 || hasMarkedCommentContent(sourceRoot) || cloneForms.some(hasMaterialCommentContent);
 }
 
 function sourceOwnedCommentFormHeadingMatches(heading, ownership) {

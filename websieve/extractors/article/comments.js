@@ -74,6 +74,10 @@
   }
 
   function commentThreadHasMaterial(thread) {
+    if (thread.matches("div.comments, section.comments")) {
+      var promptProbe = thread.cloneNode(true);
+      if (stripEmptyCommentUi(promptProbe)) return false;
+    }
     var material = thread.matches("p, li, blockquote, [slot='comment'], [itemprop~='text' i], [class*='body' i], img, picture, video, audio") ?
       [thread] : [];
     material = material.concat(Array.prototype.slice.call(thread.querySelectorAll("p, li, blockquote, [slot='comment'], [itemprop~='text' i], [class*='body' i], img, picture, video, audio")));

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve published content inside source-owned reply forms while removing empty comment prompts before marking substantive threads.
 - Apply shared inert custom-control cleanup to recovered Reader source bodies while retaining contextual labels and substantive custom-element content.
 - Restore missing nonempty code examples and data tables from a single proven source-owned Reader article body after standard visibility and article cleanup.
 - Preserve source-owned article bodies inside mixed article/sidebar layout wrappers, including supplemental author prose and article calls to action, while excluding independently owned recommendation sidebars.
