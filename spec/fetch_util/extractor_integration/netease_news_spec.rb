@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil NetEase News extractor integration' do
   include_context 'extractor integration helpers'
 
@@ -49,11 +51,55 @@ RSpec.describe 'FetchUtil NetEase News extractor integration' do
       expect_content_type(payload, 'article')
       expect(payload['markdown']).to include('中国海军1艘战略核潜艇成功发射1发携载训练模拟弹头的潜射战略导弹')
       expect(payload['markdown']).to include('此次发射训练检验了武器装备性能')
+      source = Nokogiri::HTML(html)
+      expect(payload['title']).to eq(source.at_css('title').text)
+      expect(payload['byline']).to eq(source.at_css('.post_info').text)
+      reporting = source.css('.post_body p').map(&:text)
+      expect(reporting).to all(satisfy { |paragraph| payload['markdown'].include?(paragraph) })
+      expect(payload['excerpt']).to include(reporting.fetch(2))
+      expect(payload['excerpt']).not_to eq('2948')
+      expect(payload['markdown']).not_to include('[2948]')
       expect(payload['markdown']).not_to include('相关推荐')
       expect(payload['markdown']).not_to include('热点推荐')
       expect(payload['markdown']).not_to include('佩斯科夫：试射导弹')
       expect(payload['markdown']).not_to include('网易跟贴')
       expect_warnings(payload, exclude: %w[empty_extraction short_extraction url_content_mismatch consent_interstitial])
+    end
+  end
+
+  it 'distinguishes an owned header count from authored numeric references and discussion' do
+    paragraphs = Array.new(4) do |index|
+      "<p>Reporting paragraph #{index}: the instruments preserve measurements and the authored source context without omitting findings.</p>"
+    end.join
+    html = <<~HTML
+      <html><head><title>Measuring the river safely</title></head><body><article>
+        <h1>Measuring the river safely</h1>
+        <div>2026-07-06 18:09:22 Source: Field Research Desk</div>
+        <a class="interaction-count" href="/comments/river">2948</a>
+        <div class="article-body">#{paragraphs}
+          <p>The authored discussion reference <a class="interaction-count" href="/comments/report">3107</a> documents the original observations.</p>
+          <pre><code>interaction-count = 3107</code></pre>
+        </div>
+        <section id="comments"><div class="comment">
+          <p>The reader reports a substantive correction to the sensor calibration used in the third observation.</p>
+        </div></section>
+      </article></body></html>
+    HTML
+    extract_from_url('https://dispatch.example/articles/river', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['byline']).to eq('2026-07-06 18:09:22 Source: Field Research Desk')
+      expect(payload['markdown']).not_to include('[2948]')
+      expect(payload['markdown']).to include('[3107](https://dispatch.example/comments/report)')
+      expect(payload['markdown']).to include('interaction-count = 3107', 'substantive correction to the sensor calibration')
+      expect(payload['excerpt']).not_to eq('2948')
+    end
+
+    ambiguous = html.sub('Source: Field Research Desk</div>',
+                         'Source: Field Research Desk</div><div>2026-07-07 08:11:00 Source: Another Desk</div>')
+    extract_from_url('https://dispatch.example/articles/river', ambiguous) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['byline']).to be_nil
+      expect(payload['markdown']).to include('Reporting paragraph 3', 'substantive correction to the sensor calibration')
     end
   end
 end

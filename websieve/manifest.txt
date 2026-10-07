@@ -33,6 +33,7 @@ core/dom/widgets/action_prompts.js
 core/dom/widgets/article_engagement.js
 core/dom/widgets/availability_modal.js
 core/dom/widgets/scoreboard.js
+core/dom/widgets/comment_count.js
 core/dom/widgets/article.js
 core/dom/widgets/related_records.js
 core/dom/promo_cleanup.js
@@ -347,7 +348,6 @@ profiles/news/middle_east/turkey/sozcu.js
 profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/news/europe/western/germany/faz.js
 profiles/news/europe/central/poland/agora_wyborcza.js
-profiles/news/asia/east/netease_news.js
 profiles/news/europe/central/czech/idnes.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js

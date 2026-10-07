@@ -5,6 +5,9 @@ function readerSourceOwnedBylineExtension(content, metadata, contentByline, meta
     var semantic = sourceOwnedSemanticArticleOwnership(metadata || {}).ownership;
     var ownsSelectedBody = semantic && semantic.body.sourceNode.contains(content.sourceOwnedArticleBody);
     var semanticByline = ownsSelectedBody ? readerSourceOwnedSemanticHeaderByline(semantic) : null;
+    if (!semanticByline && ownsSelectedBody && !semantic.headerContext) {
+      semanticByline = readerSourceOwnedEmbeddedHeaderByline(semantic, content);
+    }
     if (semanticByline) return readerSourceOwnedBylineDecision(semanticByline, content, metadata, contentByline, metadataByline);
   }
 
@@ -48,6 +51,26 @@ function readerSourceOwnedBylineExtension(content, metadata, contentByline, meta
   return null;
 }
 
+function readerSourceOwnedEmbeddedHeaderByline(ownership, content) {
+  var root = ownership.ownerRoot;
+  if (ownership.body.sourceNode !== root || !root.matches("article, [role='article']") ||
+      ownership.heading.parentElement !== root) return null;
+  var selected = document.createElement("div");
+  selected.innerHTML = content.html;
+  var selectedTexts = new Set(Array.from(selected.querySelectorAll("p")).map(function(paragraph) {
+    return normalizeText(paragraph.textContent || "");
+  }).filter(Boolean));
+  var first = Array.from(root.querySelectorAll("p")).find(function(paragraph) {
+    return !elementSubtreeHidden(paragraph) && !sourceOwnershipInChrome(paragraph) &&
+      !paragraph.closest(VISIBLE_COMMENT_THREAD_SELECTOR) && sourceRecordBefore(ownership.heading, paragraph) &&
+      selectedTexts.has(normalizeText(paragraph.textContent || ""));
+  });
+  var body = first && sourceOwnedDirectChild(root, first);
+  if (!body || body.contains(ownership.heading)) return null;
+  var prefix = sourceOwnedArticleHeaderPrefix({ownerRoot: root, heading: ownership.heading, body: {sourceNode: body}});
+  return prefix ? readerSourceOwnedSemanticHeaderByline({headerContext: prefix}) : null;
+}
+
 function readerSourceOwnedBylineDecision(candidate, content, metadata, contentByline, metadataByline) {
   var siteName = normalizeText(content.siteName || metadata.siteName || location.hostname);
   if (readerSourceOwnedBylineIsAuthoritative(contentByline, siteName)) {
@@ -86,6 +109,8 @@ function readerSourceOwnedSemanticHeaderByline(ownership) {
   if (!ownership || !ownership.headerContext) return null;
   var roots = sourceOwnedArticleHeaderNodes(ownership.headerContext);
   var dates = sourceOwnedArticleHeaderDateNodes(roots);
+  var attributions = roots.map(readerSourceOwnedDatedSourceAttribution).filter(Boolean);
+  if (dates.length === 0) return attributions.length === 1 ? attributions[0] : null;
   if (dates.length !== 1) return null;
   var selector = "[rel~='author' i], [itemprop~='author' i], [class*='author-name' i], " +
     "[class*='byline' i], [class*='writer' i], [class*='reporter' i]";
@@ -119,6 +144,9 @@ function readerSourceOwnedSemanticHeaderByline(ownership) {
   if (authors.length > 1) return null;
   if (plainBylines.length === 1) return normalizeText(plainBylines[0].textContent || "");
   if (plainBylines.length > 1) return null;
+
+  if (attributions.length === 1) return attributions[0];
+  if (attributions.length > 1) return null;
 
   var current = sourceOwnershipPageUrl(location.href);
   var currentOrigin = current ? new URL(current).origin : "";

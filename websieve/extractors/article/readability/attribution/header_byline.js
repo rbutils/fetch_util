@@ -68,7 +68,8 @@ function readerSourceOwnedSelectedHeaderByline(content, metadata, contentByline,
   var candidateBranches = new Set();
   children.slice(headingIndex + 1, bodyIndex).forEach(function(branch) {
     if (elementSubtreeHidden(branch) || sourceOwnershipInChrome(branch) || branch.matches("article, main, [role='main']")) return;
-    var datedByline = readerSourceOwnedSemanticHeaderByline({ headerContext: branch });
+    var datedByline = readerSourceOwnedSemanticHeaderByline({ headerContext: branch }) ||
+      readerSourceOwnedDatedSourceAttribution(branch);
     if (datedByline) {
       sourceByline.push(datedByline);
       candidateBranches.add(branch);
@@ -91,6 +92,13 @@ function readerSourceOwnedSelectedHeaderByline(content, metadata, contentByline,
     if (!candidateBranches.has(ownedBranch) && !readerSourceOwnedHeaderCaptionBranch(ownedBranch)) return null;
   }
   return sourceByline.length === 1 ? sourceByline[0] : null;
+}
+
+function readerSourceOwnedDatedSourceAttribution(root) {
+  if (!root.matches("div, span, p, address") || root.children.length || elementSubtreeHidden(root) || sourceOwnershipInChrome(root)) return null;
+  var text = normalizeText(root.textContent || "");
+  var match = text.match(/^(\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)\s+(?:来源|source|quelle|fonte|fuente)\s*[:：]\s*\S.+$/i);
+  return match && visiblePublicationDateLike(match[1]) ? text : null;
 }
 
 function readerSourceOwnedHeaderCaptionBranch(branch) {

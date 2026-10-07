@@ -92,7 +92,7 @@
         .replace(/[_-]+/g, " ").toLowerCase();
       if (paragraphs.every(function(paragraph) { return owner.contains(paragraph); }) &&
           owner.querySelectorAll("h1").length === 1 && !owner.querySelector("article") &&
-          /\b(?:main content|article (?:body|content|detail(?: page)?)|(?:article|post|story|entry) detail|(?:post|story|entry) (?:body|content)|detail content)\b/u.test(ownerContext)) return owner;
+          /\b(?:main content|article (?:body|content|main|detail(?: page)?)|(?:article|post|story|entry) detail|(?:post|story|entry) (?:body|content|main)|detail content)\b/u.test(ownerContext)) return owner;
       owner = owner.parentElement;
     }
     return null;

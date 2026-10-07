@@ -1860,7 +1860,6 @@ RSpec.describe "extract asset bundle" do
       profiles/news/europe/southern/spain/unidad_editorial.js
       profiles/news/europe/western/germany/faz.js
       profiles/news/europe/central/poland/agora_wyborcza.js
-      profiles/news/asia/east/netease_news.js
       profiles/news/europe/central/czech/idnes.js
       profiles/publishing/naver_blog.js
     ]

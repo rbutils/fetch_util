@@ -12,6 +12,9 @@
         clone.body.replaceChildren(selectedOwner);
       }
       stripSourceOwnedTerminalArticleFurniture(clone.documentElement, sourceClones);
+      clone.querySelectorAll("a[href]").forEach(function(node) {
+        if (articleCommentCountControl(node)) node.remove();
+      });
       stripGoogleSourcePreferenceControl(document.documentElement, clone.documentElement, sourceClones);
       var conflictingSourceBylines = new Set();
       stripPublisherCtaNotes(clone);

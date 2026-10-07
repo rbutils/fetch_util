@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the NetEase article profile through shared source-proved count-control cleanup and dated header attribution; preserve compact source-owned reporting excerpts, footer attribution, authored numeric references and discussion.
 - Retire the Substack profile by preserving physically source-owned short article prose during list arbitration, including commerce-shaped article routes and material comments and replies.
 - Retire the RCS article callback through shared Reader extraction, preserving complete reporting, literal attribution and publication metadata; remove only source-proven unrelated leaf score widgets while retaining authored and subject-owned scores.
 - Retire the Folha callback through source-owned Reader recovery of declared alternative-headline lists and their inline destinations.

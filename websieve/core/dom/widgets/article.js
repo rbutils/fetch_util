@@ -228,6 +228,9 @@ function articleEmptyAdPlaceholderNode(node, context) {
 
 function stripArticleWidgets(root) {
   var contentSelector = "article, main, section, h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, figure";
+  root.querySelectorAll("a[href]").forEach(function(node) {
+    if (articleCommentCountControl(node)) node.remove();
+  });
   root.querySelectorAll("p").forEach(function(node) {
     if (articleClosedDiscussionNotice(node)) node.remove();
   });

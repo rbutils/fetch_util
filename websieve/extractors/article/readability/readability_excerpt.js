@@ -220,7 +220,7 @@
             readerBodyEvidence.sourceParagraphs.find(function(node) { return !sourceOwnedPublicationField(node); }))))) {
       return ownedLead;
     }
-    var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt);
+    var compactBodyExcerpt = readabilityCompactBodyExcerpt(template, marker, excerpt, readerBodyEvidence);
     if (compactBodyExcerpt) return compactBodyExcerpt;
     if (ownedLead) return ownedLead;
     if (textCharacters.length < 400) return article.excerpt;
