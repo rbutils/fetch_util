@@ -116,7 +116,7 @@
       paragraph.appendChild(cleanClone(visibilityPrunedClone(source)));
       root.appendChild(paragraph);
     });
-    return Object.assign({}, content, {
+    return Object.assign(content, {
       title: normalizeText(ownership.heading.textContent),
       html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
     });
