@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
@@ -1033,6 +1035,12 @@ RSpec.describe 'FetchUtil extractor integration' do
                               includes: ["# The end of the vibecession?", "One constant source of frustration",
                                          "vibecession debate a real article body"],
                               excludes: ["102 more comments", "have a recession"])
+      expect(payload['title']).to eq('The end of the vibecession? - Example Stack')
+      expect(payload['byline']).to eq('Example Writer')
+      expect(payload['publishedTime']).to be_nil
+      paragraphs = Nokogiri::HTML.fragment(payload['html']).css('p').map(&:text)
+      source = Nokogiri::HTML(html).css('.body.markup p').map(&:text)
+      expect(paragraphs).to eq(source)
     end
   end
 

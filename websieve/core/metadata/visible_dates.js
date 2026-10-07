@@ -12,6 +12,8 @@ function visiblePublishedTimeRoots() {
 
 function visiblePublishedTimeField(node) {
   var contentSelector = "article, main, [role='main'], [itemprop='articleBody'], .entry-content, .post-content";
+  if (node.matches("h1, h2, h3, h4, h5, h6") &&
+      !node.matches("[itemprop~='datePublished' i], [itemprop~='dateModified' i]")) return false;
   if (node.matches(contentSelector) || node.matches("a.answer_timestamp[href]") ||
       node.closest("aside, [role='complementary']") ||
       visiblePublicationSchedule(node) || visibleForeignPublicationCard(node)) return false;

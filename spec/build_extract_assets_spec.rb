@@ -1605,7 +1605,6 @@ RSpec.describe "extract asset bundle" do
                           registerMediaCommerceLeadProfiles
                           registerNewsHomepageProfiles
                           registerBookingProfiles
-                          registerSubstackProfiles
                           registerPackageRegistryProfiles
                           registerStatuspageProfiles
                           registerLegalReferenceProfiles

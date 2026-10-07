@@ -41,7 +41,11 @@
   }
 
   function focalCommentThreadBelongsToArticle(thread, focalOwnership) {
-    if (!focalOwnership || !focalOwnership.node ||
+    if (!focalOwnership || !focalOwnership.node) return false;
+    var semanticArticle = focalOwnership.proof === "unique-semantic-article-source-identity" &&
+      focalOwnership.node.matches("article") && focalOwnership.heading &&
+      focalOwnership.node.contains(focalOwnership.heading);
+    if (!semanticArticle &&
         !/^(?:same-owner-source-headline|same-owner-repeated-headline|canonical-article-metadata|source-record-container|liveblog-parent)$/.test(focalOwnership.proof || "")) return false;
     if (focalOwnership.proof === "source-record-container") {
       var record = focalOwnership.sourceRecord;

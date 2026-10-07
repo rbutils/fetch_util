@@ -268,7 +268,6 @@ profiles/families/scientific_records/oeis.js
 profiles/families/scientific_records/rcsb.js
 profiles/families/scientific_records/nist.js
 profiles/families/scientific_records/index.js
-profiles/publishing/substack.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
 profiles/families/institutional/core.js
