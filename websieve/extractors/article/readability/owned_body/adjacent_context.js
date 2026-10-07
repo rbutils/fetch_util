@@ -10,17 +10,19 @@
         normalizeText(source.textContent) === normalizeText(selected[index].textContent) &&
         (!index || (sources[index - 1].compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING));
     })) return null;
-    var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
-      return !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading) &&
-        (!normalizeText(content.title) || normalizeText(heading.textContent) === normalizeText(content.title));
-    });
-    if (headings.length !== 1 ||
-        !(headings[0].compareDocumentPosition(sources[0]) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
-    var owner = headings[0].parentElement;
-    while (owner && owner !== document.body && !sources.every(function(source) { return owner.contains(source); })) {
+    var owner = sources[0].parentElement;
+    var headings = [];
+    while (owner && owner !== document.body) {
+      headings = Array.from(owner.querySelectorAll("h1")).filter(function(heading) {
+        return !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading) &&
+          (heading.compareDocumentPosition(sources[0]) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+          (!normalizeText(content.title) || normalizeText(heading.textContent) === normalizeText(content.title) ||
+           normalizeText(heading.textContent).startsWith(normalizeText(content.title) + ". "));
+      });
+      if (headings.length && sources.every(function(source) { return owner.contains(source); })) break;
       owner = owner.parentElement;
     }
-    if (!owner || owner === document.body ||
+    if (!owner || owner === document.body || headings.length !== 1 ||
         (!owner.matches("article, main, [role='main']") &&
          !/(?:^|[\s_-])(?:article|post|story|entry)(?:$|[\s_-])/i.test(String(owner.className || "")))) return null;
     if (Array.from(owner.querySelectorAll("h1")).filter(function(heading) {
@@ -35,7 +37,7 @@
     if (!node || elementSubtreeHidden(node) || sourceOwnershipInChrome(node) ||
         node.querySelector("a, button, input, select, textarea, img, video, audio, iframe")) return null;
     var text = normalizeText(node.textContent);
-    return /^(?:\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}|\d{1,2}\.?\s+[\p{L}.]+,?\s+\d{4})(?:\s*(?:\/|,|at)?\s*\d{1,2}:\d{2}(?::\d{2})?)?$/iu.test(text) ? text : null;
+    return /^(?:\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}|\d{1,2}\.?\s+[\p{L}.]+,?\s+\d{4})(?:\s*(?:\/|,|at)?\s*\d{1,2}:\d{2}(?::\d{2})?)?$/iu.test(text) ? text : null;
   }
 
   function readerAdjacentContextNodes(ownership) {
@@ -114,5 +116,8 @@
       paragraph.appendChild(cleanClone(visibilityPrunedClone(source)));
       root.appendChild(paragraph);
     });
-    return Object.assign({}, content, {html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent});
+    return Object.assign({}, content, {
+      title: normalizeText(ownership.heading.textContent),
+      html: root.innerHTML, markdown: markdownFor(root.innerHTML), textContent: root.textContent
+    });
   }

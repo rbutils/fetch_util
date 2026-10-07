@@ -111,7 +111,8 @@
     }
 
     // Paywall partial content: paywall detected and content appears truncated
-    if (!challengeType && !interstitialType && content && content.contentType === "article" && !likelyListPath()) {
+    if (!challengeType && !interstitialType && content && content.contentType === "article" &&
+        (!likelyListPath() || visibleLocalizedSubscriptionOffer())) {
       var paywall = paywallSignals();
       if (paywall && reasons.indexOf("subscription_interstitial") === -1) {
         var publicArticle = metadata && metadata.isAccessibleForFree === true;

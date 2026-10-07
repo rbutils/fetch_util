@@ -33,6 +33,30 @@
     return normalized.length < 3000 && hits.length >= 1;
   }
 
+  function visibleLocalizedSubscriptionOffer() {
+    return Array.from(document.querySelectorAll("a, button")).some(function(action) {
+      if (elementSubtreeHidden(action) || action.closest("aside, nav, footer, blockquote, q, form")) return false;
+      var offer = action.closest("div, section");
+      var owner = offer && offer.closest("main, article, [role='main']");
+      if (!offer || !owner || elementSubtreeHidden(offer) ||
+          !/^wybierz\s+prenumeratę(?:\s|[,!.?]|$)/iu.test(normalizeText(offer.textContent))) return false;
+      var headings = Array.from(owner.querySelectorAll("h1")).filter(function(heading) {
+        return !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading);
+      });
+      if (headings.length !== 1) return false;
+      return Array.from(owner.querySelectorAll("[class*='fadeout' i], [class*='restricted' i], [class*='locked' i]")).some(function(boundary) {
+        var restricted = Array.from(boundary.classList).some(function(token) {
+          return /(?:^|[-_])(?:fadeout|restricted|locked)(?:$|[-_])/i.test(token);
+        });
+        return restricted && !elementSubtreeHidden(boundary) && !sourceOwnershipInChrome(boundary) &&
+          !boundary.closest("aside, nav, footer, blockquote, q, form") &&
+          Array.from(boundary.querySelectorAll("p")).some(function(paragraph) {
+            return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent);
+          }) && (boundary.compareDocumentPosition(offer) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+    });
+  }
+
   // Detect structured data paywall signals (isAccessibleForFree, content_tier meta)
   function paywallSignals() {
     // Check structured data: isAccessibleForFree
@@ -44,7 +68,7 @@
     var metaPaywall = contentTier && /^(locked|metered|premium)$/i.test(normalizeText(contentTier));
 
     // Check common paywall DOM indicators
-    var domPaywall = !!document.querySelector(
+    var domPaywall = visibleLocalizedSubscriptionOffer() || !!document.querySelector(
       "[data-piano-offer], [data-paywall], [class*='paywall' i], [id*='paywall' i], " +
       "[class*='subscribe-wall' i], [class*='premium-wall' i], [class*='piano-offer' i], " +
       "[data-testid*='paywall' i], [class*='metered' i][class*='banner' i]"

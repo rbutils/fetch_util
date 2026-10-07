@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration for Agora/Wyborcza articles' do
   include_context 'extractor integration helpers'
 
@@ -8,6 +10,11 @@ RSpec.describe 'FetchUtil extractor integration for Agora/Wyborcza articles' do
 
     extract_from_url('https://kalisz.wyborcza.pl/kalisz/7,181359,32893183,co-dwie-godziny-pociag-do-berlina-co-godzine-do-warszawy-cpk.html', html) do |payload|
       expect_content_type(payload, 'article')
+      source = Nokogiri::HTML(html)
+      expect(payload['title']).to eq(source.at_css('main h1').text)
+      expect(payload['byline']).to eq('Janusz Jaros')
+      expect(payload['markdown']).to include('06.07.2026, 19:05')
+      source.css('.mrf-article-body p').each { |paragraph| expect(payload['markdown']).to include(paragraph.text) }
       expect(payload['markdown']).to include('Linia "Igrek" Kolei Dużych Prędkości ma powstać do 2035 roku')
       expect(payload['markdown']).to include('Powstanie tu estakada obwodnicy Kolei Dużych Prędkości')
       expect(payload['markdown']).not_to include('Wyłącz AdBlocka')
@@ -69,6 +76,7 @@ RSpec.describe 'FetchUtil extractor integration for Agora/Wyborcza articles' do
       expect(payload['title']).to eq('Rozmowa o pracy i rodzinie')
       expect(payload['byline']).to be_nil
       expect(payload['publishedTime']).to eq('2026-06-24T17:42:00+02:00')
+      expect(payload['excerpt']).to eq('Jesteś bardzo blisko związana ze swoimi rodzicami i rodziną.')
       expect(payload['markdown']).to include('ZAWIERA PŁATNĄ WSPÓŁPRACĘ')
       expect(payload['markdown']).to include('Jesteś bardzo blisko związana ze swoimi rodzicami')
       expect(payload['markdown']).to include('![Ewa Chodakowska](https://kobieta.gazeta.pl/img/ewa.jpg)')
@@ -81,6 +89,56 @@ RSpec.describe 'FetchUtil extractor integration for Agora/Wyborcza articles' do
       expect(payload['markdown']).not_to include('Wybór redakcji')
       expect_warnings(payload, exclude: %w[paywall_partial_content truncated_content url_content_mismatch consent_interstitial])
       expect(payload['suspect']).to be(false)
+    end
+  end
+
+  it 'keeps owned extended headlines and localized access offers distinct from hidden or quoted promotions' do
+    html = <<~HTML
+      <main>
+        <header><h1>Transport planning. Additional routes serve the region</h1><p>07.10.2026, 12:30</p></header>
+        <article>
+          <p>Planning teams published the timetable and explained how the regional routes connect.</p>
+          <div class="content-fadeout">
+            <p>Residents reviewed the proposed connections and raised questions about the construction schedule.</p>
+            <p>The published report records those questions and the agency responses without omitting the public detail.</p>
+          </div>
+        </article>
+        <section class="subscription-offer">Wybierz prenumeratę, by czytać dalszą część <button>Sprawdź ofertę</button></section>
+      </main>
+    HTML
+    document = "<html><head><title>Transport planning</title></head><body>#{html}</body></html>"
+    extract_from_url('https://regional.example/story/transport', document) do |payload|
+      expect(payload['title']).to eq('Transport planning. Additional routes serve the region')
+      expect(payload['markdown']).to include('07.10.2026, 12:30')
+      expect(payload['markdown']).to include('The published report records those questions')
+      expect_warnings(payload, include: 'paywall_partial_content')
+    end
+    [html.sub('class="content-fadeout"', 'class="unlocked-content"'),
+     html.sub('class="subscription-offer"', 'class="subscription-offer" hidden'),
+     html.sub('<section class="subscription-offer">', '<blockquote><section class="subscription-offer">')
+         .sub('</section>', '</section></blockquote>')].each do |negative|
+      extract_from_url('https://regional.example/story/transport', "<html><head><title>Transport planning</title></head>#{negative}</html>") do |payload|
+        expect_warnings(payload, exclude: 'paywall_partial_content')
+      end
+    end
+  end
+
+  it 'uses a uniquely owned marked intro without adopting an unrelated newsletter lead' do
+    html = <<~HTML
+      <html><head><title>Evidence from field measurements</title></head><body>
+        <article><h1>Evidence from field measurements</h1>
+          <div id="story_standfirst">The authored overview explains the complete measurement programme.</div>
+          <p>The first report describes the measurement method and the instrument calibration in full.</p>
+          <p>The second report explains the observed variations and records the remaining uncertainties.</p>
+          <p>The final report identifies the follow-up work and preserves the substantive public conclusions.</p>
+        </article>
+        <aside><div id="newsletter_lead">Subscribe to our unrelated newsletter for promotional updates.</div></aside>
+      </body></html>
+    HTML
+    extract_from_url('https://field.example/story/evidence', html) do |payload|
+      expect(payload['excerpt']).to eq('The authored overview explains the complete measurement programme.')
+      expect(payload['markdown']).to include('The final report identifies the follow-up work')
+      expect(payload['excerpt']).not_to include('newsletter')
     end
   end
 end

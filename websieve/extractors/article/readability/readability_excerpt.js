@@ -173,6 +173,8 @@
 
     var dateLead = readabilityOwnedDateLeadExcerpt(article, readerBodyEvidence);
     if (dateLead) return dateLead;
+    var markedIntro = readabilityOwnedMarkedIntroExcerpt(article, metadata);
+    if (markedIntro) return markedIntro;
 
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
