@@ -348,7 +348,6 @@ profiles/news/middle_east/turkey/sozcu.js
 profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/news/europe/western/germany/faz.js
 profiles/news/europe/central/poland/agora_wyborcza.js
-profiles/news/europe/central/czech/idnes.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js
 boot/pipeline_helpers.js

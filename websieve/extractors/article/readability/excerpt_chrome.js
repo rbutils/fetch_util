@@ -16,6 +16,67 @@
     });
   }
 
+  function readabilityOwnedDateParagraphSources(article, selected) {
+    var headings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
+      return !elementVisuallyHidden(heading) && normalizeText(heading.textContent || "") === normalizeText(article.title || "");
+    });
+    if (headings.length !== 1) return null;
+    var owner = headings[0].parentElement;
+    while (owner && owner !== document.body) {
+      if (sourceOwnershipInChrome(owner) || owner.closest(VISIBLE_COMMENT_THREAD_SELECTOR) || commentRecordMarker(owner)) return null;
+      var visibleHeadings = Array.from(owner.querySelectorAll("h1")).filter(function(node) { return !elementVisuallyHidden(node); });
+      if (visibleHeadings.length !== 1) return null;
+      var nodes = Array.from(owner.querySelectorAll("p, div")).filter(function(node) {
+        return (node.localName === "p" || !node.children.length) && !elementVisuallyHidden(node) &&
+          !sourceOwnershipInChrome(node) && !node.closest(VISIBLE_COMMENT_THREAD_SELECTOR) && !commentRecordMarker(node);
+      });
+      var sources = selected.map(function(paragraph) {
+        var matches = nodes.filter(function(node) {
+          return normalizeText(node.textContent || "") === normalizeText(paragraph.textContent || "");
+        });
+        return matches.length === 1 ? matches[0] : null;
+      });
+      if (sources.every(Boolean)) return sources;
+      owner = owner.parentElement;
+    }
+    return null;
+  }
+
+  function readabilityOwnedDateLeadExcerpt(article, bodyEvidence) {
+    var value = normalizeText(article && article.excerpt || "");
+    var date = "(?:\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[./]\\s*\\d{1,2}[./]\\s*\\d{4}|" +
+      "\\d{1,2}\\.?\\s+\\p{L}[\\p{L}\\p{M}.'’\\-]*\\s+\\d{4}|\\p{L}[\\p{L}\\p{M}.'’\\-]*\\s+\\d{1,2},?\\s+\\d{4})";
+    if (!new RegExp("^" + date + "(?:\\s*,?\\s+)\\d{1,2}:\\d{2}(?::\\d{2})?$", "u").test(value)) return null;
+
+    var template = readabilityArticleTemplate(article);
+    var selected = template && Array.from(template.content.querySelectorAll("p"));
+    if (!selected || selected.length < 2) return null;
+    var sources = bodyEvidence && bodyEvidence.sourceParagraphs;
+    if (bodyEvidence && ((bodyEvidence.unmappedHeaderParagraphs || []).length ||
+        (bodyEvidence.unmappedTrailingParagraphs || []).length)) return null;
+    if (!Array.isArray(sources)) sources = readabilityOwnedDateParagraphSources(article, selected);
+    if (!sources || sources.length < 2 || normalizeText(sources[0].textContent || "") !== value) return null;
+    if (!selected || selected.length !== sources.length || !sources.every(function(source, index) {
+      return source && source.ownerDocument === document && source.isConnected && !elementVisuallyHidden(source) &&
+        normalizeText(source.textContent || "") === normalizeText(selected[index].textContent || "") &&
+        (!index || (sources[index - 1].compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING));
+    })) return null;
+
+    var owner = sources[0].parentElement;
+    while (owner && owner !== document.body && !sources.every(function(source) { return owner.contains(source); })) {
+      owner = owner.parentElement;
+    }
+    if (!owner || owner === document.body) return null;
+    var headings = Array.from(owner.querySelectorAll("h1")).filter(function(heading) { return !elementVisuallyHidden(heading); });
+    if (headings.length !== 1 || normalizeText(headings[0].textContent || "") !== normalizeText(article.title || "") ||
+        !(headings[0].compareDocumentPosition(sources[0]) & Node.DOCUMENT_POSITION_FOLLOWING)) return null;
+    var lead = sources[1];
+    if (!readabilityExcerptNode(lead) || lead.querySelector("button, input, select, textarea") ||
+        !(sources[0].compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING) ||
+        !/\p{Sentence_Terminal}/u.test(lead.textContent || "")) return null;
+    return readabilityExcerptPrefix(lead.textContent || "");
+  }
+
   function readabilityOwnedBylineExcerpt(article, metadata, readerBodyEvidence) {
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt || /[\p{Sentence_Terminal}"'“”‘’]/u.test(excerpt) || !readerBodyEvidence) return false;

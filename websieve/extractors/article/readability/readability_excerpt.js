@@ -171,6 +171,9 @@
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt) return (article && article.excerpt) || null;
 
+    var dateLead = readabilityOwnedDateLeadExcerpt(article, readerBodyEvidence);
+    if (dateLead) return dateLead;
+
     var text = normalizeText((article && article.textContent) || "");
     var excerptCharacters = Array.from(excerpt);
     var textCharacters = Array.from(text);

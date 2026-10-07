@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration for iDNES articles' do
   include_context 'extractor integration helpers'
 
@@ -43,12 +45,42 @@ RSpec.describe 'FetchUtil extractor integration for iDNES articles' do
     HTML
 
     extract_from_url("https://www.idnes.cz/zpravy/zahranicni/arad-izrael-ultraortodoxni-zide-nepokoje.A260702_195055_zahranicni_krou", html) do |payload|
+      source = Nokogiri::HTML(html)
+      lead = source.at_css('.art-full > p:nth-of-type(2)').text
       expect_content_type(payload, "article")
+      expect(payload['title']).to eq(source.at_css('h1').text)
+      expect(payload['language']).to eq('cs')
+      expect(payload['publishedTime']).to eq('2026-07-06T20:00:00')
+      expect(payload['excerpt']).to include(lead)
+      source.css('.art-full > p, #art-text > p').each do |paragraph|
+        expect(Nokogiri::HTML(payload['html']).text).to include(paragraph.text)
+      end
       expect(payload["markdown"]).to include("Ultraortodoxní Židé a v tmavých hidžábech zahalené muslimky")
       expect(payload["markdown"]).to include("Zhruba 50 procent ultraortodoxních mužů nepracuje")
-      expect(payload["markdown"]).to include("další část bude dostupná pouze v iDNES Premium")
+      expect(payload["markdown"]).not_to include("další část bude dostupná pouze v iDNES Premium")
       expect(payload["markdown"]).not_to include("Právě nejčtenější Premium články")
       expect_warnings(payload, include: "paywall_partial_content", exclude: %w[truncated_content url_content_mismatch consent_interstitial])
+    end
+  end
+
+  it 'uses an owned reporting lead after a date-time while preserving authored dated prose' do
+    lead = 'The public report describes the complete measurement method and the independent observations supporting its conclusion.'
+    dated = '6 juillet 2026 20:00'
+    html = <<~HTML
+      <html lang="fr"><head><title>Independent observations</title></head><body><article>
+        <h1>Independent observations</h1><p>#{dated}</p><p>#{lead}</p>
+        <p>The following explanation preserves the original reporting and the context needed to evaluate each observation independently.</p>
+      </article></body></html>
+    HTML
+    extract_from_url('https://journal.example/observations', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['excerpt']).to eq(lead)
+      expect(Nokogiri::HTML(payload['html']).text).to include(dated, lead)
+    end
+    prose = "#{dated} marks the start of the reported experiment, a substantive observation retained as the authored lead."
+    extract_from_url('https://journal.example/observations', html.sub("<p>#{dated}</p>", "<p>#{prose}</p>")) do |payload|
+      expect(payload['excerpt']).to include(prose)
+      expect(Nokogiri::HTML(payload['html']).text).to include(prose, lead)
     end
   end
 end
