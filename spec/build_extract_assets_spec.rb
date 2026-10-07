@@ -1856,7 +1856,6 @@ RSpec.describe "extract asset bundle" do
     expected_tail = %w[
       profiles/news/asia/east/nhk.js
       systems/cms/wordpress.js
-      profiles/news/asia/central/azerbaijan/oxu.js
       profiles/news/europe/southern/spain/unidad_editorial.js
       profiles/news/europe/western/germany/faz.js
       profiles/news/europe/central/poland/agora_wyborcza.js

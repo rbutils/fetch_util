@@ -160,6 +160,7 @@ extractors/article/fallback/high_confidence_content.js
 extractors/article/fallback/content_cleanup.js
 extractors/article/fallback/fallback_scoring.js
 extractors/article/fallback/fallback.js
+extractors/article/readability/owned_body/adjacent_context.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js
 extractors/article/readability/source_paragraph_mapping.js
@@ -343,7 +344,6 @@ profiles/register.js
 profiles/news/asia/east/nhk.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
-profiles/news/asia/central/azerbaijan/oxu.js
 profiles/news/middle_east/turkey/sozcu.js
 profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/news/europe/western/germany/faz.js

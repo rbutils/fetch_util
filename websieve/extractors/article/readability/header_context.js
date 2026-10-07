@@ -145,6 +145,7 @@
   }
 
   function sourceOwnedReaderHeaderContent(content, metadata) {
+    content = sourceOwnedReaderAdjacentContext(content);
     if (!content || !content.readerMode || content.hostAware || content.contentType !== "article" ||
         !content.html) return content;
     var title = content.title || (metadata && metadata.title);

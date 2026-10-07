@@ -19,6 +19,7 @@
 
 ### Development
 
+- Retire the Oxu callback through shared, physically proved Reader lead media, visible date context and topic destinations while excluding unrelated sharing UI.
 - Retire the iDNES article profile through shared Reader extraction, preserving public reporting and paywall warnings while selecting a source-owned lead after a date-only header.
 - Retire the NetEase article profile through shared source-proved count-control cleanup and dated header attribution; preserve compact source-owned reporting excerpts, footer attribution, authored numeric references and discussion.
 - Retire the Substack profile by preserving physically source-owned short article prose during list arbitration, including commerce-shaped article routes and material comments and replies.
