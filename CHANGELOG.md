@@ -5,6 +5,7 @@
 ### Fixed
 
 - Retain private Reader source evidence when restoring adjacent article context so subsequent author and publication recovery remains source-bound.
+- Preserve published WordPress comments in order while removing empty reply-form invitations and controls from the owned comment clone.
 - Preserve published content inside source-owned reply forms while removing empty comment prompts before marking substantive threads.
 - Apply shared inert custom-control cleanup to recovered Reader source bodies while retaining contextual labels and substantive custom-element content.
 - Restore missing nonempty code examples and data tables from a single proven source-owned Reader article body after standard visibility and article cleanup.

@@ -93,6 +93,17 @@
     var clone = visibilityPrunedClone(source, document);
     if (!clone) return "";
     if (clone.matches("form, nav, aside, footer, dialog, [class*='promo' i], [class*='sponsor' i], [class*='advert' i]")) return "";
+    clone.querySelectorAll("form, div, section").forEach(function(node) {
+      if (!node.querySelector("input, textarea, select, button")) return;
+      var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+      if (!headings.some(emptyCommentFormHeading)) return;
+      var probe = node.cloneNode(true);
+      stripCommentFormControls(probe);
+      probe.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(function(heading) {
+        if (emptyCommentFormHeading(heading)) heading.remove();
+      });
+      if (!hasMaterialCommentContent(probe)) node.remove();
+    });
     clone.setAttribute("data-fetchutil-social-comment", "true");
     clone.querySelectorAll("form, nav, aside, dialog, [role~='navigation' i], [role~='complementary' i], [role='toolbar' i], [class*='promo' i], [class*='sponsor' i], [class*='advert' i], [class*='newsletter' i], [class*='subscribe' i], button, input, textarea, select").forEach(function(node) {
       node.remove();

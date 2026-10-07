@@ -76,8 +76,8 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
     end
   end
 
-  describe "comment section stripping" do
-    it "removes WordPress comment sections from extracted content" do
+  describe "published comment preservation and interface cleanup" do
+    it "preserves WordPress comments while removing the empty reply interface" do
       html = <<~HTML
         <html>
           <body>
@@ -118,9 +118,16 @@ RSpec.describe 'FetchUtil extractor integration – multilingual cleanup' do
 
         expect(payload["markdown"]).to include("Mix flour with eggs")
         expect(payload["markdown"]).to include("pan-fry in butter")
-        expect(payload["markdown"]).not_to include("Great recipe")
-        expect(payload["markdown"]).not_to include("babcia would be proud")
+        comments = [
+          "Great recipe! I added some onions too.",
+          "Can I freeze these before boiling?",
+          "My babcia would be proud!"
+        ]
+        comments.each { |comment| expect(payload["markdown"]).to include(comment) }
+        positions = comments.map { |comment| payload["markdown"].index(comment) }
+        expect(positions).to eq(positions.sort)
         expect(payload["markdown"]).not_to include("Leave a Reply")
+        expect(payload["html"]).not_to include("<textarea")
       end
     end
 
