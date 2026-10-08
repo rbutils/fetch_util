@@ -150,7 +150,7 @@ RSpec.describe "extract asset bundle" do
     expect(sozcu_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
     expect(sozcu_source).not_to include("sozcuContent", "registerHostAwareProfile")
     expect(faz_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
-    expect(faz_source).to include("registerHostAwareProfile(/(^|\\.)faz\\.net$/, fazArticleContent);")
+    expect(faz_source).not_to include("registerHostAwareProfile", "fazArticleContent")
     expect(faz_source).not_to include("fazContent")
   end
 
@@ -1861,7 +1861,6 @@ RSpec.describe "extract asset bundle" do
     expected_tail = %w[
       systems/cms/wordpress.js
       profiles/news/europe/southern/spain/unidad_editorial.js
-      profiles/news/europe/western/germany/faz.js
       profiles/publishing/naver_blog.js
     ]
     expect(direct_tail).to eq(expected_tail)
