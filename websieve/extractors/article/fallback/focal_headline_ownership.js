@@ -219,6 +219,9 @@
   }
 
   function genericFocalArticleContent(metadata) {
-    if (!fallbackLiveblogPageContext() && !resolveCanonicalArticleBodyOwnership() && !fallbackFocalHeadlineOwnership()) return null;
-    return fallbackContent(metadata);
+    if (fallbackLiveblogPageContext() || resolveCanonicalArticleBodyOwnership() || fallbackFocalHeadlineOwnership()) {
+      return fallbackContent(metadata);
+    }
+    var headed = sourceOwnedHeadedBranchOwnership(metadata);
+    return headed ? canonicalArticleBodyContent(metadata, headed) : null;
   }

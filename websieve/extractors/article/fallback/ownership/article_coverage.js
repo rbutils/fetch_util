@@ -17,6 +17,9 @@ function sourceOwnedArticleMarkup(ownership) {
   }
   var bodySourceClones = new WeakMap();
   article.appendChild(sourceOwnedContentClone(source, bodyFooters, ownership, bodySourceClones));
+  (ownership.contextNodes || []).forEach(function(context) {
+    article.appendChild(sourceOwnedContentClone(context));
+  });
   threads.filter(function(thread) { return source.contains(thread); }).forEach(function(thread) {
     var clone = bodySourceClones.get(thread);
     if (clone && article.contains(clone)) clone.setAttribute("data-fetchutil-social-comment", "true");

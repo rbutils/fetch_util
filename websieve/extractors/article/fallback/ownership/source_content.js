@@ -273,5 +273,8 @@ function genericSourceOwnedPageContent(metadata) {
     return canonicalArticleBodyContent(metadata, ownership, article, publicPreview);
   }
   var semantic = sourceOwnedSemanticArticleOwnership(metadata);
-  return semantic.ownership ? canonicalArticleBodyContent(metadata, semantic.ownership) : null;
+  if (semantic.ownership) return canonicalArticleBodyContent(metadata, semantic.ownership);
+  if (semantic.considered) return null;
+  var headed = sourceOwnedHeadedBranchOwnership(metadata);
+  return headed ? canonicalArticleBodyContent(metadata, headed) : null;
 }

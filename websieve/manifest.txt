@@ -140,6 +140,8 @@ extractors/article/fallback/ownership/source_header_metadata.js
 extractors/article/fallback/ownership/content/canonical_body.js
 extractors/article/fallback/ownership/content/mixed_sidebar_layout.js
 extractors/article/fallback/ownership/source_content.js
+extractors/article/fallback/ownership/headed_branch/context.js
+extractors/article/fallback/ownership/headed_branch/ownership.js
 extractors/article/fallback/ownership/article_coverage.js
 extractors/article/fallback/ownership/article_body.js
 extractors/article/fallback/ownership/liveblog_records.js
@@ -341,7 +343,6 @@ profiles/social/networks/twitter.js
 profiles/social/networks/bluesky.js
 profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
-profiles/news/asia/east/nhk.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/news/middle_east/turkey/sozcu.js

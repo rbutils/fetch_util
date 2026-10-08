@@ -1240,6 +1240,8 @@ RSpec.describe "extract asset bundle" do
       extractors/article/fallback/ownership/source_header_metadata.js
       extractors/article/fallback/ownership/content/canonical_body.js
       extractors/article/fallback/ownership/source_content.js
+      extractors/article/fallback/ownership/headed_branch/context.js
+      extractors/article/fallback/ownership/headed_branch/ownership.js
       extractors/article/fallback/ownership/article_coverage.js
       extractors/article/fallback/ownership/article_body.js
       extractors/article/fallback/ownership/liveblog_records.js
@@ -1498,6 +1500,8 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/ownership/content/canonical_body.js
         extractors/article/fallback/ownership/content/mixed_sidebar_layout.js
         extractors/article/fallback/ownership/source_content.js
+        extractors/article/fallback/ownership/headed_branch/context.js
+        extractors/article/fallback/ownership/headed_branch/ownership.js
         extractors/article/fallback/ownership/article_coverage.js
         extractors/article/fallback/ownership/article_body.js
         extractors/article/fallback/ownership/liveblog_records.js
@@ -1855,7 +1859,6 @@ RSpec.describe "extract asset bundle" do
       File.read(File.join(source_root, path)).match?(/(?:^[ \t]*|;[ \t]*)registerHostAwareProfile\(/)
     end
     expected_tail = %w[
-      profiles/news/asia/east/nhk.js
       systems/cms/wordpress.js
       profiles/news/europe/southern/spain/unidad_editorial.js
       profiles/news/europe/western/germany/faz.js

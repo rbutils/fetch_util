@@ -53,4 +53,71 @@ RSpec.describe 'FetchUtil NHK extractor integration' do
       expect(payload['suspect']).to be(true)
     end
   end
+
+  it 'retains dated reporting, code, tables and topic links on an independent publisher' do
+    html = <<~HTML
+      <html><head><title>River bridge inspection update | Example Journal</title></head><body><main>
+        <section>
+          <div><h1>River bridge inspection update</h1><div>2026-10-08 10:30</div>
+            <p>Engineers inspected the river bridge after the overnight storm and confirmed its main span remains open to traffic.</p>
+            <p>Crews will publish the complete repair schedule after checking the supports and reviewing the <a href="/record">inspection record</a>.</p>
+            <pre><code>inspect_span("north")</code></pre>
+            <table><tr><th>Span</th><th>Status</th></tr><tr><td>North</td><td>Open</td></tr></table>
+          </div>
+          <div><h3>Topics</h3><a href="/topics/bridges">Bridges</a><a href="/topics/transport">Transport</a></div>
+        </section>
+        <aside><h2>Related reports</h2><a href="/other">An unrelated report</a></aside>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://journal.example.test/reports/bridge', html) do |payload|
+      expect_content_type(payload, 'article')
+      expect(payload['markdown']).to include(
+        'Engineers inspected the river bridge', 'complete repair schedule',
+        'inspect_span("north")', 'North', 'Open', '/topics/bridges', '/topics/transport'
+      )
+      expect(payload['markdown']).not_to include('An unrelated report')
+      expect(payload['hostAware']).to be(false)
+    end
+  end
+
+  it 'does not discard an authored continuation outside a short dated heading branch' do
+    continuation = 'The independent inspection also examined every support and documented the river levels. ' \
+                   'The published findings explain why the repairs remain necessary despite the road reopening. ' \
+                   'Residents can consult the full measurement table and the supporting engineering analysis'
+    html = <<~HTML
+      <html><head><title>River bridge inspection update</title></head><body><main>
+        <section><h1>River bridge inspection update</h1><div>2026-10-08 10:30</div>
+          <p>Engineers inspected the river bridge after the overnight storm and confirmed its main span remains open to traffic.</p>
+          <p>Crews will publish the complete repair schedule after checking the supports and reviewing the public inspection record.</p>
+        </section>
+        <section><h2>Detailed findings</h2><p>#{continuation}</p></section>
+      </main></body></html>
+    HTML
+
+    extract_from_url('https://journal.example.test/reports/bridge', html) do |payload|
+      expect(payload['markdown']).to include(continuation)
+    end
+  end
+
+  it 'does not use competing or hidden headings to drop another visible report' do
+    html = <<~HTML
+      <html><head><title>River bridge inspection update</title></head><body><main>
+        <section><h1>River bridge inspection update</h1><div>2026-10-08 10:30</div>
+          <p>Engineers inspected the river bridge after the overnight storm and confirmed its main span remains open to traffic.</p>
+          <p>Crews will publish the complete repair schedule after checking the supports and reviewing the public inspection record.</p>
+        </section>
+        <section><h1>Independent reservoir inspection</h1><div>2026-10-08 11:30</div>
+          <p>The independent reservoir report records a separate investigation into the dam and its safety systems after the storm.</p>
+          <p>The reservoir engineers reviewed all measurement records and published their findings for residents and emergency planners.</p>
+        </section>
+      </main></body></html>
+    HTML
+
+    [html, html.sub('<h1>River bridge', '<h1 hidden>River bridge')].each do |source|
+      extract_from_url('https://journal.example.test/reports/bridge', source) do |payload|
+        expect(payload['markdown']).to include('The independent reservoir report', 'The reservoir engineers reviewed')
+      end
+    end
+  end
 end

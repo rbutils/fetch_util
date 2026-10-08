@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire the NHK callback through shared ownership of dated headline/prose branches, retaining reporting and topic context while declining ambiguous material boundaries.
 - Retire the software-project homepage callback in favor of shared page ownership, preserving complete overviews, release notes, examples and destinations.
 - Route shared portal ownership directly through the extraction pipeline and retire its host-profile registration wrapper.
 - Run shared documentation-system extraction directly through the generic pipeline instead of a host-profile callback.

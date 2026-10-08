@@ -25,6 +25,7 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
     focalPermalinkContent: true
   };
   if (publicPreview) content.focalPublicPreview = true;
+  if (ownership.terminalProseEllipsis) content.warningReasons = ["truncated_content"];
   Object.defineProperty(content, "sourceOwnedArticleBody", { value: ownership.body.sourceNode });
   content.sourceOwnedArticlePublicationResolved = publicationFields.sourceOwnedArticlePublicationResolved;
   return content;
