@@ -86,6 +86,63 @@
     };
   }
 
+  function visibleDeclaredPaidBodyRetained(content, metadata, paywall) {
+    if (!content || content.contentType !== "article" || !content.html || !metadata ||
+        !paywall || paywall.source !== "structured_data" || visibleLocalizedSubscriptionOffer()) return false;
+    var declarations = structuredDataNodes().filter(function(node) {
+      return nodeTypes(node).some(function(type) {
+        return /^(?:Article|NewsArticle|ReportageNewsArticle|AnalysisNewsArticle|OpinionNewsArticle)$/.test(type);
+      });
+    });
+    if (declarations.length !== 1) return false;
+    var headings = Array.from(document.querySelectorAll("h1")).filter(function(node) {
+      return !elementSubtreeHidden(node) && !sourceOwnershipInChrome(node);
+    });
+    if (headings.length !== 1) return false;
+    var heading = headings[0];
+    var headline = normalizeText(heading.textContent);
+    if (headline !== normalizeText(metadata.title) ||
+        (declarations[0].headline && headline !== normalizeText(declarations[0].headline))) return false;
+    var owner = heading.closest("article, main, [role='main']");
+    if (!owner || elementSubtreeHidden(owner)) return false;
+    var bodies = Array.from(owner.querySelectorAll("[itemprop='articleBody'], [data-article-body], [data-section='articleBody']")).filter(function(node) {
+      return !elementSubtreeHidden(node) && !sourceOwnershipInChrome(node);
+    });
+    if (bodies.length > 1) return false;
+    var body = bodies[0] || owner;
+    var paragraphs = Array.from(body.querySelectorAll("p")).filter(function(node) {
+      return !elementSubtreeHidden(node) && !sourceOwnershipInChrome(node) &&
+        !node.closest("header, blockquote, pre, table") && normalizeText(node.textContent).length >= 80;
+    });
+    if (paragraphs.length < 3 || paragraphs.map(function(node) { return normalizeText(node.textContent); }).join(" ").length < 1200) return false;
+    var continuation = /subscribe to continue|subscription required|sign in to continue reading|log in to continue reading|unlock full access|para seguir leyendo|contin[uú]a leyendo|lee este art[ií]culo completo|solo para suscriptores|contenido exclusivo para suscriptores/i;
+    var boundaries = Array.from(owner.querySelectorAll("[data-paywall], [class*='paywall' i], [id*='paywall' i], [class*='subscribe-wall' i], [class*='premium-wall' i], [data-piano-offer]"));
+    if (boundaries.some(function(node) {
+      if (elementSubtreeHidden(node) || node.closest("blockquote, q, pre, code, aside, nav, footer")) return false;
+      return continuation.test(normalizeText(node.textContent)) ||
+        !(node.compareDocumentPosition(paragraphs[0]) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })) return false;
+    if (Array.from(body.querySelectorAll("p, div, section")).some(function(node) {
+      return !elementSubtreeHidden(node) && !node.closest("blockquote, q, pre, code, aside, nav, footer") &&
+        !node.children.length && continuation.test(normalizeText(node.textContent));
+    })) return false;
+
+    var selected = document.createElement("div");
+    selected.innerHTML = content.html;
+    var declaredBody = declarations[0].articleBody;
+    if (declaredBody != null && (typeof declaredBody !== "string" ||
+        normalizeText(selected.textContent).indexOf(normalizeText(declaredBody)) === -1)) return false;
+    var units = "p, blockquote, pre, table, ul, ol, figure, h2, h3, h4, h5, h6, img, picture, video, audio, iframe, object, embed";
+    var source = document.createElement("div");
+    Array.from(body.querySelectorAll(units)).forEach(function(node) {
+      if (elementSubtreeHidden(node) || sourceOwnershipInChrome(node) || node.closest("header")) return;
+      var parentUnit = node.parentElement.closest(units);
+      if (parentUnit && body.contains(parentUnit)) return;
+      source.appendChild(visibilityPrunedClone(node, document));
+    });
+    return articleMaterialPreserved(source, selected);
+  }
+
   function visiblePublicArticleBodyRetained(content, paywall) {
     if (!content || content.contentType !== "article" || !paywall || paywall.contentTier !== "premium" || !document.body) return false;
     if (subscriptionWallDominates(document.body.innerText || "")) return false;

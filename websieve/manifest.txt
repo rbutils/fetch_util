@@ -259,7 +259,6 @@ systems/media/player_pages.js
 systems/news_engines/portal_lead_records.js
 systems/news_engines/portal_lead_context.js
 systems/news_engines/generic_portal_homepages.js
-systems/news_engines/unidad_editorial_engine.js
 profiles/host_aware.js
 profiles/social/search.js
 profiles/media_commerce/index.js
@@ -345,7 +344,6 @@ profiles/social/networks/bluesky.js
 profiles/register.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
-profiles/news/europe/southern/spain/unidad_editorial.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js
 boot/pipeline_helpers.js

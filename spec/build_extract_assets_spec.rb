@@ -1101,7 +1101,7 @@ RSpec.describe "extract asset bundle" do
     expect(sources.fetch("systems/cms/mediawiki.js")).to include("function mediaWikiContent(metadata)")
   end
 
-  it "keeps docs and Unidad Editorial modules in their ownership slots" do
+  it "keeps shared docs ownership and removes the retired publisher engine" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     rdoc_source = File.read(File.join(source_root, "systems/docs/reference/rdoc.js"))
@@ -1116,12 +1116,10 @@ RSpec.describe "extract asset bundle" do
     expect(File).not_to exist(File.join(source_root, "systems/antora.js"))
 
     unidad_path = "profiles/news/europe/southern/spain/unidad_editorial.js"
-    unidad_index = manifest.index(unidad_path)
     engine_path = "systems/news_engines/unidad_editorial_engine.js"
-    expect(unidad_index).to be > manifest.index(engine_path)
-    expect(unidad_index).to be > manifest.index("profiles/register.js")
-    expect(File).to exist(File.join(source_root, unidad_path))
-    expect(File).to exist(File.join(source_root, engine_path))
+    expect(manifest).not_to include(unidad_path, engine_path)
+    expect(File).not_to exist(File.join(source_root, unidad_path))
+    expect(File).not_to exist(File.join(source_root, engine_path))
     expect(File).not_to exist(File.join(source_root, "systems/news_engines/unidad_editorial.js"))
   end
 
@@ -1851,7 +1849,6 @@ RSpec.describe "extract asset bundle" do
     end
     expected_tail = %w[
       systems/cms/wordpress.js
-      profiles/news/europe/southern/spain/unidad_editorial.js
       profiles/publishing/naver_blog.js
     ]
     expect(direct_tail).to eq(expected_tail)

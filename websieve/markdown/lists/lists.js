@@ -67,7 +67,7 @@ function listSupplementalInteractionLink(link) {
   if (!link || !link.matches) return false;
   var owner = link.closest("[class*='comment' i], [id*='comment' i], [class*='reply' i], [id*='reply' i]");
   var url = materializedHttpUrl(link.getAttribute("href")) || "";
-  return !!owner || /\/(?:comments?|comentarios?|replies)(?:\/|$)/i.test(url);
+  return !!owner || genericListCardDiscussionLink(link) || /\/(?:comments?|comentarios?|replies)(?:\/|$)/i.test(url);
 }
 
 function listSupplementalNavigationOwner(node) {

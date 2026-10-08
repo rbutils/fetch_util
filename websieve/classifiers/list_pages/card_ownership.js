@@ -86,6 +86,13 @@
     return /^(comments?|discuss|hide|more|abonneren|subscribe|newsletter|login|log in|sign in|register|create account|maak een account|instellingen|settings|account|last post|first unread|go to last post|mark read|mark forum read|watch forum|new thread|post new thread|post reply|quick reply|forum rules|forum actions|forum tools)$/i.test(normalizeText(text || ""));
   }
 
+  function genericListCardDiscussionLink(link) {
+    if (!link || !/^(?:\d+\s+)?(?:comments?|repl(?:y|ies)|comentarios?|comentários?)$/iu.test(normalizeText(link.textContent))) return false;
+    var card = link.closest("article, li, section");
+    var primary = card && genericListStructuredCardLink(card, false);
+    return !!(primary && primary !== link && !link.closest("h1, h2, h3, h4"));
+  }
+
   function genericListControlSegments(text) {
     return normalizeText(text || "").split(/\s+(?:[-–—|·])\s+/).map(function(segment) {
       return normalizeText(segment).replace(/^[([]+\s*/, "").replace(/\s*[)\]]+$/, "");

@@ -31,7 +31,7 @@
     if (!root || !sourceRoot || !items || !root.contains(sourceRoot) || root.querySelector("article h1")) return null;
     var chrome = "nav, aside, header, footer, form, dialog, [role='navigation'], [role='complementary'], [aria-modal='true']";
     var links = Array.from(root.querySelectorAll("a[href]")).filter(function(link) {
-      return !elementSubtreeHidden(link) && !link.closest(chrome) &&
+      return !elementSubtreeHidden(link) && !link.closest(chrome) && !genericListCardDiscussionLink(link) &&
         normalizeText(visibilityPrunedClone(link, document).textContent) && materializedHttpUrl(link.getAttribute("href"));
     });
     // Bare linked list items alone do not establish independent editorial records.

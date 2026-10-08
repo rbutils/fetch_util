@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil Unidad Editorial extraction' do
   include_context 'extractor integration helpers'
 
@@ -68,6 +70,10 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
       expect(payload['markdown']).to include('causa número 5')
       expect(payload['markdown']).not_to include('Suscríbete para acceder')
       expect(payload['markdown']).not_to include('Comentarios')
+      expected = public_paragraphs.map { |text| text.gsub(/\s+/, ' ').strip }
+      actual = Nokogiri::HTML.fragment(payload['html']).css('p').map { |node| node.text.gsub(/\s+/, ' ').strip }
+      expect(actual & expected).to eq(expected)
+      expect(payload['paywallState']).to eq('detected')
       expect_warnings(payload, exclude: %w[paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
     end
   end
@@ -140,6 +146,10 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
       expect(payload['markdown']).not_to include('Cargando anuncio')
       expect(payload['markdown']).not_to include('Noticias relacionadas')
       expect(payload['markdown']).not_to include('CONTENIDO PATROCINADO')
+      expected = public_paragraphs.map { |text| text.gsub(/\s+/, ' ').strip }
+      actual = Nokogiri::HTML.fragment(payload['html']).css('p').map { |node| node.text.gsub(/\s+/, ' ').strip }
+      expect(actual & expected).to eq(expected)
+      expect(payload['paywallState']).to eq('detected')
       expect_warnings(payload, exclude: %w[paywall_partial_content empty_extraction short_extraction url_content_mismatch consent_interstitial])
     end
   end
@@ -169,6 +179,16 @@ RSpec.describe 'FetchUtil Unidad Editorial extraction' do
       expect(payload['markdown']).to include('Historia principal de portada con enfoque informativo 1')
       expect(payload['markdown']).not_to include('/comentarios/noticia')
       expect(payload['markdown']).not_to include('comentarios](https://www.elmundo.es/comentarios')
+      destinations = Nokogiri::HTML(html, nil, 'UTF-8').css('main article h2 a').map do |link|
+        URI.join('https://www.elmundo.es/', link['href']).to_s
+      end
+      positions = destinations.map do |url|
+        expect(payload['markdown'].scan("](#{url})").length).to eq(1)
+        payload['markdown'].index(url)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(payload['markdown']).to include('Detalle de apoyo para la noticia principal de portada 5')
+      expect(payload['warnings']).not_to include('multi_topic_page')
     end
   end
 end

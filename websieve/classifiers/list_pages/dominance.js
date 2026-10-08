@@ -200,7 +200,7 @@
       }
       if (listCanonicalKey(url) === listCanonicalKey(location.href)) return null;
     }
-    if (genericListControlText(text)) return null;
+    if (genericListControlText(text) || genericListCardDiscussionLink(link)) return null;
     if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
     if ((!group && looksLikeFooterLink(text, href)) || (!producerProvenTitle &&

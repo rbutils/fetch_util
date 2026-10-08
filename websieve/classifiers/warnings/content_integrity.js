@@ -127,7 +127,8 @@
         var partialBody = (!publicArticle && body.length < 5000) ||
           (!publicArticle && body.length < 8000 && paywallRatio < 0.40) ||
           (body.length < 12000 && paywallRatio < 0.25);
-        if (body.length > 0 && partialBody && !visiblePublicArticleBodyRetained(content, paywall)) {
+        if (body.length > 0 && partialBody && !visiblePublicArticleBodyRetained(content, paywall) &&
+            !visibleDeclaredPaidBodyRetained(content, metadata, paywall)) {
           reasons.push("paywall_partial_content");
         }
       }
