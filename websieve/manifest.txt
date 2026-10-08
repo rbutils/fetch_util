@@ -345,7 +345,6 @@ profiles/register.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
 profiles/publishing/naver_blog.js
-profiles/news/mwananchi.js
 boot/pipeline_helpers.js
 boot/reader_byline.js
 boot/reader_text_byline.js

@@ -791,10 +791,10 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     sources = manifest.to_h { |path| [path, File.read(File.join(source_root, path))] }
 
-    expect(sources.values.join.scan(/function\s+mwananchiPrePageTextCleanup\s*\(/).length).to eq(1)
+    expect(sources.values.join).not_to include("mwananchiPrePageTextCleanup")
     expect(sources.values.join.scan(/function\s+genericHomepageLeadRoot\s*\(/).length).to eq(1)
     expect(sources.values.join.scan(/function\s+genericPortalHomepageContent\s*\(/).length).to eq(1)
-    expect_manifest_order(manifest, "profiles/news/mwananchi.js", "boot/pipeline_helpers.js")
+    expect(manifest).not_to include("profiles/news/mwananchi.js")
     expect_manifest_order(
       manifest,
       "systems/news_engines/portal_lead_records.js",
@@ -818,7 +818,7 @@ RSpec.describe "extract asset bundle" do
     portal_context = sources.fetch("systems/news_engines/portal_lead_context.js")
     generic_portal = sources.fetch("systems/news_engines/generic_portal_homepages.js")
     expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
-    expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
+    expect(extract_api).not_to include("mwananchiPrePageTextCleanup")
     expect(portal_leads).to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
     expect(portal_context).to include("function homepageLeadContextDescriptions")
     expect(portal_leads).not_to include("function homepageLeadContextDescriptions")

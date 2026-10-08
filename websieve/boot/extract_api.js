@@ -1,7 +1,6 @@
   var fetchUtilExtractApi = {
     extract: withComposedDomRead(function(options) {
       resetTerminalArticleCollectionMarker();
-      mwananchiPrePageTextCleanup();
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
       var focalArticleRoute = articleRouteFocalContent();

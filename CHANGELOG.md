@@ -22,6 +22,7 @@
 
 ### Development
 
+- Remove Mwananchi's pre-extraction DOM and structured-data deletion hook; keep original article metadata and reporting available to shared extraction.
 - Retire Unidad Editorial's callback through shared article coverage and story-card ownership, preserving paid metadata while distinguishing complete visible reporting from gated previews.
 - Retire the Ringier publisher callback through visible structured article ownership, retaining summaries and reporting ahead of incidental player metadata and source-qualified article identity.
 - Retire the shared FAZ/Sözcü homepage dispatcher; preserve complete source headlines and visible notice links through shared lists while excluding player-interface announcements.
