@@ -1,10 +1,28 @@
+  function tableSocialPlainCommentHeader(row) {
+    var headers = Array.from(row.querySelectorAll("span, header")).map(function(node) {
+      if (node.children.length || node.closest("tr") !== row || elementSubtreeHidden(node)) return null;
+      var text = normalizeText(node.textContent);
+      var match = text.match(/^(.+?)\s+(on\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},\s+\d{4})\s*\|\s*(.+)$/i);
+      if (!match) return null;
+      var actions = match[3].replace(/\[[-–−+]\]/g, "").split("|").map(normalizeText);
+      if (!actions.every(function(action) { return /^(?:parent|next|previous|root|reply)$/i.test(action); })) return null;
+      return { node: node, author: normalizeText(match[1]), time: normalizeText(match[2]) };
+    }).filter(Boolean);
+    return headers.length === 1 ? headers[0] : null;
+  }
+
   function tableSocialMetadata(row) {
     var text = normalizeText(row.innerText || row.textContent || "");
     var timeNode = Array.from(row.querySelectorAll("time[datetime], [itemprop='datePublished'], [class~='time' i], [class~='age' i]")).find(function(node) {
       return !elementSubtreeHidden(node) && node.closest("tr") === row;
     });
+    var plainHeader = timeNode ? null : tableSocialPlainCommentHeader(row);
     var relative = text.match(/\b\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago\b|\b(?:yesterday|today)\b/i);
     var time = normalizeText(timeNode ? timeNode.textContent || timeNode.getAttribute("datetime") : relative && relative[0]);
+    if (plainHeader) {
+      timeNode = plainHeader.node;
+      time = plainHeader.time;
+    }
     var position = time ? text.indexOf(time) : -1;
     var prefix = position >= 0 ? text.slice(0, position) : "";
     var body = Array.from(row.querySelectorAll("p, blockquote, pre, [itemprop='text']")).find(function(node) { return node.closest("tr") === row; });
@@ -29,13 +47,18 @@
     }
     var named = prefix.match(/\bby\s+([^|,;]+?)\s*$/i);
     if (!author && named) author = normalizeText(named[1]);
+    if (!author && plainHeader) {
+      author = plainHeader.author;
+      authorNode = plainHeader.node;
+    }
     var score = text.match(/\b(\d+)\s+(?:points?|votes?)\b/i);
     var replies = text.match(/\b(\d+)\s+(?:comments?|repl(?:y|ies))\b/i);
     var action = Array.from(row.querySelectorAll("a")).some(function(link) {
       return !elementSubtreeHidden(link) && /^(?:hide|flag|save|report)$/i.test(normalizeText(link.textContent));
     });
     return { author: author || null, authorNode: authorNode || null, time: time || null, timeNode: timeNode || null,
-      score: score ? Number(score[1]) : null, replies: replies ? Number(replies[1]) : null, action: action };
+      score: score ? Number(score[1]) : null, replies: replies ? Number(replies[1]) : null, action: action,
+      plainCommentHeader: !!plainHeader };
   }
 
   function tableSocialTitleLink(row) {

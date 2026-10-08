@@ -16,8 +16,9 @@
 
   function tableSocialComment(row) {
     var indent = tableSocialIndent(row);
-    if (!indent) return null;
     var metadata = tableSocialMetadata(row);
+    if (!indent && metadata.plainCommentHeader) indent = { value: 0, explicit: true };
+    if (!indent) return null;
     var body = tableSocialCommentBody(row, metadata);
     var text = normalizeText(body.map(function(node) { return node.textContent; }).join(" "));
     var deleted = /^\[(?:deleted|dead)\]$/i.test(text);

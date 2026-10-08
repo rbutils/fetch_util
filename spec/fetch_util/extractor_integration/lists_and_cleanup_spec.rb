@@ -1847,6 +1847,7 @@ RSpec.describe 'FetchUtil extractor integration' do
 
       expect(payload["markdown"].scan("the rising star of venture capital").length).to eq(1)
       expect(payload["markdown"].scan("Is there anywhere to eat on Sandhill Road?").length).to eq(1)
+      expect(payload["markdown"].scan(/^sure$/).length).to eq(1)
       expect(payload["markdown"]).not_to include("Hacker Newsnew | past")
     end
   end

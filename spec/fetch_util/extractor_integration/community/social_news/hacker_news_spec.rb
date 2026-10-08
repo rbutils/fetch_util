@@ -5,6 +5,28 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - Hacker News' do
   include_context 'extractor integration helpers'
 
+  it 'preserves dated plain-header comments without inventing indentation' do
+    html = <<~HTML
+      <html><head><title>Archived discussion - Open Forum</title></head><body>
+      <table><tr><td><table>
+      <tr><td><table><tr><td><span>alice on Oct 9, 2006 | next [–]</span><div><p>First archived comment.</p></div></td></tr></table></td></tr>
+      <tr><td><table><tr><td><span>bob on Feb 25, 2007 | parent | next [–]</span><div><p>Second archived comment with <a href="/citation">a citation</a>.</p><pre>quoted_code()</pre></div></td></tr></table></td></tr>
+      <tr><td><table><tr><td><span>carol on Mar 1, 2007 | root | parent [–]</span><div>sure</div></td></tr></table></td></tr>
+      </table></td></tr></table></body></html>
+    HTML
+    with_url_page('https://discussion.example.test/archived', html) do |page|
+      payload = FetchUtil::Extractor.new.extract(page)
+      markdown = payload.fetch('markdown')
+      material = ['First archived comment.', 'Second archived comment with', 'quoted_code()', 'sure']
+      material.each { |text| expect(markdown.scan(Regexp.new(Regexp.escape(text))).length).to eq(1) }
+      positions = material.map { |text| markdown.index(text) }
+      expect(positions.each_cons(2).all? { |left, right| left < right }).to be(true)
+      expect(markdown).to include('[a citation](https://discussion.example.test/citation)')
+      expect(markdown.scan(/^### /).length).to eq(3)
+      expect(markdown).not_to match(/^#### /)
+    end
+  end
+
   def hacker_news_fixture(name)
     fixture_contents(File.expand_path("../../../../fixtures/#{name}", __dir__))
   end
