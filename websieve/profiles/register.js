@@ -1,7 +1,6 @@
   registerPinterestSearchProfile();
   registerMediaCommerceLeadProfiles();
   registerBookingProfiles();
-  registerHostAwareProfile(true, genericScholarlyArticleContent);
   registerHostAwareProfile(true, scientificRecordContent);
   registerPackageRegistryProfiles();
   registerStatuspageProfiles();

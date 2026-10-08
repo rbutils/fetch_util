@@ -22,6 +22,7 @@
 
 ### Development
 
+- Select scholarly records through shared page ownership while preserving an enclosing article over its embedded scientific report.
 - Retire the Hacker News callback through shared table-backed record and discussion ownership, preserving stories, source metadata, nested replies, deleted markers and authored resources.
 - Remove Mwananchi's pre-extraction DOM and structured-data deletion hook; keep original article metadata and reporting available to shared extraction.
 - Retire Unidad Editorial's callback through shared article coverage and story-card ownership, preserving paid metadata while distinguishing complete visible reporting from gated previews.

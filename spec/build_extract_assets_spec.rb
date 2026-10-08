@@ -1633,9 +1633,10 @@ RSpec.describe "extract asset bundle" do
                           registerTwitterProfiles
                           registerBlueskyProfiles
                         ])
-    expect(register_source).to include(
-      "registerHostAwareProfile(true, genericScholarlyArticleContent);\n  registerHostAwareProfile(true, scientificRecordContent);"
-    )
+    expect(register_source).to include("registerHostAwareProfile(true, scientificRecordContent);")
+    expect(register_source).not_to include("registerHostAwareProfile(true, genericScholarlyArticleContent)")
+    pipeline = File.read(File.join(source_root, "boot/pipeline_helpers.js"))
+    expect(pipeline).to include("hostAwareContent(metadata, pageText) ||\n    genericScholarlyArticleContent(metadata)")
     expected_search_manifest = %w[
       profiles/social/search.js
       profiles/media_commerce/index.js

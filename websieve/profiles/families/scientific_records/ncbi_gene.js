@@ -12,6 +12,12 @@
     var title = normalizeText(titleNode.textContent || "");
     if (!title || !/\bGene ID:\s*\d+/i.test(normalizeText(report.textContent || ""))) return null;
 
+    var articleOwner = report.closest("[itemtype*='schema.org/ScholarlyArticle'], [typeof~='ScholarlyArticle']");
+    if (articleOwner && scholarlyRecordAbstracts(articleOwner).some(function(node) {
+      return !report.contains(node) && scholarlyRecordIdentity(articleOwner, node, metadata) &&
+        normalizeText(visibilityPrunedClone(node, document).textContent || "").length >= 80;
+    })) return null;
+
     return profileHtmlContent(metadata, report, {
       title: title,
       excerpt: metadata.excerpt,
