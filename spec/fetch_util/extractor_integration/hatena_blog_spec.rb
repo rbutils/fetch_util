@@ -39,7 +39,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       </html>
     HTML
 
-    %w[blog.hatenablog.com journal.example].each do |host|
+    %w[blog.hatenablog.com entry.hatena.blog journal.example].each do |host|
       extract_from_url("https://#{host}/entry/2026/07/06/120000", html) do |payload|
         expect_content_type(payload, "article")
         expect(payload["markdown"]).to include("# [今週のはてなブログランキング〔2026年7月第1週〕](https://#{host}/entry/2026/07/06/120000)")

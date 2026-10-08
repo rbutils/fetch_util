@@ -7,8 +7,6 @@
     "[class*='wp-block-' i]"
   ];
 
-  var WORDPRESS_DEDICATED_PROFILE_HOSTS = /(^|\.)(daryo\.uz|hatena\.blog)$/;
-
   function wordpressDomDetected() {
     if (wordpressRestDeclaredEndpoint()) return true;
     if (document.querySelector(WORDPRESS_DOM_SELECTORS.join(", "))) return true;
@@ -37,7 +35,6 @@
   }
 
   function wordpressContent(metadata) {
-    if (hostMatches(WORDPRESS_DEDICATED_PROFILE_HOSTS)) return null;
     if (!wordpressDomDetected()) return null;
 
     return wordpressArticleContent(metadata, {

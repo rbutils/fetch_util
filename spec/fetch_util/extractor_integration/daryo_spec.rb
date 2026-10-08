@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Daryo extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Daryo article bodies through the generic WordPress detector' do
+  it 'extracts Daryo reporting through shared article handling' do
     expect_fixture_article(
       url: 'https://daryo.uz/2026/07/07/kuniga-bir-marta-qozogistonda-transport-vositalari-kirishiga-cheklov-ornatildi',
       fixture_path: File.expand_path('../../fixtures/daryo_article.html', __dir__),
