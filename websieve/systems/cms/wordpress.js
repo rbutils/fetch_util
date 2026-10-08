@@ -8,15 +8,6 @@
 
   var WORDPRESS_SITE_PROFILE_CONFIGS = [
     {
-      hostPattern: /(^|\.)civil\.ge$/,
-      pathPattern: /^\/archives\/\d+\/?$/i,
-      homepagePath: /^(?:\/|\/(?:index|default|home)(?:\.[a-z0-9]+)?\/?|)$/i,
-      bodySelectors: ["article#the-post", "article#the-post .entry-content.entry", "article#the-post .entry-content", "article .entry-content", "article .post-content", "article .content"],
-      title: function(metadata) { return firstText(["h1.entry-title", "h1.post-title", "article h1", "h1"]) || normalizeText((metadata && metadata.title) || document.title); },
-      removalSelectors: [".post-components", ".post-shortlink", "#breadcrumb", "#post-extra-info"],
-      minBodyTextLength: 250
-    },
-    {
       hostPattern: /(^|\.)khaosod\.co\.th$/,
       homepagePath: /^\/?$/,
       pathPattern: /\/news_\d+\/?$/i,
@@ -66,6 +57,20 @@
 
   function wordpressDomDetected() {
     if (document.querySelector(WORDPRESS_DOM_SELECTORS.join(", "))) return true;
+    var headings = Array.from(document.querySelectorAll("article h1.entry-title")).filter(function(node) {
+      return !elementSubtreeHidden(node);
+    });
+    if (headings.length === 1) {
+      var article = headings[0].closest("article");
+      var bodies = Array.from(article.querySelectorAll(".entry-content")).filter(function(node) {
+        return node.closest("article") === article && !elementSubtreeHidden(node) &&
+          (headings[0].compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+          Array.from(node.querySelectorAll("p")).some(function(paragraph) {
+            return !elementSubtreeHidden(paragraph) && normalizeText(paragraph.textContent || "");
+          });
+      });
+      if (bodies.length === 1) return true;
+    }
 
     var nodes = document.querySelectorAll("[class]");
     for (var i = 0; i < nodes.length; i += 1) {
@@ -125,7 +130,7 @@
       ],
       rewriteRoot: function(root) {
         root.querySelectorAll("header, time").forEach(function(el) {
-          el.remove();
+          if (!el.closest("[data-fetchutil-wordpress-header]")) el.remove();
         });
       }
     });

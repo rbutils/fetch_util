@@ -46,12 +46,13 @@
     if (!article || !body.isConnected) return body;
 
     var leads = wordpressArticleHeaderLeads(body, article);
-    var parts = leads.concat(wordpressArticleFeaturedMedia(body, article));
+    var parts = leads.concat(wordpressArticleFeaturedMedia(body, article), wordpressArticleTaxonomy(body, article));
     var header = wordpressArticleHeader(body, article);
     var dateFields = visibleInlineHeaderDateFields(header);
-    if (header) parts.push(header.matches("h1") ? header : header.querySelector("h1"));
+    if (header) parts.push(header);
     dateFields.forEach(function(field) { parts.push(field.node); });
     if (!parts.length) return body;
+    parts.push(body);
     parts = parts.filter(function(node, index) {
       return parts.indexOf(node) === index &&
         !parts.some(function(other) { return other !== node && other.contains(node); });
@@ -63,6 +64,7 @@
     var root = document.createElement("article");
     parts.forEach(function(part) {
       var clone = visibilityPrunedClone(part, document);
+      if (part === header && !header.matches("h1")) clone = wordpressArticleHeaderClone(clone, leads);
       if (leads.indexOf(part) !== -1) clone.setAttribute("data-fetchutil-wordpress-lead", "true");
       var dateField = dateFields.find(function(field) { return field.node === part; });
       if (dateField) {
@@ -74,8 +76,42 @@
       }
       root.appendChild(clone);
     });
-    root.appendChild(visibilityPrunedClone(body, document));
     return root;
+  }
+
+  function wordpressArticleHeaderClone(clone, leads) {
+    removeAll(clone, "nav, aside, [role='navigation'], [role='complementary'], form, button");
+    clone.querySelectorAll(".article-excerpt, .entry-summary, .post-excerpt, [itemprop='description']").forEach(function(node) {
+      if (leads.some(function(lead) { return normalizeText(lead.textContent || "") === normalizeText(node.textContent || ""); })) {
+        node.setAttribute("data-fetchutil-wordpress-lead", "true");
+      }
+    });
+    clone.querySelectorAll(".entry-header, .post-header, .entry-meta, .post-meta, .post-author, .wp-block-post-author").forEach(function(node) {
+      if (node.matches("h1, a, span, time")) {
+        node.removeAttribute("class");
+      } else {
+        node.replaceWith.apply(node, Array.from(node.childNodes));
+      }
+    });
+    var context = document.createElement("div");
+    context.setAttribute("data-fetchutil-wordpress-header", "true");
+    while (clone.firstChild) context.appendChild(clone.firstChild);
+    return context;
+  }
+
+  function wordpressArticleTaxonomy(body, article) {
+    return Array.from(article.querySelectorAll("[class], [rel~='tag']")).filter(function(node) {
+      if (node.closest("article") !== article || body.contains(node) || node.contains(body) || elementSubtreeHidden(node) ||
+          !(body.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      if (node.closest("aside, nav, [role='navigation'], [role='complementary'], [class*='related' i], [class*='recommend' i]")) return false;
+      var tokens = String(node.className || "");
+      if (!node.matches("a[rel~='tag']") && !/(?:^|[\s_-])(?:tags|tag-links|categories|cat-links)(?:$|[\s_-])/i.test(tokens)) return false;
+      if (node.querySelector("article, h1, h2, h3, h4, h5, h6, p, pre, table, form, button, input, img, video, audio")) return false;
+      var links = node.matches("a[href]") ? [node] : Array.from(node.querySelectorAll("a[href]"));
+      return links.some(function(link) {
+        return !elementSubtreeHidden(link) && normalizeText(link.textContent || "");
+      });
+    });
   }
 
   function wordpressArticleFeaturedMedia(body, article) {
@@ -106,7 +142,7 @@
     var paragraphs = Array.from(root.querySelectorAll("p"));
     for (var index = 0; index < paragraphs.length; index++) {
       var paragraph = paragraphs[index];
-      if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre, [data-fetchutil-publication-time]")) continue;
+      if (paragraph.closest("figure, figcaption, blockquote, aside, nav, header, footer, table, pre, [data-fetchutil-publication-time], [data-fetchutil-wordpress-header]")) continue;
       var value = normalizeText(paragraph.textContent || "");
       if (value && !wordpressArticleCaptionParagraph(paragraph) && !wordpressArticleMediaLabel(paragraph, root)) return value;
     }
