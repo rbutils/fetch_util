@@ -521,7 +521,6 @@ RSpec.describe "extract asset bundle" do
       profiles/community/forums/discourse.js
       profiles/community/q_and_a/stack_exchange.js
       profiles/community/shared/thread_entries.js
-      profiles/community/social_news/hacker_news.js
     ]
     expected_community_specs = %w[
       community/forums/discourse_topics_spec.rb
@@ -1628,7 +1627,6 @@ RSpec.describe "extract asset bundle" do
                           registerGerritFileResourceProfiles
                           registerGerritChangeProfiles
                           registerStackExchangeProfiles
-                          registerHackerNewsProfiles
                           registerMastodonProfiles
                           registerDiscourseProfiles
                           registerTelegramProfiles
@@ -1665,6 +1663,10 @@ RSpec.describe "extract asset bundle" do
       manifest,
       "systems/social/visible_content.js",
       "systems/social/profile_content.js",
+      "systems/social/tables/ownership.js",
+      "systems/social/tables/records.js",
+      "systems/social/tables/comments.js",
+      "systems/social/tables/content.js",
       "systems/social/content_type.js",
       "boot/result_finalization.js",
       "boot/extract_api.js"

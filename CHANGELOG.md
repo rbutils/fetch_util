@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire the Hacker News callback through shared table-backed record and discussion ownership, preserving stories, source metadata, nested replies, deleted markers and authored resources.
 - Remove Mwananchi's pre-extraction DOM and structured-data deletion hook; keep original article metadata and reporting available to shared extraction.
 - Retire Unidad Editorial's callback through shared article coverage and story-card ownership, preserving paid metadata while distinguishing complete visible reporting from gated previews.
 - Retire the Ringier publisher callback through visible structured article ownership, retaining summaries and reporting ahead of incidental player metadata and source-qualified article identity.

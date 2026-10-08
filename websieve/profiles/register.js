@@ -29,7 +29,6 @@
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
   registerStackExchangeProfiles();
-  registerHackerNewsProfiles();
   registerMastodonProfiles();
   registerDiscourseProfiles();
   registerTelegramProfiles();
