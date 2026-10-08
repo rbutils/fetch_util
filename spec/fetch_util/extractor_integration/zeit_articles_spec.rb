@@ -232,14 +232,24 @@ RSpec.describe 'FetchUtil extractor integration for Zeit articles' do
       expect(payload).to include(
         "contentType" => "list",
         "hostAware" => false,
-        "suspect" => true,
-        "warnings" => ["multi_topic_page"]
+        "suspect" => false,
+        "warnings" => []
       )
-      (1..6).each do |index|
+      expect(payload.fetch("portalRootEvidence")).to include(
+        "canonicalCardCount" => 6,
+        "completeRecordCoverage" => true
+      )
+      source_order = (1..6).flat_map do |index|
+        ["[Zeit Titel #{index}](https://www.zeit.de/politik/2026-09/zeit-story-#{index})",
+         "Eigenständige Zusammenfassung der Zeit-Nachricht #{index}."]
+      end
+      source_order.each do |text|
         expect(payload.fetch("markdown")).to include(
-          "[Zeit Titel #{index}](https://www.zeit.de/politik/2026-09/zeit-story-#{index})"
+          text
         )
       end
+      positions = source_order.map { |text| payload.fetch("markdown").index(text) }
+      expect(positions.each_cons(2).all? { |left, right| left < right }).to be(true)
       expect(mutations).to eq([])
       expect(after).to eq(before)
     end
