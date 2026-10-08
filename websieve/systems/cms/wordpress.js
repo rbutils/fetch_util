@@ -2,46 +2,15 @@
     "link[href*='/wp-content/']",
     "script[src*='/wp-content/']",
     "meta[name='generator'][content*='WordPress' i]",
+    "link[rel='pingback'][href$='/xmlrpc.php']",
     ".wp-block-post-content",
     "[class*='wp-block-' i]"
   ];
 
-  var WORDPRESS_SITE_PROFILE_CONFIGS = [
-    {
-      hostPattern: /(^|\.)khaosod\.co\.th$/,
-      homepagePath: /^\/?$/,
-      pathPattern: /\/news_\d+\/?$/i,
-      bodySelectors: [
-        ".article-content",
-        ".news-content",
-        "div.news-detail",
-        ".story-body",
-        ".entry-content",
-        "[itemprop='articleBody']"
-      ],
-      restFallback: {
-        postIdPattern: /news_(\d+)\/?$/i,
-        minTextLength: 250
-      },
-      title: function(metadata) { return firstText([".udsg__main-title", ".title-news", "article h1", "main h1", "h1"]) || (metadata && metadata.title); },
-      minVisibleBodyTextLength: 250,
-      minTextLength: 250,
-      removalSelectors: [".ads_position_wrapper", ".udgal-desc", ".trc_related_container", ".tbl-explore-more-overlay", ".social", "[id*='taboola' i]"]
-    }
-  ];
-
   var WORDPRESS_DEDICATED_PROFILE_HOSTS = /(^|\.)(daryo\.uz|hatena\.blog)$/;
 
-  function wordpressSiteProfileConfig() {
-    var host = location.hostname || "";
-    for (var i = 0; i < WORDPRESS_SITE_PROFILE_CONFIGS.length; i += 1) {
-      var config = WORDPRESS_SITE_PROFILE_CONFIGS[i];
-      if (simpleArticlePatternMatches(config.hostPattern, host)) return config;
-    }
-    return null;
-  }
-
   function wordpressDomDetected() {
+    if (wordpressRestDeclaredEndpoint()) return true;
     if (document.querySelector(WORDPRESS_DOM_SELECTORS.join(", "))) return true;
     var headings = Array.from(document.querySelectorAll("article h1.entry-title")).filter(function(node) {
       return !elementSubtreeHidden(node);
@@ -68,8 +37,6 @@
   }
 
   function wordpressContent(metadata) {
-    var siteProfileConfig = wordpressSiteProfileConfig();
-    if (siteProfileConfig) return wordpressArticleContent(metadata, siteProfileConfig);
     if (hostMatches(WORDPRESS_DEDICATED_PROFILE_HOSTS)) return null;
     if (!wordpressDomDetected()) return null;
 
@@ -91,6 +58,8 @@
       titleSelectors: ["h1.entry-title", ".entry-title", "article h1", "main h1", "h1"],
       bylineSelectors: ["[rel='author']", ".author", ".byline", ".post-author", ".wp-block-post-author", "[class*='author' i]"],
       minBodyTextLength: 180,
+      minVisibleBodyTextLength: wordpressRestDeclaredEndpoint() ? 180 : 0,
+      restFallback: true,
       removalSelectors: [
         ".entry-header:not(h1)",
         ".post-header:not(h1)",

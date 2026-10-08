@@ -1794,6 +1794,10 @@ RSpec.describe "extract asset bundle" do
     expect(retired_trend_symbols).to eq(0)
     wordpress_source = File.read(File.join(source_root, "systems/cms/wordpress.js"))
     expect(wordpress_source).not_to include("trend\\.az")
+    expect(wordpress_source).not_to include("khaosod", "WORDPRESS_SITE_PROFILE_CONFIGS", "wordpressSiteProfileConfig")
+    rest_source = File.read(File.join(source_root, "core/article/wordpress_rest.js"))
+    expect(rest_source).not_to include("news_", "postIdPattern", "rest.path")
+    expect(manifest.index("core/article/wordpress_rest.js")).to be < manifest.index("core/article/content_helpers.js")
 
     ringier_path = "profiles/news/europe/central/poland/ringier_axel_springer.js"
     expect(manifest).not_to include(ringier_path)

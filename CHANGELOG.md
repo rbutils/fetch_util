@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire Khaosod's host override and undeclared `news_<id>` REST guessing. Prefer visible WordPress content and accept a declared same-origin record only when its ID, permalink and title agree with the source; the old undeclared REST-only skeleton is no longer supported.
 - Retire To Vima's host override through source-owned preferred-source action cleanup, retaining authored prose, quotations and link destinations.
 - Retire Civil.ge's host override through shared WordPress article-shell detection and source-ordered header, author, date, reading-time and taxonomy preservation.
 - Apply source-proved widget and action cleanup to assembled canonical article bodies while preserving published discussion and authored media.

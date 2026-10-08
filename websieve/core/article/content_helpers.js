@@ -70,7 +70,7 @@
     if (options.homepagePath && simpleArticlePatternMatches(options.homepagePath, location.pathname || "")) return null;
     if (typeof options.beforeExtract === "function") options.beforeExtract(metadata);
 
-    var body = wordpressArticleBody(options) || wordpressRestArticleBody(options);
+    var body = wordpressArticleBody(options) || wordpressRestArticleBody(options, metadata);
     if (!body) return null;
     var comments = options.includeHeaderContext ? wordpressArticleCommentThreads(body) : [];
     if (options.includeHeaderContext) body = wordpressArticleHeaderContext(body);
@@ -98,12 +98,13 @@
     if (typeof options.body === "function") return options.body();
 
     var minTextLength = options.minVisibleBodyTextLength || 0;
-    if (!minTextLength) return simpleArticleBody({ bodySelectors: options.bodySelectors || WORDPRESS_ARTICLE_BODY_SELECTORS });
-
     var selectors = options.bodySelectors || WORDPRESS_ARTICLE_BODY_SELECTORS;
     for (var i = 0; i < selectors.length; i += 1) {
-      var node = document.querySelector(selectors[i]);
-      if (node && normalizeText(node.textContent || "").length >= minTextLength) return node;
+      var nodes = document.querySelectorAll(selectors[i]);
+      for (var j = 0; j < nodes.length; j += 1) {
+        var node = nodes[j];
+        if (!elementSubtreeHidden(node) && normalizeText(node.innerText || "").length >= minTextLength) return node;
+      }
     }
     return null;
   }
@@ -131,45 +132,6 @@
 
   function wordpressArticleRemovalSelectors(options) {
     return WORDPRESS_ARTICLE_REMOVAL_SELECTORS.concat(options.removalSelectors || []);
-  }
-
-  function wordpressRestArticleBody(options) {
-    var rest = options.restFallback;
-    if (!rest) return null;
-
-    var postId = wordpressRestPostId(rest);
-    if (!postId) return null;
-
-    var payload = wordpressRestFetch(rest, postId);
-    var html = payload && payload.content && payload.content.rendered;
-    if (!html) return null;
-
-    var root = document.createElement("div");
-    root.innerHTML = html;
-    if (normalizeText(root.textContent || "").length < (rest.minTextLength || options.minBodyTextLength || 0)) return null;
-    return root;
-  }
-
-  function wordpressRestPostId(rest) {
-    if (typeof rest.postId === "function") return rest.postId(location);
-    if (rest.postId) return rest.postId;
-
-    var pattern = rest.postIdPattern || /(?:^|\/)news_(\d+)\/?$/i;
-    var match = (location.pathname || "").match(pattern);
-    return match && match[1];
-  }
-
-  function wordpressRestFetch(rest, postId) {
-    var path = typeof rest.path === "function" ? rest.path(postId) : (rest.path || "/wp-json/wp/v2/posts/" + postId);
-    try {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", path, false);
-      xhr.send(null);
-      if (xhr.status < 200 || xhr.status >= 300 || !xhr.responseText) return null;
-      return JSON.parse(xhr.responseText);
-    } catch (e) {
-      return null;
-    }
   }
 
   function profileHtmlContent(metadata, node, options) {

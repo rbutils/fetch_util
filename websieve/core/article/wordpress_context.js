@@ -116,7 +116,8 @@
 
   function wordpressArticleFeaturedMedia(body, article) {
     var candidates = Array.from(article.querySelectorAll(
-      "figure, .wp-block-post-featured-image, .post-thumbnail, .featured-image, .post-media"
+      "figure, .wp-block-post-featured-image, .post-thumbnail, .featured-image, .post-media, " +
+      "[class*='featured-image' i], [class*='featured-media' i]"
     )).filter(function(node) {
       if (body.contains(node) || node.contains(body) || node.closest("article") !== article ||
           elementVisuallyHidden(node) || !(node.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
@@ -125,8 +126,17 @@
       var media = node.matches("img, picture, video") ? [node] : Array.from(node.querySelectorAll("img, picture, video"));
       return media.some(function(item) { return !elementVisuallyHidden(item); });
     });
-    return candidates.filter(function(node) {
+    var selected = candidates.filter(function(node) {
       return !candidates.some(function(other) { return other !== node && other.contains(node); });
+    });
+    return selected.flatMap(function(node) {
+      var caption = node.nextElementSibling;
+      if (caption && caption.matches("p, figcaption") &&
+          (caption.matches("[itemprop~='caption']") || /(?:^|[\s_-])caption(?:$|[\s_-])/i.test(caption.className || "")) &&
+          !elementSubtreeHidden(caption) && caption.closest("article") === article &&
+          !caption.closest("aside, nav, [role='complementary']") &&
+          (caption.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return [node, caption];
+      return [node];
     });
   }
 
