@@ -57,6 +57,13 @@ function applyMediaOwnedArticleMetadata(content, metadata) {
   return content;
 }
 
+function ownedPageContent(metadata, pageText) {
+  return hostAwareContent(metadata, pageText) ||
+    softwareProjectHomepageContent(metadata) ||
+    genericPortalHomepageContent(metadata) ||
+    genericDocsSystemContent(metadata);
+}
+
 function readableOrFallbackContent(options, metadata) {
   var focalPermalink = focalPermalinkArticleContent(metadata);
   if (focalPermalink) return focalPermalink;

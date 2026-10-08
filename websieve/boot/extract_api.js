@@ -64,7 +64,7 @@
         content = recipeStructuredDataContent(metadata);
       }
       if (!content && homepageRootPath()) {
-        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText) || genericPortalHomepageContent(metadata));
+        content = deferProvisionalHomepage(ownedPageContent(metadata, pageText));
       }
       if (!content) {
         var podcastRootContext = normalizeText([
@@ -81,7 +81,7 @@
         content = podcastEpisodeContent(metadata);
       }
       if (!content) {
-        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText) || genericPortalHomepageContent(metadata)) || genericDocsSystemContent(metadata);
+        content = deferProvisionalHomepage(ownedPageContent(metadata, pageText));
       }
       if (!content) {
         content = challengeContent(metadata, pageText, signals);
