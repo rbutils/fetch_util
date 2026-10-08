@@ -121,6 +121,21 @@ RSpec.describe 'Source-owned article action chrome' do
     end
   end
 
+  it 'keeps authored list entries inside an otherwise action-like cluster' do
+    html = article_with_actions(
+      toolbar: '<div class="additional-actions"><span class="comments-count">3 new comments</span>' \
+               '<a class="comments-action">Add a comment</a><div class="support-box">Support the newsroom</div>' \
+               '<ul class="social-share"><li>Sharing preserves the original research context.</li></ul></div>',
+      promotion: '', comments: ''
+    )
+
+    with_url_page('https://journal.example/stories/keyboards', html) do |page|
+      result = article_action_probe(page)
+      expect(result.fetch('html')).to include('Sharing preserves the original research context.')
+      expect(result.fetch('unchanged')).to be(true)
+    end
+  end
+
   it 'removes whole-line Turkish follow and app prompts without deleting editorial prose' do
     html = article_with_actions(
       toolbar: '',

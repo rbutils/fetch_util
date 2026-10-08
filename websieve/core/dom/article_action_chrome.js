@@ -28,7 +28,14 @@
 
   function articleActionCluster(node, sourceOwner) {
     if (node.children.length < 2 || normalizeText(node.textContent).length > 220 ||
-        node.querySelector("p, article, main, h1, h2, h3, h4, a[href], img, picture, video, audio, blockquote, pre, code, table, ul, ol, form")) return false;
+        node.querySelector("p, article, main, h1, h2, h3, h4, a[href], img, picture, video, audio, blockquote, pre, code, table, form")) return false;
+    if (Array.from(node.querySelectorAll("ul, ol")).some(function(list) {
+      return list.parentElement !== node || !/(?:^|[\s_-])(?:share|social)(?:[\s_-]|$)/i.test(list.className) ||
+        !list.children.length || !Array.from(list.children).every(function(item) {
+          return item.matches("li") && !item.children.length &&
+            /^(?:share|copy (?:link|url)|send)$/i.test(normalizeText(item.textContent || ""));
+        });
+    })) return false;
     var children = Array.from(node.children);
     if (!children.every(function(child) {
       return articleActionClass(child) && normalizeText(child.textContent).length <= 90;

@@ -22,6 +22,7 @@
 
 ### Development
 
+- Apply source-proved widget and action cleanup to assembled canonical article bodies while preserving published discussion and authored media.
 - Preserve unindented table-discussion comments with source-proved dated headers, including short replies and nested layout content.
 - Select scholarly records through shared page ownership while preserving an enclosing article over its embedded scientific report.
 - Retire the Hacker News callback through shared table-backed record and discussion ownership, preserving stories, source metadata, nested replies, deleted markers and authored resources.

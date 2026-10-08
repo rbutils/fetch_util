@@ -33,6 +33,9 @@ function sourceOwnedArticleMarkup(ownership) {
     if (markup) article.insertAdjacentHTML("beforeend", markup);
   });
   stripArticleAdWidgets(article);
+  stripArticleWidgets(article);
+  stripSourceOwnedArticleActions(article);
+  stripEmptyCommentUi(article);
   return article;
 }
 
