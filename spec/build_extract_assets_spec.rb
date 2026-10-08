@@ -139,14 +139,14 @@ RSpec.describe "extract asset bundle" do
     )
   end
 
-  it "registers generic portal homepages once in the source graph" do
+  it "keeps shared portal extraction outside the host-profile registry" do
     registrations = Dir[File.join(project_root, "websieve", "**", "*.js")].sum do |path|
       File.read(path).scan(/^\s+registerGenericPortalHomepageProfiles\(\);$/).length
     end
     sozcu_source = File.read(File.join(project_root, "websieve", "profiles", "news", "middle_east", "turkey", "sozcu.js"))
     faz_source = File.read(File.join(project_root, "websieve", "profiles", "news", "europe", "western", "germany", "faz.js"))
 
-    expect(registrations).to eq(1)
+    expect(registrations).to eq(0)
     expect(sozcu_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
     expect(sozcu_source).not_to include("sozcuContent", "registerHostAwareProfile")
     expect(faz_source.scan(/registerNewsHomepageListProfile\(/).length).to eq(1)
@@ -797,14 +797,14 @@ RSpec.describe "extract asset bundle" do
 
     expect(sources.values.join.scan(/function\s+mwananchiPrePageTextCleanup\s*\(/).length).to eq(1)
     expect(sources.values.join.scan(/function\s+genericHomepageLeadRoot\s*\(/).length).to eq(1)
-    expect(sources.values.join.scan(/function\s+registerGenericPortalHomepageProfiles\s*\(/).length).to eq(1)
+    expect(sources.values.join.scan(/function\s+genericPortalHomepageContent\s*\(/).length).to eq(1)
     expect_manifest_order(manifest, "profiles/news/mwananchi.js", "boot/pipeline_helpers.js")
     expect_manifest_order(
       manifest,
       "systems/news_engines/portal_lead_records.js",
       "systems/news_engines/portal_lead_context.js",
       "systems/news_engines/generic_portal_homepages.js",
-      "profiles/news/news_homepages.js"
+      "boot/extract_api.js"
     )
     reader_byline = "extractors/article/readability/attribution/header_byline.js"
     conflicting_credits = "extractors/article/readability/attribution/conflicting_credit_restoration.js"
@@ -821,7 +821,6 @@ RSpec.describe "extract asset bundle" do
     portal_leads = sources.fetch("systems/news_engines/portal_lead_records.js")
     portal_context = sources.fetch("systems/news_engines/portal_lead_context.js")
     generic_portal = sources.fetch("systems/news_engines/generic_portal_homepages.js")
-    news_homepages = sources.fetch("profiles/news/news_homepages.js")
     expect(pipeline).not_to include("function mwananchiPrePageTextCleanup")
     expect(extract_api.index("mwananchiPrePageTextCleanup")).to be > 0
     expect(portal_leads).to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
@@ -829,7 +828,7 @@ RSpec.describe "extract asset bundle" do
     expect(portal_leads).not_to include("function homepageLeadContextDescriptions")
     expect(generic_portal).not_to include("function leadTitle", "function preserveHomepageLeadTitleMedia")
     expect(generic_portal.index("function genericHomepageLeadRoot")).to be < generic_portal.index("function genericPortalHomepageContent")
-    expect(news_homepages.index("function registerGenericPortalHomepageProfiles")).to be < news_homepages.index("function registerNewsHomepageProfiles")
+    expect(extract_api).to include("genericPortalHomepageContent(metadata)")
     expect(sources.fetch(reader_byline)).to include("function readerSourceOwnedBylineForContent")
     expect(sources.fetch(reader_byline)).not_to include("readerSourceOwnedRestoreConflictingCredits")
     expect(sources.fetch(conflicting_credits)).to include("function readerSourceOwnedRestoreConflictingCredits")
@@ -1606,7 +1605,6 @@ RSpec.describe "extract asset bundle" do
                           registerPinterestSearchProfile
                           registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
-                          registerNewsHomepageProfiles
                           registerBookingProfiles
                           registerPackageRegistryProfiles
                           registerStatuspageProfiles
@@ -1649,7 +1647,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest[(manifest.index("profiles/host_aware.js") + 1), expected_search_manifest.length]).to eq(expected_search_manifest)
 
     registration_prefix = register_source.lines.grep(
-      /^\s*register(?:PinterestSearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles|NewsHomepageProfiles)\(\);$/
+      /^\s*register(?:PinterestSearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles)\(\);$/
     ).map do |line|
       line.strip.delete_suffix("();")
     end
@@ -1657,7 +1655,6 @@ RSpec.describe "extract asset bundle" do
       registerPinterestSearchProfile
       registerRingierAxelSpringerProfiles
       registerMediaCommerceLeadProfiles
-      registerNewsHomepageProfiles
     ]
     expect(registration_prefix).to eq(expected_registration_prefix)
     expect(File).not_to exist(File.join(source_root, "profiles/search.js"))
@@ -1666,7 +1663,7 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/function\s+registerSocialSearchProfiles\s*\(/).length
     end
     expect(old_wrapper_count).to eq(0)
-    expect_manifest_order(manifest, "profiles/news/news_homepages.js", register_path)
+    expect_manifest_order(manifest, "systems/news_engines/generic_portal_homepages.js", "boot/extract_api.js")
     expect_manifest_order(
       manifest,
       "systems/social/visible_content.js",
@@ -1699,7 +1696,7 @@ RSpec.describe "extract asset bundle" do
     expect(File).not_to exist(File.join(source_root, "systems/news_engines/polish_portal_descriptors.js"))
     expect(manifest).not_to include("profiles/news/europe/central/poland/wp_onet.js")
     expect(manifest).not_to include("systems/news_engines/polish_portal_descriptors.js")
-    expect(register_source).to include("registerNewsHomepageProfiles();\n  registerBookingProfiles();")
+    expect(register_source).not_to include("registerNewsHomepageProfiles")
     source_files = Dir[File.join(source_root, "**", "*.js")]
     xinhua_path = "profiles/news/global/xinhua.js"
     expect(manifest).not_to include(xinhua_path)

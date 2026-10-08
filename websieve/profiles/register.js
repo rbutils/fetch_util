@@ -2,7 +2,6 @@
   registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerHostAwareProfile(true, softwareProjectHomepageContent);
-  registerNewsHomepageProfiles();
   registerBookingProfiles();
   registerHostAwareProfile(true, genericScholarlyArticleContent);
   registerHostAwareProfile(true, scientificRecordContent);

@@ -64,7 +64,7 @@
         content = recipeStructuredDataContent(metadata);
       }
       if (!content && homepageRootPath()) {
-        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText));
+        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText) || genericPortalHomepageContent(metadata));
       }
       if (!content) {
         var podcastRootContext = normalizeText([
@@ -81,7 +81,7 @@
         content = podcastEpisodeContent(metadata);
       }
       if (!content) {
-        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText)) || genericDocsSystemContent(metadata);
+        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText) || genericPortalHomepageContent(metadata)) || genericDocsSystemContent(metadata);
       }
       if (!content) {
         content = challengeContent(metadata, pageText, signals);

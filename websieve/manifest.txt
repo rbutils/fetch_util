@@ -260,7 +260,6 @@ systems/news_engines/unidad_editorial_engine.js
 profiles/host_aware.js
 profiles/social/search.js
 profiles/media_commerce/index.js
-profiles/news/news_homepages.js
 profiles/families/academic/core.js
 profiles/families/academic/records.js
 profiles/families/academic/records_output.js
