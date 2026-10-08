@@ -152,6 +152,36 @@
     return (urlsDifferOnlyByQueryOrSlug(metadata) && containsNonLatinScript(articleTextSample)) || containsNonLatinScript(path) || (containsNonLatinScript(articleTextSample) && articlePathHasSlugOnlyStructure(pathSegments)) || strongSlugMatch;
   }
 
+  function sourceCanonicalArticleIdentity(metadata, content) {
+    if (!content || !content.readerMode || content.contentType !== "article" || !content.html) return false;
+    if (normalizeText(metadataValue("og:type", "property")).toLowerCase() !== "article") return false;
+    var canonical = Array.from(document.querySelectorAll("link[rel~='canonical'][href]"));
+    if (canonical.length !== 1 || canonical[0].href !== location.href) return false;
+    var headings = Array.from(document.querySelectorAll("h1")).filter(function(node) {
+      return !elementSubtreeHidden(node) && !node.closest("nav, aside, footer, dialog, [role='complementary']");
+    });
+    if (headings.length !== 1) return false;
+    var title = normalizeText(headings[0].textContent);
+    if (!title || title !== normalizeText(metadata.title) || title !== normalizeText(content.title)) return false;
+    var sources = content.sourceOwnedReaderBodyParagraphSources;
+    if (!sources || sources.length < 2 ||
+        (content.sourceOwnedReaderUnmappedHeaderParagraphs || []).length ||
+        (content.sourceOwnedReaderUnmappedTrailingParagraphs || []).length) return false;
+    var template = document.createElement("template");
+    template.innerHTML = content.html;
+    var rendered = Array.from(template.content.querySelectorAll("p")).map(function(node) { return normalizeText(node.textContent); });
+    var cursor = 0;
+    return sources.every(function(source) {
+      if (!source || !document.contains(source) || elementSubtreeHidden(source) || !source.closest("article") ||
+          !(headings[0].compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      var text = normalizeText(visibilityPrunedClone(source, document).textContent);
+      var position = rendered.indexOf(text, cursor);
+      if (!text || position < cursor) return false;
+      cursor = position + 1;
+      return true;
+    });
+  }
+
   function investorArchivePageGuard(metadata, content, body, markdown) {
     var text = normalizeText([metadata && metadata.title, content && content.title, body, markdown].join(" ")).toLowerCase();
     if (text.length < 800) return false;

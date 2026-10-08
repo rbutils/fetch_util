@@ -1,5 +1,4 @@
   registerPinterestSearchProfile();
-  registerRingierAxelSpringerProfiles();
   registerMediaCommerceLeadProfiles();
   registerBookingProfiles();
   registerHostAwareProfile(true, genericScholarlyArticleContent);

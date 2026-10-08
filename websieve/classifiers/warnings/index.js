@@ -30,5 +30,5 @@
     reasons = reasons.concat(contentIntegrityWarningReasons(metadata, content, markdown, body, page, combined, title, docsLike,
       readableDocsPage, glossaryPage, packagePage, credibleListFeed, challengeType, interstitialType,
       clearStructure, compactNonLatinBody, extractedNotFoundBody, hasPublicContent, substantialContent));
-    return reasons;
+    return Array.from(new Set(reasons));
   }

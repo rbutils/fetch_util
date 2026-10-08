@@ -113,6 +113,10 @@
 
     if (!videoSignal || !watchShape) return null;
 
+    // A declared article body physically present in an article is stronger than
+    // incidental video metadata. Let the shared article path retain all its material.
+    if (visibleDeclaredArticleBody()) return null;
+
     // A player can be embedded in a complete article or transcript. In that case the
     // shared article extractor must keep the owned body instead of a metadata teaser.
     var ownedBody = mediaPageOwnedBody();

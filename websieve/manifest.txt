@@ -163,6 +163,7 @@ extractors/article/fallback/content_cleanup.js
 extractors/article/fallback/fallback_scoring.js
 extractors/article/fallback/fallback.js
 extractors/article/readability/owned_body/adjacent_context.js
+extractors/article/readability/owned_body/declared_body.js
 extractors/article/readability/header_context.js
 extractors/article/readability/source_headline.js
 extractors/article/readability/source_paragraph_mapping.js
@@ -341,7 +342,6 @@ profiles/social/telegram/telegram.js
 profiles/community/forums/discourse.js
 profiles/social/networks/twitter.js
 profiles/social/networks/bluesky.js
-profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js

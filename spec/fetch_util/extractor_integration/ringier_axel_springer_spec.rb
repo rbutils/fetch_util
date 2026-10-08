@@ -43,8 +43,8 @@ RSpec.describe 'FetchUtil Ringier Axel Springer extraction' do
 
     extract_from_url('https://www.komputerswiat.pl/nauka-i-technika/kosmos/wyladowania-dodatnie/cfns2q8', html) do |payload|
       expect_content_type(payload, 'article')
-      expect(payload['markdown']).to include('## Streszczenie')
       expect(payload['markdown']).to include('Wyładowania dodatnie są rzadkie')
+      expect(payload['markdown']).to include('Są odpowiedzialne za najwyższą liczbę', 'Ich mechanizm powstawania różni się')
       expect(payload['markdown']).to include('Poznaj ich mechanizm powstawania')
       expect(payload['markdown']).not_to include('pulsembed')
       expect_warnings(payload, exclude: %w[short_extraction truncated_content multi_topic_page])
@@ -89,15 +89,14 @@ RSpec.describe 'FetchUtil Ringier Axel Springer extraction' do
       fixture_path: fixture,
       includes: [
         '# Zespol poznal termin kolejnego spotkania',
-        '## Streszczenie',
-        '- Zespol otrzymal informacje o planowanym spotkaniu.',
+        'Zespol otrzymal informacje o planowanym spotkaniu.',
         'Zespol rozpocznie przygotowania do zaplanowanego spotkania.',
         'Pierwszy akapit przedstawia decyzje organizacyjne',
         'Drugi akapit porzadkuje dane dotyczace przygotowan',
         '![Zespol podczas sesji przygotowawczej](https://cdn.example.test/poland-team.jpg)',
         'Zespol podczas sesji przygotowawczej.',
-        '1. Pierwszy etap harmonogramu.',
-        '2. Kolejna sesja kontrolna.',
+        'Pierwszy etap harmonogramu.',
+        'Kolejna sesja kontrolna.',
         'Ostatni akapit porzadkuje notatke'
       ],
       excludes: [

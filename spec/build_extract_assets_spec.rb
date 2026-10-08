@@ -1519,6 +1519,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/fallback_scoring.js
         extractors/article/fallback/fallback.js
         extractors/article/readability/owned_body/adjacent_context.js
+        extractors/article/readability/owned_body/declared_body.js
         extractors/article/readability/header_context.js
         extractors/article/readability/source_headline.js
         extractors/article/readability/source_paragraph_mapping.js
@@ -1598,13 +1599,11 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     register_path = "profiles/register.js"
-    register_index = manifest.index(register_path)
     register_source = File.read(File.join(source_root, register_path))
     calls = register_source.scan(/^\s*(register[A-Z]\w*)\(\);$/).flatten
 
     expect(calls).to eq(%w[
                           registerPinterestSearchProfile
-                          registerRingierAxelSpringerProfiles
                           registerMediaCommerceLeadProfiles
                           registerBookingProfiles
                           registerPackageRegistryProfiles
@@ -1648,13 +1647,12 @@ RSpec.describe "extract asset bundle" do
     expect(manifest[(manifest.index("profiles/host_aware.js") + 1), expected_search_manifest.length]).to eq(expected_search_manifest)
 
     registration_prefix = register_source.lines.grep(
-      /^\s*register(?:PinterestSearchProfile|RingierAxelSpringerProfiles|MediaCommerceLeadProfiles)\(\);$/
+      /^\s*register(?:PinterestSearchProfile|MediaCommerceLeadProfiles)\(\);$/
     ).map do |line|
       line.strip.delete_suffix("();")
     end
     expected_registration_prefix = %w[
       registerPinterestSearchProfile
-      registerRingierAxelSpringerProfiles
       registerMediaCommerceLeadProfiles
     ]
     expect(registration_prefix).to eq(expected_registration_prefix)
@@ -1679,7 +1677,6 @@ RSpec.describe "extract asset bundle" do
       "core/dom/selectors.js"
     )
     expect_manifest_order(manifest, "profiles/host_aware.js", register_path)
-    expect(manifest.index("profiles/news/europe/central/poland/ringier_axel_springer.js")).to be < register_index
   end
 
   it "keeps retired profile implementations absent" do
@@ -1797,12 +1794,10 @@ RSpec.describe "extract asset bundle" do
     wordpress_source = File.read(File.join(source_root, "systems/cms/wordpress.js"))
     expect(wordpress_source).not_to include("trend\\.az")
 
-    ringier_source = File.read(File.join(source_root, "profiles/news/europe/central/poland/ringier_axel_springer.js"))
-    expect(ringier_source.scan(/function\s+registerRingierAxelSpringerProfiles\s*\(/).length).to eq(1)
-    expect(ringier_source).to include("registerHostAwareProfile(true, ringierAxelSpringerArticleContent);")
-    expect(ringier_source).not_to include("mediaWatchContent =")
-    expect(ringier_source).not_to include("ringierAxelSpringerBaseMediaWatchContent")
-    expect(register_source.index("registerRingierAxelSpringerProfiles();")).to be < register_source.index("registerMediaCommerceLeadProfiles();")
+    ringier_path = "profiles/news/europe/central/poland/ringier_axel_springer.js"
+    expect(manifest).not_to include(ringier_path)
+    expect(File).not_to exist(File.join(source_root, ringier_path))
+    expect(register_source).not_to include("registerRingierAxelSpringerProfiles")
   end
 
   it "keeps registration functions singly owned before dispatch" do

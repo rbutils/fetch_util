@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire the Ringier publisher callback through visible structured article ownership, retaining summaries and reporting ahead of incidental player metadata and source-qualified article identity.
 - Retire the shared FAZ/Sözcü homepage dispatcher; preserve complete source headlines and visible notice links through shared lists while excluding player-interface announcements.
 - Retire FAZ's article callback in favor of shared article ownership, preserving complete reporting, attribution, code, tables and original access metadata.
 - Retire the NHK callback through shared ownership of dated headline/prose branches, retaining reporting and topic context while declining ambiguous material boundaries.

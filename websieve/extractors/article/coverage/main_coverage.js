@@ -145,6 +145,7 @@
     content = supplementOwnedReaderStructuredMaterial(content);
     content = supplementOwnedArticleResources(content);
     if (!content.readerMode) return content;
+    content = supplementOwnedReaderDeclaredBody(content, metadata);
     var selectedContent = content;
     content = supplementAttachedArticleLead(content, metadata);
     content = supplementOwnedArticleIntro(content, selectedContent);
