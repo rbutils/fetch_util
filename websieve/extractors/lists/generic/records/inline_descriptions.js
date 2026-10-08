@@ -8,6 +8,7 @@
     })) return false;
     if (node.closest(COMMON_CHROME_SELECTOR + ", header, dialog, [role='dialog'], [aria-modal='true'], [role='navigation'], [role='menu'], [role='toolbar']")) return false;
     if (AD_LABEL_TEXT_PATTERN.test(normalizeText(node.textContent))) return false;
+    if (node.classList.contains("vjs-modal-dialog-content") && videoFallbackText(node.textContent)) return false;
 
     var withoutMetadata = node.cloneNode(true);
     var metadata = withoutMetadata.querySelectorAll("time, [datetime], [rel='author'], [itemprop='author'], [class*='author' i], [class*='score' i], [class*='reply' i], [class*='replies' i], [class*='community' i]");

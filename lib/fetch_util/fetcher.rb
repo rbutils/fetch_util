@@ -391,8 +391,9 @@ module FetchUtil
       return false if snapshot.normalized_markdown.empty?
 
       evidence = snapshot.payload["portalRootEvidence"]
-      evidence.is_a?(Hash) && evidence["namedSectionCount"].to_i >= 2 &&
-        evidence["canonicalCardCount"].to_i >= 4
+      return false unless evidence.is_a?(Hash) && evidence["canonicalCardCount"].to_i >= 4
+
+      evidence["namedSectionCount"].to_i >= 2 || evidence["completeRecordCoverage"] == true
     end
 
     def homepage_like?(url)

@@ -113,6 +113,28 @@ RSpec.describe FetchUtil::Fetcher do
     expect(result.warnings).to include('url_content_mismatch')
   end
 
+  it 'accepts complete flat homepage records only with typed evidence and independent cards' do
+    [
+      [true, 4, false],
+      [false, 4, true],
+      ['true', 4, true],
+      [true, 3, true]
+    ].each do |complete, cards, warning|
+      url = 'https://records.example/'
+      markdown = (1..4).map { |number| "- [Public report #{number}](#{url}reports/#{number})" }.join("\n")
+      payload = payload_with(
+        title: 'Public reports', siteName: 'Public reports', markdown: markdown, contentType: 'list',
+        byline: nil, publishedTime: nil, warnings: [],
+        portalRootEvidence: { 'namedSectionCount' => 0, 'canonicalCardCount' => cards, 'completeRecordCoverage' => complete }
+      )
+      stub_browser_extraction(url, page: page_at(url), payload: payload)
+
+      result = fetch_with_dependencies(url)
+
+      expect(result.warnings.include?('homepage_index_page')).to eq(warning)
+    end
+  end
+
   it 'does not treat weak, blocked, or status roots as credible portal evidence' do
     [
       ['https://weak.example/', { warnings: ['homepage_index_page'] }, ['homepage_index_page']],

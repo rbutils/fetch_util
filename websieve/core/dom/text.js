@@ -30,6 +30,7 @@
     "unmute"
   ];
   var VIDEO_FALLBACK_PATTERNS = [
+    /^seek to live(?:, currently (?:behind live|playing live))?(?:live)? beginning of dialog window\. escape will cancel and close the window\.$/,
     /^playback speed \d/,
     /^this is a modal window\./,
     /^beginning of dialog window\./,

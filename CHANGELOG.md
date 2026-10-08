@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire the shared FAZ/Sözcü homepage dispatcher; preserve complete source headlines and visible notice links through shared lists while excluding player-interface announcements.
 - Retire FAZ's article callback in favor of shared article ownership, preserving complete reporting, attribution, code, tables and original access metadata.
 - Retire the NHK callback through shared ownership of dated headline/prose branches, retaining reporting and topic context while declining ambiguous material boundaries.
 - Retire the software-project homepage callback in favor of shared page ownership, preserving complete overviews, release notes, examples and destinations.

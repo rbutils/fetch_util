@@ -345,9 +345,7 @@ profiles/news/europe/central/poland/ringier_axel_springer.js
 profiles/register.js
 systems/cms/mediawiki.js
 systems/cms/wordpress.js
-profiles/news/middle_east/turkey/sozcu.js
 profiles/news/europe/southern/spain/unidad_editorial.js
-profiles/news/europe/western/germany/faz.js
 profiles/publishing/naver_blog.js
 profiles/news/mwananchi.js
 boot/pipeline_helpers.js

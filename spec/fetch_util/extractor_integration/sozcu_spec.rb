@@ -4,7 +4,7 @@ RSpec.describe 'FetchUtil extractor integration for Sozcu' do
   include_context 'extractor integration helpers'
   include_context 'fetcher spec helpers'
 
-  it 'classifies the Sozcu homepage as a clean story list without homepage-index warnings' do
+  it 'preserves homepage stories and visible notices without player interface text' do
     html = <<~HTML
       <html lang="tr">
         <head>
@@ -55,9 +55,24 @@ RSpec.describe 'FetchUtil extractor integration for Sozcu' do
       expect(payload['markdown']).to include('TRT\'deki ABD göndermesi')
       expect(payload['markdown']).not_to include('Seek to live')
       expect(payload['markdown']).not_to include('Beginning of dialog window')
-      expect(payload['markdown']).not_to include('SÜRMENE ASLİYE HUKUK MAHKEMESİ')
-      expect(payload['markdown']).not_to include('ANKARA 6. SULH HUKUK MAHKEMESİ')
-      expect(payload['statusPage']).to be(true)
+      destinations = %w[
+        chp-li-belediye-baskani-zafer-partisi-ne-katildi-p334463
+        basbakanin-nisanlisi-turkiye-ye-getirilmedi-p334476
+        trt-deki-abd-gondermesi-dunyada-gundem-oldu-p334439
+        altin-alacaklar-ve-satacaklar-dikkat-carsamba-gunu-dananin-kuyrugu-kopacak-p334346
+        dogum-gunu-partisi-donusu-facia-p334202
+        surmene-asliye-hukuk-mahkemesi-p334119
+        ankara-6-sulh-hukuk-mahkemesi-p334118
+      ]
+      positions = destinations.map do |path|
+        destination = "https://www.sozcu.com.tr/#{path}"
+        expect(payload['markdown'].scan("](#{destination})").length).to eq(1)
+        payload['markdown'].index(destination)
+      end
+      expect(positions).to eq(positions.sort)
+      expect(payload['markdown']).to include('SÜRMENE ASLİYE HUKUK MAHKEMESİ', 'ANKARA 6. SULH HUKUK MAHKEMESİ')
+      expect(payload['statusPage']).to be(false)
+      expect(payload.dig('portalRootEvidence', 'completeRecordCoverage')).to be(true)
     end
 
     stub_browser_extraction(url, page: page_at(url), payload: profile_payload)

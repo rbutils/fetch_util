@@ -7,11 +7,22 @@ RSpec.describe 'FetchUtil extractor integration' do
 
   it 'classifies the FAZ homepage as a story list' do
     html = fixture_contents(File.expand_path('../../fixtures/faz_homepage.html', __dir__))
+    url = 'https://www.faz.net/'
 
-    extract_from_url('https://www.faz.net/', html) do |payload|
+    extract_from_url(url, html) do |payload|
       expect(payload['contentType']).to eq('list')
       expect(payload['markdown']).to include('Kernstück der gemeinsamen Verteidigung')
       expect(payload['markdown']).to include('TKMS bekommt Zuschlag für Milliarden-Auftrag aus Kanada')
+      expect(payload['markdown']).to include('TRUMP, INFANTINO UND BALOGUN : War es das wert?')
+      expected = Nokogiri::HTML(html, nil, 'UTF-8').css('main article a').map do |link|
+        [link.text.strip, URI.join(url, link['href']).to_s]
+      end
+      positions = expected.map do |label, destination|
+        expect(payload['markdown']).to include(label)
+        expect(payload['markdown'].scan("](#{destination})").length).to eq(1)
+        payload['markdown'].index(destination)
+      end
+      expect(positions).to eq(positions.sort)
       expect(payload['warnings']).to be_empty
     end
   end
