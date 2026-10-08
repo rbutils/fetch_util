@@ -1208,7 +1208,7 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
     end
   end
 
-  it "still detects a single-section root digest as newsletter format" do
+  it "retains complete single-section digest records and newsletter format" do
     cards = (1..7).map do |i|
       <<~CARD
         <article>
@@ -1228,7 +1228,14 @@ RSpec.describe 'FetchUtil extractor integration - content quality formats' do
 
       expect(payload["contentType"]).to eq("list")
       expect(payload["contentFormat"]).to eq("newsletter")
-      expect(payload["warnings"]).to include("multi_topic_page")
+      expect(payload["warnings"]).not_to include("multi_topic_page")
+      expect(payload["portalRootEvidence"]).to include("completeRecordCoverage" => true, "canonicalCardCount" => 7)
+      markers = (1..7).flat_map do |i|
+        ["[Digest report #{i}](https://www.example.com/digest/#{i})", "Brief digest summary #{i} with a compact update."]
+      end
+      positions = markers.map { |marker| payload.fetch("markdown").index(marker) }
+      expect(positions).not_to include(nil)
+      expect(positions).to eq(positions.sort)
     end
   end
 
