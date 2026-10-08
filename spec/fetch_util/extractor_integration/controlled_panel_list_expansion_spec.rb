@@ -210,34 +210,38 @@ RSpec.describe 'FetchUtil extractor controlled panel list expansion' do
     end
   end
 
-  it 'does not append a generic panel delta to a specialized portal result' do
+  it 'does not append a generic panel delta to a specialized status result' do
+    components = { 'API' => 'operational', 'Website' => 'degraded performance',
+                   'Database' => 'operational', 'Downloads' => 'operational' }
     specialized = <<~HTML
-      <main>
-        <h1>Sözcü</h1>
-        #{(1..4).map do |number|
-          title = "Markets desk publishes substantive report number #{number}"
-          <<~CARD
-            <article class="news-card">
-              <a href="/markets-report-p#{number}">
-                <h2>#{title}</h2>
-              </a>
-            </article>
-          CARD
-        end.join}
+      <main class="layout-content status">
+        <div class="status-header"><h1>Example service status</h1></div>
+        <div class="page-status"><span class="status">Partial system degradation</span></div>
+        <div class="components-section">
+          #{components.map do |name, status|
+            %(<div class="component-container" data-component-status="#{status.tr(" ", "_")}"><span class="name">#{name}</span></div>)
+          end.join}
+        </div>
         <article><a href="/outside/story">Outside link generic extraction would admit</a></article>
       </main>
     HTML
     html = specialized + controlled_panel_fixture
 
-    with_url_page('https://www.sozcu.com.tr/', html) do |page|
+    with_url_page('https://status.example.test/', html) do |page|
+      source = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
       markdown = payload.fetch('markdown')
 
-      expect(markdown).to include(
-        '- [Markets desk publishes substantive report number 1](https://www.sozcu.com.tr/markets-report-p1)'
-      )
+      expect(payload.fetch('contentType')).to eq('list')
+      expect(payload.fetch('hostAware')).to be(true)
+      expect(markdown).to include('- Overall status: Partial system degradation')
+      labels = components.map { |name, status| "- #{name} - #{status}" }
+      labels.each { |label| expect(markdown).to include(label) }
+      positions = labels.map { |label| markdown.index(label) }
+      expect(positions).to eq(positions.sort)
       expect(markdown).not_to include('Outside link generic extraction would admit')
       expect(record_numbers(markdown)).to be_empty
+      expect(page.evaluate('document.body.innerHTML')).to eq(source)
     end
   end
 
