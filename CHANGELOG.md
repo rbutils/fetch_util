@@ -22,6 +22,7 @@
 
 ### Development
 
+- Retire To Vima's host override through source-owned preferred-source action cleanup, retaining authored prose, quotations and link destinations.
 - Retire Civil.ge's host override through shared WordPress article-shell detection and source-ordered header, author, date, reading-time and taxonomy preservation.
 - Apply source-proved widget and action cleanup to assembled canonical article bodies while preserving published discussion and authored media.
 - Preserve unindented table-discussion comments with source-proved dated headers, including short replies and nested layout content.

@@ -32,3 +32,28 @@ function articleGroupedActionPrompt(node) {
     return normalizeText(paragraph.textContent) === normalizeText(node.textContent);
   });
 }
+
+function articlePreferredSourcePrompt(node) {
+  if (!node.matches("div, section") || node.children.length || codeContentNode(node) ||
+      node.closest("p, a, blockquote, pre, code, table, aside, nav, [data-fetchutil-social-comment], [itemprop~='comment' i], .comment, .reply, .comment-body, .reply-body")) return false;
+  var tokens = articleWidgetTokens(node);
+  if (tokens.indexOf("preferred") === -1 || tokens.indexOf("source") === -1) return false;
+  var text = normalizeText(node.textContent || "");
+  if (!/^(?:(?:make|add|choose|set|select)\s+.+\s+(?:a|your)\s+preferred\s+source(?:\s+on\s+google)?|(?:κάντε|προσθέστε|ορίστε)\s+.+\s+προτιμώμενη\s+πηγή)$/i.test(text)) return false;
+  var selected = node.closest("article");
+  if (!selected) return false;
+  var sources = Array.from(document.querySelectorAll("article")).filter(function(article) {
+    return !elementSubtreeHidden(article) && (selected.id ? article.id === selected.id : !article.parentElement.closest("article"));
+  });
+  if (sources.length !== 1) return false;
+  var source = sources[0];
+  var sourceHeading = source.querySelector("h1");
+  var selectedHeading = selected.querySelector("h1");
+  if (!sourceHeading || !selectedHeading || normalizeText(sourceHeading.textContent) !== normalizeText(selectedHeading.textContent)) return false;
+  var matches = Array.from(source.querySelectorAll("div, section")).filter(function(original) {
+    return !elementSubtreeHidden(original) && original.closest("article") === source && !original.children.length &&
+      !original.closest("blockquote, pre, code, table, aside, nav") &&
+      original.getAttribute("class") === node.getAttribute("class") && normalizeText(original.textContent) === text;
+  });
+  return matches.length === 1;
+}

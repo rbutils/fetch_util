@@ -238,7 +238,7 @@ function stripArticleWidgets(root) {
     if (articleReactionChip(node)) node.remove();
   });
   root.querySelectorAll("div, section, aside").forEach(function(node) {
-    if (articleSyntheticSummaryControl(node) || articleAvailabilityModalNode(node) || articleUnrelatedScoreboardNode(node)) node.remove();
+    if (articleSyntheticSummaryControl(node) || articleAvailabilityModalNode(node) || articleUnrelatedScoreboardNode(node) || articlePreferredSourcePrompt(node)) node.remove();
   });
   stripArticleAdWidgets(root);
 
