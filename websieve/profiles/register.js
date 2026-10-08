@@ -31,7 +31,6 @@
   registerAzureDevopsPullRequestProfiles();
   registerGerritFileResourceProfiles();
   registerGerritChangeProfiles();
-  registerHostAwareProfile(true, genericDocsSystemContent);
   registerStackExchangeProfiles();
   registerHackerNewsProfiles();
   registerMastodonProfiles();

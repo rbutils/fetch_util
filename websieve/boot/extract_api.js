@@ -81,7 +81,7 @@
         content = podcastEpisodeContent(metadata);
       }
       if (!content) {
-        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText));
+        content = deferProvisionalHomepage(hostAwareContent(metadata, pageText)) || genericDocsSystemContent(metadata);
       }
       if (!content) {
         content = challengeContent(metadata, pageText, signals);

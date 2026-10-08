@@ -22,6 +22,7 @@
 
 ### Development
 
+- Run shared documentation-system extraction directly through the generic pipeline instead of a host-profile callback.
 - Group physical Reader summary recovery with the owned-body helpers while preserving its load order and compiled extraction behavior.
 - Retire the Agora article callback through shared owned headlines, marked standfirst excerpts and visible localized access-offer evidence, preserving reporting, sponsorship disclosure and media without synthetic paywall markers.
 - Retire the Oxu callback through shared, physically proved Reader lead media, visible date context and topic destinations while excluding unrelated sharing UI.
