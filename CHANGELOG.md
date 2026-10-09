@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Use shared localized article structure on Lenta and unknown hosts instead of a dated-news URL exception.
 - Apply source-based article-age warnings consistently on Siol, retaining shared recently updated, evergreen and retrospective protections.
 - Keep a subordinate component hub from replacing its uniquely owned page, preserving outside authored sections, complete resource cards and source-declared component fields.
 - Preserve all authored sections and dated records of a uniquely owned WordPress block-theme page without mistaking its update cards for a liveblog or newsletter; retain explicit editorial evidence and article boundaries.
