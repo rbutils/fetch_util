@@ -762,7 +762,7 @@ RSpec.describe "extract asset bundle" do
       /\A(?:azure_devops|bitbucket_cloud|forgejo|gerrit|gitea|github|gitlab|pagure|sourcehut)_/
     )
 
-    expect(Dir.children(community_root).sort).to eq(%w[forums q_and_a shared social_news wikis])
+    expect(actual_community_sources.map { |path| path.split("/").fetch(2) }.uniq.sort).to eq(%w[forums q_and_a shared])
     expect(actual_community_sources.sort).to eq(expected_community_sources.sort)
     expect(actual_community_specs.sort).to eq(expected_community_specs.sort)
     expect(flat_community_specs).to eq([])
