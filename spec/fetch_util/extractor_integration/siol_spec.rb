@@ -3,7 +3,7 @@
 RSpec.describe 'FetchUtil Siol extractor integration' do
   include_context 'extractor integration helpers'
 
-  it 'extracts Siol article bodies without stale content warnings' do
+  it 'extracts Siol article bodies with shared source-based warnings' do
     expect_fixture_article(
       url: 'https://siol.net/novice/slovenija/ljubljanska-zelezniska-postaja-v-sklepni-fazi-prenove-kaj-prinasajo-rekordne-nalozbe-v-promet-683781',
       fixture_path: File.expand_path('../fixtures/siol_article.html', __dir__),

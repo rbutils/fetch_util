@@ -376,10 +376,13 @@ RSpec.describe 'FetchUtil extractor integration - content quality warnings' do
       </html>
     HTML
 
-    with_url_page("https://www.dublin-inquirer.example.com/sea-level-report", html) do |page|
-      payload = extract(page)
+    %w[www.dublin-inquirer.example.com siol.net].each do |host|
+      with_url_page("https://#{host}/sea-level-report", html) do |page|
+        payload = extract(page)
 
-      expect(payload["warnings"]).to include("stale_content")
+        expect(payload["warnings"]).to include("stale_content")
+        expect(payload["markdown"]).to include('Older reporting paragraph 18')
+      end
     end
   end
 
