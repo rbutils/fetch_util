@@ -87,4 +87,37 @@ RSpec.describe 'FetchUtil component page ownership' do
       expect(payload.fetch('markdown')).not_to include('Unrelated ownership', 'separate main')
     end
   end
+
+  it 'defers ordinary resource lists without component fields to complete shared page handling' do
+    html = <<~HTML
+      <html><head><title>Research platform</title></head><body><div class="page-wrapper">
+      <h1>Research platform</h1>
+      <section><h2>Normalization engine</h2><p>Review the original values before applying a transformation.</p>
+      <a href="/normalization">Explore normalization</a><pre>normalize(record)</pre></section>
+      <section><h2>Identity orchestrator</h2><p>Choose the ownership and matching policy for each dataset.</p>
+      <a href="/identity">Explore identity</a></section>
+      <blockquote><p>Our researchers retain independently authored evidence before making a decision.</p>
+      <a href="/case-study">Read the researcher's case study</a></blockquote>
+      <section><h2>Resources</h2><div role="list">#{resource_cards}</div></section>
+      </div></body></html>
+    HTML
+    with_url_page('https://research.example/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('Normalization engine', 'Review the original values', 'normalize(record)',
+                                  'https://research.example/normalization', 'Identity orchestrator',
+                                  'Choose the ownership', 'https://research.example/identity',
+                                  'independently authored evidence', 'https://research.example/case-study')
+      positions = (1..4).flat_map do |index|
+        ["Research resource #{index}", "First explanation for resource #{index}",
+         "Second explanation for resource #{index}", "https://research.example/resources/#{index}"].map do |value|
+          expect(markdown).to include(value)
+          markdown.index(value)
+        end
+      end
+      expect(positions).to eq(positions.sort)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

@@ -230,7 +230,10 @@
         candidateFilter: function(root, _contentRoot, cards, items) {
           var customTileRoot = root.tagName && /-/.test(root.tagName.toLowerCase());
           var aemPage = !!document.querySelector(".aem-Grid, [class*='aem-GridColumn'], [data-cmp-data-layer]");
-          return items.length >= 3 && (aemPage || customTileRoot || cards.length >= 4);
+          var typedTileFields = cards.some(function(card) {
+            return !!card.querySelector("gui-tile-heading, gui-tile-content, [heading-text], [content-text], [class*='tile-heading' i], [class*='tile-content' i]");
+          });
+          return items.length >= 3 && (aemPage || customTileRoot || typedTileFields);
         },
         score: function(root, _contentRoot, _cards, items) {
           var customTileRoot = root.tagName && /-/.test(root.tagName.toLowerCase());
