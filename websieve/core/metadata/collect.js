@@ -37,6 +37,10 @@ function collectMetadata() {
   ].map(declaredBylineValue).find(Boolean) || null;
   var byline = declaredByline || sanitizeByline(visibleByline()) || null;
   var schemaPublishedTime = entityText(schemaArticle && schemaArticle.datePublished);
+  var schemaPagePublishedTime = sourceOwnedPagePublicationTime({
+    title: metadataValue("og:title", "property") || document.title,
+    canonicalUrl: canonicalUrl
+  });
   var schemaEventTime = schemaEvent && typeof eventDateText === "function" ? eventDateText(schemaEvent.startDate, schemaEvent.endDate) : null;
   var visibleHeadings = Array.from(document.querySelectorAll("h1")).filter(function(heading) {
     return !elementVisuallyHidden(heading);
@@ -51,7 +55,7 @@ function collectMetadata() {
     excerpt: metadataValue("description", "name") || metadataValue("og:description", "property"),
     declaredDescription: declaredDescription,
     siteName: metadataValue("og:site_name", "property") || location.hostname,
-    publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || metadataValue("govuk:first-published-at", "name") || visiblePublishedTime(),
+    publishedTime: schemaEventTime || metadataValue("article:published_time", "property") || metadataValue("publish-date", "name") || metadataValue("datePublished", "itemprop") || metadataValue("date", "name") || metadataValue("dc.date", "name") || metadataValue("DC.date", "name") || metadataValue("parsely-pub-date", "name") || schemaPublishedTime || metadataValue("govuk:first-published-at", "name") || schemaPagePublishedTime || visiblePublishedTime(),
     canonicalUrl: canonicalUrl || materializedHttpUrl(location.href),
     language: documentLanguage(),
     image: materializedMetadataValue("og:image", "property"),

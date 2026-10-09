@@ -110,4 +110,64 @@ RSpec.describe 'FetchUtil WordPress block page ownership' do
       end
     end
   end
+
+  def page_with_declarations(nodes, extra_head: '', article_shell: false)
+    html = block_page(<<~HTML)
+      <main><h1>Casey's studio</h1>#{introduction}
+      <section><h2>Current projects</h2><p>Our library project documents the decisions behind its accessible interface.</p>
+      <article><h3>Child journal post</h3><time datetime="2026-09-08">September 8, 2026</time></article></section></main>
+    HTML
+    if article_shell
+      html.sub!('<main><h1>', '<main><article><h1>')
+      html.sub!('</section></main>', '</section></article></main>')
+    end
+    declarations = JSON.generate('@context' => 'https://schema.org', '@graph' => nodes)
+    html.sub('</head>', "#{extra_head}<script type='application/ld+json'>#{declarations}</script></head>")
+  end
+
+  it 'retains an identity-bound page publication date without borrowing a child post date' do
+    page_node = { '@type' => 'WebPage', 'url' => 'https://studio.example/', 'name' => "Casey's studio",
+                  'datePublished' => '2025-04-09T11:34:04-07:00', 'dateModified' => '2026-09-23T11:45:34-07:00' }
+    child = { '@type' => 'BlogPosting', 'url' => 'https://studio.example/journal/child',
+              'datePublished' => '2026-09-08T09:00:00Z' }
+    [false, true].each do |article_shell|
+      with_url_page('https://studio.example/', page_with_declarations([page_node], article_shell: article_shell)) do |page|
+        before = page.evaluate('document.body.innerHTML')
+        source_declaration = page.evaluate("document.querySelector('script[type=\"application/ld+json\"]').textContent")
+        payload = extract_payload(page)
+        expect(Time.iso8601(payload.fetch('publishedTime'))).to eq(Time.iso8601(page_node.fetch('datePublished')))
+        expect(payload.fetch('markdown')).to include('I build accessible websites')
+        expect(page.evaluate('document.body.innerHTML')).to eq(before)
+        expect(page.evaluate("document.querySelector('script[type=\"application/ld+json\"]').textContent")).to eq(source_declaration)
+      end
+    end
+    explicit_head = '<meta property="article:published_time" content="2026-08-12T07:00:00Z">'
+    extract_from_url('https://studio.example/', page_with_declarations([page_node, child], extra_head: explicit_head)) do |payload|
+      expect(payload.fetch('publishedTime')).to eq('2026-08-12T07:00:00Z')
+      expect(payload.fetch('markdown')).to include('Current projects')
+    end
+    docs_html = page_with_declarations([page_node], article_shell: true).gsub("Casey's studio", 'Docker sandbox guide')
+    extract_from_url('https://studio.example/', docs_html) do |payload|
+      expect(Time.iso8601(payload.fetch('publishedTime'))).to eq(Time.iso8601(page_node.fetch('datePublished')))
+      expect(payload.fetch('markdown')).to include('I build accessible websites')
+    end
+  end
+
+  it 'declines foreign, conflicting, ambiguous, absent or malformed page publication declarations' do
+    valid = { '@type' => 'WebPage', 'url' => 'https://studio.example/', 'name' => "Casey's studio",
+              'datePublished' => '2025-04-09T11:34:04-07:00' }
+    declarations = [
+      [valid.merge('url' => 'https://other.example/')],
+      [valid.merge('name' => 'Unrelated publication')],
+      [valid, valid.merge('datePublished' => '2025-07-01T12:00:00Z')],
+      [valid.reject { |key, _| key == 'datePublished' }.merge('dateModified' => '2026-09-23T11:45:34-07:00')],
+      [valid.merge('datePublished' => 'yesterday')]
+    ]
+    declarations.each do |nodes|
+      extract_from_url('https://studio.example/', page_with_declarations(nodes)) do |payload|
+        expect(payload['publishedTime']).to be_nil
+        expect(payload.fetch('markdown')).to include('I build accessible websites', 'Current projects', 'September 8, 2026')
+      end
+    end
+  end
 end

@@ -105,3 +105,31 @@ function nodeTypes(node) {
     return String(type);
   });
 }
+
+function sourceOwnedPagePublicationTime(metadata) {
+  var pages = structuredDataNodes().filter(function(node) {
+    return nodeTypes(node).indexOf("WebPage") !== -1;
+  });
+  if (pages.length !== 1 || typeof pages[0].url !== "string") return null;
+  var name = normalizeText(entityText(pages[0].name));
+  if (name && name !== normalizeText(document.title) && name !== normalizeText(metadata && metadata.title)) return null;
+  var mains = Array.from(document.querySelectorAll("main, [role='main']")).filter(function(node) {
+    return !elementSubtreeHidden(node);
+  });
+  if (mains.length !== 1) return null;
+  var headings = Array.from(mains[0].querySelectorAll("h1")).filter(function(node) {
+    return !elementSubtreeHidden(node) && !node.closest("aside, nav, footer, [role='complementary'], [role='navigation']");
+  });
+  if (headings.length !== 1) return null;
+  var value = materializedHttpUrl(pages[0].url);
+  if (!value) return null;
+  var page = new URL(value);
+  var current = new URL(location.href);
+  var canonical = new URL(metadata && metadata.canonicalUrl || location.href);
+  if (page.origin !== current.origin || canonical.origin !== current.origin) return null;
+  page.hash = current.hash = canonical.hash = "";
+  if (page.href !== current.href && page.href !== canonical.href) return null;
+  var published = entityText(pages[0].datePublished);
+  if (!/^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/.test(published) || !Number.isFinite(Date.parse(published))) return null;
+  return published;
+}
