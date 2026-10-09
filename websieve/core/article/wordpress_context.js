@@ -103,7 +103,7 @@
     return Array.from(article.querySelectorAll("[class], [rel~='tag']")).filter(function(node) {
       if (node.closest("article") !== article || body.contains(node) || node.contains(body) || elementSubtreeHidden(node) ||
           !(body.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
-      if (node.closest("aside, nav, [role='navigation'], [role='complementary'], [class*='related' i], [class*='recommend' i]")) return false;
+      if (wordpressArticleContextChrome(node, article, "[class*='related' i], [class*='recommend' i]")) return false;
       var tokens = String(node.className || "");
       if (!node.matches("a[rel~='tag']") && !/(?:^|[\s_-])(?:tags|tag-links|categories|cat-links)(?:$|[\s_-])/i.test(tokens)) return false;
       if (node.querySelector("article, h1, h2, h3, h4, h5, h6, p, pre, table, form, button, input, img, video, audio")) return false;
@@ -114,6 +114,15 @@
     });
   }
 
+  function wordpressArticleContextChrome(node, article, widgetSelector) {
+    if (node.closest("aside, nav, [role='complementary'], [role='navigation']")) return true;
+    // Page-wide and article-wide theme flags do not identify a nested widget.
+    for (var current = node; current && current !== article; current = current.parentElement) {
+      if (current.matches(widgetSelector)) return true;
+    }
+    return false;
+  }
+
   function wordpressArticleFeaturedMedia(body, article) {
     var candidates = Array.from(article.querySelectorAll(
       "figure, .wp-block-post-featured-image, .post-thumbnail, .featured-image, .post-media, " +
@@ -121,7 +130,7 @@
     )).filter(function(node) {
       if (body.contains(node) || node.contains(body) || node.closest("article") !== article ||
           elementVisuallyHidden(node) || !(node.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
-      if (node.closest("aside, nav, [role='complementary'], [role='navigation'], " +
+      if (wordpressArticleContextChrome(node, article,
           "[class*='related' i], [class*='recommend' i], [class*='advert' i], [class*='promo' i]")) return false;
       var media = node.matches("img, picture, video") ? [node] : Array.from(node.querySelectorAll("img, picture, video"));
       return media.some(function(item) { return !elementVisuallyHidden(item); });

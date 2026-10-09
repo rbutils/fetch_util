@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve source-owned article figures, captions and taxonomy when page-wide theme flags mention related content, while continuing to exclude nested recommendation widgets and sidebars.
 - Retain private Reader source evidence when restoring adjacent article context so subsequent author and publication recovery remains source-bound.
 - Preserve published WordPress comments in order while removing empty reply-form invitations and controls from the owned comment clone.
 - Preserve published content inside source-owned reply forms while removing empty comment prompts before marking substantive threads.
