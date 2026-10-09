@@ -31,6 +31,7 @@
 
 ### Development
 
+- Restore a uniquely source-declared article introduction after selecting the complete reporting body, preserving its inline resources and surrounding-interface cleanup.
 - Keep ordinary resource-card lists on the complete shared page path unless typed component fields establish ownership by the component renderer.
 - Remove obsolete Daryo and Hatena WordPress exclusions after their dedicated handlers have been retired; retain shared article and generator detection.
 - Retire Khaosod's host override and undeclared `news_<id>` REST guessing. Prefer visible WordPress content and accept a declared same-origin record only when its ID, permalink and title agree with the source; the old undeclared REST-only skeleton is no longer supported.

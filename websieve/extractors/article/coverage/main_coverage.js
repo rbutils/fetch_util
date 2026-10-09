@@ -144,6 +144,7 @@
         content.hostAware || content.docsLike || content.legalProvision) return content;
     content = supplementOwnedReaderStructuredMaterial(content);
     content = supplementOwnedArticleResources(content);
+    content = supplementDeclaredArticleIntro(content);
     if (!content.readerMode) return content;
     content = supplementOwnedReaderDeclaredBody(content, metadata);
     var selectedContent = content;
