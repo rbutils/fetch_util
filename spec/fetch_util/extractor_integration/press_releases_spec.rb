@@ -1,7 +1,65 @@
 # frozen_string_literal: true
 
+require 'json'
+
 RSpec.describe 'FetchUtil press release extraction' do
   include_context 'extractor integration helpers'
+
+  def declared_wire_release(publisher:, site_name: 'PR Newswire', canonical_url: nil)
+    title = 'Example Robotics announces a research platform'
+    schema = { '@context' => 'https://schema.org', '@type' => 'PressRelease',
+               'headline' => title, 'publisher' => publisher }
+    canonical = canonical_url ? %(<link rel="canonical" href="#{canonical_url}">) : ''
+    <<~HTML
+      <html><head><title>#{title}</title><meta property="og:site_name" content="#{site_name}">
+      #{canonical}<script type="application/ld+json">#{JSON.generate(schema)}</script></head>
+      <body><main><article class="release-body"><h1>#{title}</h1>
+        <p>This press release was distributed by PRNewswire. Example Robotics announced a research
+        platform that documents the measurements, sources, and operating assumptions behind each result.</p>
+        <p>The platform retains the original measurements and publishes reproducible methods so that
+        independent researchers can inspect the evidence and compare the results with earlier studies.</p>
+      </article></main></body></html>
+    HTML
+  end
+
+  it 'recognizes a declared wire publisher on an unknown host without treating the issuer as publisher' do
+    html = declared_wire_release(publisher: { 'name' => 'PR Newswire' })
+    with_url_page('https://wire.example/releases/research-platform', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      expect_content_type(payload, 'press_release')
+      expect(payload.fetch('warnings')).not_to include('syndicated_repost')
+      expect(payload.fetch('markdown')).to include('original measurements', 'independent researchers')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'does not exempt a republisher or issuing company just because its hostname belongs to a wire service' do
+    cases = [
+      { publisher: { 'name' => 'Independent Journal' }, site_name: 'Independent Journal' },
+      { publisher: { 'name' => 'Example Robotics' } },
+      { publisher: { 'name' => 'Business Wire' }, site_name: 'Business Wire' },
+      { publisher: [{ 'name' => 'PR Newswire' }, { 'name' => 'Another publisher' }] }
+    ]
+    cases.each do |declarations|
+      extract_from_url('https://www.prnewswire.com/releases/research-platform', declared_wire_release(**declarations)) do |payload|
+        expect(payload.fetch('warnings')).to include('syndicated_repost')
+        expect(payload.fetch('markdown')).to include('original measurements')
+      end
+    end
+  end
+
+  it 'declines contradictory canonical or publisher origins despite matching declared names' do
+    declarations = [
+      { publisher: { 'name' => 'PR Newswire', 'url' => 'https://other.example/' } },
+      { publisher: { 'name' => 'PR Newswire' }, canonical_url: 'https://other.example/releases/original' }
+    ]
+    declarations.each do |record|
+      extract_from_url('https://wire.example/releases/research-platform', declared_wire_release(**record)) do |payload|
+        expect(payload.fetch('warnings')).to include('syndicated_repost')
+      end
+    end
+  end
 
   it 'extracts PR Newswire release bodies instead of category lists or repost warnings' do
     html = fixture_contents(File.expand_path('../../fixtures/prnewswire_press_release.html', __dir__))

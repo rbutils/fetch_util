@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Distinguish original wire publishing from reposts using matching declared site and article-publisher identities, retaining warnings for conflicting issuers, publishers and origins instead of exempting wire-service hostnames.
 - Recognize corporate releases from explicit release language, newsroom routes or datelines on any host, replacing the corporate newsroom hostname list.
 - Evaluate Protothema articles with shared compact-article completeness checks rather than suppressing truncation warnings by hostname.
 - Use shared localized article structure on Lenta and unknown hosts instead of a dated-news URL exception.

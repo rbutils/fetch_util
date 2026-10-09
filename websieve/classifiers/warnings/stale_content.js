@@ -109,17 +109,58 @@
     return body.length < 5000 && /\b(updated|published|reported)\b/.test(context);
   }
 
+  function wirePublisherIdentity(value) {
+    return normalizeText(value).toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  }
+
+  function sourceDeclaredWirePublisher(title, wirePattern) {
+    var siteName = normalizeText(metadataValue("og:site_name", "property") || "");
+    var wireName = siteName.match(wirePattern);
+    if (!wireName) return false;
+    if (wirePublisherIdentity(siteName) !== wirePublisherIdentity(wireName[0])) return false;
+    var articles = structuredDataNodes().filter(function(node) {
+      return nodeTypes(node).some(function(type) { return /(?:Article|PressRelease)$/i.test(type); }) &&
+        normalizeText(entityText(node.headline || node.name)).toLowerCase() === normalizeText(title).toLowerCase();
+    });
+    if (articles.length !== 1) return false;
+    var publisher = articles[0].publisher;
+    if (Array.isArray(publisher)) {
+      if (publisher.length !== 1) return false;
+      publisher = publisher[0];
+    }
+    if (!publisher || wirePublisherIdentity(entityName(publisher)) !== wirePublisherIdentity(siteName)) return false;
+    var publisherUrl = typeof publisher === "object" && entityText(publisher.url || publisher["@id"]);
+    var references = Array.from(document.querySelectorAll("head link[rel~='canonical'][href]")).map(function(node) {
+      return node.getAttribute("href");
+    });
+    if (publisherUrl) references.push(publisherUrl);
+    var ownedOrigin = references.every(function(value) {
+      var url = materializedHttpUrl(value);
+      return !!url && new URL(url).origin === location.origin;
+    });
+    return ownedOrigin ? wirePublisherIdentity(siteName) : null;
+  }
+
+  function wireAttributionsMatchPublisher(text, publisher, wirePattern) {
+    var attributions = new RegExp("\\b(?:distributed|provided|issued) by\\s+(" + wirePattern.source + ")", "gi");
+    var match;
+    while ((match = attributions.exec(text))) {
+      if (wirePublisherIdentity(match[1]) !== publisher) return false;
+    }
+    return true;
+  }
+
   function syndicatedRepostApplies(title, body, page) {
     var text = normalizeText(body + " " + page).toLowerCase();
     if (!text) return false;
-
-    if (hostMatches(/(^|\.)(prnewswire\.com|globenewswire\.com|businesswire\.com)$/i)) return false;
 
     if (legalInstrumentContext(title, body) || legalCaseContext(title, body)) return false;
 
     var wirePattern = /\b(ein presswire|business wire|pr newswire|prnewswire|globe newswire|globenewswire|cision|marketwired|pr\.com|accesswire)\b|\/prnewswire\//i;
     var hits = text.match(/\b(ein presswire|business wire|pr newswire|prnewswire|globe newswire|globenewswire|cision|marketwired|pr\.com|accesswire)\b|\/prnewswire\//gi) || [];
     if (!hits.length) return false;
+    var publisher = sourceDeclaredWirePublisher(title, wirePattern);
+    if (publisher && wireAttributionsMatchPublisher(text, publisher, wirePattern)) return false;
 
     var boilerplate = /\b(this press release was (?:issued|distributed)|press release (?:distributed|provided|issued) by|distributed by (?:ein presswire|business wire|pr newswire|prnewswire|globe newswire|globenewswire|cision|marketwired|accesswire)|provided by (?:ein presswire|business wire|pr newswire|prnewswire|globe newswire|globenewswire|cision|marketwired|accesswire))\b/i;
     if (boilerplate.test(text)) return true;
