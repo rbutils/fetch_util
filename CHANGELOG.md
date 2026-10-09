@@ -31,6 +31,7 @@
 
 ### Development
 
+- Ignore empty class/id-only paywall placeholders while retaining explicit access markers, materialized gates and paid metadata.
 - Preserve an explicitly declared, identity-bound page publication date when stronger publication metadata is absent, without inferring dates from child posts or modification times.
 - Group source-proved article recovery helpers in a cohesive coverage module directory without changing extraction behavior or load order.
 - Restore a uniquely source-declared article introduction after selecting the complete reporting body, preserving its inline resources and surrounding-interface cleanup.

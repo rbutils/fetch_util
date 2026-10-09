@@ -13,11 +13,11 @@ RSpec.describe 'Source-owned visible reporting with paid access metadata' do
     end.join
   end
 
-  def declared_reporting_page(body: reporting_paragraphs, before: '', after: '', extra: '', headline: 'Public archive records')
+  def declared_reporting_page(body: reporting_paragraphs, before: '', after: '', extra: '', headline: 'Public archive records', accessible: false)
     <<~HTML
       <html><head><title>Public archive records</title>
       <meta property="og:type" content="article">
-      <script type="application/ld+json">#{JSON.generate("@type" => "NewsArticle", "headline" => headline, "isAccessibleForFree" => false)}</script>
+      <script type="application/ld+json">#{JSON.generate("@type" => "NewsArticle", "headline" => headline, "isAccessibleForFree" => accessible)}</script>
       </head><body><main><article><header><h1>Public archive records</h1>
       <time datetime="2026-10-08T08:00:00Z">8 October 2026</time></header>
       #{before}<div itemprop="articleBody">#{body}</div>#{after}</article>#{extra}</main></body></html>
@@ -47,6 +47,36 @@ RSpec.describe 'Source-owned visible reporting with paid access metadata' do
     extract_from_url('https://archive.example/reports/public-archive-records', html) do |payload|
       expect(payload['warnings']).to include('subscription_interstitial')
       expect(payload['paywallState']).to eq('full_block')
+    end
+  end
+
+  it 'does not treat an empty access placeholder as a gate on a declared free article' do
+    html = declared_reporting_page(before: '<div id="paywall" class="paywall"></div>', accessible: true)
+    with_url_page('https://archive.example/reports/public-archive-records', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      declaration = page.evaluate('document.querySelector("script[type=\"application/ld+json\"]").textContent')
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload['paywallState']).to be_nil
+      expect(payload['warnings']).not_to include('paywall_partial_content', 'subscription_interstitial')
+      expected = Nokogiri::HTML.fragment(reporting_paragraphs).css('p').map(&:text)
+      actual = Nokogiri::HTML.fragment(payload['html']).css('p').map { |node| node.text.gsub(/\s+/, ' ').strip }
+      expect(actual & expected).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+      expect(page.evaluate('document.querySelector("script[type=\"application/ld+json\"]").textContent')).to eq(declaration)
+    end
+  end
+
+  it 'retains explicit access markers, materialized interfaces and paid declarations' do
+    [
+      declared_reporting_page(before: '<div id="paywall"></div>'),
+      declared_reporting_page(before: '<div data-paywall></div>', accessible: true),
+      declared_reporting_page(before: '<div id="paywall"><button>Subscribe</button></div>', accessible: true)
+    ].each do |html|
+      extract_from_url('https://archive.example/reports/public-archive-records', html) do |payload|
+        expect(payload['paywallState']).to eq('detected')
+        expect(payload['markdown']).to include('Record 1 documents the original measurements', 'Record 6 documents the original measurements')
+      end
     end
   end
 

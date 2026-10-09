@@ -68,11 +68,14 @@
     var metaPaywall = contentTier && /^(locked|metered|premium)$/i.test(normalizeText(contentTier));
 
     // Check common paywall DOM indicators
-    var domPaywall = visibleLocalizedSubscriptionOffer() || !!document.querySelector(
+    var domPaywall = visibleLocalizedSubscriptionOffer() || Array.from(document.querySelectorAll(
       "[data-piano-offer], [data-paywall], [class*='paywall' i], [id*='paywall' i], " +
       "[class*='subscribe-wall' i], [class*='premium-wall' i], [class*='piano-offer' i], " +
       "[data-testid*='paywall' i], [class*='metered' i][class*='banner' i]"
-    );
+    )).some(function(node) {
+      return node.hasAttribute("data-piano-offer") || node.hasAttribute("data-paywall") ||
+        !!normalizeText(node.textContent) || node.children.length > 0;
+    });
 
     // Detect paywall text patterns in body
     var bodySnippet = normalizeText((document.body && document.body.innerText) || "").slice(0, 6000).toLowerCase();
