@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Preserve all authored sections and dated records of a uniquely owned WordPress block-theme page without mistaking its update cards for a liveblog or newsletter; retain explicit editorial evidence and article boundaries.
 - Preserve source-owned article figures, captions and taxonomy when page-wide theme flags mention related content, while continuing to exclude nested recommendation widgets and sidebars.
 - Retain private Reader source evidence when restoring adjacent article context so subsequent author and publication recovery remains source-bound.
 - Preserve published WordPress comments in order while removing empty reply-form invitations and controls from the owned comment clone.

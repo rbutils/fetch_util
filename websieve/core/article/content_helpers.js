@@ -72,6 +72,8 @@
 
     var body = wordpressArticleBody(options) || wordpressRestArticleBody(options, metadata);
     if (!body) return null;
+    var pageRoot = wordpressBlockPageRoot(body);
+    if (pageRoot) body = pageRoot;
     var comments = options.includeHeaderContext ? wordpressArticleCommentThreads(body) : [];
     if (options.includeHeaderContext) body = wordpressArticleHeaderContext(body);
     var excerpt = options.excerpt;
@@ -88,9 +90,10 @@
       rewriteRoot: function(root, node) {
         removeAll(root, wordpressArticleRemovalSelectors(options).join(", "));
         simpleArticleRemoveText(root, options.removalTextPatterns);
-        if (typeof options.rewriteRoot === "function") options.rewriteRoot(root, node);
+        if (!pageRoot && typeof options.rewriteRoot === "function") options.rewriteRoot(root, node);
       }
     });
+    if (content && pageRoot) content.wordpressBlockPage = true;
     return wordpressArticleAppendComments(content, comments);
   }
 

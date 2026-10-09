@@ -207,6 +207,7 @@
     var structuralNewsletter = newsletterStructuralEvidence(content, formatMarkdown, guideRoot, focalArticleRoot);
     // Extracted topic pages can contain article cards without owning a focal article or digest.
     var articleDigestEvidence = content && content.contentType === "article" &&
+      (!content.wordpressBlockPage || editionContext) &&
       (focalArticleRoot || authoredDigestRecords >= 4) &&
       (!singleArticleIdentity || (focalArticleDigestRecords >= 4 &&
         (editionContext || newsletterIndependentLinkedSectionCount(focalArticleRoot, true, true) >= 4)));
@@ -222,7 +223,7 @@
 
     // 5. Multi-topic heuristic: page contains multiple distinct timestamped entries or update blocks
     // Count headings and timestamps only after related/sidebar/list/feed widgets are removed.
-    var timestampedIndexList = content && content.contentType === "list";
+    var timestampedIndexList = content && (content.contentType === "list" || content.wordpressBlockPage === true);
     var timestampedHomepageList = timestampedIndexList && homepageRootPath();
     var credibleRootHomepageList = timestampedHomepageList &&
       (content.portalRootEvidence || homepageHasEditorialSections(document));

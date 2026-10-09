@@ -114,6 +114,22 @@
     });
   }
 
+  function wordpressBlockPageRoot(body) {
+    if (!body || !body.isConnected || body.closest("article") ||
+        !document.body.classList.contains("page")) return null;
+    var main = body.closest("main, [role='main']");
+    if (!main || main === body || !main.closest(".wp-site-blocks")) return null;
+    var mains = Array.from(document.querySelectorAll("main, [role='main']")).filter(function(node) {
+      return !elementSubtreeHidden(node);
+    });
+    if (mains.length !== 1 || mains[0] !== main) return null;
+    var chrome = "nav, aside, footer, [role='navigation'], [role='complementary']";
+    var headings = Array.from(main.querySelectorAll("h1")).filter(function(node) {
+      return !node.closest(chrome + ", article") && !elementSubtreeHidden(node);
+    });
+    return headings.length === 1 ? main : null;
+  }
+
   function wordpressArticleContextChrome(node, article, widgetSelector) {
     if (node.closest("aside, nav, [role='complementary'], [role='navigation']")) return true;
     // Page-wide and article-wide theme flags do not identify a nested widget.
