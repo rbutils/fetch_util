@@ -21,13 +21,12 @@
     ].join(" ")).toLowerCase();
     var bodyLead = normalizeText((document.body && document.body.innerText) || "").slice(0, 2500).toLowerCase();
     var investorRelationsContext = /\b(?:investor relations|earnings release|quarterly results?|financial statements?|form\s*(?:10-k|10-q|8-k)|sec filing)\b/.test(context + " " + bodyLead);
-    var newsroomHost = /(^|\.)(prnewswire\.com|cision\.com|globenewswire\.com|businesswire\.com|apple\.com|amazon\.com|google)$/i.test(location.hostname || "") && /\b(newsroom|news-releases?|company-news|press)\b/i.test(location.pathname || "");
-    var corporateReleaseRoute = /\/(?:newsroom|news-releases?|press(?:-release)?|company-news|about\/news)\//i.test(location.pathname || "");
+    var corporateReleaseRoute = /\/(?:newsroom|news-releases?|press(?:-release)?|company-news|about\/news)(?:\/|$)/i.test(location.pathname || "");
     var dateline = /\b[A-Z][A-Za-z .'-]{2,40},\s+(?:Jan(?:uary)?\.?|Feb(?:ruary)?\.?|Mar(?:ch)?\.?|Apr(?:il)?\.?|May|Jun(?:e)?\.?|Jul(?:y)?\.?|Aug(?:ust)?\.?|Sep(?:tember)?\.?|Sept\.?|Oct(?:ober)?\.?|Nov(?:ember)?\.?|Dec(?:ember)?\.?)\s+\d{1,2},\s+\d{4}\s*(?:\/PRNewswire\/|--|–)/.test((document.body && document.body.innerText) || "");
     var releaseWords = /\b(press release|news release|announces?|announced|launches?|unveils?|report(?:s|ed)?(?:\s+[-\w]+){0,3}\s+results?)\b/.test(context + " " + bodyLead);
 
     // An earnings release is a detail document, unlike an IR navigation index.
-    return releaseWords && (newsroomHost || corporateReleaseRoute || dateline) && (!investorRelationsContext || dateline);
+    return releaseWords && (corporateReleaseRoute || dateline) && (!investorRelationsContext || dateline);
   }
 
   function visiblePressReleaseIndexEntry(link) {

@@ -30,11 +30,18 @@ RSpec.describe 'FetchUtil press release extraction' do
   it 'classifies strong corporate newsroom releases as press releases without stale warnings' do
     html = fixture_contents(File.expand_path('../../fixtures/apple_newsroom_press_release.html', __dir__))
 
-    extract_from_url('https://www.apple.com/newsroom/2021/05/apple-introduces-new-accessibility-features/', html) do |payload|
-      expect_content_type(payload, 'press_release')
-      expect(payload['markdown']).to include('Apple accessibility fixture: the sample release groups mobility')
-      expect(payload['warnings']).not_to include('stale_content')
-      expect(payload['warnings']).not_to include('multi_topic_page')
+    urls = [
+      'https://www.apple.com/newsroom/2021/05/apple-introduces-new-accessibility-features/',
+      'https://organization.example/newsroom/2021/05/accessibility-features/',
+      'https://organization.example/press'
+    ]
+    urls.each do |url|
+      extract_from_url(url, html) do |payload|
+        expect_content_type(payload, 'press_release')
+        expect(payload['markdown']).to include('Apple accessibility fixture: the sample release groups mobility')
+        expect(payload['warnings']).not_to include('stale_content')
+        expect(payload['warnings']).not_to include('multi_topic_page')
+      end
     end
   end
 
