@@ -31,6 +31,7 @@
 
 ### Development
 
+- Group source-proved article recovery helpers in a cohesive coverage module directory without changing extraction behavior or load order.
 - Restore a uniquely source-declared article introduction after selecting the complete reporting body, preserving its inline resources and surrounding-interface cleanup.
 - Keep ordinary resource-card lists on the complete shared page path unless typed component fields establish ownership by the component renderer.
 - Remove obsolete Daryo and Hatena WordPress exclusions after their dedicated handlers have been retired; retain shared article and generator detection.

@@ -1209,7 +1209,8 @@ RSpec.describe "extract asset bundle" do
       extractors/article/coverage/carousel_coverage.js
       extractors/article/coverage/resources.js
       extractors/article/coverage/figure_captions.js
-      extractors/article/coverage/structured_material.js
+      extractors/article/coverage/source_material/structured_material.js
+      extractors/article/coverage/source_material/declared_intro.js
       extractors/article/coverage/main_coverage.js
       extractors/article/coverage/hidden_substantive_main.js
     ]
@@ -1484,8 +1485,8 @@ RSpec.describe "extract asset bundle" do
         extractors/article/coverage/carousel_coverage.js
         extractors/article/coverage/resources.js
         extractors/article/coverage/figure_captions.js
-        extractors/article/coverage/structured_material.js
-        extractors/article/coverage/declared_intro.js
+        extractors/article/coverage/source_material/structured_material.js
+        extractors/article/coverage/source_material/declared_intro.js
         extractors/article/coverage/main_coverage.js
         extractors/article/fallback/media_ownership/focal_related_collections.js
         extractors/article/fallback/media_ownership/focal_media_ownership.js
