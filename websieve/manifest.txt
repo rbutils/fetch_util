@@ -280,6 +280,7 @@ profiles/families/scientific_records/index.js
 profiles/families/package_registries.js
 profiles/families/statuspage.js
 profiles/families/institutional/core.js
+profiles/families/institutional/component_pages.js
 profiles/families/institutional/component_hubs.js
 profiles/government/europa.js
 profiles/legal/eurlex.js

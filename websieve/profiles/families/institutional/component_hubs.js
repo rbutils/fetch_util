@@ -133,6 +133,8 @@
       var minItems = options.minItems || 3;
       var admissionCount = items.filter(function(item) { return item.admission; }).length;
       if (items.length < minItems || admissionCount < minItems) return null;
+      var page = componentHubPageContent(metadata, root);
+      if (page) return page;
       title = componentHubTitle(metadata, root, options);
       return listItemsContentResult(metadata, {
         title: title,
