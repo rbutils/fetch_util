@@ -191,6 +191,9 @@ function bylineWithoutSiblingActions(contentByline, metadataByline) {
   if (!contentValue || !metadataValue || contentValue === metadataValue) return contentByline;
 
   var roots = visibleBylineRoots();
+  var cleanedContent = bylineWithoutSourceControls(contentValue, roots);
+  if (!cleanedContent) return null;
+  if (cleanedContent === metadataValue) return metadataByline;
   for (var index = 0; index < roots.length; index += 1) {
     var fields = Array.prototype.filter.call(roots[index].querySelectorAll("[class*='author-name' i]"), function(node) {
       return !elementVisuallyHidden(node) && !node.closest("nav, footer, aside") && normalizeText(node.textContent || "") === metadataValue;
@@ -235,6 +238,7 @@ function visibleByline() {
   ], null, /^(?:author information|authors? and affiliations?)$/i, articleBylineNode);
   if (!value) value = visibleLocalizedAuthor(roots);
   if (!value) value = visibleHeaderContributor();
+  value = bylineWithoutSourceControls(value, roots);
 
   return normalizeText(value || "").replace(/^(?:by|por|par|von|di|da|door|av|af|de|autor(?:a)?|auteur|redactie|redacción|redacao|redação|penulis|oleh|tác giả|tac gia|بقلم|כתבת?|מאת)\s*:?\s+/i, "") || null;
 }

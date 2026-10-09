@@ -1,6 +1,7 @@
 00_prelude.js
 core/metadata/text_normalization.js
 core/metadata/language.js
+core/metadata/byline_controls.js
 core/metadata/visible_metadata.js
 core/metadata/labeled_metadata.js
 core/metadata/visible_dates.js

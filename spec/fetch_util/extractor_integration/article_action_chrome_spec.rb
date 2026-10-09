@@ -68,6 +68,7 @@ RSpec.describe 'Source-owned article action chrome' do
         expect(payload.fetch('markdown')).to include(part)
       end
       expect(payload.fetch('markdown')).to include('Ada Researcher')
+      expect(payload.fetch('byline')).to eq('Ada Researcher')
       expect(payload.fetch('markdown')).not_to include('3 new comments', 'Add a comment', 'Support the newsroom',
                                                        'favorite news sources', 'Was this article helpful?')
       expect(payload.fetch('html')).not_to include('additional-actions', 'favorite news sources', 'article-thumbs-rating')
@@ -207,6 +208,7 @@ RSpec.describe 'Source-owned article action chrome' do
 
       %w[html markdown excerpt].each { |field| expect(payload.fetch(field)).not_to include(notice) }
       expect(payload.fetch('markdown')).to include('source-owned introduction', 'third report paragraph')
+      expect(payload.fetch('byline')).to eq('Ada Researcher')
       expect(cleaned.fetch('html')).not_to include(notice)
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
@@ -232,6 +234,26 @@ RSpec.describe 'Source-owned article action chrome' do
       expect(cleaned.fetch('html').scan(notice).length).to eq(6)
       expect(cleaned.fetch('html')).to include('gli errori della sintesi vocale', '/transcript', '/recording.mp3')
       expect(cleaned.fetch('unchanged')).to be(true)
+    end
+  end
+
+  it 'keeps substantive author context and uses declared metadata when a visible field owns only controls' do
+    html = article_with_actions(
+      toolbar: '<div class="widget-audio-article"><p>Joint reporting with Pat Editor.</p></div>',
+      promotion: '', comments: ''
+    )
+    extract_from_url('https://journal.example/stories/keyboards', html) do |payload|
+      expect(payload.fetch('byline')).to include('Ada Researcher', 'Joint reporting with Pat Editor.')
+    end
+    declared = article_with_actions(
+      toolbar: "<div class='widget-audio-article'>Ascolta l'articolo 4 min Questo audio è generato in automatico.</div>",
+      promotion: '', comments: ''
+    )
+    declared = declared.sub('<head>', '<head><meta name="author" content="Grace Writer">')
+                       .sub('<a href="/authors/ada">Ada Researcher</a>', '')
+    extract_from_url('https://journal.example/stories/keyboards', declared) do |payload|
+      expect(payload.fetch('byline')).to eq('Grace Writer')
+      expect(payload.fetch('markdown')).to include('first report paragraph', 'third report paragraph')
     end
   end
 end
