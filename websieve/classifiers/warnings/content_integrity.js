@@ -8,20 +8,16 @@
       var pageLength = page.length;
       var slugTerms = slugKeywords();
       var hasArticlePath = slugTerms.length >= 2;
-      var protothemaArticlePage = hostMatches(/(^|\.)protothema\.gr$/i) && content.contentType === "article" && extractedLength >= 500;
-
       if (content.contentType === "article" && !content.legalProvision && !readableDocsPage && !glossaryPage && !packagePage) {
-        if (!protothemaArticlePage) {
-          if (hasArticlePath && extractedLength < 500 && pageLength > 2000) { if (!clearStructure && !compactNonLatinBody) reasons.push("truncated_content"); }
-          // Ratio-based truncation: catch moderate truncation where body is 500-1500 chars
-          // but represents less than 15% of the full page (e.g. paywall cut-off, lazy-load failure)
-          if (hasArticlePath && extractedLength >= 500 && extractedLength < 1500 && pageLength > 3000 && (extractedLength / pageLength) < 0.15 && !clearStructure && !compactNonLatinBody) { reasons.push("truncated_content"); }
-          // Broader moderate truncation: body is 1500-3000 chars but represents less than 12%
-          // of the full page text -- catches cases where a longer teaser is extracted but the
-          // bulk of the article content is missing (common with SPA lazy-load or paywall teasers)
-          if (hasArticlePath && extractedLength >= 1500 && extractedLength < 3000 && pageLength > 8000 && (extractedLength / pageLength) < 0.12 && !clearStructure && !compactNonLatinBody) { reasons.push("truncated_content"); }
-          if (missingPrimaryContent(metadata, content, markdown, body) && !compactNonLatinBody) { reasons.push("truncated_content"); }
-        }
+        if (hasArticlePath && extractedLength < 500 && pageLength > 2000) { if (!clearStructure && !compactNonLatinBody) reasons.push("truncated_content"); }
+        // Ratio-based truncation: catch moderate truncation where body is 500-1500 chars
+        // but represents less than 15% of the full page (e.g. paywall cut-off, lazy-load failure)
+        if (hasArticlePath && extractedLength >= 500 && extractedLength < 1500 && pageLength > 3000 && (extractedLength / pageLength) < 0.15 && !clearStructure && !compactNonLatinBody) { reasons.push("truncated_content"); }
+        // Broader moderate truncation: body is 1500-3000 chars but represents less than 12%
+        // of the full page text -- catches cases where a longer teaser is extracted but the
+        // bulk of the article content is missing (common with SPA lazy-load or paywall teasers)
+        if (hasArticlePath && extractedLength >= 1500 && extractedLength < 3000 && pageLength > 8000 && (extractedLength / pageLength) < 0.12 && !clearStructure && !compactNonLatinBody) { reasons.push("truncated_content"); }
+        if (missingPrimaryContent(metadata, content, markdown, body) && !compactNonLatinBody) { reasons.push("truncated_content"); }
       }
 
       // General short extraction: substantial page content was lost during extraction

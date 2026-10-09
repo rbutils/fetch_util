@@ -51,6 +51,22 @@ RSpec.describe 'FetchUtil Protothema extractor integration' do
     end
   end
 
+  it 'recognizes the same compact Greek article on an unknown host despite unrelated news rails' do
+    html = File.read(File.expand_path('../../fixtures/protothema_article.html', __dir__))
+               .gsub('www.protothema.gr', 'regional.example')
+    url = 'https://regional.example/greece/article/1847263/seismos-39-rihter-koda-stin-kissamo-hanion/'
+
+    extract_from_url(url, html) do |payload|
+      expect(payload.fetch('warnings')).to be_empty
+      expect(payload.fetch('markdown')).to include(
+        'Σεισμική δόνηση μεγέθους 3,9 Ρίχτερ καταγράφηκε στην περιοχή της Κισσάμου Χανίων',
+        'Ο σεισμός σημειώθηκε στις 01:18 μετά τα μεσάνυχτα της Τρίτης',
+        'Η καταγραφή προέρχεται από την αυτόματη λύση του Γεωδυναμικού Ινστιτούτου'
+      )
+      expect(payload.fetch('markdown')).not_to include('ΡΟΗ ΕΙΔΗΣΕΩΝ', 'Άλλο άρθρο δοκιμής')
+    end
+  end
+
   it 'leaves the Protothema homepage to shared list extraction' do
     cards = (1..6).map do |index|
       <<~HTML
