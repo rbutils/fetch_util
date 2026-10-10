@@ -61,6 +61,19 @@
       plainCommentHeader: !!plainHeader };
   }
 
+  function tableSocialPublisherContext(link, destination) {
+    var text = normalizeText(link.textContent).replace(/^\(|\)$/g, "");
+    try {
+      var context = new URL(/^https?:\/\//i.test(text) ? text : "https://" + text);
+      if (context.username || context.password) return false;
+      var publisher = context.hostname.replace(/^www\./, "");
+      var host = destination.hostname.replace(/^www\./, "");
+      return host === publisher || (publisher.indexOf(".") !== -1 && host.endsWith("." + publisher));
+    } catch (error) {
+      return false;
+    }
+  }
+
   function tableSocialTitleLink(row) {
     var links = Array.from(row.querySelectorAll("a[href]")).filter(function(link) {
       var text = normalizeText(link.textContent || link.getAttribute("aria-label"));
@@ -69,9 +82,9 @@
     });
     if (!links.length) return null;
     var primary = links[0];
-    var host = new URL(materializedHttpUrl(primary.getAttribute("href"))).hostname.replace(/^www\./, "");
+    var destination = new URL(materializedHttpUrl(primary.getAttribute("href")));
     if (links.slice(1).some(function(link) {
-      return normalizeText(link.textContent).replace(/^\(|\)$/g, "").replace(/^www\./, "") !== host;
+      return !tableSocialPublisherContext(link, destination);
     })) return null;
     return primary;
   }
