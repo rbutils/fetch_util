@@ -31,6 +31,7 @@
 
 ### Development
 
+- Keep self-contained dated table rows independent instead of treating the next title as an author row.
 - Reuse an already proved portal-list result during late validation instead of rebuilding the same collection solely to confirm its existing evidence.
 - Separate extraction API construction from delivery in a cohesive bootstrap boundary while preserving initialization order and compiled behavior.
 - Retain table-feed stories whose displayed publisher context names a parent domain or domain/path while declining unrelated domain-shaped secondary headlines.

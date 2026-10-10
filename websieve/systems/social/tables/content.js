@@ -34,6 +34,7 @@
     var records = tableSocialRecords(tables);
     var comments = tableSocialComments(tables);
     if (!records.length && !comments.length) return null;
+    if (records.length && records.length < 3 && records.every(function(record) { return record.detail === record.row; })) return null;
     if (records.length > 1 && comments.length) return null;
     var labels = tableSocialLabels(metadata, records, comments);
     var story = records.length === 1 ? records[0] : null;
@@ -69,10 +70,12 @@
     var markdown = sections.join("\n\n");
     var holder = document.createElement("div");
     holder.innerHTML = body;
+    var recordHtml = records.map(function(record) { return record.html; }).join("\n");
+    if (feed) recordHtml = "<table><tbody>" + recordHtml + "</tbody></table>";
     return {
       title: title, byline: author, publishedTime: null, siteName: labels.platform, canonicalUrl: metadata.canonicalUrl,
       excerpt: feed ? records[0].title : normalizeText(holder.textContent) || (focal && focal.text) || metadata.excerpt || title,
-      html: records.map(function(record) { return record.html; }).join("\n") + body + comments.map(function(comment) { return comment.html; }).join("\n"),
+      html: recordHtml + body + comments.map(function(comment) { return comment.html; }).join("\n"),
       markdown: markdown, textContent: normalizeText(markdown), readerMode: false,
       contentType: "social", socialKind: feed ? "feed" : replies ? "thread" : "post",
       platform: labels.platform, handle: author, replyCount: replies,

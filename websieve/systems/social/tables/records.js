@@ -92,8 +92,25 @@
   function tableSocialStory(row) {
     if (row.querySelector("table") || tableSocialIndent(row)) return null;
     var link = tableSocialTitleLink(row);
+    if (!link) return null;
+    var ownedTime = Array.from(row.querySelectorAll("time[datetime], [itemprop='datePublished']")).find(function(node) {
+      return node.closest("tr") === row && !link.contains(node) && !elementSubtreeHidden(node) &&
+        normalizeText(node.textContent || node.getAttribute("datetime"));
+    });
+    var datedCell = Array.from(row.cells).find(function(cell) {
+      return !cell.contains(link) && !elementSubtreeHidden(cell) &&
+        /^(?:\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago|yesterday|today)$/i.test(normalizeText(cell.textContent));
+    });
+    if (ownedTime || datedCell) {
+      var dateField = ownedTime || datedCell;
+      return { title: normalizeText(link.textContent || link.getAttribute("aria-label")),
+        url: materializedHttpUrl(link.getAttribute("href")), author: null,
+        time: normalizeText(dateField.textContent || dateField.getAttribute("datetime")),
+        score: null, replyCount: null, row: row, detail: row,
+        html: visibilityPrunedClone(row, document).outerHTML };
+    }
     var detail = row.nextElementSibling;
-    if (!link || !detail || detail.tagName !== "TR" || detail.closest("table") !== row.closest("table") || elementSubtreeHidden(detail)) return null;
+    if (!detail || detail.tagName !== "TR" || detail.closest("table") !== row.closest("table") || elementSubtreeHidden(detail)) return null;
     var metadata = tableSocialMetadata(detail);
     if (!metadata.time || (!metadata.author && metadata.score === null && metadata.replies === null && !metadata.action)) return null;
     var title = normalizeText(link.textContent || link.getAttribute("aria-label"));
