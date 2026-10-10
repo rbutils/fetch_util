@@ -31,6 +31,7 @@
 
 ### Development
 
+- Preserve uniquely paired authored footnote return links through shared short-fragment cleanup, retaining their targets and annotation order.
 - Recognize uniquely owned declared reference-tree pages through shared documentation handling, preserving complete included-module relationships beside their prose and code.
 - Keep self-contained dated table rows independent instead of treating the next title as an author row.
 - Reuse an already proved portal-list result during late validation instead of rebuilding the same collection solely to confirm its existing evidence.

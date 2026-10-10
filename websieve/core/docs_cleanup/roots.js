@@ -12,6 +12,31 @@ function samePageFragmentLink(href) {
   return href === "#" || href.indexOf("#") === 0 || href.indexOf(current) === 0;
 }
 
+function authoredReciprocalReferenceLink(link, targets, sourceIds) {
+  var id = link.getAttribute("id");
+  var href = link.getAttribute("href");
+  if (!id || sourceIds.get(id) !== 1 || targets.get(id) !== link || !samePageFragmentLink(href) ||
+      link.closest("nav, aside, pre, code, h1, h2, h3, h4, h5, h6")) return false;
+  var targetId;
+  try { targetId = decodeURIComponent(href.slice(href.indexOf("#") + 1)); } catch (_error) { return false; }
+  if (!targetId || sourceIds.get(targetId) !== 1 || targetId === id) return false;
+  var target = targets.get(targetId);
+  if (!target || target.tagName !== "A" || target.closest("nav, aside, pre, code, h1, h2, h3, h4, h5, h6")) return false;
+  var reverse = target.getAttribute("href");
+  if (!samePageFragmentLink(reverse)) return false;
+  var reverseId;
+  try { reverseId = decodeURIComponent(reverse.slice(reverse.indexOf("#") + 1)); } catch (_error) { return false; }
+  if (reverseId !== id) return false;
+  var noteSelector = "[role='doc-footnote'], [role='doc-endnote'], " +
+    "div[class*='footnote' i], section[class*='footnote' i], li[class*='footnote' i], " +
+    "div[class*='endnote' i], section[class*='endnote' i], li[class*='endnote' i]";
+  var note = link.closest(noteSelector) || target.closest(noteSelector);
+  if (!note || !normalizeText(note.textContent.replace(link.textContent, "").replace(target.textContent, ""))) return false;
+  var reference = note.contains(link) ? target : link;
+  var prose = reference.closest("p, li, dd, td, th, blockquote");
+  return !!(prose && !note.contains(prose) && normalizeText(prose.textContent.replace(reference.textContent, "")));
+}
+
 function tocLikeNode(node) {
   if (node.querySelector("p, pre, code, table, dl")) return false;
   var links = Array.prototype.slice.call(node.querySelectorAll("a[href]"));
@@ -125,6 +150,16 @@ function cleanupDocsRoot(root, options) {
     el.remove();
   });
 
+  var referenceTargets = new Map();
+  var sourceReferenceIds = new Map();
+  document.querySelectorAll("[id]").forEach(function(el) {
+    var id = el.getAttribute("id");
+    sourceReferenceIds.set(id, (sourceReferenceIds.get(id) || 0) + 1);
+  });
+  root.querySelectorAll("[id]").forEach(function(el) {
+    var id = el.getAttribute("id");
+    referenceTargets.set(id, referenceTargets.has(id) ? null : el);
+  });
   root.querySelectorAll("a[href]").forEach(function(el) {
     var text = normalizeText(el.textContent);
     var title = normalizeText(el.getAttribute("title"));
@@ -136,6 +171,7 @@ function cleanupDocsRoot(root, options) {
     var prose = el.closest("p, li, dd, td, th");
     if (prose && !/^(?:¶|↑|#)$/.test(text) &&
         normalizeText(prose.textContent.replace(el.textContent, ""))) return;
+    if (authoredReciprocalReferenceLink(el, referenceTargets, sourceReferenceIds)) return;
     if (samePageFragmentLink(el.getAttribute("href")) && (!text || text.length < 40 || /link for this heading/i.test(title) || /^skip to (?:main )?content$/i.test(text))) el.remove();
   });
 
