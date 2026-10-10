@@ -31,6 +31,7 @@
 
 ### Development
 
+- Classify access interstitials from readable page evidence without treating executable or inert runtime text as a visible gate.
 - Use the source-declared page summary for a proved complete portal collection instead of its first ticker or ancillary record.
 - Keep page creation dates out of featured-record publication metadata when the visible heading identifies a different document.
 - Preserve uniquely paired authored footnote return links through shared short-fragment cleanup, retaining their targets and annotation order.

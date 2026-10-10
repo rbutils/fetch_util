@@ -132,7 +132,7 @@ function substantialPublicPage(page) {
 
 function interstitialPageType(metadata, pageText) {
   var title = normalizeText(metadata.title || document.title);
-  var page = normalizeText([pageText || "", (document.body && document.body.textContent) || ""].join(" "));
+  var page = normalizeText(pageText || pageReadableText());
   var combined = (title + " " + page).toLowerCase();
   var substantialPublic = substantialPublicPage(page);
   var agreementLoginGate = agreementLoginGateEvidence();
