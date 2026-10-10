@@ -129,6 +129,14 @@ function sourceOwnedPagePublicationTime(metadata) {
   if (page.origin !== current.origin || canonical.origin !== current.origin) return null;
   page.hash = current.hash = canonical.hash = "";
   if (page.href !== current.href && page.href !== canonical.href) return null;
+  var headlineLink = headings[0].closest("a[href]");
+  if (headlineLink) {
+    var headlineUrl = materializedHttpUrl(headlineLink.getAttribute("href"));
+    if (!headlineUrl) return null;
+    var headlinePage = new URL(headlineUrl);
+    headlinePage.hash = "";
+    if (headlinePage.href !== current.href && headlinePage.href !== canonical.href) return null;
+  }
   var published = entityText(pages[0].datePublished);
   if (!/^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/.test(published) || !Number.isFinite(Date.parse(published))) return null;
   return published;
