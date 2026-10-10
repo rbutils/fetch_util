@@ -124,7 +124,10 @@
       !cookieNoticeText(rendered)
     );
     var composed = nodeHasShadowContent(document.body);
-    if (renderedLooksReadable && !composed) return rendered;
+    var ownedConsentInterface = Array.from(document.body.querySelectorAll("[role='dialog'], [aria-modal='true'], dialog, [id*='cookie' i], [class*='cookie' i], [id*='consent' i], [class*='consent' i], [id*='privacy' i], [class*='privacy' i]")).some(function(node) {
+      return cookieConsentInterfaceNode(node);
+    });
+    if (renderedLooksReadable && !composed && !ownedConsentInterface) return rendered;
 
     var clone = composed ? visibilityPrunedClone(document.body, document) : safeDeepClone(document.body, document);
     clone.querySelectorAll("script, style, noscript, template, iframe").forEach(function(el) {
@@ -137,6 +140,12 @@
   function cookieNoticeText(text) {
     var normalized = normalizeText(text || "").toLowerCase();
     if (!normalized || normalized.length > 5000) return false;
+    return cookieNoticeKeywordEvidence(normalized);
+  }
+
+  function cookieNoticeKeywordEvidence(text) {
+    var normalized = normalizeText(text || "").toLowerCase();
+    if (!normalized) return false;
     if (!textMatchesAnyPattern(normalized, COOKIE_NOTICE_KEYWORD_PATTERNS)) return false;
 
     var hits = normalized.match(COOKIE_NOTICE_HIT_PATTERN) || [];

@@ -1,3 +1,12 @@
+  function sourceOwnedConsentReportingBody(content) {
+    if (!content || content.contentType !== "article" || content.sourceOwnedTitleIdentityUnproven) return false;
+    var owner = content.sourceOwnedArticleBody || sourceOwnedReaderBodyOwner(content, content.sourceOwnedReaderBodyParagraphSources);
+    if (!owner) return false;
+    owner = owner.closest("article, [itemprop='articleBody'], [property='articleBody']");
+    if (!owner || elementSubtreeHidden(owner)) return false;
+    return !Array.from(owner.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']")).some(cookieConsentActionControl);
+  }
+
   function accessWarningReasons(metadata, content, markdown, body, page, combined, title, docsLike, readableDocsPage,
                                 challengeType, interstitialType, extractedNotFoundBody, hasPublicContent,
                                 substantialContent, emptyExtraction, boilerplateOnlyExtraction, signals) {

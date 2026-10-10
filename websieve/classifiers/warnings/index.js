@@ -19,8 +19,9 @@
     var extractedNotFoundText = normalizeText([body, contentText].join(" ")).toLowerCase();
     var extractedNotFoundBody = !visibleMaterialResultsOwner(content, metadata) &&
       notFoundInterstitialEvidence(title, extractedNotFoundText, { maxTextLength: 1100 });
-    var hasPublicContent = document.querySelectorAll("main a[href], article a[href]").length >= 3 || (content && content.contentType === "list");
     var consentDominatedBody = consentWallDominates(body);
+    var hasPublicContent = document.querySelectorAll("main a[href], article a[href]").length >= 3 ||
+      (content && content.contentType === "list") || (consentDominatedBody && sourceOwnedConsentReportingBody(content));
     var substantialContent = body.length > 500 && (!contentText || contentText.length > 500) && !(consentDominatedBody && !hasPublicContent);
     var clearStructure = clearArticleStructure(content, markdown, body);
 

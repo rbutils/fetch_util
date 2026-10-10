@@ -16,8 +16,30 @@
     return true;
   }
 
+  function cookieConsentInterfaceNode(node, text) {
+    if (!node || node.nodeType !== 1) return false;
+    var authored = "article, main, [role='main'], [itemprop='articleBody'], [property='articleBody'], blockquote, pre, code";
+    if (node.matches(authored) || node.querySelector(authored) || node.closest("article, [itemprop='articleBody'], [property='articleBody'], blockquote, pre, code")) return false;
+
+    var attrs = normalizeText([node.getAttribute("id"), node.getAttribute("class"), node.getAttribute("aria-label")].join(" "));
+    var interfaceOwned = node.matches("[role='dialog'], [aria-modal='true'], dialog") ||
+      /cookie|consent|privacy|gdpr|ccpa/i.test(attrs) || /position:\s*(fixed|sticky)/i.test(node.getAttribute("style") || "");
+    if (!interfaceOwned || !cookieNoticeKeywordEvidence(text === undefined ? node.textContent : text)) return false;
+
+    return Array.from(node.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']")).some(cookieConsentActionControl);
+  }
+
+  function cookieConsentActionControl(control) {
+    if (control.closest("blockquote, pre, code") || control.hidden || control.getAttribute("aria-hidden") === "true") return false;
+    var label = normalizeText(control.textContent || control.getAttribute("value") || control.getAttribute("aria-label") || "");
+    return /^(accept|reject|allow|deny|manage|save preferences|customi[sz]e|agree|akceptuj|odrzu|ustawienia|accepter|refuser|paramètres|aceptar|rechazar|configurar|aceitar|rejeitar|akzeptieren|ablehnen|einstellungen|accetta|rifiuta|impostazioni|accepteren|weigeren|instellingen|souhlas|odmítn|nastavení)/i.test(label);
+  }
+
   function cookieChromeNode(node) {
     if (!node || node.nodeType !== 1) return false;
+    if (node.matches("article, main, [role='main'], [itemprop='articleBody'], [property='articleBody'], blockquote, pre, code") ||
+        node.closest("blockquote, pre, code")) return false;
+    if (node.closest("article, [itemprop='articleBody'], [property='articleBody']") && node.querySelector("blockquote, pre, code")) return false;
 
     var attrs = normalizeText([
       node.getAttribute("id"),
@@ -32,7 +54,7 @@
     });
     var vendorContainer = vendorNamespace || /(onetrust|cookiebot|cybot|cookiedeclaration|cookie-declaration|usercentrics|trustarc|didomi|quantcast|osano|cookieyes|sourcepoint|sp_message|privacy-center|privacy preference center|cookie information|cookie list|consent preferences)/.test(attrs);
 
-    if (vendorContainer || externalConsentPlaceholderNode(node)) return true;
+    if (vendorContainer || externalConsentPlaceholderNode(node) || cookieConsentInterfaceNode(node, text)) return true;
     if (!text) return false;
     var attrCookieMatch = /(cookie|consent|privacy|gdpr|ccpa)/.test(attrs);
     if (attrCookieMatch && cookieNoticeText(text)) return true;
