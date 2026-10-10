@@ -799,7 +799,8 @@ RSpec.describe "extract asset bundle" do
       "systems/news_engines/portal_lead_records.js",
       "systems/news_engines/portal_lead_context.js",
       "systems/news_engines/generic_portal_homepages.js",
-      "boot/extract_api.js"
+      "boot/api/extract.js",
+      "boot/api/deliver.js"
     )
     reader_byline = "extractors/article/readability/attribution/header_byline.js"
     conflicting_credits = "extractors/article/readability/attribution/conflicting_credit_restoration.js"
@@ -812,7 +813,7 @@ RSpec.describe "extract asset bundle" do
     )
 
     pipeline = sources.fetch("boot/pipeline_helpers.js")
-    extract_api = sources.fetch("boot/extract_api.js")
+    extract_api = sources.fetch("boot/api/extract.js")
     portal_leads = sources.fetch("systems/news_engines/portal_lead_records.js")
     portal_context = sources.fetch("systems/news_engines/portal_lead_context.js")
     generic_portal = sources.fetch("systems/news_engines/generic_portal_homepages.js")
@@ -1368,7 +1369,7 @@ RSpec.describe "extract asset bundle" do
     detail_path = "classifiers/list_pages/detail_articles.js"
     dominance_path = "classifiers/list_pages/dominance.js"
     arbitration_path = "boot/list_candidate_arbitration.js"
-    boot_path = "boot/extract_api.js"
+    boot_path = "boot/api/extract.js"
 
     expect(manifest.index(detail_path)).to be < manifest.index(dominance_path)
     expect(manifest.index(detail_path)).to be < manifest.index(boot_path)
@@ -1389,7 +1390,7 @@ RSpec.describe "extract asset bundle" do
 
     expect(manifest.count(browse_path)).to eq(1)
     expect(manifest.index(browse_path)).to be < manifest.index("extractors/lists/relabeling.js")
-    expect(manifest.index(browse_path)).to be < manifest.index("boot/extract_api.js")
+    expect(manifest.index(browse_path)).to be < manifest.index("boot/api/extract.js")
   end
 
   it "groups dynamic list collections while preserving load order" do
@@ -1536,7 +1537,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],
-      ["boot/list_candidate_arbitration.js", ["boot/source_material_arbitration.js"], "boot/extract_api.js"],
+      ["boot/list_candidate_arbitration.js", ["boot/source_material_arbitration.js"], "boot/api/extract.js"],
       ["extractors/lists/relabeling.js", %w[
         extractors/lists/generic/records/card_evidence.js
         extractors/lists/generic/records/duplicate_record_metadata.js
@@ -1661,7 +1662,7 @@ RSpec.describe "extract asset bundle" do
       File.read(path).scan(/function\s+registerSocialSearchProfiles\s*\(/).length
     end
     expect(old_wrapper_count).to eq(0)
-    expect_manifest_order(manifest, "systems/news_engines/generic_portal_homepages.js", "boot/extract_api.js")
+    expect_manifest_order(manifest, "systems/news_engines/generic_portal_homepages.js", "boot/api/extract.js")
     expect_manifest_order(
       manifest,
       "systems/social/published_feed.js",
@@ -1673,7 +1674,8 @@ RSpec.describe "extract asset bundle" do
       "systems/social/tables/content.js",
       "systems/social/content_type.js",
       "boot/result_finalization.js",
-      "boot/extract_api.js"
+      "boot/api/extract.js",
+      "boot/api/deliver.js"
     )
     expect_manifest_order(
       manifest,

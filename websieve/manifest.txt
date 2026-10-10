@@ -362,5 +362,6 @@ boot/contents_component_finalization.js
 boot/result_finalization.js
 boot/list_candidate_arbitration.js
 boot/source_material_arbitration.js
-boot/extract_api.js
+boot/api/extract.js
+boot/api/deliver.js
 99_outro.js

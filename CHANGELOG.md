@@ -31,6 +31,7 @@
 
 ### Development
 
+- Separate extraction API construction from delivery in a cohesive bootstrap boundary while preserving initialization order and compiled behavior.
 - Retain table-feed stories whose displayed publisher context names a parent domain or domain/path while declining unrelated domain-shaped secondary headlines.
 - Preserve stable publication-slot identities across transient materialization classes, empty layout placeholders, and scalar vote fields embedded beside action controls without revealing hidden authored records.
 - Materialize a proved finite initial publication-slot collection before owned browser extraction, with configurable time/viewport bounds, explicit partial warnings, and lifecycle/viewport restoration.
