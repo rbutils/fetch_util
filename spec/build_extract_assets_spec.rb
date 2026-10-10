@@ -1664,6 +1664,7 @@ RSpec.describe "extract asset bundle" do
     expect_manifest_order(manifest, "systems/news_engines/generic_portal_homepages.js", "boot/extract_api.js")
     expect_manifest_order(
       manifest,
+      "systems/social/published_feed.js",
       "systems/social/visible_content.js",
       "systems/social/profile_content.js",
       "systems/social/tables/ownership.js",

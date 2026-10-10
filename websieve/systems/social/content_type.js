@@ -175,7 +175,8 @@
     }
     if (content && !ownedPostContent && (content.browseIndexContent || content.browseIndexEvidence)) return content;
     if (document.body) {
-      if (content && !content.hostAware && content.contentType !== "interstitial" && !ownedPostContent) {
+      if (content && !content.hostAware && content.contentType !== "interstitial" && !ownedPostContent &&
+          !content.sourceOwnedPublishedFeed) {
         var repeatedPost = socialPostOwnedContent(metadata);
         if (repeatedPost) content = repeatedPost;
       }

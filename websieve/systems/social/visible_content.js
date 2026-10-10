@@ -166,6 +166,8 @@
   }
 
   function socialPostOwnedContent(metadata) {
+    var publishedFeed = sourceOwnedPublishedFeedContent(metadata);
+    if (publishedFeed) return publishedFeed;
     var evidence = socialRepeatedPostEvidence() || socialDiscussionPostEvidence();
     if (!evidence) return null;
 

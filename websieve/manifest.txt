@@ -235,6 +235,7 @@ systems/content_types/sports.js
 systems/content_types/press_releases.js
 systems/content_types/products.js
 systems/content_types/properties.js
+systems/social/published_feed.js
 systems/social/visible_content.js
 systems/social/profile_content.js
 systems/social/tables/ownership.js

@@ -3,6 +3,9 @@
       resetTerminalArticleCollectionMarker();
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
+      if (ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) {
+        return finalizeExtractResult(ownedSocialPost, metadata, pageReadableText(), null, null);
+      }
       var focalArticleRoute = articleRouteFocalContent();
       var focalArticleRouteOwner = focalArticleRoute ? articleRouteFocalContent(null, true) : null;
       var articleBodyCollection = independentArticleBodyCollection();

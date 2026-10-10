@@ -94,7 +94,9 @@
     }
 
     // Multi-topic / liveblog warning: page contains multiple stories that can't be isolated
-    if (!challengeType && !interstitialType && content && content.contentType !== "search" && content.contentType !== "press_release" && !content.isolatedLiveblogEntry && !docsLike && !packagePage) {
+    var sourceOwnedPublishedFeed = content && content.sourceOwnedPublishedFeed === true &&
+      content.contentType === "social" && content.socialKind === "feed";
+    if (!challengeType && !interstitialType && content && content.contentType !== "search" && content.contentType !== "press_release" && !content.isolatedLiveblogEntry && !sourceOwnedPublishedFeed && !docsLike && !packagePage) {
       var formatView = multiTopicExtractionView(content, markdown);
       var formatMarkdown = formatView.markdown || markdown || "";
       var format = detectContentFormat(metadata, content, formatMarkdown);
