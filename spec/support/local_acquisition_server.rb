@@ -8,7 +8,7 @@ class LocalAcquisitionServer
 
   attr_reader :port
 
-  def initialize
+  def initialize(routes: {})
     @server = TCPServer.new("127.0.0.1", 0)
     @port = @server.addr[1]
     @requests = Queue.new
@@ -16,6 +16,7 @@ class LocalAcquisitionServer
     @closed = false
     @clients = []
     @workers = []
+    @routes = routes.dup.freeze
     @acceptor = Thread.new { accept_requests }
   end
 
@@ -72,6 +73,10 @@ class LocalAcquisitionServer
     return unless request
 
     @requests << request
+    if @routes.key?(request.path)
+      respond(client, "200 OK", { "Content-Type" => "text/html; charset=utf-8" }, @routes.fetch(request.path))
+      return
+    end
     case request.path
     when "/redirect"
       respond(client, "302 Found", { "Location" => "/hydrated" }, "")

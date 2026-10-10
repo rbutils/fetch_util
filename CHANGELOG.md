@@ -31,6 +31,7 @@
 
 ### Development
 
+- Materialize a proved finite initial publication-slot collection before owned browser extraction, with configurable time/viewport bounds, explicit partial warnings, and lifecycle/viewport restoration.
 - Recognize physically owned published feeds before broad portal arbitration, preserving ordered short, undated and duplicate-destination entries while excluding control-only promotions.
 - Recognize long, unbranded consent interfaces through owned modal controls without treating their partner lists as homepage content or removing authored privacy reporting.
 - Ignore empty class/id-only paywall placeholders while retaining explicit access markers, materialized gates and paid metadata.

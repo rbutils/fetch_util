@@ -271,7 +271,13 @@ module FetchUtil
     end
 
     def build_page_result(page, requested_url, transport_url, observation, attempt)
-      payload = observation.measure(:extraction, attempt: attempt) { @extractor.extract(page) }
+      payload = observation.measure(:extraction, attempt: attempt) do
+        if @owned_browser
+          @browser.send(:with_materialized_feed, page) { @extractor.extract(page) }
+        else
+          @extractor.extract(page)
+        end
+      end
       if telegram_focal_preview?(transport_url) && payload["contentType"] == "article"
         observation.measure(:pre_extraction_sleep, attempt: attempt) { sleep Browser::PRE_EXTRACTION_SETTLE_WAIT }
         payload = observation.measure(:extraction, attempt: attempt) { @extractor.extract(page) }
@@ -980,7 +986,8 @@ module FetchUtil
 
     def browser_options(options)
       options.slice(:timeout, :wait, :wait_for_idle, :idle_duration, :viewport,
-                    :user_agent, :accept_language, :browser_path, :browser_options)
+                    :user_agent, :accept_language, :browser_path, :browser_options,
+                    :feed_hydration_timeout, :feed_hydration_max_height)
     end
 
     def log_request(url, t0)

@@ -7,12 +7,14 @@ require "uri"
 
 module FetchUtil
   class Browser
+    autoload :FeedMaterialization, "fetch_util/browser/feed_materialization"
     autoload :InteractionHelpers, "fetch_util/browser/interaction_helpers"
     autoload :Lifecycle, "fetch_util/browser/lifecycle"
     autoload :Navigation, "fetch_util/browser/navigation"
     autoload :SiteStabilization, "fetch_util/browser/site_stabilization"
     autoload :Stabilization, "fetch_util/browser/stabilization"
 
+    include FeedMaterialization
     include InteractionHelpers
     include Lifecycle
     include Navigation
@@ -49,11 +51,13 @@ module FetchUtil
     def initialize(timeout: 20, wait: 0.75, wait_for_idle: true, idle_duration: 0.35,
                    viewport: DEFAULT_VIEWPORT, user_agent: DEFAULT_USER_AGENT,
                    accept_language: DEFAULT_ACCEPT_LANGUAGE, browser_path: nil,
-                   browser_options: nil)
+                   browser_options: nil, feed_hydration_timeout: 5, feed_hydration_max_height: 18_000)
       @timeout = positive_timeout(timeout)
       @wait = nonnegative_duration(wait, "wait")
       @wait_for_idle = wait_for_idle
       @idle_duration = nonnegative_duration(idle_duration, "idle_duration")
+      @feed_hydration_timeout = nonnegative_duration(feed_hydration_timeout, "feed_hydration_timeout")
+      @feed_hydration_max_height = positive_feed_height(feed_hydration_max_height)
       @viewport = DEFAULT_VIEWPORT.merge(symbolize_hash(viewport || {}))
       @user_agent = user_agent.to_s.dup.freeze
       @accept_language = accept_language.to_s.dup.freeze

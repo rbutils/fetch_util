@@ -132,6 +132,8 @@ For article results, `description` exposes declared page metadata independently 
 - `idle_duration:` idle duration passed to Ferrum when `wait_for_idle` is enabled
 - `reader_mode:` prefer Readability before heuristic fallbacks
 - `viewport:` viewport hash with `:width` and `:height`
+- `feed_hydration_timeout:` finite initial-feed observation budget in seconds (default `5`; `0` disables viewport materialization)
+- `feed_hydration_max_height:` temporary feed viewport height ceiling in CSS pixels (default `18000`), bounding browser layout/raster work rather than the number of extracted records
 - `user_agent:` override the browser user agent
 - `accept_language:` override request language headers
 - `browser_path:` explicit Chromium path
@@ -139,6 +141,16 @@ For article results, `description` exposes declared page metadata independently 
 `timeout:` is not a whole-fetch deadline: PDF probing, browser navigation and
 stabilization, native extraction, and HTTP fallbacks have distinct existing
 budgets. The extractor retains its minimum 60-second evaluation allowance.
+
+For a proved publication collection with stable, positive-height empty sibling
+slots, an owned fetch browser temporarily materializes the **initial identity
+set**. It does not exhaust infinite scrolling or guess network endpoints. The
+normal viewport is restored for extraction, with lifecycle briefly frozen to
+prevent destructive offscreen virtualization; restoration and resumption also
+run when extraction fails. Available content is retained, and any unresolved
+initial slots produce `unmaterialized_feed_entries` rather than silent partial
+output. This extraction adapter does not change ordinary `Browser#with_page`
+callbacks or the interface of injected browsers.
 
 ## Output Shape
 
