@@ -223,5 +223,5 @@
       return fallbackContent(metadata);
     }
     var headed = sourceOwnedHeadedBranchOwnership(metadata);
-    return headed ? canonicalArticleBodyContent(metadata, headed) : null;
+    return headed ? canonicalArticleBodyContent(metadata, headed) : sourceOwnedSplitArticleContent(metadata);
   }
