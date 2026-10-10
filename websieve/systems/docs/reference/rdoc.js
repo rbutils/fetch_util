@@ -5,17 +5,33 @@ function rdocSystemPresent(generator, signature) {
   if (metadata && !elementSubtreeHidden(metadata)) return true;
   var body = document.querySelector("#bodyContent");
   if (!body || elementSubtreeHidden(body)) return false;
+  if (sdocReferenceIdentity(body)) return true;
   return Array.prototype.some.call(body.querySelectorAll("h1, h2"), function(heading) {
     return !elementSubtreeHidden(heading) && /^(?:class|module)\s+[A-Z][\w:]*(?:\s*<\s*[A-Z][\w:]*)?(?:\s*[¶↑])*$/i.test(normalizeText(heading.textContent));
   });
 }
 
+function sdocReferenceIdentity(body) {
+  var tree = document.querySelector("meta[name='data-tree-keys']");
+  if (!body || !tree || !document.querySelector("meta[name='data-rel-prefix']") ||
+      document.querySelectorAll("#bodyContent").length !== 1 || !body.querySelector("#content .description")) return false;
+  var keys;
+  try { keys = JSON.parse(tree.getAttribute("content") || ""); } catch (_error) { return false; }
+  if (!Array.isArray(keys) || !keys.length || !keys.every(function(key) { return typeof key === "string" && /^[A-Z]\w*$/.test(key); })) return false;
+  var identity = keys.join("::");
+  var declared = document.querySelector("meta[property='og:title']");
+  return normalizeText(document.title) === identity || (declared &&
+    normalizeText(declared.getAttribute("content") || declared.getAttribute("value")) === identity) ? identity : null;
+}
+
 function rdocDocsContent(metadata, info) {
+  var referenceName = !location.hash && sdocReferenceIdentity(document.querySelector("#bodyContent"));
   return docsEngineContent(metadata, info, {
     system: "rdoc",
     rootSelectors: ["#bodyContent", "#content", "#main", "main"],
-    titleSelectors: ["#bodyContent h1", "#content h1", "#main h1", "main h1"],
-    fallbackTitle: function() { return metadata.title || document.title; },
+    titleSelectors: referenceName ? [] : ["#bodyContent h1", "#content h1", "#main h1", "main h1"],
+    preferFragmentTitle: referenceName ? false : undefined,
+    fallbackTitle: function() { return referenceName || metadata.title || document.title; },
     titleFormatter: function(title) {
       return title.replace(/\s*(?:-|\u2013|\u2014)\s*RDoc Documentation$/i, "").replace(/^(class|module)\s+/i, "");
     },
