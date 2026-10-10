@@ -4,17 +4,22 @@ require "spec_helper"
 
 RSpec.describe "finite initial publication acquisition" do
   def feed_document(missing: nil, append: false)
-    slots = (1..20).map { |number| "<section class='publication-slot' id='entry-#{number}'></section>" }.join
+    slots = (1..20).map { |number| "<section class='publication-slot pending' id='entry-#{number}'></section>" }.join
     <<~HTML
       <!doctype html><html><head><meta charset="utf-8"><title>Community publication collection</title>
-      <style>.publication-slot { min-height: 220px; padding: 4px; } article { height: 200px; }</style></head>
-      <body><main><h1>Community publication collection</h1><div id="collection">#{slots}</div></main>
+      <style>.publication-slot { min-height: 220px; padding: 4px; } .pending { visibility: hidden; } article { height: 200px; }</style></head>
+      <body><main><h1>Community publication collection</h1><div id="collection">#{slots}
+      <section id="entry-70" style="visibility:hidden;height:220px"><article>
+      <a rel="author">Hidden author</a><time datetime="2026-10-10">Today</time>
+      <h2><a href="/entry/70">Intentionally hidden reporting</a></h2></article></section></div>
+      <figure class="age-filter"><p>Show 18+</p></figure></main>
       <script>
       window.ticks = 0; setInterval(() => window.ticks++, 20);
       function populate(slot) {
         const number = Number(slot.id.split('-')[1]);
         if (number === #{missing || "null"} || !Number.isInteger(number)) return;
-        slot.innerHTML = '<aside data-score="' + number + '">' + number + '</aside><article>' +
+        slot.className = 'publication-slot active';
+        slot.innerHTML = '<aside class="vote-box"><p>' + number + '</p><button>Vote</button></aside><article>' +
           '<header><span rel="author">élise 名' + number + '</span><time datetime="2026-01-02T12:00:00Z">today</time></header>' +
           '<h2><a href="/entry/' + number + '">Published record ' + number + '</a></h2>' +
           '<p>Authored reporting for record ' + number + ' preserves this complete original paragraph.</p></article>';
@@ -26,7 +31,9 @@ RSpec.describe "finite initial publication acquisition" do
       Array.from(document.querySelectorAll('.publication-slot')).slice(0, 3).forEach(populate);
       const observer = new IntersectionObserver(entries => entries.forEach(entry => {
         if (entry.isIntersecting) populate(entry.target);
-        else if (Number(entry.target.id.split('-')[1]) > 3) entry.target.replaceChildren();
+        else if (Number(entry.target.id.split('-')[1]) > 3) {
+          entry.target.className = 'publication-slot pending'; entry.target.replaceChildren();
+        }
       }));
       document.querySelectorAll('.publication-slot').forEach(slot => observer.observe(slot));
       </script></body></html>
@@ -57,6 +64,7 @@ RSpec.describe "finite initial publication acquisition" do
         expect(offsets).to all(be_a(Integer))
         expect(offsets).to eq(offsets.sort)
         expect(payload.fetch("markdown")).to include("élise 名20")
+        expect(payload.fetch("markdown")).not_to include("Intentionally hidden reporting")
         expect(page.evaluate("document.getElementById('appended-slot') !== null")).to be(true)
         expect(page.evaluate("({width: innerWidth, height: innerHeight})")).to eq(original)
         ticks = page.evaluate("window.ticks")

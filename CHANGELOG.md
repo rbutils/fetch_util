@@ -31,6 +31,7 @@
 
 ### Development
 
+- Preserve stable publication-slot identities across transient materialization classes, empty layout placeholders, and scalar vote fields embedded beside action controls without revealing hidden authored records.
 - Materialize a proved finite initial publication-slot collection before owned browser extraction, with configurable time/viewport bounds, explicit partial warnings, and lifecycle/viewport restoration.
 - Recognize physically owned published feeds before broad portal arbitration, preserving ordered short, undated and duplicate-destination entries while excluding control-only promotions.
 - Recognize long, unbranded consent interfaces through owned modal controls without treating their partner lists as homepage content or removing authored privacy reporting.
