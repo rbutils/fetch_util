@@ -273,18 +273,20 @@
     var materializedItemCount = best.portalEvidenceMaterializedItemCount == null ? best.items.filter(function(item) {
       return !!materializedHttpUrl(item && item.url);
     }).length : best.portalEvidenceMaterializedItemCount;
+    var portalEvidence = options.portalRoot && portalSectionCount >= 2 && portalEvidenceItemCount >= 4 && materializedItemCount >= 2 ? {
+      namedSectionCount: portalSectionCount,
+      canonicalCardCount: portalEvidenceItemCount
+    } : null;
+    var excerpt = portalEvidence && metadata.declaredDescription || (best.items[0] ? best.items[0].text : metadata.excerpt);
 
     var result = listItemsContentResult(metadata, {
       title: metadata.title || document.title,
-      excerpt: best.items[0] ? best.items[0].text : metadata.excerpt,
+      excerpt: excerpt,
       html: listHtmlWithoutUnsafeDestinations(best.root),
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,
-      portalRootEvidence: options.portalRoot && portalSectionCount >= 2 && portalEvidenceItemCount >= 4 && materializedItemCount >= 2 ? {
-        namedSectionCount: portalSectionCount,
-        canonicalCardCount: portalEvidenceItemCount
-      } : null
+      portalRootEvidence: portalEvidence
     });
     result.listExtraction = best;
     result.listArbitrationMarkdown = rankedMarkdown;
