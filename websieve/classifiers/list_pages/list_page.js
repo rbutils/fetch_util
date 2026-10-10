@@ -128,6 +128,7 @@
     if (content && content.contentType === "list") {
       if (!homepageRootPath()) return null;
       if (content.docsLike) return null;
+      if (content.portalRootEvidence) return content;
       var listRootContent = listContent(metadata, { portalRoot: true });
       if (!listRootContent.portalRootEvidence) return null;
       content.portalRootEvidence = listRootContent.portalRootEvidence;

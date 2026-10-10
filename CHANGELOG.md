@@ -31,6 +31,7 @@
 
 ### Development
 
+- Reuse an already proved portal-list result during late validation instead of rebuilding the same collection solely to confirm its existing evidence.
 - Separate extraction API construction from delivery in a cohesive bootstrap boundary while preserving initialization order and compiled behavior.
 - Retain table-feed stories whose displayed publisher context names a parent domain or domain/path while declining unrelated domain-shaped secondary headlines.
 - Preserve stable publication-slot identities across transient materialization classes, empty layout placeholders, and scalar vote fields embedded beside action controls without revealing hidden authored records.
