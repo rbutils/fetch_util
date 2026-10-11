@@ -33,6 +33,7 @@ core/dom/widgets/article_placeholders.js
 core/dom/widgets/action_prompts.js
 core/dom/widgets/article_engagement.js
 core/dom/widgets/availability_modal.js
+core/dom/widgets/subscription_interface.js
 core/dom/widgets/scoreboard.js
 core/dom/widgets/comment_count.js
 core/dom/widgets/article.js

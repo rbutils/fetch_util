@@ -32,6 +32,7 @@
 ### Development
 
 - Keep a proved consent-only interface explicit when readable-text cleanup leaves no public reporting.
+- Remove materialized publication signup components only when invitation, recipient controls and legal-consent links agree, preserving mixed authored material.
 - Keep independent visible homepage reporting ahead of a specialized adapter's partial topic, introduction or hero fragment.
 - Retain a uniquely declared article's visible header and complete body across separate typed layout regions without selecting an unrelated notice.
 - Prefer a complete visible CMS body owned by the unique article heading over unrelated global story-description fragments.
