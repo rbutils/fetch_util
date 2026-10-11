@@ -214,6 +214,9 @@ function consentWallPage(title, page) {
   if (/^before you continue to (google|youtube)\b/.test(normalizedTitle)) return true;
   if (/before you continue to (google|youtube)/.test(normalizedPage) && /accept all|reject all|more options|we use cookies and data/.test(normalizedPage)) return true;
   if (requiredCookieGateOwner()) return true;
+  if (!normalizedPage && Array.from(document.querySelectorAll("div, section, aside, [role='dialog']")).some(function(node) {
+    return cookieConsentInterfaceNode(node);
+  })) return true;
   if (!consentWallDominates(normalizedPage)) return false;
 
   return cookiePattern.test(normalizedTitle) || cookieLeadPattern.test(normalizedPage);
