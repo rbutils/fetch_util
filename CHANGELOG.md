@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Isolate transient extraction and Markdown trees from the active page document while preserving source visibility and complete material.
+
 - Preserve paired table attribution ownership so dated author rows cannot become duplicate stories and suppress published replies.
 
 - Keep shared repair helpers in their explicit release-pipeline and clone-cleanup module boundaries.

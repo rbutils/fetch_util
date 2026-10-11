@@ -53,7 +53,7 @@
   }
 
   function withComposedDomRead(extract) {
-    return function(options) {
+    return withInertDomWork(function(options) {
       var previous = composedDomReadContext;
       var previousToken = composedDomShadowToken;
       var previousReaderProperty = composedDomShadowReaderProperty;
@@ -78,5 +78,5 @@
         composedDomShadowToken = previousToken;
         composedDomShadowReaderProperty = previousReaderProperty;
       }
-    };
+    });
   }

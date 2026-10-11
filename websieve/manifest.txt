@@ -48,6 +48,7 @@ core/dom/article_collections.js
 core/dom/terminal_article_furniture.js
 core/dom/materialization.js
 core/dom/deferred_reveals.js
+core/dom/inert_work.js
 core/dom/composed.js
 core/dom/clipping.js
 core/dom/base.js
