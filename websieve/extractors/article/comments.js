@@ -46,7 +46,7 @@
       focalOwnership.node.matches("article") && focalOwnership.heading &&
       focalOwnership.node.contains(focalOwnership.heading);
     if (!semanticArticle &&
-        !/^(?:same-owner-source-headline|same-owner-repeated-headline|canonical-article-metadata|source-record-container|liveblog-parent)$/.test(focalOwnership.proof || "")) return false;
+        !/^(?:same-owner-source-headline|same-owner-repeated-headline|canonical-article-metadata|source-record-container|liveblog-parent|unique-canonical-headed-body-branch)$/.test(focalOwnership.proof || "")) return false;
     if (focalOwnership.proof === "source-record-container") {
       var record = focalOwnership.sourceRecord;
       return !!(record && record.recordContainer === focalOwnership.node &&
@@ -74,6 +74,7 @@
   }
 
   function commentThreadHasMaterial(thread) {
+    if (sourceOwnedCommentInterfaceOnlyThread(thread)) return false;
     if (thread.matches("div.comments, section.comments")) {
       var promptProbe = thread.cloneNode(true);
       if (stripEmptyCommentUi(promptProbe)) return false;
@@ -90,8 +91,10 @@
   }
 
   function cleanFocalCommentClone(source) {
-    var clone = visibilityPrunedClone(source, document);
+    var sourceClones = new WeakMap();
+    var clone = visibilityPrunedClone(source, document, sourceClones);
     if (!clone) return "";
+    stripSourceOwnedCommentInterfaceNotices(source, clone, sourceClones);
     if (clone.matches("form, nav, aside, footer, dialog, [class*='promo' i], [class*='sponsor' i], [class*='advert' i]")) return "";
     clone.querySelectorAll("form, div, section").forEach(function(node) {
       if (!node.querySelector("input, textarea, select, button")) return;

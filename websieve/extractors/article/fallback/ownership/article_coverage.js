@@ -94,6 +94,8 @@ function sourceOwnedArticleHasUncoveredText(ownership, threadRoots, ownedThreads
 }
 
 function sourceOwnedArticleMaterialNodeCovered(node, ownership, threadRoots, ownedThreads) {
+  if (sourceOwnedPlainArticleInterfaceNode(node, ownership)) return true;
+  if ((ownership.contextNodes || []).some(function(context) { return context === node || context.contains(node); })) return true;
   var commentThread = threadRoots.find(function(thread) { return thread === node || thread.contains(node); });
   if (commentThread && commentThreadHasMaterial(commentThread)) {
     return ownedThreads.indexOf(commentThread) !== -1;

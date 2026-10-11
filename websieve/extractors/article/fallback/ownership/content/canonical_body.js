@@ -11,6 +11,7 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
     byline: attribution.byline || null,
     excerpt: publicPreview ? publicPreview.text :
       (sourceOwnedDeclaredArticleHeaderLead(ownership, metadata, text) ||
+        sourceOwnedPlainArticleLead(ownership, text) ||
         fallbackSourceOwnedSummary(ownership.body.sourceNode, text, ownership) ||
         sourceOwnedArticleHeaderLead(ownership) || completeArticleLead ||
         fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true, ownership)),

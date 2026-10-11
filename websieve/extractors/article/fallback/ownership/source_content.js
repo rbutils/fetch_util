@@ -255,6 +255,7 @@ function sourceOwnedHeaderContainsForeignArticle(header) {
 function sourceOwnedHeaderContributions(ownership) {
   var body = ownership.body.sourceNode;
   return Array.from(ownership.ownerRoot.querySelectorAll("p, h2, h3, h4, h5, h6, blockquote, ul, ol, li, table, pre, code, figure, img, picture, video, audio, iframe, object, embed, a[href]")).filter(function(node) {
+    if (sourceOwnedPlainArticleInterfaceNode(node, ownership)) return false;
     if (elementVisuallyHidden(node) || sourceOwnershipInChrome(node) || body.contains(node) || node.contains(ownership.heading)) return false;
     if (!sourceOwnedHeaderPrecedesBody(node, body)) return false;
     var article = node.closest("article");
@@ -277,5 +278,7 @@ function genericSourceOwnedPageContent(metadata) {
   if (semantic.ownership) return canonicalArticleBodyContent(metadata, semantic.ownership);
   if (semantic.considered) return null;
   var headed = sourceOwnedHeadedBranchOwnership(metadata);
-  return headed ? canonicalArticleBodyContent(metadata, headed) : null;
+  if (headed) return canonicalArticleBodyContent(metadata, headed);
+  var plain = sourceOwnedPlainArticleBodyOwnership(metadata);
+  return plain ? canonicalArticleBodyContent(metadata, plain) : null;
 }
