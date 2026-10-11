@@ -219,6 +219,8 @@
   }
 
   function genericFocalArticleContent(metadata) {
+    var declaredBody = sourceOwnedDeclaredArticleBodyOwnership(metadata);
+    if (declaredBody) return canonicalArticleBodyContent(metadata, declaredBody);
     if (fallbackLiveblogPageContext() || resolveCanonicalArticleBodyOwnership() || fallbackFocalHeadlineOwnership()) {
       return fallbackContent(metadata);
     }

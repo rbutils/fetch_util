@@ -156,7 +156,8 @@ function sourceOwnedArticleHeaderContext(ownership) {
         !sourceOwnedHeaderPrecedesBody(header, body) || sourceOwnedHeaderContainsChrome(header) ||
         sourceOwnedHeaderContainsForeignArticle(header)) return false;
 
-    var headings = Array.from(header.querySelectorAll("h1")).filter(function(node) {
+    var headingSelector = ownership.proof === "declared-complete-physical-article-body" ? "h1, h2, [itemprop~='headline' i]" : "h1";
+    var headings = Array.from(header.querySelectorAll(headingSelector)).filter(function(node) {
       return !elementVisuallyHidden(node) && !node.closest("nav, aside, footer, form, [role~='navigation' i], [role~='complementary' i]");
     });
     return headings.length === 1 && headings[0] === ownership.heading;

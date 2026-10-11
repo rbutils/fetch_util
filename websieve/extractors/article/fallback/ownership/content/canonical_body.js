@@ -10,7 +10,8 @@ function canonicalArticleBodyContent(metadata, ownership, article, publicPreview
     title: titleIdentityUnproven ? (metadata && metadata.title) || ownership.title : ownership.title,
     byline: attribution.byline || null,
     excerpt: publicPreview ? publicPreview.text :
-      (fallbackSourceOwnedSummary(ownership.body.sourceNode, text, ownership) ||
+      (sourceOwnedDeclaredArticleHeaderLead(ownership, metadata, text) ||
+        fallbackSourceOwnedSummary(ownership.body.sourceNode, text, ownership) ||
         sourceOwnedArticleHeaderLead(ownership) || completeArticleLead ||
         fallbackArticleExcerpt(ownership.body.sourceNode, text, metadata, true, ownership)),
     siteName: (metadata && metadata.siteName) || location.hostname,

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Bind a complete declared article body to its visible physical source and printed header, retaining alternate headings and attribution while excluding sibling services and unrelated stories.
 - Exclude source-proved action clusters and automatic-audio notices from visible author fields while preserving substantive author context and declared metadata.
 - Distinguish original wire publishing from reposts using matching declared site and article-publisher identities, retaining warnings for conflicting issuers, publishers and origins instead of exempting wire-service hostnames.
 - Recognize corporate releases from explicit release language, newsroom routes or datelines on any host, replacing the corporate newsroom hostname list.
