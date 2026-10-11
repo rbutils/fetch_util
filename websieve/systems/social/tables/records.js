@@ -122,10 +122,14 @@
 
   function tableSocialRecords(tables) {
     var records = [];
+    var ownedDetailRows = new Set();
     tables.forEach(function(table) {
       tableSocialRows(table).forEach(function(row) {
+        if (ownedDetailRows.has(row)) return;
         var record = tableSocialStory(row);
-        if (record) records.push(record);
+        if (!record) return;
+        records.push(record);
+        if (record.detail !== record.row) ownedDetailRows.add(record.detail);
       });
     });
     return records;

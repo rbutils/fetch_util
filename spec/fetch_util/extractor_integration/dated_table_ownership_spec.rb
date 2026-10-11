@@ -63,4 +63,14 @@ RSpec.describe 'FetchUtil dated table record ownership' do
       expect(payload['markdown']).to include('Observation 4', 'The supporting observation')
     end
   end
+
+  it 'keeps unmarked paired attribution out of standalone records while retaining nested replies' do
+    html = fixture_contents(File.expand_path('../../fixtures/table_social_nested_layout.html', __dir__))
+    extract_from_url('https://forum.example.test/discussion/7', html) do |payload|
+      expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'handle' => 'mira', 'replyCount' => 1)
+      expect(payload['markdown']).to include('shares its table', '`source_code`', 'supporting reference',
+                                             'Owned field', 'Research value', 'Noah', 'The nested reply preserves its full source.')
+      expect(payload['html']).to include('https://docs.example.test/nested', 'The nested reply preserves its full source.')
+    end
+  end
 end

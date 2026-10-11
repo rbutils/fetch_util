@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve paired table attribution ownership so dated author rows cannot become duplicate stories and suppress published replies.
+
 - Keep shared repair helpers in their explicit release-pipeline and clone-cleanup module boundaries.
 
 - Remove only source-proved leaf article engagement clusters, preserving author and comment portraits, authored resources and reciprocal references.
