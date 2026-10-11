@@ -232,7 +232,12 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
-    if (elementMap) mapDomCloneElements(node, clone, elementMap);
+    var engagementClusters = sourceOwnedEngagementClusters(node);
+    var sourceClones = elementMap || (engagementClusters.length ? new WeakMap() : null);
+    if (sourceClones) {
+      mapDomCloneElements(node, clone, sourceClones);
+      stripSourceOwnedEngagementClusters(node, clone, sourceClones, engagementClusters);
+    }
     materializeEditorialFrameLinks(node, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {

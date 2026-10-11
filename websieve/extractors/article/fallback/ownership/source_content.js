@@ -2,6 +2,7 @@ function sourceOwnedContentClone(source, preservedFooterNodes, ownership, source
   sourceClones = sourceClones || new WeakMap();
   var clone = visibilityPrunedClone(source, document, sourceClones);
   if (!clone) return document.createElement("div");
+  stripSourceOwnedEngagementClusters(source, clone, sourceClones);
   sourceOwnedCleanCommentFormRoots(source, clone, sourceClones, ownership);
   var editorialHeadings = [];
   if (typeof genericArticleEditorialHeading === "function") {

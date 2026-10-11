@@ -32,6 +32,7 @@ core/dom/cookie_chrome.js
 core/dom/widgets/article_placeholders.js
 core/dom/widgets/action_prompts.js
 core/dom/widgets/article_engagement.js
+core/dom/widgets/engagement_cluster.js
 core/dom/widgets/availability_modal.js
 core/dom/widgets/subscription_interface.js
 core/dom/widgets/scoreboard.js

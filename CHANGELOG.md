@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Remove only source-proved leaf article engagement clusters, preserving author and comment portraits, authored resources and reciprocal references.
+
 - Preserve complete physically owned reporting beneath agreeing article metadata and headings, excluding editor-owned comment notices and selecting the reporting lead ahead of media captions.
 - Bind a complete declared article body to its visible physical source and printed header, retaining alternate headings and attribution while excluding sibling services and unrelated stories.
 - Exclude source-proved action clusters and automatic-audio notices from visible author fields while preserving substantive author context and declared metadata.
