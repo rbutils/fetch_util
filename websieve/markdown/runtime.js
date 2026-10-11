@@ -17,14 +17,14 @@
     return [heading, details, body].filter(Boolean).join("\n\n");
   }
 
-  function markdownFor(html, allowSerializedOwnedPublicPreviews, allowArticleMailto) {
+  function markdownFor(html, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot) {
     if (typeof TurndownService !== "function") return html;
 
     var root = document.createElement("div");
     root.innerHTML = html;
     preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
-    cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
+    if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     normalizeCodeBlocks(root);
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);

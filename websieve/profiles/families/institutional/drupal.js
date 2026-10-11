@@ -30,6 +30,8 @@
 
     var root = best && best.root;
     if (!root || textLength(root) < 200) return null;
+    var page = homepageFragmentPageContent(metadata, root);
+    if (page) return page;
 
     return normalizeComponentHub(metadata, root, {
       docsLike: best.componentCount >= 2,

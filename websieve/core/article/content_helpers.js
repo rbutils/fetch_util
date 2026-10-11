@@ -72,6 +72,8 @@
 
     var body = wordpressArticleBody(options) || wordpressRestArticleBody(options, metadata);
     if (!body) return null;
+    var homepage = homepageFragmentPageContent(metadata, body);
+    if (homepage) return homepage;
     var pageRoot = wordpressBlockPageRoot(body);
     if (pageRoot) body = pageRoot;
     var comments = options.includeHeaderContext ? wordpressArticleCommentThreads(body) : [];
@@ -169,7 +171,7 @@
     if (typeof options.rewriteRoot === "function") options.rewriteRoot(root, node);
     if (options.cleanupRoot !== false) cleanupAgentRoot(root);
 
-    var markdown = markdownFor(root.innerHTML);
+    var markdown = markdownFor(root.innerHTML, false, true, options.preserveCleanedRoot === true);
     if (options.cleanupMarkdown !== false) markdown = cleanupMarkdownNoise(markdown);
     if (typeof options.postProcessMarkdown === "function") markdown = options.postProcessMarkdown(markdown, root, node);
 

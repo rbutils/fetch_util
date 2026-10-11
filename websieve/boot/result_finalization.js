@@ -95,20 +95,23 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
+  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true ? function(value) {
+    return String(value || "").trim();
+  } : cleanupMarkdownNoise;
   var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
   var cleanedHtml = sanitizedHtml(content.html, !!content.focalPublicPreview);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
-  var markdown = cleanupMarkdownNoise(content.markdown && !content.focalPublicPreview ? content.markdown :
+  var markdown = cleanResultMarkdown(content.markdown && !content.focalPublicPreview ? content.markdown :
     markdownFor(cleanedHtml || content.html, !!content.focalPublicPreview, preserveInlineMailtoUntilFinalType));
   var contentText = normalizeText(content.textContent || "");
   var normalizedMarkdown = normalizeText(markdown);
   if (!normalizedMarkdown && contentText.length > 40) {
-    markdown = cleanupMarkdownNoise(markdownFor(cleanedHtml, false, preserveInlineMailtoUntilFinalType) || contentText);
+    markdown = cleanResultMarkdown(markdownFor(cleanedHtml, false, preserveInlineMailtoUntilFinalType) || contentText);
   }
   normalizedMarkdown = normalizeText(markdown);
   if (content.contentType === "list" && referenceTableArticleMarkdown(markdown)) content.contentType = "article";
   if (content.contentType === "article" && !content.secFiling && !content.readerMode && content.html && content.html.length > 50000 && contentText.length >= 1200 && normalizedMarkdown.length < contentText.length * 0.2) {
-    markdown = cleanupMarkdownNoise(contentText);
+    markdown = cleanResultMarkdown(contentText);
   }
   var originalPrimaryTitle = normalizeText((content.title || metadata.title || "").replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var siteTitle = normalizeText(content.siteName || metadata.siteName || "");
@@ -178,7 +181,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
       markdown = "# " + primaryTitle + "\n\n" + markdown;
     }
   }
-  markdown = cleanupMarkdownNoise(content.sourceOwnedTitleIdentityUnproven === true && !sourceOwnedTitleIdentityResolved ?
+  markdown = cleanResultMarkdown(content.sourceOwnedTitleIdentityUnproven === true && !sourceOwnedTitleIdentityResolved ?
     preserveUnprovenSourceTitleExtension(markdown, content.sourceOwnedHeadingTitle, originalPrimaryTitle) : markdown);
   if ((content.contentType === "article" || content.contentType === "medical") &&
       content.sourceOwnedLiveblog !== true && !content.docsLike && !content.legalProvision) {

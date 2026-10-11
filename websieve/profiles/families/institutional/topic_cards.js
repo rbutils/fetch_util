@@ -33,6 +33,8 @@
     });
 
     if (!best) return null;
+    var page = homepageFragmentPageContent(metadata, best.root);
+    if (page) return page;
     var title = normalizeText(((document.querySelector("h1") || {}).textContent) || metadata.title || document.title || "Topics");
 
     return listItemsContentResult(metadata, {
