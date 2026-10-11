@@ -1473,7 +1473,9 @@ RSpec.describe "extract asset bundle" do
       ["classifiers/list_pages/detail_articles.js", %w[
         extractors/article/coverage/code_coverage.js
       ], "classifiers/list_pages/dominance.js"],
-      ["extractors/article/comments.js", [], "extractors/article/roots.js"],
+      ["extractors/article/comment_interface.js", %w[
+        extractors/article/comments.js
+      ], "extractors/article/roots.js"],
       ["extractors/article/roots.js", %w[
         extractors/article/source_record_helpers.js
         extractors/article/source_record_discussion.js
@@ -1494,6 +1496,10 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/focal_headline_ownership.js
         extractors/article/fallback/ownership/source_header_metadata.js
         extractors/article/fallback/ownership/content/canonical_body.js
+        extractors/article/fallback/ownership/content/declared_body.js
+        extractors/article/fallback/ownership/content/plain_interfaces.js
+        extractors/article/fallback/ownership/content/plain_body.js
+        extractors/article/fallback/ownership/content/split_regions.js
         extractors/article/fallback/ownership/content/mixed_sidebar_layout.js
         extractors/article/fallback/ownership/source_content.js
         extractors/article/fallback/ownership/headed_branch/context.js

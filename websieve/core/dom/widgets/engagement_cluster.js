@@ -61,6 +61,14 @@ function articleLeafEngagementCluster(node) {
   return body;
 }
 
+function prepareSourceOwnedEngagementClone(source, clone, elementMap) {
+  var clusters = sourceOwnedEngagementClusters(source);
+  var sourceClones = elementMap || (clusters.length ? new WeakMap() : null);
+  if (!sourceClones) return;
+  mapDomCloneElements(source, clone, sourceClones);
+  stripSourceOwnedEngagementClusters(source, clone, sourceClones, clusters);
+}
+
 function sourceOwnedEngagementClusters(sourceRoot) {
   return Array.from(sourceRoot.querySelectorAll("div")).map(function(source) {
     var body = articleLeafEngagementCluster(source);

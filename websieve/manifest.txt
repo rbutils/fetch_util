@@ -122,8 +122,8 @@ classifiers/warnings/access.js
 classifiers/warnings/content_integrity.js
 classifiers/warnings/finalization_paywall_state.js
 classifiers/warnings/index.js
-extractors/article/comments.js
 extractors/article/comment_interface.js
+extractors/article/comments.js
 extractors/article/roots.js
 extractors/article/source_record_helpers.js
 extractors/article/source_record_discussion.js

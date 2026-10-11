@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Keep shared repair helpers in their explicit release-pipeline and clone-cleanup module boundaries.
+
 - Remove only source-proved leaf article engagement clusters, preserving author and comment portraits, authored resources and reciprocal references.
 
 - Preserve complete physically owned reporting beneath agreeing article metadata and headings, excluding editor-owned comment notices and selecting the reporting lead ahead of media captions.
