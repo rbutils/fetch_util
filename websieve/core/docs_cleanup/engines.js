@@ -66,8 +66,17 @@ function docsArticleContent(metadata, node, options) {
 
   options = options || {};
   var sourceNode = options.focusFragment === false ? node : focusedDocsNode(node);
-  var root = cleanClone(sourceNode, options.preserveSelector);
+  var readableSource = options.pruneSourceVisibility ? visibilityPrunedClone(sourceNode) : sourceNode;
+  var root = cleanClone(readableSource, options.preserveSelector);
 
+  if (options.preserveAuthoredSections && root.querySelector(VISIBLE_COMMENT_THREAD_SELECTOR + ", " + VISIBLE_COMMENT_RECORD_SELECTOR)) {
+    visibleCommentThreadRoots(root).forEach(function(thread) {
+      var records = [thread].concat(Array.from(thread.querySelectorAll(VISIBLE_COMMENT_RECORD_SELECTOR)));
+      if (records.some(function(record) { return commentRecordMarker(record) && commentThreadHasMaterial(record); })) {
+        thread.setAttribute("data-fetchutil-social-comment", "true");
+      }
+    });
+  }
   cleanupAgentRoot(root);
 
   if (!options.preserveAuthoredSections) cleanupDocsRoot(root, options);

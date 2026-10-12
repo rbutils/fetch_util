@@ -62,6 +62,7 @@ function ownedPageContent(metadata, pageText) {
     genericScholarlyArticleContent(metadata) ||
     sourceOwnedProductContent(metadata) ||
     asciidocDocsContent(metadata) ||
+    physicalTechnicalDocsContent(metadata) ||
     tableSocialContent(metadata) ||
     softwareProjectHomepageContent(metadata) ||
     genericPortalHomepageContent(metadata) ||

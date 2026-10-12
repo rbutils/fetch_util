@@ -269,6 +269,7 @@ systems/docs/generic/api_engines.js
 systems/docs/generic/sphinx.js
 systems/docs/generic/software_projects.js
 systems/docs/generic/asciidoc.js
+systems/docs/generic/technical_owner.js
 systems/docs/generic/index.js
 systems/docs/hosted/frameworks.js
 systems/docs/hosted/stripe.js
