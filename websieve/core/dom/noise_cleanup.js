@@ -125,7 +125,7 @@
     root.querySelectorAll("a, button, div, p, span, li").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       if (textLength(el) > 200) return;
-      if (SOCIAL_APP_PROMO_TEXT_PATTERN.test(text) && !codeContentNode(el)) el.remove();
+      if (SOCIAL_APP_PROMO_TEXT_PATTERN.test(text) && !codeContentNode(el) && !authoredInlineActionReference(el)) el.remove();
     });
 
     // Strip app download / subscription promo containers

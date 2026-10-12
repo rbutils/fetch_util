@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve ordinary inline membership and account references owned by surrounding authored prose while continuing to remove standalone and interface-owned controls.
+
 - Check custom-thread name eligibility before physical visibility, avoiding repeated irrelevant subtree work while retaining every eligible post and reply in source order.
 
 - Render complete source-proved generated technical documents through shared ownership, preserving printed headers, sections and code instead of rebuilding them as article or collection candidates.

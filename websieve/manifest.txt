@@ -41,6 +41,7 @@ core/dom/widgets/article.js
 core/dom/widgets/related_records.js
 core/dom/promo_cleanup.js
 core/dom/cleanup/inert_custom_ui.js
+core/dom/cleanup/inline_action.js
 core/dom/noise_cleanup.js
 core/dom/publisher_cta.js
 core/dom/article_action_chrome.js

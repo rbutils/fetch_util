@@ -221,7 +221,7 @@
 
     root.querySelectorAll("a, button").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
-      if (ACCOUNT_ACTION_TEXT_PATTERN.test(text)) el.remove();
+      if (ACCOUNT_ACTION_TEXT_PATTERN.test(text) && !authoredInlineActionReference(el)) el.remove();
     });
 
     root.querySelectorAll("p, div, span, a, button, li").forEach(function(el) {
