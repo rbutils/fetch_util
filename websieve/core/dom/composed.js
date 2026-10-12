@@ -72,7 +72,7 @@
       }
       composedDomReadContext = context;
       try {
-        return extract(options);
+        return withArticleRouteRead(function() { return extract(options); });
       } finally {
         composedDomReadContext = previous;
         composedDomShadowToken = previousToken;

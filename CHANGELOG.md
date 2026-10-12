@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reuse immutable current-page article-ownership probes within one source read, avoiding repeated whole-page cloning for collection sections without retaining mutable rendered HTML or changing ownership decisions.
+
 - Bound bare Markdown URL recognition to its protocol prefix and actual token, avoiding repeated whole-document suffix work while preserving credential cleanup, code literals and complete output.
 
 - Isolate transient extraction and Markdown trees from the active page document while preserving source visibility and complete material.
