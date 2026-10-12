@@ -90,7 +90,7 @@ function docsArticleContent(metadata, node, options) {
 
   var markdown;
   try {
-    markdown = markdownFor(root.innerHTML).trim();
+    markdown = markdownFor(root.innerHTML, false, true, options.preserveCleanedRoot === true).trim();
   } catch(e) {
     markdown = "";
   }

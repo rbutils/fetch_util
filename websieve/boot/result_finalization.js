@@ -95,7 +95,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
-  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true ? function(value) {
+  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true ? function(value) {
     return String(value || "").trim();
   } : cleanupMarkdownNoise;
   var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
@@ -236,6 +236,10 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var publishedTime = collectionPublishedTime(content, metadata);
   if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;
   if (content.sourceOwnedProduct === true) publishedTime = content.publishedTime || null;
+  if (content.sourceOwnedDataRecord === true) {
+    byline = null;
+    publishedTime = null;
+  }
   var result = {
     title: primaryTitle || normalizeText(metadata.title),
     byline: byline,

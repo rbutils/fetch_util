@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete physically owned current data records before article or collection reconstruction, preserving table fields, sequences, repeated provenance labels and reference hierarchies without borrowing publication metadata.
+
 - Preserve complete visible homepage reporting and community collections beside owned record tables, retaining all table values and resources without reclassifying the mixed collection as a social feed or liveblog.
 
 - Preserve complete source-owned technical documents, including exercises and published replies outside nested articles, while keeping hidden source descendants hidden.
