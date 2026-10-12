@@ -277,6 +277,9 @@ systems/docs/hosted/baselinker.js
 systems/docs/hosted/ruby_api.js
 systems/docs/hosted/index.js
 systems/media/player_pages.js
+systems/products/declared_family.js
+systems/products/physical_ownership.js
+systems/products/content.js
 systems/news_engines/portal_lead_records.js
 systems/news_engines/portal_lead_context.js
 systems/news_engines/generic_portal_homepages.js

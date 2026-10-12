@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete physically owned product families and their materialized variants and FAQs, including declared split regions, before article or collection reconstruction.
+
 - Release unselected disposable collection roots after each completed comparison, retaining ancestor descriptions and preserving the chosen root, borrowed item cards and physical source nodes.
 
 - Read only caller-owned labeled metadata values during record, article-header and contents-page proof, retaining all eligible values and complete default definition-list parsing.

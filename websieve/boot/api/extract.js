@@ -127,6 +127,9 @@
       if (!content) {
         content = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
       }
+      if (content && content.sourceOwnedProduct === true) {
+        return finalizeExtractResult(content, metadata, pageText, signals, null);
+      }
       if (content && content.contentType === "article" && !content.hostAware && !content.docsLike) {
         sourceOwnedSearchHistoryContent(metadata, content);
       }
