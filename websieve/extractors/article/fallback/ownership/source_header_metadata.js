@@ -74,7 +74,9 @@ function sourceOwnedFallbackHeaderMetadata(selected, title, metadata) {
   });
   if (bodyRoots.length !== 1 || (!bodyRoots[0].contains(selected) && !selected.contains(bodyRoots[0]))) return null;
 
-  var groups = visibleLabeledMetadataGroups(main).filter(function(group) {
+  var groups = visibleLabeledMetadataGroups(main, function(label) {
+    return ["from", "author", "by", "published", "publication date", "date"].indexOf(sourceRecordLabelKey(label)) !== -1;
+  }).filter(function(group) {
     if (!sourceRecordBefore(heading, group.list) || !sourceRecordBefore(group.list, bodyRoots[0])) return false;
     var hasAuthor = sourceRecordFieldValues(group, ["From", "Author", "By"]).length > 0;
     var hasDate = sourceRecordFieldValues(group, ["Published", "Publication Date", "Date"]).length > 0;

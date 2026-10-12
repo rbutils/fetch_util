@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Read only caller-owned labeled metadata values during record, article-header and contents-page proof, retaining all eligible values and complete default definition-list parsing.
+
 - Preserve ordinary inline membership and account references owned by surrounding authored prose while continuing to remove standalone and interface-owned controls.
 
 - Check custom-thread name eligibility before physical visibility, avoiding repeated irrelevant subtree work while retaining every eligible post and reply in source order.

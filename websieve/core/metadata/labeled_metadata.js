@@ -9,7 +9,7 @@ function visibleMetadataNodeText(node) {
   return Array.prototype.map.call(node.childNodes || [], visibleMetadataNodeText).filter(Boolean).join(" ");
 }
 
-function visibleLabeledMetadataGroups(root) {
+function visibleLabeledMetadataGroups(root, includeLabel) {
   if (!root || !root.querySelectorAll) return [];
   var lists = [];
   if (root.matches && root.matches("dl")) lists.push(root);
@@ -22,6 +22,8 @@ function visibleLabeledMetadataGroups(root) {
       return term.closest("dl") === list && !elementVisuallyHidden(term);
     });
     var fields = terms.map(function(term) {
+      var label = normalizeText(visibleMetadataNodeText(term)).toLowerCase().replace(/\s+/g, " ");
+      if (!label || (includeLabel && !includeLabel(label))) return null;
       var values = [];
       var sibling = term.nextElementSibling;
       while (sibling && sibling.tagName === "DD" && sibling.closest("dl") === list) {
@@ -32,11 +34,11 @@ function visibleLabeledMetadataGroups(root) {
         sibling = sibling.nextElementSibling;
       }
       return {
-        label: normalizeText(visibleMetadataNodeText(term)).toLowerCase().replace(/\s+/g, " "),
+        label: label,
         values: values,
         term: term
       };
-    }).filter(function(field) { return field.label && field.values.length; });
+    }).filter(function(field) { return field && field.values.length; });
 
     return { list: list, fields: fields };
   }).filter(function(group) { return group.fields.length; });

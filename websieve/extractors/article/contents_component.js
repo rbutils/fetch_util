@@ -191,7 +191,9 @@ function sourceOwnedContentsComponentOwnership(metadata) {
   var targets = contentsComponentTargets(main, component, nav);
   if (!targets) return null;
 
-  var groups = visibleLabeledMetadataGroups(main).filter(function(group) {
+  var groups = visibleLabeledMetadataGroups(main, function(label) {
+    return ["from", "published", "publication date"].indexOf(sourceRecordLabelKey(label)) !== -1;
+  }).filter(function(group) {
     var from = sourceRecordUniqueField(group, ["From"]);
     var published = sourceRecordUniqueField(group, ["Published", "Publication Date"]);
     var region = contentsComponentMetadataRegion(group.list, main);

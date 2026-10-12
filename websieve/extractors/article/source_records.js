@@ -172,7 +172,11 @@ function structuredSourceRecordOwnership(metadata) {
   if (!metadata || !metadata.title) return null;
   var main = sourceRecordVisibleMain();
   if (!main) return null;
-  var groups = visibleLabeledMetadataGroups(main).filter(function(group) {
+  var groups = visibleLabeledMetadataGroups(main, function(label) {
+    return ["document type", "agency", "agencies", "published", "publication date", "document number", "document citation"].indexOf(
+      sourceRecordLabelKey(label)
+    ) !== -1;
+  }).filter(function(group) {
     return !group.list.closest("aside, [role='complementary'], [aria-label*='sidebar' i], [class*='sidebar' i]");
   });
   var candidates = groups.map(sourceRecordGroupCandidate).filter(Boolean);
