@@ -51,6 +51,8 @@ core/dom/deferred_reveals.js
 core/dom/inert_work.js
 core/dom/composed.js
 core/dom/clipping.js
+core/dom/visibility/read_scope.js
+core/dom/visibility/subtree.js
 core/dom/base.js
 core/dom/public_preview_cleanup.js
 core/dom/cleanup.js

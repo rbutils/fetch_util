@@ -1,4 +1,10 @@
   function bestListExtraction(metadata, pageTitles, options) {
+    return withSourceVisibilityRead(function() {
+      return computeBestListExtraction(metadata, pageTitles, options);
+    });
+  }
+
+  function computeBestListExtraction(metadata, pageTitles, options) {
     options = options || {};
     if (options.repeatedRecordCollection) {
       return buildListExtraction(options.sourceOwner || options.repeatedRecordCollection.primaryMain || options.repeatedRecordCollection.owner,

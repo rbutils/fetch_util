@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reuse immutable physical subtree-visibility predicates during collection selection, avoiding repeated ancestor style and clipping work while preserving boundaries, composed ownership and mutable rendering-tree freshness.
+
 - Reuse immutable current-page article-ownership probes within one source read, avoiding repeated whole-page cloning for collection sections without retaining mutable rendered HTML or changing ownership decisions.
 
 - Bound bare Markdown URL recognition to its protocol prefix and actual token, avoiding repeated whole-document suffix work while preserving credential cleanup, code literals and complete output.

@@ -71,34 +71,6 @@
     }
   }
 
-  function elementSubtreeHiddenWithin(node, boundary) {
-    var current = node && node.nodeType === 11 && node.host ? node.host : node;
-    while (current && current !== boundary && current.nodeType === 1) {
-      if (current.parentElement && current.parentElement.shadowRoot && !current.assignedSlot) return true;
-      var style = window.getComputedStyle ? window.getComputedStyle(current) : null;
-      if (current.hidden) return true;
-      if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0 && !deferredRevealContentNode(current, style)))) return true;
-      if (collapsedOverflowNode(current, style)) return true;
-      current = composedDomParent(current);
-    }
-    return false;
-  }
-
-  function elementSubtreeHidden(node) {
-    return elementSubtreeHiddenWithin(node, null);
-  }
-
-  function elementVisuallyHiddenWithin(node, boundary) {
-    if (!node || node.nodeType !== 1) return false;
-    if (elementSubtreeHiddenWithin(node, boundary)) return true;
-    var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
-    return !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
-  }
-
-  function elementVisuallyHidden(node) {
-    return elementVisuallyHiddenWithin(node, null);
-  }
-
   function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones, clipBounds) {
     if (!source || !clone) return;
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
