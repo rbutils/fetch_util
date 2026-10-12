@@ -178,13 +178,19 @@ function markdownAutolinkAt(markdown, position) {
 }
 
 function markdownCredentialUrlAt(markdown, position) {
+  if (markdown[position] !== "h" && markdown[position] !== "H") return null;
   if (markdownEscaped(markdown, position)) return null;
-  var candidate = markdown.slice(position).match(/^https?:\/\/[^\s<>]+/i);
-  if (!candidate) return null;
+  var protocol = markdown.slice(position, position + 8).match(/^https?:\/\//i);
+  if (!protocol) return null;
+  var tokenStart = position + protocol[0].length;
+  var end = tokenStart;
+  while (end < markdown.length && !/[\s<>]/.test(markdown[end])) end += 1;
+  if (end === tokenStart) return null;
+  var candidate = markdown.slice(position, end);
 
-  var visible = credentialFreeHttpText(candidate[0]);
-  if (visible === candidate[0]) return null;
-  return { value: visible, end: position + candidate[0].length };
+  var visible = credentialFreeHttpText(candidate);
+  if (visible === candidate) return null;
+  return { value: visible, end: end };
 }
 
 function markdownLabelEnd(value, start) {

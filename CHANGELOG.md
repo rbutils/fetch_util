@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Bound bare Markdown URL recognition to its protocol prefix and actual token, avoiding repeated whole-document suffix work while preserving credential cleanup, code literals and complete output.
+
 - Isolate transient extraction and Markdown trees from the active page document while preserving source visibility and complete material.
 
 - Preserve paired table attribution ownership so dated author rows cannot become duplicate stories and suppress published replies.
