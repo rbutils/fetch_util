@@ -141,3 +141,27 @@
 
     return { main: main, heading: pageHeading, body: body };
   }
+
+  function homepageTablePeerCollectionContent(metadata, tables, records) {
+    if (!homepageRootPath() || records.length < 2 || !tables.length) return null;
+    var mains = document.querySelectorAll("main, [role~='main' i]");
+    if (mains.length !== 1) return null;
+    var main = mains[0];
+    if (!tables.every(function(table) { return main.contains(table); })) return null;
+    var destinations = new Set();
+    Array.from(main.querySelectorAll("h2, h3, h4")).forEach(function(heading) {
+      if (homepageLandingChrome(heading) || tables.some(function(table) { return table.contains(heading); })) return;
+      var link = heading.closest("a[href]") || heading.querySelector("a[href]");
+      var destination = link && materializedHttpUrl(link.getAttribute("href"));
+      if (!destination || sourceOwnershipPageUrl(destination) === sourceOwnershipPageUrl(location.href)) return;
+      if (!normalizeText(heading.textContent) || elementSubtreeHidden(heading)) return;
+      destinations.add(destination);
+    });
+    if (destinations.size < 2 || homepageFragmentPageRoot(tables[0]) !== main) return null;
+    var content = homepageFragmentPageContent(metadata, tables[0]);
+    if (content) {
+      content.hostAware = false;
+      content.sourceOwnedHomepagePeerTables = true;
+    }
+    return content;
+  }

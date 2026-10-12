@@ -109,7 +109,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     markdown = cleanResultMarkdown(markdownFor(cleanedHtml, false, preserveInlineMailtoUntilFinalType) || contentText);
   }
   normalizedMarkdown = normalizeText(markdown);
-  if (content.contentType === "list" && referenceTableArticleMarkdown(markdown)) content.contentType = "article";
+  if (content.contentType === "list" && content.sourceOwnedHomepagePeerTables !== true &&
+      referenceTableArticleMarkdown(markdown)) content.contentType = "article";
   if (content.contentType === "article" && !content.secFiling && !content.readerMode && content.html && content.html.length > 50000 && contentText.length >= 1200 && normalizedMarkdown.length < contentText.length * 0.2) {
     markdown = cleanResultMarkdown(contentText);
   }

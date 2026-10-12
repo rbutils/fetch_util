@@ -36,6 +36,8 @@
     if (!records.length && !comments.length) return null;
     if (records.length && records.length < 3 && records.every(function(record) { return record.detail === record.row; })) return null;
     if (records.length > 1 && comments.length) return null;
+    var homepageCollection = homepageTablePeerCollectionContent(metadata, tables, records);
+    if (homepageCollection) return homepageCollection;
     var labels = tableSocialLabels(metadata, records, comments);
     var story = records.length === 1 ? records[0] : null;
     var focal = comments[0];

@@ -127,7 +127,7 @@
       if (!content) {
         content = genericFocalArticleContent(metadata) || readableOrFallbackContent(options, metadata);
       }
-      if (content && content.sourceOwnedProduct === true) {
+      if (content && (content.sourceOwnedProduct === true || content.sourceOwnedHomepagePeerTables === true)) {
         return finalizeExtractResult(content, metadata, pageText, signals, null);
       }
       if (content && content.contentType === "article" && !content.hostAware && !content.docsLike) {
