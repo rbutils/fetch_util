@@ -68,10 +68,10 @@
   }
 
   function socialCustomThreadEvidence() {
-    var nodes = Array.prototype.slice.call(document.body.getElementsByTagName("*")).filter(function(node) {
-      return !elementSubtreeHidden(node) &&
-        !node.closest("nav, footer, aside, form, dialog, [role='dialog']") &&
-        /-(?:post|comment)$/.test(String(node.localName || ""));
+    var nodes = Array.prototype.filter.call(document.body.getElementsByTagName("*"), function(node) {
+      return /-(?:post|comment)$/.test(String(node.localName || "")) &&
+        !elementSubtreeHidden(node) &&
+        !node.closest("nav, footer, aside, form, dialog, [role='dialog']");
     });
     var posts = nodes.filter(function(node) { return /-post$/.test(node.localName); });
     var candidates = posts.map(function(post) {

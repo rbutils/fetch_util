@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Check custom-thread name eligibility before physical visibility, avoiding repeated irrelevant subtree work while retaining every eligible post and reply in source order.
+
 - Render complete source-proved generated technical documents through shared ownership, preserving printed headers, sections and code instead of rebuilding them as article or collection candidates.
 
 - Reuse immutable physical subtree-visibility predicates during collection selection, avoiding repeated ancestor style and clipping work while preserving boundaries, composed ownership and mutable rendering-tree freshness.
