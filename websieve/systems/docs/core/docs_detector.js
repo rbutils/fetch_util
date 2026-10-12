@@ -9,6 +9,7 @@
 
     signatureInfo = { generator: generator, appName: appName, signature: signature };
 
+    if (asciidocDocsContext(metadata)) return docsSystemResult("asciidoc", signatureInfo);
     if (document.querySelector("[class*='stldocs-']")) return docsSystemResult("stldocs", signatureInfo);
     if (/astro/.test(generator) && (document.querySelector("#starlight__sidebar, starlight-menu-button, [class*='sl-markdown-content']") || /starlight/.test(signature))) {
       return docsSystemResult("starlight", signatureInfo);

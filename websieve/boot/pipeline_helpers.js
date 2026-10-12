@@ -60,6 +60,7 @@ function applyMediaOwnedArticleMetadata(content, metadata) {
 function ownedPageContent(metadata, pageText) {
   return hostAwareContent(metadata, pageText) ||
     genericScholarlyArticleContent(metadata) ||
+    asciidocDocsContent(metadata) ||
     tableSocialContent(metadata) ||
     softwareProjectHomepageContent(metadata) ||
     genericPortalHomepageContent(metadata) ||

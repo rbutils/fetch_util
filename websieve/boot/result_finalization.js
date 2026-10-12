@@ -192,7 +192,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
-  var legalChromeMarkdown = stripLeadingLegalInstitutionalChrome(markdown);
+  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true ? markdown : stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
   if (content.sourceOwnedLiveblog && content.contentType === "list") content.contentType = "article";

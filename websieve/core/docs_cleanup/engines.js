@@ -70,7 +70,7 @@ function docsArticleContent(metadata, node, options) {
 
   cleanupAgentRoot(root);
 
-  cleanupDocsRoot(root, options);
+  if (!options.preserveAuthoredSections) cleanupDocsRoot(root, options);
 
   if (typeof options.rewriteRoot === "function") {
     try {

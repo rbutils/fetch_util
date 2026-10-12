@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete source-proved generated technical documents through shared ownership, preserving printed headers, sections and code instead of rebuilding them as article or collection candidates.
+
 - Reuse immutable physical subtree-visibility predicates during collection selection, avoiding repeated ancestor style and clipping work while preserving boundaries, composed ownership and mutable rendering-tree freshness.
 
 - Reuse immutable current-page article-ownership probes within one source read, avoiding repeated whole-page cloning for collection sections without retaining mutable rendered HTML or changing ownership decisions.
