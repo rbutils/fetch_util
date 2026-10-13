@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete physically owned published entries whose bookmark and heading match the current page, preserving reporting, taxonomy, references and replies while recovering only the owned header attribution, date and lead.
+
 - Preserve Unicode words with partial inline emphasis and adjacent pure emphasis runs in valid Markdown without introducing literal delimiters or changing code and ordinary prose boundaries.
 
 - Render complete current declared news portals from their physically owned Main, retaining every materialized reporting collection, source illustration and authorial section while keeping hidden content hidden and avoiding borrowed story bylines or dates.
