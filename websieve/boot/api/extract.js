@@ -3,7 +3,7 @@
       resetTerminalArticleCollectionMarker();
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
-      var ownedReference = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : physicalReferenceContent(metadata);
+      var ownedReference = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : physicalOwnedReferenceContent(metadata);
       if ((ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) || ownedReference) {
         return finalizeExtractResult(ownedReference || ownedSocialPost, metadata, pageReadableText(), null, null);
       }

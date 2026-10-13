@@ -51,16 +51,17 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentByline = sanitizeByline(content.byline);
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
-  var metadataByline = sourceOwnedLiveblogParent ? null : sanitizeByline(metadata.byline);
+  var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true;
+  var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
     sourceOwnedReaderAnswerPublicationTime(readerParagraphs, metadata.canonicalUrl, content.title || metadata.title) : null;
   var metadataQuestionAnswerTime = !Array.isArray(readerParagraphs) && metadata.publishedTime &&
     metadata.sourceOwnedQuestionAnswerPublicationTime === metadata.publishedTime ? metadata.publishedTime : null;
-  var displayedPublishedTime = sourceOwnedLiveblogParent || sourceOwnedArticlePublication ? content.publishedTime :
+  var displayedPublishedTime = sourceOwnedLiveblogParent || sourceOwnedArticlePublication || sourceOwnedUnattributedReference ? content.publishedTime :
     readerAnswerTime || metadataQuestionAnswerTime || visiblePublishedTime(content);
-  var visibleBylineRaw = sourceOwnedLiveblogParent ? null : visibleByline();
-  var namedAuthorByline = sourceOwnedLiveblogParent ? null : visibleNamedAuthorByline();
+  var visibleBylineRaw = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : visibleByline();
+  var namedAuthorByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : visibleNamedAuthorByline();
   var bylinePublishedTime = [contentByline, metadataByline, visibleBylineRaw].some(function(value) {
     return bylineContainsPublishedTime(value, displayedPublishedTime);
   });
@@ -73,7 +74,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   contentByline = bylineWithoutSiblingActions(contentByline, metadataByline);
-  var sourceOwnedByline = readerSourceOwnedBylineForContent(content, metadata, contentByline, metadataByline);
+  var sourceOwnedByline = sourceOwnedUnattributedReference ? null : readerSourceOwnedBylineForContent(content, metadata, contentByline, metadataByline);
   if (sourceOwnedByline) contentByline = metadataByline = sourceOwnedByline;
   var sourceBylineEligible = content.readerMode || (content.contentType === "article" && content.sourceOwnedFocalArticle);
   var readerAuthor = sourceBylineEligible ? readerBylineSourceAuthorLink(content, metadataByline) : null;
@@ -95,7 +96,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
-  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ? function(value) {
+  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ? function(value) {
     return String(value || "").trim();
   } : cleanupMarkdownNoise;
   var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
@@ -193,7 +194,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
-  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true ?
+  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true || content.sourceOwnedIndexedPlay === true ?
     markdown : stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
@@ -236,7 +237,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var publishedTime = collectionPublishedTime(content, metadata);
   if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;
   if (content.sourceOwnedProduct === true) publishedTime = content.publishedTime || null;
-  if (content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true) {
+  if (content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true) {
     byline = null;
     publishedTime = null;
   }

@@ -66,7 +66,25 @@ function docsArticleContent(metadata, node, options) {
 
   options = options || {};
   var sourceNode = options.focusFragment === false ? node : focusedDocsNode(node);
-  var readableSource = options.pruneSourceVisibility ? visibilityPrunedClone(sourceNode) : sourceNode;
+  var materialRoot = options.preserveSourceMaterialRoot;
+  var referenceRoots = (options.preserveSourceReferenceRoots || []).filter(function(reference) { return sourceNode.contains(reference); });
+  var sourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length ? new Map() : null;
+  var readableSource = options.pruneSourceVisibility ? visibilityPrunedClone(sourceNode, document, sourceClones) : sourceNode;
+  if (sourceClones && materialRoot) {
+    for (var ancestor = materialRoot; ancestor && sourceNode.contains(ancestor); ancestor = ancestor.parentElement) {
+      var clone = sourceClones.get(ancestor);
+      if (clone) Array.from(clone.classList).forEach(function(token) {
+        if (/(?:sidebar|side-nav|sidenav|left-rail|right-rail|article-drawer|toc-drawer|table-of-contents|mobile-menu|mobile-nav|hamburger-menu|toc)/i.test(token)) {
+          clone.classList.remove(token);
+        }
+      });
+      if (ancestor === sourceNode) break;
+    }
+  }
+  referenceRoots.forEach(function(reference) {
+    var clone = sourceClones.get(reference);
+    if (clone) clone.setAttribute("data-fetchutil-source-owned-primary", "true");
+  });
   var root = cleanClone(readableSource, options.preserveSelector);
 
   if (options.preserveAuthoredSections && root.querySelector(VISIBLE_COMMENT_THREAD_SELECTOR + ", " + VISIBLE_COMMENT_RECORD_SELECTOR)) {
