@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete physical definition records whose declared identifier matches the current route and whose printed type owns the page title, preserving every field, sibling value, curator comment and resource without borrowing publication metadata.
+
 - Render complete source-proved indexed plays before generic reconstruction, preserving every spoken line, stage direction, repeated passage, source-owned teaching resource and published reply without borrowing attribution or treating layout sidebars and dramatic voices as foreign content.
 
 - Reuse complete caller Markdown in unchanged topic-classification views, avoiding redundant whole-document conversion while rebuilding views after actual filtering or when Markdown is absent.

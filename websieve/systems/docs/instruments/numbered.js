@@ -75,5 +75,5 @@
   }
 
   function physicalReferenceContent(metadata) {
-    return physicalDataRecordContent(metadata) || physicalNumberedInstrumentContent(metadata);
+    return physicalDataRecordContent(metadata) || physicalDefinitionRecordContent(metadata) || physicalNumberedInstrumentContent(metadata);
   }

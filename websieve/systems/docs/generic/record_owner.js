@@ -39,7 +39,10 @@ function physicalDataRecordContext() {
 }
 
 function physicalDataRecordContent(metadata) {
-  var context = physicalDataRecordContext();
+  return physicalDataRecordContentForContext(metadata, physicalDataRecordContext());
+}
+
+function physicalDataRecordContentForContext(metadata, context) {
   if (!context) return null;
   var sourceClones = new Map();
   var readable = visibilityPrunedClone(context.root, document, sourceClones);

@@ -271,6 +271,7 @@ systems/docs/generic/software_projects.js
 systems/docs/generic/asciidoc.js
 systems/docs/generic/technical_owner.js
 systems/docs/generic/record_owner.js
+systems/docs/records/definition_fields.js
 systems/docs/instruments/numbered.js
 systems/docs/works/indexed_play.js
 systems/docs/generic/index.js
