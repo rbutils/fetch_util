@@ -3,9 +3,9 @@
       resetTerminalArticleCollectionMarker();
       var metadata = collectMetadata();
       var ownedSocialPost = socialPostOwnedContent(metadata);
-      var ownedDataRecord = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : physicalDataRecordContent(metadata);
-      if ((ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) || ownedDataRecord) {
-        return finalizeExtractResult(ownedDataRecord || ownedSocialPost, metadata, pageReadableText(), null, null);
+      var ownedReference = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : physicalReferenceContent(metadata);
+      if ((ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) || ownedReference) {
+        return finalizeExtractResult(ownedReference || ownedSocialPost, metadata, pageReadableText(), null, null);
       }
       var focalArticleRoute = articleRouteFocalContent();
       var focalArticleRouteOwner = focalArticleRoute ? articleRouteFocalContent(null, true) : null;

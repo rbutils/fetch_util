@@ -170,6 +170,7 @@
   }
 
   function applySocialContentType(content, metadata, ownedPostContent) {
+    if (content && content.sourceOwnedNumberedInstrument === true) return content;
     if (content && !content.hostAware && content.contentType !== "interstitial" && ownedPostContent) {
       content = ownedPostContent;
     }
