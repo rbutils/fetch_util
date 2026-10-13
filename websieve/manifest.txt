@@ -274,6 +274,8 @@ systems/docs/generic/record_owner.js
 systems/docs/records/definition_fields.js
 systems/docs/instruments/numbered.js
 systems/docs/works/indexed_play.js
+extractors/article/declared/semantic_owner.js
+extractors/article/declared/rendering.js
 systems/docs/generic/index.js
 systems/docs/hosted/frameworks.js
 systems/docs/hosted/stripe.js
