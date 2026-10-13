@@ -53,12 +53,15 @@
     root.innerHTML = content && content.html ? content.html : "";
     if (!root.innerHTML) return { root: null, markdown: markdown };
 
-    Array.prototype.forEach.call(root.querySelectorAll(multiTopicIgnoredContainerSelector()), function(node) {
+    var ignoredContainers = root.querySelectorAll(multiTopicIgnoredContainerSelector());
+    Array.prototype.forEach.call(ignoredContainers, function(node) {
       node.parentNode.removeChild(node);
     });
 
     var filteredMarkdown = markdown;
-    if (typeof markdownFor === "function") filteredMarkdown = markdownFor(root.innerHTML || "");
+    if ((ignoredContainers.length || !filteredMarkdown) && typeof markdownFor === "function") {
+      filteredMarkdown = markdownFor(root.innerHTML || "");
+    }
     return { root: root, markdown: filteredMarkdown || "" };
   }
 

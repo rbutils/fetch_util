@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reuse complete caller Markdown in unchanged topic-classification views, avoiding redundant whole-document conversion while rebuilding views after actual filtering or when Markdown is absent.
+
 - Render complete physically owned numbered instruments before article or collection reconstruction, preserving every provision, repeated obligation and published reply without borrowing publication metadata or classifying provisions as a comment thread.
 
 - Render complete physically owned current data records before article or collection reconstruction, preserving table fields, sequences, repeated provenance labels and reference hierarchies without borrowing publication metadata.
