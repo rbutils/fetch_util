@@ -24,6 +24,7 @@
     root.innerHTML = html;
     preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
+    mergeAdjacentEmphasis(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     normalizeCodeBlocks(root);
     preserveStructuredCardLinks(root);
@@ -37,6 +38,7 @@
       bulletListMarker: "-",
       emDelimiter: "_"
     });
+    addIntrawordEmphasisRule(service);
 
     service.addRule("tables", {
       filter: function(node) {

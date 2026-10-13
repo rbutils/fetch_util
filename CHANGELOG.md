@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve Unicode words with partial inline emphasis and adjacent pure emphasis runs in valid Markdown without introducing literal delimiters or changing code and ordinary prose boundaries.
+
 - Render complete current declared news portals from their physically owned Main, retaining every materialized reporting collection, source illustration and authorial section while keeping hidden content hidden and avoiding borrowed story bylines or dates.
 
 - Render complete current news articles whose declarations match ordered physical reporting and a unique printed heading, preserving owned sections, offer labels, edition references and every materialized media encoding without replacing reporting with social inference.
