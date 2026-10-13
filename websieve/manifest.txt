@@ -288,6 +288,7 @@ systems/products/declared_family.js
 systems/products/physical_ownership.js
 systems/products/content.js
 systems/news_engines/portal_lead_records.js
+systems/news_engines/owned_portal.js
 systems/news_engines/portal_lead_context.js
 systems/news_engines/generic_portal_homepages.js
 profiles/host_aware.js

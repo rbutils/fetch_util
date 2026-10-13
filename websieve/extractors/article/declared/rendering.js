@@ -58,9 +58,9 @@ function restoreDeclaredArticleReferences(root, references) {
   });
 }
 
-function materializeDeclaredArticleMedia(root) {
+function materializeDeclaredArticleMedia(root, preserveEveryImageSource) {
   root.querySelectorAll("video, audio, img").forEach(function(media) {
-    var values = media.matches("img") ? (!normalizeText(media.getAttribute("alt") || "") ? [media.getAttribute("src")] : []) :
+    var values = media.matches("img") ? (preserveEveryImageSource === true || !normalizeText(media.getAttribute("alt") || "") ? [media.getAttribute("src")] : []) :
       [media.getAttribute("src")].concat(Array.from(media.querySelectorAll("source[src]")).map(function(source) { return source.getAttribute("src"); }));
     var seen = new Set();
     var owner = media.closest("a, picture") || media;

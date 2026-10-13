@@ -71,7 +71,7 @@
     }
   }
 
-  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones, clipBounds) {
+  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones, clipBounds, collectionFlow) {
     if (!source || !clone) return;
     var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
     var preservedRoot = exactPreservedRoot ? source : preservingRoot;
@@ -83,10 +83,12 @@
       return;
     }
     var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
-    if (exactPreservedRoot) clipBounds = null;
+    // A positively owned materialized collection remains complete when its
+    // layout scrolls horizontally. Its ordinary hidden-boundary checks still apply.
+    if (exactPreservedRoot || collectionFlow) clipBounds = null;
     else if (!checkedParent) clipBounds = ancestorHorizontalClipBounds(source);
     var sourceChildren = composedDomChildren(source);
-    var clipped = horizontallyClippedElement(source, style, clipBounds);
+    var clipped = !collectionFlow && horizontallyClippedElement(source, style, clipBounds);
     var overflowingChildren = clipped && style.overflowX === "visible" &&
       !source.matches("pre, code, kbd, samp, .CodeMirror, .cm-editor") &&
       sourceChildren.some(function(child) { return child.nodeType === 1; });
@@ -110,7 +112,7 @@
     }
 
     var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
-    var childClipBounds = horizontalClipBounds(source, style, clipBounds);
+    var childClipBounds = collectionFlow ? null : horizontalClipBounds(source, style, clipBounds);
     var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
     sourceChildren.forEach(function(child, index) {
       var childClone = cloneChildren[index];
@@ -119,7 +121,7 @@
         childClone.remove();
         return;
       }
-      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones, childClipBounds);
+      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones, childClipBounds, collectionFlow);
     });
 
     if (overflowingChildren && !clone.children.length) {
@@ -137,11 +139,11 @@
     }
   }
 
-  function visibilityPrunedClone(node, ownerDoc, sourceClones) {
+  function visibilityPrunedClone(node, ownerDoc, sourceClones, collectionFlow) {
     if (!node || elementSubtreeHidden(node)) return (ownerDoc || document).createElement("div");
     var clone = safeDeepClone(node, ownerDoc || document);
     if (!clone) return (ownerDoc || document).createElement("div");
-    pruneHiddenClone(node, clone, null, null, false, sourceClones);
+    pruneHiddenClone(node, clone, null, null, false, sourceClones, null, collectionFlow === true);
     return clone;
   }
 

@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Render complete current declared news portals from their physically owned Main, retaining every materialized reporting collection, source illustration and authorial section while keeping hidden content hidden and avoiding borrowed story bylines or dates.
+
 - Render complete current news articles whose declarations match ordered physical reporting and a unique printed heading, preserving owned sections, offer labels, edition references and every materialized media encoding without replacing reporting with social inference.
 
 - Render complete physical definition records whose declared identifier matches the current route and whose printed type owns the page title, preserving every field, sibling value, curator comment and resource without borrowing publication metadata.

@@ -69,7 +69,8 @@ function docsArticleContent(metadata, node, options) {
   var materialRoot = options.preserveSourceMaterialRoot;
   var referenceRoots = (options.preserveSourceReferenceRoots || []).filter(function(reference) { return sourceNode.contains(reference); });
   var sourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length ? new Map() : null;
-  var readableSource = options.pruneSourceVisibility ? visibilityPrunedClone(sourceNode, document, sourceClones) : sourceNode;
+  var readableSource = options.pruneSourceVisibility ?
+    visibilityPrunedClone(sourceNode, document, sourceClones, options.preserveMaterializedCollection === true) : sourceNode;
   if (sourceClones && materialRoot) {
     for (var ancestor = materialRoot; ancestor && sourceNode.contains(ancestor); ancestor = ancestor.parentElement) {
       var clone = sourceClones.get(ancestor);
@@ -85,6 +86,7 @@ function docsArticleContent(metadata, node, options) {
     var clone = sourceClones.get(reference);
     if (clone) clone.setAttribute("data-fetchutil-source-owned-primary", "true");
   });
+  if (readableSource !== sourceNode && typeof options.prepareRoot === "function") options.prepareRoot(readableSource);
   var root = cleanClone(readableSource, options.preserveSelector);
 
   if (options.preserveAuthoredSections && root.querySelector(VISIBLE_COMMENT_THREAD_SELECTOR + ", " + VISIBLE_COMMENT_RECORD_SELECTOR)) {

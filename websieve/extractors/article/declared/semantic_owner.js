@@ -70,5 +70,6 @@ function declaredSemanticArticleContent(metadata) {
 }
 
 function sourceOwnedPrimaryContent(metadata) {
-  return physicalOwnedReferenceContent(metadata) || declaredSemanticArticleContent(metadata);
+  return physicalOwnedReferenceContent(metadata) ||
+    declaredSemanticArticleContent(metadata) || declaredNewsPortalContent(metadata);
 }

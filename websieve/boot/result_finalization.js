@@ -51,7 +51,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentByline = sanitizeByline(content.byline);
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
-  var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true;
+  var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
+    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
@@ -237,7 +238,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var publishedTime = collectionPublishedTime(content, metadata);
   if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;
   if (content.sourceOwnedProduct === true) publishedTime = content.publishedTime || null;
-  if (content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true) {
+  if (sourceOwnedUnattributedReference) {
     byline = null;
     publishedTime = null;
   }
