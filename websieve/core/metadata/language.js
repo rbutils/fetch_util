@@ -13,6 +13,24 @@ function normalizeLanguageCode(value) {
   return code.length === 2 ? code : null;
 }
 
+var languageStopwords = {
+  en: "the and that for with this from are was were have has not but their about more will would which when",
+  es: "el la los las un una del de al a en y por con para que más son sus su se pero como esta todo nos hay fue muy han sin sobre tiene",
+  fr: "les des une est dans pour sur par pas qui que avec son sont plus ses mais cette ont tout nous vous aux leur",
+  de: "und die der das ist von zu mit den ein eine für auf als auch nicht sich werden nach bei aus wie oder noch nur dem des über",
+  pt: "dos das uma por com para que mais são mas como esta seu sua tem nos foi pode muito seus sobre também",
+  it: "gli una del per con che sono più dalla della delle dei anche come questa tutto suo sua suoi nelle alla",
+  nl: "een het van zijn met dat voor maar niet ook als nog wel hun uit bij kan zou meer alle dit wordt"
+};
+var languageCodes = Object.keys(languageStopwords);
+var languageWordMembership = Object.create(null);
+languageCodes.forEach(function(code) {
+  languageStopwords[code].split(" ").forEach(function(word) {
+    if (!languageWordMembership[word]) languageWordMembership[word] = [];
+    languageWordMembership[word].push(code);
+  });
+});
+
 function languageFromText() {
   var text = normalizeText(document.body && document.body.innerText || "");
   if (text.length < 80) return null;
@@ -37,37 +55,31 @@ function languageFromText() {
   var words = text.toLowerCase().match(/[a-zÀ-ž]+/g) || [];
   if (words.length < 30) return null;
 
-  var stopwords = {
-    en: /^(?:the|and|that|for|with|this|from|are|was|were|have|has|not|but|their|about|more|will|would|which|when)$/,
-    es: /^(?:el|la|los|las|un|una|del|de|al|a|en|y|por|con|para|que|más|son|sus|su|se|pero|como|esta|todo|nos|hay|fue|muy|han|sin|sobre|tiene)$/,
-    fr: /^(?:les|des|une|est|dans|pour|sur|par|pas|qui|que|avec|son|sont|plus|ses|mais|cette|ont|tout|nous|vous|aux|leur)$/,
-    de: /^(?:und|die|der|das|ist|von|zu|mit|den|ein|eine|für|auf|als|auch|nicht|sich|werden|nach|bei|aus|wie|oder|noch|nur|dem|des|über)$/,
-    pt: /^(?:dos|das|uma|por|com|para|que|mais|são|mas|como|esta|seu|sua|tem|nos|foi|pode|muito|seus|sobre|também)$/,
-    it: /^(?:gli|una|del|per|con|che|sono|più|dalla|della|delle|dei|anche|come|questa|tutto|suo|sua|suoi|nelle|alla)$/,
-    nl: /^(?:een|het|van|zijn|met|dat|voor|maar|niet|ook|als|nog|wel|hun|uit|bij|kan|zou|meer|alle|dit|wordt)$/
-  };
   var scores = {};
-  Object.keys(stopwords).forEach(function(code) { scores[code] = 0; });
+  languageCodes.forEach(function(code) { scores[code] = 0; });
   words.forEach(function(word) {
-    Object.keys(stopwords).forEach(function(code) {
-      if (stopwords[code].test(word)) scores[code] += 1;
+    var memberships = languageWordMembership[word];
+    if (!memberships) return;
+    memberships.forEach(function(code) {
+      scores[code] += 1;
     });
   });
 
-  var best = Object.keys(scores).sort(function(a, b) { return scores[b] - scores[a]; })[0];
-  var runnerUp = Object.keys(scores).sort(function(a, b) { return scores[b] - scores[a]; })[1];
+  var ranked = languageCodes.slice().sort(function(a, b) { return scores[b] - scores[a]; });
+  var best = ranked[0];
+  var runnerUp = ranked[1];
   return best && scores[best] >= 4 && scores[best] >= (scores[runnerUp] || 0) * 1.8 ? best : null;
 }
 
 function documentLanguage() {
   var openGraphLanguage = normalizeLanguageCode(metadataValue("og:locale", "property"));
   var htmlLanguage = normalizeLanguageCode(document.documentElement && document.documentElement.getAttribute("lang"));
-  var inferredLanguage = languageFromText();
-
-  if (htmlLanguage && htmlLanguage === inferredLanguage) return htmlLanguage;
+  if (openGraphLanguage && htmlLanguage && openGraphLanguage !== htmlLanguage) {
+    return htmlLanguage === languageFromText() ? htmlLanguage : openGraphLanguage;
+  }
 
   return openGraphLanguage ||
     htmlLanguage ||
     normalizeLanguageCode(metadataValue("Content-Language", "http-equiv")) ||
-    inferredLanguage;
+    languageFromText();
 }

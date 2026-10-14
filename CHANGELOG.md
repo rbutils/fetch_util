@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve language decisions while skipping text inference when declarations already determine the result, and count full-input shared stopwords through an indexed membership map.
+
 - Run browser extraction only once after vendor loading, keeping vendor-only fallback and restoring the caller's timeout instead of queuing another extraction after a transport timeout.
 
 - Render complete physically owned published entries whose bookmark and heading match the current page, preserving reporting, taxonomy, references and replies while recovering only the owned header attribution, date and lead.
