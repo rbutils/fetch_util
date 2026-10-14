@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Run browser extraction only once after vendor loading, keeping vendor-only fallback and restoring the caller's timeout instead of queuing another extraction after a transport timeout.
+
 - Render complete physically owned published entries whose bookmark and heading match the current page, preserving reporting, taxonomy, references and replies while recovering only the owned header attribution, date and lead.
 
 - Preserve Unicode words with partial inline emphasis and adjacent pure emphasis runs in valid Markdown without introducing literal delimiters or changing code and ordinary prose boundaries.

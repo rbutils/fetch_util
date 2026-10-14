@@ -150,6 +150,7 @@ RSpec.describe FetchUtil::Extractor do
     described_class.new.extract(page)
 
     expect(page).to have_received(:timeout=).with(60).once
+    expect(page).to have_received(:timeout=).with(120).once
     expect(page).to have_received(:timeout=).with(nil).once
   end
 
@@ -202,8 +203,34 @@ RSpec.describe FetchUtil::Extractor do
       expect(payload).to include('markdown' => 'Hello')
       expect(page).to have_received(:evaluate).with('window.stop && window.stop()')
       expect(page).to have_received(:timeout=).with(60).once
+      expect(page).to have_received(:timeout=).with(120).once
       expect(page).to have_received(:timeout=).with(15).once
     end
+  end
+
+  it 'does not queue another extraction or asset fallback after an evaluation timeout' do
+    timeout_error = Ferrum::TimeoutError.new
+    allow(page).to receive(:timeout).and_return(15)
+    allow(page).to receive(:timeout=)
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).with(/__fetchUtilPrivateApi\.extract/).and_raise(timeout_error)
+
+    expect { described_class.new.extract(page) }.to raise_error(FetchUtil::ExtractionError, timeout_error.message)
+
+    expect(page).to have_received(:evaluate).once
+    expect(page).to have_received(:add_script_tag).exactly(2).times
+    expect(page).to have_received(:timeout=).with(120).once
+    expect(page).to have_received(:timeout=).with(15).once
+  end
+
+  it 'preserves a longer caller timeout for the single extraction evaluation' do
+    allow(page).to receive(:timeout).and_return(200)
+    allow(page).to receive(:timeout=)
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Complete material' })
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Complete material')
+    expect(page).to have_received(:timeout=).with(200).exactly(3).times
   end
 
   it 'caches inline fallback assets and extraction call per extractor instance' do

@@ -69,17 +69,24 @@ module FetchUtil
       page.timeout = [original_timeout.to_f, 60].max if timeout_supported
 
       register_cdp_closed_shadow_roots(page)
-      inject_vendor_assets(page)
+      inject_vendor_assets_with_fallback(page)
+      # Spend the former two evaluation waits on one extraction. A transport
+      # timeout does not cancel synchronous page JavaScript, so retrying it can
+      # queue a second full extraction behind the first and retain both trees.
+      page.timeout = [original_timeout.to_f, 120].max if timeout_supported
       page.evaluate(extraction_call)
+    ensure
+      restore_page_timeout(page, original_timeout) if timeout_supported
+    end
+
+    def inject_vendor_assets_with_fallback(page)
+      inject_vendor_assets(page)
     rescue Ferrum::TimeoutError
       begin
         page.evaluate("window.stop && window.stop()")
       rescue Ferrum::Error
       end
       inject_vendor_assets_inline(page)
-      page.evaluate(extraction_call)
-    ensure
-      restore_page_timeout(page, original_timeout) if timeout_supported
     end
 
     def restore_page_timeout(page, timeout)
