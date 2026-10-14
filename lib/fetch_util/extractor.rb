@@ -97,6 +97,7 @@ module FetchUtil
 
     def register_cdp_closed_shadow_roots(page)
       return unless page.respond_to?(:command)
+      return unless page.evaluate(closed_shadow_reader_probe) == true
 
       document = page.command("DOM.getDocument", depth: -1, pierce: true).fetch("root")
       shadow_root_pairs(document).each do |host, root|
@@ -104,6 +105,10 @@ module FetchUtil
       end
     rescue Ferrum::Error
       nil
+    end
+
+    def closed_shadow_reader_probe
+      @closed_shadow_reader_probe ||= "typeof window[#{JSON.generate(Browser::SHADOW_ROOT_READER_PROPERTY)}] === 'function'".freeze
     end
 
     def shadow_root_pairs(document)

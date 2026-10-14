@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Discover closed component roots through CDP only when the page exposes the private reader that can consume them, preserving complete discovery and ordinary extraction when the optional bridge is absent or unavailable.
+
 - Preserve language decisions while skipping text inference when declarations already determine the result, and count full-input shared stopwords through an indexed membership map.
 
 - Run browser extraction only once after vendor loading, keeping vendor-only fallback and restoring the caller's timeout instead of queuing another extraction after a transport timeout.

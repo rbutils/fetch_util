@@ -72,6 +72,7 @@ RSpec.describe FetchUtil::Extractor do
     }
     allow(page).to receive(:add_script_tag)
     allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Closed content' })
+    allow(page).to receive(:evaluate).with(/\Atypeof window\[/).and_return(true)
     allow(page).to receive(:command) do |method, **parameters|
       commands << [method, parameters]
       case method
@@ -99,6 +100,7 @@ RSpec.describe FetchUtil::Extractor do
   it 'continues extraction when the pierced CDP document is unavailable' do
     allow(page).to receive(:add_script_tag)
     allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Ordinary content' })
+    allow(page).to receive(:evaluate).with(/\Atypeof window\[/).and_return(true)
     allow(page).to receive(:command).with('DOM.getDocument', depth: -1, pierce: true)
                                     .and_raise(Ferrum::TimeoutError, 'timed out')
 
@@ -118,6 +120,7 @@ RSpec.describe FetchUtil::Extractor do
     }
     allow(page).to receive(:add_script_tag)
     allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Fallback content' })
+    allow(page).to receive(:evaluate).with(/\Atypeof window\[/).and_return(true)
     allow(page).to receive(:command) do |method, **parameters|
       case method
       when 'DOM.getDocument' then document
@@ -139,6 +142,27 @@ RSpec.describe FetchUtil::Extractor do
     allow(page).to receive(:evaluate).and_return(nil)
 
     expect { described_class.new.extract(page) }.to raise_error(FetchUtil::ExtractionError)
+  end
+
+  it 'does not materialize a pierced DOM when no private closed-root reader can consume it' do
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:command)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Complete ordinary content' })
+    allow(page).to receive(:evaluate).with(/\Atypeof window\[/).and_return(false)
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Complete ordinary content')
+    expect(page).not_to have_received(:command)
+    expect(page).to have_received(:evaluate).with(/__fetchUtilPrivateApi\.extract/).once
+  end
+
+  it 'keeps ordinary extraction available when the optional private reader probe fails' do
+    allow(page).to receive(:add_script_tag)
+    allow(page).to receive(:command)
+    allow(page).to receive(:evaluate).and_return({ 'markdown' => 'Complete fallback content' })
+    allow(page).to receive(:evaluate).with(/\Atypeof window\[/).and_raise(Ferrum::BrowserError, 'probe unavailable')
+
+    expect(described_class.new.extract(page)).to include('markdown' => 'Complete fallback content')
+    expect(page).not_to have_received(:command)
   end
 
   it 'restores a nil page timeout after extraction' do
