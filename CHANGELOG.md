@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Support explicit ownership transfer of disposable inert Markdown inputs while retaining ordinary input-copying behavior and the same configured Turndown rules.
+
 - Assess localized subscription controls only after their complete anchored offer phrase is proved, avoiding unrelated-action visibility scans and repeated full-owner text copies while retaining the same source ownership and access evidence.
 
 - Check collection and published-feed eligibility before source-wide homepage assessment, preserving existing classification decisions without traversing unrelated article sections.
