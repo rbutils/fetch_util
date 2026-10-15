@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve ordinary control-word references within authored paragraphs while
+  continuing to remove actual player actions and other interface controls.
+
 - Preserve parenthetical function explanations and conditional return prose while
   continuing to remove unformatted runtime statements with actual syntax evidence.
 
