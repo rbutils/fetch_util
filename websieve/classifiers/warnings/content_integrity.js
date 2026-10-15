@@ -1,3 +1,13 @@
+  function paywallPartialBodyEligible(metadata, body, page) {
+    if (!body.length) return false;
+    var publicArticle = metadata && metadata.isAccessibleForFree === true;
+    var ratio = page.length > 0 ? body.length / page.length : 1;
+    // These are the existing partial-warning thresholds, not extraction limits.
+    return (!publicArticle && body.length < 5000) ||
+      (!publicArticle && body.length < 8000 && ratio < 0.40) ||
+      (body.length < 12000 && ratio < 0.25);
+  }
+
   function contentIntegrityWarningReasons(metadata, content, markdown, body, page, combined, title, docsLike,
                                           readableDocsPage, glossaryPage, packagePage, credibleListFeed,
                                           challengeType, interstitialType, clearStructure, compactNonLatinBody,
@@ -110,25 +120,13 @@
 
     // Paywall partial content: paywall detected and content appears truncated
     if (!challengeType && !interstitialType && content && content.contentType === "article" &&
+        paywallPartialBodyEligible(metadata, body, page) &&
         (!likelyListPath() || visibleLocalizedSubscriptionOffer())) {
       var paywall = paywallSignals();
-      if (paywall && reasons.indexOf("subscription_interstitial") === -1) {
-        var publicArticle = metadata && metadata.isAccessibleForFree === true;
-        // Flag if we got some content but it looks incomplete:
-        // - Short absolute length (< 5000 chars), OR
-        // - Content represents less than 40% of page text (paywall cut articles often have
-        //   a teaser paragraph then truncation, while full page has nav/footer text), OR
-        // - Longer content (< 12000 chars) but very low ratio (< 0.25) — catches cases where
-        //   a substantial teaser is extracted but the full article is much longer (common with
-        //   premium publishers like handelsblatt, nzz, luxtimes where teasers can be 5-10K chars)
-        var paywallRatio = page.length > 0 ? body.length / page.length : 1;
-        var partialBody = (!publicArticle && body.length < 5000) ||
-          (!publicArticle && body.length < 8000 && paywallRatio < 0.40) ||
-          (body.length < 12000 && paywallRatio < 0.25);
-        if (body.length > 0 && partialBody && !visiblePublicArticleBodyRetained(content, paywall) &&
-            !visibleDeclaredPaidBodyRetained(content, metadata, paywall)) {
-          reasons.push("paywall_partial_content");
-        }
+      if (paywall && reasons.indexOf("subscription_interstitial") === -1 &&
+          !visiblePublicArticleBodyRetained(content, paywall) &&
+          !visibleDeclaredPaidBodyRetained(content, metadata, paywall)) {
+        reasons.push("paywall_partial_content");
       }
     }
 

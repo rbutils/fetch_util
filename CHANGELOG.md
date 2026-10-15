@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Apply the existing partial-article warning eligibility before source-wide paywall assessment, retaining access declarations, ratio boundaries and source-proved complete public or paid bodies.
+
 - Support explicit ownership transfer of disposable inert Markdown inputs while retaining ordinary input-copying behavior and the same configured Turndown rules.
 
 - Assess localized subscription controls only after their complete anchored offer phrase is proved, avoiding unrelated-action visibility scans and repeated full-owner text copies while retaining the same source ownership and access evidence.
