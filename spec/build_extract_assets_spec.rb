@@ -835,12 +835,15 @@ RSpec.describe "extract asset bundle" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     base_path = "core/dom/base.js"
+    prune_path = "core/dom/visibility/prune.js"
     list_path = "extractors/lists/generic/records/flat_extraction.js"
     base_source = File.read(File.join(source_root, base_path))
     list_source = File.read(File.join(source_root, list_path))
 
-    expect(manifest.index(base_path)).to be < manifest.index(list_path)
-    expect(base_source).to include("function pruneHiddenClone", "function visibilityPrunedClone")
+    expect_manifest_order(manifest, prune_path, base_path, list_path)
+    expect(File.read(File.join(source_root, prune_path))).to include("function pruneHiddenClone")
+    expect(base_source).to include("function visibilityPrunedClone", "pruneHiddenClone(node, clone,")
+    expect(base_source).not_to include("function pruneHiddenClone")
     expect(list_source).to include("pruneHiddenClone(node, clone, preservedRoots, null, false, sourceToVisible)")
     expect(list_source).not_to include("function pruneHiddenListClone")
   end
@@ -855,7 +858,8 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/article_action_chrome.js")).to be < manifest.index("core/dom/article_collections.js")
     expect_manifest_order(
       manifest,
-      "core/dom/widgets/related_records.js",
+      "core/dom/widgets/related/article_ownership.js",
+      "core/dom/widgets/related/records.js",
       "core/dom/article_collections.js",
       "core/dom/terminal_article_furniture.js",
       "core/dom/cleanup.js"
@@ -1314,7 +1318,9 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index("core/dom/public_preview_cleanup.js")).to be < manifest.index("core/dom/cleanup.js")
     expect(manifest.index("core/dom/widgets/action_prompts.js")).to be < manifest.index("core/dom/widgets/article.js")
     expect(manifest.index("core/dom/widgets/article_engagement.js")).to be < manifest.index("core/dom/widgets/article.js")
-    expect(manifest.index("core/dom/widgets/related_records.js")).to be < manifest.index("core/dom/noise_cleanup.js")
+    expect_manifest_order(
+      manifest, "core/dom/widgets/related/article_ownership.js", "core/dom/widgets/related/records.js", "core/dom/noise_cleanup.js"
+    )
     expect_manifest_order(manifest, "core/dom/cleanup/inert_custom_ui.js", "core/dom/noise_cleanup.js")
   end
 
@@ -1461,13 +1467,17 @@ RSpec.describe "extract asset bundle" do
         markdown/lists/lists.js
       ], "markdown/inventory.js"],
       ["core/docs_cleanup/engines.js", %w[
+        core/docs_cleanup/literal_projection.js
+        core/docs_cleanup/materialized_sections.js
         markdown/code/code_helpers.js
         markdown/code/code_surfaces.js
+        markdown/code/literal_programs.js
       ], "markdown/tables.js"],
       ["markdown/tables.js", %w[
         markdown/materialization/materialization_inline.js
         markdown/materialization/materialization_containers.js
         markdown/materialization/materialization_blocks.js
+        markdown/materialization/output.js
         markdown/materialization/materialization.js
       ], "markdown/card_links.js"],
       ["classifiers/list_pages/detail_articles.js", %w[
