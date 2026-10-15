@@ -77,11 +77,12 @@ RSpec.describe "finite initial publication acquisition" do
   it "warns when an initial entry does not materialize before the deadline" do
     with_feed(missing: 15, feed_hydration_timeout: 0.4) do |browser, server|
       browser.with_page(server.url("/feed")) do |page|
+        original = page.evaluate("({width: innerWidth, height: innerHeight})")
         payload = browser.send(:with_materialized_feed, page) { FetchUtil::Extractor.new.extract(page) }
         expect(payload.fetch("warnings")).to include("unmaterialized_feed_entries")
         expect(payload.fetch("markdown")).to include("Published record 1]")
         expect(payload.fetch("markdown")).not_to include("Published record 15]")
-        expect(page.evaluate("innerHeight")).to eq(900)
+        expect(page.evaluate("({width: innerWidth, height: innerHeight})")).to eq(original)
       end
     end
   end
@@ -89,10 +90,11 @@ RSpec.describe "finite initial publication acquisition" do
   it "reports a height-bound partial collection without dropping available records" do
     with_feed(feed_hydration_max_height: 1_000, feed_hydration_timeout: 0.4) do |browser, server|
       browser.with_page(server.url("/feed")) do |page|
+        original = page.evaluate("({width: innerWidth, height: innerHeight})")
         payload = browser.send(:with_materialized_feed, page) { FetchUtil::Extractor.new.extract(page) }
         expect(payload.fetch("warnings")).to include("unmaterialized_feed_entries")
         expect(payload.fetch("markdown")).to include("Published record 1]", "Published record 3]")
-        expect(page.evaluate("innerHeight")).to eq(900)
+        expect(page.evaluate("({width: innerWidth, height: innerHeight})")).to eq(original)
       end
     end
   end
@@ -100,9 +102,10 @@ RSpec.describe "finite initial publication acquisition" do
   it "resumes lifecycle and restores viewport when extraction raises" do
     with_feed do |browser, server|
       browser.with_page(server.url("/feed")) do |page|
+        original = page.evaluate("({width: innerWidth, height: innerHeight})")
         error = FetchUtil::ExtractionError.new("original extraction failure")
         expect { browser.send(:with_materialized_feed, page) { raise error } }.to(raise_error { |raised| expect(raised).to equal(error) })
-        expect(page.evaluate("innerHeight")).to eq(900)
+        expect(page.evaluate("({width: innerWidth, height: innerHeight})")).to eq(original)
         ticks = page.evaluate("window.ticks")
         sleep 0.1
         expect(page.evaluate("window.ticks")).to be > ticks
