@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep non-rendered runtime nodes out of Markdown while preserving complete authored
+  inline and fenced HTML examples.
+
 - Use a coherent current website's declared description for an owned news portal
   when its organization omits one, preserving existing precedence and full reporting.
 

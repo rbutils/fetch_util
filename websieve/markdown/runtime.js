@@ -39,6 +39,7 @@
       bulletListMarker: "-",
       emDelimiter: "_"
     });
+    service.remove(["script", "style", "noscript", "template"]);
     addIntrawordEmphasisRule(service);
     preserveLiteralAngleText(service);
 
