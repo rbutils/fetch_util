@@ -63,7 +63,7 @@ function materializeDeclaredArticleMedia(root, preserveEveryImageSource) {
     var values = media.matches("img") ? (preserveEveryImageSource === true || !normalizeText(media.getAttribute("alt") || "") ? [media.getAttribute("src")] : []) :
       [media.getAttribute("src")].concat(Array.from(media.querySelectorAll("source[src]")).map(function(source) { return source.getAttribute("src"); }));
     var seen = new Set();
-    var owner = media.closest("a, picture") || media;
+    var owner = media.closest("a") || media.closest("picture") || media;
     values.forEach(function(value) {
       var url = declaredArticleHttpUrl(value);
       if (!url || seen.has(url)) return;

@@ -20,6 +20,75 @@ RSpec.describe 'FetchUtil declared article and media ownership' do
     HTML
   end
 
+  def declared_media_probe(page)
+    FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
+    directory = File.expand_path('../../../websieve', __dir__)
+    source = File.readlines(File.join(directory, 'manifest.txt'), chomp: true)
+                 .reject { |line| line.empty? || line.start_with?('#') }
+                 .map { |file| File.read(File.join(directory, file)) }.join("\n")
+    export = <<~JS
+      window.declaredMediaProbe = withComposedDomRead(function() {
+        var root = document.querySelector('main').cloneNode(true);
+        materializeDeclaredArticleMedia(root, true);
+        return { html: root.outerHTML, markdown: markdownFor(root.outerHTML, false, false, true),
+          nestedAnchors: root.querySelectorAll('a a').length };
+      });
+      })(window);
+    JS
+    page.add_script_tag(content: source.sub('})(window);', export))
+    page.evaluate('window.declaredMediaProbe()')
+  end
+
+  it 'keeps every linked picture, story heading and description outside added media-source links' do
+    cards = (1..240).map do |number|
+      <<~HTML
+        <article><a href="/reports/entry-#{number}"><figure><picture>
+          <img src="/images/report-#{number}.png" alt="Recorded scene #{number}">
+          </picture><figcaption>Published figure #{number}</figcaption></figure>
+          <h2>Report #{number}</h2><p>Complete observations for record #{number} remain in their published order.</p>
+        </a></article>
+      HTML
+    end.join
+    with_url_page('https://publication.example.test/', "<html><body><main>#{cards}</main></body></html>") do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = declared_media_probe(page)
+
+      expect(result.fetch('nestedAnchors')).to eq(0)
+      (1..240).each do |number|
+        expect(result.fetch('markdown')).to include(
+          "## [Report #{number}](https://publication.example.test/reports/entry-#{number})",
+          "https://publication.example.test/images/report-#{number}.png",
+          "Published figure #{number}",
+          "Complete observations for record #{number} remain in their published order."
+        )
+        expect(result.fetch('html')).to include("href=\"/reports/entry-#{number}\"")
+      end
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'retains unlinked pictures, captions and every audio and video source without changing the physical page' do
+    html = <<~HTML
+      <html><body><main><figure><picture><img src="/images/scene.png" alt="Published scene"></picture>
+        <figcaption>Authored scene caption.</figcaption></figure>
+        <video src="/media/primary.mp4"><source src="/media/alternate.webm"></video>
+        <audio><source src="/media/recording.ogg"><source src="/media/recording.mp3"></audio>
+        <p>Final reporting and <a href="/references">its published references</a>.</p>
+      </main></body></html>
+    HTML
+    with_url_page('https://publication.example.test/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = declared_media_probe(page)
+
+      expect(result.fetch('nestedAnchors')).to eq(0)
+      %w[images/scene.png media/primary.mp4 media/alternate.webm media/recording.ogg media/recording.mp3 references].each do |path|
+        expect(result.fetch('markdown')).to include("https://publication.example.test/#{path}")
+      end
+      expect(result.fetch('markdown')).to include('Authored scene caption.', 'Final reporting', 'its published references')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'preserves an independent publisher summary and visible declared body ahead of a player teaser' do
     with_url_page('https://research.example/reports/storms', declared_article_html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)

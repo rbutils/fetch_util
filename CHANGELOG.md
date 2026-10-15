@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep story links intact when materializing source references for pictures inside
+  linked reporting cards, without introducing nested anchors or losing media values.
+
 - Retain coherent page-declared product descriptions after physical family ownership
   is proved, without borrowing conflicting, unrelated or prefix-name metadata.
 
