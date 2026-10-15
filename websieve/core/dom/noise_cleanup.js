@@ -43,15 +43,6 @@
     return imgs >= 1 && links >= 1 && (badgeImage || /\b(status|badge|coverage|workflow|ci)\b|\bbuild[\s_-]+(?:passing|failing)\b/.test(altText));
   }
 
-  function looksLikeInlineJS(text) {
-    var normalized = normalizeText(text || "");
-    if (!normalized || normalized.length > 1200 || normalized.length < 12) return false;
-    var jsPatterns = /\b(document\.(body|getElementById|querySelector|createElement|cookie|write)|window\.(location|addEventListener|dataLayer|gtag|ga\()|function\s*\(|var\s+\w+\s*=\s*|\.push\s*\(\s*function|\.classList\.(add|remove|toggle)|\.style\.\w+\s*=|\.innerHTML\s*=|\.setAttribute\s*\(|addEventListener\s*\(|\.insertBefore\s*\(|\.appendChild\s*\(|\.parentNode\s*\.|new\s+(Date|Array|Object|RegExp|Map|Set)\s*\(|typeof\s+\w+\s*[!=]==?\s*|===?\s*['"]undefined['"]|console\.(log|warn|error)|setTimeout\s*\(|setInterval\s*\(|JSON\.(parse|stringify)|Promise\.(resolve|reject|all)|Object\.(keys|values|assign|defineProperty)|Array\.(isArray|from|prototype)|return\s+(true|false|null|void|this)\b|if\s*\([^)]*\)\s*\{|try\s*\{|catch\s*\(\w+\)\s*\{|throw\s+new\s+\w+)/;
-    if (!jsPatterns.test(normalized)) return false;
-    var jsTokens = normalized.match(/[{};()=]|function\s|var\s|const\s|let\s|return\s|\.push\(|\.call\(|\.apply\(|=>|===?|!==?|&&|\|\|/g) || [];
-    return jsTokens.length >= 3;
-  }
-
   function looksLikeDebugData(text) {
     var normalized = normalizeText(text || "");
     if (!normalized || normalized.length < 40) return false;

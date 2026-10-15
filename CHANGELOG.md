@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve parenthetical function explanations and conditional return prose while
+  continuing to remove unformatted runtime statements with actual syntax evidence.
+
 - Keep complete article-ownership evidence while avoiding redundant literal-code
   presentation copies and promptly releasing disposable analysis trees.
 
