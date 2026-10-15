@@ -399,7 +399,7 @@ module FetchUtil
       evidence = snapshot.payload["portalRootEvidence"]
       return false unless evidence.is_a?(Hash) && evidence["canonicalCardCount"].to_i >= 4
 
-      evidence["namedSectionCount"].to_i >= 2 || evidence["completeRecordCoverage"] == true
+      evidence["declaredNewsPortal"] == true || evidence["namedSectionCount"].to_i >= 2 || evidence["completeRecordCoverage"] == true
     end
 
     def homepage_like?(url)

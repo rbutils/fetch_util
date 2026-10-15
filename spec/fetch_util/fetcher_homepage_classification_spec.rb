@@ -156,6 +156,68 @@ RSpec.describe FetchUtil::Fetcher do
     end
   end
 
+  it 'retains a physically proved declared portal through public normalization without inventing section evidence' do
+    url = 'https://publication.example.test/'
+    markdown = (1..180).map { |number| "- [Independent reporting #{number}](#{url}reporting/#{number})" }.join("\n")
+    html = '<main><h1>Published daily reporting</h1><p>Complete physical reporting remains material.</p></main>'
+    payload = payload_with(
+      title: 'Published daily reporting', siteName: 'Published daily reporting', html: html, markdown: markdown,
+      contentType: 'list', byline: nil, publishedTime: nil, warnings: [],
+      portalRootEvidence: { 'canonicalCardCount' => 180, 'declaredNewsPortal' => true }
+    )
+    stub_browser_extraction(url, page: page_at(url), payload: payload)
+
+    result = fetch_with_dependencies(url)
+
+    expect(result.content_type).to eq('list')
+    expect(result.warnings).to eq([])
+    expect(result.suspect).to be(false)
+    expect(result.html).to eq(html)
+    expect(result.markdown).to eq(markdown)
+    expect(result.published_time).to be_nil
+    expect(payload['portalRootEvidence']).not_to have_key('namedSectionCount')
+    expect(payload['portalRootEvidence']).not_to have_key('completeRecordCoverage')
+  end
+
+  it 'requires typed declared portal evidence and the existing independent-record proof' do
+    [[false, 4], ['true', 4], [nil, 4], [true, 3]].each do |declared, records|
+      url = 'https://unproved.example.test/'
+      markdown = (1..4).map { |number| "- [Public reporting #{number}](#{url}reporting/#{number})" }.join("\n")
+      payload = payload_with(
+        title: 'Published reporting', markdown: markdown, contentType: 'list', warnings: [],
+        portalRootEvidence: { 'canonicalCardCount' => records, 'declaredNewsPortal' => declared }
+      )
+      stub_browser_extraction(url, page: page_at(url), payload: payload)
+
+      result = fetch_with_dependencies(url)
+
+      expect(result.warnings).to include('homepage_index_page')
+      expect(result.markdown).to eq(markdown)
+    end
+  end
+
+  it 'keeps blocked, status, empty and non-root results outside declared portal credibility' do
+    cases = [
+      ['https://blocked.example.test/', { warnings: ['consent_wall'] }, %w[consent_wall homepage_index_page]],
+      ['https://status.example.test/', { statusPage: true, warnings: ['status_page'] }, ['status_page']],
+      ['https://empty.example.test/', { markdown: '' }, ['homepage_index_page']],
+      ['https://publication.example.test/section', { warnings: ['url_content_mismatch'] }, ['url_content_mismatch']]
+    ]
+    cases.each do |url, overrides, expected|
+      payload = payload_with(
+        title: 'Published reporting', contentType: 'list', warnings: [],
+        markdown: (1..4).map { |number| "- [Public reporting #{number}](#{url}reporting/#{number})" }.join("\n"),
+        portalRootEvidence: { 'canonicalCardCount' => 4, 'declaredNewsPortal' => true }, **overrides
+      )
+      stub_browser_extraction(url, page: page_at(url), payload: payload)
+
+      result = fetch_with_dependencies(url)
+
+      expect(result.warnings).to eq(expected)
+      expect(result.markdown).to eq(payload['markdown'])
+    end
+  end
+
   it 'keeps search result pages as search content' do
     search_page = page_at('https://www.google.com/search?q=ruby+language')
     search_payload = payload_with(

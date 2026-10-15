@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Honor proved declared-portal ownership in public result normalization while
+  retaining existing blocked, status, empty and non-homepage warning guards.
+
 - Preserve proved physical portal-record evidence for homepage warning decisions,
   counting unique visible reporting destinations without treating foreign, hidden
   or duplicate-only records as independent ownership proof.

@@ -96,6 +96,26 @@ RSpec.describe 'FetchUtil physically owned declared news portals' do
     end
   end
 
+  it 'preserves physical reporting and truthful warnings through the actual public result factory' do
+    url = 'https://publication.example.test/'
+    extract_from_url(url, declared_portal_page) do |payload|
+      factory = FetchUtil::Fetcher.new(browser: double('unused browser'), extractor: double('unused extractor'),
+                                       raw_docs_fallback: double('unused raw fallback'))
+      result = factory.send(:build_result, url, url, payload)
+
+      expect(payload['portalRootEvidence']).to eq('canonicalCardCount' => 180, 'declaredNewsPortal' => true)
+      expect(result.content_type).to eq('list')
+      expect(result.warnings).to eq([])
+      expect(result.suspect).to be(false)
+      expect(result.html).to eq(payload['html'])
+      expect(result.markdown).to eq(payload['markdown'])
+      expect(result.published_time).to be_nil
+      (1..180).each do |number|
+        expect(result.markdown).to include("Published reporting #{number}", "description #{number}", "/resources/#{number}")
+      end
+    end
+  end
+
   it 'declines missing, foreign, conflicting, multiple and hidden physical identities' do
     html = declared_portal_page
     cases = [
