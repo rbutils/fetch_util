@@ -247,6 +247,35 @@ RSpec.describe 'Article-owned interface widgets' do
     end
   end
 
+  it 'preserves visually material, referenced and ambiguous subscription leaves' do
+    html = <<~HTML
+      <html><head><title>Public transit subscription records</title><style>
+      .has-picture { background-image: linear-gradient(#fff, #eee); }
+      .has-before::before { content: "Published source disclosure"; }
+      </style></head><body><article>
+      <h1>Public transit subscription records</h1>
+      <p>The investigation compares the public transit records with the published subscription policy and documents the original evidence.</p>
+      <div id="background-leaf" class="ads has-picture">ই-পেপার সাবস্ক্রিপশন</div>
+      <div id="generated-leaf" class="ads has-before">ই-পেপার সাবস্ক্রিপশন</div>
+      <a href="#referenced-leaf">Original subscription source</a>
+      <div id="referenced-leaf" class="ads">ই-পেপার সাবস্ক্রিপশন</div>
+      <div id="duplicate-leaf" class="ads">ই-পেপার সাবস্ক্রিপশন</div>
+      <div id="duplicate-leaf" class="ads">ই-পেপার সাবস্ক্রিপশন</div>
+      <p>The concluding account explains how readers can verify the original timetable and the source-owned subscription records.</p>
+      </article></body></html>
+    HTML
+
+    with_url_page('https://publication.example.test/transit-records', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      result = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+
+      expect(result.fetch('html')).to include('id="background-leaf"', 'id="generated-leaf"', 'id="referenced-leaf"')
+      expect(result.fetch('html').scan('id="duplicate-leaf"').length).to eq(2)
+      expect(result.fetch('markdown')).to include('Original subscription source', 'verify the original timetable')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'removes an empty ad placeholder owned by an articleBody root' do
     html = <<~HTML
       <html><head><title>Transit records explained</title></head><body>

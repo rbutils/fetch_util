@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Check subscription-prompt styling on its unique live source before removing an
+  inert article clone, retaining visual material, references and ambiguous leaves.
+
 - Keep source-owned emphasized section letters on their citation links without
   rewriting ordinary intraword emphasis or literal program values.
 

@@ -35,7 +35,11 @@ function articleSubscriptionPromptShape(node) {
   if (Array.from(node.attributes || []).some(function(attribute) {
     return !/^(?:class|id)$/i.test(String(attribute.name || ""));
   })) return false;
+  return true;
+}
 
+function articleSubscriptionPromptSource(node) {
+  if (!node || !node.isConnected || !articleSubscriptionPromptShape(node)) return false;
   var view = node.ownerDocument && node.ownerDocument.defaultView;
   if (!view || !view.getComputedStyle) return false;
   try {
@@ -60,9 +64,9 @@ function articleSubscriptionPromptLeaf(node, context) {
 
   var id = String(node.getAttribute("id") || "");
   var candidates = id ? context.sourcesById.get(id) || [] :
-    Array.from(document.querySelectorAll("div.ads, span.ads, p.ads")).filter(articleSubscriptionPromptShape);
+    Array.from(document.querySelectorAll("div.ads, span.ads, p.ads")).filter(articleSubscriptionPromptSource);
   candidates = candidates.filter(function(source) {
-    return source !== node && source.isConnected && articleSubscriptionPromptShape(source) && source.isEqualNode(node);
+    return source !== node && articleSubscriptionPromptSource(source) && source.isEqualNode(node);
   });
   return candidates.length === 1;
 }
