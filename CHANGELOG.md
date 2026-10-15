@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Check search-route prerequisites before reconstructing article ownership, preserving eligible result cards and focal reporting.
+
 - Avoid materializing irrelevant challenge-asset combinations while preserving complete challenge evidence and existing classification boundaries.
 
 - Retain complete physically owned technical manuals, including authored repetitions, chapters, callouts, programs, tables and references, with source visibility and truthful attribution.

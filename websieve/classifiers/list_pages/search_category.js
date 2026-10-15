@@ -1,6 +1,7 @@
   function thinSearchOrCategoryPage(content) {
-    if (!content || content.contentType !== "article" || articleRouteFocalContent(content)) return false;
+    if (!content || content.contentType !== "article") return false;
     if (!queryOrCategoryPage()) return false;
+    if (articleRouteFocalContent(content)) return false;
 
     var root = document.createElement("div");
     root.innerHTML = content.html || "";
@@ -51,13 +52,14 @@
   }
 
   function searchResultsListPage(content, markdown) {
-    if (!content || content.contentType !== "article" || articleRouteFocalContent(content)) return false;
+    if (!content || content.contentType !== "article") return false;
     if (content.repeatedRecordArticleOwnershipConflict) return false;
 
     var path = (location.pathname || "").toLowerCase();
     var query = (location.search || "").toLowerCase();
     var searchUrl = /\/(?:search|results?)(?:\.html?)?$/i.test(path) || /(?:^|[?&])(?:q|query|search|searchtext|keyword|k|text)=/.test(query);
     if (!searchUrl) return false;
+    if (articleRouteFocalContent(content)) return false;
 
     var root = pageContentProbe(content);
     var text = normalizeText([root.textContent || "", markdown || "", document.title || ""].join(" "));
