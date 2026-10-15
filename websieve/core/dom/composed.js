@@ -1,12 +1,15 @@
   var composedDomReadContext = null;
   var composedDomShadowToken = null;
   var composedDomShadowReaderProperty = null;
+  var composedDomStableShadowReader = null;
+  var composedDomStableShadowReaderKnown = false;
 
   function composedDomShadowRoot(node) {
     if (!node) return null;
     if (node.shadowRoot) return node.shadowRoot;
     try {
-      var reader = composedDomShadowReaderProperty && window[composedDomShadowReaderProperty];
+      var reader = composedDomStableShadowReaderKnown ? composedDomStableShadowReader :
+        composedDomShadowReaderProperty && window[composedDomShadowReaderProperty];
       return typeof reader === "function" ? reader(composedDomShadowToken, "get", node) || null : null;
     } catch (_error) {
       return null;
@@ -57,9 +60,27 @@
       var previous = composedDomReadContext;
       var previousToken = composedDomShadowToken;
       var previousReaderProperty = composedDomShadowReaderProperty;
+      var previousStableReader = composedDomStableShadowReader;
+      var previousStableReaderKnown = composedDomStableShadowReaderKnown;
       var context = new WeakSet();
       composedDomShadowToken = options && options.shadow_root_token;
       composedDomShadowReaderProperty = options && options.shadow_root_reader_property;
+      composedDomStableShadowReader = null;
+      composedDomStableShadowReaderKnown = false;
+      // A private immutable bridge, or its absence on an injected page, cannot
+      // change during this synchronous physical read. Avoid Window's named-item
+      // lookup after every detached-clone mutation. Mutable/accessor bridges
+      // retain their original per-node reads; nested calls restore their owner.
+      if (composedDomShadowReaderProperty) {
+        var descriptor = Object.getOwnPropertyDescriptor(window, composedDomShadowReaderProperty);
+        if (descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value") &&
+            !descriptor.configurable && !descriptor.writable) {
+          composedDomStableShadowReader = descriptor.value;
+          composedDomStableShadowReaderKnown = true;
+        } else if (!(composedDomShadowReaderProperty in window)) {
+          composedDomStableShadowReaderKnown = true;
+        }
+      }
       var roots = [document];
       for (var index = 0; index < roots.length; index += 1) {
         Array.prototype.forEach.call(roots[index].querySelectorAll("*"), function(node) {
@@ -77,6 +98,8 @@
         composedDomReadContext = previous;
         composedDomShadowToken = previousToken;
         composedDomShadowReaderProperty = previousReaderProperty;
+        composedDomStableShadowReader = previousStableReader;
+        composedDomStableShadowReaderKnown = previousStableReaderKnown;
       }
     });
   }

@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reuse an immutable or absent private shadow-reader capability only within one synchronous read, preserving mutable getters, newly installed readers and nested scope ownership.
+
 - Preserve complete Markdown materialization boundaries while copying unchanged source spans once instead of rebuilding ordinary prose character by character.
 
 - Preserve complete text normalization while avoiding replacement records for already normalized single spaces, including full Unicode whitespace and input-coercion behavior.
