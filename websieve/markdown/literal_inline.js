@@ -1,5 +1,5 @@
   function preserveLiteralInlineCode(root) {
-    root.querySelectorAll("a:not([href])").forEach(function(anchor) {
+    root.querySelectorAll("code a:not([href])").forEach(function(anchor) {
       anchor.replaceWith.apply(anchor, Array.prototype.slice.call(anchor.childNodes));
     });
     root.querySelectorAll("code").forEach(function(code) {

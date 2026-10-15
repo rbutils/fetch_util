@@ -48,6 +48,33 @@ RSpec.describe 'Complete inline code presentation' do
     end
   end
 
+  it 'retains source-owned spacing between adjacent unlinked taxonomy labels' do
+    html = '<p>Published reporting remains intact.</p><div class="tags">' \
+           '<a class="tag">Field observations</a><a class="tag">Rain records</a>' \
+           '<a class="tag" href="/topics/rivers">River levels</a></div>'
+    with_url_page('https://publication.example.test/reference/manual', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
+      page.add_script_tag(content: inline_presentation_probe('return markdownFor(document.body.innerHTML, false, true, true);'))
+      markdown = page.evaluate('inlinePresentationProbe({})')
+      expect(markdown).to include('Published reporting remains intact.',
+                                  'Field observations Rain records [River levels](https://publication.example.test/topics/rivers)')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'keeps uncued adjacent prose contiguous while normalizing named code anchors' do
+    html = '<p><a>road</a><a>map</a> and ' \
+           '<code><a name="type-token">Root</a><span>&lt;Value&gt;</span></code>.</p>'
+    with_url_page('https://publication.example.test/reference/manual', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
+      page.add_script_tag(content: inline_presentation_probe('return markdownFor(document.body.innerHTML, false, true, true);'))
+      expect(page.evaluate('inlinePresentationProbe({})')).to include('roadmap and `Root<Value>`.')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'retains attributed descendants, literal references and named destinations' do
     html = '<p><code><span id="target">Identified token</span></code> ' \
            '<code><span title="Published annotation">Annotated token</span></code> ' \

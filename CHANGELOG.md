@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve non-code tag ownership until adjacent-label spacing is rendered, while
+  continuing to normalize named anchors inside complete literal code values.
+
 - Check subscription-prompt styling on its unique live source before removing an
   inert article clone, retaining visual material, references and ambiguous leaves.
 
