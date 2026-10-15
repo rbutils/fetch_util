@@ -3,12 +3,15 @@
 RSpec.describe 'FetchUtil physically owned declared news portals' do
   include_context 'extractor integration helpers'
 
-  def declared_portal_page
+  def declared_portal_page(organization_description: 'Independent public reporting and source references.', website_description: nil,
+                           website_url: 'https://publication.example.test/')
     declarations = [
       { '@context' => 'https://schema.org', '@type' => 'NewsMediaOrganization', name: 'Published Daily', url: 'https://publication.example.test/',
-        description: 'Independent public reporting and source references.' },
-      { '@context' => 'https://schema.org', '@type' => 'WebSite', name: 'Published Daily', url: 'https://publication.example.test/' }
+        description: organization_description },
+      { '@context' => 'https://schema.org', '@type' => 'WebSite', name: 'Published Daily', url: website_url }
     ]
+    declarations.first.delete(:description) if organization_description.nil?
+    declarations.last[:description] = website_description unless website_description.nil?
     records = (1..180).map do |number|
       <<~HTML
         <section><h2><a href="/reporting/#{number}">Published reporting #{number}</a></h2>
@@ -78,6 +81,39 @@ RSpec.describe 'FetchUtil physically owned declared news portals' do
       expect(page.evaluate('hasDeclaredNewsPortal()')).to be false
     end
     with_page(html.gsub('https://publication.example.test/', 'about:blank')) do |page|
+      page.add_script_tag(content: declared_portal_source)
+      expect(page.evaluate('hasDeclaredNewsPortal()')).to be false
+    end
+  end
+
+  it 'uses the coherent current website description without replacing any physical reporting or illustration credit' do
+    description = 'Published public reporting, complete source context and independent references.'
+    html = declared_portal_page(organization_description: nil, website_description: description)
+           .sub('<main>', '<main><p>Visible illustration credit.</p>')
+    extract_from_url('https://publication.example.test/', html) do |payload|
+      expect(payload['excerpt']).to eq(description)
+      expect(payload['byline']).to be_nil
+      expect(payload['publishedTime']).to be_nil
+      %w[html markdown].each do |format|
+        expect(payload[format]).to include('Visible illustration credit.')
+        (1..180).each do |number|
+          expect(payload[format]).to include("Published reporting #{number}", "description #{number}", "/resources/#{number}")
+        end
+      end
+    end
+  end
+
+  it 'retains an existing organization description ahead of a different coherent website description' do
+    html = declared_portal_page(website_description: 'A different current website description.')
+    extract_from_url('https://publication.example.test/', html) do |payload|
+      expect(payload['excerpt']).to eq('Independent public reporting and source references.')
+    end
+  end
+
+  it 'does not borrow a description from a foreign website declaration' do
+    html = declared_portal_page(organization_description: nil, website_description: 'Foreign website description.',
+                                website_url: 'https://foreign.example.test/')
+    with_url_page('https://publication.example.test/', html) do |page|
       page.add_script_tag(content: declared_portal_source)
       expect(page.evaluate('hasDeclaredNewsPortal()')).to be false
     end

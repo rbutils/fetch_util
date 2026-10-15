@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Use a coherent current website's declared description for an owned news portal
+  when its organization omits one, preserving existing precedence and full reporting.
+
 - Finalize proved owned manuals after reclaiming completed browser work, keeping
   full material, source freshness, one shared timeout and legacy extraction contracts.
 

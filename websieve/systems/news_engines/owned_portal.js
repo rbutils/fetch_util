@@ -32,7 +32,8 @@ function declaredNewsPortalContext(metadata) {
   });
   var destinations = new Set(records.map(function(link) { return focalCanonicalUrl(link.getAttribute("href")); }));
   if (destinations.size < 2) return null;
-  return { root: root, title: name, records: records, description: normalizeText(entityText(organizations[0].description)) };
+  var description = normalizeText(entityText(organizations[0].description)) || normalizeText(entityText(sites[0].description));
+  return { root: root, title: name, records: records, description: description };
 }
 
 function declaredNewsPortalContent(metadata) {
