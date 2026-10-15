@@ -1,9 +1,10 @@
   var fetchUtilExtractApi = {
     extract: withComposedDomRead(function(options) {
       resetTerminalArticleCollectionMarker();
-      var metadata = collectMetadata();
+      var preparedPage = metadataWithPreparedStandaloneManual();
+      var metadata = preparedPage.metadata;
       var ownedSocialPost = socialPostOwnedContent(metadata);
-      var ownedPrimary = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : sourceOwnedPrimaryContent(metadata);
+      var ownedPrimary = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : sourceOwnedPrimaryContent(metadata, preparedPage.manual);
       if ((ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) || ownedPrimary) {
         return finalizeExtractResult(ownedPrimary || ownedSocialPost, metadata, pageReadableText(), null, null);
       }

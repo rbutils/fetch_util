@@ -34,12 +34,16 @@ RSpec.describe 'Complete inline code presentation' do
           return service.turndown(root);
         }
         var actual = markdownFor(source.outerHTML, false, true, true, convert);
-        return {actual: actual, expected: expected, spansAtConversion: spansAtConversion};
+        var rendered = physicalManualRenderedSections({}, {root: source, title: 'Reference Manual', lead: 'Published explanation'});
+        return {actual: actual, expected: expected, spansAtConversion: spansAtConversion,
+          rendered: rendered.markdown, publicPresentation: rendered.html.indexOf('class="type"') !== -1};
       JS
       result = page.evaluate('inlinePresentationProbe({})')
       expect(result.fetch('actual')).to eq(result.fetch('expected'))
       expect(result.fetch('actual')).to include('`Root<Value240>`', 'reference/240')
       expect(result.fetch('spansAtConversion')).to eq(0)
+      expect(result.fetch('rendered')).to eq(result.fetch('expected'))
+      expect(result.fetch('publicPresentation')).to be(true)
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end

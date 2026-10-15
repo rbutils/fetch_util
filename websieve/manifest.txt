@@ -78,6 +78,7 @@ core/docs_cleanup/article_title_finalization.js
 core/docs_cleanup/adjacent_headings.js
 core/docs_cleanup/engines.js
 core/docs_cleanup/literal_projection.js
+core/docs_cleanup/materialized_sections.js
 markdown/code/code_helpers.js
 markdown/code/code_surfaces.js
 markdown/code/literal_programs.js

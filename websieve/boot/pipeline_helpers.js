@@ -69,6 +69,21 @@ function ownedPageContent(metadata, pageText) {
     genericDocsSystemContent(metadata);
 }
 
+function metadataWithPreparedStandaloneManual() {
+  var metadata = collectMetadata();
+  var manual = null;
+  // Preserve the existing declared-article and published-entry precedence. This
+  // only advances construction of an independently proved physical manual.
+  if (!document.querySelector("main, [role='main']:not(article), script[type='application/ld+json'], [itemscope][itemtype], article.hentry") &&
+      document.querySelector("article[role='main'], div.book")) {
+    var context = physicalTechnicalDocsContext(metadata);
+    if (context && (context.generatedBook || context.root.matches("article"))) {
+      manual = physicalManualRenderedSections(metadata, context);
+    }
+  }
+  return { metadata: metadata, manual: manual };
+}
+
 function readableOrFallbackContent(options, metadata) {
   var focalPermalink = focalPermalinkArticleContent(metadata);
   if (focalPermalink) return focalPermalink;

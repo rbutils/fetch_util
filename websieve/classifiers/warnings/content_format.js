@@ -133,6 +133,8 @@
     var liveblog = structuredDataNode(["LiveBlogPosting"]);
     if (liveblog) return "liveblog";
     if (content && content.sourceOwnedLiveblog === true) return "liveblog";
+    if (content && content.sourceOwnedUnattributedManual === true && content.sourceOwnedManualTitle === content.title &&
+        content.sourceOwnedCleanedManualHtml === content.html) return null;
 
     // 2. DOM signals for liveblog
     var liveblogDOM = (multiTopicExtractionView(content, markdown).root || document).querySelector(

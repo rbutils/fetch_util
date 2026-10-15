@@ -19,7 +19,7 @@
     return result;
   }
 
-  function cleanupMarkdownNoise(markdown) {
+  function cleanupMarkdownNoise(markdown, preserveAuthoredRepeats) {
     var protectedMarkdown = protectMarkdownFences(markdown);
     var result = protectedMarkdown.markdown
       .replace(/Your browser doesn't support HTML5 audio\s*/g, "")
@@ -140,12 +140,13 @@
     result = stripTrailingArticlePromoTail(result);
     result = repairDroppedLeadingTitleInitial(result);
 
-    result = result.split("\n").map(function(line) {
-      if (line.length < 120 || /\[[^\]]+\]\([^)]+\)/.test(line)) return line;
-      return line.replace(/(.{50,300}?[.!?])(?:\s*\1)+/g, "$1");
-    }).join("\n");
-
-    result = collapseMarkdownDuplicateLines(result);
+    if (!preserveAuthoredRepeats) {
+      result = result.split("\n").map(function(line) {
+        if (line.length < 120 || /\[[^\]]+\]\([^)]+\)/.test(line)) return line;
+        return line.replace(/(.{50,300}?[.!?])(?:\s*\1)+/g, "$1");
+      }).join("\n");
+      result = collapseMarkdownDuplicateLines(result);
+    }
     return restoreMarkdownFences(result.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
   }
 

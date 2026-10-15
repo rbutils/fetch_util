@@ -52,7 +52,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
-    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true;
+    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
@@ -99,9 +99,12 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var byline = contentByline || metadataByline || visibleBylineValue;
   var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ? function(value) {
     return String(value || "").trim();
+  } : content.sourceOwnedUnattributedManual === true && content.sourceOwnedCleanedManualHtml === content.html ? function(value) {
+    return cleanupMarkdownNoise(value, true);
   } : cleanupMarkdownNoise;
   var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
-  var cleanedHtml = sanitizedHtml(content.html, !!content.focalPublicPreview);
+  var cleanedHtml = content.sourceOwnedUnattributedManual === true && content.sourceOwnedCleanedManualHtml === content.html ?
+    content.html : sanitizedHtml(content.html, !!content.focalPublicPreview);
   if (content.title) content.title = normalizeText(content.title.replace(/\s*Stay organized with collections\s*Save and categorize content based on your preferences\.?\s*/gi, ""));
   var markdown = cleanResultMarkdown(content.markdown && !content.focalPublicPreview ? content.markdown :
     markdownFor(cleanedHtml || content.html, !!content.focalPublicPreview, preserveInlineMailtoUntilFinalType));
@@ -257,7 +260,9 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     bedrooms: content.bedrooms === undefined ? null : content.bedrooms,
     bathrooms: content.bathrooms === undefined ? null : content.bathrooms,
     areaSqft: content.areaSqft === undefined ? null : content.areaSqft,
-    html: materializedHtml(content.html, inlineArticleMailtoAllowed(content)),
+    html: content.sourceOwnedUnattributedManual === true && typeof content.html === "string" &&
+      content.sourceOwnedMaterializedManualHtml === content.html ? content.html :
+      materializedHtml(content.html, inlineArticleMailtoAllowed(content)),
     markdown: markdown,
     readerMode: content.readerMode,
     contentType: content.contentType || "article",

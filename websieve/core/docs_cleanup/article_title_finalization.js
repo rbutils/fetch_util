@@ -1,4 +1,8 @@
 function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markdown, originalPrimaryTitle, siteTitle) {
+  if (content.sourceOwnedUnattributedManual === true && content.sourceOwnedManualTitle === originalPrimaryTitle &&
+      content.sourceOwnedCleanedManualHtml === content.html) {
+    return { title: originalPrimaryTitle, markdown: markdown, identityResolved: true };
+  }
   var primaryTitle = originalPrimaryTitle;
   var identityResolved = false;
   if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true) {

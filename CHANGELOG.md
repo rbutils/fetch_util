@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Retain complete physically owned technical manuals, including authored repetitions, chapters, callouts, programs, tables and references, with source visibility and truthful attribution.
+
 - Retain complete nested and adjacent inline literals, template angles and code-only table values while preserving attributed content and real references.
 
 - Preserve every complete literal program while avoiding discarded child conversion, retaining source HTML, languages, fences and table-owned code.
