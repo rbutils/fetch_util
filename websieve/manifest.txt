@@ -79,6 +79,7 @@ markdown/tables.js
 markdown/materialization/materialization_inline.js
 markdown/materialization/materialization_containers.js
 markdown/materialization/materialization_blocks.js
+markdown/materialization/output.js
 markdown/materialization/materialization.js
 markdown/card_links.js
 core/markdown_cleanup/fences.js

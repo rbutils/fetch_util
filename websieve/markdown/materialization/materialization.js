@@ -1,12 +1,15 @@
 function materializedMarkdown(markdown, allowArticleMailto) {
   var input = String(markdown || "").replace(/\r\n?/g, "\n");
-  var output = "";
+  var output = new MarkdownMaterializationOutput(input);
   var position = 0;
   var paragraphOpen = false;
   var paragraphContainer = null;
 
   while (position < input.length) {
     if (markdownLineStart(input, position)) {
+      // The indented-code predicate reads the already-materialized preceding
+      // lines. All other ordinary text can remain one unchanged source span.
+      output.flush(position);
       var line = input.slice(position, markdownLineEnd(input, position));
       if (paragraphOpen && !markdownParagraphContinues(line, paragraphContainer)) {
         paragraphOpen = false;
@@ -15,7 +18,7 @@ function materializedMarkdown(markdown, allowArticleMailto) {
 
       var rawHtmlBlock = markdownRawHtmlBlockAt(input, position, !paragraphOpen);
       if (rawHtmlBlock) {
-        output += rawHtmlBlock.value;
+        output.replace(position, rawHtmlBlock.end, rawHtmlBlock.value);
         position = rawHtmlBlock.end;
         paragraphOpen = false;
         continue;
@@ -23,15 +26,13 @@ function materializedMarkdown(markdown, allowArticleMailto) {
 
       var fence = markdownFencedCodeAt(input, position);
       if (fence) {
-        output += input.slice(position, fence.end);
         position = fence.end;
         paragraphOpen = false;
         continue;
       }
 
-      var indentedCode = markdownIndentedCodeAt(input, position, output);
+      var indentedCode = markdownIndentedCodeAt(input, position, output.value);
       if (indentedCode) {
-        output += input.slice(position, indentedCode.end);
         position = indentedCode.end;
         paragraphOpen = false;
         continue;
@@ -39,7 +40,7 @@ function materializedMarkdown(markdown, allowArticleMailto) {
 
       var definition = paragraphOpen ? null : markdownReferenceDefinitionAt(input, position);
       if (definition) {
-        output += definition.value;
+        output.replace(position, definition.end, definition.value);
         position = definition.end;
         paragraphOpen = false;
         continue;
@@ -52,21 +53,20 @@ function materializedMarkdown(markdown, allowArticleMailto) {
 
     var codeSpan = markdownCodeSpanAt(input, position);
     if (codeSpan) {
-      output += input.slice(position, codeSpan.end);
       position = codeSpan.end;
       continue;
     }
 
     var htmlTag = markdownHtmlTagAt(input, position);
     if (htmlTag) {
-      output += htmlTag.value;
+      output.replace(position, htmlTag.end, htmlTag.value);
       position = htmlTag.end;
       continue;
     }
 
     var autolink = markdownAutolinkAt(input, position);
     if (autolink) {
-      output += autolink.value;
+      output.replace(position, autolink.end, autolink.value);
       position = autolink.end;
       continue;
     }
@@ -75,22 +75,21 @@ function materializedMarkdown(markdown, allowArticleMailto) {
     if (link) {
       var label = materializedMarkdown(link.label, allowArticleMailto);
       var url = link.image ? materializedHttpUrl(link.url) : materializedLinkUrl(link.url, allowArticleMailto !== false);
-      output += url ? (link.image ? "!" : "") + "[" + label + "](" + url + link.suffix + ")" : label;
+      output.replace(position, link.end, url ? (link.image ? "!" : "") + "[" + label + "](" + url + link.suffix + ")" : label);
       position = link.end;
       continue;
     }
 
     var credentialUrl = markdownCredentialUrlAt(input, position);
     if (credentialUrl) {
-      output += credentialUrl.value;
+      output.replace(position, credentialUrl.end, credentialUrl.value);
       position = credentialUrl.end;
       continue;
     }
 
-    output += input[position];
     position += 1;
   }
-  return output;
+  return output.finish();
 }
 
 function markdownFencedCodeAt(value, position) {

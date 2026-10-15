@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve complete Markdown materialization boundaries while copying unchanged source spans once instead of rebuilding ordinary prose character by character.
+
 - Preserve complete text normalization while avoiding replacement records for already normalized single spaces, including full Unicode whitespace and input-coercion behavior.
 
 - Apply the existing partial-article warning eligibility before source-wide paywall assessment, retaining access declarations, ratio boundaries and source-proved complete public or paid bodies.
