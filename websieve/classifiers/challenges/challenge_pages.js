@@ -34,29 +34,32 @@ function anubisChallengePage(title, page) {
 function dataDomeChallengePage(title, page, signals) {
   title = title || "";
   page = page || "";
-  var assets = challengeAssetText(signals);
-  var combined = normalizeText(title + " " + page + " " + assets);
-  var nearEmpty = !page || normalizeText(page).length < 80;
-  var dataDomeAssets = /captcha-delivery\.com|datadome(?:\.co|\.js)?|\bvar\s+dd\s*=|\bddjskey\b|\bddCaptchaUrl\b/i.test(assets);
-  var dataDomeGateText = /datadome captcha|please enable javascript|disable (?:any )?ad blocker|request unsuccessful|blocked by datadome/i.test(combined);
+  if (/datadome captcha/i.test(title + " " + page)) return true;
 
-  return /datadome captcha/i.test(title + " " + page) ||
-    (dataDomeAssets && (nearEmpty || dataDomeGateText));
+  var assets = challengeAssetText(signals);
+  var dataDomeAssets = /captcha-delivery\.com|datadome(?:\.co|\.js)?|\bvar\s+dd\s*=|\bddjskey\b|\bddCaptchaUrl\b/i.test(assets);
+  if (!dataDomeAssets) return false;
+  if (!page || normalizeText(page).length < 80) return true;
+
+  var combined = normalizeText(title + " " + page + " " + assets);
+  return /datadome captcha|please enable javascript|disable (?:any )?ad blocker|request unsuccessful|blocked by datadome/i.test(combined);
 }
 
 function cloudflareChallengePage(title, page, signals) {
   title = title || "";
   page = page || "";
-  var assets = challengeAssetText(signals);
-  var nearEmpty = !page || normalizeText(page).length < 120;
-
   if (challengeEducationalContext(page)) return false;
 
-  return /attention required! \| cloudflare/i.test(title) ||
+  var pageChallenge = /attention required! \| cloudflare/i.test(title) ||
     ((/just a moment/i.test(title) || /verify you are human|checking your browser|performing security verification|verification successful\. waiting for .* to respond|reviewing the security of your connection before proceeding|please enable javascript and cookies to continue|security service to protect/i.test(page)) &&
       !/this page explains/i.test(page)) ||
-    (((/turnstile/i.test(title) || /turnstile/i.test(page)) && /managed challenge|interactive challenge/i.test(page)) && !challengeEducationalContext(page)) ||
-    (nearEmpty && /(cdn-cgi\/challenge-platform|cloudflare ray id|turnstile|cf challenge)/i.test(assets) && !challengeEducationalContext(assets));
+    ((/turnstile/i.test(title) || /turnstile/i.test(page)) && /managed challenge|interactive challenge/i.test(page));
+  if (pageChallenge) return true;
+  if (page && normalizeText(page).length >= 120) return false;
+
+  var assets = challengeAssetText(signals);
+  return /(cdn-cgi\/challenge-platform|cloudflare ray id|turnstile|cf challenge)/i.test(assets) &&
+    !challengeEducationalContext(assets);
 }
 
 function challengePageType(metadata, pageText, signals) {
