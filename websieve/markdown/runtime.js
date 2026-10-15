@@ -28,6 +28,8 @@
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
 
+    var literalPrograms = prepareLiteralCodePrograms(root);
+
     var service = new TurndownService({
       headingStyle: "atx",
       codeBlockStyle: "fenced",
@@ -50,6 +52,11 @@
         return node.nodeName === "PRE";
       },
       replacement: function(_content, node) {
+        var programKey = node.getAttribute(literalPrograms.attribute);
+        if (programKey !== null) {
+          var program = literalPrograms.programs[Number(programKey)];
+          if (program) return fencedCodeBlock(program.language, program.text);
+        }
         var code = node.querySelector("code");
         var text = cleanCodeText(code ? code.textContent : node.textContent);
         if (!text) return "\n\n";

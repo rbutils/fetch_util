@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve every complete literal program while avoiding discarded child conversion, retaining source HTML, languages, fences and table-owned code.
+
 - Convert complete disposable Markdown block units without copying their owned tree again, preserving ordinary inputs, mixed inline runs, references and legacy-vendor behavior.
 
 - Retain complete visible literal programs while avoiding hidden and presentation-only clone work, preserving ordinary mapped, composed, stateful and ambiguous-source behavior.
