@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Check actual promotion-removal prerequisites before whole-subtree text and paragraph visibility work, preserving complete authored sections and existing promotion decisions.
+
 - Give nested extraction work its own inert document while preserving native primitives, source/base/language facts and exact outer ownership after normal or exceptional completion.
 
 - Reuse an immutable or absent private shadow-reader capability only within one synchronous read, preserving mutable getters, newly installed readers and nested scope ownership.

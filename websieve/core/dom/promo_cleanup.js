@@ -17,8 +17,6 @@
       if (el.closest("[data-fetchutil-page-overview], [data-fetchutil-source-owned-primary]") &&
           el.querySelector("p, h1, h2, h3, h4, h5, h6, pre, [data-fetchutil-project-reference]")) return;
 
-      var text = normalizeText(el.textContent || "");
-      var textLower = text.toLowerCase();
       var attrs = [
         el.className || "",
         el.id || "",
@@ -26,23 +24,31 @@
         el.getAttribute("data-test") || "",
         el.getAttribute("aria-label") || ""
       ].join(" ").toLowerCase();
+      var promoAttrs = PROMO_ATTR_PATTERN.test(attrs);
+      if (el.matches("p, span") && !promoAttrs) return;
       var imageSrcs = Array.prototype.map.call(el.querySelectorAll("img, source"), function(img) {
         return (img.getAttribute("src") || img.getAttribute("srcset") || "").toLowerCase();
       }).join(" ");
 
-      var promoAttrs = PROMO_ATTR_PATTERN.test(attrs);
-      var promoText = PROMO_TEXT_PATTERN.test(textLower);
       var promoMedia = PROMO_MEDIA_PATTERN.test(imageSrcs);
-      if (el.matches("p, span") && !(promoAttrs && promoText)) return;
+      // Neither removal branch can act without attribute or media evidence.
+      // Ordinary sections need no whole-subtree text or paragraph visibility
+      // assessment, even when their authored prose discusses subscriptions.
+      if (!promoAttrs && !promoMedia) return;
+      var text = normalizeText(el.textContent || "");
+      var promoText = PROMO_TEXT_PATTERN.test(text.toLowerCase());
+      if (el.matches("p, span") && !promoText) return;
 
-      var editorialParagraphs = Array.prototype.filter.call(el.querySelectorAll("p"), function(paragraph) {
-        return !elementVisuallyHidden(paragraph) && normalizeText(paragraph.textContent || "").length >= 80 &&
-          !paragraph.closest("nav, aside, footer, [role~='navigation' i], [role~='complementary' i]");
-      });
-      var editorialText = editorialParagraphs.reduce(function(total, paragraph) {
-        return total + normalizeText(paragraph.textContent || "").length;
-      }, 0);
-      if (promoAttrs && editorialParagraphs.length >= 2 && editorialText >= 280 && !promoText && !promoMedia) return;
+      if (promoAttrs && !promoText && !promoMedia) {
+        var editorialParagraphs = Array.prototype.filter.call(el.querySelectorAll("p"), function(paragraph) {
+          return !elementVisuallyHidden(paragraph) && normalizeText(paragraph.textContent || "").length >= 80 &&
+            !paragraph.closest("nav, aside, footer, [role~='navigation' i], [role~='complementary' i]");
+        });
+        var editorialText = editorialParagraphs.reduce(function(total, paragraph) {
+          return total + normalizeText(paragraph.textContent || "").length;
+        }, 0);
+        if (editorialParagraphs.length >= 2 && editorialText >= 280) return;
+      }
 
       // A layout's detached CTA slot is not promotional content when it owns
       // a visible heading and has no action or other promotional evidence.
