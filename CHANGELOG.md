@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Prove related-heading and selected-article eligibility before source-wide ownership work, retaining complete authored sections and fresh source-backed related-record decisions.
+
 - Check actual promotion-removal prerequisites before whole-subtree text and paragraph visibility work, preserving complete authored sections and existing promotion decisions.
 
 - Give nested extraction work its own inert document while preserving native primitives, source/base/language facts and exact outer ownership after normal or exceptional completion.

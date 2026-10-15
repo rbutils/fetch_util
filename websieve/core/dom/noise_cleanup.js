@@ -181,12 +181,21 @@
   }
 
   function stripRelatedSectionsByHeading(root) {
+    // Every removable rail below requires a related-collection heading. Prove
+    // that inexpensive eligibility before comparing the selected article with
+    // all source paragraphs; ordinary manuals can have thousands of both.
+    var headings = Array.from(root.querySelectorAll("h2, h3, h4"));
+    var eligible = headings.some(function(heading) {
+      var text = normalizeText(heading.textContent || "").replace(/[:：]\s*$/, "");
+      return RELATED_SECTION_HEADING_PATTERN.test(text) || relatedRecordCollectionHeading(text);
+    });
+    if (!eligible) return;
     if (!relatedRailRootOwnsArticle(root)) return;
     // This guard already validates the unchanged source page. The loops below
     // only edit the cloned root, so rebuilding that source assessment per node
     // repeats a full article/visibility scan without adding new evidence.
     var focalArticle = root.matches && root.matches("article") ? root : root.querySelector("article");
-    root.querySelectorAll("h2, h3, h4").forEach(function(heading) {
+    headings.forEach(function(heading) {
       if (heading.closest("[data-fetchutil-page-overview], [data-fetchutil-editorial-aside]")) return;
       if (heading.closest("[role='doc-bibliography']")) return;
       if (heading.closest("article") !== focalArticle) return;

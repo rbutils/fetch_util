@@ -38,7 +38,8 @@ core/dom/widgets/subscription_interface.js
 core/dom/widgets/scoreboard.js
 core/dom/widgets/comment_count.js
 core/dom/widgets/article.js
-core/dom/widgets/related_records.js
+core/dom/widgets/related/article_ownership.js
+core/dom/widgets/related/records.js
 core/dom/promo_cleanup.js
 core/dom/cleanup/inert_custom_ui.js
 core/dom/cleanup/inline_action.js
