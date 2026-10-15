@@ -33,7 +33,7 @@ function declaredNewsPortalContext(metadata) {
   var destinations = new Set(records.map(function(link) { return focalCanonicalUrl(link.getAttribute("href")); }));
   if (destinations.size < 2) return null;
   var description = normalizeText(entityText(organizations[0].description)) || normalizeText(entityText(sites[0].description));
-  return { root: root, title: name, records: records, description: description };
+  return { root: root, title: name, records: records, canonicalCardCount: destinations.size, description: description };
 }
 
 function declaredNewsPortalContent(metadata) {
@@ -57,5 +57,6 @@ function declaredNewsPortalContent(metadata) {
   content.docsLike = false;
   content.sourceOwnedGeneratedDocs = true;
   content.sourceOwnedDeclaredNewsPortal = true;
+  content.portalRootEvidence = { canonicalCardCount: context.canonicalCardCount, declaredNewsPortal: true };
   return content;
 }

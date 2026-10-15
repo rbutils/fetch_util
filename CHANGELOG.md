@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve proved physical portal-record evidence for homepage warning decisions,
+  counting unique visible reporting destinations without treating foreign, hidden
+  or duplicate-only records as independent ownership proof.
+
 - Keep story links intact when materializing source references for pictures inside
   linked reporting cards, without introducing nested anchors or losing media values.
 

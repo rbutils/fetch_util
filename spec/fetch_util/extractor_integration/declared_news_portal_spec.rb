@@ -59,6 +59,43 @@ RSpec.describe 'FetchUtil physically owned declared news portals' do
     end
   end
 
+  it 'carries unique visible same-origin reporting evidence through the complete physical portal owner' do
+    additional = <<~HTML
+      <section><h2><a href="/reporting/1">A second printed heading for the same destination</a></h2>
+        <p>Its independently printed description remains material.</p></section>
+      <section><h2><a href="https://external.example.test/reporting/1">An external authored reference</a></h2></section>
+      <section hidden><h2><a href="/other-hidden">Another hidden record</a></h2></section>
+      <nav><h2><a href="/menu-record">Navigation control</a></h2></nav>
+    HTML
+    html = declared_portal_page.sub('</main>', "#{additional}</main>")
+    extract_from_url('https://publication.example.test/', html) do |payload|
+      expect(payload['portalRootEvidence']).to eq('canonicalCardCount' => 180, 'declaredNewsPortal' => true)
+      (1..180).each do |number|
+        expect(payload['html']).to include("Published reporting #{number}", "description #{number}", "/resources/#{number}")
+        expect(payload['markdown']).to include("Published reporting #{number}", "description #{number}", "/resources/#{number}")
+      end
+      expect(payload['markdown']).to include('Its independently printed description remains material.', 'An external authored reference')
+      expect(payload['markdown']).not_to include('Another hidden record', 'Navigation control')
+      expect(payload['publishedTime']).to be_nil
+      expect(payload['byline']).to be_nil
+    end
+  end
+
+  it 'declines physical proof when printed records are missing, duplicated to one destination or entirely foreign' do
+    html = declared_portal_page
+    candidates = [
+      html.sub(%r{<main>.*</main>}m, '<main><p>One ordinary published introduction.</p></main>'),
+      html.gsub(%r{/reporting/\d+}, '/reporting/shared'),
+      html.gsub(%r{href="/reporting/\d+"}, 'href="https://external.example.test/reporting/shared"')
+    ]
+    candidates.each do |candidate|
+      with_url_page('https://publication.example.test/', candidate) do |page|
+        page.add_script_tag(content: declared_portal_source)
+        expect(page.evaluate('hasDeclaredNewsPortal()')).to be false
+      end
+    end
+  end
+
   it 'declines missing, foreign, conflicting, multiple and hidden physical identities' do
     html = declared_portal_page
     cases = [
