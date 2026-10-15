@@ -92,6 +92,7 @@ core/markdown_cleanup/fences.js
 core/markdown_cleanup/duplicates.js
 core/markdown_cleanup.js
 markdown/emphasis.js
+markdown/literal_inline.js
 markdown/block_units.js
 markdown/roots.js
 markdown/runtime.js

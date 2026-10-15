@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Retain complete nested and adjacent inline literals, template angles and code-only table values while preserving attributed content and real references.
+
 - Preserve every complete literal program while avoiding discarded child conversion, retaining source HTML, languages, fences and table-owned code.
 
 - Convert complete disposable Markdown block units without copying their owned tree again, preserving ordinary inputs, mixed inline runs, references and legacy-vendor behavior.

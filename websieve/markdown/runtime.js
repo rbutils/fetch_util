@@ -21,6 +21,7 @@
     preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
     mergeAdjacentEmphasis(root);
+    preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     normalizeCodeBlocks(root);
     preserveStructuredCardLinks(root);
@@ -37,6 +38,7 @@
       emDelimiter: "_"
     });
     addIntrawordEmphasisRule(service);
+    preserveLiteralAngleText(service);
 
     service.addRule("tables", {
       filter: function(node) {
@@ -175,8 +177,8 @@
     var protectedMarkdown = protectMarkdownFences(converted);
     var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();
     // Strip residual raw HTML tags outside of code blocks
-    md = md.replace(/(```[\s\S]*?```|`[^`\n]+`)|<\/?[a-z][^>]*>/gi, function(match, codeBlock) {
-      return codeBlock ? codeBlock : "";
+    md = md.replace(/(```[\s\S]*?```|`[^`\n]+`)|<\/?[a-z][^>]*>/gi, function(match, codeBlock, offset, text) {
+      return codeBlock || markdownEscapedAt(text, offset) ? match : "";
     });
     return restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
   }

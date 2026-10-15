@@ -53,6 +53,16 @@
   function tableCellNodeMarkdown(node, inLink) {
     if (node.nodeType === Node.TEXT_NODE) return inLink ? escapeMarkdownLinkLabel(node.textContent) : node.textContent;
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
+    if (/^(?:CODE|PRE)$/.test(node.tagName) && !inLink && !node.querySelector("a[href], img")) {
+      var literal = normalizeText(node.textContent);
+      if (!literal) return "";
+      var delimiter = "`";
+      (literal.match(/`+/g) || []).forEach(function(run) {
+        if (run.length >= delimiter.length) delimiter = run + "`";
+      });
+      var padding = /^`|`$/.test(literal) ? " " : "";
+      return delimiter + padding + literal + padding + delimiter;
+    }
     if (node.tagName === "IMG") {
       var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
       var src = materializedHttpUrl(node.getAttribute("src"));
