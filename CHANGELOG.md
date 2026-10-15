@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep source-owned emphasized section letters on their citation links without
+  rewriting ordinary intraword emphasis or literal program values.
+
 - Resolve unambiguous paired publication/modification fields from the same owned
   article declaration, preserving printed labels and rejecting conflicting dates.
 

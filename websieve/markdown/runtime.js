@@ -21,6 +21,7 @@
 
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     preserveAccessibleLinkLabels(root);
+    mergeAdjacentCitationLetters(root);
     preserveInlineProse(root);
     mergeAdjacentEmphasis(root);
     preserveLiteralInlineCode(root);
