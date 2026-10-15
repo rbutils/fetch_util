@@ -40,13 +40,14 @@ RSpec.describe FetchUtil::Browser do
   it "stabilizes substantive content while a background request remains open" do
     with_server do |server|
       with_browser(wait_for_idle: true, idle_duration: 0.08, wait: 0) do |browser|
-        started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        text = browser.with_page(server.url("/persistent")) { |page| page.evaluate("document.body.innerText") }
-        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+        browser.with_page(server.url("/persistent")) do |page|
+          expect(page.evaluate("document.body.innerText").length).to be > FetchUtil::Browser::CONTENT_READY_MIN_LENGTH
+          expect(server.wait_for_request("/pending").path).to eq("/pending")
 
-        expect(text.length).to be > FetchUtil::Browser::CONTENT_READY_MIN_LENGTH
-        expect(server.wait_for_request("/pending").path).to eq("/pending")
-        expect(elapsed).to be < 2.0
+          background_request = page.network.traffic.find { |exchange| exchange.url == server.url("/pending") }
+          expect(background_request).not_to be_nil
+          expect(background_request).to be_pending
+        end
       end
     end
   end
