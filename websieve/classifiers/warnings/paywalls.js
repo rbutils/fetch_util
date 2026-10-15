@@ -33,13 +33,40 @@
     return normalized.length < 3000 && hits.length >= 1;
   }
 
+  function localizedSubscriptionOfferPrefix(offer) {
+    var pattern = /^wybierz\s+prenumeratę(?:\s|[,!.?]|$)/iu;
+    // Only the complete phrase and its following boundary can affect this
+    // anchored predicate. Walk native text in textContent order, preserving its
+    // whitespace semantics without materializing the rest of a long owner.
+    var requiredLength = "wybierz prenumeratę".length + 1;
+    var walker = offer.ownerDocument.createTreeWalker(offer, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_CDATA_SECTION);
+    var prefix = "";
+    var node;
+    while ((node = walker.nextNode())) {
+      var text = node.nodeValue;
+      for (var index = 0; index < text.length; index++) {
+        var character = text[index];
+        if (/\s/.test(character)) {
+          if (!prefix || prefix[prefix.length - 1] === " ") continue;
+          character = " ";
+        }
+        prefix += character;
+        if (prefix.length >= requiredLength) return pattern.test(prefix);
+      }
+    }
+    return pattern.test(prefix);
+  }
+
   function visibleLocalizedSubscriptionOffer() {
-    return Array.from(document.querySelectorAll("a, button")).some(function(action) {
-      if (elementSubtreeHidden(action) || action.closest("aside, nav, footer, blockquote, q, form")) return false;
+    var prefixes = new WeakMap();
+    return Array.prototype.some.call(document.querySelectorAll("a, button"), function(action) {
       var offer = action.closest("div, section");
-      var owner = offer && offer.closest("main, article, [role='main']");
-      if (!offer || !owner || elementSubtreeHidden(offer) ||
-          !/^wybierz\s+prenumeratę(?:\s|[,!.?]|$)/iu.test(normalizeText(offer.textContent))) return false;
+      if (!offer) return false;
+      if (!prefixes.has(offer)) prefixes.set(offer, localizedSubscriptionOfferPrefix(offer));
+      if (!prefixes.get(offer)) return false;
+      var owner = offer.closest("main, article, [role='main']");
+      if (!owner || elementSubtreeHidden(action) ||
+          action.closest("aside, nav, footer, blockquote, q, form") || elementSubtreeHidden(offer)) return false;
       var headings = Array.from(owner.querySelectorAll("h1")).filter(function(heading) {
         return !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading);
       });

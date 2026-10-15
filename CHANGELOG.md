@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Assess localized subscription controls only after their complete anchored offer phrase is proved, avoiding unrelated-action visibility scans and repeated full-owner text copies while retaining the same source ownership and access evidence.
+
 - Check collection and published-feed eligibility before source-wide homepage assessment, preserving existing classification decisions without traversing unrelated article sections.
 
 - Discover closed component roots through CDP only when the page exposes the private reader that can consume them, preserving complete discovery and ordinary extraction when the optional bridge is absent or unavailable.
