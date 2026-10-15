@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Give nested extraction work its own inert document while preserving native primitives, source/base/language facts and exact outer ownership after normal or exceptional completion.
+
 - Reuse an immutable or absent private shadow-reader capability only within one synchronous read, preserving mutable getters, newly installed readers and nested scope ownership.
 
 - Preserve complete Markdown materialization boundaries while copying unchanged source spans once instead of rebuilding ordinary prose character by character.

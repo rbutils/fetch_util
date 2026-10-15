@@ -1,9 +1,12 @@
+  var inertDomWorkContext = null;
+
   function withInertDomWork(extract) {
     return function(options) {
+      var previousContext = inertDomWorkContext;
       var creationDescriptor = Object.getOwnPropertyDescriptor(document, "createElement");
       var cloningDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, "cloneNode");
-      var createElement = document.createElement;
-      var cloneNode = Node.prototype.cloneNode;
+      var createElement = previousContext ? previousContext.createElement : document.createElement;
+      var cloneNode = previousContext ? previousContext.cloneNode : Node.prototype.cloneNode;
       var workingDocument = document.implementation.createHTMLDocument(document.title || "");
       var base = createElement.call(workingDocument, "base");
       base.href = document.baseURI;
@@ -12,8 +15,8 @@
       if (language) workingDocument.documentElement.setAttribute("lang", language);
       var replaceCreation = !creationDescriptor || creationDescriptor.configurable || creationDescriptor.writable;
       var replaceCloning = cloningDescriptor && (cloningDescriptor.configurable || cloningDescriptor.writable);
-
       try {
+        inertDomWorkContext = { createElement: createElement, cloneNode: cloneNode };
         if (replaceCreation) Object.defineProperty(document, "createElement", {
           configurable: !creationDescriptor || creationDescriptor.configurable,
           enumerable: !!(creationDescriptor && creationDescriptor.enumerable),
@@ -31,6 +34,7 @@
         }));
         return extract(options);
       } finally {
+        inertDomWorkContext = previousContext;
         if (replaceCreation) {
           if (creationDescriptor) Object.defineProperty(document, "createElement", creationDescriptor);
           else delete document.createElement;
