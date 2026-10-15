@@ -206,8 +206,25 @@
 
     var clone = safeDeepClone(node, document);
     if (!clone) return document.createElement("div");
-    prepareSourceOwnedEngagementClone(node, clone, elementMap);
-    materializeEditorialFrameLinks(node, clone);
+    return cleanClonedContent(node, clone, preserveSelector, elementMap);
+  }
+
+  function disposableDomRoot(node) {
+    return !!(node && node.nodeType === 1 && !node.parentNode && !node.isConnected &&
+      node.ownerDocument && node.ownerDocument !== document && !node.ownerDocument.defaultView);
+  }
+
+  function cleanDisposableClone(node, preserveSelector) {
+    // Only a caller-owned, detached inert root may be consumed. Physical source
+    // nodes and children still owned by another tree retain the copying path.
+    if (!disposableDomRoot(node)) return cleanClone(node, preserveSelector);
+    if (cookieChromeNode(node)) return document.createElement("div");
+    return cleanClonedContent(node, node, preserveSelector, null);
+  }
+
+  function cleanClonedContent(source, clone, preserveSelector, elementMap) {
+    prepareSourceOwnedEngagementClone(source, clone, elementMap);
+    materializeEditorialFrameLinks(source, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {
       clone.querySelectorAll(preserveSelector).forEach(function(el) {
