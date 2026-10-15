@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep complete article-ownership evidence while avoiding redundant literal-code
+  presentation copies and promptly releasing disposable analysis trees.
+
 - Check search-route prerequisites before reconstructing article ownership, preserving eligible result cards and focal reporting.
 
 - Avoid materializing irrelevant challenge-asset combinations while preserving complete challenge evidence and existing classification boundaries.
