@@ -1,6 +1,8 @@
 function normalizeText(value) {
   if (typeof value !== "string") value = value == null ? "" : String(value);
-  return value.replace(/\s+/g, " ").trim();
+  // Lone ordinary spaces are already normalized. Do not build replacement
+  // records for every word again when a full-input value is read repeatedly.
+  return value.trim().replace(/\s{2,}|[^\S ]/g, " ");
 }
 
 function safeDecodeURI(value) {
