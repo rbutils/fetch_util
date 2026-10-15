@@ -3,10 +3,9 @@
       resetTerminalArticleCollectionMarker();
       var preparedPage = metadataWithPreparedStandaloneManual();
       var metadata = preparedPage.metadata;
-      var ownedSocialPost = socialPostOwnedContent(metadata);
-      var ownedPrimary = ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed ? null : sourceOwnedPrimaryContent(metadata, preparedPage.manual);
-      if ((ownedSocialPost && ownedSocialPost.sourceOwnedPublishedFeed) || ownedPrimary) {
-        return finalizeExtractResult(ownedPrimary || ownedSocialPost, metadata, pageReadableText(), null, null);
+      var earlyOwnership = sourceOwnedEarlyPageContent(metadata, preparedPage.manual);
+      if (earlyOwnership.content) {
+        return finalizeExtractResult(earlyOwnership.content, metadata, pageReadableText(), null, null);
       }
       var focalArticleRoute = articleRouteFocalContent();
       var focalArticleRouteOwner = focalArticleRoute ? articleRouteFocalContent(null, true) : null;
@@ -164,7 +163,7 @@
       content = applySportsContent(content, metadata);
       content = applyProductPageContent(content, metadata);
       content = prepareSourceOwnedBrowseIndex(content, metadata);
-      content = applySocialContentType(content, metadata, ownedSocialPost);
+      content = applySocialContentType(content, metadata, earlyOwnership.socialPost);
       var strongArticle = strongArticleContent(content, false);
 
       var productList = genericProductListContent(metadata);

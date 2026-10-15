@@ -1553,7 +1553,11 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js
       ], "extractors/glossary/cleanup.js"],
-      ["boot/list_candidate_arbitration.js", ["boot/source_material_arbitration.js"], "boot/api/extract.js"],
+      ["boot/list_candidate_arbitration.js", %w[
+        boot/source_material_arbitration.js
+        boot/owned_work/source_state.js
+        boot/owned_work/prepare.js
+      ], "boot/api/extract.js"],
       ["extractors/lists/relabeling.js", %w[
         extractors/lists/generic/records/card_evidence.js
         extractors/lists/generic/records/duplicate_record_metadata.js

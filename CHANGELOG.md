@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Finalize proved owned manuals after reclaiming completed browser work, keeping
+  full material, source freshness, one shared timeout and legacy extraction contracts.
+
 - Preserve ordinary control-word references within authored paragraphs while
   continuing to remove actual player actions and other interface controls.
 

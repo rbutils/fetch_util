@@ -4,6 +4,8 @@ require "json"
 
 module FetchUtil
   class Extractor
+    autoload :OwnedEvaluation, "fetch_util/extractor/owned_evaluation"
+
     INLINE_ASSET_PATHS = %w[vendor/readability.js vendor/turndown.js extract.js].freeze
     VENDOR_ASSET_PATHS = INLINE_ASSET_PATHS.first(2).freeze
     VENDOR_GLOBAL_NAMES = %w[Readability TurndownService].freeze
@@ -70,11 +72,16 @@ module FetchUtil
 
       register_cdp_closed_shadow_roots(page)
       inject_vendor_assets_with_fallback(page)
-      # Spend the former two evaluation waits on one extraction. A transport
-      # timeout does not cancel synchronous page JavaScript, so retrying it can
-      # queue a second full extraction behind the first and retain both trees.
-      page.timeout = [original_timeout.to_f, 120].max if timeout_supported
-      page.evaluate(extraction_call)
+      # Completed owned work may release its unreachable browser trees before
+      # finalization. Every command shares one deadline; timeouts never retry
+      # or queue another complete extraction behind synchronous page work.
+      budget = [original_timeout.to_f, 120].max
+      page.timeout = budget if timeout_supported
+      if page.respond_to?(:command) && page.respond_to?(:main_frame)
+        OwnedEvaluation.new(page, owned_preparation_call, budget: budget).call
+      else
+        page.evaluate(extraction_call)
+      end
     ensure
       restore_page_timeout(page, original_timeout) if timeout_supported
     end
@@ -191,6 +198,15 @@ module FetchUtil
 
         source.sub(PRIVATE_DELIVERY_SENTINEL, "__fetchUtilDeliverExtractApi").freeze
       end
+    end
+
+    def owned_preparation_call
+      @owned_preparation_call ||= extraction_call.sub(
+        "return __fetchUtilPrivateApi.extract(",
+        "return (typeof __fetchUtilPrivateApi.prepareOwnedWork === 'function' ? " \
+        "__fetchUtilPrivateApi.prepareOwnedWork.bind(__fetchUtilPrivateApi) : options => ({ " \
+        "owned: false, finish: () => __fetchUtilPrivateApi.extract(options), dispose: () => {} }))("
+      ).freeze
     end
 
     def inline_asset_scripts

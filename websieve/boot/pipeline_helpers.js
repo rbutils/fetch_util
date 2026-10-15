@@ -69,19 +69,29 @@ function ownedPageContent(metadata, pageText) {
     genericDocsSystemContent(metadata);
 }
 
+function standaloneManualPreparationEligible() {
+  return !document.querySelector("main, [role='main']:not(article), script[type='application/ld+json'], [itemscope][itemtype], article.hentry") &&
+    !!document.querySelector("article[role='main'], div.book");
+}
+
 function metadataWithPreparedStandaloneManual() {
   var metadata = collectMetadata();
   var manual = null;
   // Preserve the existing declared-article and published-entry precedence. This
   // only advances construction of an independently proved physical manual.
-  if (!document.querySelector("main, [role='main']:not(article), script[type='application/ld+json'], [itemscope][itemtype], article.hentry") &&
-      document.querySelector("article[role='main'], div.book")) {
+  if (standaloneManualPreparationEligible()) {
     var context = physicalTechnicalDocsContext(metadata);
     if (context && (context.generatedBook || context.root.matches("article"))) {
       manual = physicalManualRenderedSections(metadata, context);
     }
   }
   return { metadata: metadata, manual: manual };
+}
+
+function sourceOwnedEarlyPageContent(metadata, preparedManual) {
+  var socialPost = socialPostOwnedContent(metadata);
+  var content = socialPost && socialPost.sourceOwnedPublishedFeed ? socialPost : sourceOwnedPrimaryContent(metadata, preparedManual);
+  return { socialPost: socialPost, content: content };
 }
 
 function readableOrFallbackContent(options, metadata) {
