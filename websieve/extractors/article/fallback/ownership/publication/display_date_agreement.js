@@ -44,3 +44,27 @@ function sourceOwnedDisplayAgreesWithPreciseDate(visible, precise) {
       (display.clock !== localDate[2] || display.seconds && display.seconds !== localDate[3])) return false;
   return true;
 }
+
+function sourceOwnedPairedPublicationTime(nodes, records) {
+  if (!records || records.length !== 1 || nodes.length !== 1) return null;
+  var node = nodes[0];
+  if (!node || typeof node === "string" || !node.children) return null;
+  var fields = Array.from(node.children);
+  if (fields.length < 2 || fields.some(function(field) { return !field.matches("time[datetime]"); })) return null;
+  if (normalizeText(node.textContent || "") !== normalizeText(fields.map(function(field) {
+    return field.textContent || "";
+  }).join(" "))) return null;
+  var publicationSelector = "[itemprop~='datePublished' i], .published, .dt-published";
+  var modificationSelector = "[itemprop~='dateModified' i], .updated, .dt-updated";
+  var published = fields.filter(function(field) { return field.matches(publicationSelector); });
+  if (published.length !== 1 || published[0].matches(modificationSelector) || fields.some(function(field) {
+    return field !== published[0] && !field.matches(modificationSelector);
+  })) return null;
+  var visible = sourceOwnedPublicationNodeDate(published[0]);
+  var precise = entityText(records[0].datePublished);
+  if (sourceOwnedPublishedDisplayDate(visible).kind !== "calendar" || !Number.isFinite(Date.parse(precise)) ||
+      !sourceOwnedDisplayAgreesWithPreciseDate(visible, precise)) return null;
+  var head = sourceOwnedHeadPublicationTime();
+  return head.ambiguous || head.value && !sourceOwnedPublicationDatesEquivalent(head.value, precise) ?
+    { publishedTime: null } : { publishedTime: precise };
+}

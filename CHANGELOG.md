@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Resolve unambiguous paired publication/modification fields from the same owned
+  article declaration, preserving printed labels and rejecting conflicting dates.
+
 - Honor proved declared-portal ownership in public result normalization while
   retaining existing blocked, status, empty and non-homepage warning guards.
 

@@ -37,6 +37,18 @@ RSpec.describe 'FetchUtil complete declared semantic article ownership' do
     )
   end
 
+  def paired_publication_page
+    html = declared_article_page(['The first complete reporting paragraph.', 'The second complete reporting paragraph.'])
+    html.sub('"datePublished":"2026-10-07"', '"datePublished":"2026-10-07 03:03:00"')
+        .sub('<meta property="article:published_time" content="2026-10-07">', '')
+        .sub('<time itemprop="datePublished" datetime="2026-10-07">October 7, 2026</time>', <<~HTML)
+          <span class="publication-dates">
+          <time class="published" itemprop="datePublished" datetime="October 7, 2026">October 7, 2026</time>
+          <time class="updated" itemprop="dateModified" datetime="2020-02-24T17:29:39+02:00">07.10.2026 • 03:03</time>
+          </span>
+        HTML
+  end
+
   it 'retains every physical reporting paragraph and all owned sections, captions, references and replies' do
     paragraphs = (1..30).map { |index| "Reporting paragraph #{index} contains complete published observations and source context." }
     supplemental = <<~HTML
@@ -106,6 +118,47 @@ RSpec.describe 'FetchUtil complete declared semantic article ownership' do
       %w[html markdown].each do |format|
         paragraphs.each { |text| expect(payload[format]).to include(text) }
         expect(payload[format]).to include('Owned caption.', '/images/source.png')
+      end
+    end
+  end
+
+  it 'resolves paired publication and modification fields without joining their printed labels' do
+    extract_from_url('https://publication.example.test/article/report', paired_publication_page) do |payload|
+      expect(payload['publishedTime']).to eq('2026-10-07 03:03:00')
+      expect(payload['byline']).to eq('Source Writer')
+      %w[html markdown].each do |format|
+        expect(payload[format]).to include(
+          'October 7, 2026', '07.10.2026 • 03:03',
+          'The first complete reporting paragraph.', 'The second complete reporting paragraph.'
+        )
+      end
+    end
+  end
+
+  it 'does not override conflicting or ambiguous page publication metadata with a paired widget' do
+    head = '<meta property="article:published_time" content="2026-10-08 03:03:00">'
+    pages = [paired_publication_page.sub('</head>', "#{head}</head>"),
+             paired_publication_page.sub('</head>', "#{head}<meta property=\"article:published_time\" content=\"2026-10-09 03:03:00\"></head>")]
+    pages.each do |html|
+      extract_from_url('https://publication.example.test/article/report', html) do |payload|
+        expect(payload['publishedTime']).to be_nil
+        expect(payload['markdown']).to include('The first complete reporting paragraph.', 'The second complete reporting paragraph.')
+      end
+    end
+  end
+
+  it 'declines foreign, duplicate, disagreeing and prose-bearing paired date evidence' do
+    html = paired_publication_page
+    pages = [
+      html.sub('"url":"https://publication.example.test/article/report"', '"url":"https://publication.example.test/article/foreign"'),
+      html.sub('itemprop="dateModified"', 'itemprop="datePublished"'),
+      html.sub('datetime="October 7, 2026"', 'datetime="October 6, 2026"'),
+      html.sub('<span class="publication-dates">', '<span class="publication-dates">Unrelated authored context ')
+    ]
+    pages.each do |page|
+      extract_from_url('https://publication.example.test/article/report', page) do |payload|
+        expect(payload['publishedTime']).not_to eq('2026-10-07 03:03:00')
+        expect(payload['markdown']).to include('The first complete reporting paragraph.', 'The second complete reporting paragraph.')
       end
     end
   end

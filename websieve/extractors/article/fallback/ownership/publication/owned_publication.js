@@ -201,6 +201,8 @@ function sourceOwnedRepairHeadlineJson(source, headline) {
 function sourceOwnedSelectedPublicationTime(headline, pageUrl, visibleDateNodes) {
   var publicationRecords = sourceOwnedPublicationRecords(headline, pageUrl);
   var records = publicationRecords.records;
+  var paired = sourceOwnedPairedPublicationTime(visibleDateNodes, records);
+  if (paired) return paired;
   var visibleValues = visibleDateNodes.map(function(node) {
     return typeof node === "string" ? normalizeText(node) : sourceOwnedPublicationNodeDate(node);
   }).filter(Boolean);
