@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Check collection and published-feed eligibility before source-wide homepage assessment, preserving existing classification decisions without traversing unrelated article sections.
+
 - Discover closed component roots through CDP only when the page exposes the private reader that can consume them, preserving complete discovery and ordinary extraction when the optional bridge is absent or unavailable.
 
 - Preserve language decisions while skipping text inference when declarations already determine the result, and count full-input shared stopwords through an indexed membership map.
