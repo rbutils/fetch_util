@@ -17,11 +17,7 @@
     return [heading, details, body].filter(Boolean).join("\n\n");
   }
 
-  function markdownFor(html, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot) {
-    if (typeof TurndownService !== "function") return html;
-
-    var root = document.createElement("div");
-    root.innerHTML = html;
+  function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     preserveAccessibleLinkLabels(root);
     preserveInlineProse(root);
     mergeAdjacentEmphasis(root);
@@ -168,7 +164,8 @@
       }
     });
 
-    var protectedMarkdown = protectMarkdownFences(service.turndown(root));
+    var converted = convertRoot ? convertRoot(service, root) : service.turndown(root);
+    var protectedMarkdown = protectMarkdownFences(converted);
     var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();
     // Strip residual raw HTML tags outside of code blocks
     md = md.replace(/(```[\s\S]*?```|`[^`\n]+`)|<\/?[a-z][^>]*>/gi, function(match, codeBlock) {

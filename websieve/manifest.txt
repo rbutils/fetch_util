@@ -91,6 +91,8 @@ core/markdown_cleanup/fences.js
 core/markdown_cleanup/duplicates.js
 core/markdown_cleanup.js
 markdown/emphasis.js
+markdown/block_units.js
+markdown/roots.js
 markdown/runtime.js
 classifiers/challenges/challenge_pages.js
 classifiers/challenges/meta_walls.js

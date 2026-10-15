@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Convert complete disposable Markdown block units without copying their owned tree again, preserving ordinary inputs, mixed inline runs, references and legacy-vendor behavior.
+
 - Retain complete visible literal programs while avoiding hidden and presentation-only clone work, preserving ordinary mapped, composed, stateful and ambiguous-source behavior.
 
 - Clean explicitly owned disposable inert roots without another deep copy, preserving ordinary source-copying behavior and complete sections, references, code and tables.
