@@ -54,7 +54,10 @@ core/dom/inert_work.js
 core/dom/composed.js
 core/dom/clipping.js
 core/dom/visibility/read_scope.js
+core/dom/visibility/indexed_source.js
 core/dom/visibility/subtree.js
+core/dom/visibility/projected_clone.js
+core/dom/visibility/prune.js
 core/dom/base.js
 core/dom/public_preview_cleanup.js
 core/dom/cleanup.js
@@ -74,6 +77,7 @@ core/docs_cleanup/linked_article_title_markdown.js
 core/docs_cleanup/article_title_finalization.js
 core/docs_cleanup/adjacent_headings.js
 core/docs_cleanup/engines.js
+core/docs_cleanup/literal_projection.js
 markdown/code/code_helpers.js
 markdown/code/code_surfaces.js
 markdown/tables.js

@@ -10,20 +10,20 @@
     }
   }
 
-  function elementOwnSubtreeHidden(node) {
+  function elementOwnSubtreeHidden(node, knownStyle) {
     // Only the physical page is immutable during this synchronous read. Detached
     // rendering trees remain fresh, and no style object or clone is retained.
     var cache = sourceVisibilityReadContext && node.isConnected && node.ownerDocument === document
       ? sourceVisibilityReadContext : null;
     if (cache && cache.has(node)) return cache.get(node);
-    var hidden = computeElementOwnSubtreeHidden(node);
+    var hidden = computeElementOwnSubtreeHidden(node, knownStyle, arguments.length > 1);
     if (cache) cache.set(node, hidden);
     return hidden;
   }
 
-  function computeElementOwnSubtreeHidden(node) {
+  function computeElementOwnSubtreeHidden(node, knownStyle, styleKnown) {
     if (node.parentElement && node.parentElement.shadowRoot && !node.assignedSlot) return true;
-    var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
+    var style = styleKnown ? knownStyle : sourceVisibilityStyle(node);
     if (node.hidden) return true;
     if (style && (style.display === "none" || (style.opacity !== "" && Number(style.opacity) === 0 && !deferredRevealContentNode(node, style)))) return true;
     return collapsedOverflowNode(node, style);

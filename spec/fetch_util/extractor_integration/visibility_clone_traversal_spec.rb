@@ -36,7 +36,7 @@ RSpec.describe "Visibility clone traversal" do
         })()
       JS
       expect(result.fetch("labels")).to eq((0...125).map { |index| "Record #{index}" })
-      expect(result.fetch("calls")).to be <= (result.fetch("nodes") * 2) + 8
+      expect(result.fetch("calls")).to be <= result.fetch("nodes") + 8
     end
   end
 
@@ -53,6 +53,35 @@ RSpec.describe "Visibility clone traversal" do
       expect(result).to include("Visible record", 'href="/visible"')
       expect(result).not_to include("Hidden title", "Hidden prose", "Hidden child", "Hidden subtree", "Transparent subtree")
       expect(page.evaluate("cloneVisibility(document.querySelector('[hidden] a')).textContent")).to eq("")
+    end
+  end
+
+  it "retains a deeply constructed physical tree and every text and comment mapping" do
+    with_url_page("https://example.test/", "<html><body><main></main></body></html>") do |page|
+      page.add_script_tag(content: visibility_source)
+      result = page.evaluate(<<~JS)
+        (() => {
+          const root = document.querySelector('main');
+          let parent = root;
+          for (let index = 0; index < 2048; index++) {
+            const section = document.createElement('section');
+            parent.appendChild(section);
+            parent = section;
+          }
+          const text = document.createTextNode('Complete deeply nested material');
+          const comment = document.createComment('source annotation');
+          parent.append(text, comment);
+          const before = root.outerHTML;
+          const mappings = new WeakMap();
+          const clone = cloneVisibility(root, document, mappings);
+          return { sections: clone.querySelectorAll('section').length, text: clone.textContent,
+            textMapping: mappings.get(text).textContent, commentMapping: mappings.get(comment).textContent,
+            sourceUnchanged: root.outerHTML === before };
+        })()
+      JS
+      expect(result).to eq("sections" => 2048, "text" => "Complete deeply nested material",
+                           "textMapping" => "Complete deeply nested material", "commentMapping" => "source annotation",
+                           "sourceUnchanged" => true)
     end
   end
 

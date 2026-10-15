@@ -71,79 +71,20 @@
     }
   }
 
-  function pruneHiddenClone(source, clone, preservedRoots, preservingRoot, checkedParent, sourceClones, clipBounds, collectionFlow) {
-    if (!source || !clone) return;
-    var exactPreservedRoot = !!(preservedRoots && preservedRoots.indexOf(source) !== -1);
-    var preservedRoot = exactPreservedRoot ? source : preservingRoot;
-    // Recursion reaches a child only after its parent's subtree visibility passed.
-    var boundary = checkedParent ? composedDomParent(source) : preservedRoot;
-    var subtreeHidden = elementSubtreeHiddenWithin(source, boundary || null);
-    if (source.nodeType === 1 && !exactPreservedRoot && subtreeHidden) {
-      clone.remove();
-      return;
-    }
-    var style = source.nodeType === 1 && !exactPreservedRoot && window.getComputedStyle ? window.getComputedStyle(source) : null;
-    // A positively owned materialized collection remains complete when its
-    // layout scrolls horizontally. Its ordinary hidden-boundary checks still apply.
-    if (exactPreservedRoot || collectionFlow) clipBounds = null;
-    else if (!checkedParent) clipBounds = ancestorHorizontalClipBounds(source);
-    var sourceChildren = composedDomChildren(source);
-    var clipped = !collectionFlow && horizontallyClippedElement(source, style, clipBounds);
-    var overflowingChildren = clipped && style.overflowX === "visible" &&
-      !source.matches("pre, code, kbd, samp, .CodeMirror, .cm-editor") &&
-      sourceChildren.some(function(child) { return child.nodeType === 1; });
-    if (clipped && !overflowingChildren) {
-      clone.remove();
-      return;
-    }
-    if (sourceClones) sourceClones.set(source, clone);
-
-    if (source.nodeType === 1 && exactPreservedRoot) {
-      clone.removeAttribute("hidden");
-      clone.removeAttribute("inert");
-      if (clone.getAttribute("aria-hidden") === "true") clone.removeAttribute("aria-hidden");
-      if (clone.style) {
-        clone.style.removeProperty("display");
-        clone.style.removeProperty("visibility");
-        clone.style.removeProperty("opacity");
-        if (!clone.getAttribute("style")) clone.removeAttribute("style");
-      }
-      clone.setAttribute("data-fetchutil-controlled-list-panel", "true");
-    }
-
-    var visibilityHidden = !!(style && (style.visibility === "hidden" || style.visibility === "collapse"));
-    var childClipBounds = collectionFlow ? null : horizontalClipBounds(source, style, clipBounds);
-    var cloneChildren = Array.prototype.slice.call(clone.childNodes || []);
-    sourceChildren.forEach(function(child, index) {
-      var childClone = cloneChildren[index];
-      if (!childClone) return;
-      if ((visibilityHidden || overflowingChildren) && child.nodeType !== 1) {
-        childClone.remove();
-        return;
-      }
-      pruneHiddenClone(child, childClone, preservedRoots, preservedRoot, true, sourceClones, childClipBounds, collectionFlow);
-    });
-
-    if (overflowingChildren && !clone.children.length) {
-      clone.remove();
-      if (sourceClones) sourceClones.delete(source);
-      return;
-    }
-
-    if (visibilityHidden) {
-      clone.style.setProperty("visibility", "visible", "important");
-      ["aria-label", "title", "alt", "value"].forEach(function(attribute) {
-        clone.removeAttribute(attribute);
-      });
-      if (!clone.children.length) clone.remove();
-    }
-  }
-
-  function visibilityPrunedClone(node, ownerDoc, sourceClones, collectionFlow) {
+  function visibilityPrunedClone(node, ownerDoc, sourceClones, collectionFlow, sourceProjection) {
     if (!node || elementSubtreeHidden(node)) return (ownerDoc || document).createElement("div");
+    var physicalTree = node.isConnected && node.ownerDocument === document && node.getRootNode() === document &&
+      (!composedDomShadowReaderProperty || composedDomStableShadowReaderKnown) && !nodeHasShadowContent(node);
+    if (sourceProjection && !sourceClones && physicalTree) {
+      var physicalClone = visibilityPrunedPhysicalClone(node, sourceProjection, collectionFlow);
+      if (physicalClone) return physicalClone;
+      // The stateful/template fallback retains the complete native copy,
+      // including its ordinary presentation descendants.
+      sourceProjection = null;
+    }
     var clone = safeDeepClone(node, ownerDoc || document);
     if (!clone) return (ownerDoc || document).createElement("div");
-    pruneHiddenClone(node, clone, null, null, false, sourceClones, null, collectionFlow === true);
+    pruneHiddenClone(node, clone, null, null, false, sourceClones, null, collectionFlow === true, sourceProjection, physicalTree);
     return clone;
   }
 
