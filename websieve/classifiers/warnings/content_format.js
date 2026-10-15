@@ -28,43 +28,6 @@
     return false;
   }
 
-  function multiTopicIgnoredContainerSelector() {
-    return [
-      "aside", "nav", "footer", "[role='complementary']", "[role='navigation']",
-      "[aria-label*='related' i]", "[aria-label*='recommended' i]", "[aria-label*='latest' i]",
-      "[class*='related' i]", "[class*='recommend' i]", "[class*='recirculat' i]",
-      "[class*='liveblog' i]", "[class*='live-blog' i]",
-      "[class*='sidebar' i]", "[class*='side-bar' i]", "[class*='widget' i]",
-      "[class*='comment' i]", "[class*='discussion' i]", "[class*='community' i]",
-      "[class*='popular' i]", "[class*='trending' i]", "[class*='suggest' i]",
-      "[class*='teaser' i]", "[class*='also-read' i]", "[class*='read-more' i]",
-      "[class*='more-news' i]", "[class*='more-stories' i]", "[class*='more-from' i]", "[class*='front-page' i]",
-      "[class*='article-list' i]", "[class*='content-list' i]", "[class*='story-list' i]",
-      "[class*='news-list' i]", "[class*='headline-list' i]", "[class*='feed' i]",
-      "[class*='story-card' i]", "[class*='storycard' i]", "[class*='article-related-content' i]",
-      "[id*='related' i]", "[id*='recommend' i]", "[id*='comment' i]", "[id*='sidebar' i]", "[id*='widget' i]",
-      "[data-component*='article-list' i]", "[data-component*='related' i]",
-      "[data-testid*='related' i]", "[data-testid*='recommend' i]", "[data-testid*='comment' i]"
-    ].join(", ");
-  }
-
-  function multiTopicExtractionView(content, markdown) {
-    var root = document.createElement("div");
-    root.innerHTML = content && content.html ? content.html : "";
-    if (!root.innerHTML) return { root: null, markdown: markdown };
-
-    var ignoredContainers = root.querySelectorAll(multiTopicIgnoredContainerSelector());
-    Array.prototype.forEach.call(ignoredContainers, function(node) {
-      node.parentNode.removeChild(node);
-    });
-
-    var filteredMarkdown = markdown;
-    if ((ignoredContainers.length || !filteredMarkdown) && typeof markdownFor === "function") {
-      filteredMarkdown = markdownFor(root.innerHTML || "");
-    }
-    return { root: root, markdown: filteredMarkdown || "" };
-  }
-
   function unicodeWordCount(text) {
     var value = String(text || "");
     if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Derive topic warnings from selected HTML rather than presentation Markdown,
+  reusing only an exact completed conversion while keeping DOM views isolated.
+
 - Keep non-rendered runtime nodes out of Markdown while preserving complete authored
   inline and fenced HTML examples.
 
