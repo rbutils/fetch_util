@@ -20,6 +20,18 @@ function declaredProductFaqNodes() {
   });
 }
 
+function productDeclaredDescription(name, metadata) {
+  var description = normalizeText(metadata && metadata.declaredDescription || "");
+  if (!description) return null;
+  var escapedName = normalizeText(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  if (!escapedName || !new RegExp("(^|[^\\p{L}\\p{N}])" + escapedName + "(?=$|[^\\p{L}\\p{N}])", "iu").test(description)) return null;
+  var declarations = Array.from(document.head.querySelectorAll("meta[name='description' i], meta[property='og:description' i]")).map(function(node) {
+    return normalizeText(node.getAttribute("content"));
+  }).filter(Boolean);
+  if (!declarations.length || declarations.some(function(value) { return value !== description; })) return null;
+  return description;
+}
+
 function declaredProductFamily(metadata) {
   var families = structuredDataNodes().filter(function(node) {
     return nodeTypes(node).some(function(type) { return type === "ProductGroup" || type === "Product" || type === "Car"; }) &&
@@ -56,5 +68,11 @@ function declaredProductFamily(metadata) {
       if (questions.indexOf(name) === -1) questions.push(name);
     });
   });
-  return questions.length ? { name: name, topic: topic, variants: variants, questions: questions } : null;
+  return questions.length ? {
+    name: name,
+    topic: topic,
+    variants: variants,
+    questions: questions,
+    description: productDeclaredDescription(family.name, metadata)
+  } : null;
 }

@@ -69,6 +69,7 @@ function sourceOwnedProductContent(metadata) {
   }).filter(function(value, index, all) { return visiblePublicationDateLike(value) && all.indexOf(value) === index; });
   return {
     title: title,
+    description: context.description,
     byline: null,
     date: null,
     publishedTime: dates.length === 1 ? dates[0] : null,

@@ -53,6 +53,61 @@ RSpec.describe 'FetchUtil extractor integration - physical product family owners
     HTML
   end
 
+  def product_description_document(description, open_graph_description: description)
+    product_family_document(2).sub('</head>', <<~HTML)
+      <meta name="description" content="#{description}">
+      <meta property="og:description" content="#{open_graph_description}"></head>
+    HTML
+  end
+
+  it 'retains a coherent family-owned declared description without changing the physical result' do
+    description = 'Atlas R100 technical specifications and ownership information.'
+    with_url_page('https://publication.example.test/products/r100', product_family_document(2)) do |page|
+      original_body = page.evaluate('document.body.outerHTML')
+      original = extract_payload(page)
+      page.evaluate(<<~JAVASCRIPT, description)
+        ((value) => {
+          [{name: "description"}, {property: "og:description"}].forEach(attributes => {
+            const meta = document.createElement("meta");
+            Object.entries(attributes).forEach(([key, text]) => meta.setAttribute(key, text));
+            meta.content = value;
+            document.head.appendChild(meta);
+          });
+        })(arguments[0])
+      JAVASCRIPT
+      expect(page.evaluate('document.head.querySelectorAll("meta[name=description], meta[property=\"og:description\"]").length')).to eq(2)
+      result = extract_payload(page)
+      expect(result).to eq(original.merge('description' => description))
+      expect(result['contentType']).to eq('product')
+      expect(result['excerpt']).not_to eq(description)
+      expect(page.evaluate('document.body.outerHTML')).to eq(original_body)
+    end
+  end
+
+  it 'declines conflicting page descriptions for an otherwise proved physical family' do
+    html = product_description_document('Atlas R100 technical specifications.', open_graph_description: 'Atlas R100 service schedules.')
+    extract_from_url('https://publication.example.test/products/r100', html) do |payload|
+      expect(payload['contentType']).to eq('product')
+      expect(payload['description']).to be_nil
+    end
+  end
+
+  it 'does not borrow an unrelated company description for the physical family' do
+    html = product_description_document('Discover our complete equipment catalogue and company services.')
+    extract_from_url('https://publication.example.test/products/r100', html) do |payload|
+      expect(payload['contentType']).to eq('product')
+      expect(payload['description']).to be_nil
+    end
+  end
+
+  it 'does not confuse a longer product identifier with the declared family name' do
+    html = product_description_document('Atlas R1000 technical specifications and ownership information.')
+    extract_from_url('https://publication.example.test/products/r100', html) do |payload|
+      expect(payload['contentType']).to eq('product')
+      expect(payload['description']).to be_nil
+    end
+  end
+
   it 'preserves every physically owned variant, price, table, resource and published answer' do
     html = product_family_document(160)
     with_url_page('https://publication.example.test/products/r100', html) do |page|

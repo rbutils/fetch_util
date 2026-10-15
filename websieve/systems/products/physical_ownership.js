@@ -51,7 +51,7 @@ function sourceOwnedProductContext(metadata) {
   var variants = productPhysicalLabels(root, family.variants, "h2, h3, h4, h5, h6, button, p, span, dt, th");
   var questions = productPhysicalLabels(root, family.questions, "h2, h3, h4, h5, h6, button, summary, p, span, div");
   if (!variants || !questions) return null;
-  if (mains.length) return { heading: heading, regions: [root], labels: variants.concat(questions) };
+  if (mains.length) return { heading: heading, regions: [root], labels: variants.concat(questions), description: family.description };
 
   var start = productBodyRegion(heading);
   var finalQuestion = questions[questions.length - 1];
@@ -69,5 +69,5 @@ function sourceOwnedProductContext(metadata) {
   var anchors = [heading].concat(variants, questions);
   if (anchors.some(function(anchor) { return !regions.some(function(region) { return region.contains(anchor); }); })) return null;
   if (regions.some(function(region) { return region.querySelector("article, [itemtype*='NewsArticle'], [itemtype*='BlogPosting']"); })) return null;
-  return { heading: heading, regions: regions, labels: variants.concat(questions) };
+  return { heading: heading, regions: regions, labels: variants.concat(questions), description: family.description };
 }

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain coherent page-declared product descriptions after physical family ownership
+  is proved, without borrowing conflicting, unrelated or prefix-name metadata.
+
 - Derive topic warnings from selected HTML rather than presentation Markdown,
   reusing only an exact completed conversion while keeping DOM views isolated.
 
