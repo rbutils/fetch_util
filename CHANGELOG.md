@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Autoload the HTTP redirect client directly so injected TLS-fallback handling does
+  not depend on a documentation fallback having been loaded first.
+
 - Join complete inline literals across destination-less named code containers while
   preserving taxonomy ownership, source whitespace and genuine reference boundaries.
 

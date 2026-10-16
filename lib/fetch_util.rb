@@ -24,6 +24,7 @@ module FetchUtil
   autoload :CLI, "fetch_util/cli"
   autoload :Extractor, "fetch_util/extractor"
   autoload :Fetcher, "fetch_util/fetcher"
+  autoload :HttpRedirectClient, "fetch_util/http_redirect_client"
   autoload :ParallelFetcher, "fetch_util/parallel_fetcher"
   autoload :PdfProbe, "fetch_util/pdf_probe"
   autoload :PhaseObservation, "fetch_util/phase_observation"
