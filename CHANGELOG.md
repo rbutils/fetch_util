@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve the complete physical body of coherently declared, dated reference
+  indexes without rebuilding the same material as competing article/list roots.
+
 - Defer format-warning Markdown conversion and newsletter statistics until their
   existing classification branches require them, preserving filtered HTML and decisions.
 

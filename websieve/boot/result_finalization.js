@@ -52,7 +52,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
-    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true;
+    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true ||
+    content.sourceOwnedDatedReferenceIndex === true;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
@@ -97,11 +98,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     namedAuthorByline
   );
   var byline = contentByline || metadataByline || visibleBylineValue;
-  var cleanResultMarkdown = content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ? function(value) {
-    return String(value || "").trim();
-  } : content.sourceOwnedUnattributedManual === true && content.sourceOwnedCleanedManualHtml === content.html ? function(value) {
-    return cleanupMarkdownNoise(value, true);
-  } : cleanupMarkdownNoise;
+  var cleanResultMarkdown = resultMarkdownCleanup(content);
   var preserveInlineMailtoUntilFinalType = inlineArticleMailtoMaySurviveUntilFinalType(content);
   var cleanedHtml = content.sourceOwnedUnattributedManual === true && content.sourceOwnedCleanedManualHtml === content.html ?
     content.html : sanitizedHtml(content.html, !!content.focalPublicPreview);
@@ -198,7 +195,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
-  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true || content.sourceOwnedIndexedPlay === true ?
+  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true ||
+    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDatedReferenceIndex === true ?
     markdown : stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
@@ -212,7 +210,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     content = relabelAsListContent(content, { strongList: true });
   }
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
-  if (legalStatuteArticleContent(null, markdown)) {
+  if (!content.sourceOwnedDatedReferenceIndex && legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";
   }
   if (content.contentType === "list" && opaqueDetailPath()) {
