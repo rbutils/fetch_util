@@ -30,8 +30,37 @@ function cleanDocsHeadings(root, selector, formatter) {
 
   root.querySelectorAll(selector).forEach(function(el) {
     var text = formatter(el.textContent, el);
-    if (text) el.textContent = text;
+    setDocsHeadingText(el, text);
   });
+}
+
+function docsHeadingTextBoundary(heading, offset) {
+  var walker = heading.ownerDocument.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    var node = walker.currentNode;
+    if (offset <= node.textContent.length) return { node: node, offset: offset };
+    offset -= node.textContent.length;
+  }
+  return null;
+}
+
+function setDocsHeadingText(heading, text) {
+  if (!text || normalizeText(heading.textContent) === text) return;
+  var start = heading.textContent.indexOf(text);
+  if (start < 0) {
+    heading.textContent = text;
+    return;
+  }
+  var first = docsHeadingTextBoundary(heading, start);
+  var last = docsHeadingTextBoundary(heading, start + text.length);
+  var suffix = heading.ownerDocument.createRange();
+  suffix.setStart(last.node, last.offset);
+  suffix.setEnd(heading, heading.childNodes.length);
+  suffix.deleteContents();
+  var prefix = heading.ownerDocument.createRange();
+  prefix.setStart(heading, 0);
+  prefix.setEnd(first.node, first.offset);
+  prefix.deleteContents();
 }
 
 function docsNamedAnchorTarget(name) {

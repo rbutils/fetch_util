@@ -143,7 +143,7 @@ function cleanupDocsRoot(root, options) {
 
   root.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(function(el) {
     var text = cleanDocsHeadingText(el.textContent);
-    if (text) el.textContent = text;
+    setDocsHeadingText(el, text);
   });
 
   root.querySelectorAll("nav, [aria-label*='breadcrumb' i], ol[aria-label*='breadcrumb' i]").forEach(function(el) {
@@ -167,7 +167,8 @@ function cleanupDocsRoot(root, options) {
     // Removing that link would remove the heading, not just its permalink.
     var wrappedHeading = el.querySelector("h1, h2, h3, h4, h5, h6");
     if (wrappedHeading && normalizeText(wrappedHeading.textContent)) return;
-    if (el.closest("h1, h2, h3, h4, h5, h6") && text.length >= 8) return;
+    if (el.closest("dt, h1, h2, h3, h4, h5, h6") && text &&
+        !/^(?:¶|↑|#|\uF0C1|\uF0C6|\uF08E|\uF14C)$/.test(text)) return;
     var prose = el.closest("p, li, dd, td, th");
     if (prose && !/^(?:¶|↑|#)$/.test(text) &&
         normalizeText(prose.textContent.replace(el.textContent, ""))) return;

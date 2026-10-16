@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Preserve authored documentation definition-term and heading links, including
+  inline heading markup when removing a permalink suffix. Proved current generated
+  technical references retain repeated authored descriptions and literals, using
+  their existing renderer within the owned-work lifetime.
+
 - Preserve complete physically owned software landing pages when embedded community
   topics and media controls would otherwise displace the application's public content.
 

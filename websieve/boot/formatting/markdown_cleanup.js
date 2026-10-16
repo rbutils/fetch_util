@@ -1,4 +1,7 @@
 function resultMarkdownCleanup(content) {
+  if (typeof content.sourceOwnedGeneratedReferenceHtml === "string" && content.sourceOwnedGeneratedReferenceHtml === content.html) {
+    return function(value) { return String(value || "").trim(); };
+  }
   if (content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true ||
       content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ||
       content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedSoftwareLanding === true) {

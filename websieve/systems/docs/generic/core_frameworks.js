@@ -57,8 +57,10 @@
     info = info || docsSystemInfo(metadata);
     if (!info || info.system !== "mkdocs") return null;
     var referenceNavMarkdown = "";
+    var referenceContext = generatedReferencePreparationContext(metadata);
+    var sourceFacts = generatedReferenceTailFacts(referenceContext);
 
-    return docsContentBySelectors(metadata, [
+    var content = docsContentBySelectors(metadata, [
       "main .md-content__inner",
       "main .md-content",
       "article.md-content__inner",
@@ -77,6 +79,7 @@
         referenceNavMarkdown = mkdocsReferenceNavMarkdown(referenceNav);
         if (referenceNav && root.querySelectorAll("a[href]").length < 4) root.appendChild(referenceNav);
         removeAll(root, COMMON_DOCS_CHROME_SELECTOR + ", .md-source-file, .md-content__button, .md-feedback, .mdx-badge, .md-nav, .md-sidebar");
+        sourceFacts.forEach(function(fact) { root.appendChild(fact); });
         removeNodesByText(root, "div, p, span, button, a", /^(table of contents|view source|edit this page)$/i);
         root.querySelectorAll(".admonition, details.note, details.tip, details.warning, details.info, details.danger, details.example, details.question, details.abstract, details.success, details.failure, details.bug, details.quote").forEach(function(el) {
           var titleEl = el.querySelector(".admonition-title, summary");
@@ -94,6 +97,10 @@
         });
       }
     });
+    if (content && referenceContext) {
+      content.sourceOwnedGeneratedReferenceHtml = content.html;
+    }
+    return content;
   }
 
   function mdBookContent(metadata, info) {

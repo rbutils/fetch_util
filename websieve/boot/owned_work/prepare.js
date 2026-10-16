@@ -12,14 +12,17 @@
   }
 
   function prepareOwnedExtractionWork(options) {
-    if (!standaloneManualPreparationEligible() || structuredDataNodes().length) {
+    var manualEligible = standaloneManualPreparationEligible() && !structuredDataNodes().length;
+    var frameworkEligible = generatedReferencePreparationEligible() && generatedReferenceDeclarationsAgree();
+    if (!manualEligible && !frameworkEligible) {
       return ordinaryOwnedExtractionTask(options);
     }
     var state = ownedExtractionSourceState();
     if (!state) return ordinaryOwnedExtractionTask(options);
     var metadata = collectMetadata();
-    var context = standaloneManualPreparationContext(metadata);
+    var context = standaloneManualPreparationContext(metadata) || generatedReferencePreparationContext(metadata);
     if (!context) return ordinaryOwnedExtractionTask(options);
+    var framework = context.framework === "mkdocs";
     var prepared = false;
     var fallback = false;
     var selected = null;
@@ -38,14 +41,14 @@
       if (prepared) return;
       prepared = true;
       withComposedDomRead(function() {
-        if (!ownedExtractionSourceUnchanged(state) || structuredDataNodes().length) {
+        if (!ownedExtractionSourceUnchanged(state) || (framework ? !generatedReferenceDeclarationsAgree() : structuredDataNodes().length)) {
           fallback = true;
           return;
         }
         resetTerminalArticleCollectionMarker();
-        var manual = physicalManualRenderedSections(metadata, context);
+        var manual = framework ? mkdocsMaterialContent(metadata, context.info) : physicalManualRenderedSections(metadata, context);
         context = null;
-        var earlyOwnership = manual && sourceOwnedEarlyPageContent(metadata, manual);
+        var earlyOwnership = manual && (framework ? { content: manual } : sourceOwnedEarlyPageContent(metadata, manual));
         selected = earlyOwnership && earlyOwnership.content;
         fallback = !selected;
         if (selected) pageText = pageReadableText();
@@ -60,7 +63,7 @@
         try {
           prepare();
           return withComposedDomRead(function(currentOptions) {
-            if (fallback || !ownedExtractionSourceUnchanged(state) || structuredDataNodes().length) {
+            if (fallback || !ownedExtractionSourceUnchanged(state) || (framework ? !generatedReferenceDeclarationsAgree() : structuredDataNodes().length)) {
               dispose();
               return fetchUtilExtractApi.extract(currentOptions);
             }
