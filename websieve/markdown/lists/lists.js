@@ -131,14 +131,14 @@ function listItemSocialFields(item) {
   };
 }
 
-function listItemContextValues(item, primaryUrls, primaryRecordKeys) {
+function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders) {
   if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
   if (rowDetail) {
     if (!item.tableCells && !item.tableRowDetail) return [rowDetail];
     if (item.tableReferenceDetail == null) {
-      item.tableReferenceDetail = stripGenericListControlPhrases(listTableRowDetail(card, item.text, item.tableCells, { url: item.url }));
+      item.tableReferenceDetail = stripGenericListControlPhrases(listTableRowDetail(card, item.text, item.tableCells, { url: item.url }, readTableHeaders));
     }
     return [item.tableReferenceDetail];
   }
@@ -194,12 +194,13 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
     return url && listCanonicalKey(url);
   }).filter(Boolean));
   primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(items);
+  var readTableHeaders = tableIndexHeaderReader();
   return items.map(function(item) {
     if (item.sourceOrderedStructuredCard && item.card) {
       return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();
     }
     var line = "- " + markdownLink(item.displayText || item.text, item.url);
-    var context = listItemContextValues(item, primaryUrls, primaryRecordKeys).join(" - ");
+    var context = listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders).join(" - ");
     if (context) line += " - " + context;
     return line;
   }).join("\n");

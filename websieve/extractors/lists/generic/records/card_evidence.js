@@ -211,11 +211,11 @@
     return normalizeText(clone.textContent);
   }
 
-  function listTableRowDetail(row, title, logicalCells, references) {
+  function listTableRowDetail(row, title, logicalCells, references, readHeaders) {
     var cells = logicalCells || tableIndexCells(row);
     var cellsAreLogical = !!logicalCells;
     var table = row.closest && row.closest("table");
-    var headers = table ? tableIndexHeaders(table) : [];
+    var headers = table ? (readHeaders || tableIndexHeaders)(table) : [];
     var titleCellIndex = cells.findIndex(function(cell) {
       return cell && listTableCellText(cell).indexOf(title) !== -1;
     });

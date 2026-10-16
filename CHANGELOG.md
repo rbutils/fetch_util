@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reuse complete table-header grids within each read-only record-rendering pass,
+  retaining every row, spanning field and reference without quadratic header scans.
+
 - Reclaim completed browser work before cloning a proved standalone manual, while
   preserving ordinary-page handling, complete material and one shared deadline.
 

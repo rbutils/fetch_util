@@ -73,8 +73,9 @@
       return materializedHttpUrl(item.url || "");
     }).filter(Boolean));
     var sourceOwnedResultCountNodes = options && options.sourceOwnedResultCountNodes;
+    var readTableHeaders = tableIndexHeaderReader();
     var itemValues = items && items.map(function(item) {
-      return listDescriptionItemValues(item, primaryUrls, primaryRecordKeys);
+      return listDescriptionItemValues(item, primaryUrls, primaryRecordKeys, readTableHeaders);
     });
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();

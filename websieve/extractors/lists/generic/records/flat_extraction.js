@@ -135,7 +135,7 @@
         if (!primary) return;
 
         var text = normalizeText(primary.link.textContent || primary.link.getAttribute("aria-label") || "");
-        var detail = stripGenericListControlPhrases(listTableRowDetail(row, text, dataRow.cells));
+        var detail = stripGenericListControlPhrases(listTableRowDetail(row, text, dataRow.cells, null, context.readTableHeaders));
         var candidate = {
           text: text,
           url: primary.url,
@@ -215,9 +215,9 @@
     return card;
   }
 
-  function listDescriptionItemValues(item, primaryUrls, primaryRecordKeys) {
+  function listDescriptionItemValues(item, primaryUrls, primaryRecordKeys, readTableHeaders) {
     if (!item) return [];
-    var values = [item.text].concat(listItemContextValues(item, primaryUrls, primaryRecordKeys));
+    var values = [item.text].concat(listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders));
     var ownerCard = listDescriptionOwnerCard(item);
     if (ownerCard) {
       var rendered = values.join("\n");

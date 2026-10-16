@@ -30,6 +30,14 @@
     return grid;
   }
 
+  function tableIndexHeaderReader() {
+    var tables = new WeakMap();
+    return function(table) {
+      if (!tables.has(table)) tables.set(table, tableIndexHeaders(table));
+      return tables.get(table);
+    };
+  }
+
   function tableIndexHeaders(table) {
     var rows = Array.prototype.filter.call(table.querySelectorAll("thead tr"), function(row) {
       var cells = tableIndexCells(row);

@@ -225,7 +225,7 @@
       headings.forEach(function(heading) { detailText = detailText.replace(normalizeText(heading.textContent), ""); });
     } else detailText = detailText.replace(text, "");
     var detail = card && card.matches && card.matches("tr") ?
-      listTableRowDetail(card, text) :
+      listTableRowDetail(card, text, null, null, context.readTableHeaders) :
       detailText.replace(/\s*[|·]\s*/g, " - ");
     detail = stripGenericListControlPhrases(detail);
     if (!weatherPage && /\/(ve[ðd]ur|vedur|forecast|weather|spastod)\b/i.test(resolvedPath || href) && weatherModuleText(text + " " + detail)) return null;

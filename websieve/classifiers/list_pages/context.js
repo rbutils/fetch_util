@@ -140,6 +140,7 @@
       linkGroups: new WeakMap(),
       numberedCollections: new WeakMap(),
       cardText: new WeakMap(),
+      readTableHeaders: tableIndexHeaderReader(),
       figureCollections: new WeakMap(),
       supportingCards: new WeakMap(),
       supportingLinks: new WeakSet(),
