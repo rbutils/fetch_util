@@ -16,6 +16,7 @@ RSpec.shared_context "native replay runs" do
 
       raise "Chromium is required; set FETCH_UTIL_ALLOW_MISSING_CHROMIUM=1 only for explicitly limited environments"
     end
+    @browser_path = native_browser_executable(@browser_path)
     @temporary_root = Dir.mktmpdir("native-replay-spec-")
     @manifest_path = File.join(@temporary_root, "manifest.json")
     @run_paths = {}
@@ -34,6 +35,14 @@ RSpec.shared_context "native replay runs" do
 
   after(:all) do
     FileUtils.remove_entry(@temporary_root) if @temporary_root && File.directory?(@temporary_root)
+  end
+
+  def native_browser_executable(launcher)
+    browser = Ferrum::Browser.new(headless: true, browser_path: launcher, timeout: 30, process_timeout: 20,
+                                  browser_options: { "no-sandbox" => nil })
+    File.realpath("/proc/#{browser.process.pid}/exe")
+  ensure
+    browser&.quit
   end
 
   def build_manifest
