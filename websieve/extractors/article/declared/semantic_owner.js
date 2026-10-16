@@ -72,5 +72,6 @@ function declaredSemanticArticleContent(metadata) {
 function sourceOwnedPrimaryContent(metadata, preparedManual) {
   return physicalOwnedReferenceContent(metadata) ||
     declaredSemanticArticleContent(metadata) || canonicalPublishedEntryContent(metadata) ||
-    preparedManual || physicalStandaloneManualContent(metadata) || datedReferenceIndexContent(metadata) || declaredNewsPortalContent(metadata);
+    preparedManual || physicalStandaloneManualContent(metadata) || datedReferenceIndexContent(metadata) ||
+    homepageSubsectionCollectionContent(metadata) || declaredNewsPortalContent(metadata);
 }

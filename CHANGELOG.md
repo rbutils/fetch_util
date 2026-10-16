@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete declared homepage collections when a later bounded query section,
+  rather than the current page, owns the only printed primary heading.
+
 - Preserve the complete physical body of coherently declared, dated reference
   indexes without rebuilding the same material as competing article/list roots.
 

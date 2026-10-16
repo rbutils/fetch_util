@@ -2,6 +2,83 @@
     return node.closest("nav, aside, header, footer, form, [role~='navigation' i], [role~='complementary' i], [role='search']");
   }
 
+  function homepageCollectionPageIdentity() {
+    var current = sourceOwnershipPageUrl(location.href);
+    var nodes = structuredDataNodes();
+    if (!current || nodes.some(structuredDataFocalRecord)) return null;
+    var pages = nodes.filter(function(node) {
+      return nodeTypes(node).indexOf("WebPage") !== -1 && sourceOwnershipPageUrl(node.url || node["@id"]) === current;
+    });
+    var sites = nodes.filter(function(node) {
+      return nodeTypes(node).indexOf("WebSite") !== -1 && sourceOwnershipPageUrl(node.url || node["@id"]) === current;
+    });
+    if (pages.length !== 1 || sites.length !== 1) return null;
+    var identity = sites[0]["@id"] || sites[0].url;
+    var parts = asArray(pages[0].isPartOf).map(function(part) {
+      return typeof part === "string" ? part : part && part["@id"];
+    });
+    try {
+      if (!identity || !parts.some(function(part) {
+        return part && new URL(part, document.baseURI).href === new URL(identity, document.baseURI).href;
+      })) return null;
+    } catch (_error) {
+      return null;
+    }
+    var pageName = document.createElement("textarea");
+    pageName.innerHTML = entityName(pages[0]) || "";
+    if (normalizeText(pageName.value) !== normalizeText(document.title)) return null;
+    var titles = Array.from(document.querySelectorAll("meta[property='og:title' i]")).map(function(node) {
+      return normalizeText(node.getAttribute("content"));
+    });
+    var siteName = normalizeText(entityName(sites[0]));
+    var publishers = Array.from(document.querySelectorAll("meta[property='og:site_name' i]"));
+    var types = Array.from(document.querySelectorAll("meta[property='og:type' i]"));
+    var urls = Array.from(document.querySelectorAll("link[rel~='canonical' i], meta[property='og:url' i]"));
+    if (!titles.length || !titles[0] || !titles.every(function(title) { return title === titles[0]; }) ||
+        !siteName || !publishers.length || !publishers.every(function(node) {
+          return normalizeText(node.getAttribute("content")) === siteName;
+        }) || !types.length || !types.every(function(node) {
+          return normalizeText(node.getAttribute("content")).toLowerCase() === "website";
+        }) || !urls.length || !urls.every(function(node) {
+          return sourceOwnershipPageUrl(node.getAttribute("href") || node.getAttribute("content")) === current;
+        })) return null;
+    return { title: titles[0], siteName: siteName };
+  }
+
+  function homepageCollectionSubsectionHeading(root, records) {
+    var identity = homepageCollectionPageIdentity();
+    if (!identity) return false;
+    var headings = Array.from(root.querySelectorAll("h1")).filter(function(heading) {
+      return !homepageLandingChrome(heading) && !elementSubtreeHidden(heading);
+    });
+    if (headings.length !== 1 || headings[0].closest("article")) return false;
+    var heading = headings[0];
+    var title = normalizeText(heading.textContent || "");
+    if (!title || title === identity.title || title === identity.siteName) return false;
+    var queries = Array.from(root.querySelectorAll(".wp-block-query")).filter(function(query) {
+      return !homepageLandingChrome(query) && !elementSubtreeHidden(query) &&
+        !!query.querySelector(".wp-block-post-template");
+    });
+    if (queries.length < 2) return false;
+    for (var owner = heading.parentElement; owner && owner !== root; owner = owner.parentElement) {
+      if (!owner.matches(".wp-block-group, section")) continue;
+      var ownedQueries = queries.filter(function(query) { return owner.contains(query); });
+      if (ownedQueries.length !== 1) continue;
+      var owned = records.filter(function(record) {
+        return ownedQueries[0].contains(record) && !!record.closest(".wp-block-post-template");
+      });
+      var peers = records.filter(function(record) {
+        return !owner.contains(record) && !!record.closest(".wp-block-post-template") &&
+          queries.some(function(query) { return query.contains(record); }) &&
+          !!(record.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      var destinations = new Set(owned.map(function(record) { return materializedHttpUrl(record.getAttribute("href")); }));
+      var peerDestinations = new Set(peers.map(function(record) { return materializedHttpUrl(record.getAttribute("href")); }));
+      if (destinations.size >= 2 && peerDestinations.size >= 2) return true;
+    }
+    return false;
+  }
+
   function homepageFragmentPageRoot(root) {
     if (!root || !document.body || !homepageRootPath()) return null;
     var declared = focalSourceArticleMetadata();
@@ -28,7 +105,7 @@
     });
     var peers = records.filter(function(link) { return !root.contains(link); });
     if (!peers.length) {
-      if (root.querySelector("h1")) return null;
+      if (root.querySelector("h1") && !homepageCollectionSubsectionHeading(root, records)) return null;
       var destinations = new Set(records.filter(function(link) { return root.contains(link); }).map(function(link) {
         return materializedHttpUrl(link.getAttribute("href"));
       }));
@@ -47,7 +124,7 @@
     var owner = homepageFragmentPageRoot(root);
     if (!owner) return null;
     var clone = visibilityPrunedClone(owner, document);
-    removeAll(clone, "nav, footer, form, menu, dialog, script, style, [role~='navigation' i], [role~='menu' i], [role='dialog']");
+    removeAll(clone, "nav, footer, form, menu, dialog, script, style, noscript, template, [role~='navigation' i], [role~='menu' i], [role='dialog']");
     Array.from(clone.querySelectorAll("aside, [role='complementary']")).forEach(function(node) {
       if (!node.querySelector("article, section, h2 a[href], h3 a[href], h4 a[href], pre, code, blockquote, table, figure")) {
         node.remove();
@@ -67,6 +144,14 @@
       publishedTime: null,
       contentType: "list",
       extra: { sourceOwnedHomepageCollection: true }
+    });
+  }
+
+  function homepageSubsectionCollectionContent(metadata) {
+    if (!document.body || !homepageRootPath() || !document.body.querySelector("h1") ||
+        !document.body.querySelector(".wp-block-query .wp-block-post-template")) return null;
+    return withSourceVisibilityRead(function() {
+      return homepageFragmentPageContent(metadata, document.body);
     });
   }
 
