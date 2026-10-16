@@ -21,6 +21,12 @@ function declaredBylineValue(value) {
 }
 
 function collectMetadata() {
+  return withSourceVisibilityRead(function() {
+    return computeMetadata();
+  });
+}
+
+function computeMetadata() {
   var canonicalUrl = materializedCanonicalUrl();
   var schemaArticle = structuredDataNode(["NewsArticle", "Article", "BlogPosting"]);
   var schemaEvent = typeof eventStructuredDataNode === "function" ? eventStructuredDataNode() : null;

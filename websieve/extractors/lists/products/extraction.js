@@ -1,4 +1,10 @@
   function genericProductListContent(metadata) {
+    return withSourceVisibilityRead(function() {
+      return computeGenericProductListContent(metadata);
+    });
+  }
+
+  function computeGenericProductListContent(metadata) {
     var items = [];
     var selectors = ["main", "[role='main']", ".products", ".product-grid", ".product-list", ".search-results", ".category", ".collection", "body"];
     var roots = [];

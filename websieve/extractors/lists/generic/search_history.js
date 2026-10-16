@@ -1,4 +1,10 @@
   function sourceOwnedSearchHistoryContent(metadata, existingContent) {
+    return withSourceVisibilityRead(function() {
+      return computeSourceOwnedSearchHistoryContent(metadata, existingContent);
+    });
+  }
+
+  function computeSourceOwnedSearchHistoryContent(metadata, existingContent) {
     if (!document.body || typeof challengePageType === "function" && challengePageType(metadata, pageReadableText())) return null;
 
     function visible(node) {

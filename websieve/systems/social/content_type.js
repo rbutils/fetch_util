@@ -126,6 +126,12 @@
   }
 
   function socialSourceFeedEvidence() {
+    return withSourceVisibilityRead(function() {
+      return computeSocialSourceFeedEvidence();
+    });
+  }
+
+  function computeSocialSourceFeedEvidence() {
     var root = document.querySelector("main, [role='main']") || document.body;
     var selector = genericListCardSelector(false) + ", section, .feed-item, [class*='thread' i]";
     var items = Array.prototype.map.call(root.querySelectorAll(selector), function(card) {

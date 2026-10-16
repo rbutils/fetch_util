@@ -2,7 +2,9 @@
     if (!content || content.hostAware || content.docsLike) return null;
     var computedFocalArticleOwner = articleRouteFocalContent(content, true);
     var focalArticleOwner = computedFocalArticleOwner || selectedFocalArticleOwner;
-    var collection = repeatedRecordCollectionPage(focalArticleOwner, content);
+    var collection = withSourceVisibilityRead(function() {
+      return repeatedRecordCollectionPage(focalArticleOwner, content);
+    });
     if (collection && collection.articleOwnershipConflict) content.repeatedRecordArticleOwnershipConflict = true;
     return collection;
   }

@@ -2,7 +2,7 @@
 
   function withSourceVisibilityRead(extract) {
     var previous = sourceVisibilityReadContext;
-    sourceVisibilityReadContext = new WeakMap();
+    sourceVisibilityReadContext = { hidden: new WeakMap(), escaping: new WeakMap() };
     try {
       return extract();
     } finally {
@@ -14,7 +14,7 @@
     // Only the physical page is immutable during this synchronous read. Detached
     // rendering trees remain fresh, and no style object or clone is retained.
     var cache = sourceVisibilityReadContext && node.isConnected && node.ownerDocument === document
-      ? sourceVisibilityReadContext : null;
+      ? sourceVisibilityReadContext.hidden : null;
     if (cache && cache.has(node)) return cache.get(node);
     var hidden = computeElementOwnSubtreeHidden(node, knownStyle, arguments.length > 1);
     if (cache) cache.set(node, hidden);

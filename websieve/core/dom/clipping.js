@@ -1,7 +1,12 @@
   function overflowEscapingDescendant(node) {
-    return composedDomChildren(node).some(function(child) {
+    var cache = sourceVisibilityReadContext && node.isConnected && node.ownerDocument === document
+      ? sourceVisibilityReadContext.escaping : null;
+    if (cache && cache.has(node)) return cache.get(node);
+    var escaping = composedDomChildren(node).some(function(child) {
       return child.nodeType === 1 && (/^(absolute|fixed)$/.test(window.getComputedStyle(child).position) || overflowEscapingDescendant(child));
     });
+    if (cache) cache.set(node, escaping);
+    return escaping;
   }
 
   function collapsedOverflowNode(node, style) {

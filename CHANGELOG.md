@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reuse physical-source visibility and escaping-descendant facts within metadata and
+  collection assessments, preserving clipping, ownership and fresh later source reads.
+
 - Reuse supporting-card boundary evidence within an immutable supplemental read,
   preserving every reference and fresh ownership checks after source changes.
 
