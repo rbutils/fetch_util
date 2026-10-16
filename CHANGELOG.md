@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Join complete inline literals across destination-less named code containers while
+  preserving taxonomy ownership, source whitespace and genuine reference boundaries.
+
 - Preserve non-code tag ownership until adjacent-label spacing is rendered, while
   continuing to normalize named anchors inside complete literal code values.
 

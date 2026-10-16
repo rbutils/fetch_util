@@ -75,6 +75,27 @@ RSpec.describe 'Complete inline code presentation' do
     end
   end
 
+  it 'joins named code containers without erasing code-styled taxonomy ownership' do
+    html = '<p><a name="contact">Published contact: <code>&lt;</code></a>' \
+           '<code><a>person@publication.example.test</a>&gt;</code>.</p>' \
+           '<div class="tags"><a name="field"><code>Field</code></a>' \
+           '<a name="records"><code>Records</code></a></div>' \
+           '<p><a name="alpha" class="tag"><code>Alpha</code></a>' \
+           '<a name="beta" class="tag"><code>Beta</code></a></p>' \
+           '<p><a id="water" rel="tag"><code>Water</code></a>' \
+           '<a id="level" rel="tag"><code>Level</code></a></p>' \
+           '<p><a name="road">road</a><a name="map">map</a></p>'
+    with_url_page('https://publication.example.test/reference/manual', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
+      page.add_script_tag(content: inline_presentation_probe('return markdownFor(document.body.innerHTML, false, true, true);'))
+      markdown = page.evaluate('inlinePresentationProbe({})')
+      expect(markdown).to include('Published contact: `<person@publication.example.test>`.',
+                                  '`Field` `Records`', '`Alpha` `Beta`', '`Water` `Level`', 'roadmap')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
   it 'retains attributed descendants, literal references and named destinations' do
     html = '<p><code><span id="target">Identified token</span></code> ' \
            '<code><span title="Published annotation">Annotated token</span></code> ' \

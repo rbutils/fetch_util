@@ -1,5 +1,6 @@
   function preserveLiteralInlineCode(root) {
-    root.querySelectorAll("code a:not([href])").forEach(function(anchor) {
+    root.querySelectorAll("a:not([href])").forEach(function(anchor) {
+      if (!anchor.closest("code") && !literalNamedCodeContainer(anchor)) return;
       anchor.replaceWith.apply(anchor, Array.prototype.slice.call(anchor.childNodes));
     });
     root.querySelectorAll("code").forEach(function(code) {
@@ -25,6 +26,12 @@
       previous.append.apply(previous, Array.prototype.slice.call(code.childNodes));
       code.remove();
     });
+  }
+
+  function literalNamedCodeContainer(anchor) {
+    return anchor.matches("[name], [id]") && anchor.querySelector("code") &&
+      !anchor.matches("[rel~='tag' i]") && !tagSpacingEvidence(anchor) &&
+      !(anchor.parentElement && tagSpacingEvidence(anchor.parentElement));
   }
 
   function literalInlinePresentation(code) {
