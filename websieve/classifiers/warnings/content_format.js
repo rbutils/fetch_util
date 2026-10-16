@@ -100,7 +100,8 @@
         content.sourceOwnedCleanedManualHtml === content.html) return null;
 
     // 2. DOM signals for liveblog
-    var liveblogDOM = (multiTopicExtractionView(content, markdown).root || document).querySelector(
+    var formatRoot = multiTopicExtractionRoot(content);
+    var liveblogDOM = (formatRoot || document).querySelector(
       "[data-liveblog], [class*='liveblog' i], [class*='live-blog' i], [id*='liveblog' i], " +
       "[class*='live-ticker' i], [class*='liveticker' i], [id*='live-ticker' i], " +
       "[class*='live-feed' i], [class*='live-updates' i], [class*='live-entries' i]"
@@ -166,15 +167,13 @@
       if (proseLen < 500) return "video";
     }
 
-    var formatView = multiTopicExtractionView(content, markdown);
-    var formatMarkdown = formatView.markdown || markdown || "";
-    var guideRoot = formatView.root;
+    var guideRoot = formatRoot;
+    var formatHtml = guideRoot ? guideRoot.innerHTML : "";
     var editionContext = newsletterEditionContext(metadata, content, guideRoot);
     var singleArticleIdentity = newsletterSingleArticleIdentity(guideRoot);
     var focalArticleRoot = newsletterFocalArticleRoot(metadata, content, guideRoot);
     var authoredDigestRecords = newsletterIndependentLinkedSectionCount(guideRoot, true);
     var focalArticleDigestRecords = focalArticleRoot ? newsletterIndependentLinkedSectionCount(focalArticleRoot, true) : 0;
-    var structuralNewsletter = newsletterStructuralEvidence(content, formatMarkdown, guideRoot, focalArticleRoot);
     // Extracted topic pages can contain article cards without owning a focal article or digest.
     var articleDigestEvidence = content && content.contentType === "article" &&
       (!content.wordpressBlockPage || editionContext) &&
@@ -198,9 +197,9 @@
     var credibleRootHomepageList = timestampedHomepageList &&
       (content.portalRootEvidence || homepageHasEditorialSections(document));
     // Dated records on any list are not live updates without the explicit evidence above.
-    if (formatView.root && !timestampedIndexList && !codeRichGuide) {
-      var headings = formatView.root.querySelectorAll("h2, h3");
-      var timeElements = formatView.root.querySelectorAll("time, [datetime]");
+    if (guideRoot && !timestampedIndexList && !codeRichGuide) {
+      var headings = guideRoot.querySelectorAll("h2, h3");
+      var timeElements = guideRoot.querySelectorAll("time, [datetime]");
 
       // Multiple time-stamped entries suggest a compilation / live-update page
       // Require higher thresholds: >= 6 time elements (up from 4) and >= 4 headings (up from 3)
@@ -218,6 +217,11 @@
     // 6. Markdown-level heuristic: many H2/H3 with timestamps interspersed
     // Require higher thresholds to avoid false positives on regular articles
     // with a single publication timestamp (e.g. "Stand: 04:07 Uhr")
+    var needsFormatMarkdown = (!timestampedIndexList && !codeRichGuide) || newsletterEvidence;
+    var formatMarkdown = "";
+    if (needsFormatMarkdown) {
+      formatMarkdown = (guideRoot ? multiTopicViewMarkdown(content, formatHtml, markdown) : markdown) || markdown || "";
+    }
     if (formatMarkdown && !timestampedIndexList && !codeRichGuide) {
       var h2Count = (formatMarkdown.match(/^##\s+/gm) || []).length;
       // A dotted coin price such as 0.01 is not a time; dotted clocks need a time unit.
@@ -235,6 +239,8 @@
     // satisfy the short-block and link-density heuristics for a digest.
     if (formatMarkdown && content && content.html && guideRoot &&
         (!credibleRootHomepageList || newsletterEvidence) && (!content.browseIndexEvidence || newsletterEvidence)) {
+      if (!newsletterEvidence) return null;
+      var structuralNewsletter = newsletterStructuralEvidence(content, formatMarkdown, guideRoot, focalArticleRoot);
       // Newsletter format requires source-owned editorial evidence as well as this structure.
       if (newsletterEvidence && structuralNewsletter.dense) {
         return "newsletter";

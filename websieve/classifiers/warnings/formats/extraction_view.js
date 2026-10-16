@@ -38,16 +38,21 @@
     return markdown;
   }
 
-  function multiTopicExtractionView(content, markdown) {
+  function multiTopicExtractionRoot(content) {
     var root = document.createElement("div");
     root.innerHTML = content && content.html ? content.html : "";
-    if (!root.innerHTML) return { root: null, markdown: markdown };
+    if (!root.innerHTML) return null;
 
     var ignoredContainers = root.querySelectorAll(multiTopicIgnoredContainerSelector());
     Array.prototype.forEach.call(ignoredContainers, function(node) {
       node.parentNode.removeChild(node);
     });
+    return root;
+  }
 
+  function multiTopicExtractionView(content, markdown) {
+    var root = multiTopicExtractionRoot(content);
+    if (!root) return { root: null, markdown: markdown };
     return {
       root: root,
       markdown: multiTopicViewMarkdown(content, root.innerHTML || "", markdown)

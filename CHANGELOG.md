@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Defer format-warning Markdown conversion and newsletter statistics until their
+  existing classification branches require them, preserving filtered HTML and decisions.
+
 - Reuse physical visibility facts during each semantic article-ownership assessment,
   retaining complete coverage, comment ownership and fresh source changes.
 
