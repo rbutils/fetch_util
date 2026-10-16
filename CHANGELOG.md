@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Read only the existing normalized classifier prefix from shared list ancestors,
+  preserving whitespace, live DOM freshness and all extracted record material.
+
 - Reuse complete table-header grids within each read-only record-rendering pass,
   retaining every row, spanning field and reference without quadratic header scans.
 

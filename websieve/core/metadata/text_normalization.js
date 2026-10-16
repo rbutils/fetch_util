@@ -5,6 +5,33 @@ function normalizeText(value) {
   return value.trim().replace(/\s{2,}|[^\S ]/g, " ");
 }
 
+function normalizedElementTextPrefix(node, limit) {
+  if (!node || node.nodeType !== 1 || limit <= 0) return "";
+  var walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_CDATA_SECTION);
+  var output = "";
+  var pendingSpace = false;
+  var textNode;
+
+  while ((textNode = walker.nextNode())) {
+    var value = textNode.nodeValue || "";
+    for (var index = 0; index < value.length; index += 1) {
+      var character = value.charAt(index);
+      if (/\s/.test(character)) {
+        if (output) pendingSpace = true;
+        continue;
+      }
+      if (pendingSpace) {
+        output += " ";
+        pendingSpace = false;
+        if (output.length >= limit) return output;
+      }
+      output += character;
+      if (output.length >= limit) return output;
+    }
+  }
+  return output;
+}
+
 function safeDecodeURI(value) {
   try { return decodeURIComponent(value); } catch (_e) { return value; }
 }
