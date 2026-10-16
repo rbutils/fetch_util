@@ -21,9 +21,10 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
   var compactSummary = listCompactMetadataFollowingField(card, compactMetadata, compactSummarySelector, item.summary);
   var compactSummaryClone = compactSummary && listClonedCardNode(card, clone, compactSummary);
   var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
+  var supportingCardCache = new WeakMap();
   var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
-      return !!genericListSupportingCard(link, item.contentCard || card);
+      return !!genericListSupportingCard(link, item.contentCard || card, supportingCardCache);
     });
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
   var supportingLinks = new WeakSet();

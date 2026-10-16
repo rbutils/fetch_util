@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reuse supporting-card boundary evidence within an immutable supplemental read,
+  preserving every reference and fresh ownership checks after source changes.
+
 - Preserve contiguous table-cell words and source whitespace across inline links
   and code while retaining semantic block boundaries and exact reference labels.
 

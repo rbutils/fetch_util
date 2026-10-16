@@ -105,6 +105,16 @@
   }
 
   function genericListSupportingCard(link, candidateCard, cache) {
+    function cardBoundary(card) {
+      if (!cache) return genericListCardBoundary(card);
+      var cached = cache.get(card) || {};
+      if (!Object.prototype.hasOwnProperty.call(cached, "boundary")) {
+        cached.boundary = genericListCardBoundary(card);
+        cache.set(card, cached);
+      }
+      return cached.boundary;
+    }
+
     function semanticSiblingRecord(card, primary) {
       if (!card.matches("article, li") || !card.parentElement || listCardNodeHidden(card)) return false;
       function soleSemanticRecord(branch) {
@@ -154,7 +164,7 @@
     if (semanticSiblingRecord(candidateCard, link)) return null;
     var section = link.closest("section");
     if (section && candidateCard.contains(section) && structuredCardLink(section, false) === link) return null;
-    var candidateBoundary = candidateCard.parentElement && genericListCardBoundary(candidateCard);
+    var candidateBoundary = candidateCard.parentElement && cardBoundary(candidateCard);
     if (candidateBoundary && candidateCard === link) {
       var directHeading = link.querySelector("h1, h2, h3, h4");
       var directTitle = normalizeText(directHeading && directHeading.textContent);
@@ -165,7 +175,7 @@
 
     var current = link && link.parentElement;
     while (current && current !== document.body && current !== document.documentElement) {
-      if (genericListCardBoundary(current)) {
+      if (cardBoundary(current)) {
         var primary = structuredCardLink(current);
         if (primary && primary !== link) return current;
         if (primary === link) return null;
