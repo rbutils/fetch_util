@@ -42,26 +42,34 @@
 
   function tableCellMarkdown(cell) {
     var clone = removeDuplicatedLeadingCellBlocks(cell);
-    var parts = [];
-    Array.prototype.forEach.call(clone.childNodes, function(child) {
-      var text = normalizeText(tableCellNodeMarkdown(child, false));
-      if (text) parts.push(text);
-    });
-    return parts.length ? parts.join(" ") : clone.textContent;
+    var text = Array.prototype.map.call(clone.childNodes, function(child) {
+      return tableCellNodeMarkdown(child, false);
+    }).join("");
+    return normalizeText(text) || clone.textContent;
+  }
+
+  function tableCellInlineWhitespace(source, markdown) {
+    return (/^\s/.test(source) ? " " : "") + markdown + (/\s$/.test(source) ? " " : "");
+  }
+
+  function tableCellBlockNode(node) {
+    return /^(?:ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|BR|DD|DETAILS|DIALOG|DIV|DL|DT|FIELDSET|FIGCAPTION|FIGURE|FOOTER|FORM|H[1-6]|HEADER|HGROUP|HR|LI|MAIN|MENU|NAV|OL|P|PRE|SECTION|SUMMARY|TABLE|UL)$/.test(node.tagName);
   }
 
   function tableCellNodeMarkdown(node, inLink) {
     if (node.nodeType === Node.TEXT_NODE) return inLink ? escapeMarkdownLinkLabel(node.textContent) : node.textContent;
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
     if (/^(?:CODE|PRE)$/.test(node.tagName) && !inLink && !node.querySelector("a[href], img")) {
-      var literal = normalizeText(node.textContent);
-      if (!literal) return "";
+      var source = node.textContent;
+      var literal = normalizeText(source);
+      if (!literal) return node.tagName === "PRE" || source.length ? " " : "";
       var delimiter = "`";
       (literal.match(/`+/g) || []).forEach(function(run) {
         if (run.length >= delimiter.length) delimiter = run + "`";
       });
       var padding = /^`|`$/.test(literal) ? " " : "";
-      return delimiter + padding + literal + padding + delimiter;
+      var program = delimiter + padding + literal + padding + delimiter;
+      return node.tagName === "PRE" ? " " + program + " " : tableCellInlineWhitespace(source, program);
     }
     if (node.tagName === "IMG") {
       var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
@@ -75,9 +83,10 @@
     if (link) {
       var href = materializedHttpUrl(node.getAttribute("href"));
       var label = normalizeText(content || node.getAttribute("aria-label") || "");
-      return href && label ? markdownLinkWithFormattedLabel(label, href.replace(/\|/g, "%7C")) : label;
+      var reference = href && label ? markdownLinkWithFormattedLabel(label, href.replace(/\|/g, "%7C")) : label;
+      return tableCellInlineWhitespace(node.textContent, reference);
     }
-    return /^(?:BR|DIV|P|LI|SECTION)$/.test(node.tagName) ? " " + content + " " : content;
+    return tableCellBlockNode(node) ? " " + content + " " : content;
   }
 
   function compactParameterCell(cell) {

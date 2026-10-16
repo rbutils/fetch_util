@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve contiguous table-cell words and source whitespace across inline links
+  and code while retaining semantic block boundaries and exact reference labels.
+
 - Read only the existing normalized classifier prefix from shared list ancestors,
   preserving whitespace, live DOM freshness and all extracted record material.
 
