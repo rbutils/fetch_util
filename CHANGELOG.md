@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reclaim completed browser work before cloning a proved standalone manual, while
+  preserving ordinary-page handling, complete material and one shared deadline.
+
 - Autoload the HTTP redirect client directly so injected TLS-fallback handling does
   not depend on a documentation fallback having been loaded first.
 

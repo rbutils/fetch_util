@@ -24,11 +24,23 @@ module FetchUtil
 
         properties = command("Runtime.getProperties", objectId: @object_id, ownProperties: true).fetch("result")
         values = properties.to_h { |property| [property.fetch("name"), property["value"]] }
-        unless values.dig("owned", "type") == "boolean" && values.dig("finish", "type") == "function"
+        unless values.dig("owned", "type") == "boolean" && values.dig("finish", "type") == "function" &&
+               (!values.key?("prepare") || values.dig("prepare", "type") == "function")
           raise ExtractionError, "Invalid owned extraction work descriptor"
         end
 
-        collect_completed_work if values.dig("owned", "value") == true
+        if values.dig("owned", "value") == true
+          if values.key?("prepare")
+            collect_completed_work
+            command(
+              "Runtime.callFunctionOn",
+              objectId: @object_id,
+              functionDeclaration: "function() { return this.prepare(); }",
+              returnByValue: false
+            )
+          end
+          collect_completed_work
+        end
         command(
           "Runtime.callFunctionOn",
           objectId: @object_id,

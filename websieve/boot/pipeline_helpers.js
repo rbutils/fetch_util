@@ -76,16 +76,17 @@ function standaloneManualPreparationEligible() {
 
 function metadataWithPreparedStandaloneManual() {
   var metadata = collectMetadata();
-  var manual = null;
   // Preserve the existing declared-article and published-entry precedence. This
   // only advances construction of an independently proved physical manual.
-  if (standaloneManualPreparationEligible()) {
-    var context = physicalTechnicalDocsContext(metadata);
-    if (context && (context.generatedBook || context.root.matches("article"))) {
-      manual = physicalManualRenderedSections(metadata, context);
-    }
-  }
+  var context = standaloneManualPreparationContext(metadata);
+  var manual = context ? physicalManualRenderedSections(metadata, context) : null;
   return { metadata: metadata, manual: manual };
+}
+
+function standaloneManualPreparationContext(metadata) {
+  if (!standaloneManualPreparationEligible()) return null;
+  var context = physicalTechnicalDocsContext(metadata);
+  return context && (context.generatedBook || context.root.matches("article")) ? context : null;
 }
 
 function sourceOwnedEarlyPageContent(metadata, preparedManual) {

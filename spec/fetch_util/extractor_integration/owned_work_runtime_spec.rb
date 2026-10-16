@@ -24,14 +24,16 @@ RSpec.describe 'Owned extraction runtime', :integration do
     HTML
   end
 
-  def owned_runtime_probe(page, body)
+  def owned_runtime_probe(page, body, setup: '', prepare: true)
     extractor = FetchUtil::Extractor.new
     preparation = extractor.__send__(:owned_preparation_call)
     page.evaluate(<<~JS)
       (() => {
         const originalClone = Node.prototype.cloneNode;
         const originalCreate = document.createElement;
+        #{setup}
         const task = #{preparation};
+        if (#{prepare} && typeof task.prepare === 'function') task.prepare();
         const preparedScopesRestored = Node.prototype.cloneNode === originalClone && document.createElement === originalCreate;
         #{body}
       })()
@@ -50,8 +52,42 @@ RSpec.describe 'Owned extraction runtime', :integration do
       end
       actual = FetchUtil::Extractor.new.extract(page)
       expect(actual).to eq(ordinary)
-      expect(calls.count('HeapProfiler.collectGarbage')).to eq(1)
+      expect(calls.count('HeapProfiler.collectGarbage')).to eq(2)
       expect(actual.fetch('html').scan('<pre').length).to eq(160)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'proves ownership before cloning and performs explicit preparation only once' do
+    with_url_page('https://reference.example.test/manual.html', owned_manual_html) do |page|
+      inject_standalone_extractor(page)
+      before = page.evaluate('document.body.innerHTML')
+      setup = <<~JS
+        const ownedRoot = document.querySelector('article');
+        const originalImport = Document.prototype.importNode;
+        let clones = 0;
+        Document.prototype.importNode = function(node, deep) {
+          if (node === ownedRoot) clones++;
+          return originalImport.call(this, node, deep);
+        };
+      JS
+      result = owned_runtime_probe(page, <<~JS, setup: setup, prepare: false)
+        const beforePreparation = clones;
+        task.prepare();
+        const afterPreparation = clones;
+        task.prepare();
+        const afterRepeatedPreparation = clones;
+        const payload = task.finish();
+        Document.prototype.importNode = originalImport;
+        return { owned: task.owned, beforePreparation, afterPreparation, afterRepeatedPreparation, payload,
+          restored: Node.prototype.cloneNode === originalClone && document.createElement === originalCreate &&
+            Document.prototype.importNode === originalImport };
+      JS
+      expect(result).to include('owned' => true, 'beforePreparation' => 0, 'restored' => true)
+      expect(result.fetch('afterPreparation')).to be_positive
+      expect(result.fetch('afterRepeatedPreparation')).to eq(result.fetch('afterPreparation'))
+      expect(result.fetch('payload').fetch('html').scan('<pre').length).to eq(160)
+      expect(result.fetch('payload').fetch('markdown')).to include('instruction_160', 'https://reference.example.test/reference/160')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
