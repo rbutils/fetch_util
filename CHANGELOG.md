@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reuse physical visibility facts during each semantic article-ownership assessment,
+  retaining complete coverage, comment ownership and fresh source changes.
+
 - Reuse physical-source visibility and escaping-descendant facts within metadata and
   collection assessments, preserving clipping, ownership and fresh later source reads.
 
