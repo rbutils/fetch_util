@@ -1,7 +1,7 @@
 function resultMarkdownCleanup(content) {
   if (content.sourceOwnedHomepageCollection === true || content.sourceOwnedDataRecord === true ||
       content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ||
-      content.sourceOwnedDatedReferenceIndex === true) {
+      content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedSoftwareLanding === true) {
     return function(value) { return String(value || "").trim(); };
   }
   if (content.sourceOwnedUnattributedManual === true && content.sourceOwnedCleanedManualHtml === content.html) {

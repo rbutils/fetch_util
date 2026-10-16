@@ -73,5 +73,5 @@ function sourceOwnedPrimaryContent(metadata, preparedManual) {
   return physicalOwnedReferenceContent(metadata) ||
     declaredSemanticArticleContent(metadata) || canonicalPublishedEntryContent(metadata) ||
     preparedManual || physicalStandaloneManualContent(metadata) || datedReferenceIndexContent(metadata) ||
-    homepageSubsectionCollectionContent(metadata) || declaredNewsPortalContent(metadata);
+    homepageSubsectionCollectionContent(metadata) || softwareLandingContent(metadata) || declaredNewsPortalContent(metadata);
 }

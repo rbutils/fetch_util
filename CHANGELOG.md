@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete physically owned software landing pages when embedded community
+  topics and media controls would otherwise displace the application's public content.
+
 - Preserve complete declared homepage collections when a later bounded query section,
   rather than the current page, owns the only printed primary heading.
 

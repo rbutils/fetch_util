@@ -53,7 +53,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
     content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true ||
-    content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedHomepageCollection === true;
+    content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedHomepageCollection === true || content.sourceOwnedSoftwareLanding === true;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?

@@ -305,6 +305,8 @@ systems/media/player_pages.js
 systems/products/declared_family.js
 systems/products/physical_ownership.js
 systems/products/content.js
+systems/products/software_landing/ownership.js
+systems/products/software_landing/content.js
 systems/news_engines/portal_lead_records.js
 systems/news_engines/owned_portal.js
 systems/news_engines/portal_lead_context.js

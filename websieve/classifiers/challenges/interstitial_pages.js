@@ -105,6 +105,8 @@ function likelyAuthWall(title, page, combined) {
 
   if (/sign in|log in|login|create (?:an )?account|reset your password/.test(normalizedTitle)) return true;
 
+  if (!expectedAuthPath && sourceOwnedSoftwareLandingContext({ title: title })) return false;
+
   // If the page has substantial visible content (links, images, headings), it is likely a public page
   // with incidental login UI in a header/footer — not an auth wall
   if (!/sign in|log in|login|create (?:an )?account|reset your password/.test(normalizedTitle) && effectivePublicSignals >= 15 && normalizedPage.length >= 1000) {
