@@ -21,6 +21,7 @@
       stripPublisherCtaNotes(clone);
       var excerptMarker = markReadabilityExcerptSources(clone);
       var sourceIdentities = markReadabilitySourceNodeProvenance(clone, sourceClones, excerptMarker);
+      var sectionHeadings = readerSectionHeadingSnapshots(clone, metadata, sourceClones, sourceIdentities, excerptMarker);
       var declaredByline = normalizeText(readerTextBylineName(metadata && metadata.declaredByline || ""));
       if (declaredByline) {
         sourceClones.forEach(function(_readableClone, source) {
@@ -51,6 +52,7 @@
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
       article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
+      article = sourceOwnedReaderRetainedSections(article, sectionHeadings, sourceClones, sourceIdentities, excerptMarker);
       var sourceParagraphTemplate = document.createElement("template");
       sourceParagraphTemplate.innerHTML = article.content;
       var selectedSourceParagraphs = sourceOwnedReaderParagraphIdentitySources(

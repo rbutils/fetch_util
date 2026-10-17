@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain source-proved article section headings when reader chrome heuristics remove
+  their IDs, preserving each heading before its exact retained authored paragraph.
+
 - Preserve complete self-indexed disclosure catalogs, their visible resource panels,
   fragment targets and source transfer destinations without borrowing a version date.
 
