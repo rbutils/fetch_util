@@ -62,7 +62,9 @@ function listPrimaryRecordKey(url, title) {
 }
 
 function listPrimaryRecordKeys(items) {
-  return new Set((items || []).map(function(item) {
+  var keys = new Set((items || []).map(function(item) {
     return listPrimaryRecordKey(item.url, item.displayText || item.text);
   }).filter(Boolean));
+  Object.defineProperty(keys, "recordContext", { value: listPrimaryRecordContext(items) });
+  return keys;
 }

@@ -127,6 +127,7 @@ function listItemSocialFields(item) {
 
 function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders) {
   if (item.groupLabel != null) return item.groupLabel ? [item.groupLabel] : [];
+  if (!listItemOwnsCardContext(item, primaryRecordKeys)) return [];
   var card = item.card;
   var rowDetail = card && card.matches && card.matches("tr") ? stripGenericListControlPhrases(item.detail) : "";
   if (rowDetail) {

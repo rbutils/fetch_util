@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep collection-card context with its positively selected heading owner instead
+  of repeating it on a secondary topic from that same physical card.
+
 - Preserve complete event dates without borrowing training releases, deadlines,
   publication fields, hidden text or literal program examples as event dates.
 
