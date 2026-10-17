@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve visible documentation control-label references with proved native
+  input associations and readable boundaries, without exposing inactive panels.
+
 - Normalize physical code blocks without discarding sibling filenames, prose or
   resource links from their wrappers.
 

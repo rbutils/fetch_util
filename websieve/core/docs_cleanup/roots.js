@@ -183,7 +183,9 @@ function cleanupDocsRoot(root, options) {
     var id = el.getAttribute("id");
     referenceTargets.set(id, referenceTargets.has(id) ? null : el);
   });
+  var controlReferences = preserveDocsControlLabelReferences(root, sourceReferenceIds);
   root.querySelectorAll("a[href]").forEach(function(el) {
+    if (controlReferences.links.has(el)) return;
     var text = normalizeText(el.textContent);
     if (!text && el.closest("pre, code") && (el.getAttribute("id") || el.getAttribute("name"))) return;
     var title = normalizeText(el.getAttribute("title"));
@@ -207,7 +209,8 @@ function cleanupDocsRoot(root, options) {
       el.remove();
       return;
     }
-    if (tocLikeNode(el) || breadcrumbLikeNode(el)) el.remove();
+    var controlLabels = containsDocsControlLabel(el, controlReferences);
+    if (!controlLabels && (tocLikeNode(el) || breadcrumbLikeNode(el))) el.remove();
   });
 
   if (options.removeTryIt) {
