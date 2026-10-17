@@ -35,10 +35,36 @@
     return true;
   }
 
+  function listUnownedEmptyReference(link, root, recordContext, descriptionOwners) {
+    if (link.querySelector("img, picture, svg, video, audio, canvas, object, iframe") ||
+        link.closest("pre, code, [aria-hidden='true' i], [inert]") || listCardNodeHidden(link)) return false;
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    if (!url || emptyMarkdownSelfControl(link, url, root)) return false;
+    for (var owner = link; owner; owner = owner.parentElement) {
+      if (recordContext.selectedSources.has(owner) || recordContext.byCard.has(owner) ||
+          descriptionOwners.has(owner)) return false;
+      if (owner.matches("details:not([open])")) {
+        var summary = Array.from(owner.children).find(function(child) { return child.tagName === "SUMMARY"; });
+        if (!summary || !summary.contains(link)) return false;
+      }
+      if (owner === root) return true;
+    }
+    return false;
+  }
+
   function listUnrepresentedMetadataReferences(extraction, descriptions) {
+    var primaryRecordKeys;
+    var unownedReferences = new WeakSet();
+    var descriptionOwners = new WeakSet(descriptions.map(function(part) { return part.node; }).filter(Boolean));
     var links = Array.from(extraction.root.querySelectorAll("a[href]")).filter(function(link) {
       if (link.closest("nav, header, footer, form, menu, dialog, [role='navigation'], [role='menu'], [role='toolbar'], [aria-modal='true']")) return false;
       var text = normalizeText(link.textContent);
+      if (!text) {
+        primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(extraction.items);
+        if (!listUnownedEmptyReference(link, extraction.root, primaryRecordKeys.recordContext, descriptionOwners)) return false;
+        unownedReferences.add(link);
+        return true;
+      }
       var namedField = Array.from(link.classList || []).some(function(name) {
         return /^(?:card|story|teaser|result|news|headline)[-_]+(?:tags?|topics?|categor(?:y|ies))(?:[-_]|$)/i.test(name) ||
           /^(?:Card|Story|Teaser|Result|News|Headline)(?:Tags?|Topics?|Categor(?:y|ies))(?:[-_]|$)/.test(name);
@@ -52,13 +78,17 @@
       var url = materializedHttpUrl(item.url || "");
       return url && listCanonicalKey(url);
     }).filter(Boolean));
-    var primaryRecordKeys = listPrimaryRecordKeys(extraction.items);
+    primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(extraction.items);
     var rendered = extraction.items.map(function(item) {
       return { node: item.card || item.sourceNode, markdown: listMarkdown([item], primaryUrls, primaryRecordKeys) };
     }).concat(descriptions);
     return links.map(function(link) {
       var url = materializedHttpUrl(link.getAttribute("href"));
       var text = normalizeText(link.textContent);
+      if (unownedReferences.has(link)) {
+        var label = inlineLinkLabel(link) || normalizeText(link.getAttribute("title")) || url;
+        return { node: link, markdown: markdownLink(label, url), metadataReference: true };
+      }
       if (!url || primaryUrls.has(listCanonicalKey(url)) || genericListControlText(text) || looksLikeFooterLink(text, url)) return null;
       var destination = "](" + listPresentationUrl(url) + ")";
       if (rendered.some(function(part) {

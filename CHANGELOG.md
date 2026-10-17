@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain visible standalone collection destinations outside selected cards and
+  descriptions, without exposing hidden bodies or repeating owned references.
+
 - Preserve independently authored same-destination metadata references across
   physical cards instead of treating every matching URL and label as one record.
 
