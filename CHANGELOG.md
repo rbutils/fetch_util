@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve named code-line target bindings through repeated code normalization
+  without changing complete program text, language or source line order.
+
 - Preserve authored documentation definition-term and heading links, including
   inline heading markup when removing a permalink suffix. Proved current generated
   technical references retain repeated authored descriptions and literals, using

@@ -82,6 +82,7 @@ core/docs_cleanup/literal_projection.js
 core/docs_cleanup/materialized_sections.js
 extractors/lists/reference_index/ownership.js
 extractors/lists/reference_index/content.js
+markdown/code/named_targets.js
 markdown/code/code_helpers.js
 markdown/code/code_surfaces.js
 markdown/code/literal_programs.js

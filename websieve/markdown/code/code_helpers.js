@@ -116,22 +116,17 @@
       if (!pre && !/^(curl\b|[{[]|>>>|\$\s|GET\b|POST\b|PUT\b|PATCH\b|DELETE\b|HTTP\/|<\w)/m.test(text)) return;
 
       var replacement = document.createElement("pre");
-      var code = document.createElement("code");
       var language = guessCodeLanguage(pre || el);
       if (!language && (el.matches(".redoc-json, [class*='redoc-json']") || /^[\[{]/.test(text))) language = "json";
-      code.textContent = text;
-      if (language) code.setAttribute("data-language", language);
-      replacement.appendChild(code);
+      replacement.appendChild(normalizedCodeElement(text, language, pre || el));
       el.replaceWith(replacement);
     });
 
     root.querySelectorAll("pre").forEach(function(pre) {
       var code = pre.querySelector("code") || document.createElement("code");
       var language = code.getAttribute("data-language") || guessCodeLanguage(code) || guessCodeLanguage(pre);
-      code.textContent = cleanCodeText(code.textContent || pre.textContent);
-      if (language) code.setAttribute("data-language", language);
-      pre.innerHTML = "";
-      pre.appendChild(code);
+      var replacement = normalizedCodeElement(code.textContent || pre.textContent, language, code.parentNode ? code : pre);
+      pre.replaceChildren(replacement);
     });
   }
 

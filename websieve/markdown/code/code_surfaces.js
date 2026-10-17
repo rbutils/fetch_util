@@ -16,16 +16,16 @@
     return children.map(codeSurfaceText).join("");
   }
 
-  function normalizedCodeElement(text, language) {
+  function normalizedCodeElement(text, language, source) {
     var code = document.createElement("code");
-    code.textContent = cleanCodeText(text);
+    appendNamedCodeTargets(code, cleanCodeText(text), source);
     if (language) code.setAttribute("data-language", language);
     return code;
   }
 
   function normalizeCodeSurfaces(root) {
     root.querySelectorAll("tt").forEach(function(node) {
-      node.replaceWith(normalizedCodeElement(codeSurfaceText(node)));
+      node.replaceWith(normalizedCodeElement(codeSurfaceText(node), "", node));
     });
 
     // Editors render each materialized line separately. Measurements, cursors and
@@ -41,7 +41,7 @@
       if (!lines.length) return;
 
       var pre = document.createElement("pre");
-      pre.appendChild(normalizedCodeElement(lines.map(codeSurfaceText).join("\n"), guessCodeLanguage(editor)));
+      pre.appendChild(normalizedCodeElement(lines.map(codeSurfaceText).join("\n"), guessCodeLanguage(editor), lines));
       editor.replaceChildren(pre);
     });
 
@@ -49,7 +49,7 @@
     examples.forEach(function(pre) {
       var code = pre.querySelector("code");
       var language = code && code.getAttribute("data-language") || guessCodeLanguage(code) || guessCodeLanguage(pre);
-      pre.replaceChildren(normalizedCodeElement(codeSurfaceText(pre), language));
+      pre.replaceChildren(normalizedCodeElement(codeSurfaceText(pre), language, pre));
     });
     return root;
   }
