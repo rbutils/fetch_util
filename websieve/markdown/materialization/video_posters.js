@@ -21,8 +21,11 @@
       if (video.closest("pre, code, script, style, noscript, template") || markdownVideoPosterHidden(video, root)) return;
       var poster = materializedHttpUrl(video.getAttribute("poster"));
       var supplied = Array.prototype.some.call(video.querySelectorAll("img[src]"), function(image) {
-        return !markdownVideoPosterHidden(image, video) && normalizeText(image.getAttribute("alt")) &&
-          materializedHttpUrl(image.getAttribute("src")) === poster;
+        if (markdownVideoPosterHidden(image, video) || materializedHttpUrl(image.getAttribute("src")) !== poster) return false;
+        if (!normalizeText(image.getAttribute("alt"))) {
+          image.setAttribute("alt", normalizeText(video.getAttribute("aria-label") || video.getAttribute("title")) || "Video poster");
+        }
+        return true;
       });
       if (poster && !supplied) {
         var image = video.ownerDocument.createElement("img");
