@@ -77,6 +77,63 @@
     return readabilityExcerptPrefix(lead.textContent || "");
   }
 
+  function readerSectionHeaderDateExcerpt(article, bodyEvidence, snapshots) {
+    var sources = bodyEvidence && bodyEvidence.sourceParagraphs;
+    if (!article || !snapshots || !snapshots.headings.length || !Array.isArray(sources) || sources.length < 2 ||
+        (bodyEvidence.unmappedTrailingParagraphs || []).length) return null;
+    var value = normalizeText(article.excerpt || "");
+    var date = "(?:\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[./]\\s*\\d{1,2}[./]\\s*\\d{4}|" +
+      "\\d{1,2}\\.?\\s+\\p{L}[\\p{L}\\p{M}.'’\\-]*\\s+\\d{4}|\\p{L}[\\p{L}\\p{M}.'’\\-]*\\s+\\d{1,2},?\\s+\\d{4})";
+    if (!new RegExp("^" + date + "$", "u").test(value)) return null;
+
+    var owner = snapshots.owner;
+    if (!owner || !owner.isConnected || owner === document.body || owner.querySelectorAll("h1").length !== 1) return null;
+    var headline = owner.querySelector("h1");
+    var articleTitle = normalizeText(article.title || "");
+    if (headline.parentElement !== owner || elementVisuallyHidden(headline) ||
+        (articleTitle && normalizeText(headline.textContent) !== articleTitle) ||
+        !sourceOwnedReaderHeadlineTitleMatches(headline.textContent, null, null)) return null;
+    var section = snapshots.headings[0];
+    var lead = section.paragraph;
+    var heading = lead && lead.previousElementSibling;
+    if (!heading || heading.parentElement !== owner || heading.id !== section.id ||
+        normalizeText(heading.textContent) !== section.text || !sources.includes(lead) ||
+        normalizeText(lead.textContent) !== section.paragraphText || !readabilityExcerptNode(lead) ||
+        !readerSectionParagraphNarrative(lead) || sources.some(function(source) {
+          return !source || source.localName !== "p" || source.ownerDocument !== document ||
+            !owner.contains(source) || elementVisuallyHidden(source);
+        })) return null;
+
+    var dates = [];
+    var revision = new RegExp("^(?:last updated|updated)\\s*[:：-]\\s*" + date + "$", "iu");
+    var node = headline.nextSibling;
+    while (node && node !== heading) {
+      if (node.nodeType === Node.TEXT_NODE && normalizeText(node.textContent)) return null;
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (!node.matches("span, time, p, div") || node.children.length || elementVisuallyHidden(node) ||
+            node.matches("[role~='button'], [role~='menuitem'], [role~='tab'], [role~='dialog']")) return null;
+        var text = normalizeText(node.textContent);
+        var dateField = node.matches("time, [itemprop~='datePublished' i]") ||
+          Array.from(node.classList).some(function(token) {
+            return /(?:^|[-_])(?:date|published|publication)(?:$|[-_])/i.test(token);
+          });
+        if (dateField && text === value) dates.push(node);
+        else if (!revision.test(text)) return null;
+      }
+      node = node.nextSibling;
+    }
+    var edges = bodyEvidence.unmappedHeaderParagraphs || [];
+    if (node !== heading || dates.length !== 1 || edges.length !== 1 || edges[0].source !== dates[0] ||
+        normalizeText(edges[0].text) !== value) return null;
+
+    var template = readabilityArticleTemplate(article);
+    var selected = template && Array.from(template.content.querySelectorAll("p[id]")).filter(function(paragraph) {
+      return paragraph.id === section.paragraphId;
+    });
+    if (!selected || selected.length !== 1 || normalizeText(selected[0].textContent) !== section.paragraphText) return null;
+    return readabilityExcerptPrefix(section.paragraphText);
+  }
+
   function readabilityOwnedBylineExcerpt(article, metadata, readerBodyEvidence) {
     var excerpt = normalizeText((article && article.excerpt) || "");
     if (!excerpt || /[\p{Sentence_Terminal}"'“”‘’]/u.test(excerpt) || !readerBodyEvidence) return false;

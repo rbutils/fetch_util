@@ -62,7 +62,8 @@
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
       );
       var sourceOwnedPublication = readabilityOwnedSelectedPublication(article, metadata, readerBodyEvidence);
-      var excerpt = readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
+      var excerpt = readerSectionHeaderDateExcerpt(article, readerBodyEvidence, sectionHeadings) ||
+        readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
       if (excerpt === article.excerpt && readerBodyEvidence && readerBodyEvidence.sourceParagraphs) {
         var normalizedExcerpt = normalizeText(excerpt || "");
         var readerBylineExcerpt = normalizedExcerpt &&

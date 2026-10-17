@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Select a source-proved section lead instead of a standalone reader header date,
+  retaining publication and revision fields in the complete article body.
+
 - Preserve authored nested local-reference indexes when their independently proved
   source sections distinguish them from short, link-dense navigation controls.
 
