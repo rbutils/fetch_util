@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep extension helpers outside pinned release-source families while loading them
+  before their extraction and formatting consumers.
+
 - Prepare complete flat table Markdown after vendor whitespace normalization,
   avoiding discarded child conversion while preserving nested and layout paths.
 
