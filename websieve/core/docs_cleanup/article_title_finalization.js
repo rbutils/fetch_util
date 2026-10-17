@@ -5,6 +5,11 @@ function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markd
   }
   var primaryTitle = originalPrimaryTitle;
   var identityResolved = false;
+  var completePageTitle = articleTitleFromCompletePageHeading(content, cleanedHtml, primaryTitle);
+  if (completePageTitle !== primaryTitle) {
+    primaryTitle = completePageTitle;
+    identityResolved = true;
+  }
   if ((content.contentType === "article" || content.contentType === "medical") && content.sourceOwnedLiveblog !== true) {
     var declaredDescriptionTitle = articleTitleFromDeclaredDescription(cleanedHtml, primaryTitle, siteTitle, metadata.excerpt);
     if (declaredDescriptionTitle !== primaryTitle) {
@@ -45,6 +50,52 @@ function sourceOwnedArticleTitleResolution(content, metadata, cleanedHtml, markd
     }
   }
   return { title: primaryTitle, markdown: markdown, identityResolved: identityResolved };
+}
+
+function articleTitleFromCompletePageHeading(content, html, title) {
+  if (!document.body || !content || !html || !title || content.sourceOwnedLiveblog === true ||
+      content.sourceOwnedUnattributedManual === true ||
+      (content.contentType !== "article" && content.contentType !== "medical")) return title;
+
+  var declaredTitle = normalizeText(document.title || "");
+  if (!declaredTitle || declaredTitle === normalizeText(title)) return title;
+  var articles = Array.prototype.filter.call(document.querySelectorAll("article"), function(article) {
+    return !elementSubtreeHidden(article) && !sourceOwnershipInChrome(article);
+  });
+  if (articles.length !== 1 || articles[0].querySelector("article")) return title;
+  var owner = articles[0];
+  var headers = Array.prototype.filter.call(owner.children, function(node) {
+    return node.tagName === "HEADER" && !elementSubtreeHidden(node);
+  });
+  if (headers.length !== 1) return title;
+  var headings = Array.prototype.filter.call(headers[0].querySelectorAll("h1, h2, h3, h4, h5, h6"), function(heading) {
+    return !elementSubtreeHidden(heading) && !sourceOwnershipInChrome(heading);
+  });
+  if (headings.length !== 1 || normalizeText(headings[0].textContent || "") !== declaredTitle) return title;
+
+  var exteriorHeadings = Array.prototype.filter.call(document.querySelectorAll("h1"), function(heading) {
+    return !owner.contains(heading) && !elementSubtreeHidden(heading) &&
+      normalizeText(heading.textContent || "") === normalizeText(title);
+  });
+  if (exteriorHeadings.length !== 1 ||
+      !(exteriorHeadings[0].compareDocumentPosition(owner) & Node.DOCUMENT_POSITION_FOLLOWING)) return title;
+  var conflictingTitle = Array.prototype.some.call(document.querySelectorAll(
+    "meta[property='og:title' i], meta[name='twitter:title' i]"
+  ), function(node) {
+    var value = normalizeText(node.getAttribute("content") || "");
+    return value && value !== declaredTitle;
+  });
+  var pageUrl = sourceOwnershipPageUrl(materializedCanonicalUrl() || location.href);
+  if (conflictingTitle || sourceOwnedTitleMetadataConflictsWithHeading(declaredTitle, pageUrl)) return title;
+
+  var selected = document.createElement("div");
+  selected.innerHTML = html;
+  var selectedHeadings = Array.prototype.filter.call(selected.querySelectorAll("h1, h2, h3, h4, h5, h6"), function(heading) {
+    return normalizeText(heading.textContent || "") === declaredTitle;
+  });
+  if (selectedHeadings.length !== 1 ||
+      normalizeText(selected.textContent || "") !== normalizeText(owner.textContent || "")) return title;
+  return declaredTitle;
 }
 
 function articleTitleFromSelectedExternalBodyHeading(content, metadata, title) {

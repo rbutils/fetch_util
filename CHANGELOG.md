@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Bind a complete selected article to its declared, source-owned header title instead
+  of borrowing an unrelated site-brand heading outside the article.
+
 - Preserve authored documentation resource lists instead of inferring breadcrumbs from short link labels. Generic breadcrumb inference now requires separators and a current-page ancestor link hierarchy, while MkDocs cleanup preserves captured source visibility.
 
 - Retain valid physical video posters and source destinations in Markdown while
