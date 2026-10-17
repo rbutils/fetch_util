@@ -40,6 +40,10 @@
       bulletListMarker: "-",
       emDelimiter: "_"
     });
+    var preparedTables = null;
+    service.options.fetchUtilPrepareRoot = function(normalizedRoot) {
+      preparedTables = prepareDataTableMarkdown(normalizedRoot);
+    };
     service.remove(["script", "style", "noscript", "template"]);
     addIntrawordEmphasisRule(service);
     preserveLiteralAngleText(service);
@@ -49,6 +53,8 @@
         return node.nodeName === "TABLE";
       },
       replacement: function(content, node) {
+        var prepared = preparedDataTableMarkdown(node, preparedTables);
+        if (prepared !== null) return "\n\n" + prepared + "\n\n";
         return "\n\n" + tableToMarkdown(node, content) + "\n\n";
       }
     });

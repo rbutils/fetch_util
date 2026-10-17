@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Prepare complete flat table Markdown after vendor whitespace normalization,
+  avoiding discarded child conversion while preserving nested and layout paths.
+
 - Read table cells without cloning when no adjacent leading-block pair can exist,
   preserving complete values, references and the existing isolated duplicate cleanup.
 

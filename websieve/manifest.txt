@@ -90,6 +90,7 @@ markdown/code/code_helpers.js
 markdown/code/code_surfaces.js
 markdown/code/literal_programs.js
 markdown/tables.js
+markdown/tables/prepared.js
 markdown/materialization/materialization_inline.js
 markdown/materialization/materialization_containers.js
 markdown/materialization/materialization_blocks.js
