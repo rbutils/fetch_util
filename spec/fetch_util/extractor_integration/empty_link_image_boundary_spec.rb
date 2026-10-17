@@ -71,4 +71,36 @@ RSpec.describe 'Empty link and physical image boundaries' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'represents a primary image label once while retaining a distinct image-owned reference' do
+    records = (1..6).map do |number|
+      <<~HTML
+        <article><section class="inner"><figure><a href="/reports/#{number}"><img src="https://images.example.test/report-#{number}.png" alt="Authored report diagram #{number}"></a></figure>
+        <span>Current report</span><h3><a href="/reports/#{number}">Independent publication report #{number}</a></h3></section>
+        <p>The complete context describes the independent research and its published evidence.
+        <a href="https://resources.example.test/related-#{number}"><img src="https://images.example.test/related-#{number}.png" alt="Supplemental resource #{number}"></a>
+        The final sentence remains part of the report.</p></article>
+      HTML
+    end
+    html = <<~HTML
+      <html><head><title>Publication reports</title></head><body><main><h1>Publication reports</h1>
+      <section><h2>Research reports</h2>#{records.take(3).join}</section>
+      <section><h2>Community reports</h2>#{records.drop(3).join}</section>
+      </main></body></html>
+    HTML
+
+    with_url_page('https://publication.example.test/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract(page)
+      markdown = payload.fetch('markdown')
+
+      (1..6).each do |number|
+        expect(markdown.scan("Authored report diagram #{number}").length).to eq(1)
+        expect(markdown).to include("[Independent publication report #{number}](https://publication.example.test/reports/#{number})",
+                                    "[Supplemental resource #{number}](https://resources.example.test/related-#{number})")
+      end
+      expect(markdown).to include('The final sentence remains part of the report.')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

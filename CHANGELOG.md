@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Avoid repeating collection image labels from suppressed primary aliases while
+  retaining distinct image-owned supplemental references.
+
 - Keep literal exclamation marks separate from empty links, avoiding invented
   image destinations while preserving physical images and literal programs.
 
