@@ -68,10 +68,12 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
       return item.supplementalSourceClones.get(node);
     }).filter(function(node) { return node && card.contains(node); });
   }
+  var selectedContext = primaryRecordKeys && primaryRecordKeys.recordContext;
   Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) {
     var url = materializedHttpUrl(link.getAttribute("href"));
     var representedPrimary = primaryRecordKeys ?
-      primaryRecordKeys.has(listPrimaryRecordKey(url, link.textContent)) :
+      primaryRecordKeys.has(listPrimaryRecordKey(url, link.textContent)) &&
+        (!selectedContext || selectedContext.selectedSources.has(link)) :
       primaryUrls && primaryUrls.has(listCanonicalKey(url));
     var prose = link.closest("p, blockquote");
     var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&

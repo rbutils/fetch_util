@@ -1,7 +1,12 @@
 function listPrimaryRecordContext(items) {
   var byCard = new WeakMap();
+  var selectedSources = new WeakSet();
   (items || []).forEach(function(item) {
-    if (!item.card || !item.sourceNode) return;
+    if (!item.sourceNode) return;
+    selectedSources.add(item.sourceNode);
+    var mappedSource = item.supplementalSourceClones && item.supplementalSourceClones.get(item.sourceNode);
+    if (mappedSource) selectedSources.add(mappedSource);
+    if (!item.card) return;
     var records = byCard.get(item.card);
     if (!records) {
       records = [];
@@ -9,7 +14,7 @@ function listPrimaryRecordContext(items) {
     }
     records.push(item);
   });
-  return { byCard: byCard, headingOwners: new WeakMap() };
+  return { byCard: byCard, headingOwners: new WeakMap(), selectedSources: selectedSources };
 }
 
 function listSelectedHeadingContextOwner(card, records) {

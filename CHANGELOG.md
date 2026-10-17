@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independently authored same-destination metadata references across
+  physical cards instead of treating every matching URL and label as one record.
+
 - Keep separately selected child-card resources in their own record without
   repeating them in an evidenced parent or dropping unselected child material.
 
