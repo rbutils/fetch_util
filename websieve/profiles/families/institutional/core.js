@@ -2,7 +2,8 @@
     options = options || {};
     if (!root || textLength(root) < (options.minText || 200)) return null;
 
-    var clone = options.preserveContentNav ? safeDeepClone(root, document) : cleanClone(root);
+    var visibleRoot = options.sourceVisibility ? visibilityPrunedClone(root) : root;
+    var clone = options.preserveContentNav ? safeDeepClone(visibleRoot, document) : cleanClone(visibleRoot);
     if (options.preserveContentNav) {
       clone.querySelectorAll("nav.contents, nav[class*='contents' i]").forEach(function(nav) {
         var section = document.createElement("section");
@@ -17,7 +18,7 @@
     }
     if (options.strip) options.strip(clone);
 
-    var markdown = markdownFor(clone.innerHTML);
+    var markdown = markdownFor(clone.innerHTML, false, false, !!(options.sourceVisibility && options.convertRoot), options.convertRoot);
     var text = normalizeText(markdown || clone.textContent || "");
     if (text.length < (options.minText || 200)) return null;
 
@@ -37,6 +38,7 @@
       readerMode: false,
       contentType: options.contentType || "article",
       hostAware: true,
+      sourceOwnedInstitutionalHtml: options.sourceVisibility && options.convertRoot ? clone.innerHTML : null,
       docsLike: !!options.docsLike
     };
   }

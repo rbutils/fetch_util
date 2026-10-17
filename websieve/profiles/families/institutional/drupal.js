@@ -9,6 +9,60 @@
     return /(?:^|\s)(?:path-[\w-]+|node-[\w-]+)(?:\s|$)/i.test((document.body && document.body.className) || "");
   }
 
+  function drupalLanguageNavigation(node) {
+    var authored = "p, h1, h2, h3, h4, h5, h6, pre, code, blockquote, table, figure";
+    if (!node || node.closest(authored) || node.querySelector(authored)) return false;
+    if (node.matches("nav, [role='navigation'], [role='menu'], [role='menubar'], select, button")) return true;
+
+    var links = Array.from(node.querySelectorAll("a[href]"));
+    if (links.length < 2) return false;
+    var languages = new Set();
+    var complete = links.every(function(link) {
+      var language = normalizeLanguageCode(link.getAttribute("hreflang"));
+      var destination = materializedHttpUrl(link.getAttribute("href"));
+      var label = normalizeText(link.textContent);
+      if (!language || !destination || !label) return false;
+      languages.add(language);
+      return true;
+    });
+    if (!complete || languages.size < 2) return false;
+    var text = node.ownerDocument.createTreeWalker(node, 4);
+    var current;
+    while ((current = text.nextNode())) {
+      if (normalizeText(current.textContent) && !current.parentElement.closest("a[href]")) return false;
+    }
+    return true;
+  }
+
+  function drupalInstitutionalMarkdown(service, root, sourceRoot) {
+    var imageRule = service.rules.forNode(root.ownerDocument.createElement("img"));
+    var standaloneImages = new Set();
+    Array.from((sourceRoot || root).querySelectorAll("img")).forEach(function(image) {
+      if (image.closest("a, p, li, pre, code, table, h1, h2, h3, h4, h5, h6")) return;
+      var rendered = imageRule.replacement("", image, service.options).trim();
+      if (rendered.indexOf("![") === 0) standaloneImages.add(rendered);
+    });
+    Array.from(root.querySelectorAll("a[href]")).forEach(function(link) {
+      if (link.closest("pre, code") || !materializedHttpUrl(link.getAttribute("href"))) return;
+      if (link.querySelector("a[href], pre, table, ul, ol, form, button, input, select, textarea")) return;
+      var headings = link.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      if (headings.length !== 1 || !normalizeText(headings[0].textContent)) return;
+
+      var heading = headings[0];
+      var destination = link.cloneNode(false);
+      while (heading.firstChild) destination.appendChild(heading.firstChild);
+      heading.appendChild(destination);
+      while (link.firstChild) link.parentNode.insertBefore(link.firstChild, link);
+      link.remove();
+    });
+    var protectedMarkdown = protectMarkdownFences(ownedHomepageMarkdown(service, root));
+    var markdown = protectedMarkdown.markdown.split("\n").map(function(line) {
+      var unindented = line.replace(/^[ \t]+/, "");
+      return standaloneImages.has(unindented) ? unindented : line;
+    }).join("\n");
+    return restoreMarkdownFences(markdown, protectedMarkdown.blocks);
+  }
+
   function drupalInstitutionalContent(metadata) {
     if (!drupalPlatformPage()) return null;
 
@@ -35,12 +89,17 @@
 
     return normalizeComponentHub(metadata, root, {
       docsLike: best.componentCount >= 2,
+      sourceVisibility: true,
+      convertRoot: function(service, clone) { return drupalInstitutionalMarkdown(service, clone, root); },
       titleRoot: document,
       cardSelector: "article.entity-block.content-link, .card-list article, [class*='card-headline' i], [class*='card' i] article, [class*='paragraph--type--cards' i] .card",
       headingSelector: "h2, h3, h4, [class*='card-headline' i], [class*='title' i]",
       detailSelector: "[class*='field--name-field-desc' i], [class*='field--name-field-body' i], [class*='summary' i], [class*='description' i], p",
       strip: function(clone) {
-        removeAll(clone, COMMON_INSTITUTIONAL_CHROME_SELECTOR + ", .side-navigation, [class*='side-navigation' i], [class*='language' i], [class*='breadcrumb' i], .left-column, .sharing, .add-on, [class*='search' i], article.entity-block.content-link .content-desc > a[href], form, .visually-hidden, .hidden");
+        removeAll(clone, COMMON_INSTITUTIONAL_CHROME_SELECTOR + ", .side-navigation, [class*='side-navigation' i], [class*='breadcrumb' i], .left-column, .sharing, .add-on, [class*='search' i], article.entity-block.content-link .content-desc > a[href], form, .visually-hidden, .hidden");
+        clone.querySelectorAll("[class*='language' i]").forEach(function(node) {
+          if (drupalLanguageNavigation(node)) node.remove();
+        });
       }
     });
   }

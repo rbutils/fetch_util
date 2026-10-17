@@ -147,6 +147,8 @@
 
     return institutionalArticleResult(metadata, root, {
       docsLike: options.docsLike,
+      sourceVisibility: options.sourceVisibility,
+      convertRoot: options.convertRoot,
       minText: options.minText,
       titleRoot: options.titleRoot,
       title: options.title,

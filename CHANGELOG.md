@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Institutional pages retain authored inline language markup in headings, prose and code;
+  language navigation is removed only when its control or complete language-choice ownership is proved.
+
 - Preserve a complete independently headed homepage MAIN when its current website identity and physical peer-section ownership agree, instead of borrowing one feature heading or returning Markdown without the owned HTML.
 
 - Keep complete, positively owned static CMS homepages under their document identity,
