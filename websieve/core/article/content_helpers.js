@@ -171,7 +171,7 @@
     if (typeof options.rewriteRoot === "function") options.rewriteRoot(root, node);
     if (options.cleanupRoot !== false) cleanupAgentRoot(root);
 
-    var markdown = markdownFor(root.innerHTML, false, true, options.preserveCleanedRoot === true);
+    var markdown = markdownFor(root.innerHTML, false, true, options.preserveCleanedRoot === true, options.convertRoot);
     if (options.cleanupMarkdown !== false) markdown = cleanupMarkdownNoise(markdown);
     if (typeof options.postProcessMarkdown === "function") markdown = options.postProcessMarkdown(markdown, root, node);
 

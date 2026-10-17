@@ -84,6 +84,7 @@ extractors/lists/reference_index/disclosure_ownership.js
 extractors/lists/reference_index/disclosure_content.js
 extractors/lists/canonical_table/ownership.js
 extractors/lists/canonical_table/content.js
+systems/cms/wordpress_homepage.js
 markdown/code/named_targets.js
 core/docs_cleanup/engines.js
 core/docs_cleanup/literal_projection.js

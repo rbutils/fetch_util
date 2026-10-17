@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep complete, positively owned static CMS homepages under their document identity,
+  preserving peer sections and linked updates without borrowing a child post's title or liveblog format.
+
 - Preserve complete canonically identified numeric-record tables and their physical
   page ownership through the existing bounded completed-work extraction lifetime.
 

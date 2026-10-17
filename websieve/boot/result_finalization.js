@@ -242,7 +242,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   if (content.sourceOwnedProduct === true) publishedTime = content.publishedTime || null;
   if (sourceOwnedUnattributedReference) {
     byline = null;
-    publishedTime = null;
+    publishedTime = content.sourceOwnedStaticHomepage === true ? content.publishedTime : null;
   }
   var result = {
     title: primaryTitle || normalizeText(metadata.title),
