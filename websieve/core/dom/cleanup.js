@@ -226,7 +226,7 @@
 
     root.querySelectorAll("p, div, span, a, button, li").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
-      if (AD_LABEL_TEXT_PATTERN.test(text) && textLength(el) < 80) el.remove();
+      if (AD_LABEL_TEXT_PATTERN.test(text) && textLength(el) < 80 && !authoredInlineActionReference(el)) el.remove();
     });
 
     root.querySelectorAll("p, div").forEach(function(el) {

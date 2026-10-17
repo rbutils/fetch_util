@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain inline references with advertising-related labels when their authored
+  prose ownership is proved, while continuing to remove standalone ad controls.
+
 - Preserve complete documentation callout programs, references and nested blocks;
   keep authored disclosure markup and its open or closed state intact.
 
