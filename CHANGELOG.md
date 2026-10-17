@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain valid physical video posters and source destinations in Markdown while
+  preserving source HTML, explicit visibility, existing fallbacks and programs.
+
 - Institutional pages retain authored inline language markup in headings, prose and code;
   language navigation is removed only when its control or complete language-choice ownership is proved.
 

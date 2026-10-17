@@ -20,6 +20,7 @@
   }
 
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
+    materializeMarkdownVideoReferences(root);
     preserveAccessibleLinkLabels(root);
     mergeAdjacentCitationLetters(root);
     preserveInlineProse(root);
