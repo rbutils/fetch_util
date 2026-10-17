@@ -1,4 +1,7 @@
 function resultMarkdownCleanup(content) {
+  if (typeof content.sourceOwnedDisclosureCatalogHtml === "string" && content.sourceOwnedDisclosureCatalogHtml === content.html) {
+    return function(value) { return String(value || "").trim(); };
+  }
   if (typeof content.sourceOwnedGeneratedReferenceHtml === "string" && content.sourceOwnedGeneratedReferenceHtml === content.html) {
     return function(value) { return String(value || "").trim(); };
   }

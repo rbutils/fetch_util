@@ -53,7 +53,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
   var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
     content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true ||
-    content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedHomepageCollection === true || content.sourceOwnedSoftwareLanding === true;
+    content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedHomepageCollection === true || content.sourceOwnedSoftwareLanding === true ||
+    content.sourceOwnedDisclosureCatalog === true;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
@@ -196,7 +197,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
   var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true ||
-    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDatedReferenceIndex === true ?
+    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedDisclosureCatalog === true ?
     markdown : stripLeadingLegalInstitutionalChrome(markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
@@ -210,7 +211,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     content = relabelAsListContent(content, { strongList: true });
   }
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
-  if (!content.sourceOwnedDatedReferenceIndex && legalStatuteArticleContent(null, markdown)) {
+  if (!content.sourceOwnedDatedReferenceIndex && !content.sourceOwnedDisclosureCatalog && legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";
   }
   if (content.contentType === "list" && opaqueDetailPath()) {

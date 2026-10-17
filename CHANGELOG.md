@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete self-indexed disclosure catalogs, their visible resource panels,
+  fragment targets and source transfer destinations without borrowing a version date.
+
 - Preserve named code-line target bindings through repeated code normalization
   without changing complete program text, language or source line order.
 
