@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep separately selected child-card resources in their own record without
+  repeating them in an evidenced parent or dropping unselected child material.
+
 - Keep collection-card context with its positively selected heading owner instead
   of repeating it on a secondary topic from that same physical card.
 

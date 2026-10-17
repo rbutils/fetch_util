@@ -39,6 +39,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     card = outerCard;
   }
   var clone = card.cloneNode(true);
+  var separatelySelectedChildren = listSeparatelySelectedChildClones(item, card, clone, primaryRecordKeys);
   var compactMetadata = listCompactMetadataRow(card, item);
   var compactMetadataClone = compactMetadata && listClonedCardNode(card, clone, compactMetadata.node);
   var compactSummarySelector = "[class*='summary'], [class*='description'], [class*='excerpt'], p";
@@ -134,6 +135,10 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     if (genericListAuthorMetadataNode(node) && genericListInteractionOwner(node)) node.remove();
   });
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
+    if (separatelySelectedChildren.has(nested)) {
+      nested.remove();
+      return;
+    }
     if (nested === contentCard || (!genericListFieldBoundary(nested) &&
         nestedMetadataCards.indexOf(nested) === -1 && siblingPresentationCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();

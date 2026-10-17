@@ -61,6 +61,29 @@ RSpec.describe "Selected physical record context" do
     HTML
   end
 
+  def evidenced_directory_markdown(include_child:)
+    introduction = "This complete authored introduction explains the directory and remains with its own parent record before the individually selected resources."
+    html = <<~HTML
+      <main><h1>Public resource directory</h1><article id="directory">
+        <h2><a id="directory-title" href="/documentation">Documentation and references</a></h2>
+        <p id="directory-summary">#{introduction}</p>
+        <section class="tall"><h3><a href="/news?type=blog">Blog</a></h3>
+          <a href="/news?type=blog"></a><ul><a href="/news?type=blog"></a>
+            <li id="child-card"><a href="/news?type=blog"></a><a id="child-title" href="/news/encoding">How to encode a complete media stream</a></li>
+            <li id="archive-card"><a id="archive-title" href="/news?type=blog">Blog archive</a></li>
+          </ul>
+        </section>
+        <div>Independent parent resource <a href="/manual">complete manual</a>.</div>
+      </article></main>
+    HTML
+    records = [
+      { id: "directory-title", card: "directory", summary: introduction },
+      { id: "archive-title", card: "archive-card" }
+    ]
+    records.insert(1, { id: "child-title", card: "child-card" }) if include_child
+    selected_record_markdown(html, records)
+  end
+
   it "does not give a secondary topic the context of its separately selected heading record" do
     records = [
       { id: "first", card: "feature" }, { id: "series", card: "feature" }, { id: "second", card: "second-card" }
@@ -115,5 +138,20 @@ RSpec.describe "Selected physical record context" do
     expect(markdown).to include("Documentation and examples", "Complete encoding instructions", "Blog archive")
     expect(markdown).to include("The directory's independently authored introduction remains complete.")
     expect(markdown).to include("The complete directory's final reference remains", "](https://publication.example.test/support/)")
+  end
+
+  it "does not repeat a selected child resource in a parent with authored record evidence" do
+    markdown = evidenced_directory_markdown(include_child: true)
+    expect(markdown.scan("](https://publication.example.test/news?type=blog)").size).to eq(5)
+    expect(markdown).to include("This complete authored introduction", "individually selected resources.")
+    expect(markdown).to include("[How to encode a complete media stream](https://publication.example.test/news/encoding)")
+    expect(markdown).to include("[complete manual](https://publication.example.test/manual)")
+  end
+
+  it "retains an evidenced parent's child resource when that physical child is not separately selected" do
+    markdown = evidenced_directory_markdown(include_child: false)
+    expect(markdown.scan("](https://publication.example.test/news?type=blog)").size).to eq(5)
+    expect(markdown).to include("How to encode a complete media stream", "This complete authored introduction")
+    expect(markdown).to include("[complete manual](https://publication.example.test/manual)")
   end
 end

@@ -49,3 +49,22 @@ function listItemOwnsCardContext(item, primaryRecordKeys) {
   return !owner || owner === item || !ownerUrl || !itemUrl ||
     listCanonicalKey(ownerUrl) === listCanonicalKey(itemUrl);
 }
+
+function listSeparatelySelectedChildClones(item, card, clone, primaryRecordKeys) {
+  var selected = new WeakSet();
+  var context = primaryRecordKeys && primaryRecordKeys.recordContext;
+  if (!context || !item.sourceNode || !card.contains(item.sourceNode)) return selected;
+  var sources = card.querySelectorAll("*");
+  var clones = clone.querySelectorAll("*");
+  if (sources.length !== clones.length) return selected;
+  Array.prototype.forEach.call(sources, function(source, index) {
+    if (!source.matches(genericListCardSelector()) || source.matches("tr, td, th") ||
+        source.contains(item.sourceNode)) return;
+    var records = context.byCard.get(source);
+    var cloned = clones[index];
+    if (cloned && cloned.tagName === source.tagName && records && records.some(function(record) {
+      return record !== item && record.sourceNode && source.contains(record.sourceNode);
+    })) selected.add(cloned);
+  });
+  return selected;
+}
