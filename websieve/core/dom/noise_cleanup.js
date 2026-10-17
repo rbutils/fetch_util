@@ -272,6 +272,7 @@
       }
     });
 
+    var authoredReferenceIndex = authoredLocalReferenceIndexReader(root);
     root.querySelectorAll("div, section, ul").forEach(function(el) {
       if (el.closest("article, main, [role='main']") && el.matches("article *, main *, [role='main'] *")) return;
       var text = normalizeText(el.textContent || "");
@@ -279,6 +280,7 @@
       if (links >= 6 && text.length < 600 && !el.querySelector("article, main, [role='main'], p, h1, h2, h3, blockquote, pre, table")) {
         var words = navigationWordCount(text);
         if (!words || (links / words) <= 0.5) return;
+        if (authoredReferenceIndex(el)) return;
         var group = genericListLinkGroup(el.querySelector("a[href]"));
         if (group && el.contains(group.card)) return;
         el.remove();

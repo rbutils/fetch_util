@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve authored nested local-reference indexes when their independently proved
+  source sections distinguish them from short, link-dense navigation controls.
+
 - Retain source-proved article section headings when reader chrome heuristics remove
   their IDs, preserving each heading before its exact retained authored paragraph.
 
