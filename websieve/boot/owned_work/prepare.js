@@ -14,15 +14,18 @@
   function prepareOwnedExtractionWork(options) {
     var manualEligible = standaloneManualPreparationEligible() && !structuredDataNodes().length;
     var frameworkEligible = generatedReferencePreparationEligible() && generatedReferenceDeclarationsAgree();
-    if (!manualEligible && !frameworkEligible) {
+    var tableEligible = canonicalDataTablePreparationEligible();
+    if (!manualEligible && !frameworkEligible && !tableEligible) {
       return ordinaryOwnedExtractionTask(options);
     }
     var state = ownedExtractionSourceState();
     if (!state) return ordinaryOwnedExtractionTask(options);
     var metadata = collectMetadata();
-    var context = standaloneManualPreparationContext(metadata) || generatedReferencePreparationContext(metadata);
+    var context = standaloneManualPreparationContext(metadata) || generatedReferencePreparationContext(metadata) ||
+      canonicalDataTableContext(metadata);
     if (!context) return ordinaryOwnedExtractionTask(options);
     var framework = context.framework === "mkdocs";
+    var dataTable = context.kind === "canonical-data-table";
     var prepared = false;
     var fallback = false;
     var selected = null;
@@ -46,9 +49,10 @@
           return;
         }
         resetTerminalArticleCollectionMarker();
-        var manual = framework ? mkdocsMaterialContent(metadata, context.info) : physicalManualRenderedSections(metadata, context);
+        var manual = dataTable ? canonicalDataTableContent(metadata, context) :
+          (framework ? mkdocsMaterialContent(metadata, context.info) : physicalManualRenderedSections(metadata, context));
         context = null;
-        var earlyOwnership = manual && (framework ? { content: manual } : sourceOwnedEarlyPageContent(metadata, manual));
+        var earlyOwnership = manual && (framework || dataTable ? { content: manual } : sourceOwnedEarlyPageContent(metadata, manual));
         selected = earlyOwnership && earlyOwnership.content;
         fallback = !selected;
         if (selected) pageText = pageReadableText();

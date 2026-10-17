@@ -51,10 +51,11 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var contentByline = sanitizeByline(content.byline);
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
+  var sourceOwnedCanonicalTable = content.sourceOwnedCanonicalDataTable === true;
   var sourceOwnedUnattributedReference = content.sourceOwnedDataRecord === true || content.sourceOwnedNumberedInstrument === true ||
     content.sourceOwnedIndexedPlay === true || content.sourceOwnedDeclaredNewsPortal === true || content.sourceOwnedUnattributedManual === true ||
     content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedHomepageCollection === true || content.sourceOwnedSoftwareLanding === true ||
-    content.sourceOwnedDisclosureCatalog === true;
+    content.sourceOwnedDisclosureCatalog === true || sourceOwnedCanonicalTable;
   var metadataByline = sourceOwnedLiveblogParent || sourceOwnedUnattributedReference ? null : sanitizeByline(metadata.byline);
   var readerParagraphs = content.sourceOwnedReaderBodyParagraphSources;
   var readerAnswerTime = Array.isArray(readerParagraphs) ?
@@ -112,7 +113,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     markdown = cleanResultMarkdown(markdownFor(cleanedHtml, false, preserveInlineMailtoUntilFinalType) || contentText);
   }
   normalizedMarkdown = normalizeText(markdown);
-  if (content.contentType === "list" && content.sourceOwnedHomepagePeerTables !== true &&
+  if (content.contentType === "list" && !sourceOwnedCanonicalTable && content.sourceOwnedHomepagePeerTables !== true &&
       referenceTableArticleMarkdown(markdown)) content.contentType = "article";
   if (content.contentType === "article" && !content.secFiling && !content.readerMode && content.html && content.html.length > 50000 && contentText.length >= 1200 && normalizedMarkdown.length < contentText.length * 0.2) {
     markdown = cleanResultMarkdown(contentText);
@@ -196,9 +197,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     if (transcriptCue) markdown = cleanupMarkdownNoise([markdown, transcriptCue].filter(Boolean).join("\n\n"));
   }
   if (content.contentType === "article") markdown = financialStatementLinksMarkdown(markdown);
-  var legalChromeMarkdown = content.sourceOwnedGeneratedDocs === true || content.sourceOwnedProduct === true ||
-    content.sourceOwnedIndexedPlay === true || content.sourceOwnedDatedReferenceIndex === true || content.sourceOwnedDisclosureCatalog === true ?
-    markdown : stripLeadingLegalInstitutionalChrome(markdown);
+  var legalChromeMarkdown = resultLegalChromeMarkdown(content, markdown);
   var legalChromeRemoved = legalChromeMarkdown !== markdown;
   markdown = materializedMarkdown(legalChromeMarkdown, preserveInlineMailtoUntilFinalType);
   if (content.sourceOwnedLiveblog && content.contentType === "list") content.contentType = "article";
@@ -211,7 +210,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     content = relabelAsListContent(content, { strongList: true });
   }
   if (legalChromeRemoved && normalizeText(legalChromeMarkdown).length >= 5000) content.contentType = "article";
-  if (!content.sourceOwnedDatedReferenceIndex && !content.sourceOwnedDisclosureCatalog && legalStatuteArticleContent(null, markdown)) {
+  if (!content.sourceOwnedDatedReferenceIndex && !content.sourceOwnedDisclosureCatalog &&
+      !sourceOwnedCanonicalTable && legalStatuteArticleContent(null, markdown)) {
     if (content.contentType === "list") content.contentType = "article";
   }
   if (content.contentType === "list" && opaqueDetailPath()) {

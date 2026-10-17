@@ -178,7 +178,8 @@
   function applySocialContentType(content, metadata, ownedPostContent) {
     if (content && (content.sourceOwnedNumberedInstrument === true || content.sourceOwnedIndexedPlay === true ||
         content.sourceOwnedDeclaredSemanticArticle === true || content.sourceOwnedDatedReferenceIndex === true ||
-        content.sourceOwnedSoftwareLanding === true || content.sourceOwnedDisclosureCatalog === true)) return content;
+        content.sourceOwnedSoftwareLanding === true || content.sourceOwnedDisclosureCatalog === true ||
+        content.sourceOwnedCanonicalDataTable === true)) return content;
     if (content && !content.hostAware && content.contentType !== "interstitial" && ownedPostContent) {
       content = ownedPostContent;
     }

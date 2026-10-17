@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete canonically identified numeric-record tables and their physical
+  page ownership through the existing bounded completed-work extraction lifetime.
+
 - Keep extension helpers outside pinned release-source families while loading them
   before their extraction and formatting consumers.
 
