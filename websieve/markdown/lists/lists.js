@@ -1,17 +1,3 @@
-function escapeMarkdownLinkLabel(text) {
-  return String(text == null ? "" : text).replace(/\\/g, "\\\\").replace(/([\[\]])/g, "\\$1");
-}
-
-function markdownLink(text, url) {
-  var href = listPresentationUrl(url);
-  return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
-}
-
-function markdownLinkWithFormattedLabel(markdown, url) {
-  var href = listPresentationUrl(url);
-  return href ? "[" + markdown + "](" + href + ")" : markdown;
-}
-
 function listItemMaterialIdentity(item, rawHref) {
   return JSON.stringify([
     item.url || "unlinked:" + (rawHref || ""),
@@ -48,16 +34,17 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
   var clone = visibilityChecked ? node : node.cloneNode(true);
   if (!visibilityChecked) pruneListCardVisibility(node, clone);
   if (clone.matches && clone.matches("a[href]")) {
-    var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
+    var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "") || inlineLinkLabel(clone);
     var rootUrl = materializedHttpUrl(clone.getAttribute("href"));
     if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
     return markdownLink(rootLabel, clone.getAttribute("href"));
   }
   clone.querySelectorAll("a[href]").forEach(function(link) {
-    var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
+    var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "") || inlineLinkLabel(link);
     var url = materializedHttpUrl(link.getAttribute("href"));
     var linked = (!allowedLinks || allowedLinks.has(link)) &&
       !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl));
+    if (linked && url && label) escapeMarkdownLinkImageBoundary(link, clone);
     link.replaceWith(clone.ownerDocument.createTextNode(linked ? markdownLink(label, url) : label));
   });
   return normalizeText(clone.textContent);

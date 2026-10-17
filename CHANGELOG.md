@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep literal exclamation marks separate from empty links, avoiding invented
+  image destinations while preserving physical images and literal programs.
+
 - Retain repeated quoted paragraphs and separators, preserving reference
   multiplicity and paragraph boundaries after quoted lists.
 
