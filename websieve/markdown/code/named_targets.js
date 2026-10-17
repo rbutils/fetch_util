@@ -65,3 +65,19 @@
     });
     if (previous < text.length) code.appendChild(document.createTextNode(text.slice(previous)));
   }
+
+  function restorePrunedNamedCodeTargets(sourceRoot, sourceClones) {
+    sourceRoot.querySelectorAll("pre").forEach(function(sourcePre) {
+      var clonePre = sourceClones.get(sourcePre);
+      if (!clonePre) return;
+      var sourceCode = sourcePre.querySelector("code") || sourcePre;
+      if (!sourceCode.querySelector("a[id], a[name]")) return;
+      var cloneCode = clonePre.querySelector("code") || clonePre;
+      var text = cleanCodeText(namedCodeTargetSurface(sourceCode).text);
+      if (text !== cleanCodeText(namedCodeTargetSurface(cloneCode).text)) return;
+      // Empty reference targets carry bindings, not hidden program text. Restore
+      // them only when the visible clone already contains the entire program.
+      cloneCode.replaceChildren();
+      appendNamedCodeTargets(cloneCode, text, sourceCode);
+    });
+  }

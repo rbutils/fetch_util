@@ -68,9 +68,11 @@ function docsArticleContent(metadata, node, options) {
   var sourceNode = options.focusFragment === false ? node : focusedDocsNode(node);
   var materialRoot = options.preserveSourceMaterialRoot;
   var referenceRoots = (options.preserveSourceReferenceRoots || []).filter(function(reference) { return sourceNode.contains(reference); });
-  var sourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length ? new Map() : null;
+  var preserveCodeTargets = options.pruneSourceVisibility && sourceNode.querySelector("pre a[id], pre a[name]");
+  var sourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length || preserveCodeTargets ? new Map() : null;
   var readableSource = options.pruneSourceVisibility ?
     visibilityPrunedClone(sourceNode, document, sourceClones, options.preserveMaterializedCollection === true) : sourceNode;
+  if (preserveCodeTargets) restorePrunedNamedCodeTargets(sourceNode, sourceClones);
   if (sourceClones && materialRoot) {
     for (var ancestor = materialRoot; ancestor && sourceNode.contains(ancestor); ancestor = ancestor.parentElement) {
       var clone = sourceClones.get(ancestor);

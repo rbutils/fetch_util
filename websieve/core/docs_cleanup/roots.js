@@ -59,12 +59,35 @@ function breadcrumbLikeNode(node) {
   var text = normalizeText(node.textContent);
   if (!text || text.length > 220) return false;
 
-  // Real breadcrumbs are flat link+separator chains; content cards with
-  // paragraphs, bold text, or headings are NOT breadcrumbs (e.g. GitBook cards)
-  if (node.querySelector("p, strong, b, h1, h2, h3, h4, h5, h6")) return false;
+  // Short labels alone do not make an authored resource list navigation.
+  if (node.querySelector("p, strong, b, h1, h2, h3, h4, h5, h6, ul, ol, pre, code, table, button, input, select, textarea")) return false;
+  var walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  var separator = false;
+  while (walker.nextNode()) {
+    var source = walker.currentNode;
+    if (source.parentElement.closest("a[href]")) continue;
+    var value = normalizeText(source.nodeValue);
+    if (!value) continue;
+    if (!/^[\s/>\u203a\u00bb\u2192]+$/.test(value)) return false;
+    separator = true;
+  }
+  if (!separator) return false;
 
-  return links.every(function(link) {
-    return normalizeText(link.textContent).length > 0 && normalizeText(link.textContent).length < 40;
+  var current = new URL(location.href);
+  var currentPath = current.pathname.replace(/\/+$/, "") || "/";
+  var previousPath = null;
+  return links.every(function(link, index) {
+    var label = normalizeText(link.textContent);
+    var href = materializedHttpUrl(link.getAttribute("href"));
+    if (!label || label.length >= 40 || !href) return false;
+    var target = new URL(href);
+    var path = target.pathname.replace(/\/+$/, "") || "/";
+    if (target.origin !== current.origin || target.search || target.hash) return false;
+    if (index === 0 && path !== "/") return false;
+    if (index > 0 && (path === previousPath || (previousPath !== "/" && path.indexOf(previousPath + "/") !== 0))) return false;
+    if (path !== "/" && path !== currentPath && currentPath.indexOf(path + "/") !== 0) return false;
+    previousPath = path;
+    return true;
   });
 }
 

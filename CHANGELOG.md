@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve authored documentation resource lists instead of inferring breadcrumbs from short link labels. Generic breadcrumb inference now requires separators and a current-page ancestor link hierarchy, while MkDocs cleanup preserves captured source visibility.
+
 - Retain valid physical video posters and source destinations in Markdown while
   preserving source HTML, explicit visibility, existing fallbacks and programs.
 

@@ -68,6 +68,7 @@
       "main"
     ], {
       titleSelectors: ["main h1", "article h1"],
+      pruneSourceVisibility: true,
       fallbackTitle: function(metadata) { return normalizeText(metadata.title || document.title); },
       postProcessMarkdown: function(markdown) {
         if (!referenceNavMarkdown || /## Reference Pages[\s\S]*\n\s*-\s+\[/.test(markdown)) return markdown;
