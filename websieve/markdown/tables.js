@@ -41,11 +41,13 @@
   }
 
   function tableCellMarkdown(cell) {
-    var clone = removeDuplicatedLeadingCellBlocks(cell);
-    var text = Array.prototype.map.call(clone.childNodes, function(child) {
+    // Duplicate leading blocks require at least two direct element children.
+    // The remaining renderer only reads the selected cell tree.
+    var source = cell.childElementCount < 2 ? cell : removeDuplicatedLeadingCellBlocks(cell);
+    var text = Array.prototype.map.call(source.childNodes, function(child) {
       return tableCellNodeMarkdown(child, false);
     }).join("");
-    return normalizeText(text) || clone.textContent;
+    return normalizeText(text) || source.textContent;
   }
 
   function tableCellInlineWhitespace(source, markdown) {

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Read table cells without cloning when no adjacent leading-block pair can exist,
+  preserving complete values, references and the existing isolated duplicate cleanup.
+
 - Select a source-proved section lead instead of a standalone reader header date,
   retaining publication and revision fields in the complete article body.
 
