@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain unlabeled overlay and icon-link destinations as readable references,
+  preserving literal punctuation and uniquely proved heading-permalink cleanup.
+
 - Preserve separate Markdown boundaries for disclosure summaries while keeping
   closed answers hidden and open content complete.
 

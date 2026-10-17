@@ -199,6 +199,10 @@ function cleanupDocsRoot(root, options) {
     if (prose && !/^(?:¶|↑|#)$/.test(text) &&
         normalizeText(prose.textContent.replace(el.textContent, ""))) return;
     if (authoredReciprocalReferenceLink(el, referenceTargets, sourceReferenceIds)) return;
+    if (!text && samePageFragmentLink(el.getAttribute("href"))) {
+      if (emptyMarkdownSelfControl(el, materializedHttpUrl(el.getAttribute("href")), root)) el.remove();
+      return;
+    }
     if (samePageFragmentLink(el.getAttribute("href")) && (!text || text.length < 40 || /link for this heading/i.test(title) || /^skip to (?:main )?content$/i.test(text))) el.remove();
   });
 

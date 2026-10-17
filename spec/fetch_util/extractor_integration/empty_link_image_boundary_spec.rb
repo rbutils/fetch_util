@@ -27,11 +27,12 @@ RSpec.describe 'Empty link and physical image boundaries' do
       payload = extract(page)
       markdown = payload.fetch('markdown')
 
-      expect(markdown).to include('Give every reader control!', 'Independent sponsors make this publication possible!',
+      expect(markdown).to include('Give every reader control!',
                                   'A subsequent sentence retains its own words.', program,
                                   '![](https://images.example.test/diagram.png)',
                                   '![](https://images.example.test/standalone.png)',
                                   '[Resource overview](https://resources.example.test/overview)')
+      expect(markdown).to match(/Independent sponsors make this publication possible\\?!/)
       expect(markdown).not_to include('![](https://support.example.test/empty)', '![](https://docs.publication.example.test/resources/#control)')
       expect(markdown).not_to match(%r{(?<!\\)!\[Resource overview\]\(https://resources\.example\.test/overview\)})
       expect(payload.fetch('html')).to include('https://images.example.test/diagram.png', 'https://images.example.test/standalone.png', program)

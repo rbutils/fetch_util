@@ -39,7 +39,7 @@
     unwrapWrapperDivs(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
-    removeEmptyMarkdownLinks(root);
+    preserveUnlabeledMarkdownDestinations(root);
 
     var literalPrograms = prepareLiteralCodePrograms(root);
 

@@ -37,14 +37,18 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
     var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
     var rootUrl = materializedHttpUrl(clone.getAttribute("href"));
     if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
-    return markdownLink(rootLabel || inlineLinkLabel(clone), clone.getAttribute("href"));
+    return markdownLink(rootLabel || inlineLinkLabel(clone) || normalizeText(clone.getAttribute("title")), clone.getAttribute("href"));
   }
   clone.querySelectorAll("a[href]").forEach(function(link) {
     var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
     var url = materializedHttpUrl(link.getAttribute("href"));
     var linked = (!allowedLinks || allowedLinks.has(link)) &&
       !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl));
-    if (linked && !label) label = inlineLinkLabel(link);
+    if (linked && !label) {
+      label = inlineLinkLabel(link) || normalizeText(link.getAttribute("title"));
+      if (!label && emptyMarkdownSelfControl(link, url, clone)) linked = false;
+      if (linked && !label) label = url || "";
+    }
     if (linked && url && label) escapeMarkdownLinkImageBoundary(link, clone);
     link.replaceWith(clone.ownerDocument.createTextNode(linked ? markdownLink(label, url) : label));
   });

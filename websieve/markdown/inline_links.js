@@ -3,14 +3,14 @@
   }
 
   function markdownLink(text, url) {
-    if (!normalizeText(text)) return "";
     var href = listPresentationUrl(url);
+    if (!normalizeText(text)) text = href || "";
     return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
   }
 
   function markdownLinkWithFormattedLabel(markdown, url) {
-    if (!normalizeText(markdown)) return "";
     var href = listPresentationUrl(url);
+    if (!normalizeText(markdown)) markdown = href ? escapeMarkdownLinkLabel(href) : "";
     return href ? "[" + markdown + "](" + href + ")" : markdown;
   }
 
@@ -28,11 +28,53 @@
     });
   }
 
-  function removeEmptyMarkdownLinks(root) {
+  function markdownFragmentTargetIndex(root) {
+    var targets = new Map();
+    var nodes = Array.prototype.slice.call(root.querySelectorAll("[id], a[name]"));
+    if (root.matches && root.matches("[id], a[name]")) nodes.unshift(root);
+    nodes.forEach(function(node) {
+      [node.getAttribute("id"), node.matches("a[name]") && node.getAttribute("name")].forEach(function(name) {
+        if (!name) return;
+        if (!targets.has(name)) targets.set(name, new Set());
+        targets.get(name).add(node);
+      });
+    });
+    return targets;
+  }
+
+  function emptyMarkdownSelfControl(link, href, root, targets, sourceTargets) {
+    if (!href || link.closest("pre, code, kbd, samp")) return false;
+    try {
+      var destination = new URL(href);
+      var page = new URL(location.href);
+      if (destination.origin !== page.origin || destination.pathname !== page.pathname || destination.search !== page.search) return false;
+      if (!destination.hash) return href.endsWith("#");
+      var heading = link.closest("h1, h2, h3, h4, h5, h6");
+      if (!heading || !root.contains(heading)) return false;
+      var id = decodeURIComponent(destination.hash.slice(1));
+      var owners = (targets || markdownFragmentTargetIndex(root)).get(id);
+      var sourceOwners = (sourceTargets || markdownFragmentTargetIndex(document)).get(id);
+      return !!(owners && owners.size === 1 && sourceOwners && sourceOwners.size === 1 && heading.contains(Array.from(owners)[0]));
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function preserveUnlabeledMarkdownDestinations(root) {
+    var targets;
+    var sourceTargets;
     root.querySelectorAll("a[href]").forEach(function(link) {
       if (link.closest("pre, code, kbd, samp") || normalizeText(link.textContent)) return;
       if (link.querySelector("img, video, audio, canvas, iframe, object, embed, math, pre, code")) return;
-      link.replaceWith.apply(link, Array.prototype.slice.call(link.childNodes));
+      var href = materializedHttpUrl(link.getAttribute("href"));
+      if (!targets) targets = markdownFragmentTargetIndex(root);
+      if (!sourceTargets) sourceTargets = markdownFragmentTargetIndex(document);
+      if (!href || emptyMarkdownSelfControl(link, href, root, targets, sourceTargets)) {
+        link.replaceWith.apply(link, Array.prototype.slice.call(link.childNodes));
+        return;
+      }
+      var label = normalizeText(link.getAttribute("title")) || href;
+      link.appendChild(document.createTextNode(label));
     });
   }
 
