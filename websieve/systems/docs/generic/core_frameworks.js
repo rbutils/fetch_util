@@ -136,13 +136,16 @@
       ],
       titleSelectors: ["main .markdown h1", "main h1", "article h1", ".theme-doc-markdown h1"],
       fallbackTitle: docsFallbackTitleWithoutTrailingBrand,
+      pruneSourceVisibility: true,
       removeSelectors: COMMON_DOCS_CHROME_SELECTOR + ", .theme-doc-breadcrumbs, .theme-doc-toc-desktop, .theme-doc-toc-mobile, .pagination-nav, .theme-edit-this-page, .theme-last-updated",
       removeTextPattern: /^(skip to main content|on this page|edit this page|copy for llm|view as markdown|ask ai|search)$/i,
       contentType: function(root, info) { return docsHomepageListLike(root, info) ? "list" : "article"; },
       preserveSelector: "[role='tab']",
       rewriteRoot: function(root) {
         stripDocsTextNodePattern(root, /\b(?:Get started|Getting started|Docs|API|FAQ|Contributing|Troubleshooting|Guides?|Reference)(?:\s*\|\s*(?:Get started|Getting started|Docs|API|FAQ|Contributing|Troubleshooting|Guides?|Reference)){2,}\s*/gi);
-        removeAll(root, "header, footer, nav, aside, [role='banner'], [role='navigation'], [class*='navbar' i], [class*='sidebar' i], [class*='menu' i], [class*='toc' i]");
+        root.querySelectorAll("footer, nav, aside, [role='banner'], [role='navigation'], [class*='navbar' i], [class*='sidebar' i], [class*='menu' i], [class*='toc' i]").forEach(function(node) {
+          if (!node.matches("h1, h2, h3, h4, h5, h6, [role~='heading' i]")) node.remove();
+        });
         var tabPanels = Array.prototype.slice.call(root.querySelectorAll("[role='tabpanel']"));
         var selectedPanels = [];
         root.querySelectorAll("[role='tab'][aria-controls]").forEach(function(tab) {

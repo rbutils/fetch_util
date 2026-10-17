@@ -242,6 +242,7 @@
     });
 
     root.querySelectorAll(".anchor, .heading-link, .header-anchor").forEach(function(el) {
+      if (el.matches("h1, h2, h3, h4, h5, h6, [role~='heading' i]")) return;
       var text = normalizeText(el.textContent);
       if (el.closest("h1, h2, h3, h4, h5, h6") && text.length >= 8) {
         el.replaceWith(document.createTextNode(text));

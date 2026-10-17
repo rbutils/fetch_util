@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve visible Docusaurus article headers and sticky heading roles instead of
+  treating their navigation-related class names as navigation containers.
+
 - Bind a complete selected article to its declared, source-owned header title instead
   of borrowing an unrelated site-brand heading outside the article.
 

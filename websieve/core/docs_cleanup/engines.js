@@ -11,6 +11,7 @@ function docsEngineContent(metadata, info, descriptor) {
   var titleFormatter = descriptor.titleFormatter || descriptor.headingFormatter;
   var options = {
     preserveSelector: descriptor.preserveSelector,
+    pruneSourceVisibility: descriptor.pruneSourceVisibility === true,
     rewriteRoot: function(root) {
       if (descriptor.removeSelectors) {
         root.querySelectorAll(descriptor.removeSelectors).forEach(function(el) {
