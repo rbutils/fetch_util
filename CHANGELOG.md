@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve heading-card destinations alongside complete authored nested lists,
+  images, descriptions and inline programs in Markdown.
+
 - Retain visible standalone collection destinations outside selected cards and
   descriptions, without exposing hidden bodies or repeating owned references.
 

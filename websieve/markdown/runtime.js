@@ -165,7 +165,7 @@
     service.addRule("headingCardLinks", {
       filter: function(node) {
         return node.nodeName === "A" && !node.closest("li") && node.querySelector("h1, h2, h3, h4, h5, h6") &&
-          !node.querySelector("pre, table, ul, ol");
+          !node.querySelector("pre, table");
       },
       replacement: function(content, node) {
         // Associate the destination with the card's heading without flattening its body.
