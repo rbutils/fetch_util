@@ -1,5 +1,5 @@
   function authoredInlineActionReference(node) {
-    var paragraph = node.closest("p");
+    var paragraph = node.closest("p, li, dd, td, th");
     if (!paragraph || paragraph.querySelector("button, input, select, textarea, [role='button']")) return false;
     var link = node.matches("a[href]") ? node : null;
     if (!link && node.matches("span, strong, b, em, i")) {
