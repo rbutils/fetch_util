@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain repeated quoted paragraphs and separators, preserving reference
+  multiplicity and paragraph boundaries after quoted lists.
+
 - Preserve visible documentation control-label references with proved native
   input associations and readable boundaries, without exposing inactive panels.
 

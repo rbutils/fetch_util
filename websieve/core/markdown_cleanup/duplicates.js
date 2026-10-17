@@ -1,5 +1,5 @@
   function semanticMarkdownRecordLine(line) {
-    return /^\s*(?:(?:[-+*]|\d{1,9}[.)])\s+\S|\|.*\|\s*$)/.test(line);
+    return /^\s*(?:>|(?:[-+*]|\d{1,9}[.)])\s+\S|\|.*\|\s*$)/.test(line);
   }
 
   function collapseMarkdownDuplicateLines(markdown) {
