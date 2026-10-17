@@ -76,13 +76,15 @@
     cleanupAgentRoot(clone);
     removeAll(clone, "nav, header, footer, aside, form, script, style, noscript, [class*='ticket' i], [class*='checkout' i], [class*='modal' i]");
 
-    var descriptionRoot = root.querySelector("[data-testid*='description' i], [class*='description' i], [class*='about' i], [class*='summary' i], article, section") || root;
-    var descriptionClone = cleanClone(visibilityPrunedClone(descriptionRoot, document));
-    cleanupAgentRoot(descriptionClone);
-    removeAll(descriptionClone, "nav, header, footer, aside, form, script, style, noscript, [class*='ticket' i], [class*='checkout' i]");
+    var title = firstText(["main h1", "article h1", "h1"]) || metadata.title || document.title;
+    var descriptionClone = clone.cloneNode(true);
+    var headings = Array.prototype.filter.call(descriptionClone.querySelectorAll("h1"), function(heading) {
+      return !heading.closest("pre, code");
+    });
+    if (headings.length === 1 && normalizeText(headings[0].textContent) === normalizeText(title)) headings[0].remove();
 
     return eventContentResult({
-      title: firstText(["main h1", "article h1", "h1"]) || metadata.title || document.title,
+      title: title,
       dateText: visibleEventDateTime(root) || metadata.publishedTime,
       location: visibleEventLocation(root),
       description: cleanupMarkdownNoise(markdownFor(descriptionClone.innerHTML)) || metadata.excerpt,

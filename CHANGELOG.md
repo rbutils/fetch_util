@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete visible event introductions, peer sections, programs and closing
+  resources instead of selecting only the first description-like section.
+
 - Avoid repeating already represented collection metadata references while
   retaining separate, physically owned occurrences of the same destination.
 
