@@ -40,7 +40,8 @@
       return /(?:shields\.io\/|\/badge(?:s)?[/.?_-]|\/badge\.svg(?:[?#]|$))/i.test(src);
     });
 
-    return imgs >= 1 && links >= 1 && (badgeImage || /\b(status|badge|coverage|workflow|ci)\b|\bbuild[\s_-]+(?:passing|failing)\b/.test(altText));
+    var machineStatus = /\b(coverage|workflow|ci)\b|\bbuild[\s_-]+(?:status|passing|failing)\b/.test(altText);
+    return imgs >= 1 && links >= 1 && (machineStatus || (badgeImage && !altText));
   }
 
   function looksLikeDebugData(text) {
