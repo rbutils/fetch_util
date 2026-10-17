@@ -74,6 +74,6 @@ function sourceOwnedPrimaryContent(metadata, preparedManual) {
     declaredSemanticArticleContent(metadata) || canonicalPublishedEntryContent(metadata) ||
     preparedManual || canonicalDataTableContent(metadata) || physicalStandaloneManualContent(metadata) ||
     datedReferenceIndexContent(metadata) || disclosureCatalogContent(metadata) ||
-    homepageSubsectionCollectionContent(metadata) || wordpressHomepageContent(metadata) ||
+    homepageSubsectionCollectionContent(metadata) || wordpressHomepageContent(metadata) || homepagePeerSectionsContent(metadata) ||
     softwareLandingContent(metadata) || declaredNewsPortalContent(metadata);
 }

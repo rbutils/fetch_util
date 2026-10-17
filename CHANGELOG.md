@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Preserve a complete independently headed homepage MAIN when its current website identity and physical peer-section ownership agree, instead of borrowing one feature heading or returning Markdown without the owned HTML.
+
 - Keep complete, positively owned static CMS homepages under their document identity,
   preserving peer sections and linked updates without borrowing a child post's title or liveblog format.
 

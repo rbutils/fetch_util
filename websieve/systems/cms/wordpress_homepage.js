@@ -71,20 +71,6 @@ function wordpressHomepageContext(metadata) {
   });
 }
 
-function wordpressHomepageMarkdown(service, root) {
-  Array.from(root.querySelectorAll("h1 br, h2 br, h3 br, h4 br, h5 br, h6 br")).forEach(function(br) {
-    if (!br.closest("code, pre")) br.replaceWith(root.ownerDocument.createTextNode(" "));
-  });
-  var listItem = service.rules.forNode(root.ownerDocument.createElement("li"));
-  service.addRule("completeHomepageListItem", {
-    filter: "li",
-    replacement: function(content, node, options) {
-      return listItem.replacement(content.replace(/^(?:[ \t]*\n)+/, ""), node, options);
-    }
-  });
-  return service.turndown(root);
-}
-
 function wordpressHomepageContent(metadata) {
   var context = wordpressHomepageContext(metadata);
   if (!context) return null;
@@ -95,7 +81,7 @@ function wordpressHomepageContent(metadata) {
     cleanupRoot: false,
     cleanupMarkdown: false,
     preserveCleanedRoot: true,
-    convertRoot: wordpressHomepageMarkdown,
+    convertRoot: ownedHomepageMarkdown,
     title: context.title,
     excerpt: metadata.description || metadata.excerpt || null,
     byline: null,
