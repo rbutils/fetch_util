@@ -40,6 +40,51 @@ RSpec.describe "Record metadata and page chrome" do
     end
   end
 
+  def represented_metadata_reference_deltas(independent: false)
+    root = File.expand_path("../../..", __dir__)
+    paths = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject do |line|
+      line.empty? || line.start_with?("#")
+    end
+    source = paths.map { |path| File.read(File.join(root, "websieve", path)) }.join("\n")
+    outro = File.read(File.join(root, "websieve/99_outro.js"))
+    raise "source-module test boundary changed" unless source.scan(outro).size == 1
+
+    source = source.sub(outro, <<~JS)
+      window.__representedMetadataReferences = function() {
+        var root = document.querySelector('main'), card = document.querySelector('article');
+        var primary = card.querySelector('h3 a'), before = document.body.innerHTML;
+        var extraction = {root: root, items: [{card: card, sourceNode: primary, url: primary.href, text: primary.textContent}]};
+        var descriptions = [{node: card, markdown: markdownFor(card.innerHTML)}];
+        var references = listUnrepresentedMetadataReferences(extraction, descriptions);
+        return {
+          references: references.map(function(part) { return {id: part.node.id, markdown: part.markdown}; }),
+          represented: descriptions[0].markdown,
+          unchanged: before === document.body.innerHTML
+        };
+      };
+      })(window);
+    JS
+    outside = '<p>A separate authored use of <a id="independent" rel="tag" ' \
+              'href="/categories/research(v2)?scope=local#methods">Research classification</a> ' \
+              'belongs to this other paragraph.</p>'
+    outside = "" unless independent
+    html = <<~HTML
+      <html><head><title>Publication reports</title></head><body><main>
+      <article><h3><a href="/reports/physical-record">Independent complete report</a></h3>
+      <p>The complete owned report retains its original evidence and concluding explanation.</p>
+      <p class="story-tags"><a id="represented" rel="tag" href="/categories/research(v2)?scope=local#methods">Research classification</a></p></article>
+      #{outside}</main></body></html>
+    HTML
+    with_url_page("https://publication.example.test/", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
+      inject_standalone_extractor(page)
+      page.add_script_tag(content: source)
+      result = page.evaluate("window.__representedMetadataReferences()")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
+      result
+    end
+  end
+
   it "keeps primary headlines and their owned metadata rather than deleting the record" do
     markdown = metadata_card_records
     4.times do |index|
@@ -93,5 +138,18 @@ RSpec.describe "Record metadata and page chrome" do
     expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(
       4.times.map { |index| "https://publisher.example/stories/#{index}" }
     )
+  end
+
+  it "does not append a category destination already represented by its physical owner" do
+    result = represented_metadata_reference_deltas
+    expect(result.fetch("represented")).to include("Research classification", "/categories/research%28v2%29?scope=local#methods")
+    expect(result).to include("references" => [], "unchanged" => true)
+  end
+
+  it "retains a separate same-destination occurrence outside the represented owner" do
+    result = represented_metadata_reference_deltas(independent: true)
+    expect(result.fetch("references").map { |part| part.fetch("id") }).to eq(["independent"])
+    expect(result.fetch("references").first.fetch("markdown")).to include("Research classification", "/categories/research%28v2%29?scope=local#methods")
+    expect(result.fetch("unchanged")).to be(true)
   end
 end

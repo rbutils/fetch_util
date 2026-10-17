@@ -60,7 +60,7 @@
       var url = materializedHttpUrl(link.getAttribute("href"));
       var text = normalizeText(link.textContent);
       if (!url || primaryUrls.has(listCanonicalKey(url)) || genericListControlText(text) || looksLikeFooterLink(text, url)) return null;
-      var destination = markdownLink("", url).replace(/^\[\]/, "]");
+      var destination = "](" + listPresentationUrl(url) + ")";
       if (rendered.some(function(part) {
         return part.node && part.node.contains(link) && part.markdown.indexOf(destination) !== -1;
       })) return null;

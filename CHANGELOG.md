@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Avoid repeating already represented collection metadata references while
+  retaining separate, physically owned occurrences of the same destination.
+
 - Preserve card-owned paragraphs outside inner collection-title wrappers and
   retain their authored record references without repeating primary aliases.
 
