@@ -108,17 +108,16 @@
     });
 
     root.querySelectorAll("div.highlight, div[class*='CodeBlock'], div[class*='codeBlock'], div[class*='code-sample'], div[class*='CodeSample'], div[class*='snippet'], div.redoc-json, div[class*='redoc-json']").forEach(function(el) {
-      if (el.querySelectorAll("pre").length > 1) return;
-      var pre = el.querySelector("pre");
-      var text = cleanCodeText((pre || el).innerText || (pre || el).textContent);
+      if (el.querySelector("pre")) return;
+      var text = cleanCodeText(el.innerText || el.textContent);
       if (!text) return;
 
-      if (!pre && !/^(curl\b|[{[]|>>>|\$\s|GET\b|POST\b|PUT\b|PATCH\b|DELETE\b|HTTP\/|<\w)/m.test(text)) return;
+      if (!/^(curl\b|[{[]|>>>|\$\s|GET\b|POST\b|PUT\b|PATCH\b|DELETE\b|HTTP\/|<\w)/m.test(text)) return;
 
       var replacement = document.createElement("pre");
-      var language = guessCodeLanguage(pre || el);
+      var language = guessCodeLanguage(el);
       if (!language && (el.matches(".redoc-json, [class*='redoc-json']") || /^[\[{]/.test(text))) language = "json";
-      replacement.appendChild(normalizedCodeElement(text, language, pre || el));
+      replacement.appendChild(normalizedCodeElement(text, language, el));
       el.replaceWith(replacement);
     });
 

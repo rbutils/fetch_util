@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Normalize physical code blocks without discarding sibling filenames, prose or
+  resource links from their wrappers.
+
 - Retain inline references with advertising-related labels when their authored
   prose ownership is proved, while continuing to remove standalone ad controls.
 
