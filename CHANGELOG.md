@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve separate Markdown boundaries for disclosure summaries while keeping
+  closed answers hidden and open content complete.
+
 - Avoid repeating collection image labels from suppressed primary aliases while
   retaining distinct image-owned supplemental references.
 

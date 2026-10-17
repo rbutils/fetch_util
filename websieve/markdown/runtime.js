@@ -56,6 +56,12 @@
       preparedTables = prepareDataTableMarkdown(normalizedRoot);
     };
     service.remove(["script", "style", "noscript", "template"]);
+    service.addRule("disclosureBlocks", {
+      filter: ["details", "summary"],
+      replacement: function(content) {
+        return "\n\n" + content.trim() + "\n\n";
+      }
+    });
     addIntrawordEmphasisRule(service);
     preserveLiteralAngleText(service);
 
