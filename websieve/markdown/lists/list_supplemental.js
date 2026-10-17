@@ -12,15 +12,39 @@ function listClonedCardFields(card, clone, selector, fieldFilter) {
   });
 }
 
+function listOuterSupplementalCard(item, card) {
+  var owner = item.contentCard;
+  var primaryUrl = materializedHttpUrl(item.url || "");
+  if (!owner || card !== item.card || !owner.contains(card) || !primaryUrl ||
+      closestGenericListFieldCard(item.sourceNode) !== owner) return null;
+  var titleLinks = cardOwnedNodes(owner, "h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4");
+  if (!titleLinks.length || !titleLinks.every(function(node) {
+    var link = node.matches("a[href]") ? node : node.closest("a[href]");
+    var url = materializedHttpUrl(link.getAttribute("href"));
+    return url && listCanonicalKey(url) === listCanonicalKey(primaryUrl);
+  })) return null;
+  return cardOwnedNodes(owner, "p, blockquote").some(function(node) {
+    return !card.contains(node) && !!normalizeText(node.textContent || "");
+  }) ? owner : null;
+}
+
 function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryRecordKeys) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
+  var selectedContentCard = item.contentCard;
+  var sourceCard = item.card;
+  var outerCard = listOuterSupplementalCard(item, card);
+  if (outerCard) {
+    selectedContentCard = card;
+    sourceCard = outerCard;
+    card = outerCard;
+  }
   var clone = card.cloneNode(true);
   var compactMetadata = listCompactMetadataRow(card, item);
   var compactMetadataClone = compactMetadata && listClonedCardNode(card, clone, compactMetadata.node);
   var compactSummarySelector = "[class*='summary'], [class*='description'], [class*='excerpt'], p";
   var compactSummary = listCompactMetadataFollowingField(card, compactMetadata, compactSummarySelector, item.summary);
   var compactSummaryClone = compactSummary && listClonedCardNode(card, clone, compactSummary);
-  var contentCard = item.contentCard && listClonedCardNode(card, clone, item.contentCard);
+  var contentCard = selectedContentCard && listClonedCardNode(card, clone, selectedContentCard);
   var supportingCardCache = new WeakMap();
   var supportingNestedCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
     return !genericListStructuredCardLink(nested) && Array.prototype.some.call(nested.querySelectorAll("a[href]"), function(link) {
@@ -28,10 +52,18 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     });
   }).map(function(nested) { return listClonedCardNode(card, clone, nested); }).filter(Boolean);
   var supportingLinks = new WeakSet();
+  var primaryProseLinks = new WeakSet();
   var descriptionOwner = listDescriptionOwnerCard(item);
   var ownerProse = descriptionOwner ? cardOwnedNodes(descriptionOwner, "p, blockquote") : [];
+  var outerOwnerProse = selectedContentCard && sourceCard ? cardOwnedNodes(sourceCard, "p, blockquote").filter(function(node) {
+    return !selectedContentCard.contains(node);
+  }) : [];
+  ownerProse = ownerProse.concat(outerOwnerProse.filter(function(node) { return ownerProse.indexOf(node) === -1; }));
   if (card !== item.card && item.supplementalSourceClones) {
     ownerProse = ownerProse.map(function(node) {
+      return item.supplementalSourceClones.get(node);
+    }).filter(function(node) { return node && card.contains(node); });
+    outerOwnerProse = outerOwnerProse.map(function(node) {
       return item.supplementalSourceClones.get(node);
     }).filter(function(node) { return node && card.contains(node); });
   }
@@ -42,12 +74,15 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
       primaryUrls && primaryUrls.has(listCanonicalKey(url));
     var prose = link.closest("p, blockquote");
     var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&
-      normalizeText(prose.textContent || "").length >= 30;
+      (outerOwnerProse.indexOf(prose) !== -1 || normalizeText(prose.textContent || "").length >= 30);
     var ownedHeadingReference = listSupplementalHeadingReference(link, item, card);
     if (!url || (!ownedProseReference && !ownedHeadingReference && (listSupplementalInteractionLink(link) ||
         representedPrimary))) return;
     var clonedLink = listClonedCardNode(card, clone, link);
-    if (clonedLink) supportingLinks.add(clonedLink);
+    if (clonedLink) {
+      supportingLinks.add(clonedLink);
+      if (ownedProseReference) primaryProseLinks.add(clonedLink);
+    }
   });
   var metadataSelector = "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], time, [datetime], [class*='score' i], [class*='point' i], [class*='reply' i], [class*='comment' i], [class*='community' i], [class*='metric' i], [class*='stat' i]";
   var nestedMetadataCards = Array.prototype.filter.call(card.querySelectorAll(genericListCardSelector()), function(nested) {
@@ -82,6 +117,9 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     var filter = selector === authorFieldSelector ? function(node) {
       return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
     } : null;
+    if (selector === compactSummarySelector && selectedContentCard) {
+      filter = function(node) { return selectedContentCard.contains(node); };
+    }
     return fields.concat(listClonedCardFields(card, clone, selector, filter));
   }, []).filter(function(field) {
     return !(compactMetadataClone && compactMetadataClone.contains(field)) && field !== compactSummaryClone;
@@ -122,6 +160,6 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     node.remove();
   });
   pruneGenericListControls(clone);
-  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url, supportingLinks));
+  var supplemental = stripGenericListControlPhrases(listTextWithReferences(clone, true, item.url, supportingLinks, primaryProseLinks));
   return representedValues.indexOf(supplemental) >= 0 ? "" : supplemental;
 }

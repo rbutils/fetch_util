@@ -97,6 +97,7 @@ markdown/code/code_surfaces.js
 markdown/code/literal_programs.js
 markdown/tables.js
 markdown/materialization/materialization_inline.js
+markdown/materialization/disclosure_visibility.js
 markdown/materialization/materialization_containers.js
 markdown/materialization/materialization_blocks.js
 markdown/materialization/output.js

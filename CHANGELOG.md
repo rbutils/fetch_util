@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve card-owned paragraphs outside inner collection-title wrappers and
+  retain their authored record references without repeating primary aliases.
+
 - Retain unlabeled overlay and icon-link destinations as readable references,
   preserving literal punctuation and uniquely proved heading-permalink cleanup.
 

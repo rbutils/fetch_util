@@ -29,10 +29,11 @@ function listClonedCardNode(card, clone, node) {
   }, clone);
 }
 
-function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLinks) {
+function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLinks, primaryProseLinks) {
   if (!node || !node.cloneNode) return "";
   var clone = visibilityChecked ? node : node.cloneNode(true);
   if (!visibilityChecked) pruneListCardVisibility(node, clone);
+  pruneClosedMarkdownDisclosures(clone);
   if (clone.matches && clone.matches("a[href]")) {
     var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
     var rootUrl = materializedHttpUrl(clone.getAttribute("href"));
@@ -43,7 +44,8 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
     var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
     var url = materializedHttpUrl(link.getAttribute("href"));
     var linked = (!allowedLinks || allowedLinks.has(link)) &&
-      !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl));
+      !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl) &&
+        !(primaryProseLinks && primaryProseLinks.has(link)));
     if (linked && !label) {
       label = inlineLinkLabel(link) || normalizeText(link.getAttribute("title"));
       if (!label && emptyMarkdownSelfControl(link, url, clone)) linked = false;
