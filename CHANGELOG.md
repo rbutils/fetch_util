@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete event dates without borrowing training releases, deadlines,
+  publication fields, hidden text or literal program examples as event dates.
+
 - Retain complete visible event introductions, peer sections, programs and closing
   resources instead of selecting only the first description-like section.
 

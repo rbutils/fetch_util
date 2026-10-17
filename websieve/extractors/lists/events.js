@@ -128,21 +128,6 @@
     return normalizeText([entityName(value), addressText].filter(Boolean).join(" - ")) || entityText(value);
   }
 
-  function visibleEventDateTime(root) {
-    root = root || document;
-    var start = firstScopedText([root], ["[itemprop='startDate']", "time[datetime]"], "datetime") ||
-      firstScopedText([root], ["[itemprop='startDate']", "[class*='start-date' i]", "[class*='event-date' i]", "[class*='date' i]", "time"]);
-    var end = firstScopedText([root], ["[itemprop='endDate']"], "datetime") ||
-      firstScopedText([root], ["[itemprop='endDate']", "[class*='end-date' i]"]);
-    if (start || end) return eventDateText(start, end);
-
-    var text = normalizeText((root && root.textContent) || "");
-    var match = text.match(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?(?:,?\s+\d{4})?(?:\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)?/);
-    if (match) return normalizeText(match[0]);
-    match = text.match(/\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{4}(?:\s*,?\s*\d{1,2}:\d{2})?/);
-    return match ? normalizeText(match[0]) : null;
-  }
-
   function visibleEventLocation(root) {
     root = root || document;
 

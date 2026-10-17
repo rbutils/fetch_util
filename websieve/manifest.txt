@@ -263,6 +263,7 @@ extractors/lists/products/extraction.js
 extractors/lists/products/mixed_content.js
 extractors/lists/products/evidence.js
 extractors/lists/jobs.js
+extractors/lists/event_dates.js
 extractors/lists/events.js
 extractors/lists/homepage/news_homepages.js
 extractors/search.js
