@@ -2,6 +2,29 @@
     return (metadata.title || document.title).replace(/\s*[|\-]\s*[^|\-]*$/, "");
   }
 
+  function preserveDocsCalloutChildren(root, selector) {
+    root.querySelectorAll(selector).forEach(function(node) {
+      if (node.matches("details")) return;
+      var parent = node.parentElement && node.parentElement.closest(selector);
+      if (parent && root.contains(parent)) return;
+
+      var title = node.querySelector(".admonition-heading");
+      if (title && !title.childElementCount && /^(note|tip|warning|info|danger|example|question|abstract|success|failure|bug|quote)$/i.test(normalizeText(title.textContent))) {
+        var label = document.createElement("strong");
+        label.textContent = normalizeText(title.textContent).toUpperCase() + ":";
+        title.textContent = "";
+        title.appendChild(label);
+      }
+
+      var quote = document.createElement("blockquote");
+      Array.prototype.slice.call(node.attributes).forEach(function(attribute) {
+        quote.setAttribute(attribute.name, attribute.value);
+      });
+      while (node.firstChild) quote.appendChild(node.firstChild);
+      node.replaceWith(quote);
+    });
+  }
+
   function mkdocsReferenceNavList() {
     if (!/\/(?:reference|api)\/?$/i.test(location.pathname || "")) return null;
 
@@ -82,17 +105,7 @@
         removeAll(root, COMMON_DOCS_CHROME_SELECTOR + ", .md-source-file, .md-content__button, .md-feedback, .mdx-badge, .md-nav, .md-sidebar");
         sourceFacts.forEach(function(fact) { root.appendChild(fact); });
         removeNodesByText(root, "div, p, span, button, a", /^(table of contents|view source|edit this page)$/i);
-        root.querySelectorAll(".admonition, details.note, details.tip, details.warning, details.info, details.danger, details.example, details.question, details.abstract, details.success, details.failure, details.bug, details.quote").forEach(function(el) {
-          var titleEl = el.querySelector(".admonition-title, summary");
-          var admonitionType = normalizeText((titleEl && titleEl.textContent) || "Note").toUpperCase();
-          if (titleEl) titleEl.remove();
-          var content = normalizeText(el.textContent);
-          if (content) {
-            var bq = document.createElement("blockquote");
-            bq.innerHTML = "<p><strong>" + admonitionType + ":</strong> " + content + "</p>";
-            el.replaceWith(bq);
-          }
-        });
+        preserveDocsCalloutChildren(root, ".admonition");
         root.querySelectorAll("font").forEach(function(el) {
           el.replaceWith(document.createTextNode(el.textContent));
         });
@@ -174,14 +187,7 @@
         root.querySelectorAll("[role='tablist']").forEach(function(tablist) {
           tablist.remove();
         });
-        root.querySelectorAll(".admonition, [class*='admonition']").forEach(function(admonition) {
-          var title = normalizeText((admonition.querySelector(".admonition-heading, .admonition-title") || {}).textContent) || "Note";
-          var content = normalizeText(admonition.textContent).replace(new RegExp("^" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "");
-          if (!content) return admonition.remove();
-          var quote = document.createElement("blockquote");
-          quote.innerHTML = "<p><strong>" + title.toUpperCase() + ":</strong> " + content + "</p>";
-          admonition.replaceWith(quote);
-        });
+        preserveDocsCalloutChildren(root, ".admonition, [class*='admonition']");
       }
     });
   }

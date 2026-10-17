@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete documentation callout programs, references and nested blocks;
+  keep authored disclosure markup and its open or closed state intact.
+
 - Preserve visible Docusaurus article headers and sticky heading roles instead of
   treating their navigation-related class names as navigation containers.
 
