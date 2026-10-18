@@ -22,7 +22,7 @@ function listSelectedReferenceContextOwner(card, context) {
   if (context.referenceOwners.has(card)) return context.referenceOwners.get(card);
   var records = context.byCard.get(card);
   var owner = null;
-  if (records && records.length > 1 && records.every(function(record) {
+  if (records && records.length > 1 && card.querySelector("h1, h2, h3, h4, h5, h6") && records.every(function(record) {
     return record.sourceNode && record.sourceNode.matches("a[href]") && card.contains(record.sourceNode) &&
       !record.sourceNode.closest("h1, h2, h3, h4, h5, h6");
   }) && !card.querySelector("p, blockquote, pre, code, table, figure, img, picture, svg, video, audio, canvas, object, iframe, form, input, button, select, textarea, time, [datetime], [rel~='author']") &&

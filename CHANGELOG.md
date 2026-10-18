@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep heading-free reference groups on the complete typed-record rendering path
+  instead of treating them as whole headed resource sections.
+
 - Retain documentation disclosure summaries, their complete resource markup and
   open/closed state while keeping hidden answers and source-hidden content excluded.
 
