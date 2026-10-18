@@ -60,8 +60,40 @@
     return "- " + markdownLink(text, destinations[0]);
   }
 
+  function listDescriptionFigureParts(root, items) {
+    if (!items || !items.length) return [];
+    var figures = Array.from(root.querySelectorAll("figure")).filter(function(figure) {
+      if (figure.closest("a[href], nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog']") || listCardNodeHidden(figure)) return false;
+      var caption = figure.querySelector("figcaption");
+      if (!caption || caption.closest("figure") !== figure) return false;
+      var heading = Array.from(caption.querySelectorAll("h1, h2, h3, h4, h5, h6")).some(function(node) {
+        return node.closest("figure") === figure && normalizeText(node.textContent);
+      });
+      var image = Array.from(figure.querySelectorAll("img")).some(function(node) {
+        var source = node.getAttribute("src") || node.getAttribute("data-src") || node.getAttribute("data-lazy-src");
+        return node.closest("figure") === figure && !node.closest("a[href]") && !listCardNodeHidden(node) && materializedHttpUrl(source);
+      });
+      if (!heading || !image) return false;
+      return !items.some(function(item) {
+        var source = item.sourceNode || item.orderNode || item.card;
+        return source && figure.contains(source);
+      });
+    });
+    return figures.filter(function(figure) {
+      return !figures.some(function(owner) { return owner !== figure && owner.contains(figure); });
+    }).map(function(figure) {
+      var clone = figure.cloneNode(true);
+      pruneListCardVisibility(figure, clone);
+      clone.querySelectorAll("h1 br, h2 br, h3 br, h4 br, h5 br, h6 br").forEach(function(lineBreak) {
+        lineBreak.replaceWith(document.createTextNode(" "));
+      });
+      return { node: figure, markdown: markdownFor(clone.outerHTML).trim(), descriptiveFigure: true };
+    }).filter(function(part) { return part.markdown; });
+  }
+
   function listDescriptionParts(root, items, options) {
-    var descParts = [];
+    var figureParts = listDescriptionFigureParts(root, items);
+    var descParts = figureParts.slice();
     var hasItems = items && items.length > 0;
     var includeInlineProse = hasItems && options && options.includeInlineProse;
     var primaryUrls = new Set((items || []).map(function(item) {
@@ -82,6 +114,7 @@
     }).filter(Boolean);
     var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote" : "h1, h2, h3, p, blockquote";
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
+      if (figureParts.some(function(part) { return part.node.contains(el); })) return;
       if (sourceOwnedResultCountNodes && sourceOwnedResultCountNodes.has(el)) {
         var resultCountMarkdown = markdownFor(el.outerHTML).trim();
         if (resultCountMarkdown) descParts.push({ node: el, markdown: resultCountMarkdown });

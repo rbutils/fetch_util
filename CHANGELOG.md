@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete unselected figure descriptions in collection Markdown, including
+  physical images, captions, resources and programs in their source order.
+
 - Render a positively shared collection of media records once in physical source
   order, retaining complete heading roles, unselected peers and independent
   same-URL images without copying every sibling image into each selected record.
