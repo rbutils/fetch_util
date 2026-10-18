@@ -26,22 +26,26 @@
   }
 
   function isBadgeNode(node) {
-    if (!node) return false;
+    if (!node || normalizeText(node.textContent)) return false;
+    if (normalizeText(node.getAttribute("aria-label") || node.getAttribute("title") || "")) return false;
+    if (node.querySelector("h1, h2, h3, h4, h5, h6, article, figure, picture, svg, video, audio, iframe, object, embed, canvas, pre, code, kbd, samp, table, blockquote, ul, ol, dl, button, input, select, textarea")) return false;
 
-    var text = normalizeText(node.textContent);
-    if (text.length > 200) return false;
-    var imgs = node.querySelectorAll("img").length;
-    var links = node.querySelectorAll("a").length;
-    var altText = normalizeText(Array.prototype.map.call(node.querySelectorAll("img[alt]"), function(img) {
-      return img.getAttribute("alt") || "";
-    }).join(" ")).toLowerCase();
-    var badgeImage = Array.prototype.some.call(node.querySelectorAll("img"), function(img) {
+    var imgs = node.querySelectorAll("img");
+    var links = node.querySelectorAll("a");
+    if (!imgs.length || !links.length) return false;
+
+    var statusOnlyImages = Array.prototype.every.call(imgs, function(img) {
+      if (normalizeText(img.getAttribute("aria-label") || img.getAttribute("title") || "")) return false;
+      var alt = normalizeText(img.getAttribute("alt") || "").toLowerCase();
       var src = img.getAttribute("src") || img.getAttribute("data-src") || "";
-      return /(?:shields\.io\/|\/badge(?:s)?[/.?_-]|\/badge\.svg(?:[?#]|$))/i.test(src);
+      return /\b(coverage|workflow|ci)\b|\bbuild[\s_-]+(?:status|passing|failing)\b/.test(alt) ||
+        (!alt && /(?:shields\.io\/|\/badge(?:s)?[/.?_-]|\/badge\.svg(?:[?#]|$))/i.test(src));
     });
 
-    var machineStatus = /\b(coverage|workflow|ci)\b|\bbuild[\s_-]+(?:status|passing|failing)\b/.test(altText);
-    return imgs >= 1 && links >= 1 && (machineStatus || (badgeImage && !altText));
+    return statusOnlyImages && Array.prototype.every.call(links, function(link) {
+      return !!link.querySelector("img") &&
+        !normalizeText(link.getAttribute("aria-label") || link.getAttribute("title") || "");
+    });
   }
 
   function looksLikeDebugData(text) {

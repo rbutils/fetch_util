@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete authored resource groups and prose beside status badges,
+  removing only positively badge-only material instead of an entire mixed owner.
+
 - Apply captured source visibility before cleaning Sphinx and Read the Docs roots,
   retaining visible programs and named targets while excluding hidden source content.
 
