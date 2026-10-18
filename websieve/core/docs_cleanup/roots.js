@@ -1,7 +1,7 @@
 function removeNodesByText(root, selector, pattern) {
   root.querySelectorAll(selector).forEach(function(el) {
     var text = normalizeText(el.textContent);
-    if (text && pattern.test(text) && !codeContentNode(el)) el.remove();
+    if (text && pattern.test(text) && !codeContentNode(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
   });
 }
 

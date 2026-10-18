@@ -70,7 +70,10 @@ function docsArticleContent(metadata, node, options) {
   var materialRoot = options.preserveSourceMaterialRoot;
   var referenceRoots = (options.preserveSourceReferenceRoots || []).filter(function(reference) { return sourceNode.contains(reference); });
   var preserveCodeTargets = options.pruneSourceVisibility && sourceNode.querySelector("pre a[id], pre a[name]");
-  var sourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length || preserveCodeTargets ? new Map() : null;
+  var authoredReferences = docsAuthoredSourceReferences(sourceNode);
+  var needsSourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length || preserveCodeTargets ||
+    (options.pruneSourceVisibility && authoredReferences.length);
+  var sourceClones = needsSourceClones ? new Map() : null;
   var readableSource = options.pruneSourceVisibility ?
     visibilityPrunedClone(sourceNode, document, sourceClones, options.preserveMaterializedCollection === true) : sourceNode;
   if (preserveCodeTargets) restorePrunedNamedCodeTargets(sourceNode, sourceClones);
@@ -90,7 +93,9 @@ function docsArticleContent(metadata, node, options) {
     if (clone) clone.setAttribute("data-fetchutil-source-owned-primary", "true");
   });
   if (readableSource !== sourceNode && typeof options.prepareRoot === "function") options.prepareRoot(readableSource);
-  var root = cleanClone(readableSource, options.preserveSelector);
+  var cleanedElements = authoredReferences.length ? new WeakMap() : null;
+  var root = cleanClone(readableSource, options.preserveSelector, cleanedElements);
+  rememberDocsAuthoredReferences(root, sourceNode, readableSource, authoredReferences, sourceClones, cleanedElements);
 
   if (options.preserveAuthoredSections && root.querySelector(VISIBLE_COMMENT_THREAD_SELECTOR + ", " + VISIBLE_COMMENT_RECORD_SELECTOR)) {
     visibleCommentThreadRoots(root).forEach(function(thread) {
@@ -113,7 +118,7 @@ function docsArticleContent(metadata, node, options) {
 
   var markdown;
   try {
-    markdown = markdownFor(root.innerHTML, false, true, options.preserveCleanedRoot === true).trim();
+    markdown = docsMarkdownForRoot(root, options.preserveCleanedRoot === true).trim();
   } catch(e) {
     markdown = "";
   }

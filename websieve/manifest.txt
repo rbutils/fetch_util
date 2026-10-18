@@ -72,6 +72,7 @@ core/article/root_selection.js
 core/article/wordpress_context.js
 core/article/profile_article.js
 core/simple_article_profile.js
+core/docs_cleanup/controls/authored_references.js
 core/docs_cleanup/controls/labels.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/article_title_provenance.js

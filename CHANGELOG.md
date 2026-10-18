@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve source-visible authored documentation references whose labels also name
+  interface controls, including complete configuration and resource links.
+
 - Render selected heading-and-reference-only groups once in source order while
   preserving every physical repeated destination and all unselected resources.
 
