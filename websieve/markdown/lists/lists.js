@@ -191,6 +191,10 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
   primaryRecordKeys = primaryRecordKeys || listPrimaryRecordKeys(items);
   var readTableHeaders = tableIndexHeaderReader();
   return items.map(function(item) {
+    var referenceOwner = item.card && listSelectedReferenceContextOwner(item.card, primaryRecordKeys.recordContext);
+    if (referenceOwner) {
+      return referenceOwner === item ? "\n\n" + listSelectedReferenceGroupMarkdown(item.card, primaryRecordKeys.recordContext) + "\n\n" : "";
+    }
     if (item.sourceOrderedStructuredCard && item.card) {
       return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();
     }

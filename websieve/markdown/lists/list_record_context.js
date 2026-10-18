@@ -14,7 +14,41 @@ function listPrimaryRecordContext(items) {
     }
     records.push(item);
   });
-  return { byCard: byCard, headingOwners: new WeakMap(), selectedSources: selectedSources };
+  return { byCard: byCard, headingOwners: new WeakMap(), referenceOwners: new WeakMap(), selectedSources: selectedSources };
+}
+
+function listSelectedReferenceContextOwner(card, context) {
+  if (!context || !context.referenceOwners || !card.matches("div, section, article, aside")) return null;
+  if (context.referenceOwners.has(card)) return context.referenceOwners.get(card);
+  var records = context.byCard.get(card);
+  var owner = null;
+  if (records && records.length > 1 && records.every(function(record) {
+    return record.sourceNode && record.sourceNode.matches("a[href]") && card.contains(record.sourceNode) &&
+      !record.sourceNode.closest("h1, h2, h3, h4, h5, h6");
+  }) && !card.querySelector("p, blockquote, pre, code, table, figure, img, picture, svg, video, audio, canvas, object, iframe, form, input, button, select, textarea, time, [datetime], [rel~='author']") &&
+      !card.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href], h5 a[href], h6 a[href], a[href] h1, a[href] h2, a[href] h3, a[href] h4, a[href] h5, a[href] h6")) {
+    var remainder = card.cloneNode(true);
+    remainder.querySelectorAll("a[href], h1, h2, h3, h4, h5, h6, br").forEach(function(node) { node.remove(); });
+    if (!normalizeText(remainder.textContent || "")) owner = records[0];
+  }
+  context.referenceOwners.set(card, owner);
+  return owner;
+}
+
+function listSelectedReferenceGroupMarkdown(card, context) {
+  var html = listHtmlWithoutUnsafeDestinations(card);
+  if (!context || !context.representedHeadings) return markdownFor(html).trim();
+  var clone = document.createElement("div");
+  clone.innerHTML = html;
+  var selector = "h1, h2, h3, h4, h5, h6";
+  var headings = card.querySelectorAll(selector);
+  var copies = clone.querySelectorAll(selector);
+  if (headings.length === copies.length) {
+    Array.prototype.forEach.call(headings, function(heading, index) {
+      if (context.representedHeadings.has(heading) && copies[index].tagName === heading.tagName) copies[index].remove();
+    });
+  }
+  return markdownFor(clone.innerHTML).trim();
 }
 
 function listSelectedHeadingContextOwner(card, records) {
@@ -63,13 +97,14 @@ function listSeparatelySelectedChildClones(item, card, clone, primaryRecordKeys)
   var clones = clone.querySelectorAll("*");
   if (sources.length !== clones.length) return selected;
   Array.prototype.forEach.call(sources, function(source, index) {
-    if (!source.matches(genericListCardSelector()) || source.matches("tr, td, th") ||
-        source.contains(item.sourceNode)) return;
+    if (source.matches("tr, td, th") || source.contains(item.sourceNode)) return;
     var records = context.byCard.get(source);
+    var selectedCard = records && (source.matches(genericListCardSelector()) || listSelectedReferenceContextOwner(source, context)) &&
+      records.some(function(record) {
+        return record !== item && record.sourceNode && source.contains(record.sourceNode);
+      });
     var cloned = clones[index];
-    if (cloned && cloned.tagName === source.tagName && records && records.some(function(record) {
-      return record !== item && record.sourceNode && source.contains(record.sourceNode);
-    })) selected.add(cloned);
+    if (cloned && cloned.tagName === source.tagName && selectedCard) selected.add(cloned);
   });
   return selected;
 }

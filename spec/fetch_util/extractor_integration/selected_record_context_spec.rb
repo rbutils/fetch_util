@@ -6,7 +6,7 @@ require "support/extractor_integration_helpers"
 RSpec.describe "Selected physical record context" do
   include_context "extractor integration helpers"
 
-  def selected_record_markdown(html, records)
+  def selected_record_markdown(html, records, sectioned: false)
     root = File.expand_path("../../..", __dir__)
     paths = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject do |line|
       line.empty? || line.start_with?("#")
@@ -24,7 +24,18 @@ RSpec.describe "Selected physical record context" do
           return {sourceNode: link, card: root.querySelector("#" + record.card),
             url: link.href, text: link.textContent, summary: record.summary || ""};
         });
-        return {markdown: listMarkdown(items), unchanged: before === document.body.innerHTML};
+        var markdown;
+        if (#{sectioned}) {
+          var group = root.querySelector("#utilities");
+          var heading = group.querySelector("h1, h2, h3, h4, h5, h6");
+          var introduction = root.querySelector("#introduction");
+          markdown = sectionedListMarkdownWithDescriptions({regions: [{node: group, cards: items,
+            headingNode: heading, label: heading.textContent}]},
+            [{node: introduction, markdown: markdownFor(introduction.outerHTML)}]);
+        } else {
+          markdown = listMarkdown(items);
+        }
+        return {markdown: markdown, unchanged: before === document.body.innerHTML};
       };
       })(window);
     JS
@@ -82,6 +93,48 @@ RSpec.describe "Selected physical record context" do
     ]
     records.insert(1, { id: "child-title", card: "child-card" }) if include_child
     selected_record_markdown(html, records)
+  end
+
+  def shared_reference_group_markdown(selected:, select_repeated: false)
+    introduction = "This complete directory introduction explains the independently selected software and its useful references."
+    html = <<~HTML
+      <section id="directory"><h1>Public service directory</h1>
+        <p>#{introduction}</p>
+        <div><h2>Open service software</h2><p>The service uses
+          <a id="license" href="/licenses/free">Free software license</a>.
+          The complete service explanation remains available to every reader.</p></div>
+        <div id="utilities"><h3>Useful links</h3>
+          <a href="/contact">Contact the maintainers</a>
+          <a id="security" href="/security">Security guidance</a>
+          <a id="source" href="/source">Source code</a>
+          <a id="bugs" href="/issues">Report an issue</a>
+          <a id="questions" href="/questions">Community questions</a>
+          <a href="/wiki">Complete service wiki</a>
+          <a href="/blog">Service updates</a>
+          <a id="source-repeat" href="/source">Source code</a>
+          <a href="/privacy">Privacy information</a>
+        </div>
+        <div>Independent closing resource <a href="/support">complete support manual</a>.</div>
+      </section>
+    HTML
+    records = [{ id: "license", card: "directory", summary: introduction }]
+    if selected
+      records.concat(%w[security source bugs questions].map { |id| { id: id, card: "utilities" } })
+      records << { id: "source-repeat", card: "utilities" } if select_repeated
+    end
+    markdown = selected_record_markdown(html, records)
+    expect(markdown).to include(introduction, "The complete service explanation remains available to every reader.")
+    expect(markdown).to include("Contact the maintainers", "Complete service wiki", "Privacy information", "Useful links")
+    expect(markdown).to include("Independent closing resource", "](https://publication.example.test/support)")
+    references = markdown.scan(%r{\[([^\]]+)\]\(https://publication\.example\.test/(contact|security|source|issues|questions|wiki|blog|privacy)\)})
+    expected_references = [
+      ["Contact the maintainers", "contact"], ["Security guidance", "security"],
+      ["Source code", "source"], ["Report an issue", "issues"],
+      ["Community questions", "questions"], ["Complete service wiki", "wiki"],
+      ["Service updates", "blog"], ["Source code", "source"], ["Privacy information", "privacy"]
+    ]
+    expect(references).to eq(expected_references)
+    markdown
   end
 
   it "does not give a secondary topic the context of its separately selected heading record" do
@@ -153,5 +206,59 @@ RSpec.describe "Selected physical record context" do
     expect(markdown.scan("](https://publication.example.test/news?type=blog)").size).to eq(5)
     expect(markdown).to include("How to encode a complete media stream", "This complete authored introduction")
     expect(markdown).to include("[complete manual](https://publication.example.test/manual)")
+  end
+
+  it "renders a selected shared reference group's complete context once without copying it into its ancestor" do
+    markdown = shared_reference_group_markdown(selected: true)
+    expect(markdown.scan("](https://publication.example.test/source)").size).to eq(2)
+    expect(markdown.scan("](https://publication.example.test/contact)").size).to eq(1)
+    expect(markdown.scan("Useful links").size).to eq(1)
+  end
+
+  it "retains a complete shared reference group when none of its references is separately selected" do
+    markdown = shared_reference_group_markdown(selected: false)
+    expect(markdown.scan("](https://publication.example.test/source)").size).to eq(2)
+    expect(markdown.scan("](https://publication.example.test/contact)").size).to eq(1)
+  end
+
+  it "preserves two separately selected physical references to the same destination" do
+    markdown = shared_reference_group_markdown(selected: true, select_repeated: true)
+    expect(markdown.scan("](https://publication.example.test/source)").size).to eq(2)
+    expect(markdown.scan("](https://publication.example.test/contact)").size).to eq(1)
+    expect(markdown.scan("Useful links").size).to eq(1)
+  end
+
+  it "keeps independently selected table-cell references as separate list records" do
+    html = <<~HTML
+      <main><h1>Complete reference directory</h1><table><tbody><tr id="resource-row">
+        <td><a id="first-reference" href="/references/first">First complete reference</a></td>
+        <td><a id="second-reference" href="/references/second">Second complete reference</a></td>
+      </tr></tbody></table></main>
+    HTML
+    records = %w[first-reference second-reference].map { |id| { id: id, card: "resource-row" } }
+    markdown = selected_record_markdown(html, records)
+    expect(markdown).to include("[First complete reference](https://publication.example.test/references/first)")
+    expect(markdown).to include("[Second complete reference](https://publication.example.test/references/second)")
+    expect(markdown.lines.count { |line| line.start_with?("- [") }).to eq(2)
+  end
+
+  it "renders a shared group's physical heading once when its section already represents that node" do
+    html = <<~HTML
+      <main><h1>Complete reference directory</h1>
+        <p id="introduction">The complete introduction remains before every reference.</p>
+        <div id="utilities"><h2>Useful links</h2>
+          <a href="/contact">Contact the maintainers</a>
+          <a id="security" href="/security">Security guidance</a>
+          <a id="source" href="/source">Source code</a>
+        </div>
+      </main>
+    HTML
+    records = %w[security source].map { |id| { id: id, card: "utilities" } }
+    markdown = selected_record_markdown(html, records, sectioned: true)
+    expect(markdown).to include("The complete introduction remains before every reference.")
+    expect(markdown.scan(%r{\[([^\]]+)\]\(https://publication\.example\.test/(contact|security|source)\)})).to eq(
+      [["Contact the maintainers", "contact"], ["Security guidance", "security"], ["Source code", "source"]]
+    )
+    expect(markdown.scan(/^## Useful links$/).size).to eq(1)
   end
 end

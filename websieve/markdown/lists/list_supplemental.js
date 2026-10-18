@@ -136,11 +136,10 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
   Array.prototype.forEach.call(clone.querySelectorAll(authorFieldSelector), function(node) {
     if (genericListAuthorMetadataNode(node) && genericListInteractionOwner(node)) node.remove();
   });
+  clone.querySelectorAll("*").forEach(function(nested) {
+    if (separatelySelectedChildren.has(nested)) nested.remove();
+  });
   clone.querySelectorAll(genericListCardSelector()).forEach(function(nested) {
-    if (separatelySelectedChildren.has(nested)) {
-      nested.remove();
-      return;
-    }
     if (nested === contentCard || (!genericListFieldBoundary(nested) &&
         nestedMetadataCards.indexOf(nested) === -1 && siblingPresentationCards.indexOf(nested) === -1)) return;
     if (supportingNestedCards.indexOf(nested) === -1) nested.remove();

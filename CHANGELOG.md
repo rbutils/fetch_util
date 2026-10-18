@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Render selected heading-and-reference-only groups once in source order while
+  preserving every physical repeated destination and all unselected resources.
+
 - Preserve heading-card destinations alongside complete authored nested lists,
   images, descriptions and inline programs in Markdown.
 

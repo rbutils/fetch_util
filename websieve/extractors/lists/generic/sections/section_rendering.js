@@ -13,6 +13,15 @@
     var primaryRecordKeys = listPrimaryRecordKeys(sectioned.regions.reduce(function(items, region) {
       return items.concat(region.cards);
     }, []));
+    var representedHeadings = new WeakSet();
+    var headingSelector = "h1, h2, h3, h4, h5, h6";
+    sectioned.regions.forEach(function(region) {
+      if (region.label && region.headingNode && region.headingNode.matches(headingSelector)) representedHeadings.add(region.headingNode);
+    });
+    descriptions.forEach(function(description) {
+      if (description.markdown && description.node && description.node.matches && description.node.matches(headingSelector)) representedHeadings.add(description.node);
+    });
+    primaryRecordKeys.recordContext.representedHeadings = representedHeadings;
     sectioned.regions.forEach(function(region, regionIndex) {
       if (region.label) {
         blocks.push({
