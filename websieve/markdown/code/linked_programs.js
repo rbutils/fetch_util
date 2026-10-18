@@ -30,6 +30,10 @@
     var parents = [code];
     surface.bindings.forEach(function(binding) {
       if (binding.reference && binding.reference.end <= binding.reference.start) return;
+      if (binding.kind === "target" && binding.node === source && binding.node.nodeName === code.nodeName &&
+          ["id", "name"].every(function(attribute) {
+            return binding.node.getAttribute(attribute) === code.getAttribute(attribute);
+          })) return;
       while (cursor < binding.offset) {
         cursor += surface.text[cursor] === "\r" && surface.text[cursor + 1] === "\n" ? 2 : 1;
         normalizedOffset++;

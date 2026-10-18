@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Apply captured source visibility before cleaning Sphinx and Read the Docs roots,
+  retaining visible programs and named targets while excluding hidden source content.
+
 - Preserve nested ordered-list structure when parent markers grow to multiple
   digits by indenting continuations to the complete emitted marker width.
 

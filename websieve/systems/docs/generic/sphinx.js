@@ -1,6 +1,7 @@
   function readTheDocsContent(metadata, info) {
     return docsEngineContent(metadata, info, {
       system: "readthedocs",
+      pruneSourceVisibility: true,
       rootSelectors: [
         ".wy-nav-content .rst-content",
         ".rst-content",
@@ -37,6 +38,7 @@
   function sphinxDocsContent(metadata, info) {
     return docsEngineContent(metadata, info, {
       system: "sphinx",
+      pruneSourceVisibility: true,
       rootSelectors: ["div.document > div > div.section", "div.document > div.section", ".document", "div.body[role='main']", "div.body", "[role='main']", "main"],
       titleSelectors: [".document h1", "div.body h1", "[role='main'] h1", "main h1"],
       fallbackTitle: function(metadata) { return (metadata.title || document.title).replace(/\s*[—-]\s*[^—-]*documentation$/i, ""); },
