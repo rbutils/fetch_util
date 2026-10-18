@@ -114,6 +114,7 @@ core/markdown_cleanup.js
 markdown/emphasis.js
 markdown/literal_inline.js
 markdown/inline_links.js
+markdown/ordered_lists.js
 markdown/block_units.js
 markdown/roots.js
 markdown/runtime.js

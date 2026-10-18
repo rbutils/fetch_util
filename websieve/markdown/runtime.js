@@ -55,6 +55,7 @@
       }
     });
     addIntrawordEmphasisRule(service);
+    addOrderedListContinuationRule(service);
     preserveLiteralAngleText(service);
 
     service.addRule("tables", {

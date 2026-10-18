@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve nested ordered-list structure when parent markers grow to multiple
+  digits by indenting continuations to the complete emitted marker width.
+
 - Preserve visible, unlinked empty-ALT supporting images in collection Markdown,
   including repeated physical occurrences, while retaining hidden and control exclusions.
 
