@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Render a positively shared collection of media records once in physical source
+  order, retaining complete heading roles, unselected peers and independent
+  same-URL images without copying every sibling image into each selected record.
+
 - Preserve authored numeric-only paragraphs and adjacent measured values instead
   of guessing gallery pagination from their text after Markdown conversion.
 

@@ -14,15 +14,54 @@ function listPrimaryRecordContext(items) {
     }
     records.push(item);
   });
-  return { byCard: byCard, headingOwners: new WeakMap(), referenceOwners: new WeakMap(), selectedSources: selectedSources };
+  return { byCard: byCard, headingOwners: new WeakMap(), referenceOwners: new WeakMap(), mediaOwners: new WeakMap(), selectedSources: selectedSources };
+}
+
+function listSelectedMediaContextOwner(card, records) {
+  if (!records || records.length < 2 || card.querySelector("pre, code, table, form, input, button, select, textarea, nav, [role='navigation'], [role='toolbar']")) return null;
+
+  function mediaRecord(node, destination) {
+    var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+      return !heading.closest("a[href]") && !listCardNodeHidden(heading) && normalizeText(heading.textContent);
+    });
+    var images = Array.from(node.querySelectorAll("img[src]")).filter(function(image) {
+      return !listCardNodeHidden(image) && materializedHttpUrl(image.getAttribute("src"));
+    });
+    var links = Array.from(node.querySelectorAll("a[href]")).filter(function(link) { return !listCardNodeHidden(link); });
+    if (!headings.length || !images.length || !links.length) return false;
+    var primary = destination || materializedHttpUrl(links[0].getAttribute("href"));
+    return !!primary && links.every(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      return url && listCanonicalKey(url) === listCanonicalKey(primary);
+    });
+  }
+
+  var owners = [];
+  for (var record of records) {
+    var source = record.sourceNode;
+    if (!source || !source.matches("a[href]") || source.closest("h1, h2, h3, h4, h5, h6") ||
+        source.querySelector("h1, h2, h3, h4, h5, h6") || !card.contains(source)) return null;
+    var owner = source.parentElement;
+    var destination = materializedHttpUrl(record.url || "");
+    while (owner && owner !== card && !mediaRecord(owner, destination)) owner = owner.parentElement;
+    if (!owner || owner === card || owners.indexOf(owner) !== -1) return null;
+    owners.push(owner);
+  }
+  var parent = owners[0].parentElement;
+  if (!parent || !owners.every(function(owner) { return owner.parentElement === parent; })) return null;
+  var peers = Array.from(parent.children).filter(function(node) {
+    return !node.matches("script, style, template") && !listCardNodeHidden(node);
+  });
+  return peers.every(function(peer) { return mediaRecord(peer); }) ? records[0] : null;
 }
 
 function listSelectedReferenceContextOwner(card, context) {
   if (!context || !context.referenceOwners || !card.matches("div, section, article, aside")) return null;
   if (context.referenceOwners.has(card)) return context.referenceOwners.get(card);
   var records = context.byCard.get(card);
-  var owner = null;
-  if (records && records.length > 1 && card.querySelector("h1, h2, h3, h4, h5, h6") && records.every(function(record) {
+  var owner = listSelectedMediaContextOwner(card, records);
+  if (owner) context.mediaOwners.set(card, owner);
+  if (!owner && records && records.length > 1 && card.querySelector("h1, h2, h3, h4, h5, h6") && records.every(function(record) {
     return record.sourceNode && record.sourceNode.matches("a[href]") && card.contains(record.sourceNode) &&
       !record.sourceNode.closest("h1, h2, h3, h4, h5, h6");
   }) && !card.querySelector("p, blockquote, pre, code, table, figure, img, picture, svg, video, audio, canvas, object, iframe, form, input, button, select, textarea, time, [datetime], [rel~='author']") &&
@@ -37,10 +76,19 @@ function listSelectedReferenceContextOwner(card, context) {
 
 function listSelectedReferenceGroupMarkdown(card, context) {
   var html = listHtmlWithoutUnsafeDestinations(card);
-  if (!context || !context.representedHeadings) return markdownFor(html).trim();
+  var mediaGroup = !!(context && context.mediaOwners && context.mediaOwners.has(card));
+  if (!mediaGroup && (!context || !context.representedHeadings)) return markdownFor(html).trim();
   var clone = document.createElement("div");
   clone.innerHTML = html;
   var selector = "h1, h2, h3, h4, h5, h6";
+  if (mediaGroup) {
+    clone.querySelectorAll(selector).forEach(function(heading) {
+      heading.querySelectorAll("br").forEach(function(lineBreak) {
+        lineBreak.replaceWith(document.createTextNode(" "));
+      });
+    });
+    return markdownFor(clone.innerHTML).trim();
+  }
   var headings = card.querySelectorAll(selector);
   var copies = clone.querySelectorAll(selector);
   if (headings.length === copies.length) {
