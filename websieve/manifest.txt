@@ -62,6 +62,7 @@ core/dom/visibility/indexed_source.js
 core/dom/visibility/subtree.js
 core/dom/visibility/projected_clone.js
 core/dom/visibility/prune.js
+core/dom/cleanup/svg_text.js
 core/dom/base.js
 core/dom/public_preview_cleanup.js
 core/dom/cleanup.js

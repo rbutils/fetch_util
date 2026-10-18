@@ -64,7 +64,7 @@
       if (el.hasAttribute("style")) el.removeAttribute("style");
       if ((el.namespaceURI || "").toLowerCase() === "http://www.w3.org/2000/svg") {
         svgUrlAttributes.forEach(function(attribute) {
-          el.removeAttribute(attribute);
+          materializeSvgPresentationAttribute(el, attribute);
         });
       }
     });

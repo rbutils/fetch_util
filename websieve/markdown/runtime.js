@@ -20,6 +20,7 @@
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     pruneClosedMarkdownDisclosures(root);
     materializeMarkdownVideoReferences(root);
+    materializeMarkdownSvgText(root);
     preserveAccessibleLinkLabels(root);
     mergeAdjacentCitationLetters(root);
     preserveInlineProse(root);

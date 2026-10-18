@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain authored SVG chart labels and references in source order, preserving
+  sanitized vector HTML and complete visible text in Markdown without exposing
+  hidden labels or closed disclosure contents.
+
 - Keep independent unlabeled resource peers in physical source order beside a
   selected reference, retaining repeated destinations and authored inline markup.
 
