@@ -1130,16 +1130,20 @@ RSpec.describe "extract asset bundle" do
   it "loads Markdown cleanup helpers before their consumer" do
     source_root = File.join(project_root, "websieve")
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
+    literal_path = "core/markdown_cleanup/literal_pre.js"
     fence_path = "core/markdown_cleanup/fences.js"
     duplicate_path = "core/markdown_cleanup/duplicates.js"
     cleanup_path = "core/markdown_cleanup.js"
 
     expect(manifest.index(fence_path)).to be < manifest.index(cleanup_path)
-    expect(manifest.index(duplicate_path)).to be_between(manifest.index(fence_path), manifest.index(cleanup_path)).exclusive
+    expect(manifest.index(literal_path)).to be < manifest.index(fence_path)
+    expect(manifest).not_to include(duplicate_path)
+    expect(File).not_to exist(File.join(source_root, duplicate_path))
     expect(File.read(File.join(source_root, fence_path))).to include("function protectMarkdownFences")
-    expect(File.read(File.join(source_root, duplicate_path))).to include("function collapseMarkdownDuplicateLines")
+    expect(File.read(File.join(source_root, literal_path))).to include("function markdownLiteralPreAt")
+    expect(File.read(File.join(source_root, fence_path))).to include("markdownLiteralPreAt(input, position)")
     expect(File.read(File.join(source_root, cleanup_path))).to include("protectMarkdownFences(markdown)")
-    expect(File.read(File.join(source_root, cleanup_path))).to include("collapseMarkdownDuplicateLines(result)")
+    expect(File.read(File.join(source_root, cleanup_path))).not_to include("collapseMarkdownDuplicateLines")
     expect(File.read(File.join(source_root, cleanup_path))).to include("restoreMarkdownFences(")
   end
 
@@ -1460,6 +1464,7 @@ RSpec.describe "extract asset bundle" do
         classifiers/list_pages/material_results/cards.js
       ], "classifiers/warnings/url_mismatch.js"],
       ["classifiers/list_pages/link_groups.js", %w[
+        markdown/lists/list_record_context.js
         markdown/lists/list_aliases.js
         markdown/lists/finalization.js
         markdown/lists/list_metadata.js
@@ -1475,6 +1480,7 @@ RSpec.describe "extract asset bundle" do
       ], "markdown/tables.js"],
       ["markdown/tables.js", %w[
         markdown/materialization/materialization_inline.js
+        markdown/materialization/disclosure_visibility.js
         markdown/materialization/materialization_containers.js
         markdown/materialization/materialization_blocks.js
         markdown/materialization/output.js
