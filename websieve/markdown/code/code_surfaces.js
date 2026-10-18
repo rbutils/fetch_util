@@ -2,7 +2,7 @@
     if (node.nodeType === 3) return node.textContent;
     if (node.nodeType !== 1) return "";
     if (node.matches("br")) return "\n";
-    if (node.matches("button, script, style, template, [hidden], [aria-hidden='true']")) return "";
+    if (node.matches("button, [role='button' i], script, style, template, [hidden], [aria-hidden='true']")) return "";
 
     var children = Array.prototype.slice.call(node.childNodes);
     var blockLines = children.filter(function(child) {

@@ -76,7 +76,7 @@
         var programKey = node.getAttribute(literalPrograms.attribute);
         if (programKey !== null) {
           var program = literalPrograms.programs[Number(programKey)];
-          if (program) return fencedCodeBlock(program.language, program.text);
+          if (program) return program.html ? "\n\n" + program.html + "\n\n" : fencedCodeBlock(program.language, program.text);
         }
         var code = node.querySelector("code");
         var text = cleanCodeText(code ? code.textContent : node.textContent);

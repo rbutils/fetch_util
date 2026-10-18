@@ -1,5 +1,6 @@
   function preserveLiteralInlineCode(root) {
     root.querySelectorAll("a:not([href])").forEach(function(anchor) {
+      if (anchor.closest("pre") && anchor.matches("[id], [name]")) return;
       if (!anchor.closest("code") && !literalNamedCodeContainer(anchor)) return;
       anchor.replaceWith.apply(anchor, Array.prototype.slice.call(anchor.childNodes));
     });

@@ -1,5 +1,6 @@
 require "spec_helper"
 require "support/extractor_integration_helpers"
+require "nokogiri"
 
 RSpec.describe FetchUtil::Extractor do
   include_context "extractor integration helpers"
@@ -47,7 +48,14 @@ RSpec.describe FetchUtil::Extractor do
 
     extract_from_url('https://manual.example.test/commands', html, reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
-      expect(markdown).to include("\ncopy\n", "\nhelp\n", 'Copy(value)', 'print("¶")', 'copy(value)')
+      expect(markdown).to include("\ncopy\n", "\nhelp\n", 'Copy(value)', 'copy(value)')
+      program = Nokogiri::HTML5.fragment(markdown).at_css('pre code')
+      expect(program.text).to eq("Copy(value)\nprint(\"¶\")\ncopy(value)")
+      expect(program.css('a[href]').map { |node| [node['href'], node.text] }).to eq(
+        [
+          ['https://manual.example.test/functions/print', 'print']
+        ]
+      )
       expect(markdown).not_to include("Copy to clipboard", "\nCopy\n", "[Share]")
     end
   end

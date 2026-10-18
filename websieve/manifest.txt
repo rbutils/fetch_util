@@ -91,6 +91,7 @@ extractors/lists/canonical_table/content.js
 systems/cms/wordpress_homepage.js
 classifiers/list_pages/ownership/homepage_peer_sections.js
 markdown/code/named_targets.js
+markdown/code/linked_programs.js
 markdown/materialization/video_posters.js
 core/docs_cleanup/engines.js
 core/docs_cleanup/literal_projection.js
@@ -107,6 +108,7 @@ markdown/materialization/output.js
 markdown/materialization/materialization.js
 markdown/card_links.js
 markdown/tables/prepared.js
+core/markdown_cleanup/literal_pre.js
 core/markdown_cleanup/fences.js
 core/markdown_cleanup.js
 markdown/emphasis.js

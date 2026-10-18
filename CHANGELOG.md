@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical HTTP references at their exact literal-program positions in
+  extracted HTML and protected Markdown, retaining complete code and named targets.
+
 - Preserve every authored prose occurrence instead of deleting repeated paragraphs
   or sentences using text-only frequency and similarity rules, while applying
   captured visibility before cleaning physical documentation roots.

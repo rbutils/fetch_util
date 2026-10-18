@@ -11,7 +11,7 @@
       if (!text) return;
       var language = (code && code.getAttribute("data-language")) || guessCodeLanguage(code || pre);
       pre.setAttribute(attribute, String(programs.length));
-      programs.push({ text: text, language: language });
+      programs.push({ text: text, language: language, html: linkedCodeProgramHtml(pre) });
       // Turndown evaluates children before the PRE replacement. The replacement
       // owns the complete literal program, so its discarded child conversion
       // needs only a nonblank token rather than another pass over every byte.

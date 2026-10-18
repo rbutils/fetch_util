@@ -1,5 +1,5 @@
-  function namedCodeTargetSurface(source) {
-    var chunks = [], targets = [], length = 0;
+  function namedCodeTargetSurface(source, preserveReferences) {
+    var chunks = [], targets = [], bindings = [], references = [], length = 0;
     function append(text) {
       chunks.push(text);
       length += text.length;
@@ -8,10 +8,23 @@
       if (node.nodeType === 3) { append(node.textContent); return; }
       if (node.nodeType !== 1) return;
       if (node.matches("br")) { append("\n"); return; }
-      if (node.matches("button, script, style, template, [hidden], [aria-hidden='true']")) return;
-      if (node.matches("a[id], a[name]") && !node.textContent && !node.children.length &&
-          (node.getAttribute("id") || node.getAttribute("name"))) {
-        targets.push({ node: node, offset: length });
+      if (node.matches("button, [role='button' i], script, style, template, [hidden], [aria-hidden='true']")) return;
+      var emptyTarget = node.matches("a[id], a[name]") && !node.textContent && !node.children.length &&
+        (node.getAttribute("id") || node.getAttribute("name"));
+      if (emptyTarget) {
+        var target = { node: node, offset: length, kind: "target" };
+        targets.push(target);
+        if (preserveReferences) bindings.push(target);
+      }
+      var href = preserveReferences && node.matches("a[href]") && normalizeText(node.textContent) &&
+        materializedHttpUrl(node.getAttribute("href"));
+      var reference = href ? { node: node, href: href, start: length, end: length } : null;
+      if (reference) {
+        references.push(reference);
+        bindings.push({ kind: "open", offset: length, reference: reference });
+      } else if (preserveReferences && !emptyTarget && !node.matches("pre") &&
+          (node.hasAttribute("id") || node.matches("a[name]"))) {
+        bindings.push({ kind: "target", node: node, offset: length });
       }
       var children = Array.prototype.slice.call(node.childNodes);
       var lines = children.filter(function(child) {
@@ -24,13 +37,18 @@
       } else {
         children.forEach(walk);
       }
+      if (reference) {
+        reference.end = length;
+        bindings.push({ kind: "close", offset: length, reference: reference });
+      }
     }
     var nodes = Array.isArray(source) ? source : [source];
     nodes.forEach(function(node, index) { if (index) append("\n"); walk(node); });
-    return { text: chunks.join(""), targets: targets };
+    return { text: chunks.join(""), targets: targets, bindings: bindings, references: references };
   }
 
   function appendNamedCodeTargets(code, text, source) {
+    if (appendLinkedCodeReferences(code, text, source)) return;
     var nodes = Array.isArray(source) ? source : [source];
     if (!source || !nodes.some(function(node) { return node.querySelector("a[id], a[name]"); })) {
       code.textContent = text;

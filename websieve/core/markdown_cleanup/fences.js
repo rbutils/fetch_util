@@ -4,7 +4,8 @@
     var protectedMarkdown = "";
     var position = 0;
     while (position < input.length) {
-      var fence = markdownFencedCodeAt(input, position) || markdownIndentedFenceAt(input, position);
+      var fence = markdownFencedCodeAt(input, position) || markdownIndentedFenceAt(input, position) ||
+        markdownLiteralPreAt(input, position);
       if (fence && fence.end > position) {
         protectedMarkdown += "@@FETCH_UTIL_FENCE_" + fencedBlocks.length + "@@";
         fencedBlocks.push(input.slice(position, fence.end));
