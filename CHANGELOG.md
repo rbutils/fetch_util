@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain documentation disclosure summaries, their complete resource markup and
+  open/closed state while keeping hidden answers and source-hidden content excluded.
+
 - Preserve complete authored resource groups and prose beside status badges,
   removing only positively badge-only material instead of an entire mixed owner.
 

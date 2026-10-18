@@ -103,18 +103,17 @@
     return docsContentBySelectors(metadata, ["main article", "main", "article"], {
       titleSelectors: ["main article h1", "main h1", "article h1"],
       fallbackTitle: function(metadata) { return metadata.title || document.title; },
+      pruneSourceVisibility: true,
       rewriteRoot: function(root) {
         root.querySelectorAll("nav, aside, .sidebar, [data-testid='side-nav'], [data-testid='breadcrumbs']").forEach(function(el) {
           el.remove();
         });
         removeNodesByText(root, "div, p, span, button, a", /^(on this page|edit this page on github|theme)$/i);
         root.querySelectorAll("details summary").forEach(function(el) {
-          var text = compactReferenceText(el.textContent);
-          if (text) {
-            var heading = document.createElement("h3");
-            heading.textContent = text;
-            el.replaceWith(heading);
-          }
+          if (!compactReferenceText(el.textContent) || el.querySelector("h1, h2, h3, h4, h5, h6")) return;
+          var heading = document.createElement("h3");
+          while (el.firstChild) heading.appendChild(el.firstChild);
+          el.appendChild(heading);
         });
       }
     });
