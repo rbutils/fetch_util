@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve visible static map image layers and their physical occurrences while
+  continuing to remove interactive map tiles and controls.
+
 - Retain every authored secondary documentation heading and its destination
   instead of deleting later H1 sections by position.
 

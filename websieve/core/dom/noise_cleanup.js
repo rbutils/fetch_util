@@ -149,27 +149,7 @@
       if (textLength(el) < 30) el.remove();
     });
 
-    // Strip map tile images and zoom controls
-    root.querySelectorAll("img").forEach(function(img) {
-      var src = (img.getAttribute("src") || "");
-      if (/maps\.wikimedia\.org\/osm|\/osm-intl\/\d+\/|tile\.openstreetmap\.org|maps\.wikimedia\.org\/v4\/marker/i.test(src)) img.remove();
-    });
-    root.querySelectorAll("a, button, div, span").forEach(function(el) {
-      var text = normalizeText(el.textContent).toLowerCase();
-      var title = (el.getAttribute("title") || "").toLowerCase();
-      if (/^(zoom in|zoom out|show in full screen|layers|leaflet|maplibre)$/.test(text) && textLength(el) < 40 && !codeContentNode(el)) el.remove();
-      else if (/^(zoom in|zoom out)$/.test(title) && textLength(el) < 10 && !codeContentNode(el)) el.remove();
-    });
-    // Match map-library containers, not substrings in leaflet cards or roadmap sections.
-    var mapContainerSelector = [
-      ".leaflet-container, .leaflet-pane, .leaflet-control, .leaflet-top, .leaflet-bottom",
-      ".maplibregl-map, .maplibregl-canvas-container, .maplibregl-control-container, .maplibre-map",
-      ".map-container, .mw-kartographer-container, .kartographer-container"
-    ].join(", ");
-    root.querySelectorAll(mapContainerSelector).forEach(function(el) {
-      // Only strip if it doesn't contain substantial text content
-      if (textLength(el) < 200) el.remove();
-    });
+    stripMapWidgets(root);
 
     return root;
   }
