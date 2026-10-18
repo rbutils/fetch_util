@@ -27,6 +27,7 @@
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     normalizeCodeBlocks(root);
+    preserveWholeInlineCodeLinks(root);
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);
     separateAdjacentInlineLinks(root);

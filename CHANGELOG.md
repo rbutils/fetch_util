@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep whole linked inline program values literal by placing their reference around
+  the code span instead of serializing Markdown link syntax inside the program.
+
 - Retain independently labelled resource links in owned collection reference groups
   even when their destination matches the record's primary link.
 

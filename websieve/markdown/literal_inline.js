@@ -35,6 +35,26 @@
       !(anchor.parentElement && tagSpacingEvidence(anchor.parentElement));
   }
 
+  function preserveWholeInlineCodeLinks(root) {
+    root.querySelectorAll("code").forEach(function(code) {
+      if (code.closest("pre, button, form, [role='button' i], [role='tab' i], [hidden], [aria-hidden='true'], [inert]") ||
+          code.querySelector("code, img, br, pre, svg, math, button, input, textarea, select")) return;
+      var links = code.querySelectorAll("a[href]");
+      if (links.length !== 1) return;
+      var link = links[0];
+      var text = code.textContent;
+      if (!text || /[\r\n]/.test(text) || text !== link.textContent ||
+          !materializedHttpUrl(link.getAttribute("href"))) return;
+      if (Array.prototype.some.call(code.querySelectorAll("[id], [name]"), function(target) {
+        return target !== link;
+      })) return;
+
+      code.replaceChildren(document.createTextNode(text));
+      code.replaceWith(link);
+      link.replaceChildren(code);
+    });
+  }
+
   function literalInlinePresentation(code) {
     var descendants = code.querySelectorAll("*");
     return descendants.length > 0 && Array.prototype.every.call(descendants, function(node) {
