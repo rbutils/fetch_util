@@ -31,6 +31,7 @@ function listClonedCardNode(card, clone, node) {
 
 function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLinks, primaryProseLinks) {
   if (!node || !node.cloneNode) return "";
+  var linkedRoot = node.closest && node.closest("a[href]");
   var clone = visibilityChecked ? node : node.cloneNode(true);
   if (!visibilityChecked) pruneListCardVisibility(node, clone);
   pruneClosedMarkdownDisclosures(clone);
@@ -40,6 +41,12 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
     if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
     return markdownLink(rootLabel || inlineLinkLabel(clone) || normalizeText(clone.getAttribute("title")), clone.getAttribute("href"));
   }
+  clone.querySelectorAll("img[src]").forEach(function(image) {
+    if (linkedRoot || normalizeText(image.getAttribute("alt") || "") ||
+        image.closest("a[href], pre, code, kbd, samp, button, [role='button' i], [role='tab' i], [role='menuitem' i], [role='toolbar' i], nav, [role='navigation' i]")) return;
+    var url = materializedHttpUrl(image.getAttribute("src"));
+    if (url) image.replaceWith(clone.ownerDocument.createTextNode(" ![](" + url + ") "));
+  });
   clone.querySelectorAll("a[href]").forEach(function(link) {
     var label = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
     var url = materializedHttpUrl(link.getAttribute("href"));

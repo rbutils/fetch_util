@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve visible, unlinked empty-ALT supporting images in collection Markdown,
+  including repeated physical occurrences, while retaining hidden and control exclusions.
+
 - Preserve physical HTTP references at their exact literal-program positions in
   extracted HTML and protected Markdown, retaining complete code and named targets.
 
