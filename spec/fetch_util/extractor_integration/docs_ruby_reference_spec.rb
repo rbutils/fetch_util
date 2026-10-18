@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
@@ -355,13 +357,19 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page("https://rubyapi.org/3.4/o/string", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new.extract(page)
+      headings = Nokogiri::HTML5.fragment(payload.fetch('html')).css('h1')
 
-      expect(payload["markdown"]).to include("# String")
+      expect(headings.map(&:text)).to eq(['String'])
+      expect(headings.first.css('a[href]').map { |link| [link['href'], link.text] })
+        .to eq([['https://rubyapi.org/3.4/o/string', 'String']])
+      expect(payload['markdown']).to include('# [String](https://rubyapi.org/3.4/o/string)')
       expect(payload["markdown"]).to include("A `String` object has an arbitrary sequence of bytes")
       expect(payload["markdown"]).to include("## Methods for Creating a String")
       expect(payload["markdown"]).not_to include("Enable Type Signatures")
       expect(payload["markdown"]).not_to include("Preview")
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
