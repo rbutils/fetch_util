@@ -160,14 +160,14 @@ RSpec.describe 'FetchUtil complete materialized manual sections' do
         var calls = 0;
         var materializedCalls = 0;
         var titleEvidenceCalls = 0;
-        var formatViewCalls = 0;
+        var formatRootCalls = 0;
         var detectingFormat = false;
         var sanitized = null;
         var original = sanitizedHtml;
         var originalMaterialized = materializedHtml;
         var originalTitleEvidence = articleTitleFromDeclaredDescription;
         var originalFormat = detectContentFormat;
-        var originalView = multiTopicExtractionView;
+        var originalRoot = multiTopicExtractionRoot;
         sanitizedHtml = function(html, previews) {
           if (html === content.html) calls++;
           var cleaned = original(html, previews);
@@ -187,21 +187,21 @@ RSpec.describe 'FetchUtil complete materialized manual sections' do
           try { return originalFormat.apply(this, arguments); }
           finally { detectingFormat = false; }
         };
-        multiTopicExtractionView = function() {
-          if (detectingFormat) formatViewCalls++;
-          return originalView.apply(this, arguments);
+        multiTopicExtractionRoot = function() {
+          if (detectingFormat) formatRootCalls++;
+          return originalRoot.apply(this, arguments);
         };
         try {
           var result = finalizeExtractResult(content, metadata, pageReadableText(), null, null);
           return { calls: calls, materializedCalls: materializedCalls, titleEvidenceCalls: titleEvidenceCalls,
-            formatViewCalls: formatViewCalls, contentFormat: result.contentFormat,
+            formatRootCalls: formatRootCalls, contentFormat: result.contentFormat,
             sanitized: sanitized, html: result.html, markdown: result.markdown };
         } finally {
           sanitizedHtml = original;
           materializedHtml = originalMaterialized;
           articleTitleFromDeclaredDescription = originalTitleEvidence;
           detectContentFormat = originalFormat;
-          multiTopicExtractionView = originalView;
+          multiTopicExtractionRoot = originalRoot;
         }
       });
       })(window);
@@ -224,9 +224,9 @@ RSpec.describe 'FetchUtil complete materialized manual sections' do
       expect(changed.fetch('titleEvidenceCalls')).to be_positive
       expect(changed_title.fetch('titleEvidenceCalls')).to be_positive
       expect(unchanged.fetch('contentFormat')).to be_nil
-      expect(unchanged.fetch('formatViewCalls')).to eq(0)
-      expect(changed.fetch('formatViewCalls')).to be_positive
-      expect(changed_title.fetch('formatViewCalls')).to be_positive
+      expect(unchanged.fetch('formatRootCalls')).to eq(0)
+      expect(changed.fetch('formatRootCalls')).to be_positive
+      expect(changed_title.fetch('formatRootCalls')).to be_positive
       [unchanged, changed, changed_title].each do |result|
         expect(result.fetch('html')).not_to include('onclick=', 'style=', 'mailto:', 'javascript:')
         %w[html markdown].each do |format|
