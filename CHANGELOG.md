@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain independently labelled resource links in owned collection reference groups
+  even when their destination matches the record's primary link.
+
 - Retain complete unselected figure descriptions in collection Markdown, including
   physical images, captions, resources and programs in their source order.
 

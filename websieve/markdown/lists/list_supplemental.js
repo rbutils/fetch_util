@@ -28,6 +28,37 @@ function listOuterSupplementalCard(item, card) {
   }) ? owner : null;
 }
 
+function listSupplementalResourceReference(link, item, card, selectedContext, cache) {
+  if (!link || !item.sourceNode || !card || !card.contains(link)) return false;
+  var group = link.parentElement && link.parentElement.closest("p, div, ul, ol, li, dd, td, th");
+  if (!group || group === card || !card.contains(group)) return false;
+  if (cache.has(group)) return cache.get(group);
+  cache.set(group, false);
+  if (group.contains(item.sourceNode) || listSupplementalNavigationOwner(group) ||
+      group.closest("pre, code, kbd, samp, form, button, [role='button' i], [role='tab' i], [role='toolbar' i], [role='dialog' i]") ||
+      group.querySelector("h1, h2, h3, h4, h5, h6, pre, code, kbd, samp, table, figure, picture, img, svg, video, audio, iframe, form, input, button, select, textarea, [aria-controls]")) return false;
+  var links = Array.from(group.querySelectorAll("a[href]")).filter(function(anchor) {
+    return !listCardNodeHidden(anchor);
+  });
+  if (links.length < 2 || links.indexOf(link) === -1) return false;
+  var destinations = new Set();
+  var primaryLabels = [item.text, item.displayText].map(normalizeText).filter(Boolean);
+  if (!links.every(function(anchor) {
+    var url = materializedHttpUrl(anchor.getAttribute("href"));
+    var label = normalizeText(anchor.textContent || anchor.getAttribute("aria-label") || "");
+    if (!url || !label || primaryLabels.indexOf(label) !== -1 ||
+        listSupplementalInteractionLink(anchor) ||
+        (selectedContext && selectedContext.selectedSources.has(anchor))) return false;
+    destinations.add(listCanonicalKey(url));
+    return true;
+  }) || destinations.size < 2) return false;
+  var remainder = group.cloneNode(true);
+  remainder.querySelectorAll("a[href]").forEach(function(anchor) { anchor.remove(); });
+  if (!/^[\s|·,;:–—\/-]*$/.test(remainder.textContent || "")) return false;
+  cache.set(group, true);
+  return true;
+}
+
 function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryRecordKeys) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var selectedContentCard = item.contentCard;
@@ -69,6 +100,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     }).filter(function(node) { return node && card.contains(node); });
   }
   var selectedContext = primaryRecordKeys && primaryRecordKeys.recordContext;
+  var resourceGroups = new WeakMap();
   Array.prototype.forEach.call(card.querySelectorAll("a[href]"), function(link) {
     var url = materializedHttpUrl(link.getAttribute("href"));
     var representedPrimary = primaryRecordKeys ?
@@ -79,12 +111,13 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     var ownedProseReference = prose && ownerProse.indexOf(prose) !== -1 &&
       (outerOwnerProse.indexOf(prose) !== -1 || normalizeText(prose.textContent || "").length >= 30);
     var ownedHeadingReference = listSupplementalHeadingReference(link, item, card);
-    if (!url || (!ownedProseReference && !ownedHeadingReference && (listSupplementalInteractionLink(link) ||
+    var ownedResourceReference = listSupplementalResourceReference(link, item, card, selectedContext, resourceGroups);
+    if (!url || (!ownedProseReference && !ownedHeadingReference && !ownedResourceReference && (listSupplementalInteractionLink(link) ||
         representedPrimary))) return;
     var clonedLink = listClonedCardNode(card, clone, link);
     if (clonedLink) {
       supportingLinks.add(clonedLink);
-      if (ownedProseReference) primaryProseLinks.add(clonedLink);
+      if (ownedProseReference || ownedResourceReference) primaryProseLinks.add(clonedLink);
     }
   });
   var metadataSelector = "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], time, [datetime], [class*='score' i], [class*='point' i], [class*='reply' i], [class*='comment' i], [class*='community' i], [class*='metric' i], [class*='stat' i]";
