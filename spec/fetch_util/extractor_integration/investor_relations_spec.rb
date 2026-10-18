@@ -18,8 +18,8 @@ RSpec.describe 'Investor relations extraction' do
     end
   end
 
-  it 'does not fabricate financial links from generic earnings copy and unlabeled site images' do
-    html = <<~HTML
+  def unlabeled_dashboard_html
+    <<~HTML
       <html>
         <head><title>Creator rewards dashboard</title></head>
         <body>
@@ -38,6 +38,14 @@ RSpec.describe 'Investor relations extraction' do
         </body>
       </html>
     HTML
+  end
+
+  it 'does not fabricate financial links from generic earnings copy and unlabeled site images' do
+    consent = '<p>We use cookies. Choose your cookie preferences.</p><button>Accept all cookies</button>'
+    html = unlabeled_dashboard_html.sub(
+      '<div class="cookie-settings">',
+      "<div class=\"cookie-settings\" role=\"dialog\" aria-label=\"Cookie preferences\">#{consent}"
+    )
 
     with_url_page('https://rewards.example/dashboard', html) do |page|
       payload = FetchUtil::Extractor.new.extract(page)
@@ -126,6 +134,20 @@ RSpec.describe 'Investor relations extraction' do
       expect_content_type(payload, 'press_release')
       expect(payload['markdown']).to include('| Revenue | Quarter |')
       expect(payload['markdown']).to include('Quarterly report PDF')
+    end
+  end
+
+  it 'preserves unlabeled article resources without inventing financial or consent ownership' do
+    with_url_page('https://rewards.example/dashboard', unlabeled_dashboard_html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = FetchUtil::Extractor.new.extract(page)
+
+      expect(payload.fetch('markdown')).to include('Track group earnings by day, month, and all time.')
+      expect(payload.fetch('markdown')).not_to include('## Financial Statement Links')
+      %w[/cookie/close.svg /cookie/powered-by.svg].each do |path|
+        expect(payload.fetch('markdown')).to include("![](https://rewards.example#{path})")
+      end
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end
