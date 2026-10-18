@@ -124,8 +124,6 @@
       // Strip HTML comment artifacts that bleed through
       .replace(/\s*-->\s*/g, " ")
       .replace(/\s*<!--\s*/g, " ")
-      // Strip image gallery pagination counters (e.g. "1 14", "2 14" between images)
-      .replace(/(?:^|\n)\s*\d{1,3}\s+\d{1,3}\s*(?:\n|$)/g, "\n")
       // Strip markdown links pointing to ad/tracking redirect domains (Outbrain, Taboola, etc.)
       // These leak through when the ad widget's container isn't caught by class/id stripping
       .replace(MARKDOWN_AD_NETWORK_LINK_PATTERN, "")

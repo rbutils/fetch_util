@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve authored numeric-only paragraphs and adjacent measured values instead
+  of guessing gallery pagination from their text after Markdown conversion.
+
 - Keep heading-free reference groups on the complete typed-record rendering path
   instead of treating them as whole headed resource sections.
 
