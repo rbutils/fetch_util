@@ -10,7 +10,9 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut lists archive thread
   end
 
   it 'preserves the complete archive conversation and traversal inventory' do
-    extract_from_url('https://lists.example.test/~alice/project-list/thread/root', sourcehut_thread_fixture,
+    html = sourcehut_thread_fixture.gsub('<details', '<details open')
+
+    extract_from_url('https://lists.example.test/~alice/project-list/thread/root', html,
                      reader_mode: false) do |payload|
       markdown = payload.fetch('markdown')
       expect(payload).to include('contentType' => 'social', 'socialKind' => 'thread', 'platform' => 'SourceHut',
@@ -50,6 +52,7 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut lists archive thread
 
   it 'preserves encoded opaque message ids and literal plus signs' do
     html = sourcehut_thread_fixture
+           .gsub('<details', '<details open')
            .gsub('/thread/root/', '/topic%2Fwith+plus/')
            .sub('id="thread/root" href="#thread/root"',
                 'id="topic/with+plus" href="#topic%2Fwith%2Bplus"')
@@ -129,6 +132,23 @@ RSpec.describe 'FetchUtil extractor integration - SourceHut lists archive thread
       extract_from_url(url, sourcehut_thread_fixture, reader_mode: false) do |payload|
         expect(payload['platform']).not_to eq('SourceHut')
       end
+    end
+  end
+
+  it 'keeps closed metadata hidden while retaining conversation and declared raw traversal' do
+    extract_from_url('https://lists.example.test/~alice/project-list/thread/root', sourcehut_thread_fixture,
+                     reader_mode: false) do |payload|
+      markdown = payload.fetch('markdown')
+
+      expect(payload).to include('platform' => 'SourceHut', 'replyCount' => 5)
+      expect(markdown).to include('Details', 'Opening archive message.', 'Second archive reply.')
+      expect(markdown).not_to include('Message ID', 'DKIM signature', 'In-Reply-To: thread/root')
+      expect(markdown).to include(
+        '[Raw opening message](https://lists.example.test/~alice/project-list/thread/root/raw)',
+        '[Raw reply 1](https://lists.example.test/~alice/project-list/reply-1/raw)'
+      )
+      expect(markdown.scan('Repeated idless archive reply.').length).to eq(2)
+      expect(markdown).not_to include('Hidden archive reply', 'Duplicate stable reply must not render')
     end
   end
 end
