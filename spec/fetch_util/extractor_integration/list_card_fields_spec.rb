@@ -864,10 +864,17 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       page.add_script_tag(content: list_card_fields_source)
       result = page.evaluate(<<~JAVASCRIPT)
         (() => {
+          const before = document.body.innerHTML;
           const card = document.querySelector('main > div');
-          const items = Array.from(card.querySelectorAll('a')).map(link =>
-            FetchUtilListFieldsTest.candidate(link, card, FetchUtilListFieldsTest.context()));
+          const links = Array.from(card.querySelectorAll('a'));
+          const items = links.map(link => Object.assign(
+            FetchUtilListFieldsTest.candidate(link, card, FetchUtilListFieldsTest.context()),
+            { sourceNode: link }
+          ));
           return {
+            before,
+            after: document.body.innerHTML,
+            selectedSources: items.every((item, index) => item.sourceNode === links[index]),
             sharedCard: items.every(item => item.card === card),
             description: FetchUtilListFieldsTest.description(card, items),
             markdown: FetchUtilListFieldsTest.render(items)
@@ -876,10 +883,19 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
       JAVASCRIPT
 
       summary = "Explore practical workshops with expert teachers who support your learning goals."
+      expect(result["after"]).to eq(result["before"])
+      expect(result["selectedSources"]).to be(true)
       expect(result["sharedCard"]).to be(true)
       expect(result["description"].scan(summary)).to eq([summary])
       expect(result["markdown"]).not_to include(summary)
       expect(result["markdown"].scan(%r{https://learning.example/learn/}).length).to eq(3)
+      expect(result["markdown"].scan(%r{\[([^\]]+)\]\((https://learning\.example/learn/[^)]+)\)})).to eq(
+        [
+          ["Explore cartography workshops", "https://learning.example/learn/maps"],
+          ["Explore scientific research workshops", "https://learning.example/learn/science"],
+          ["Explore music composition workshops", "https://learning.example/learn/music"]
+        ]
+      )
     end
   end
 
