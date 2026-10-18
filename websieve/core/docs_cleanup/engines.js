@@ -67,14 +67,17 @@ function docsArticleContent(metadata, node, options) {
 
   options = options || {};
   var sourceNode = options.focusFragment === false ? node : focusedDocsNode(node);
+  var pruneSourceVisibility = options.pruneSourceVisibility === true ||
+    (options.pruneSourceVisibility !== false && sourceNode.isConnected &&
+      sourceNode.ownerDocument === document && sourceNode.getRootNode() === document);
   var materialRoot = options.preserveSourceMaterialRoot;
   var referenceRoots = (options.preserveSourceReferenceRoots || []).filter(function(reference) { return sourceNode.contains(reference); });
-  var preserveCodeTargets = options.pruneSourceVisibility && sourceNode.querySelector("pre a[id], pre a[name]");
+  var preserveCodeTargets = pruneSourceVisibility && sourceNode.querySelector("pre a[id], pre a[name]");
   var authoredReferences = docsAuthoredSourceReferences(sourceNode);
   var needsSourceClones = (materialRoot && sourceNode.contains(materialRoot)) || referenceRoots.length || preserveCodeTargets ||
-    (options.pruneSourceVisibility && authoredReferences.length);
+    (pruneSourceVisibility && authoredReferences.length);
   var sourceClones = needsSourceClones ? new Map() : null;
-  var readableSource = options.pruneSourceVisibility ?
+  var readableSource = pruneSourceVisibility ?
     visibilityPrunedClone(sourceNode, document, sourceClones, options.preserveMaterializedCollection === true) : sourceNode;
   if (preserveCodeTargets) restorePrunedNamedCodeTargets(sourceNode, sourceClones);
   if (sourceClones && materialRoot) {

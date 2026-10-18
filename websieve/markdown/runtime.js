@@ -3,9 +3,7 @@
     var allowArticleMailto = inlineArticleMailtoMaySurviveUntilFinalType(content);
     if (content.focalPublicPreview && content.html) markdown = markdownFor(sanitizedHtml(content.html, true), true, allowArticleMailto);
     else if (!markdown && content.html) markdown = markdownFor(sanitizedHtml(content.html), false, allowArticleMailto);
-    var preserveAuthoredRepeats = content.sourceOwnedUnattributedManual &&
-      content.sourceOwnedCleanedManualHtml === content.html;
-    return cleanupMarkdownNoise(markdown || content.textContent || "", preserveAuthoredRepeats).trim();
+    return cleanupMarkdownNoise(markdown || content.textContent || "").trim();
   }
 
   function contentMarkdownWithDetails(body, title, details) {

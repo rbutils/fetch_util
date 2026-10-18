@@ -855,9 +855,9 @@ RSpec.describe 'FetchUtil extractor integration' do
           <main>
             <h1>The Shawshank Redemption</h1>
             <p data-testid="plot">
-              <span role="presentation" data-testid="plot-xs_to_m"><span>#{plot}</span></span>
+              <span role="presentation" data-testid="plot-xs_to_m" style="display:none"><span>#{plot}</span></span>
               <span role="presentation" data-testid="plot-l"><span>#{plot}</span></span>
-              <span role="presentation" data-testid="plot-xl"><span>#{plot}</span></span>
+              <span role="presentation" data-testid="plot-xl" style="display:none"><span>#{plot}</span></span>
             </p>
             <section>
               <h2>Top Cast</h2>
@@ -883,11 +883,19 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page("https://www.example-movies.test/title/tt0111161/", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      visible_plots = page.evaluate(<<~JS)
+        Array.from(document.querySelectorAll('[data-testid="plot"] > [role="presentation"]'))
+          .filter(node => getComputedStyle(node).display !== 'none')
+          .map(node => node.textContent);
+      JS
+      expect(visible_plots).to eq([plot])
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("article")
       expect(payload["markdown"].scan(plot).length).to eq(1)
       expect(payload["markdown"]).to include("Top Cast")
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

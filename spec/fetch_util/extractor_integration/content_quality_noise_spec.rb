@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe 'FetchUtil extractor integration - content quality noise' do
   include_context 'extractor integration helpers'
 
-  it "collapses consecutive duplicate lines in extracted markdown" do
+  it "preserves independently authored consecutive paragraphs with the same text" do
     html = <<~HTML
       <html>
         <head><title>Test Article</title></head>
@@ -26,19 +26,20 @@ RSpec.describe 'FetchUtil extractor integration - content quality noise' do
     HTML
 
     with_url_page("https://www.example.com/test-article", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = extract(page)
 
       markdown = payload["markdown"]
-      # Consecutive duplicates (3+) should be collapsed to 1 occurrence
       occurrences = markdown.scan(/Share this article/).length
-      expect(occurrences).to eq(1)
+      expect(occurrences).to eq(4)
+      expect(payload.fetch('html').scan(/Share this article/).length).to eq(4)
       expect(markdown).to include("Introduction paragraph with real content")
       expect(markdown).to include("The article continues with more meaningful text")
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
-  it "collapses non-consecutive duplicate lines appearing many times" do
-    # Build HTML with the same line repeated 5 times non-consecutively
+  it "preserves all physical repeated paragraphs between distinct authored paragraphs" do
     items = 5.times.map do |i|
       "<p>Unique paragraph number #{i + 1}.</p>\n<p>Repeated boilerplate line here</p>"
     end.join("\n")
@@ -57,12 +58,16 @@ RSpec.describe 'FetchUtil extractor integration - content quality noise' do
     HTML
 
     with_url_page("https://www.example.com/dup-test", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = extract(page)
 
       markdown = payload["markdown"]
-      # Non-consecutive duplicates appearing 4+ times should be collapsed to first occurrence only
       occurrences = markdown.scan(/Repeated boilerplate line here/).length
-      expect(occurrences).to be <= 3
+      expect(occurrences).to eq(5)
+      expect(payload.fetch('html').scan(/Repeated boilerplate line here/).length).to eq(5)
+      unique = markdown.scan(/Unique paragraph number \d+\./)
+      expect(unique).to eq((1..5).map { |number| "Unique paragraph number #{number}." })
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve every authored prose occurrence instead of deleting repeated paragraphs
+  or sentences using text-only frequency and similarity rules, while applying
+  captured visibility before cleaning physical documentation roots.
+
 - Preserve visible static map image layers and their physical occurrences while
   continuing to remove interactive map tiles and controls.
 
