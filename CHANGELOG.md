@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep independent unlabeled resource peers in physical source order beside a
+  selected reference, retaining repeated destinations and authored inline markup.
+
 - Keep whole linked inline program values literal by placing their reference around
   the code span instead of serializing Markdown link syntax inside the program.
 

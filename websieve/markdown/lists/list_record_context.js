@@ -14,7 +14,39 @@ function listPrimaryRecordContext(items) {
     }
     records.push(item);
   });
-  return { byCard: byCard, headingOwners: new WeakMap(), referenceOwners: new WeakMap(), mediaOwners: new WeakMap(), selectedSources: selectedSources };
+  return {
+    byCard: byCard,
+    headingOwners: new WeakMap(),
+    referenceOwners: new WeakMap(),
+    mediaOwners: new WeakMap(),
+    unlabeledPeerOwners: new WeakMap(),
+    selectedSources: selectedSources
+  };
+}
+
+function listUnlabeledReferencePeer(link) {
+  return !normalizeText(link.textContent || "") &&
+    !normalizeText(link.getAttribute("aria-label") || "") &&
+    !normalizeText(link.getAttribute("title") || "");
+}
+
+function listSelectedUnlabeledReferenceContextOwner(card, records) {
+  if (!records || records.length !== 1 ||
+      card.closest("nav, [role='navigation'], [role='toolbar'], [role='button']") ||
+      card.querySelector("p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, blockquote, pre, code, table, figure, img, picture, svg, video, audio, canvas, object, iframe, form, input, button, select, textarea, time, [datetime], [rel~='author'], [aria-controls], [role='button']")) return null;
+  var source = records[0].sourceNode;
+  if (!source || source.parentElement !== card || !source.matches("a[href]")) return null;
+  var links = Array.from(card.children).filter(function(node) { return !listCardNodeHidden(node); });
+  if (!links.includes(source) || !links.every(function(link) {
+    return link.matches("a[href]") && materializedHttpUrl(link.getAttribute("href")) &&
+      (normalizeText(link.textContent || "") || listUnlabeledReferencePeer(link));
+  })) return null;
+  if (Array.from(card.childNodes).some(function(node) {
+    return node.nodeType === 3 && normalizeText(node.textContent || "");
+  })) return null;
+  return links.some(function(link) {
+    return link !== source && listUnlabeledReferencePeer(link);
+  }) ? records[0] : null;
 }
 
 function listSelectedMediaContextOwner(card, records) {
@@ -59,8 +91,12 @@ function listSelectedReferenceContextOwner(card, context) {
   if (!context || !context.referenceOwners || !card.matches("div, section, article, aside")) return null;
   if (context.referenceOwners.has(card)) return context.referenceOwners.get(card);
   var records = context.byCard.get(card);
-  var owner = listSelectedMediaContextOwner(card, records);
-  if (owner) context.mediaOwners.set(card, owner);
+  var owner = listSelectedUnlabeledReferenceContextOwner(card, records);
+  if (owner) context.unlabeledPeerOwners.set(card, owner);
+  if (!owner) {
+    owner = listSelectedMediaContextOwner(card, records);
+    if (owner) context.mediaOwners.set(card, owner);
+  }
   if (!owner && records && records.length > 1 && card.querySelector("h1, h2, h3, h4, h5, h6") && records.every(function(record) {
     return record.sourceNode && record.sourceNode.matches("a[href]") && card.contains(record.sourceNode) &&
       !record.sourceNode.closest("h1, h2, h3, h4, h5, h6");
@@ -75,6 +111,18 @@ function listSelectedReferenceContextOwner(card, context) {
 }
 
 function listSelectedReferenceGroupMarkdown(card, context) {
+  if (context && context.unlabeledPeerOwners && context.unlabeledPeerOwners.has(card)) {
+    var peers = card.cloneNode(true);
+    pruneListCardVisibility(card, peers);
+    peers.querySelectorAll("a[href]").forEach(function(link) {
+      var destination = materializedHttpUrl(link.getAttribute("href"));
+      if (destination && listUnlabeledReferencePeer(link)) {
+        link.textContent = destination;
+        link.after(peers.ownerDocument.createElement("br"));
+      }
+    });
+    return markdownFor(listHtmlWithoutUnsafeDestinations(peers)).trim();
+  }
   var html = listHtmlWithoutUnsafeDestinations(card);
   var mediaGroup = !!(context && context.mediaOwners && context.mediaOwners.has(card));
   if (!mediaGroup && (!context || !context.representedHeadings)) return markdownFor(html).trim();
