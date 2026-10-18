@@ -25,16 +25,23 @@ RSpec.describe 'Declared reference tree identity' do
 
   it 'retains every declared reference relationship beside the prose and code' do
     with_url_page('https://reference.example.test/api/Ledger.html', reference_html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract(page)
       document = Nokogiri::HTML5.fragment(result.fetch('html'))
 
       expect(result.fetch('title')).to eq('Domain::Ledger')
       expect(result.fetch('readerMode')).to be(false)
-      expect(document.css('a[href]').map { |link| link['href'] }).to eq((1..36).map { |index| "https://reference.example.test/api/Capabilities#{index}.html" })
+      modules = (1..36).map { |index| "https://reference.example.test/api/Capabilities#{index}.html" }
+      operations = 'https://reference.example.test/api/Ledger.html#operations'
+      expect(document.css('h3.sectiontitle + ul a[href]').map { |link| link['href'] }).to eq(modules)
+      expect(document.css('a[href]').map { |link| link['href'] }).to eq([operations, *modules])
+      expect(document.at_css('#operations a')['href']).to eq(operations)
+      expect(result.fetch('markdown')).to include("## [Operations](#{operations})")
       expect(result.fetch('markdown')).to include('ledger.validate(input)')
       expect(document.at_css('#operations').text).to eq('Operations')
       expect(document.css('p').map(&:text)).to include(a_string_including('Section 8 explains'))
       expect(result.fetch('markdown')).not_to include('Unrelated file navigation')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
