@@ -61,6 +61,7 @@
     }
 
     return docsArticleContent(metadata, node, {
+      pruneSourceVisibility: true,
       title: firstText(["main h1", "main article h1"]) || normalizeText(metadata.title || document.title),
       rewriteRoot: function(root) {
         root.querySelectorAll("#starlight__sidebar, starlight-menu-button, [class*='stldocs-sidebar'], [class*='stldocs-sidebar-entry'], [class*='stldocs-expander'], [class*='sidebar-pane'], [class*='sidebar-content'], [class*='sidebar-accordion'], [class*='table-of-contents'], .stldocs-breadcrumbs, .stl-ui-dropdown, .discord, aside").forEach(function(el) {
@@ -74,9 +75,6 @@
           });
         }
         removeNodesByText(root, "div, p, span, button, a", /^(on this page|table of contents|copy page|edit page|expand|collapse|api reference)$/i);
-        root.querySelectorAll("h1").forEach(function(el, index) {
-          if (index > 0) el.remove();
-        });
         root.querySelectorAll("h2, h3, h4, h5, h6, p, div, span").forEach(function(el) {
           var text = normalizeText(el.textContent);
           if (/expand collapse/i.test(text)) el.remove();

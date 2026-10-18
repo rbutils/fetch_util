@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain every authored secondary documentation heading and its destination
+  instead of deleting later H1 sections by position.
+
 - Preserve source-visible authored documentation references whose labels also name
   interface controls, including complete configuration and resource links.
 
