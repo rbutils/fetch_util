@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete source-owned leading resource groups and images through
+  reader cleanup, retaining independent occurrences and captured visibility.
+
 - Retain complete visible disclosure-heading labels independently of prose
   length, while keeping hidden answers and interface controls excluded.
 

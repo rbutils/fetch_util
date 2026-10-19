@@ -51,6 +51,7 @@
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);
+      preserveReadabilityOwnedLeadResources(reader, clone, sourceClones, excerptMarker);
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
@@ -83,6 +84,7 @@
       );
       article.content = stripReadabilityExcerptMarkers(article.content, excerptMarker);
       article.content = stripReadabilitySourceNodeMarkers(article.content, excerptMarker, sourceIdentities);
+      article.content = stripReadabilityLeadResourceMarkers(article.content, excerptMarker);
       article.content += comments;
 
       var content = {
