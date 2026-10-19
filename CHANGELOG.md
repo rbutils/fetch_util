@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep dates inside interactive controls out of publication metadata while
+  retaining independently declared publication and event dates.
+
 - Preserve declared alternative names of meaningful inline SVG images, including
   repeated and linked images and their source-owned reader context, while keeping
   decorative and hidden names out.

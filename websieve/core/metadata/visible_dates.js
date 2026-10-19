@@ -15,7 +15,7 @@ function visiblePublishedTimeField(node) {
   if (node.matches("h1, h2, h3, h4, h5, h6") &&
       !node.matches("[itemprop~='datePublished' i], [itemprop~='dateModified' i]")) return false;
   if (node.matches(contentSelector) || node.matches("a.answer_timestamp[href]") ||
-      node.closest("aside, [role='complementary']") ||
+      node.closest("aside, [role='complementary'], button, input, select, textarea, [role='button']") ||
       visiblePublicationSchedule(node) || visibleForeignPublicationCard(node)) return false;
   return !node.querySelector(contentSelector + ", h1, h2, h3, h4, h5, h6, figure, blockquote, pre, table");
 }
