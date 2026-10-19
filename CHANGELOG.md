@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete explicitly declared localized front pages, including their
+  independent sections and resources, instead of selecting a single Drupal body.
+
 - Keep literal underscores and asterisks in plain reference labels, including
   generated resource URLs, instead of interpreting them as Markdown emphasis.
 

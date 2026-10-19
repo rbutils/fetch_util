@@ -1,6 +1,11 @@
   function homepageRootPath() {
     var path = (location.pathname || "").toLowerCase();
-    return path === "" || path === "/" || /^\/(?:index|default|home)(?:\.[a-z0-9]+)?\/?$/i.test(path);
+    if (path === "" || path === "/" || /^\/(?:index|default|home)(?:\.[a-z0-9]+)?\/?$/i.test(path)) return true;
+    if (!document.body || !document.body.classList.contains("path-frontpage")) return false;
+    var current = sourceOwnershipPageUrl(location.href);
+    return !!current && Array.from(document.querySelectorAll("a[data-drupal-link-system-path='<front>'][href]")).some(function(link) {
+      return sourceOwnershipPageUrl(link.getAttribute("href")) === current;
+    });
   }
 
   function rejectedHomepageLeadText(text, href) {
