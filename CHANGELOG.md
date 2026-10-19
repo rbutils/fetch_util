@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independent section-owned collection destinations beside their physical
+  headings instead of treating View all references as interactive controls.
+
 - Preserve independent authored Learn more resource links instead of treating
   their labels as media playback controls.
 

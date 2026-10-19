@@ -114,9 +114,9 @@
       if (el.hasAttribute("data-fetchutil-social-comment") && !el.matches("a, button") &&
           !el.querySelector("a, button, input, select, textarea")) return;
       if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el) && !ownsMaterialMedia &&
-          !authoredInlineActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
+          !authoredInlineActionReference(el) && !authoredSectionActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
       if (playerControlText(text) && textLength(el) < 80 && !codeContentNode(el) && !ownsMaterialMedia &&
-          !authoredInlineActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
+          !authoredInlineActionReference(el) && !authoredSectionActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
     });
 
     // Strip social media join/follow CTAs
