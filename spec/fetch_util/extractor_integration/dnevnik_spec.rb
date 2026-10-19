@@ -8,7 +8,9 @@ RSpec.describe 'FetchUtil extractor integration' do
   it 'preserves every public teaser paragraph through shared article ownership' do
     url = 'https://www.dnevnik.bg/biznes/2026/07/06/4932760_sled_sreshta_mejdu_radev_i_erdogan_dogovorut_s_botash/'
     html = fixture_contents(File.expand_path('../../fixtures/dnevnik_article.html', __dir__))
-    paragraphs = Nokogiri::HTML(html).css('article p').map { |node| node.text.strip }
+    source = Nokogiri::HTML(html)
+    paragraphs = source.css('article p').map { |node| node.text.strip }
+    footer = source.at_css('article > footer').text.strip
     title = 'След среща между Радев и Ердоган договорът с Боташ е замразен'
 
     with_url_page(url, html) do |page|
@@ -19,7 +21,8 @@ RSpec.describe 'FetchUtil extractor integration' do
                                  'byline' => 'Георги Пауновски', 'readerMode' => true, 'hostAware' => false)
       expect(payload['markdown']).to include("# #{title}", '[Георги Пауновски](https://www.dnevnik.bg/author/georgi-paunovski/)')
       paragraphs.each { |paragraph| expect(payload['markdown'].scan(paragraph).length).to eq(1) }
-      expect(payload['markdown']).not_to include('Дневник и Капитал са сертифицирани', 'Продължете да четете с пълен достъп')
+      expect(payload['markdown'].scan(footer).length).to eq(1)
+      expect(payload['markdown']).not_to include('Продължете да четете с пълен достъп')
       expect_warnings(payload, include: %w[paywall_partial_content],
                                exclude: %w[url_content_mismatch empty_extraction short_extraction consent_interstitial])
       expect(payload['suspect']).to be(true)
