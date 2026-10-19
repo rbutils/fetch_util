@@ -232,14 +232,25 @@
     return materializeHttpAttributes(clone, true);
   }
 
+  function meaningfulDisclosureHeading(el, heading, text) {
+    if (!heading || !text || !/^(true|false)$/.test(el.getAttribute("aria-expanded") || "")) return false;
+    var popup = el.getAttribute("aria-haspopup");
+    if (popup && popup !== "false") return false;
+    if (heading.closest("nav, form, [role~='navigation' i], [role~='menu' i], [role~='menubar' i], [role~='toolbar' i]")) return false;
+    if (el.querySelector("[class*='http-verb']")) return false;
+    if (normalizeText(heading.innerText || heading.textContent || "") !== text) return false;
+    return !cookieNoticeText(text) && !utilityHeadingText(text) &&
+      !playerControlText(text) && !BUTTON_ACTION_TEXT_PATTERN.test(text);
+  }
+
   function preserveMeaningfulButtons(root) {
     if (!root || !root.querySelectorAll) return root;
 
     root.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']").forEach(function(el) {
       var text = normalizeText(el.innerText || el.textContent || el.getAttribute("value") || "");
-      if (el.hasAttribute("data-fetchutil-preserve") || !meaningfulButtonText(text)) return;
-
+      if (el.hasAttribute("data-fetchutil-preserve")) return;
       var heading = el.parentElement && el.parentElement.closest("h1, h2, h3, h4, h5, h6");
+      if (!meaningfulButtonText(text) && !meaningfulDisclosureHeading(el, heading, text)) return;
       var replacement = document.createElement(heading ? "span" : "p");
       replacement.textContent = text;
       replacement.setAttribute("data-fetchutil-button-text", "true");

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete visible disclosure-heading labels independently of prose
+  length, while keeping hidden answers and interface controls excluded.
+
 - Preserve complete article-owned footer attributions and resources instead of
   treating them as page-level footer furniture.
 
