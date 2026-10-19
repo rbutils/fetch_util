@@ -1,4 +1,5 @@
 var docsAuthoredReferenceContexts = new WeakMap();
+var docsAuthoredArticleContexts = new WeakSet();
 
 function docsAuthoredSourceReferences(root) {
   return withSourceVisibilityRead(function() {
@@ -12,6 +13,8 @@ function docsAuthoredSourceReferences(root) {
 }
 
 function rememberDocsAuthoredReferences(root, source, readableSource, references, sourceClones, cleanedElements) {
+  if (source.nodeType === Node.ELEMENT_NODE && source.ownerDocument === document && source.isConnected &&
+      source.closest("article, [itemprop~='articleBody']")) docsAuthoredArticleContexts.add(root);
   if (!references.length) return;
   var preserved = new WeakSet();
   references.forEach(function(reference) {
@@ -30,25 +33,33 @@ function docsAuthoredReferenceNode(root, node) {
   return Array.from(node.querySelectorAll("a")).some(function(link) { return references.has(link); });
 }
 
+function docsAuthoredArticleNode(root, node) {
+  return docsAuthoredArticleContexts.has(root) && root.contains(node);
+}
+
 function docsMarkdownForRoot(root, preserveCleanedRoot) {
   if (typeof TurndownService !== "function") return root.innerHTML;
   var references = docsAuthoredReferenceContexts.get(root);
+  var articleOwned = docsAuthoredArticleContexts.has(root);
   // Removing controls can leave adjacent text nodes. Coalescing them changes
   // neither serialized HTML nor program text, and matches the ordinary parser.
-  if (references) root.normalize();
+  if (references || articleOwned) root.normalize();
   var parsed = document.createElement("div");
   parsed.innerHTML = root.innerHTML;
   var sourceChildren = Array.from(root.childNodes);
   var parsedChildren = Array.from(parsed.childNodes);
-  if (references && sourceChildren.length === parsedChildren.length && sourceChildren.every(function(child, index) {
+  if ((references || articleOwned) && sourceChildren.length === parsedChildren.length && sourceChildren.every(function(child, index) {
     return child.isEqualNode(parsedChildren[index]);
   })) {
-    var preserved = new WeakSet();
-    var parsedLinks = parsed.querySelectorAll("a");
-    root.querySelectorAll("a").forEach(function(link, index) {
-      if (references.has(link)) preserved.add(parsedLinks[index]);
-    });
-    docsAuthoredReferenceContexts.set(parsed, preserved);
+    if (articleOwned) docsAuthoredArticleContexts.add(parsed);
+    if (references) {
+      var preserved = new WeakSet();
+      var parsedLinks = parsed.querySelectorAll("a");
+      root.querySelectorAll("a").forEach(function(link, index) {
+        if (references.has(link)) preserved.add(parsedLinks[index]);
+      });
+      docsAuthoredReferenceContexts.set(parsed, preserved);
+    }
   }
   return convertMarkdownRoot(parsed, false, true, preserveCleanedRoot);
 }

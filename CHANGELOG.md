@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve article prose and resource links with CTA-only layout markers unless
+  independent promotional attributes, text or media identify a promotional module.
+
 - Handle detached reference nodes during cleanup without crashing documentation
   extraction or changing authored-resource ownership checks.
 

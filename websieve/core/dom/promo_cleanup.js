@@ -2,8 +2,10 @@
   var PROMO_TEXT_PATTERN = new RegExp("\\b(" + NOISE_PROMO_TEXT_TERMS + ")\\b", "i");
   var PROMO_MEDIA_PATTERN = new RegExp("(?:\\/|[-_])(" + NOISE_PROMO_MEDIA_TERMS + ")(?:\\/|[-_.?]|$)", "i");
 
-  function promoCtaOnlyHeading(node, attrs, promoMedia, promoText) {
+  function promoCtaOnlyMaterial(root, node, attrs, promoMedia, promoText) {
     if (promoMedia || promoText || PROMO_ATTR_PATTERN.test(attrs.replace(/(?:^|[-_\s])cta(?=[-_\s]|$)/gi, " "))) return false;
+    if ((node.closest("article, [itemprop~='articleBody']") || docsAuthoredArticleNode(root, node)) &&
+        node.querySelector("p, pre, code, ul, ol, dl, table, blockquote, figure")) return true;
     if (node.querySelector("a[href], button, [role='button'], form")) return false;
     return Array.prototype.some.call(node.querySelectorAll("h1, h2, h3, h4"), function(heading) {
       return !!normalizeText(heading.textContent || "");
@@ -50,9 +52,8 @@
         if (editorialParagraphs.length >= 2 && editorialText >= 280) return;
       }
 
-      // A layout's detached CTA slot is not promotional content when it owns
-      // a visible heading and has no action or other promotional evidence.
-      if (promoAttrs && promoCtaOnlyHeading(el, attrs, promoMedia, promoText)) return;
+      // A CTA marker alone cannot identify article-owned material as promotion.
+      if (promoAttrs && promoCtaOnlyMaterial(root, el, attrs, promoMedia, promoText)) return;
       if ((promoAttrs || promoMedia) && (text.length < 900 || promoText)) {
         el.remove();
       } else if (promoText && promoMedia && text.length < 1200) {
