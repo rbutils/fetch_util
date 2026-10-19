@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep physical heading levels and complete inline content when heading text uses
+  nested layout wrappers instead of flattening those headings into paragraphs.
+
 - Preserve complete inline program whitespace in Markdown instead of collapsing
   repeated spaces, tabs and literal edge padding as ordinary prose.
 

@@ -31,6 +31,7 @@
     preserveWholeInlineCodeLinks(root);
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);
+    materializeMarkdownHeadingLayouts(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
     preserveUnlabeledMarkdownDestinations(root);
