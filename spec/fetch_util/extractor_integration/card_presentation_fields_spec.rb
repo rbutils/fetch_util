@@ -17,6 +17,7 @@ RSpec.describe "FetchUtil extractor integration - card presentation fields" do
     html = "<main>#{cards}#{actions}</main><div id='separate'><article>Independent biography.</article>" \
            "<div class='product'>Independent product.</div><div class='card'><a href='/other'>Other story</a><p>Other summary.</p></div></div>"
     with_url_page("https://events.example/", html) do |page|
+      inject_standalone_extractor(page)
       root = File.expand_path("../../..", __dir__)
       source = File.readlines(File.join(root, "websieve/manifest.txt"), chomp: true).reject(&:empty?).map do |entry|
         File.read(File.join(root, "websieve", entry))
@@ -29,7 +30,9 @@ RSpec.describe "FetchUtil extractor integration - card presentation fields" do
         (() => {
           const root = document.querySelector('main'), before = root.innerHTML;
           const items = fieldProbe.items(fieldProbe.clone(root));
-          return {markdown: fieldProbe.render(items), unchanged: root.innerHTML === before,
+          return {markdown: fieldProbe.render(items), records: items.map(item => ({
+              url: item.url, markdown: fieldProbe.render([item])
+            })), unchanged: root.innerHTML === before,
             boundaries: Array.from(document.querySelector('#separate').children).map(fieldProbe.boundary)};
         })()
       JS
@@ -37,12 +40,19 @@ RSpec.describe "FetchUtil extractor integration - card presentation fields" do
       expect(lines.first(125)).to eq((1..125).map do |i|
         "- [Conference event #{i}](https://events.example/event/#{i}) - Venue number #{i}. - Session slot #{i}."
       end)
-      expect(lines.length).to eq(250)
-      lines.drop(125).each_with_index do |line, index|
+      records = result.fetch("records")
+      expect(records.map { |record| record.fetch("url") }).to eq(
+        (1..125).map { |i| "https://events.example/event/#{i}" } +
+        (1..125).map { |i| "https://events.example/action/#{i}" }
+      )
+      records.drop(125).each_with_index do |record, index|
         number = index + 1
-        expect(line).to include("https://events.example/action/#{number})")
+        markdown = record.fetch("markdown")
+        expect(markdown).to include("https://events.example/action/#{number})")
+        expect(markdown).to include("### Action conference #{number}.", "![](https://events.example/arrow.svg)")
+        expect(result.fetch("markdown").scan(markdown).length).to eq(1)
         ["Action conference #{number}.", "Action slot #{number}.", "Action venue #{number}."].each do |field|
-          expect(line.scan(field).length).to eq(1)
+          expect(markdown.scan(field).length).to eq(1)
         end
       end
       expect(result.fetch("boundaries")).to eq([true, true, true])
