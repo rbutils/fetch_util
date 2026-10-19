@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Handle detached reference nodes during cleanup without crashing documentation
+  extraction or changing authored-resource ownership checks.
+
 - Preserve independent section-owned collection destinations beside their physical
   headings instead of treating View all references as interactive controls.
 

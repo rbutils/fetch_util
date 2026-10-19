@@ -1,4 +1,5 @@
   function sectionActionReferenceLink(node) {
+    if (!node) return null;
     var link = node.matches("a[href]") ? node : null;
     if (!link && node.matches("p") && node.children.length === 1 &&
         node.firstElementChild.matches("a[href]") &&
