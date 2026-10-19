@@ -100,12 +100,17 @@ function preserveListBodyImageMarkdown(extraction) {
   });
   if (!images.size) return;
   var represented = listMarkdownImageCounts(extraction.markdown);
-  if (!listImageCountsOmitted(images, represented)) return;
+  var standaloneImages = (extraction.renderedDescriptions || []).some(function(part) {
+    return part.descriptiveImage;
+  });
+  // Standalone media does not certify the neighbouring prose or programs.
+  // Retain this owner's existing complete-body path after adding those parts.
+  if (!standaloneImages && !listImageCountsOmitted(images, represented)) return;
 
   var complete = markdownFor(listBodyMarkdownHtml(root), false, false, true, convertListBodyMarkdown);
   // The ordinary converter applies disclosure and program semantics. A closed
   // body or literal image syntax must not trigger a synthetic representation.
-  if (!listImageCountsOmitted(listMarkdownImageCounts(complete), represented)) return;
+  if (!standaloneImages && !listImageCountsOmitted(listMarkdownImageCounts(complete), represented)) return;
   extraction.sourceBodyMarkdown = complete;
   extraction.markdown = complete;
 }

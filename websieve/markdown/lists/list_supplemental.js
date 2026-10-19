@@ -59,7 +59,7 @@ function listSupplementalResourceReference(link, item, card, selectedContext, ca
   return true;
 }
 
-function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryRecordKeys) {
+function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryRecordKeys, imageContext) {
   if (!card || !card.cloneNode) return listDetailWithoutContext(item.detail, contextValues);
   var selectedContentCard = item.contentCard;
   var sourceCard = item.card;
@@ -70,6 +70,9 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     card = outerCard;
   }
   var clone = card.cloneNode(true);
+  var representedImages = imageContext ? imageContext.images.map(function(image) {
+    return listClonedCardNode(card, clone, image);
+  }).filter(Boolean) : [];
   var separatelySelectedChildren = listSeparatelySelectedChildClones(item, card, clone, primaryRecordKeys);
   var compactMetadata = listCompactMetadataRow(card, item);
   var compactMetadataClone = compactMetadata && listClonedCardNode(card, clone, compactMetadata.node);
@@ -163,6 +166,7 @@ function listSupplementalDetail(item, contextValues, card, primaryUrls, primaryR
     return listClonedCardNode(card, clone, heading);
   }));
   pruneListCardVisibility(card, clone);
+  representedImages.forEach(function(image) { image.remove(); });
   selectedFields.forEach(function(field) {
     if (field && field.remove) field.remove();
   });

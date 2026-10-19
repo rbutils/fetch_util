@@ -1469,6 +1469,7 @@ RSpec.describe "extract asset bundle" do
         markdown/lists/list_aliases.js
         markdown/lists/finalization.js
         markdown/lists/list_metadata.js
+        markdown/lists/list_media_context.js
         markdown/lists/list_supplemental.js
         markdown/lists/lists.js
       ], "markdown/inventory.js"],

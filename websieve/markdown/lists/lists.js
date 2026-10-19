@@ -153,6 +153,7 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHe
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
     item.summary
   );
+  var imageContext = listSelectedHeadingImageContext(item, primaryRecordKeys);
   var contextValues = [
     listCompactMetadataRepresents(compactMetadata, item.category) ? "" : item.category,
     item.contextHeading,
@@ -162,12 +163,12 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHe
     listCompactMetadataContains(compactMetadata, socialFields.scoreNode) ? "" : socialFields.score,
     socialFields.replyCount,
     socialFields.community,
-    item.image,
+    imageContext ? imageContext.markdown : item.image,
     item.caption
   ];
   var detailCard = item.supplementalCard || card;
   var supplementalDetail = listExactPrimaryAliasDetail(item.detail, item) ? "" :
-    listSupplementalDetail(item, contextValues, detailCard, primaryUrls, primaryRecordKeys);
+    listSupplementalDetail(item, contextValues, detailCard, primaryUrls, primaryRecordKeys, imageContext);
   if (listExactPrimaryAliasDetail(supplementalDetail, item)) supplementalDetail = "";
   if (supplementalDetail) contextValues.push(supplementalDetail);
   if (item.contextHeading && item.summary) {

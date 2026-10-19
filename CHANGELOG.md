@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical images owned by selected linked headings instead of flattening
+  their alternatives into text-only record metadata.
+
 - Preserve complete source-owned leading resource groups and images through
   reader cleanup, retaining independent occurrences and captured visibility.
 

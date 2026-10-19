@@ -91,6 +91,33 @@
     }).filter(function(part) { return part.markdown; });
   }
 
+  function listDescriptionImageParts(root, items, figures) {
+    if (!items || !items.length) return [];
+    return Array.from(root.querySelectorAll("img[src]")).filter(function(image) {
+      if (!materializedHttpUrl(image.getAttribute("src")) || listCardNodeHidden(image) ||
+          listImageWithinClosedDisclosure(image) ||
+          image.closest("p, blockquote, h1, h2, h3, h4, h5, h6, pre, code, kbd, samp, nav, header, footer, aside, form, button, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog'], [role='tab'], [role='menuitem']")) return false;
+      if (figures.some(function(part) { return part.node.contains(image); }) || items.some(function(item) {
+        return [item.card, item.contentCard, item.sourceNode].some(function(owner) {
+          return owner && owner.contains(image);
+        });
+      })) return false;
+      var link = image.closest("a[href]");
+      var control = image.closest("[role='button']");
+      if (control && (control !== link || materializedHttpUrl(link.getAttribute("href")) !==
+          materializedHttpUrl(image.getAttribute("src")))) return false;
+      if (!link) return true;
+      if (!materializedHttpUrl(link.getAttribute("href")) || link.querySelectorAll("img").length !== 1) return false;
+      var remainder = link.cloneNode(true);
+      remainder.querySelector("img").remove();
+      return !normalizeText(remainder.textContent) &&
+        !remainder.querySelector("svg, picture, video, audio, iframe, input, button, select, textarea");
+    }).map(function(image) {
+      var link = image.closest("a[href]");
+      return { node: image, markdown: markdownFor((link || image).outerHTML).trim(), descriptiveImage: true };
+    }).filter(function(part) { return part.markdown; });
+  }
+
   function listDescriptionParts(root, items, options) {
     var figureParts = listDescriptionFigureParts(root, items);
     var descParts = figureParts.slice();
@@ -167,6 +194,13 @@
         descParts.push({ node: el, markdown: prefix + text });
       }
     });
+    var imageParts = listDescriptionImageParts(root, items, figureParts);
+    if (imageParts.length) {
+      descParts = descParts.concat(imageParts).sort(function(left, right) {
+        var position = left.node.compareDocumentPosition(right.node);
+        return position & 4 ? -1 : position & 2 ? 1 : 0;
+      });
+    }
     return descParts;
   }
 
