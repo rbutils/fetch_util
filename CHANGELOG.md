@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical heading levels and complete inline content across line breaks
+  instead of flattening the headings into ordinary Markdown paragraphs.
+
 - Keep dates inside interactive controls out of publication metadata while
   retaining independently declared publication and event dates.
 

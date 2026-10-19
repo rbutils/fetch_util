@@ -22,5 +22,11 @@
         inline.parentNode.insertBefore(inline.ownerDocument.createTextNode(" "), inline);
         inline.parentNode.insertBefore(inline.ownerDocument.createTextNode(" "), inline.nextSibling);
       });
+
+      heading.querySelectorAll("br").forEach(function(lineBreak) {
+        if (lineBreak.closest("pre, code, kbd, samp, svg, math, table")) return;
+        // An ATX heading occupies one line; retain each physical word boundary.
+        lineBreak.parentNode.replaceChild(lineBreak.ownerDocument.createTextNode(" "), lineBreak);
+      });
     });
   }
