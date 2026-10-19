@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep physical heading levels, images, prose and source order when a media context
+  has a single independent reference instead of flattening its headings into metadata.
+
 - Preserve article prose and resource links with CTA-only layout markers unless
   independent promotional attributes, text or media identify a promotional module.
 

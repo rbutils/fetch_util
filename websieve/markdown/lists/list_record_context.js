@@ -50,7 +50,7 @@ function listSelectedUnlabeledReferenceContextOwner(card, records) {
 }
 
 function listSelectedMediaContextOwner(card, records) {
-  if (!records || records.length < 2 || card.querySelector("pre, code, table, form, input, button, select, textarea, nav, [role='navigation'], [role='toolbar']")) return null;
+  if (!records || !records.length || card.querySelector("pre, code, table, form, input, button, select, textarea, nav, [role='navigation'], [role='toolbar']")) return null;
 
   function mediaRecord(node, destination) {
     var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
@@ -66,6 +66,15 @@ function listSelectedMediaContextOwner(card, records) {
       var url = materializedHttpUrl(link.getAttribute("href"));
       return url && listCanonicalKey(url) === listCanonicalKey(primary);
     });
+  }
+
+  if (records.length === 1) {
+    var selected = records[0].sourceNode;
+    var selectedUrl = materializedHttpUrl(records[0].url || "");
+    return selected && selected.matches("a[href]") && card.contains(selected) &&
+      !selected.closest("h1, h2, h3, h4, h5, h6") &&
+      !selected.querySelector("h1, h2, h3, h4, h5, h6") &&
+      mediaRecord(card, selectedUrl) ? records[0] : null;
   }
 
   var owners = [];
