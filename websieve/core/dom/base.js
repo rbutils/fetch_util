@@ -163,6 +163,24 @@
     return cleanClonedContent(node, node, preserveSelector, null);
   }
 
+  function articleOwnedFooter(node) {
+    if (!node || node.tagName !== "FOOTER") return false;
+    if (node.closest("nav, form, button, [role~='navigation' i], [role~='contentinfo' i]")) return false;
+    return !!node.closest("article, [itemprop~='articleBody' i]");
+  }
+
+  function materializeArticleOwnedFooters(root) {
+    root.querySelectorAll("footer").forEach(function(footer) {
+      if (!articleOwnedFooter(footer)) return;
+      var replacement = footer.ownerDocument.createElement("div");
+      Array.from(footer.attributes).forEach(function(attribute) {
+        replacement.setAttribute(attribute.name, attribute.value);
+      });
+      while (footer.firstChild) replacement.appendChild(footer.firstChild);
+      footer.replaceWith(replacement);
+    });
+  }
+
   function cleanClonedContent(source, clone, preserveSelector, elementMap) {
     preserveSvgCloneVisibility(source, clone, elementMap);
     prepareSourceOwnedEngagementClone(source, clone, elementMap);
@@ -173,6 +191,7 @@
         el.setAttribute("data-fetchutil-preserve", "true");
       });
     }
+    materializeArticleOwnedFooters(clone);
     cleanupCookieChrome(clone);
     stripArticleWidgets(clone);
     if (stripEmptyCommentUi(clone)) return document.createElement("div");

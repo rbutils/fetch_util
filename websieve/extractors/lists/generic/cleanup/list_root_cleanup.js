@@ -1,4 +1,5 @@
   function cleanupListRoot(root, producerProvenCardNodes, preservedOwnerNodes) {
+    materializeArticleOwnedFooters(root);
     cleanupCookieChrome(root);
     stripTrackingPixels(root);
     resolveLazyImages(root);

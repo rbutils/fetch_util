@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete article-owned footer attributions and resources instead of
+  treating them as page-level footer furniture.
+
 - Retain complete selected list-body images, linked image destinations and peer
   sections in Markdown instead of preferring a text-only list reconstruction.
 

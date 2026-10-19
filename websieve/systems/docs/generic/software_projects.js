@@ -169,6 +169,7 @@
 
   function preserveProjectReleaseNotes(root) {
     root.querySelectorAll("footer, [role='contentinfo']").forEach(function(footer) {
+      if (articleOwnedFooter(footer)) return;
       var records = [];
       footer.querySelectorAll("a[href]").forEach(function(link) {
         if (!projectReleaseNotesLink(link)) return;
