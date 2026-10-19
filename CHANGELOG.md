@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve declared alternative names of meaningful inline SVG images, including
+  repeated and linked images and their source-owned reader context, while keeping
+  decorative and hidden names out.
+
 - Keep physical heading levels and complete inline content when heading text uses
   nested layout wrappers instead of flattening those headings into paragraphs.
 

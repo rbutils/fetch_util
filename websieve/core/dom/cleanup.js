@@ -238,7 +238,7 @@
     });
 
     root.querySelectorAll("svg, .octicon").forEach(function(el) {
-      if (svgMaterialTextNodes(el).length) return;
+      if (svgMaterialTextNodes(el).length || svgDeclaredImageName(el)) return;
       el.remove();
     });
 

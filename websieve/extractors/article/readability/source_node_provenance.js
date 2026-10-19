@@ -77,20 +77,7 @@
     });
     if (!found) return;
 
-    var cleanConditionally = reader._cleanConditionally;
-    reader._cleanConditionally = function(root, tag) {
-      var removeNodes = this._removeNodes;
-      this._removeNodes = function(nodes, filter) {
-        return removeNodes.call(this, nodes, function(node, index, list) {
-          return !referenceBlocks.has(node) && (!filter || filter.call(this, node, index, list));
-        });
-      };
-      try {
-        return cleanConditionally.call(this, root, tag);
-      } finally {
-        this._removeNodes = removeNodes;
-      }
-    };
+    protectReadabilitySourceBlocks(reader, referenceBlocks);
   }
 
   function sourceOwnedReaderHeadlineTitleMatches(headline, content, metadata) {
