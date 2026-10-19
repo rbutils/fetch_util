@@ -220,7 +220,8 @@
       var text = normalizeText(el.innerText || el.textContent || el.getAttribute("value") || "");
       if (el.hasAttribute("data-fetchutil-preserve") || !meaningfulButtonText(text)) return;
 
-      var replacement = document.createElement("p");
+      var heading = el.parentElement && el.parentElement.closest("h1, h2, h3, h4, h5, h6");
+      var replacement = document.createElement(heading ? "span" : "p");
       replacement.textContent = text;
       replacement.setAttribute("data-fetchutil-button-text", "true");
       el.replaceWith(replacement);

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain physical heading roles when meaningful button and control labels become
+  inert readable text, while keeping unrelated labels as ordinary paragraphs.
+
 - Preserve physical heading levels and complete inline content across line breaks
   instead of flattening the headings into ordinary Markdown paragraphs.
 
