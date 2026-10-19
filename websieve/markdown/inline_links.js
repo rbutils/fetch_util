@@ -1,5 +1,10 @@
   function escapeMarkdownLinkLabel(text) {
-    return String(text == null ? "" : text).replace(/\\/g, "\\\\").replace(/([\[\]])/g, "\\$1");
+    return String(text == null ? "" : text).replace(/\\/g, "\\\\").replace(/[\[\]_*]/g, function(character, index, label) {
+      // Intraword underscores do not open emphasis; retain plain reference identifiers.
+      if (character === "_" && /[a-z0-9]/i.test(label.charAt(index - 1)) &&
+          /[a-z0-9]/i.test(label.charAt(index + 1))) return character;
+      return "\\" + character;
+    });
   }
 
   function markdownLink(text, url) {

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep literal underscores and asterisks in plain reference labels, including
+  generated resource URLs, instead of interpreting them as Markdown emphasis.
+
 - Retain authored SVG chart labels and references in source order, preserving
   sanitized vector HTML and complete visible text in Markdown without exposing
   hidden labels or closed disclosure contents.
