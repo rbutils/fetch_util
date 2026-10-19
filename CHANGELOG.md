@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independent authored Learn more resource links instead of treating
+  their labels as media playback controls.
+
 - Preserve complete explicitly declared localized front pages, including their
   independent sections and resources, instead of selecting a single Drupal body.
 

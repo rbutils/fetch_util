@@ -42,7 +42,7 @@
     /^loaded:\s*\d/,
     /^progress:\s*\d/
   ];
-  var PLAYER_CONTROL_TEXT_PATTERN = /^(play|pause|resume|volume\s+\d+%|rewind\s+\d+\s+seconds|forward\s+\d+\s+seconds|skip\s+(?:back|forward)|chromecast|closed captions|captions|settings|fullscreen|full screen|mute|unmute|next up|up next|current time\s+\d|remaining time\s+|duration\s+|learn more)$/;
+  var PLAYER_CONTROL_TEXT_PATTERN = /^(play|pause|resume|volume\s+\d+%|rewind\s+\d+\s+seconds|forward\s+\d+\s+seconds|skip\s+(?:back|forward)|chromecast|closed captions|captions|settings|fullscreen|full screen|mute|unmute|next up|up next|current time\s+\d|remaining time\s+|duration\s+)$/;
   var PLAYER_TIMESTAMP_PATTERN = /^\d+:\d+$/;
   var BUTTON_ACTION_TEXT_PATTERN = /^(log in|login|sign in|register|create account|get disney\+|accept all|reject all|confirm my choices|manage preferences|save preferences|allow all|more details|cookies details)$/i;
 

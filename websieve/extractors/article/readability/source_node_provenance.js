@@ -49,6 +49,50 @@
     return sourceIdentities;
   }
 
+  function preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones) {
+    if (!reader || !selectedOwner || !sourceClones) return;
+    var referenceBlocks = new WeakSet();
+    var found = false;
+    sourceClones.forEach(function(clone, source) {
+      if (source.localName !== "div" || !selectedOwner.contains(clone)) return;
+      if (source.closest("nav, header, footer, aside, form, button, pre, code, [role='navigation'], [role='toolbar'], [role='dialog']")) return;
+      if (clone.querySelector("p, h1, h2, h3, h4, h5, h6, ul, ol, dl, table, pre, code, button, input, select, textarea, img, picture, video, audio, iframe, object, embed, svg")) return;
+      var sourceLinks = source.querySelectorAll("a[href]");
+      var links = clone.querySelectorAll("a[href]");
+      if (sourceLinks.length !== 1 || links.length !== 1) return;
+      var label = normalizeText(links[0].textContent || "");
+      if (!label || normalizeText(source.textContent || "") !== label || normalizeText(clone.textContent || "") !== label) return;
+      var outside = clone.cloneNode(true);
+      outside.querySelectorAll("a").forEach(function(link) { link.remove(); });
+      if (normalizeText(outside.textContent || "")) return;
+      var href = sourceLinks[0].getAttribute("href") || "";
+      if (!href.trim() || href.trim().charAt(0) === "#") return;
+      try {
+        var sourceUrl = new URL(href, location.href);
+        var cloneUrl = new URL(links[0].getAttribute("href") || "", location.href);
+        if (!/^https?:$/.test(sourceUrl.protocol) || sourceUrl.href !== cloneUrl.href) return;
+      } catch (_error) { return; }
+      referenceBlocks.add(clone);
+      found = true;
+    });
+    if (!found) return;
+
+    var cleanConditionally = reader._cleanConditionally;
+    reader._cleanConditionally = function(root, tag) {
+      var removeNodes = this._removeNodes;
+      this._removeNodes = function(nodes, filter) {
+        return removeNodes.call(this, nodes, function(node, index, list) {
+          return !referenceBlocks.has(node) && (!filter || filter.call(this, node, index, list));
+        });
+      };
+      try {
+        return cleanConditionally.call(this, root, tag);
+      } finally {
+        this._removeNodes = removeNodes;
+      }
+    };
+  }
+
   function sourceOwnedReaderHeadlineTitleMatches(headline, content, metadata) {
     var title = normalizeText(headline);
     if (!title) return false;

@@ -48,6 +48,7 @@
       reader._checkByline = function(node, matchString) {
         return articleBylineNode(node) && checkByline.call(this, node, matchString);
       };
+      preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
