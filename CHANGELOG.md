@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete selected list-body images, linked image destinations and peer
+  sections in Markdown instead of preferring a text-only list reconstruction.
+
 - Retain physical heading roles when meaningful button and control labels become
   inert readable text, while keeping unrelated labels as ordinary paragraphs.
 

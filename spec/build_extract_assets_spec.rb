@@ -1586,6 +1586,7 @@ RSpec.describe "extract asset bundle" do
       ["extractors/lists/card_visibility.js", %w[
         extractors/lists/list_candidate_selection.js
         extractors/lists/result_status_context.js
+        extractors/lists/generic/body_image_markdown.js
       ], "extractors/lists/core.js"],
       ["extractors/lists/core.js", %w[
         extractors/lists/homepage/search_tools.js

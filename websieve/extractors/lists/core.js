@@ -260,6 +260,7 @@
     if (best.items.length >= 2 && best.items.every(function(item) { return item.sourceOrderedStructuredCard; })) {
       best.markdown = markdownFor(best.root.innerHTML);
     }
+    preserveListBodyImageMarkdown(best);
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");
     }).length;

@@ -2,12 +2,12 @@ function deferredListFinalizationMarkdown(content, metadata, markdown) {
   var listLikeContent = content.contentType === "list" ||
     (content.contentType === "social" && content.socialKind === "feed");
   var listExtraction = content.listExtraction;
-  var sourceTableMarkdown = listExtraction && listExtraction.sourceTableMarkdown;
-  if (listLikeContent && content.sectionMarkdownWithDescription && !sourceTableMarkdown) {
+  var sourceBodyMarkdown = listExtraction && (listExtraction.sourceTableMarkdown || listExtraction.sourceBodyMarkdown);
+  if (listLikeContent && content.sectionMarkdownWithDescription && !sourceBodyMarkdown) {
     markdown = materializedMarkdown(cleanupMarkdownNoise(content.sectionMarkdownWithDescription));
     content.textContent = markdown;
   }
-  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown && !sourceTableMarkdown) {
+  if (listLikeContent && listExtraction && content.markdown === listExtraction.markdown && !sourceBodyMarkdown) {
     var inlineDescriptionMarkdown = listExtraction.sectionCount ? listMarkdownWithMetadataReferences(listExtraction) :
       listMarkdownWithInlineDescriptions(listExtraction);
     if (inlineDescriptionMarkdown) {
