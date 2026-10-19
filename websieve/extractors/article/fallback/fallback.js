@@ -87,6 +87,7 @@
     var relatedCollectionMarker = null;
     var relatedSlotMarker = null;
     var renderVisibleNode = visibleNode;
+    var commentCopies = fallbackCommentCopies(sourceClones);
     if (focalOwnership && focalOwnership.relatedCollection) {
       var relatedCollectionClone = sourceClones.get(focalOwnership.relatedCollection);
       var focalOwnerClone = sourceClones.get(focalOwnership.node);
@@ -104,14 +105,14 @@
             return left.source.compareDocumentPosition(right.source) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
           });
           renderVisibleNode = document.createElement("div");
-          ownedRoots.forEach(function(entry) { renderVisibleNode.appendChild(entry.clone.cloneNode(true)); });
+          ownedRoots.forEach(function(entry) { renderVisibleNode.appendChild(commentCopies.clone(entry.clone)); });
         }
       } else {
         focalOwnership = null;
       }
     }
     stripSourceOwnedTerminalArticleFurniture(visibleNode, sourceClones);
-    var markedVisibleNode = safeDeepClone(renderVisibleNode, document);
+    var markedVisibleNode = commentCopies.clone(renderVisibleNode);
     markTerminalArticleLinkCollections(markedVisibleNode);
     var ownedMedia = focalOwnership ? (focalOwnership.media ? [focalOwnership.media] :
       Array.prototype.filter.call(focalOwnership.node.querySelectorAll("video"), function(media) {
@@ -122,10 +123,10 @@
     var preservedRelatedCollection = focalOwnershipDetachRelatedCollection(markedVisibleNode, relatedCollectionMarker,
       relatedSlotMarker);
     if (relatedCollectionMarker && !preservedRelatedCollection) return null;
-    var clone = cleanClone(markedVisibleNode);
+    var clone = commentCopies.clean(markedVisibleNode);
     if (focalOwnership && focalOwnership.body.publicPreview) focalOwnershipRetainPublicPreview(clone);
-    var comments = focalOwnership ? visibleCommentMarkup(document, focalOwnership) :
-      (fallbackFocalArticleRoot(clone) ? visibleCommentMarkup(document) : "");
+    var commentEntries = focalOwnership ? visibleCommentEntries(document, focalOwnership) :
+      (fallbackFocalArticleRoot(clone) ? visibleCommentEntries(document) : []);
     prepareFallbackInlineProse(clone);
     cleanupGenericArticleRoot(clone);
     prepareFallbackInlineProse(clone);
@@ -135,7 +136,7 @@
         focalOwnership.node, relatedSlotMarker)) return null;
     }
     ownedMedia.forEach(function(media) { focalOwnershipPreserveMediaResources(clone, media); });
-    if (comments) clone.insertAdjacentHTML("beforeend", comments);
+    commentCopies.restore(clone, commentEntries);
     var text = normalizeText(clone.textContent);
     var headerMetadata = sourceOwnedFallbackHeaderMetadata(node, document.title, metadata);
     var sourceOwnedPublication = sourceOwnedMedia ?

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete physical comment threads once each and in source order when
+  fallback cleanup retains only part of the original discussion.
+
 - Preserve physical images owned by selected linked headings instead of flattening
   their alternatives into text-only record metadata.
 

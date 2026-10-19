@@ -114,7 +114,7 @@
     return clone.outerHTML;
   }
 
-  function legacyVisibleCommentMarkup(root) {
+  function legacyVisibleCommentEntries(root) {
     var containers = [];
     visibleCommentCandidates(root).forEach(function(node) {
       if (!node.querySelector("p, li, [class*='body' i], [slot='comment']")) return;
@@ -126,16 +126,93 @@
       var minimum = /-comment$/.test(String(entry.source.localName || "")) ? 8 : 40;
       return normalizeText(entry.clone.textContent || "").length >= minimum;
     }).map(function(entry) {
-      return entry.clone.outerHTML;
-    }).join("");
+      return { source: entry.source, html: entry.clone.outerHTML };
+    });
   }
 
-  function visibleCommentMarkup(root, focalOwnership) {
-    if (!root || !root.querySelectorAll) return "";
-    if (!focalOwnership) return legacyVisibleCommentMarkup(root);
+  function visibleCommentEntries(root, focalOwnership) {
+    if (!root || !root.querySelectorAll) return [];
+    if (!focalOwnership) return legacyVisibleCommentEntries(root);
 
     var threads = visibleCommentThreadRoots(root).filter(function(thread) {
       return focalCommentThreadBelongsToArticle(thread, focalOwnership) && commentThreadHasMaterial(thread);
     });
-    return threads.map(cleanFocalCommentClone).join("");
+    return threads.map(function(thread) {
+      return { source: thread, html: cleanFocalCommentClone(thread) };
+    }).filter(function(entry) { return !!entry.html; });
+  }
+
+  function visibleCommentMarkup(root, focalOwnership) {
+    return visibleCommentEntries(root, focalOwnership).map(function(entry) { return entry.html; }).join("");
+  }
+
+  function fallbackCommentCopies(sourceClones) {
+    var copies = new WeakMap();
+    var restored = new WeakMap();
+
+    function clone(node) {
+      var copied = safeDeepClone(node, document);
+      mapDomCloneElements(node, copied, copies);
+      return copied;
+    }
+
+    function clean(node) {
+      if (cookieChromeNode(node)) return cleanClone(node);
+      var copied = clone(node);
+      return copied ? cleanClonedContent(node, copied) : document.createElement("div");
+    }
+
+    function rendered(source, root) {
+      var node = restored.get(source) || sourceClones.get(source);
+      while (node && copies.has(node)) node = copies.get(node);
+      return node && (node === root || root.contains(node)) ? node : null;
+    }
+
+    function insertAtSourcePosition(root, source, replacement) {
+      var branch = source;
+      for (var parent = composedDomParent(branch); parent; parent = composedDomParent(branch)) {
+        var target = rendered(parent, root);
+        if (target && target.nodeType === 1) {
+          var siblings = composedDomChildren(parent);
+          var position = siblings.indexOf(branch);
+          if (position >= 0) {
+            var next = null;
+            for (var index = position + 1; index < siblings.length; index += 1) {
+              var candidate = rendered(siblings[index], root);
+              if (candidate && candidate.parentNode === target) {
+                next = candidate;
+                break;
+              }
+            }
+            target.insertBefore(replacement, next);
+            return;
+          }
+        }
+        branch = parent;
+      }
+      root.appendChild(replacement);
+    }
+
+    return {
+      clone: clone,
+      clean: clean,
+      restore: function(root, entries) {
+        entries.forEach(function(entry) {
+          var container = document.createElement("div");
+          container.innerHTML = entry.html;
+          var replacement = container.firstElementChild;
+          if (!replacement) return;
+          var existing = rendered(entry.source, root);
+          if (existing === root) {
+            while (root.firstChild) root.removeChild(root.firstChild);
+            while (replacement.firstChild) root.appendChild(replacement.firstChild);
+            restored.set(entry.source, root);
+            return;
+          }
+          if (existing) existing.replaceWith(replacement);
+          else insertAtSourcePosition(root, entry.source, replacement);
+          restored.set(entry.source, replacement);
+        });
+      }
+    };
   }
