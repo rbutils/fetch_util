@@ -39,6 +39,7 @@
 
     var service = new TurndownService({
       headingStyle: "atx",
+      preformattedCode: true,
       codeBlockStyle: "fenced",
       bulletListMarker: "-",
       emDelimiter: "_"

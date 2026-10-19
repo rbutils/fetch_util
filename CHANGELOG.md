@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete inline program whitespace in Markdown instead of collapsing
+  repeated spaces, tabs and literal edge padding as ordinary prose.
+
 - Keep physical heading levels, images, prose and source order when a media context
   has a single independent reference instead of flattening its headings into metadata.
 
