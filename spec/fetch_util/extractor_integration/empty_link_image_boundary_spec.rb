@@ -64,9 +64,13 @@ RSpec.describe 'Empty link and physical image boundaries' do
         expect(markdown).to include("Independent publication report #{number}")
         expect(markdown).to match(/Complete context for report #{number} remains available\\?!/)
         expect(markdown).to include("[Publication resource #{number}](https://support.example.test/resource-#{number})")
-        expect(markdown).not_to match(/(?<!\\)!\[Publication resource #{number}\]\(/)
+        expect(markdown).not_to match(%r{(?<!\\)!\[Publication resource #{number}\]\(https://support\.example\.test/resource-#{number}\)})
         expect(payload.fetch('html')).to include("https://images.example.test/logo-#{number}.png")
       end
+      expected_images = (1..6).map do |number|
+        ["Publication resource #{number}", "https://images.example.test/logo-#{number}.png"]
+      end
+      expect(markdown.scan(%r{!\[([^\]]*)\]\((https://images\.example\.test/logo-\d+\.png)\)})).to eq(expected_images)
       expect(markdown).to include('Its final sentence still belongs to this report.')
       expect(markdown).not_to include('![](https://support.example.test/')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
