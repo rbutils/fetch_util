@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Remove explicit leaf action controls on custom elements while retaining nested
+  programs, references and independently authored article content.
+
 - Preserve complete physical comment threads once each and in source order when
   fallback cleanup retains only part of the original discussion.
 

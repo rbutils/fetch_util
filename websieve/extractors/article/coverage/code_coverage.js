@@ -119,6 +119,10 @@
     var fallbackExamples = articleBodyCodeBlocks(fallbackRoot);
     if (fallbackExamples.length <= primaryExamples.length || !articleMaterialPreserved(primaryRoot, fallbackRoot)) return null;
 
+    var selectedHtml = primary.html;
+    supplementOwnedReaderStructuredMaterial(primary);
+    if (primary.html !== selectedHtml) return primary;
+
     // Preserve the selected article's metadata and provenance while restoring its examples.
     return Object.assign({}, primary, { html: fallback.html, textContent: fallback.textContent });
   }

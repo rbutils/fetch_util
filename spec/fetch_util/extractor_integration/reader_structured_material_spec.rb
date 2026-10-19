@@ -146,13 +146,16 @@ RSpec.describe "Reader structured material fidelity" do
     source_document.at_css("article").add_child(Nokogiri::HTML.fragment(<<~HTML))
       <nav><pre>FD01-INNER-NAV-CODE</pre></nav>
       <aside><table><tbody><tr><td>FD01-INNER-ASIDE-TABLE</td></tr></tbody></table></aside>
-      <footer><pre>FD01-INNER-FOOTER-CODE</pre></footer>
+      <footer role="contentinfo"><pre>FD01-INNER-FOOTER-CODE</pre></footer>
       <form><table><tbody><tr><td>FD01-INNER-FORM-TABLE</td></tr></tbody></table></form>
       <section hidden><pre>FD01-HIDDEN-CODE</pre><table><tr><td>FD01-HIDDEN-TABLE</td></tr></table></section>
       <section aria-hidden="true"><pre>FD01-ARIA-HIDDEN-CODE</pre></section>
       <section style="opacity:0"><pre>FD01-OPAQUE-HIDDEN-CODE</pre></section>
-      <demo-share>Share</demo-share>
-      <x-related-article>أخبار ذات صلة</x-related-article>
+      <demo-share role="button">Share</demo-share>
+      <x-related-article role="navigation">أخبار ذات صلة</x-related-article>
+      <p><demo-share>Share</demo-share><x-related-article>أخبار ذات صلة</x-related-article></p>
+      <footer><pre>FD01-OWNED-FOOTER-CODE</pre></footer>
+      <demo-share role="button"><pre><code>FD01-OWNED-ACTION-CODE</code></pre><a href="/action-resource">FD01 action-owned resource</a></demo-share>
       <supplement-share>Share the full field review, including its method, complete observations, and results.</supplement-share>
       <material-related-article><a href="/material-context">FD01 contextual field record</a></material-related-article>
     HTML
@@ -164,11 +167,20 @@ RSpec.describe "Reader structured material fidelity" do
     HTML
 
     with_url_page("https://fd01.test/owner-isolation", source_document.to_html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = extract_payload(page, reader_mode: true)
       output = Nokogiri::HTML.fragment(payload.fetch("html"))
       expect(payload['contentType']).to eq('article')
       expect(output.text).to include("CODE-CELL-001", "TABLE-ROW-001")
-      expect(output.css("demo-share, x-related-article")).to be_empty
+      expect(output.css('demo-share[role="button"]').select { |node| node.element_children.empty? }).to be_empty
+      expect(output.css('x-related-article[role="navigation"]')).to be_empty
+      expect(output.css('p > demo-share, p > x-related-article').map(&:text)).to eq(['Share', 'أخبار ذات صلة'])
+      expect(output.css('pre').map(&:text)).to include('FD01-OWNED-FOOTER-CODE', 'FD01-OWNED-ACTION-CODE')
+      expect(output.at_css('a[href="https://fd01.test/action-resource"]')&.text).to eq('FD01 action-owned resource')
+      expect(payload['markdown']).to include(
+        "```\nFD01-OWNED-FOOTER-CODE\n```", 'FD01-OWNED-ACTION-CODE', 'Share', 'أخبار ذات صلة',
+        '[FD01 action-owned resource](https://fd01.test/action-resource)'
+      )
       expect(output.text).to include("Share the full field review", "FD01 contextual field record")
       expect(output.at_css('a[href="https://fd01.test/material-context"]')).not_to be_nil
       expect(payload['markdown']).not_to include(
@@ -178,6 +190,7 @@ RSpec.describe "Reader structured material fidelity" do
         'FD01-ASIDE', 'FD01-TABLE-AS-LIST', 'FD01-RELATED-RECORDS',
         'FD01 unrelated story', 'FD01-FOREIGN-ARTICLE', 'FD01-NESTED-FOREIGN-ARTICLE'
       )
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

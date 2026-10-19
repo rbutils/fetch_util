@@ -249,6 +249,8 @@
     root.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']").forEach(function(el) {
       var text = normalizeText(el.innerText || el.textContent || el.getAttribute("value") || "");
       if (el.hasAttribute("data-fetchutil-preserve")) return;
+      if (el.tagName !== "BUTTON" && el.getAttribute("role") === "button" &&
+          el.querySelector("a[href], pre, code, table, img, picture, video, audio, article, section, ul, ol, blockquote")) return;
       var heading = el.parentElement && el.parentElement.closest("h1, h2, h3, h4, h5, h6");
       if (!meaningfulButtonText(text) && !meaningfulDisclosureHeading(el, heading, text)) return;
       var replacement = document.createElement(heading ? "span" : "p");

@@ -90,7 +90,16 @@
     return root;
   }
 
+  function stripLeafActionControls(root) {
+    root.querySelectorAll("[role='button']").forEach(function(el) {
+      if (el.children.length || el.matches("a[href]") || codeContentNode(el)) return;
+      var text = normalizeText(el.textContent || "").toLowerCase();
+      if (UI_ACTION_TEXT_PATTERN.test(text)) el.remove();
+    });
+  }
+
   function stripUIWidgets(root, options) {
+    stripLeafActionControls(root);
     stripInertCustomUiElements(root);
     stripArticleWidgets(root);
     root.querySelectorAll("div, section, span").forEach(function(el) {

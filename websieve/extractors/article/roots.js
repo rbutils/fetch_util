@@ -197,6 +197,7 @@
   function cleanupGenericArticleRoot(root) {
     if (!root || !root.querySelectorAll) return root;
 
+    stripLeafActionControls(root);
     cleanupEmptyMixedSidebarRecommendations(root);
     root.querySelectorAll("[class~='ads' i]").forEach(function(node) {
       if (genericArticleAdFurniture(node)) node.remove();
