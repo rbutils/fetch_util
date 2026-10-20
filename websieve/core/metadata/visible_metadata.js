@@ -97,7 +97,7 @@ function localizedAuthorProfilePath(href) {
     var routeIndex = segments.findIndex(function(segment) {
       return authorRoutes.indexOf(segment) !== -1;
     });
-    if (routeIndex !== segments.length - 2) return false;
+    if (routeIndex < 0 || routeIndex !== segments.length - 2) return false;
 
     var slug = segments[segments.length - 1];
     if (/[\u0000-\u001f\u007f/\\]/.test(slug)) return false;

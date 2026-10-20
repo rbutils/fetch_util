@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Require a real localized author-route segment before treating a resource link
+  as an author profile, preserving ordinary single-segment references as content.
+
 - Retain complete authored material surrounding selected nested publication cards,
   preserving physical order without assigning parent context to the child record.
 
