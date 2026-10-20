@@ -19,7 +19,7 @@ RSpec.describe 'Source-owned leading publication resources' do
         var marker = markReadabilityExcerptSources(clone);
         var identities = markReadabilitySourceNodeProvenance(clone, sourceClones, marker);
         var reader = new Readability(clone);
-        preserveReadabilityOwnedLeadResources(reader, clone, sourceClones, marker);
+        preserveReadabilityOwnedResources(reader, clone, sourceClones, marker);
         reader._cleanConditionally(clone.body, 'div');
         var firstHtml = clone.body.innerHTML;
         clone.body.innerHTML = firstHtml;
