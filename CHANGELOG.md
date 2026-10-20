@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independent resources in authored peer sections through reader cleanup,
+  retaining their source order, visibility and separate repeated destinations.
+
 - Require a real localized author-route segment before treating a resource link
   as an author profile, preserving ordinary single-segment references as content.
 

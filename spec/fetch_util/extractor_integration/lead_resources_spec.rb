@@ -151,4 +151,49 @@ RSpec.describe 'Source-owned leading publication resources' do
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
+
+  it 'retains each independent resource in later authored sections' do
+    extra = <<~HTML
+      <section><h2>Independent tools</h2><p>The published tools supplement the complete procedure and retain their own reference destination for readers.</p>
+      <div><a href="../tools/">Published tools</a></div></section>
+      <section><h2>Independent repository</h2><p>The independent repository contains complete source material and preserves a separate authored reference.</p>
+      <div><a href="../tools/">Repository edition</a></div></section>
+    HTML
+    with_url_page('https://publication.example.test/reports/sections/', resource_report('', extra)) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract(page)
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('[Published tools](https://publication.example.test/reports/tools/)',
+                                  '[Repository edition](https://publication.example.test/reports/tools/)')
+      expect(markdown.scan('https://publication.example.test/reports/tools/').size).to eq(2)
+      expect(markdown.index('[Published tools]')).to be < markdown.index('[Repository edition]')
+      expect(payload.fetch('html')).to include("console.log(sample);  ")
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
+
+  it 'keeps later resources source-bound across reparsing and excludes hidden navigation and closed content' do
+    extra = <<~HTML
+      <section><h2>Independent resources</h2><p>These published resources supplement the complete procedure with individually declared supporting destinations.</p>
+      <div><a href="../tools/">Published tools</a></div>
+      <div hidden><a href="../hidden/">Hidden later resource</a></div>
+      <nav><div><a href="../account/">Account settings</a></div></nav>
+      <details><summary>Optional evidence</summary><div><a href="../closed/">Closed later resource</a></div><pre><code>secret_later_program();</code></pre></details></section>
+    HTML
+    with_url_page('https://publication.example.test/reports/reparsed-sections/', resource_report('', extra)) do |page|
+      before = page.evaluate('document.body.innerHTML')
+      payload = extract(page)
+      expect(payload.fetch('markdown')).to include('[Published tools]')
+      expect(payload.fetch('markdown')).not_to include('Hidden later resource', 'Account settings', 'Closed later resource', 'secret_later_program();')
+      exact = leading_resource_reparse(page)
+      expect(exact.fetch('sameMarkup')).to be(true)
+      expect(exact.fetch('markdown')).to include('[Published tools]')
+      %w[destination duplicate foreign].each do |mutation|
+        changed = leading_resource_reparse(page, mutation)
+        expect(changed.fetch('markdown')).not_to include('Published tools')
+        expect(changed.fetch('html')).to include("console.log(sample);  ")
+      end
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
+    end
+  end
 end

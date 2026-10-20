@@ -53,10 +53,34 @@
     return !normalizeText(outside.textContent);
   }
 
+  function readabilityOwnedResourceSections(root, sourceClones) {
+    var lead = readabilityLeadResourceSection(root, sourceClones);
+    if (!lead) return [];
+    var owner = lead.closest("main, article, [role='main'], [itemprop~='articleBody']");
+    var sections = [lead];
+    var excluded = "nav, footer, aside, form, button, details:not([open]), [role='navigation'], " +
+      "[role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
+    owner.querySelectorAll("section").forEach(function(section) {
+      var clone = sourceClones.get(section);
+      if (section === lead || !clone || !root.contains(clone) || section.closest(excluded) ||
+          elementSubtreeHidden(section) ||
+          section.closest("main, article, [role='main'], [itemprop~='articleBody']") !== owner) return;
+      function ownsVisible(node) {
+        var mapped = sourceClones.get(node);
+        return node.closest("section") === section && mapped && clone.contains(mapped) &&
+          !node.closest(excluded) && !elementSubtreeHidden(node) && !!normalizeText(mapped.textContent);
+      }
+      var heading = Array.from(section.querySelectorAll("h2, h3, h4, h5, h6")).some(ownsVisible);
+      var prose = Array.from(section.querySelectorAll("p")).some(ownsVisible);
+      if (heading && prose) sections.push(section);
+    });
+    return sections;
+  }
+
   function preserveReadabilityOwnedLeadResources(reader, root, sourceClones, marker) {
     if (!reader || !root || !sourceClones || !marker) return;
-    var section = readabilityLeadResourceSection(root, sourceClones);
-    if (!section) return;
+    var sections = readabilityOwnedResourceSections(root, sourceClones);
+    if (!sections.length) return;
     var attribute = "data-fetchutil-reader-source-resource";
     var blocks = new WeakSet();
     var snapshots = new Map();
@@ -64,7 +88,8 @@
     var excluded = "nav, footer, aside, form, button, pre, code, details:not([open]), " +
       "[role='navigation'], [role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
     sourceClones.forEach(function(clone, source) {
-      if (source.localName !== "div" || clone.localName !== "div" || !section.contains(source) || !root.contains(clone)) return;
+      if (source.localName !== "div" || clone.localName !== "div" || !root.contains(clone) ||
+          !sections.some(function(section) { return section.contains(source); })) return;
       if (source.closest(excluded) || elementSubtreeHidden(source) || clone.hasAttribute(attribute)) return;
       if (!readabilityMappedLeadResources(source, clone, sourceClones)) return;
       var identity = marker + ":" + originals.length;
