@@ -4,6 +4,7 @@ require 'spec_helper'
 
 RSpec.describe 'FetchUtil extractor integration - docs content cleanup fragments' do
   include_context 'extractor integration helpers'
+  include_context 'literal title heading assertions'
 
   it "focuses docs fragment urls on the requested docker section" do
     html = <<~HTML
@@ -81,9 +82,10 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup fragments
     html = fixture_contents(File.expand_path('../../fixtures/javadoc_reference.html', __dir__))
 
     with_url_page("https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html", html) do |page|
-      markdown = extract(page).fetch("markdown")
+      payload = extract(page)
+      markdown = payload.fetch("markdown")
 
-      expect(markdown).to include("# Interface Map<K,V>")
+      expect_literal_title_heading(payload, "Interface Map<K,V>")
       expect(markdown).to include("## Method Summary")
       expect(markdown).to include("### put")
       expect(markdown).to include("V put(K key, V value)")

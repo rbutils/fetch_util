@@ -4,6 +4,7 @@ require 'spec_helper'
 
 RSpec.describe 'FetchUtil extractor integration - docs content cleanup warnings' do
   include_context 'extractor integration helpers'
+  include_context 'literal title heading assertions'
 
   it "does not flag readable docs pages for incidental cookie footer text" do
     html = <<~HTML
@@ -185,7 +186,7 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup warnings'
     with_url_page("https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div", html) do |page|
       payload = extract(page)
 
-      expect(payload["markdown"]).to include("# <div>: The Content Division element")
+      expect_literal_title_heading(payload, "<div>: The Content Division element")
       expect(payload["warnings"]).not_to include("truncated_content")
     end
   end

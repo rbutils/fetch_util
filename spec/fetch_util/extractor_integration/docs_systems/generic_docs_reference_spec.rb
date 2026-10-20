@@ -4,6 +4,7 @@ require 'spec_helper'
 
 RSpec.describe 'FetchUtil extractor integration - generic reference docs systems' do
   include_context 'extractor integration helpers'
+  include_context 'literal title heading assertions'
 
   it "extracts python docs with title-first output and fenced code blocks" do
     html = <<~HTML
@@ -123,7 +124,7 @@ RSpec.describe 'FetchUtil extractor integration - generic reference docs systems
       payload = extract(page)
 
       expect(payload["title"]).to eq("Function read_to_string")
-      expect(payload["markdown"]).to include("# Function read_to_string")
+      expect_literal_title_heading(payload, "Function read_to_string")
       expect(payload["markdown"]).to include("Reads the entire contents of a file into a string")
       expect(payload["markdown"]).not_to include("Copy item path")
       expect(payload["markdown"]).not_to include("Search")
