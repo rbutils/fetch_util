@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Extract complete source-owned native disclosure catalogues without competing
+  whole-page article clones, preserving every visible record and closed state.
+
 - Finish classification of directly owned rich reporting cards before inspecting
   nested cards, preserving complete records without recursive ownership cycles.
 

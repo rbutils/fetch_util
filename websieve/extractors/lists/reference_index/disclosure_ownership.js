@@ -15,9 +15,9 @@ function disclosureCatalogChrome(node) {
     !!node.querySelector("ul ul, ol ol, ul ol, ol ul");
 }
 
-function disclosureCatalogOutsideMaterial(root) {
+function disclosureCatalogOutsideMaterial(root, retainedOutside) {
   function outside(node) {
-    if (node === root || node.nodeType === 8) return false;
+    if (node === root || node.nodeType === 8 || retainedOutside && retainedOutside.indexOf(node) !== -1) return false;
     if (node.nodeType === 3) return !!normalizeText(node.nodeValue || "");
     if (node.nodeType !== 1 || node.matches("script, style, noscript, template") || disclosureCatalogChrome(node)) return false;
     if (node.contains(root)) return Array.from(node.childNodes).some(outside);
@@ -81,6 +81,8 @@ function disclosureCatalogIndexOwned(root, groups) {
 
 function disclosureCatalogContext() {
   return withSourceVisibilityRead(function() {
+    var nativeRecords = nativeDisclosureRecordIndexContext();
+    if (nativeRecords) return nativeRecords;
     if (!document.body || document.querySelector("article, [role='article'], [itemprop~='articleBody'], script[type='application/ld+json'], [itemscope][itemtype]")) return null;
     var headings = Array.from(document.querySelectorAll("h1"));
     if (headings.length !== 1 || elementVisuallyHidden(headings[0])) return null;

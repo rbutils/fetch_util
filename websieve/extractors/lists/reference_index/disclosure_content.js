@@ -32,6 +32,11 @@ function disclosureCatalogContent(metadata) {
     var holder = document.createElement("div");
     holder.appendChild(clone);
     try {
+      (context.trailingResources || []).forEach(function(source) {
+        var resource = visibilityPrunedClone(source, document);
+        if (resource) holder.appendChild(resource);
+      });
+      if (context.nativeRecordDisclosures) retainNativeDisclosureState(holder);
       holder.querySelectorAll("script, style, noscript, template").forEach(function(node) { node.remove(); });
       holder.querySelectorAll("button").forEach(function(button) {
         var span = button.ownerDocument.createElement("span");

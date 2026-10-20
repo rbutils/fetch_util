@@ -87,6 +87,7 @@ core/docs_cleanup/article_title_finalization.js
 core/docs_cleanup/adjacent_headings.js
 extractors/lists/reference_index/ownership.js
 extractors/lists/reference_index/content.js
+extractors/lists/reference_index/native_disclosure_records.js
 extractors/lists/reference_index/disclosure_ownership.js
 extractors/lists/reference_index/disclosure_content.js
 extractors/lists/canonical_table/ownership.js
