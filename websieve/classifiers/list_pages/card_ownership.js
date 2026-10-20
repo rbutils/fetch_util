@@ -195,11 +195,11 @@
     });
     if (!ownedLinks.length) return false;
 
-    var hasNestedCard = Array.prototype.some.call(node.querySelectorAll(genericListCardSelector()), genericListNestedCard);
-    if (!hasNestedCard) return true;
-    return ownedLinks.some(function(link) {
+    var hasOwnedPrimaryLink = ownedLinks.some(function(link) {
       return link.parentElement === node || !!link.closest("h1, h2, h3, h4");
     });
+    if (hasOwnedPrimaryLink) return true;
+    return !Array.prototype.some.call(node.querySelectorAll(genericListCardSelector()), genericListNestedCard);
   }
 
   function closestGenericListCard(node) {

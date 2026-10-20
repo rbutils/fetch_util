@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Finish classification of directly owned rich reporting cards before inspecting
+  nested cards, preserving complete records without recursive ownership cycles.
+
 - Preserve source-owned heading-only reference cards through reader cleanup,
   retaining their physical order, repeated destinations and complete heading roles.
 
