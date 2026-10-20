@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete source-owned definitions and physical table-cell roles through
+  reader heuristics while excluding interfaces and retaining closed states and code.
+
 - Retain complete visible footer fact tables with their physical labels and
   source order while keeping adjacent navigation and subscription controls out.
 

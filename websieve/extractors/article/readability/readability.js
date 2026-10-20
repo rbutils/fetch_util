@@ -43,6 +43,7 @@
       if (!mediaWikiLike) cleanupAgentRoot(clone);
       cleanupGenericArticleRoot(clone);
       stripSourceOwnedCitationActions(clone.documentElement);
+      var definitionClass = prepareReadabilityOwnedDefinitions(clone, sourceClones, excerptMarker);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
       // Readability removes accepted bylines; linked records own their own attribution.
@@ -55,6 +56,7 @@
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
+      article.content = stripReadabilityDefinitionClass(article.content, definitionClass);
       article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
       article = sourceOwnedReaderRetainedSections(article, sectionHeadings, sourceClones, sourceIdentities, excerptMarker);
       var sourceParagraphTemplate = document.createElement("template");
