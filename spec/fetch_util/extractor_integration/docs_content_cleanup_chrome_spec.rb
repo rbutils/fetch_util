@@ -1,9 +1,22 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'nokogiri'
 
 RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' do
   include_context 'extractor integration helpers'
+
+  def expect_literal_title_heading(payload, title)
+    native = Nokogiri::HTML5.fragment(payload.fetch("html"))
+    heading_lines = payload.fetch("markdown").lines.grep(/\A# /).map(&:chomp)
+    # These fixtures contain plain, single-line titles. Decode punctuation only
+    # in those headings, leaving literal programs and other content untouched.
+    titles = heading_lines.map { |line| line.delete_prefix("# ").gsub(/\\([[:punct:]])/, '\1') }
+
+    expect(native.css("h1").map(&:text)).to eq([title])
+    expect(titles).to eq([title])
+    expect(heading_lines.join).not_to match(/(?<!\\)</)
+  end
 
   it "cleans react docs toc and copy controls" do
     html = <<~HTML
@@ -165,7 +178,7 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' d
     with_page(html) do |page|
       payload = extract(page)
 
-      expect(payload["markdown"]).to include("# <div>: The Content Division element")
+      expect_literal_title_heading(payload, "<div>: The Content Division element")
       expect(payload["markdown"]).to include("generic container for flow content")
       expect(payload["markdown"]).not_to include("Try it")
     end
@@ -195,7 +208,7 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' d
       payload = extract(page)
 
       expect(payload["title"]).to eq("Function read_to_string")
-      expect(payload["markdown"]).to include("# Function read_to_string")
+      expect_literal_title_heading(payload, "Function read_to_string")
       expect(payload["markdown"]).to include("Reads the entire contents of a file into a string")
       expect(payload["markdown"]).not_to include("Copy item path")
       expect(payload["markdown"]).not_to include("Search")
@@ -369,7 +382,7 @@ RSpec.describe 'FetchUtil extractor integration - docs content cleanup chrome' d
     with_url_page("https://api.baselinker.com/index.php?method=shops_api", html) do |page|
       payload = extract(page)
 
-      expect(payload["markdown"]).to include("# shops_api")
+      expect_literal_title_heading(payload, "shops_api")
       expect(payload["markdown"]).to include("Returns the list of shops connected")
       expect(payload["markdown"]).to include("## Input parameters")
       expect(payload["markdown"]).not_to include("Method list")

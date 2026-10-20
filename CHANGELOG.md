@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verify cleaned documentation titles by physical heading role and literal text,
+  retaining escaped element and identifier names in the test contract.
+
 - Preserve physical article titles after authored context without synthesizing
   duplicates, retaining linked headings, literal programs and source order.
 
