@@ -5,6 +5,22 @@ function normalizeText(value) {
   return value.trim().replace(/\s{2,}|[^\S ]/g, " ");
 }
 
+function normalizedHeadingText(node) {
+  if (!node || !node.matches || !node.matches("h1, h2, h3, h4, h5, h6")) {
+    return normalizeText(node && node.textContent);
+  }
+  var breaks = node.querySelectorAll("br");
+  if (!breaks.length) return normalizeText(node.textContent);
+
+  var clone = node.cloneNode(true);
+  var clonedBreaks = clone.querySelectorAll("br");
+  Array.prototype.forEach.call(breaks, function(source, index) {
+    var text = elementVisuallyHiddenWithin(source, node) ? "" : " ";
+    clonedBreaks[index].replaceWith(clone.ownerDocument.createTextNode(text));
+  });
+  return normalizeText(clone.textContent);
+}
+
 function normalizedElementTextPrefix(node, limit) {
   if (!node || node.nodeType !== 1 || limit <= 0) return "";
   var walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_CDATA_SECTION);

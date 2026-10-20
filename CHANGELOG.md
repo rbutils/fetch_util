@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve visible line-break boundaries in heading metadata without splitting
+  adjacent inline words or synthesizing duplicate physical title headings.
+
 - Verify cleaned documentation titles by physical heading role and literal text,
   retaining escaped element and identifier names in the test contract.
 

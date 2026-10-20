@@ -117,7 +117,7 @@ function markdownHasOwnedTitleHeading(markdown, title, root) {
   if (!root || !root.querySelectorAll || !title) return false;
   var titleLower = normalizeText(title).toLowerCase();
   var headings = Array.prototype.filter.call(root.querySelectorAll("h1"), function(heading) {
-    return normalizeText(heading.textContent).toLowerCase() === titleLower;
+    return normalizedHeadingText(heading).toLowerCase() === titleLower;
   });
   if (!headings.length) return false;
   var visibleMarkdown = "\n" + protectMarkdownFences(markdown).markdown + "\n";

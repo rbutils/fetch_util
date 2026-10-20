@@ -22,7 +22,7 @@ function firstText(selectors, attr) {
     var node = document.querySelector(selectors[i]);
     if (!node) continue;
 
-    var value = attr ? node.getAttribute(attr) : node.textContent;
+    var value = attr ? node.getAttribute(attr) : normalizedHeadingText(node);
     value = normalizeText(value);
     if (value) return value;
   }
