@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete physical program declarations with linked tokens through reader
+  cleanup, retaining literal values and every ordered code reference.
+
 - Extract complete source-owned native disclosure catalogues without competing
   whole-page article clones, preserving every visible record and closed state.
 

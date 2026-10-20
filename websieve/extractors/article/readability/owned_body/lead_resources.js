@@ -81,7 +81,7 @@
     if (!reader || !root || !sourceClones || !marker) return;
     var sections = readabilityOwnedResourceSections(root, sourceClones);
     var headingBlocks = readabilityOwnedHeadingResourceBlocks(root, sourceClones);
-    if (!sections.length && !headingBlocks.size) return;
+    var programBlocks = readabilityOwnedLinkedProgramBlocks(root, sourceClones);
     var attribute = "data-fetchutil-reader-source-resource";
     var blocks = new WeakSet();
     var snapshots = new Map();
@@ -90,9 +90,11 @@
       "[role='navigation'], [role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
     sourceClones.forEach(function(clone, source) {
       if (source.localName !== "div" || clone.localName !== "div" || !root.contains(clone) ||
-          (!headingBlocks.has(clone) && !sections.some(function(section) { return section.contains(source); }))) return;
+          (!headingBlocks.has(clone) && !programBlocks.has(clone) &&
+            !sections.some(function(section) { return section.contains(source); }))) return;
       if (source.closest(excluded) || elementSubtreeHidden(source) || clone.hasAttribute(attribute)) return;
-      if (!headingBlocks.has(clone) && !readabilityMappedLeadResources(source, clone, sourceClones)) return;
+      if (!headingBlocks.has(clone) && !programBlocks.has(clone) &&
+          !readabilityMappedLeadResources(source, clone, sourceClones)) return;
       var identity = marker + ":" + originals.length;
       clone.setAttribute(attribute, identity);
       blocks.add(clone);
