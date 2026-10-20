@@ -1557,7 +1557,9 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/compact_body_excerpt.js
         extractors/article/readability/owned_body/alternative_headline.js
         extractors/article/readability/owned_body/named_svg_images.js
+        extractors/article/readability/owned_body/heading_resources.js
         extractors/article/readability/owned_body/lead_resources.js
+        extractors/article/readability/owned_body/definitions.js
         extractors/article/readability/source_node_provenance.js
         extractors/article/readability/attribution/conflicting_credit_restoration.js
         extractors/article/readability/readability.js
@@ -1585,6 +1587,7 @@ RSpec.describe "extract asset bundle" do
         extractors/lists/generic/sections/section_rendering.js
         extractors/lists/generic/sections/record_section_fallback.js
         extractors/lists/generic/sections/section_discovery.js
+        extractors/lists/generic/sections/footer_data.js
       ], "extractors/lists/card_visibility.js"],
       ["extractors/lists/card_visibility.js", %w[
         extractors/lists/list_candidate_selection.js

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve source-owned heading-only reference cards through reader cleanup,
+  retaining their physical order, repeated destinations and complete heading roles.
+
 - Preserve complete source-owned definitions and physical table-cell roles through
   reader heuristics while excluding interfaces and retaining closed states and code.
 
