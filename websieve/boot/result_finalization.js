@@ -137,7 +137,8 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
     });
   }
   if ((content.contentType === "article" || content.contentType === "medical") &&
-      (content.sourceOwnedTitleIdentityUnproven !== true || sourceOwnedTitleIdentityResolved) && primaryTitle && normalizeText(markdown)) {
+      (content.sourceOwnedTitleIdentityUnproven !== true || sourceOwnedTitleIdentityResolved) && primaryTitle && normalizeText(markdown) &&
+      !markdownHasOwnedTitleHeading(markdown, primaryTitle, cleanedHtml)) {
     var lines = markdown.split("\n");
     var titleIndex = -1;
     var primaryTitleLower = primaryTitle.toLowerCase();

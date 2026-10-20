@@ -141,7 +141,7 @@ function docsArticleContent(metadata, node, options) {
     });
   }
 
-  if (title && !markdownStartsWithTitle(markdown, title)) markdown = "# " + title + "\n\n" + markdown;
+  if (title && !markdownStartsWithTitle(markdown, title, root)) markdown = "# " + title + "\n\n" + markdown;
 
   return {
     title: title || metadata.title,

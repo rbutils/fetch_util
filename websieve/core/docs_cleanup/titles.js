@@ -108,7 +108,27 @@ function docsFragmentTitle(root) {
   return text || null;
 }
 
-function markdownStartsWithTitle(markdown, title) {
+function markdownHasOwnedTitleHeading(markdown, title, root) {
+  if (typeof root === "string") {
+    var holder = document.implementation.createHTMLDocument("").createElement("div");
+    holder.innerHTML = root;
+    root = holder;
+  }
+  if (!root || !root.querySelectorAll || !title) return false;
+  var titleLower = normalizeText(title).toLowerCase();
+  var headings = Array.prototype.filter.call(root.querySelectorAll("h1"), function(heading) {
+    return normalizeText(heading.textContent).toLowerCase() === titleLower;
+  });
+  if (!headings.length) return false;
+  var visibleMarkdown = "\n" + protectMarkdownFences(markdown).markdown + "\n";
+  return headings.some(function(heading) {
+    var rendered = markdownFor(heading.outerHTML, false, true, true).trim();
+    return rendered && visibleMarkdown.indexOf("\n" + rendered + "\n") !== -1;
+  });
+}
+
+function markdownStartsWithTitle(markdown, title, root) {
+  if (markdownHasOwnedTitleHeading(markdown, title, root)) return true;
   title = normalizeText(title).replace(/[\`*_]/g, "");
   if (!title) return false;
   var titleLower = normalizeText(title).toLowerCase();

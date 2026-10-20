@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical article titles after authored context without synthesizing
+  duplicates, retaining linked headings, literal programs and source order.
+
 - Preserve independent resources in authored peer sections through reader cleanup,
   retaining their source order, visibility and separate repeated destinations.
 

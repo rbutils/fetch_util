@@ -180,7 +180,7 @@
     if (typeof options.validateMarkdown === "function" && !options.validateMarkdown(markdown, text, root, node)) return null;
 
     var title = profileArticleTitle(metadata, root, node, options);
-    if (title && options.prependTitle !== false && !markdownStartsWithTitle(markdown, title)) {
+    if (title && options.prependTitle !== false && !markdownStartsWithTitle(markdown, title, root)) {
       markdown = "# " + title + "\n\n" + markdown;
     }
 
