@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete authored material surrounding selected nested publication cards,
+  preserving physical order without assigning parent context to the child record.
+
 - Remove explicit leaf action controls on custom elements while retaining nested
   programs, references and independently authored article content.
 

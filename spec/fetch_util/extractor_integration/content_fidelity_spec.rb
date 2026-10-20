@@ -210,12 +210,19 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
-  it 'keeps nested card evidence within the accepted card boundary' do
+  it 'keeps nested card attribution local without discarding its authored parent' do
     with_url_page('https://fidelity.test/', fixture('fidelity_generic_nested_card')) do |page|
       result = extract_payload(page, reader_mode: false)
 
       expect(result['markdown']).to include('FID:inner-title', 'FID:inner-summary', 'FID:inner-image', 'FID:inner-time')
-      expect(result['markdown']).not_to include('FID:outer-action', 'FID:outer-summary', 'FID:outer-image')
+      %w[FID:outer-action FID:outer-image FID:outer-summary].each do |value|
+        expect(result['markdown'].scan(value).length).to eq(1)
+      end
+      inner = result['markdown'].lines.find { |line| line.include?('[FID:inner-title]') }
+      expect(inner).not_to include('FID:outer-action', 'FID:outer-summary', 'FID:outer-image')
+      expect(result['markdown'].index('FID:outer-action')).to be < result['markdown'].index('FID:outer-image')
+      expect(result['markdown'].index('FID:outer-image')).to be < result['markdown'].index('FID:outer-summary')
+      expect(result['markdown'].index('FID:outer-summary')).to be < result['markdown'].index('FID:inner-title')
     end
   end
 

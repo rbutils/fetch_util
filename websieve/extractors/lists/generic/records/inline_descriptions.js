@@ -55,7 +55,10 @@
   function listUnrepresentedMetadataReferences(extraction, descriptions) {
     var primaryRecordKeys;
     var unownedReferences = new WeakSet();
-    var descriptionOwners = new WeakSet(descriptions.map(function(part) { return part.node; }).filter(Boolean));
+    var descriptionOwners = new WeakSet();
+    descriptions.forEach(function(part) {
+      (part.sourceNodes || [part.node]).filter(Boolean).forEach(function(node) { descriptionOwners.add(node); });
+    });
     var links = Array.from(extraction.root.querySelectorAll("a[href]")).filter(function(link) {
       if (link.closest("nav, header, footer, form, menu, dialog, [role='navigation'], [role='menu'], [role='toolbar'], [aria-modal='true']")) return false;
       var text = normalizeText(link.textContent);
