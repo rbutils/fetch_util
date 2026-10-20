@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'content fidelity contracts' do
   include_context 'extractor integration helpers'
   include_context 'content fidelity contracts'
@@ -256,19 +258,32 @@ RSpec.describe 'content fidelity contracts' do
     HTML
 
     with_url_page('https://fidelity.test/news', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
-      lines = result['markdown'].lines.grep(/^- \[/)
+      markdown = result.fetch('markdown')
+      native = Nokogiri::HTML5.fragment(result.fetch('html'))
+      destinations = (1..12).map { |record| ["FID:module-title-#{record}", "https://fidelity.test/news/#{record}"] }
+      images = (1..12).map { |record| ["FID:module-image-#{record}", "https://fidelity.test/images/#{record}.jpg"] }
+      records = markdown.split(/(?=^### \[FID:module-title-\d+\])/).drop(1)
 
       expect(result['contentType']).to eq('list')
-      expect(lines.length).to eq(12)
-      lines.each_with_index do |line, index|
+      expect(markdown.scan(/^### \[(FID:module-title-\d+)\]\(([^)]+)\)$/)).to eq(destinations)
+      expect(markdown.scan(/^## (FID:module-section-\w+)$/).flatten).to eq(%w[FID:module-section-one FID:module-section-two])
+      expect(markdown.scan(/!\[(FID:module-image-\d+)\]\(([^)]+)\)/)).to eq(images)
+      expect(native.css('h3 a').map { |node| [node.text, node['href']] }).to eq(destinations)
+      expect(native.css('img').map { |node| [node['alt'], node['src']] }).to eq(images)
+      expect(native.css('p').map(&:text)).to eq((1..12).map { |record| "FID:module-summary-#{record}" })
+      expect(records.length).to eq(12)
+      records.each_with_index do |body, index|
         record = index + 1
-        expect(line).to include(
+        expect(body).to include(
           "FID:module-title-#{record}", "FID:module-summary-#{record}",
           "FID:module-meta-#{record}"
         )
-        expect(line).not_to include("FID:module-summary-#{record == 12 ? 11 : record + 1}")
+        expect(body.scan(/FID:module-summary-\d+/)).to eq(["FID:module-summary-#{record}"])
+        expect(body.scan(/FID:module-meta-\d+/)).to eq(["FID:module-meta-#{record}"])
       end
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
