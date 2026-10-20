@@ -3,10 +3,12 @@
         current.sourceNode === candidate.sourceNode) return null;
     var outer = current.sourceNode.contains(candidate.sourceNode) ? current : candidate;
     var inner = outer === current ? candidate : current;
-    if (!inner.sectionCount || !outer.sourceNode.contains(inner.sourceNode)) return null;
+    var additionalFooterData = ownedFooterDataGroups(outer.root).length > ownedFooterDataGroups(inner.root).length;
+    if ((!inner.sectionCount && !additionalFooterData) || !outer.sourceNode.contains(inner.sourceNode)) return null;
     var outerKeys = new Set(outer.items.map(function(item) { return materializedHttpUrl(item.url); }).filter(Boolean));
     var innerKeys = new Set(inner.items.map(function(item) { return materializedHttpUrl(item.url); }).filter(Boolean));
-    if (outerKeys.size <= innerKeys.size || Array.from(innerKeys).some(function(url) { return !outerKeys.has(url); })) return null;
+    if (outerKeys.size < innerKeys.size || (outerKeys.size === innerKeys.size && !additionalFooterData) ||
+        Array.from(innerKeys).some(function(url) { return !outerKeys.has(url); })) return null;
 
     var sources = outer.items.map(function(item) {
       var url = materializedHttpUrl(item.url);

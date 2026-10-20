@@ -64,6 +64,7 @@ core/dom/visibility/subtree.js
 core/dom/visibility/projected_clone.js
 core/dom/visibility/prune.js
 core/dom/cleanup/svg_text.js
+core/dom/cleanup/footer_data.js
 core/dom/base.js
 core/dom/public_preview_cleanup.js
 core/dom/cleanup.js
@@ -255,6 +256,7 @@ extractors/lists/generic/sections/heading_context.js
 extractors/lists/generic/sections/section_rendering.js
 extractors/lists/generic/sections/record_section_fallback.js
 extractors/lists/generic/sections/section_discovery.js
+extractors/lists/generic/sections/footer_data.js
 extractors/lists/card_visibility.js
 extractors/lists/list_candidate_selection.js
 extractors/lists/result_status_context.js

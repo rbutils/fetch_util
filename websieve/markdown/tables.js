@@ -224,6 +224,11 @@
       return row;
     });
 
+    // These positively labelled key/value groups have no column-header row.
+    // Keep every physical TD as data instead of promoting the first fact.
+    if (!table.querySelector("th, thead") && atomicFooterDataGroup(table)) {
+      rows.unshift(Array.from({ length: width }, function() { return ""; }));
+    }
     var header = rows[0];
     var separator = header.map(function() { return "---"; });
     var body = rows.slice(1);

@@ -253,14 +253,12 @@
       best.renderedDescriptions = descriptions;
       best.markdown = sectionedListMarkdownWithDescriptions(best.renderedSections, descriptions) || listMarkdown(best.items);
     }
-    if (structuredListTables(best.root).length) {
-      best.sourceTableMarkdown = markdownFor(best.root.innerHTML);
-      best.markdown = best.sourceTableMarkdown;
-    }
+    applyListTableMarkdown(best);
     if (best.items.length >= 2 && best.items.every(function(item) { return item.sourceOrderedStructuredCard; })) {
       best.markdown = markdownFor(best.root.innerHTML);
     }
     preserveListBodyImageMarkdown(best);
+    applyListFooterDataMarkdown(best);
     var namedHeadingCount = Array.prototype.filter.call(best.root.querySelectorAll("h2, h3, h4"), function(heading) {
       return !heading.closest("article, li, [class*='card' i], [class*='item' i]");
     }).length;

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete visible footer fact tables with their physical labels and
+  source order while keeping adjacent navigation and subscription controls out.
+
 - Preserve visible line-break boundaries in heading metadata without splitting
   adjacent inline words or synthesizing duplicate physical title headings.
 

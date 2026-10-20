@@ -184,6 +184,7 @@
   function cleanClonedContent(source, clone, preserveSelector, elementMap) {
     preserveSvgCloneVisibility(source, clone, elementMap);
     prepareSourceOwnedEngagementClone(source, clone, elementMap);
+    clone = materializeFooterDataGroups(source, clone, elementMap);
     materializeEditorialFrameLinks(source, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {
