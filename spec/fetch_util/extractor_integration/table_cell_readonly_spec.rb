@@ -47,7 +47,7 @@ RSpec.describe FetchUtil::Extractor do
     expected = (1..603).flat_map do |index|
       [
         "Series #{index}", "[Record #{index}](https://records.example.test/series/#{index})",
-        "part#{index}value", "before`<#{index}>`after"
+        "part**#{index}***value*", "before`<#{index}>`after"
       ]
     end
     expect(result.fetch("values")).to eq(expected)

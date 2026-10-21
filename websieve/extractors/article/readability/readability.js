@@ -54,7 +54,8 @@
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);
-      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks);
+      var tableContext = preserveReadabilityDataTableSelection(reader, clone, sourceClones, metadata, sourceIdentities, headingRoles);
+      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks);
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
@@ -73,7 +74,8 @@
         sourceParagraphTemplate.content, sourceClones, sourceIdentities, excerptMarker, true
       );
       var sourceOwnedPublication = readabilityOwnedSelectedPublication(article, metadata, readerBodyEvidence);
-      var excerpt = readerSectionHeaderDateExcerpt(article, readerBodyEvidence, sectionHeadings) ||
+      var excerpt = readabilityDataPublicationExcerpt(article, tableContext, sourceParagraphTemplate.content, sourceIdentities) ||
+        readerSectionHeaderDateExcerpt(article, readerBodyEvidence, sectionHeadings) ||
         readabilityArticleExcerpt(article, metadata, excerptMarker, readerBodyEvidence);
       if (excerpt === article.excerpt && readerBodyEvidence && readerBodyEvidence.sourceParagraphs) {
         var normalizedExcerpt = normalizeText(excerpt || "");

@@ -88,6 +88,10 @@
       var reference = href && label ? markdownLinkWithFormattedLabel(label, href.replace(/\|/g, "%7C")) : label;
       return tableCellInlineWhitespace(node.textContent, reference);
     }
+    if (/^(?:EM|I|STRONG|B)$/.test(node.tagName) && content.trim()) {
+      var delimiter = /^(?:STRONG|B)$/.test(node.tagName) ? "**" : (intrawordEmphasis(node) ? "*" : "_");
+      return tableCellInlineWhitespace(node.textContent, delimiter + content.trim() + delimiter);
+    }
     return tableCellBlockNode(node) ? " " + content + " " : content;
   }
 

@@ -1,6 +1,10 @@
+  function homepageRootPathname(value) {
+    var path = (value || "").toLowerCase();
+    return path === "" || path === "/" || /^\/(?:index|default|home)(?:\.[a-z0-9]+)?\/?$/i.test(path);
+  }
+
   function homepageRootPath() {
-    var path = (location.pathname || "").toLowerCase();
-    if (path === "" || path === "/" || /^\/(?:index|default|home)(?:\.[a-z0-9]+)?\/?$/i.test(path)) return true;
+    if (homepageRootPathname(location.pathname)) return true;
     if (!document.body || !document.body.classList.contains("path-frontpage")) return false;
     var current = sourceOwnershipPageUrl(location.href);
     return !!current && Array.from(document.querySelectorAll("a[data-drupal-link-system-path='<front>'][href]")).some(function(link) {

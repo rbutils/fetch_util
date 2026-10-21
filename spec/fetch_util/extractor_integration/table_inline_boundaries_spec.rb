@@ -36,7 +36,7 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch("cells")).to eq(
       [
         "Refe[ren](https://records.example/manual)ce",
-        "[Review](https://records.example/review)er", "Alpha", "déjà-vu",
+        "[Review](https://records.example/review)er", "Alpha", "dé*jà*-**vu**",
         "pre[fix](https://records.example/fix)"
       ]
     )
@@ -83,6 +83,25 @@ RSpec.describe FetchUtil::Extractor do
         "Quote detail", "prefix```A``B```suffix", "A B"
       ]
     )
+    expect(result.fetch("unchanged")).to be(true)
+  end
+
+  it "preserves emphasis roles without moving whitespace, references or literal code" do
+    result = render_mixed_table_cells(
+      [
+        "<em>no state qualifies</em>", "<i>approximate</i>", "<strong>verified</strong>", "<b>reviewed</b>",
+        "<strong><em>joint estimate</em></strong>", "A<em> note </em>B",
+        '<a href="/guide"><em>complete guide</em></a>', "<em> </em><code>*literal*</code>"
+      ]
+    )
+    expect(result.fetch("cells")).to eq(
+      [
+        "_no state qualifies_", "_approximate_", "**verified**", "**reviewed**",
+        "**_joint estimate_**", "A *note* B",
+        "[_complete guide_](https://records.example/guide)", "`*literal*`"
+      ]
+    )
+    expect(result.fetch("links")).to eq([["complete guide", "https://records.example/guide"]])
     expect(result.fetch("unchanged")).to be(true)
   end
 end

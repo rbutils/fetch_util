@@ -81,7 +81,7 @@
     return sections;
   }
 
-  function preserveReadabilityOwnedResources(reader, root, sourceClones, marker, cardActionBlocks) {
+  function preserveReadabilityOwnedResources(reader, root, sourceClones, marker, cardActionBlocks, tableContextBlocks) {
     if (!reader || !root || !sourceClones || !marker) return;
     var sections = readabilityOwnedResourceSections(root, sourceClones);
     var headingBlocks = readabilityOwnedHeadingResourceBlocks(root, sourceClones);
@@ -100,11 +100,12 @@
       var referenceTable = source.localName === "table" && clone.localName === "table" &&
         (referenceBlocks.has(clone) || nestedResource);
       var cardAction = cardActionBlocks && cardActionBlocks.has(clone);
+      var tableContext = tableContextBlocks && tableContextBlocks.has(clone);
       if ((!referenceTable && (source.localName !== "div" || clone.localName !== "div")) || !root.contains(clone) ||
-          (!nestedResource && !cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
+          (!nestedResource && !cardAction && !tableContext && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
             !sections.some(function(section) { return section.contains(source); }))) return;
       if (source.closest(excluded) || elementSubtreeHidden(source) || clone.hasAttribute(attribute)) return;
-      if (!nestedResource && !cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
+      if (!nestedResource && !cardAction && !tableContext && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
           !readabilityMappedLeadResources(source, clone, sourceClones)) return;
       var identity = marker + ":" + originals.length;
       clone.setAttribute(attribute, identity);

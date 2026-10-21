@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve complete structured tables during reader selection, retaining their
+  headers, rows and independently proved publication context instead of orphaned cells,
+  including source-owned summary fields and introductory excerpts.
+
 - Retain introductory headings above independently titled media resources during
   list cleanup, preserving their physical heading hierarchy and destinations.
 
