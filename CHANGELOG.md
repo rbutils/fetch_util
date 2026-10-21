@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Restore a retained, source-owned physical headline's H1 role after Readability
+  cleanup while keeping all heading children and existing title-ownership rules.
+
 - Support parentless disposable table roots during Markdown conversion while
   preserving nested data-cell roles and complete public HTML.
 

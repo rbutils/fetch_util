@@ -45,6 +45,7 @@
       stripSourceOwnedCitationActions(clone.documentElement);
       var definitionClass = prepareReadabilityOwnedDefinitions(clone, sourceClones, excerptMarker);
       var cardActions = prepareReadabilityOwnedCardActions(clone, sourceClones, excerptMarker);
+      var headingRoles = readabilityRetainedHeadingRoleSnapshots(clone, sourceClones, sourceIdentities);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
       // Readability removes accepted bylines; linked records own their own attribution.
@@ -61,6 +62,7 @@
       article.content = stripReadabilityDefinitionClass(article.content, cardActions.className);
       article.content = stripReadabilityDefinitionClass(article.content, cardActions.bodyClassName);
       article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
+      article = restoreReadabilityRetainedHeadingRole(article, headingRoles, sourceClones, sourceIdentities, excerptMarker);
       article = sourceOwnedReaderRetainedSections(article, sectionHeadings, sourceClones, sourceIdentities, excerptMarker);
       var sourceParagraphTemplate = document.createElement("template");
       sourceParagraphTemplate.innerHTML = article.content;
