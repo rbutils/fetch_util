@@ -19,6 +19,7 @@
 
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     pruneClosedMarkdownDisclosures(root);
+    var frameReferences = markdownFrameReferences(root);
     materializeMarkdownVideoReferences(root);
     materializeMarkdownSvgText(root);
     preserveAccessibleLinkLabels(root);
@@ -27,6 +28,7 @@
     mergeAdjacentEmphasis(root);
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
+    materializeMarkdownFrameReferences(root, frameReferences);
     normalizeCodeBlocks(root);
     preserveWholeInlineCodeLinks(root);
     preserveStructuredCardLinks(root);

@@ -199,6 +199,7 @@ RSpec.describe "extract asset bundle" do
     manifest = File.readlines(File.join(source_root, "manifest.txt"), chomp: true)
     families = [
       %w[markdown/code/code_helpers.js markdown/code/code_surfaces.js],
+      %w[markdown/materialization/video_posters.js markdown/materialization/frame_references.js markdown/runtime.js],
       %w[
         markdown/lists/list_aliases.js markdown/lists/finalization.js markdown/lists/list_metadata.js
         markdown/lists/list_supplemental.js markdown/lists/lists.js

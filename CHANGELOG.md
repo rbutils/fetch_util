@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain declared destinations of visible embedded frames in Markdown, preserving
+  independent occurrences and labels without exposing closed or hidden content.
+
 - Preserve complete structured tables during reader selection, retaining their
   headers, rows and independently proved publication context instead of orphaned cells,
   including source-owned summary fields and introductory excerpts.
