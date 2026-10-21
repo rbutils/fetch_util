@@ -44,6 +44,7 @@
       cleanupGenericArticleRoot(clone);
       stripSourceOwnedCitationActions(clone.documentElement);
       var definitionClass = prepareReadabilityOwnedDefinitions(clone, sourceClones, excerptMarker);
+      var cardActions = prepareReadabilityOwnedCardActions(clone, sourceClones, excerptMarker);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
       // Readability removes accepted bylines; linked records own their own attribution.
@@ -52,11 +53,13 @@
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);
-      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker);
+      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks);
       var article = reader.parse();
       if (!article || !article.content) return null;
       if (normalizeText(article.textContent || "").length < 40) return null;
       article.content = stripReadabilityDefinitionClass(article.content, definitionClass);
+      article.content = stripReadabilityDefinitionClass(article.content, cardActions.className);
+      article.content = stripReadabilityDefinitionClass(article.content, cardActions.bodyClassName);
       article = sourceOwnedReaderRetainedHeadline(article, metadata, sourceClones, sourceIdentities, excerptMarker) || article;
       article = sourceOwnedReaderRetainedSections(article, sectionHeadings, sourceClones, sourceIdentities, excerptMarker);
       var sourceParagraphTemplate = document.createElement("template");

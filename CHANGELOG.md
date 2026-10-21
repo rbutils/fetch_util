@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve separately labelled, source-owned card action references through reader
+  and list cleanup without merging their independent physical occurrences.
+
 - Retain complete source-owned download and feed reference groups through reader
   cleanup, preserving labels, physical order and independent repeated destinations.
 

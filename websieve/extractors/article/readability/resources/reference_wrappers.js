@@ -69,3 +69,50 @@
     });
     return blocks;
   }
+
+  function prepareReadabilityOwnedCardActions(root, sourceClones, marker) {
+    var blocks = new WeakSet();
+    var className = "fetchutil-card-reference-candidate-" + marker;
+    var bodyClassName = "fetchutil-card-owner-content-" + marker;
+    function protectCardContainers(source) {
+      var card = source.closest("li, article, [role='listitem'], [itemprop~='articleBody']");
+      for (var container = source.parentElement; container && container !== card; container = container.parentElement) {
+        var mapped = sourceClones.get(container);
+        if (!mapped || !root.contains(mapped) || elementSubtreeHidden(container)) return;
+        if (container.localName !== "div") continue;
+        if (!readabilityMappedLeadResources(container, mapped, sourceClones, true)) return;
+        blocks.add(mapped);
+      }
+    }
+    sourceClones.forEach(function(clone, source) {
+      if (!root.contains(clone) || !authoredCardActionReference(source) ||
+          !authoredCardActionReference(clone) ||
+          normalizeText(source.textContent) !== normalizeText(clone.textContent)) return;
+      var sourceLinks = Array.from(source.querySelectorAll("a[href]"));
+      var links = Array.from(clone.querySelectorAll("a[href]"));
+      if (sourceLinks.length !== links.length || !links.every(function(link, index) {
+        var original = sourceLinks[index];
+        return sourceClones.get(original) === link && !elementSubtreeHidden(original) &&
+          normalizeText(original.textContent) === normalizeText(link.textContent) &&
+          materializedHttpUrl(original.getAttribute("href")) === materializedHttpUrl(link.getAttribute("href"));
+      })) return;
+      clone.classList.add(className);
+      blocks.add(clone);
+      protectCardContainers(source);
+      var owner = source.closest("article[itemprop~='articleBody' i]");
+      var ownerClone = owner && sourceClones.get(owner);
+      if (!ownerClone || !root.contains(ownerClone) ||
+          owner.closest("nav, aside, footer, form, [role='navigation'], [role='dialog']") ||
+          ownerClone.querySelector("nav, aside, footer, form, [role='navigation'], [role='dialog']") ||
+          normalizeText(owner.textContent) !== normalizeText(ownerClone.textContent)) return;
+      var headings = Array.from(owner.querySelectorAll("h1")).filter(function(heading) {
+        var mapped = sourceClones.get(heading);
+        return mapped && ownerClone.contains(mapped) && !elementSubtreeHidden(heading) &&
+          normalizeText(heading.textContent) === normalizeText(mapped.textContent);
+      });
+      if (headings.length === 1 && sourceOwnedReaderHeadlineTitleMatches(headings[0].textContent, null, null)) {
+        ownerClone.classList.add(bodyClassName);
+      }
+    });
+    return { blocks: blocks, className: className, bodyClassName: bodyClassName };
+  }

@@ -60,3 +60,40 @@
     after.setStartAfter(node);
     return /\p{L}/u.test(before.toString()) && /\p{L}/u.test(after.toString());
   }
+
+  function authoredCardActionReference(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE || !node.matches("div, p")) return false;
+    var excluded = "nav, header, footer, aside, form, button, pre, code, details:not([open]), " +
+      "[role='navigation'], [role='banner'], [role='complementary'], [role='dialog'], " +
+      "[role='toolbar'], [role='menu'], [role='button']";
+    if (node.closest(excluded + ", [hidden], [aria-hidden='true']") || elementSubtreeHidden(node) ||
+        node.querySelector(excluded + ", h1, h2, h3, h4, h5, h6, ul, ol, dl, table, kbd, samp, " +
+          "input, select, textarea, img, picture, video, audio, canvas, iframe, svg text")) return false;
+    var links = Array.from(node.querySelectorAll("a[href]"));
+    if (!links.length || links.some(function(link) {
+      return !materializedHttpUrl(link.getAttribute("href")) || !normalizeText(link.textContent) ||
+        link.matches("[aria-controls], [aria-expanded], [aria-haspopup]");
+    })) return false;
+    var text = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    while (text.nextNode()) {
+      if (normalizeText(text.currentNode.textContent) && !text.currentNode.parentElement.closest("a[href]")) return false;
+    }
+    var cardSelector = "li, article, [role='listitem'], [itemprop~='articleBody']";
+    var card = node.closest(cardSelector);
+    if (!card || card.closest(excluded) || card.querySelector("form, [role='dialog'], [role='toolbar']")) return false;
+    var headings = Array.from(card.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+      return heading.closest(cardSelector) === card && !heading.closest(excluded) &&
+        !elementSubtreeHidden(heading) && !!normalizeText(heading.textContent);
+    });
+    if (headings.length !== 1) return false;
+    var headingLink = headings[0].closest("a[href]") || headings[0].querySelector("a[href]");
+    var destination = headingLink && materializedHttpUrl(headingLink.getAttribute("href"));
+    if (!destination || !links.every(function(link) {
+      return materializedHttpUrl(link.getAttribute("href")) === destination;
+    })) return false;
+    return Array.from(card.querySelectorAll("p")).some(function(paragraph) {
+      return paragraph.closest(cardSelector) === card && !node.contains(paragraph) &&
+        !paragraph.closest(excluded) && !elementSubtreeHidden(paragraph) &&
+        /\p{L}/u.test(normalizeText(paragraph.textContent));
+    });
+  }
