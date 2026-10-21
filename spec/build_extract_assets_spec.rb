@@ -70,6 +70,7 @@ RSpec.describe "extract asset bundle" do
     contents = entries.map { |entry| File.read(File.join(source_root, entry)) }
 
     expect(FetchUtil::ExtractAssetState.duplicate_top_level_callables(entries, contents)).to be_empty
+    expect_manifest_order(entries, "core/dom/materialization.js", "core/dom/cleanup/editorial_frames.js", "core/dom/base.js")
     expect(entries.filter do |entry|
       File.read(File.join(source_root, entry)).match?(/^\s*function commentOnlyRoot\b/)
     end).to eq(["extractors/article/roots.js"])

@@ -182,10 +182,10 @@
   }
 
   function cleanClonedContent(source, clone, preserveSelector, elementMap) {
+    materializeEditorialFrameLinks(source, clone, elementMap);
     preserveSvgCloneVisibility(source, clone, elementMap);
     prepareSourceOwnedEngagementClone(source, clone, elementMap);
     clone = materializeFooterDataGroups(source, clone, elementMap);
-    materializeEditorialFrameLinks(source, clone);
     normalizeCodeSurfaces(clone);
     if (preserveSelector) {
       clone.querySelectorAll(preserveSelector).forEach(function(el) {

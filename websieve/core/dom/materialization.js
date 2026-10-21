@@ -1,33 +1,3 @@
-  function materializeEditorialFrameLinks(source, clone) {
-    var originals = Array.from(source.querySelectorAll("iframe"));
-    var frames = Array.from(clone.querySelectorAll("iframe"));
-    if (originals.length !== frames.length) return;
-
-    frames.forEach(function(frame, index) {
-      var original = originals[index];
-      var figure = original.closest("figure");
-      var label = normalizeText(original.getAttribute("title") || "");
-      var url = materializedHttpUrl(original.getAttribute("src"));
-      if (!figure || !source.contains(figure) || !label || !url || elementVisuallyHidden(original)) return;
-      if (original.getAttribute("src") !== frame.getAttribute("src") ||
-          original.getAttribute("title") !== frame.getAttribute("title")) return;
-      if (original.closest("aside, nav, footer, form, [role='complementary'], [role='navigation'], " +
-          "[hidden], [inert], [aria-hidden='true']")) return;
-
-      var current = original;
-      while (current && current !== source) {
-        var signal = normalizeText((current.id || "") + " " + (current.getAttribute("class") || ""));
-        if (/(?:^|[\s_-])(?:ads?|advert|advertisement|related|recommend|share|promo|comment)(?:[\s_-]|$)/i.test(signal)) return;
-        current = current.parentElement;
-      }
-
-      var link = document.createElement("a");
-      link.href = url;
-      link.textContent = label;
-      frame.replaceWith(link);
-    });
-  }
-
   function materializeHttpAttributes(root, retainUnsafeLinks, allowArticleMailto) {
     if (!root || !root.querySelectorAll) return root;
 

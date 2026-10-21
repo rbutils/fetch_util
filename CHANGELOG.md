@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve source-owned embedded resources through article and document cleanup,
+  retaining their section ownership, visibility and independent occurrences.
+
 - Retain declared destinations of visible embedded frames in Markdown, preserving
   independent occurrences and labels without exposing closed or hidden content.
 
