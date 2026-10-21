@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep nonempty content over an empty inferred list regardless of reader mode,
+  preserving access explanations without suppressing real list records.
+
 - Preserve complete visible publication prose beside a uniquely owned CMS homepage,
   including independent repeated references, without adding navigation or controls.
 

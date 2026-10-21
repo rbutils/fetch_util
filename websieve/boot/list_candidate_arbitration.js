@@ -23,7 +23,7 @@
         return !!materializedHttpUrl(link.getAttribute("href"));
       }).length;
     }
-    return !candidateText && itemCount === 0 && !!currentText && !!(current && current.readerMode);
+    return !candidateText && itemCount === 0 && !!currentText;
   }
 
   function cachedFocalArticleContent(candidate, focalArticleRoute) {
