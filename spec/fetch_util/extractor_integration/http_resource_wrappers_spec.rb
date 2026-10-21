@@ -49,9 +49,9 @@ RSpec.describe "Physical content-owned HTTP resource wrappers" do
       end
       expected_programs = source.css("pre").map(&:text)
       expected_paragraphs = source.css("main p, main .resource-column, main .resource-actions").map(&:text)
-      # Readability displays the complete physical H1 as an H2 beneath the title.
+      # Preserve each physical source heading role, including an authored H1.
       expected_headings = source.css("main h1, main h2, main h3").map do |node|
-        [node.name == "h1" ? "h2" : node.name, node.text]
+        [node.name, node.text]
       end
       with_url_page("https://resources.publication.example.test/observations/", html) do |page|
         before = page.evaluate("document.body.innerHTML")
@@ -63,7 +63,7 @@ RSpec.describe "Physical content-owned HTTP resource wrappers" do
         paragraphs = native.css("p").reject { |node| node.text.empty? && node.element_children.empty? }
         expect(paragraphs.map(&:text)).to eq(expected_paragraphs)
         expect(native.css("pre").map(&:text)).to eq(expected_programs)
-        expect(native.css("h2, h3").map { |node| [node.name, node.text] }).to eq(expected_headings)
+        expect(native.css("h1, h2, h3").map { |node| [node.name, node.text] }).to eq(expected_headings)
         expected_references.map(&:last).uniq.each do |url|
           expect(payload.fetch("markdown").scan(Regexp.new(Regexp.escape(url))).length)
             .to eq(expected_references.count { |reference| reference.last == url })
