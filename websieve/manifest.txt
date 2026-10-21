@@ -71,6 +71,7 @@ core/dom/cleanup.js
 core/article/linked_resources.js
 core/article/wordpress_comments.js
 core/article/wordpress_rest.js
+core/article/homepage_context.js
 core/article/content_helpers.js
 core/article/root_selection.js
 core/article/wordpress_context.js

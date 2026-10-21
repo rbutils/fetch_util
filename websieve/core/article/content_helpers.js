@@ -74,10 +74,12 @@
     if (!body) return null;
     var homepage = homepageFragmentPageContent(metadata, body);
     if (homepage) return homepage;
+    var sourceBody = body;
     var pageRoot = wordpressBlockPageRoot(body);
     if (pageRoot) body = pageRoot;
     var comments = options.includeHeaderContext ? wordpressArticleCommentThreads(body) : [];
     if (options.includeHeaderContext) body = wordpressArticleHeaderContext(body);
+    body = homepagePublicationContext(sourceBody, body);
     var excerpt = options.excerpt;
     if (excerpt === undefined && options.includeHeaderContext) excerpt = wordpressArticleExcerpt;
 

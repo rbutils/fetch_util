@@ -133,6 +133,7 @@
     Array.from(clone.querySelectorAll("*")).forEach(function(node) {
       if (cookieConsentInterfaceNode(node)) node.remove();
     });
+    clone = homepagePublicationContext(root, clone);
     return profileHtmlContent(metadata, clone, {
       cloneRoot: false,
       cleanupRoot: false,

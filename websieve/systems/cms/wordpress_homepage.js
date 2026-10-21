@@ -76,6 +76,7 @@ function wordpressHomepageContent(metadata) {
   if (!context) return null;
   var clone = visibilityPrunedClone(context.root, document);
   removeAll(clone, "script, style, noscript, template");
+  clone = homepagePublicationContext(context.root, clone);
   return profileHtmlContent(metadata, clone, {
     cloneRoot: false,
     cleanupRoot: false,

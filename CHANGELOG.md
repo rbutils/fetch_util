@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete visible publication prose beside a uniquely owned CMS homepage,
+  including independent repeated references, without adding navigation or controls.
+
 - Restore a retained, source-owned physical headline's H1 role after Readability
   cleanup while keeping all heading children and existing title-ownership rules.
 
