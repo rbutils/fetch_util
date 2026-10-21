@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete source-owned download and feed reference groups through reader
+  cleanup, preserving labels, physical order and independent repeated destinations.
+
 - Preserve complete physical program declarations with linked tokens through reader
   cleanup, retaining literal values and every ordered code reference.
 

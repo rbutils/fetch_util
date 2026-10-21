@@ -21,11 +21,14 @@
     return hasProse ? section : null;
   }
 
-  function readabilityMappedLeadResources(source, clone, sourceClones) {
-    var excluded = "p, h1, h2, h3, h4, h5, h6, ul, ol, dl, table, pre, code, kbd, samp, section, article, " +
+  function readabilityMappedLeadResources(source, clone, sourceClones, ownedContext, ownedTables) {
+    var excluded = (ownedContext ? "" : "p, h1, h2, h3, h4, h5, h6, ") +
+      "ul, ol, dl, " + (ownedTables ? "" : "table, ") + "pre, code, kbd, samp, section, article, " +
       "nav, header, footer, aside, form, button, input, select, textarea, [role='button'], " +
       "iframe, object, embed, video, audio, canvas";
     if (clone.querySelector(excluded)) return false;
+    if (ownedContext && clone.querySelector("details, [role='navigation'], [role='banner'], " +
+        "[role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']")) return false;
     var sourceLinks = Array.from(source.querySelectorAll("a[href]")).filter(function(node) { return !elementSubtreeHidden(node); });
     var sourceImages = Array.from(source.querySelectorAll("img")).filter(function(node) { return !elementSubtreeHidden(node); });
     var links = Array.from(clone.querySelectorAll("a[href]"));
@@ -48,6 +51,7 @@
       return mappedUrl(sourceImages[index], image, "src") &&
         sourceImages[index].getAttribute("alt") === image.getAttribute("alt");
     })) return false;
+    if (ownedContext) return normalizeText(source.textContent) === normalizeText(clone.textContent);
     var outside = clone.cloneNode(true);
     outside.querySelectorAll("a, img, picture, svg").forEach(function(node) { node.remove(); });
     return !normalizeText(outside.textContent);
@@ -82,6 +86,7 @@
     var sections = readabilityOwnedResourceSections(root, sourceClones);
     var headingBlocks = readabilityOwnedHeadingResourceBlocks(root, sourceClones);
     var programBlocks = readabilityOwnedLinkedProgramBlocks(root, sourceClones);
+    var referenceBlocks = readabilityOwnedReferenceWrappers(root, sourceClones);
     var attribute = "data-fetchutil-reader-source-resource";
     var blocks = new WeakSet();
     var snapshots = new Map();
@@ -89,11 +94,12 @@
     var excluded = "nav, footer, aside, form, button, pre, code, details:not([open]), " +
       "[role='navigation'], [role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
     sourceClones.forEach(function(clone, source) {
-      if (source.localName !== "div" || clone.localName !== "div" || !root.contains(clone) ||
-          (!headingBlocks.has(clone) && !programBlocks.has(clone) &&
+      var referenceTable = source.localName === "table" && clone.localName === "table" && referenceBlocks.has(clone);
+      if ((!referenceTable && (source.localName !== "div" || clone.localName !== "div")) || !root.contains(clone) ||
+          (!headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
             !sections.some(function(section) { return section.contains(source); }))) return;
       if (source.closest(excluded) || elementSubtreeHidden(source) || clone.hasAttribute(attribute)) return;
-      if (!headingBlocks.has(clone) && !programBlocks.has(clone) &&
+      if (!headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
           !readabilityMappedLeadResources(source, clone, sourceClones)) return;
       var identity = marker + ":" + originals.length;
       clone.setAttribute(attribute, identity);
@@ -108,14 +114,15 @@
         if (documentRoot.contains(node)) snapshots.set(node.getAttribute(attribute), node.outerHTML);
       });
       var counts = new Map();
-      documentRoot.querySelectorAll("div[" + attribute + "]").forEach(function(node) {
+      documentRoot.querySelectorAll("div[" + attribute + "], table[" + attribute + "]").forEach(function(node) {
         var identity = node.getAttribute(attribute);
         if (snapshots.has(identity)) counts.set(identity, (counts.get(identity) || 0) + 1);
       });
       return { has: function(node) {
         if (blocks.has(node)) return true;
         var identity = node.getAttribute(attribute);
-        return node.localName === "div" && counts.get(identity) === 1 && snapshots.get(identity) === node.outerHTML;
+        return (node.localName === "div" || node.localName === "table") &&
+          counts.get(identity) === 1 && snapshots.get(identity) === node.outerHTML;
       } };
     });
   }

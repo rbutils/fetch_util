@@ -1559,6 +1559,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/owned_body/named_svg_images.js
         extractors/article/readability/owned_body/heading_resources.js
         extractors/article/readability/programs/ownership.js
+        extractors/article/readability/resources/reference_wrappers.js
         extractors/article/readability/owned_body/lead_resources.js
         extractors/article/readability/owned_body/definitions.js
         extractors/article/readability/source_node_provenance.js

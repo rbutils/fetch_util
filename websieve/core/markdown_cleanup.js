@@ -102,8 +102,8 @@
       .replace(/^\s*([-*])\s+\[(?:!\[[^\]]*\]\([^)]+\)\s*)?\n+\s*#{1,6}\s*([^\n]+)\n+\s*\]\(([^)]+)\)/gm, "$1 [$2]($3)")
       .replace(/^(\s*[-*]\s*)!#{1,6}\s*/gm, "$1")
       .replace(/^(\s*[-*]\s*)#{1,6}\s*/gm, "$1")
-      // Repair or remove orphan card-link fragments from nested image/title anchors.
-      .replace(/^\s*\[\s*\n+\s*(#{1,6})\s+([^\n]+)\n+\s*\]\((https?:\/\/[^)]+)\)\s*$/gm, "$1 [$2]($3)")
+      // Preserve enclosing list indentation when repairing a nested title anchor.
+      .replace(/^([ \t]*)\[\s*\n+\s*(#{1,6})\s+([^\n]+)\n+\s*\]\((https?:\/\/[^)]+)\)[ \t]*$/gm, "$1$2 [$3]($4)")
       .replace(/^\s*\]\((https?:\/\/[^)]+)\)\[\s*\n+\s*([^\n\[\]#][^\n]*)\n+\s*\]\(\1\)\s*$/gm, "[$2]($1)")
       .replace(/^\s*\[\s*$/gm, "")
       .replace(/^\s*\]\(https?:\/\/[^)]+\)\[?\s*$/gm, "")
