@@ -137,8 +137,8 @@
       });
       if (regionComplete && region.label && firstIndex !== null) {
         if (!headings[firstIndex]) headings[firstIndex] = [];
-        headings[firstIndex].push(sectionRegionMarkdown(region));
-        headingParts.push({ node: region.headingNode || region.node, markdown: "## " + sectionRegionMarkdown(region) });
+        headings[firstIndex].push(sectionRegionHeadingMarkdown(region));
+        headingParts.push({ node: region.headingNode || region.node, markdown: sectionRegionHeadingMarkdown(region) });
       }
       return regionComplete;
     });
@@ -166,7 +166,7 @@
 
   function sameRootFlatListMarkdown(items, headings) {
     return items.map(function(item, index) {
-      var blocks = (headings[index] || []).map(function(heading) { return "## " + heading; });
+      var blocks = Array.from(headings[index] || []);
       blocks.push(listMarkdown([item]));
       return blocks.join("\n\n");
     }).join("\n");
@@ -246,8 +246,8 @@
       });
       if (region.label && index >= 0) {
         if (!headings[index]) headings[index] = [];
-        headings[index].push(sectionRegionMarkdown(region));
-        headingParts.push({ node: region.headingNode || region.node, markdown: "## " + sectionRegionMarkdown(region) });
+        headings[index].push(sectionRegionHeadingMarkdown(region));
+        headingParts.push({ node: region.headingNode || region.node, markdown: sectionRegionHeadingMarkdown(region) });
       }
     });
     var descriptions = listDescriptionParts(root, items, {

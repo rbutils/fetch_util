@@ -1,3 +1,19 @@
+  function genericListMediaRecord(node, destination) {
+    var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+      return !heading.closest("a[href]") && !listCardNodeHidden(heading) && normalizeText(heading.textContent);
+    });
+    var images = Array.from(node.querySelectorAll("img[src]")).filter(function(image) {
+      return !listCardNodeHidden(image) && materializedHttpUrl(image.getAttribute("src"));
+    });
+    var links = Array.from(node.querySelectorAll("a[href]")).filter(function(link) { return !listCardNodeHidden(link); });
+    if (!headings.length || !images.length || !links.length) return false;
+    var primary = destination || materializedHttpUrl(links[0].getAttribute("href"));
+    return !!primary && links.every(function(link) {
+      var url = materializedHttpUrl(link.getAttribute("href"));
+      return url && listCanonicalKey(url) === listCanonicalKey(primary);
+    });
+  }
+
   function genericListPairedMediaCard(link) {
     if (!link || !link.matches || !link.matches("a[href]") || listCardNodeHidden(link) ||
         link.closest("nav, header, footer, aside, menu, form, [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar']")) return null;

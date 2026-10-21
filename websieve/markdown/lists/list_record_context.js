@@ -52,29 +52,13 @@ function listSelectedUnlabeledReferenceContextOwner(card, records) {
 function listSelectedMediaContextOwner(card, records) {
   if (!records || !records.length || card.querySelector("pre, code, table, form, input, button, select, textarea, nav, [role='navigation'], [role='toolbar']")) return null;
 
-  function mediaRecord(node, destination) {
-    var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
-      return !heading.closest("a[href]") && !listCardNodeHidden(heading) && normalizeText(heading.textContent);
-    });
-    var images = Array.from(node.querySelectorAll("img[src]")).filter(function(image) {
-      return !listCardNodeHidden(image) && materializedHttpUrl(image.getAttribute("src"));
-    });
-    var links = Array.from(node.querySelectorAll("a[href]")).filter(function(link) { return !listCardNodeHidden(link); });
-    if (!headings.length || !images.length || !links.length) return false;
-    var primary = destination || materializedHttpUrl(links[0].getAttribute("href"));
-    return !!primary && links.every(function(link) {
-      var url = materializedHttpUrl(link.getAttribute("href"));
-      return url && listCanonicalKey(url) === listCanonicalKey(primary);
-    });
-  }
-
   if (records.length === 1) {
     var selected = records[0].sourceNode;
     var selectedUrl = materializedHttpUrl(records[0].url || "");
     return selected && selected.matches("a[href]") && card.contains(selected) &&
       !selected.closest("h1, h2, h3, h4, h5, h6") &&
       !selected.querySelector("h1, h2, h3, h4, h5, h6") &&
-      mediaRecord(card, selectedUrl) ? records[0] : null;
+      genericListMediaRecord(card, selectedUrl) ? records[0] : null;
   }
 
   var owners = [];
@@ -84,7 +68,7 @@ function listSelectedMediaContextOwner(card, records) {
         source.querySelector("h1, h2, h3, h4, h5, h6") || !card.contains(source)) return null;
     var owner = source.parentElement;
     var destination = materializedHttpUrl(record.url || "");
-    while (owner && owner !== card && !mediaRecord(owner, destination)) owner = owner.parentElement;
+    while (owner && owner !== card && !genericListMediaRecord(owner, destination)) owner = owner.parentElement;
     if (!owner || owner === card || owners.indexOf(owner) !== -1) return null;
     owners.push(owner);
   }
@@ -93,7 +77,7 @@ function listSelectedMediaContextOwner(card, records) {
   var peers = Array.from(parent.children).filter(function(node) {
     return !node.matches("script, style, template") && !listCardNodeHidden(node);
   });
-  return peers.every(function(peer) { return mediaRecord(peer); }) ? records[0] : null;
+  return peers.every(function(peer) { return genericListMediaRecord(peer); }) ? records[0] : null;
 }
 
 function listSelectedReferenceContextOwner(card, context) {

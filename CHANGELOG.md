@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain introductory headings above independently titled media resources during
+  list cleanup, preserving their physical heading hierarchy and destinations.
+
 - Preserve complete public introductions beside access forms, including authored
   references and programs, while retaining login warnings and captured visibility.
 

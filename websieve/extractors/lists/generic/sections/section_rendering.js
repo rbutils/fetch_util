@@ -37,7 +37,7 @@
       if (region.label && !mediaGroupFor(region.headingNode || region.node)) {
         blocks.push({
           node: region.headingNode || region.node,
-          markdown: "## " + sectionRegionMarkdown(region),
+          markdown: sectionRegionHeadingMarkdown(region),
           kind: "heading",
           regionIndex: regionIndex,
           sequence: sequence++

@@ -31,6 +31,10 @@
     return matching.length === 1 ? markdownLink(region.label, matching[0].getAttribute("href")) : region.label;
   }
 
+  function sectionRegionHeadingMarkdown(region) {
+    return "#".repeat(listMediaSectionHeadingLevel(region.headingNode)) + " " + sectionRegionMarkdown(region);
+  }
+
   function sectionRegionLabel(region, options) {
     var label = sectionHeading(region, options);
     if (!label && options.fallbackHeadingBuilder) label = options.fallbackHeadingBuilder(region);
@@ -221,7 +225,7 @@
     mergeDuplicateRecordAuthorContext(root, items);
     var markdown = regions.map(function(region) {
       var cards = listMarkdown(region.cards);
-      return region.label ? "## " + sectionRegionMarkdown(region) + "\n\n" + cards : cards;
+      return region.label ? sectionRegionHeadingMarkdown(region) + "\n\n" + cards : cards;
     }).join("\n\n");
 
     return {

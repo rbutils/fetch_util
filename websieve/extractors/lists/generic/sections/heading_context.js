@@ -31,7 +31,38 @@
       var text = normalizeText(link.textContent) || normalizeText(link.getAttribute("aria-label")) || normalizeText(image.getAttribute("alt"));
       admit(link, text, true);
     });
-    return destinations.size >= 2;
+    return destinations.size >= 2 || listOwnedMediaSectionHeading(node, headings[0]);
+  }
+
+  function listOwnedMediaSectionHeading(container, heading) {
+    return listMediaSectionHeadingOwner(container.parentElement, heading);
+  }
+
+  function listMediaSectionHeadingOwner(owner, heading) {
+    if (!owner || !owner.matches("div, section, article") || owner.matches("[role='main']") ||
+        !owner.closest("main, [role='main'], article") ||
+        owner.querySelector("pre, code, table, form, input, button, select, textarea, nav, [role='navigation'], [role='toolbar']")) return false;
+    var headings = Array.from(owner.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(node) {
+      return !listCardNodeHidden(node) && normalizeText(node.textContent);
+    });
+    if (headings.length < 2 || headings[0] !== heading || heading.closest("a[href]")) return false;
+    var level = Number(heading.tagName.slice(1));
+    if (!headings.every(function(node) {
+      return node === heading || (!node.closest("a[href]") && Number(node.tagName.slice(1)) > level);
+    })) return false;
+    return genericListMediaRecord(owner);
+  }
+
+  function listMediaSectionHeadingLevel(heading) {
+    if (!heading || !heading.matches("h3, h4, h5, h6") ||
+        heading.closest("a[href], nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='banner'], [role='contentinfo']")) return 2;
+    for (var owner = heading.parentElement; owner && !owner.matches("main, [role='main'], body, html"); owner = owner.parentElement) {
+      var leading = owner.querySelector("h1, h2, h3, h4, h5, h6");
+      if (leading && leading !== heading && listMediaSectionHeadingOwner(owner, leading)) {
+        return Number(heading.tagName.slice(1));
+      }
+    }
+    return 2;
   }
 
   function listLinkedSectionHeading(node, root, items, primaryUrls) {

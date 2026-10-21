@@ -185,7 +185,7 @@
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;
       if (linkedSectionHeading || links <= 1 || (links / words) < 0.3) {
-        var prefix = heading ? "## " : "";
+        var prefix = heading ? "#".repeat(listMediaSectionHeadingLevel(el)) + " " : "";
         if (linkedSectionHeading) {
           text = markdownFor(el.innerHTML).trim();
         } else if (!heading && links) {
