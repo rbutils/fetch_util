@@ -87,6 +87,8 @@
     var headingBlocks = readabilityOwnedHeadingResourceBlocks(root, sourceClones);
     var programBlocks = readabilityOwnedLinkedProgramBlocks(root, sourceClones);
     var referenceBlocks = readabilityOwnedReferenceWrappers(root, sourceClones);
+    var nestedTables = readabilityOwnedNestedResourceTables(root, sourceClones);
+    preserveReadabilityOwnedTableCells(reader, nestedTables);
     var attribute = "data-fetchutil-reader-source-resource";
     var blocks = new WeakSet();
     var snapshots = new Map();
@@ -94,13 +96,15 @@
     var excluded = "nav, footer, aside, form, button, pre, code, details:not([open]), " +
       "[role='navigation'], [role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
     sourceClones.forEach(function(clone, source) {
-      var referenceTable = source.localName === "table" && clone.localName === "table" && referenceBlocks.has(clone);
+      var nestedResource = nestedTables.has(clone);
+      var referenceTable = source.localName === "table" && clone.localName === "table" &&
+        (referenceBlocks.has(clone) || nestedResource);
       var cardAction = cardActionBlocks && cardActionBlocks.has(clone);
       if ((!referenceTable && (source.localName !== "div" || clone.localName !== "div")) || !root.contains(clone) ||
-          (!cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
+          (!nestedResource && !cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
             !sections.some(function(section) { return section.contains(source); }))) return;
       if (source.closest(excluded) || elementSubtreeHidden(source) || clone.hasAttribute(attribute)) return;
-      if (!cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
+      if (!nestedResource && !cardAction && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
           !readabilityMappedLeadResources(source, clone, sourceClones)) return;
       var identity = marker + ":" + originals.length;
       clone.setAttribute(attribute, identity);

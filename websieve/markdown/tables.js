@@ -234,9 +234,11 @@
       return row;
     });
 
-    // Positively owned facts and definition tables have no declared header.
+    // Facts, definitions and nested data tables have no declared header.
     // Keep every physical TD as data instead of promoting the first row.
-    if (!table.querySelector("th, thead") && (atomicFooterDataGroup(table) || headerlessDefinitionTable(table))) {
+    var nestedDataTable = !!table.parentElement.closest("table");
+    if (!table.querySelector("th, thead") &&
+        (nestedDataTable || atomicFooterDataGroup(table) || headerlessDefinitionTable(table))) {
       rows.unshift(Array.from({ length: width }, function() { return ""; }));
     }
     var header = rows[0];
