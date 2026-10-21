@@ -253,7 +253,7 @@ function interstitialContent(metadata, pageText, type) {
     details.push("Interstitial: JavaScript redirect page — content not yet loaded");
   }
 
-  return articleContentFromParts({
+  var content = articleContentFromParts({
     title: title,
     description: description,
     details: details,
@@ -261,6 +261,7 @@ function interstitialContent(metadata, pageText, type) {
     siteName: metadata.siteName || location.hostname,
     contentType: "interstitial"
   });
+  return type === "auth_wall" && !agreementLoginGate ? withAuthoredAccessIntroduction(content) : content;
 }
 
 function interstitialRequestedContextMarkdown(content, metadata, markdown, warnings) {

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete public introductions beside access forms, including authored
+  references and programs, while retaining login warnings and captured visibility.
+
 - Keep nonempty content over an empty inferred list regardless of reader mode,
   preserving access explanations without suppressing real list records.
 

@@ -1,4 +1,7 @@
 function resultMarkdownCleanup(content) {
+  if (hasSourceOwnedAccessIntroduction(content)) {
+    return function(value) { return String(value || "").trim(); };
+  }
   if (typeof content.sourceOwnedInstitutionalHtml === "string" && content.sourceOwnedInstitutionalHtml === content.html) {
     return function(value) { return String(value || "").trim(); };
   }
