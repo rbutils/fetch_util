@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Support parentless disposable table roots during Markdown conversion while
+  preserving nested data-cell roles and complete public HTML.
+
 - Preserve complete source-owned nested provider tables through reader cleanup,
   retaining visible typed cells and independent references while respecting
   captured row visibility.

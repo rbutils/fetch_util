@@ -236,7 +236,7 @@
 
     // Facts, definitions and nested data tables have no declared header.
     // Keep every physical TD as data instead of promoting the first row.
-    var nestedDataTable = !!table.parentElement.closest("table");
+    var nestedDataTable = !!(table.parentElement && table.parentElement.closest("table"));
     if (!table.querySelector("th, thead") &&
         (nestedDataTable || atomicFooterDataGroup(table) || headerlessDefinitionTable(table))) {
       rows.unshift(Array.from({ length: width }, function() { return ""; }));
