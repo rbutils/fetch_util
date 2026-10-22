@@ -133,10 +133,19 @@ RSpec.describe 'FetchUtil visible publication fields' do
     end
   end
 
-  it 'retains the existing first-field fallback when no recognized date format is present' do
+  it 'rejects class-matched section labels without publication-date evidence' do
     field = '<span class="published-date">Latest coverage</span><span class="date">Regional news</span>'
-    extract_from_url('https://example-blog.test/restoration/', publication_field_page(field)) do |payload|
-      expect(payload['publishedTime']).to eq('Latest coverage')
+    with_url_page('https://example-blog.test/restoration/', publication_field_page(field)) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      paragraphs = page.evaluate("Array.from(document.querySelectorAll('.entry-content > p'), node => node.textContent)")
+      payload = extract_payload(page)
+
+      expect(payload['publishedTime']).to be_nil
+      expect(payload.values_at('title', 'byline', 'contentType')).to eq(['Restoring the river', nil, 'article'])
+      expect(paragraphs.length).to eq(3)
+      expect(Nokogiri::HTML5.fragment(payload.fetch('html')).css('p').map(&:text)).to eq(paragraphs)
+      expect(payload['markdown'].split(/\n\s*\n/)).to eq(['# Restoring the river', *paragraphs])
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 
