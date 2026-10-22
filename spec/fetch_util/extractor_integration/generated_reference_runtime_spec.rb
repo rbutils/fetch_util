@@ -137,10 +137,10 @@ RSpec.describe 'Generated technical reference runtime', :integration do
         };
         try { payload = task.finish(); }
         finally { Document.prototype.importNode = originalImport; }
-        const ordinary = window.FetchUtilExtract.extract({reader_mode: true});
-        return {owned: task.owned, unchangedMarkup, clones, payload, ordinary,
+        return {owned: task.owned, unchangedMarkup, clones, payload,
           restored: Node.prototype.cloneNode === originalClone && document.createElement === originalCreate};
       JS
+      result['ordinary'] = page.evaluate('window.FetchUtilExtract.extract({reader_mode: true})')
       expect(result).to include('owned' => true, 'unchangedMarkup' => true, 'restored' => true)
       expect(result.fetch('clones')).to be_positive
       expect(result.fetch('payload')).to eq(result.fetch('ordinary'))
