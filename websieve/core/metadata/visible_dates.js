@@ -179,5 +179,7 @@ function visiblePublishedTime(content) {
       var value = node.getAttribute("datetime") || node.getAttribute("content") || node.textContent || "";
       return visiblePublicationDateLike(value);
     }) ||
-    firstScopedText(roots, fields, null, null, visiblePublishedTimeField) || visibleInlinePublishedTime(roots);
+    firstScopedText(roots, [
+      "[itemprop='datePublished']", "[itemprop='dateModified']", "time"
+    ], null, null, visiblePublishedTimeField) || visibleInlinePublishedTime(roots);
 }

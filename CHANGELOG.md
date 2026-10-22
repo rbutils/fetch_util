@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Require date evidence for inferred publication fields, preserving explicit
+  declarations without treating unrelated style names or pending schedules as dates.
+
 - Preserve source-owned visible gallery preview images in article output while
   keeping hidden galleries, form controls and ambiguous destinations excluded.
 
