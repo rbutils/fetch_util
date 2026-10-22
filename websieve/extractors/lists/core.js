@@ -1,14 +1,3 @@
-  function listHtmlWithoutUnsafeDestinations(root) {
-    var clone = safeDeepClone(root, document);
-    clone.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
-      node.removeAttribute("data-fetch-util-structured-card-field");
-    });
-    clone.querySelectorAll("a[href]").forEach(function(link) {
-      if (!materializedHttpUrl(link.getAttribute("href"))) link.removeAttribute("href");
-    });
-    return clone.innerHTML;
-  }
-
   function buildListExtraction(node, pageTitles, options) {
     options = options || {};
     var repeatedCollection = options.repeatedRecordCollection;
@@ -278,17 +267,19 @@
       canonicalCardCount: portalEvidenceItemCount
     } : null;
     var excerpt = portalEvidence && metadata.declaredDescription || (best.items[0] ? best.items[0].text : metadata.excerpt);
+    appendListFooterContactInformation(best, options.repeatedRecordCollection);
 
     var result = listItemsContentResult(metadata, {
       title: metadata.title || document.title,
       excerpt: excerpt,
-      html: listHtmlWithoutUnsafeDestinations(best.root),
+      html: listHtmlWithoutUnsafeDestinations(best.root, best.sourceFooterContactGroups),
       textContent: best.markdown,
       markdown: best.markdown,
       items: best.items,
       portalRootEvidence: portalEvidence
     });
     result.listExtraction = best;
+    if (best.sourceFooterContactGroups) sourceOwnedFooterContactResults.set(result, result.html);
     result.listArbitrationMarkdown = rankedMarkdown;
     if (best.sectionMarkdownWithDescription) result.sectionMarkdownWithDescription = best.sectionMarkdownWithDescription;
     return result;

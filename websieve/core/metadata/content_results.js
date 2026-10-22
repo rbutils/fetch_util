@@ -9,7 +9,7 @@ function inlineArticleMailtoAllowed(content) {
   if (!content) return false;
   var contentType = content.contentType || "article";
   return contentType === "notice" || (contentType === "article" && !content.docsLike) ||
-    hasSourceOwnedAccessIntroduction(content);
+    hasSourceOwnedAccessIntroduction(content) || hasSourceOwnedFooterContactInformation(content);
 }
 
 function inlineArticleMailtoMaySurviveUntilFinalType(content) {

@@ -56,3 +56,22 @@
     });
     return root;
   }
+
+  function listHtmlWithoutUnsafeDestinations(root, contactGroups) {
+    var clone = safeDeepClone(root, document);
+    clone.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
+      node.removeAttribute("data-fetch-util-structured-card-field");
+    });
+    var sourceLinks = contactGroups ? Array.from(root.querySelectorAll("a[href]")) : [];
+    var links = Array.from(clone.querySelectorAll("a[href]"));
+    links.forEach(function(link, index) {
+      var source = sourceLinks[index];
+      var contact = sourceLinks.length === links.length && source && contactGroups &&
+        source.getAttribute("href") === link.getAttribute("href") && source.textContent === link.textContent &&
+        contactGroups.some(function(group) { return group.contains(source); });
+      var href = contact ? materializedLinkUrl(link.getAttribute("href"), materializedTextAnchor(link)) :
+        materializedHttpUrl(link.getAttribute("href"));
+      if (!href) link.removeAttribute("href");
+    });
+    return clone.innerHTML;
+  }

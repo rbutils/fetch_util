@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete source-owned footer contact information after publication
+  collections, preserving visible addresses and labeled email and telephone references.
+
 - Preserve independently authored repeated-record identities when evaluating
   alternate headline candidates, retaining complete linked-cover collections.
 

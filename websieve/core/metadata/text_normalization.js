@@ -92,15 +92,20 @@ function materializedLinkUrl(value, allowArticleMailto) {
 
   var raw = String(value || "");
   if (raw !== raw.trim() || /[\u0000-\u001f\u007f-\u009f]/.test(raw)) return null;
-  var match = raw.match(/^mailto:(.+)$/i);
+  var match = raw.match(/^(mailto|tel):(.+)$/i);
   if (!match) return null;
   var decoded;
   try {
-    decoded = decodeURIComponent(match[1]);
+    decoded = decodeURIComponent(match[2]);
   } catch (_error) {
     return null;
   }
   if (/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(decoded) || /[?#]/.test(decoded)) return null;
+  if (match[1].toLowerCase() === "tel") {
+    var telephone = decoded.replace(/[().\- \u00a0]/g, "");
+    if (!/^\+?\d+(?:;ext=\d+)?$/i.test(telephone)) return null;
+    return "tel:" + match[2];
+  }
   var address = decoded.match(/^([A-Za-z0-9.!$&'*+/=_`{|}~-]+)@([A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?)$/);
   if (!address || address[2].indexOf("..") !== -1) return null;
   return "mailto:" + decoded;
