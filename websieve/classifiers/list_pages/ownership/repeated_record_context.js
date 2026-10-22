@@ -165,5 +165,5 @@
       branch = parent;
       parent = parent.parentElement;
     }
-    return null;
+    return pageOwnedCollectionSectionContext(owner);
   }

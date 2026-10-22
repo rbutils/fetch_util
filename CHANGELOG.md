@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain a collection's source-owned section heading across inert wrappers while
+  preserving every physical record and rejecting unrelated or hidden context.
+
 - Preserve every data row in headerless tables by generating an empty Markdown
   header instead of assigning header roles to the first published record.
 

@@ -150,6 +150,7 @@ classifiers/list_pages/dominance.js
 classifiers/list_pages/search_category.js
 classifiers/list_pages/table_grid.js
 classifiers/list_pages/table_index.js
+classifiers/list_pages/ownership/record_context/section_heading.js
 classifiers/list_pages/ownership/repeated_record_context.js
 classifiers/list_pages/ownership/repeated_records.js
 classifiers/list_pages/ownership/runtime_detail_ownership.js
