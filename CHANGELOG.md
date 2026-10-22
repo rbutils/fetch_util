@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete source-owned publication groups when the reader result is
+  only one independently linked record, retaining the page introduction and peers.
+
 - Retain heading ranks and enclosing reference destinations when attribution
   labels use transparent address wrappers, preserving semantic content guards.
 
