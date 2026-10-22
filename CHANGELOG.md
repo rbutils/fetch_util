@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep composite activity labels in named program illustrations from becoming
+  page authors, preserving independent and explicitly declared attribution.
+
 - Keep publication credits with unlinked titles whose physical owners declare
   covering links or independently confirmed literal navigation destinations.
 

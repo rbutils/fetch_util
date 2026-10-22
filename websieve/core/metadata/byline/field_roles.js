@@ -24,6 +24,27 @@ function inferredBylineHeadingAnchor(node) {
   return label(node.id) === label(node.textContent);
 }
 
+function inferredBylineActivityField(node) {
+  var group = node.closest("[role~='group'][aria-label]");
+  if (!group || !normalizeText(group.getAttribute("aria-label")) ||
+      group.matches("html, body, main, article, [role~='main'], [itemprop~='articleBody']") ||
+      group.querySelector("h1, article, [itemprop~='articleBody']")) return false;
+
+  function part(pattern) {
+    return Array.from(node.children).find(function(child) {
+      var markers = (child.getAttribute("class") || "").replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase().split(/\s+/);
+      return markers.some(function(marker) { return pattern.test(marker); }) &&
+        normalizeText(child.textContent || "") && !elementVisuallyHidden(child);
+    });
+  }
+  var name = part(/(?:^|[_:.-])name$/);
+  var activity = part(/(?:^|[_:.-])(?:said|action|activity|event|status)$/);
+  if (!name || !activity || name === activity) return false;
+  return Array.from(group.querySelectorAll("pre")).some(function(program) {
+    return normalizeText(program.textContent || "") && !elementVisuallyHidden(program);
+  });
+}
+
 function inferredArticleBylineNode(node) {
   if (!node || node.nodeType !== 1) return false;
   if (node.matches("html, body, main, [role~='main']")) return false;
@@ -44,7 +65,8 @@ function inferredArticleBylineNode(node) {
   markers.push(node.getAttribute("data-testid") || "");
   var fieldMarker = markers.some(inferredBylineFieldMarker);
   if (!fieldMarker && inferredBylineHeadingAnchor(node)) return false;
-  return (fieldMarker || inferredBylineFieldMarker(node.id)) && articleBylineNode(node);
+  return (fieldMarker || inferredBylineFieldMarker(node.id)) &&
+    !inferredBylineActivityField(node) && articleBylineNode(node);
 }
 
 function inferredBylineSourceNodes(sourceClones) {
