@@ -1618,9 +1618,9 @@ RSpec.describe 'FetchUtil extractor integration' do
       payload = FetchUtil::Extractor.new.extract(page)
       markdown = payload["markdown"]
 
-      expect(markdown).to include("Austria [15](#{url}#15) Declaration:")
-      expect(markdown).to include("Bangladesh [17](#{url}#17), [18](#{url}#18) Declaration:")
-      expect(markdown).to include("Bahamas (The) Reservations:")
+      expect(markdown).to include("Austria [15](#{url}#15) _Declaration:_")
+      expect(markdown).to include("Bangladesh [17](#{url}#17), [18](#{url}#18) _Declaration:_")
+      expect(markdown).to include("Bahamas (The) _Reservations:_")
       expect(markdown.scan("Austria").length).to eq(2)
       expect(markdown.scan("Bangladesh").length).to eq(1)
       expect(markdown.scan("Bahamas (The)").length).to eq(1)
