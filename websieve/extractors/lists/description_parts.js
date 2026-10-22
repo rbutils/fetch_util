@@ -1,6 +1,12 @@
   function listDescriptionCardNode(node, items, options, itemValues, primaryReferences, primaryUrls) {
     if (!items) return closestGenericListCard(node);
 
+    var completeRecord = items.find(function(item) {
+      return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard) &&
+        item.card && item.card.contains(node);
+    });
+    if (completeRecord) return completeRecord.card;
+
     var heading = /^H[1-6]$/.test(node.tagName || "");
     var text = heading ? listHeadingText(node) : normalizeText(node.textContent || "");
     var unlinkedHeading = heading && !node.closest("a[href]") && !node.querySelector("a[href]");

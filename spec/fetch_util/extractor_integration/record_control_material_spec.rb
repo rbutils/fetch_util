@@ -41,7 +41,7 @@ RSpec.describe 'source-ordered record control material' do
       end
       quotation = 'Last Post: 7h ago is quoted in this authored paragraph.'
       expect(native.css('p').count { |node| node.text == quotation }).to eq(5)
-      expect(markdown).to include(quotation)
+      expect(markdown.scan(quotation).length).to eq(5)
       expect(markdown).to include('**Last Post** is an authored label.')
       expect(markdown).to include('https://publication.example.test/record.png')
       expect(markdown).not_to include('by editor')

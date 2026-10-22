@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve each physical paragraph once when complete source-ordered records
+  already contain material considered by deferred description rendering.
+
 - Clean control-only metadata in source-ordered records while retaining reply
   counts, authored prose, references and literal programs.
 
