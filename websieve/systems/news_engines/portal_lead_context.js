@@ -152,7 +152,8 @@
       var state = stack.pop();
       var node = state.node;
       var hidden = state.hidden ||
-        (node !== leadRoot.root && elementSubtreeHiddenWithin(node, composedDomParent(node)));
+        (node !== leadRoot.root && elementSubtreeHiddenWithin(node, composedDomParent(node))) ||
+        listNodeWithinClosedDisclosure(node);
       var unavailable = state.unavailable || homepageLeadUnavailableOwner(node);
       var interfaceOwned = state.interfaceOwned || homepageLeadInterfaceOwner(node);
       var recordOwned = state.recordOwned || homepageLeadRecordOwner(node, itemCards);
@@ -182,9 +183,9 @@
           interfaceOwned: interfaceOwned,
           recordOwned: recordOwned
         });
-      } else if (node.tagName === "P") {
+      } else if (node.tagName === "P" || /^H[2-6]$/.test(node.tagName)) {
         contexts.push({
-          kind: "paragraph",
+          kind: node.tagName === "P" ? "paragraph" : "heading",
           node: node,
           hidden: hidden,
           unavailable: unavailable,
@@ -220,12 +221,17 @@
       var text = normalizeText(visible && visible.textContent || "");
       if (context.kind === "control") {
         if (!meaningfulButtonText(text) || itemValues.has(text)) return null;
+        itemValues.add(text);
+      } else if (context.kind === "heading") {
+        if (!text || context.node.closest("a[href], pre, code, kbd, samp, blockquote") ||
+            visible.querySelector("a[href], button, input, select, textarea, form, nav, details")) return null;
+        var headingMarkdown = markdownFor(visible.outerHTML).trim();
+        return headingMarkdown ? { node: context.node, markdown: headingMarkdown } : null;
       } else {
         var words = text.split(/\s+/).filter(Boolean).length;
-        if (text.length < 30 || text.length > 2000 || words < 4 || itemValues.has(text)) return null;
+        if (text.length < 30 || text.length > 2000 || words < 4) return null;
         if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return null;
       }
-      itemValues.add(text);
       return { node: context.node, markdown: text };
     }).filter(Boolean);
     var substantialParagraphs = 0;
@@ -240,4 +246,17 @@
       return descriptions.filter(function(description) { return description.node.tagName !== "P"; });
     }
     return descriptions;
+  }
+
+  function homepageLeadContextRepresentsDescription(leadRoot, descriptions, description) {
+    var text = normalizeText(description || "");
+    if (!leadRoot || !leadRoot.root || !text) return false;
+    var paragraphs = descriptions.filter(function(part) {
+      return part.node && part.node.tagName === "P" && leadRoot.root.contains(part.node);
+    });
+    // A synopsis is another serialization of context, not another authored node.
+    // Every physical paragraph remains in the source-ordered description list.
+    return paragraphs.some(function(part) {
+      return normalizeText(part.markdown) === text;
+    }) || normalizeText(paragraphs.map(function(part) { return part.markdown; }).join("\n\n")) === text;
   }

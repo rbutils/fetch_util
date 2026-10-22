@@ -236,17 +236,16 @@
     var title = leadRoot.hero || (metadata && metadata.title) || document.title || location.hostname;
     var markdownParts = [];
     if (leadRoot.hero) markdownParts.push("# " + leadRoot.hero);
-    if (metadata && metadata.excerpt) markdownParts.push(metadata.excerpt);
-    var ancestorDescription = homepageLeadAncestorDescription(leadRoot, sectioned, metadata);
-    if (ancestorDescription) markdownParts.push(ancestorDescription);
-    var itemTitles = new Set(leadRoot.items.map(function(item) { return normalizeText(item.text).toLowerCase(); }));
-    var sectionHeadings = leadRoot.headings.filter(function(text) {
-      return !itemTitles.has(normalizeText(text).toLowerCase());
-    });
-    if (sectionHeadings.length >= 2) {
-      markdownParts.push(sectionHeadings.map(function(text) { return "- " + text; }).join("\n"));
-    }
     var contextDescriptions = homepageLeadContextDescriptions(leadRoot);
+    if (metadata && metadata.excerpt &&
+        !homepageLeadContextRepresentsDescription(leadRoot, contextDescriptions, metadata.excerpt)) {
+      markdownParts.push(metadata.excerpt);
+    }
+    var ancestorDescription = homepageLeadAncestorDescription(leadRoot, sectioned, metadata);
+    if (ancestorDescription &&
+        !homepageLeadContextRepresentsDescription(leadRoot, contextDescriptions, ancestorDescription)) {
+      markdownParts.push(ancestorDescription);
+    }
     markdownParts.push(contextDescriptions.length ? sectionedListMarkdownWithDescriptions({
       regions: [{ node: leadRoot.root, label: "", cards: leadRoot.items }]
     }, contextDescriptions) : listMarkdown(leadRoot.items));

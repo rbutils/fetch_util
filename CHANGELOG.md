@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep portal section headings and introductions at their physical source position,
+  preserving independent repeated paragraphs and captured disclosure visibility.
+
 - Preserve complete source-owned publication groups when the reader result is
   only one independently linked record, retaining the page introduction and peers.
 
