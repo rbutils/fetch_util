@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep principal publication headings and subordinate metadata from becoming
+  page authors, preserving explicit names and independently owned page bylines.
+
 - Preserve section headings whose generated anchors resemble author fields,
   retaining genuine attribution and independently declared page authors.
 

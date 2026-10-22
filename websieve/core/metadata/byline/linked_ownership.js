@@ -40,14 +40,54 @@ function bylineSharesPublicationLink(byline, titleLink, owner) {
     materializedHttpUrl(link.getAttribute("href")) === materializedHttpUrl(titleLink.getAttribute("href"));
 }
 
+function bylinePrincipalPublicationHeading(fields, byline, owner) {
+  if (fields.length < 2 || fields.some(function(field) { return !field.matches("h1, h2, h3, h4, h5, h6"); })) return null;
+  var rank = fields.reduce(function(minimum, field) {
+    return Math.min(minimum, Number(field.tagName.substring(1)));
+  }, Infinity);
+  var principal = fields.filter(function(field) { return Number(field.tagName.substring(1)) === rank; });
+  if (principal.length !== 1) return null;
+  var title = principal[0];
+  var titleLink = bylineForeignTitleLink(title, byline, owner);
+  if (!titleLink) return null;
+  var titleUrl = materializedHttpUrl(titleLink.getAttribute("href"));
+  var subordinate = fields.some(function(field) {
+    if (field === title) return false;
+    var link = bylineForeignTitleLink(field, byline, owner);
+    return link && materializedHttpUrl(link.getAttribute("href")) !== titleUrl;
+  });
+  return subordinate ? title : null;
+}
+
+function bylineNamedHeadingGroup(node, headings, names) {
+  if (headings.length < 2 || names.length !== 1) return false;
+  var name = names[0];
+  var namedHeading = headings.find(function(heading) {
+    return heading.contains(name) && normalizeText(heading.textContent || "") === normalizeText(name.textContent || "");
+  });
+  if (!namedHeading) return false;
+  var namedRank = Number(namedHeading.tagName.substring(1));
+  var otherHeadings = headings.filter(function(heading) { return heading !== namedHeading; });
+  if (otherHeadings.some(function(heading) {
+    var markers = [heading.id, heading.getAttribute("class"), heading.getAttribute("data-testid")];
+    return Number(heading.tagName.substring(1)) <= namedRank ||
+      heading.matches("[rel~='author'], [itemprop~='author'], [itemprop~='name']") || markers.some(inferredBylineFieldMarker);
+  })) return false;
+  var text = headings.map(function(heading) { return normalizeText(heading.textContent || ""); }).join(" ");
+  return normalizeText(node.textContent || "") === text;
+}
+
 function bylinePublicationHeadingField(node) {
-  if (!bylineLinkedTitleField(node)) return false;
-  var names = Array.from(node.querySelectorAll("[itemprop~='name'], [rel~='author']"));
-  if (names.some(function(name) { return !elementVisuallyHidden(name); })) return false;
   var headings = Array.from(node.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
     return !elementVisuallyHidden(heading) && normalizeText(heading.textContent || "");
   });
   if (!headings.length) return false;
+  var names = Array.from(node.querySelectorAll("[itemprop~='name'], [rel~='author']")).filter(function(name) {
+    return !elementVisuallyHidden(name);
+  });
+  if (!node.matches("[rel~='author'], [itemprop~='author']") &&
+      (bylineNamedHeadingGroup(node, headings, names) || bylinePrincipalPublicationHeading(headings, node, node))) return true;
+  if (!bylineLinkedTitleField(node) || names.length) return false;
   var headingText = headings.map(function(heading) { return normalizeText(heading.textContent || ""); }).join(" ");
   if (normalizeText(node.textContent || "") === headingText) return true;
   return Array.from(node.querySelectorAll("a[href]")).some(function(link) {
@@ -70,8 +110,8 @@ function linkedPublicationBylineOwner(node) {
   while (owner && !owner.matches("html, body, main, [role='main']")) {
     var fields = bylineLinkedTitleFields(owner, node);
     if (fields.length) {
-      if (fields.length !== 1) return null;
-      var field = fields[0];
+      var field = fields.length === 1 ? fields[0] : bylinePrincipalPublicationHeading(fields, node, owner);
+      if (!field) return null;
       var link = bylineForeignTitleLink(field, node, owner);
       if (!link || bylineOutsideTitleRecord(field, node, owner)) return null;
       var afterTitle = !!(field.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING);
