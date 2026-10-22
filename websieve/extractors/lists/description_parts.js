@@ -101,7 +101,7 @@
     if (!items || !items.length) return [];
     return Array.from(root.querySelectorAll("img[src]")).filter(function(image) {
       if (!materializedHttpUrl(image.getAttribute("src")) || listCardNodeHidden(image) ||
-          listImageWithinClosedDisclosure(image) ||
+          listNodeWithinClosedDisclosure(image) ||
           image.closest("p, blockquote, h1, h2, h3, h4, h5, h6, pre, code, kbd, samp, nav, header, footer, aside, form, button, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog'], [role='tab'], [role='menuitem']")) return false;
       if (figures.some(function(part) { return part.node.contains(image); }) || items.some(function(item) {
         return [item.card, item.contentCard, item.sourceNode].some(function(owner) {

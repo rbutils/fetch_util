@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve declared times beside their visible labels in source-ordered records,
+  retaining source position, markup and independent occurrences without exposing
+  hidden, closed, control or program declarations.
+
 - Preserve each physical paragraph once when complete source-ordered records
   already contain material considered by deferred description rendering.
 

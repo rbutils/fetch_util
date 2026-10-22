@@ -215,10 +215,23 @@ RSpec.describe 'FetchUtil event extraction' do
       </main></body></html>
     HTML
 
-    extract_from_url('https://events.example.test/events', html) do |payload|
+    with_url_page('https://events.example.test/events', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      payload = extract_payload(page)
       expect_content_type(payload, 'list')
-      expect(payload['markdown']).to include('2026-10-01', '2026-10-08', '2026-10-15')
-      expect(payload['markdown'].scan('Community workshop').length).to eq(3)
+      markdown = payload.fetch('markdown')
+      heading = '## [Community workshop](https://events.example.test/events/community)'
+      expect(markdown.lines.map(&:chomp).grep(/^## \[Community workshop\]/)).to eq(Array.new(4, heading))
+      expect(markdown.lines.map(&:chomp).grep(/^Oct /)).to eq(
+        [
+          'Oct 1, 2026 (2026-10-01)',
+          'Oct 8, 2026 (2026-10-08)',
+          'Oct 15, 2026 (2026-10-15)',
+          'Oct 1, 2026 (2026-10-01)'
+        ]
+      )
+      expect(payload['publishedTime']).to be_nil
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 

@@ -19,13 +19,16 @@ function pruneSourceOrderedRecordControls(root) {
 
 function sourceOrderedRepeatedRecordMarkdown(item) {
   var clone = safeDeepClone(item.card, document);
+  var sourceClones = new WeakMap();
+  mapDomCloneElements(item.card, clone, sourceClones);
+  materializeListTimeDeclarations(item.card, clone, sourceClones, cardOwnedNodes(item.card, "time[datetime]"));
   pruneSourceOrderedRecordControls(clone);
   var title = normalizeText(item.text || "");
   var destination = materializedHttpUrl(item.url || "");
   clone.querySelectorAll("a[href] img[src]").forEach(function(image) {
     if (!materializedHttpUrl(image.getAttribute("src")) ||
         image.matches("[role='presentation'], [role='none'], [aria-hidden='true']") ||
-        image.closest("pre, code, kbd, samp") || listImageWithinClosedDisclosure(image)) return;
+        image.closest("pre, code, kbd, samp") || listNodeWithinClosedDisclosure(image)) return;
     var link = image.closest("a[href]");
     var imageDestination = materializedHttpUrl(link.getAttribute("href"));
     if (!destination || !imageDestination || listCanonicalKey(destination) !== listCanonicalKey(imageDestination)) return;
@@ -34,14 +37,30 @@ function sourceOrderedRepeatedRecordMarkdown(item) {
   return markdownFor(listHtmlWithoutUnsafeDestinations(clone)).trim();
 }
 
-function listImageWithinClosedDisclosure(image) {
-  var ancestor = image.parentElement;
+function materializeListTimeDeclarations(root, clone, sourceClones, times) {
+  times.forEach(function(time) {
+    if (listCardNodeHidden(time) || listNodeWithinClosedDisclosure(time) ||
+        time.closest("pre, code, kbd, samp, button, nav, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']")) return;
+    var form = time.closest("form, [role='form']");
+    if (form && root.contains(form)) return;
+    var target = sourceClones.get(time);
+    if (!target || target.localName !== "time" || !clone.contains(target) ||
+        target.getAttribute("datetime") !== time.getAttribute("datetime")) return;
+    var value = normalizeText(time.getAttribute("datetime") || "");
+    var label = normalizeText(target.textContent);
+    if (!value || label.indexOf(value) !== -1) return;
+    target.appendChild(target.ownerDocument.createTextNode(label ? " (" + value + ")" : value));
+  });
+}
+
+function listNodeWithinClosedDisclosure(node) {
+  var ancestor = node.parentElement;
   while (ancestor) {
     if (ancestor.matches("details:not([open])")) {
       var summary = Array.from(ancestor.children).find(function(child) {
         return child.localName === "summary";
       });
-      if (!summary || !summary.contains(image)) return true;
+      if (!summary || !summary.contains(node)) return true;
     }
     ancestor = ancestor.parentElement;
   }
@@ -69,7 +88,7 @@ function listSelectedHeadingImageContext(item, primaryRecordKeys) {
   if (fallback && fallback !== normalizeText(meaningfulMediaText(item.card))) return null;
   var images = cardOwnedNodes(card, "img[src]").filter(function(image) {
     return materializedHttpUrl(image.getAttribute("src")) &&
-      !listImageWithinClosedDisclosure(image) &&
+      !listNodeWithinClosedDisclosure(image) &&
       !image.closest("pre, code, kbd, samp, button, nav, form, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']");
   });
   if (!images.length) return null;

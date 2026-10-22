@@ -215,6 +215,22 @@
       (!eventDetailPage() && conferenceSchedulePage() && conferenceScheduleTimedNodeCount() >= 3);
   }
 
+  function eventScheduleMarkdown(root, clone, times, visibleClones, cleanedClones) {
+    if (!times.length) return markdownFor(clone.innerHTML);
+    var markdownClone = safeDeepClone(clone, document);
+    var markdownClones = new WeakMap();
+    mapDomCloneElements(clone, markdownClone, markdownClones);
+    var timeClones = new WeakMap();
+    times.forEach(function(time) {
+      var visible = visibleClones.get(time);
+      var cleaned = visible && cleanedClones.get(visible);
+      var copied = cleaned && markdownClones.get(cleaned);
+      if (copied) timeClones.set(time, copied);
+    });
+    materializeListTimeDeclarations(root, markdownClone, timeClones, times);
+    return markdownFor(markdownClone.innerHTML);
+  }
+
   function genericEventListContent(metadata) {
     var items = eventCardItems();
     var admissionCount = items.filter(function(item) { return item.admission; }).length;
@@ -231,12 +247,16 @@
     if (!conferenceSchedulePage()) return null;
 
     var root = document.querySelector("main, [role='main'], article, #content") || document.body;
-    var clone = cleanClone(visibilityPrunedClone(root, document));
+    var times = Array.from(root.querySelectorAll("time[datetime]"));
+    var visibleClones = times.length ? new WeakMap() : null;
+    var cleanedClones = times.length ? new WeakMap() : null;
+    var visible = visibilityPrunedClone(root, document, visibleClones);
+    var clone = cleanClone(visible, null, cleanedClones);
     cleanupAgentRoot(clone);
     cleanupListRoot(clone);
     removeAll(clone, "form, script, style, noscript, [class*='modal' i], [class*='newsletter' i]");
 
-    var markdown = cleanupMarkdownNoise(markdownFor(clone.innerHTML));
+    var markdown = cleanupMarkdownNoise(eventScheduleMarkdown(root, clone, times, visibleClones, cleanedClones));
     if (normalizeText(markdown).length < 300) return null;
 
     return listItemsContentResult(metadata, {
