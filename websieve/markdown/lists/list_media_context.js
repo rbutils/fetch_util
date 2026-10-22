@@ -67,7 +67,7 @@ function listNodeWithinClosedDisclosure(node) {
   return false;
 }
 
-function listSelectedHeadingImageContext(item, primaryRecordKeys) {
+function listSelectedRecordImageContext(item, primaryRecordKeys) {
   var card = item.contentCard || item.card;
   var source = item.sourceNode;
   var context = primaryRecordKeys && primaryRecordKeys.recordContext;
@@ -76,18 +76,23 @@ function listSelectedHeadingImageContext(item, primaryRecordKeys) {
       card.closest("nav, header, footer, aside, form, button, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']")) return null;
   var heading = source.closest("h1, h2, h3, h4, h5, h6") || source.querySelector("h1, h2, h3, h4, h5, h6");
   var headings = cardOwnedNodes(card, "h1, h2, h3, h4, h5, h6");
-  if (!heading || headings.length !== 1 || headings[0] !== heading ||
-      !materializedHttpUrl(source.getAttribute("href"))) return null;
-  var headingLinks = Array.from(heading.querySelectorAll("a[href]")).filter(function(link) {
-    return !listCardNodeHidden(link);
-  });
-  if (!heading.contains(source)) headingLinks.push(source);
-  if (headingLinks.length !== 1 || headingLinks[0] !== source) return null;
+  var destination = materializedHttpUrl(source.getAttribute("href"));
+  var primary = materializedHttpUrl(item.url || "");
+  if (!destination || !primary || listCanonicalKey(destination) !== listCanonicalKey(primary)) return null;
+  var linkedCover = !headings.length && !!normalizeText(source.textContent) && !!source.querySelector("img[src]");
+  if (!linkedCover) {
+    if (!heading || headings.length !== 1 || headings[0] !== heading) return null;
+    var headingLinks = Array.from(heading.querySelectorAll("a[href]")).filter(function(link) {
+      return !listCardNodeHidden(link);
+    });
+    if (!heading.contains(source)) headingLinks.push(source);
+    if (headingLinks.length !== 1 || headingLinks[0] !== source) return null;
+  }
 
   var fallback = normalizeText(item.image || "");
   if (fallback && fallback !== normalizeText(meaningfulMediaText(item.card))) return null;
   var images = cardOwnedNodes(card, "img[src]").filter(function(image) {
-    return materializedHttpUrl(image.getAttribute("src")) &&
+    return (!linkedCover || source.contains(image)) && materializedHttpUrl(image.getAttribute("src")) &&
       !listNodeWithinClosedDisclosure(image) &&
       !image.closest("pre, code, kbd, samp, button, nav, form, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']");
   });

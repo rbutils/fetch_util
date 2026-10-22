@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve images physically owned by selected feature links with non-heading
+  titles, retaining independent occurrences and existing visibility boundaries.
+
 - Keep composite activity labels in named program illustrations from becoming
   page authors, preserving independent and explicitly declared attribution.
 

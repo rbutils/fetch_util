@@ -153,7 +153,7 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHe
     "[class*='summary'], [class*='description'], [class*='excerpt'], p",
     item.summary
   );
-  var imageContext = listSelectedHeadingImageContext(item, primaryRecordKeys);
+  var imageContext = listSelectedRecordImageContext(item, primaryRecordKeys);
   var contextValues = [
     listCompactMetadataRepresents(compactMetadata, item.category) ? "" : item.category,
     item.contextHeading,
