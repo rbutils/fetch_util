@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain heading ranks and enclosing reference destinations when attribution
+  labels use transparent address wrappers, preserving semantic content guards.
+
 - Preserve images physically owned by selected feature links with non-heading
   titles, retaining independent occurrences and existing visibility boundaries.
 

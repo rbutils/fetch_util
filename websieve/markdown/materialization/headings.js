@@ -5,7 +5,7 @@
     headings.forEach(function(heading) {
       if (heading.closest("pre, code, kbd, samp, svg, math, table")) return;
 
-      heading.querySelectorAll("div").forEach(function(layout) {
+      heading.querySelectorAll("div, address").forEach(function(layout) {
         if (layout.closest("pre, code, kbd, samp, svg, math, table")) return;
         if (layout.querySelector("p, ul, ol, dl, pre, table, form, input, button, select, textarea, nav, h1, h2, h3, h4, h5, h6, blockquote, section, article, details, figure")) return;
         var role = (layout.getAttribute("role") || "").toLowerCase();
