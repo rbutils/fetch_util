@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve section headings whose generated anchors resemble author fields,
+  retaining genuine attribution and independently declared page authors.
+
 - Keep attribution beside a separately linked publication attached to its physical
   record, preserving independently declared and visibly global page authors.
 

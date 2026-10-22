@@ -16,6 +16,14 @@ function inferredBylineFieldMarker(marker) {
     /(?:author|byline|writer|reporter|autor|auteur|penulis)(?:s|name|names|info)?$/.test(compound);
 }
 
+function inferredBylineHeadingAnchor(node) {
+  if (!node.id || !node.matches("h1, h2, h3, h4, h5, h6")) return false;
+  function label(value) {
+    return String(value || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "");
+  }
+  return label(node.id) === label(node.textContent);
+}
+
 function inferredArticleBylineNode(node) {
   if (!node || node.nodeType !== 1) return false;
   if (node.matches("html, body, main, [role~='main']")) return false;
@@ -33,8 +41,10 @@ function inferredArticleBylineNode(node) {
   if (node.matches("[itemprop~='name']") && node.closest("[itemprop~='author']")) return articleBylineNode(node);
 
   var markers = (node.getAttribute("class") || "").split(/\s+/);
-  markers.push(node.id || "", node.getAttribute("data-testid") || "");
-  return markers.some(inferredBylineFieldMarker) && articleBylineNode(node);
+  markers.push(node.getAttribute("data-testid") || "");
+  var fieldMarker = markers.some(inferredBylineFieldMarker);
+  if (!fieldMarker && inferredBylineHeadingAnchor(node)) return false;
+  return (fieldMarker || inferredBylineFieldMarker(node.id)) && articleBylineNode(node);
 }
 
 function inferredBylineSourceNodes(sourceClones) {
