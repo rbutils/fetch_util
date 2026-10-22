@@ -1,9 +1,3 @@
-function listPageBylineField(value) {
-  return normalizeText(String(value || "")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/[*_`]/g, ""));
-}
-
 function listPagePrimaryUrlKeys(content) {
   var extraction = content && content.listExtraction;
   var items = extraction && extraction.items || content && content.listSourceItems || [];
@@ -55,7 +49,7 @@ function listPageBylineSourceOwnership(value, content) {
   return ownership;
 }
 
-function listPageByline(byline, metadata, content, markdown) {
+function listPageByline(byline, metadata, content) {
   var value = normalizeText(byline || "");
   if (!value || !content || content.contentType !== "list") return byline;
 
@@ -67,21 +61,7 @@ function listPageByline(byline, metadata, content, markdown) {
 
   var sourceOwnership = listPageBylineSourceOwnership(value, content);
   if (sourceOwnership.recordCount < 2) return byline;
-  var lines = String(markdown || "").split("\n");
-  var globallyRendered = sourceOwnership.global || lines.some(function(line) {
-    return !/^\s*[-*]\s+\[/.test(line) && listPageBylineField(line.replace(/^#{1,6}\s+/, "")).toLowerCase() === key;
-  });
-  if (globallyRendered) return byline;
-
-  var owned = lines.filter(function(line) {
-    if (!/^\s*[-*]\s+\[/.test(line)) return false;
-    var contextIndex = line.indexOf(") - ");
-    if (contextIndex < 0) return false;
-    return line.slice(contextIndex + 4).split(/\s+-\s+/).some(function(field) {
-      return listPageBylineField(field).toLowerCase() === key;
-    });
-  });
-  return owned.length > 0 && sourceOwnership.local ? null : byline;
+  return sourceOwnership.local && !sourceOwnership.global ? null : byline;
 }
 
 function collectionPublishedTime(content, metadata) {

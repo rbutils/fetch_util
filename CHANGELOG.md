@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep record-local authors from becoming list-page bylines when complete cards
+  are rendered as headings and paragraphs, preserving independent page authorship.
+
 - Require date evidence for inferred publication fields, preserving explicit
   declarations without treating unrelated style names or pending schedules as dates.
 

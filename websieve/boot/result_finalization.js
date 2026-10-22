@@ -236,7 +236,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   var paywallState = finalizedPaywallState(content, warnings);
   if (content.contentType === "interstitial") clearSocialFields(content);
   var socialFields = content.contentType === "social" ? content : {};
-  byline = listPageByline(byline, metadata, content, markdown);
+  byline = listPageByline(byline, metadata, content);
 
   var publishedTime = collectionPublishedTime(content, metadata);
   if (content.contentType !== "list" && !byline && bylinePublishedTime) publishedTime = displayedPublishedTime;

@@ -327,7 +327,7 @@ RSpec.describe "extract asset bundle" do
     expect(manifest.index(byline_path)).to be < manifest.index(finalization_path)
     expect(byline_source).to include("function listPageBylineSourceOwnership", "function listPageByline")
     expect(finalization_source).not_to include("function listPageBylineSourceOwnership")
-    expect(finalization_source).to include("byline = listPageByline(byline, metadata, content, markdown)")
+    expect(finalization_source).to include("byline = listPageByline(byline, metadata, content)")
   end
 
   it "loads the finalization paywall state classifier before result finalization" do
