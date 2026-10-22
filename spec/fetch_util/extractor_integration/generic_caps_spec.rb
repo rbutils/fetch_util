@@ -76,12 +76,17 @@ RSpec.describe 'FetchUtil generic visible collections' do
     html = "<html><head><title>Entries</title></head><body><main>#{rows}</main></body></html>"
 
     with_url_page('https://list.example/entries', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload['contentType']).to eq('list')
-      expect(payload['markdown'].scan(/^-/).length).to eq(81)
+      expected_headings = (1..81).map do |number|
+        "## [Generic entry #{number} with enough title text](https://list.example/entries/#{number})"
+      end
+      expect(payload['markdown'].lines.grep(/^## /).map(&:strip)).to eq(expected_headings)
       expect(payload['markdown']).to include('Generic entry 1 with enough title text')
       expect(payload['markdown']).to include('Generic entry 81 with enough title text')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 
