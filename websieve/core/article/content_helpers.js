@@ -156,7 +156,7 @@
   function wordpressArticleByline(metadata, options) {
     if (typeof options.byline === "function") return options.byline(metadata);
     if (options.byline !== undefined) return options.byline;
-    return (metadata && metadata.byline) || firstText(options.bylineSelectors || WORDPRESS_ARTICLE_BYLINE_SELECTORS);
+    return (metadata && metadata.byline) || sourceOwnedProfileByline(options.bylineSelectors || WORDPRESS_ARTICLE_BYLINE_SELECTORS);
   }
 
   function wordpressArticleRemovalSelectors(options) {

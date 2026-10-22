@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep attribution beside a separately linked publication attached to its physical
+  record, preserving independently declared and visibly global page authors.
+
 - Require author-field evidence for inferred bylines, retaining structured names
   and literal content instead of interpreting layout, typeface or program markers
   as attribution.

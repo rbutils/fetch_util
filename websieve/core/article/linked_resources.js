@@ -15,5 +15,6 @@
   }
 
   function articleBylineNode(node) {
-    return !linkedArticleResourceFigure(node.closest("figure"));
+    return !linkedArticleResourceFigure(node.closest("figure")) && !bylinePublicationHeadingField(node) &&
+      !linkedPublicationBylineOwner(node);
   }

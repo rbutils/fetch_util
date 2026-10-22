@@ -28,7 +28,7 @@
   function simpleArticleByline(config, metadata) {
     if (typeof config.byline === "function") return config.byline(metadata);
     if (config.byline !== undefined) return config.byline;
-    if (config.bylineSelectors) return firstText(config.bylineSelectors) || (metadata && metadata.byline);
+    if (config.bylineSelectors) return sourceOwnedProfileByline(config.bylineSelectors) || (metadata && metadata.byline);
     return undefined;
   }
 

@@ -19,7 +19,7 @@ function inferredBylineFieldMarker(marker) {
 function inferredArticleBylineNode(node) {
   if (!node || node.nodeType !== 1) return false;
   if (node.matches("html, body, main, [role~='main']")) return false;
-  if (node.closest("pre, script, style, template") || !articleBylineNode(node)) return false;
+  if (node.closest("pre, script, style, template")) return false;
 
   if (node.matches("[itemprop~='author']")) {
     var names = Array.from(node.querySelectorAll("[itemprop~='name']")).filter(function(name) {
@@ -27,14 +27,14 @@ function inferredArticleBylineNode(node) {
     });
     // An entity's other properties do not become part of its declared name.
     if (names.length === 1) return false;
-    return true;
+    return articleBylineNode(node);
   }
-  if (node.matches("[rel~='author']")) return true;
-  if (node.matches("[itemprop~='name']") && node.closest("[itemprop~='author']")) return true;
+  if (node.matches("[rel~='author']")) return articleBylineNode(node);
+  if (node.matches("[itemprop~='name']") && node.closest("[itemprop~='author']")) return articleBylineNode(node);
 
   var markers = (node.getAttribute("class") || "").split(/\s+/);
   markers.push(node.id || "", node.getAttribute("data-testid") || "");
-  return markers.some(inferredBylineFieldMarker);
+  return markers.some(inferredBylineFieldMarker) && articleBylineNode(node);
 }
 
 function inferredBylineSourceNodes(sourceClones) {
