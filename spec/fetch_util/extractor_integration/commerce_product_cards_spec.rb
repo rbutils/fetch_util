@@ -682,13 +682,19 @@ RSpec.describe 'FetchUtil commerce product-card extraction' do
     HTML
 
     with_url_page("https://blog.example.test/posts", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
+      expected = Nokogiri::HTML5(html).css('main > article').flat_map do |article|
+        link = article.at_css('h2 > a')
+        ["## [#{link.text}](https://blog.example.test#{link["href"]})", article.at_css('p').text]
+      end
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"]).to include("- [Parser combinators for Ruby agents](https://blog.example.test/posts/parser-combinators)")
+      expect(payload["markdown"].split("\n\n")).to eq(expected)
       expect(payload["markdown"]).not_to include("Rating:")
       expect(payload["markdown"]).not_to include("In Stock")
       expect(payload["markdown"]).not_to match(/\$\d/)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

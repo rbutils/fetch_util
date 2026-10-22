@@ -41,11 +41,18 @@ RSpec.describe FetchUtil::Extractor, 'alignment utility ownership' do
       HTML
     end.join
     with_url_page('https://bulletin.example/', "<main><h1>Community news</h1>#{cards}</main>") do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page)
-      (1..6).each do |index|
-        line = result['markdown'].lines.find { |value| value.include?("/reports/#{index})") }
-        expect(line).to include("Reporter #{index}", "Local account number #{index}")
+      expected = ['## Community news'] + (1..6).flat_map do |index|
+        [
+          "## [Neighborhood meeting number #{index}](https://bulletin.example/reports/#{index})",
+          "Local account number #{index}.",
+          "Reporter #{index}"
+        ]
       end
+
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 end

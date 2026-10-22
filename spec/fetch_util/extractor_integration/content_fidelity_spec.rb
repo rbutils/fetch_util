@@ -393,11 +393,17 @@ RSpec.describe 'content fidelity contracts' do
     HTML
 
     with_url_page('https://fidelity.test/archive', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
-      line = result['markdown'].lines.find { |candidate| candidate.include?('FID:single-figure-record') }
+      expected = [
+        '## FID:single-editorial-figure', '## FID:archive',
+        '### [FID:single-figure-record](https://fidelity.test/archive/figure)',
+        'FID:single-figure-caption', 'FID:single-figure-parent-context'
+      ] + (1..5).map { |index| "### [FID:ordinary-record-#{index}](https://fidelity.test/archive/#{index})" }
 
       expect(result['contentType']).to eq('list')
-      expect(line).to include('FID:single-figure-parent-context')
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
@@ -431,10 +437,25 @@ RSpec.describe 'content fidelity contracts' do
 
   it 'keeps list metadata within an outer card instead of inheriting nested-card context' do
     with_url_page('https://fidelity.test/', fixture('fidelity_card_metadata_ownership')) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page)
+      fields = %w[author time score replies community]
+      outer_metadata = fields.map { |field| "FID:outer-#{field}" }.join
+      nested_metadata = fields.map { |field| "FID:nested-#{field}" }.join
+      expected = [
+        '## FID:metadata portal', '### [FID:outer-title](https://fidelity.test/story/outer)',
+        'FID:outer-summary', outer_metadata, nested_metadata
+      ] + %w[secondary third fourth fifth].flat_map do |name|
+        ["### [FID:#{name}-title](https://fidelity.test/story/#{name})", "FID:#{name}-summary"]
+      end
+      outer = Nokogiri::HTML5.fragment(result['html']).at_css('.outer-card')
 
       expect(result['markdown']).to include('FID:outer-title', 'FID:outer-author', 'FID:outer-time', 'FID:outer-score', 'FID:outer-replies', 'FID:outer-community')
-      expect(result['markdown']).not_to include('FID:nested-author', 'FID:nested-time', 'FID:nested-score', 'FID:nested-replies', 'FID:nested-community')
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(outer.at_css('.nested-card').text).to eq(nested_metadata)
+      expect(outer.element_children.select { |node| %w[span time].include?(node.name) }.map(&:text).join).to eq(outer_metadata)
+      expect(result.values_at('byline', 'publishedTime')).to eq([nil, nil])
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
@@ -671,12 +692,21 @@ RSpec.describe 'content fidelity contracts' do
     HTML
 
     with_url_page('https://fidelity.test/opacity', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
+      visible = [
+        ['opacity-low', 'FID:opacity-low', 'FID:opacity-low-summary'],
+        ['visibility-restored', 'FID:visibility-restored', 'FID:visibility-restored-summary']
+      ] + (1..8).map { |index| ["opacity-#{index}", "FID:opacity-record-#{index}", "FID:opacity-record-#{index}-summary"] }
+      expected = ['## FID:opacity-list'] + visible.flat_map do |path, title, summary|
+        ["## [#{title} with sufficient title](https://fidelity.test/#{path})", "#{summary} remains visible."]
+      end
 
       expect(result['contentType']).to eq('list')
       expect(result['markdown']).not_to include('FID:opacity-hidden', 'FID:opacity-ancestor-hidden')
       expect(result['markdown']).to include('FID:opacity-low', 'FID:visibility-restored')
-      expect(result['markdown'].scan(/^- \[/).length).to eq(10)
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
