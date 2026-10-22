@@ -50,9 +50,11 @@
       var headingRoles = readabilityRetainedHeadingRoleSnapshots(clone, sourceClones, sourceIdentities);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
-      // Readability removes accepted bylines; linked records own their own attribution.
+      var bylineSources = inferredBylineSourceNodes(sourceClones);
+      // Readability removes accepted fields; retain their role before clone cleanup.
       reader._checkByline = function(node, matchString) {
-        return articleBylineNode(node) && checkByline.call(this, node, matchString);
+        if (this._articleByline) return false;
+        return inferredArticleBylineNode(bylineSources.get(node) || node) && checkByline.call(this, node, matchString);
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);

@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Require author-field evidence for inferred bylines, retaining structured names
+  and literal content instead of interpreting layout, typeface or program markers
+  as attribution.
+
 - Preserve declared times beside their visible labels in source-ordered records,
   retaining source position, markup and independent occurrences without exposing
   hidden, closed, control or program declarations.

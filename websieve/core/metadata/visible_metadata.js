@@ -177,7 +177,7 @@ function visibleNamedAuthorByline() {
   visibleBylineRoots().forEach(function(root) {
     root.querySelectorAll("[class*='author-name' i]").forEach(function(node) {
       if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return;
-      if (!articleBylineNode(node)) return;
+      if (!inferredArticleBylineNode(node)) return;
       var value = normalizeText(node.textContent || "");
       if (value && values.indexOf(value) === -1) values.push(value);
     });
@@ -235,7 +235,7 @@ function visibleByline() {
     "[class*='writer' i]",
     "[class*='reporter' i]",
     "[data-testid*='author' i]"
-  ], null, /^(?:author information|authors? and affiliations?)$/i, articleBylineNode);
+  ], null, /^(?:author information|authors? and affiliations?)$/i, inferredArticleBylineNode);
   if (!value) value = visibleLocalizedAuthor(roots);
   if (!value) value = visibleHeaderContributor();
   value = bylineWithoutSourceControls(value, roots);
