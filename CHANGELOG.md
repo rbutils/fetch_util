@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Clean control-only metadata in source-ordered records while retaining reply
+  counts, authored prose, references and literal programs.
+
 - Keep record-local authors from becoming list-page bylines when complete cards
   are rendered as headings and paragraphs, preserving independent page authorship.
 

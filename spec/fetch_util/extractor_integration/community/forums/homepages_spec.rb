@@ -44,6 +44,7 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
     HTML
 
     with_url_page("https://forum.ruby-lang.org/", html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new.extract(page)
 
       expect(payload["contentType"]).to eq("list")
@@ -60,6 +61,8 @@ RSpec.describe 'FetchUtil extractor integration - forum homepages' do
       expect(payload["markdown"]).to include("Last post at the conference was about actor isolation.")
       expect(payload["markdown"]).to include("New thread by me discusses memory models.")
       expect(payload["markdown"]).to include("Quick reply on this matter would be appreciated.")
+      [42, 18, 27, 15, 31].each { |count| expect(payload['markdown']).to include("#{count} replies") }
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

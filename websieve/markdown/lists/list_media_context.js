@@ -1,5 +1,25 @@
+function pruneSourceOrderedRecordControls(root) {
+  root.querySelectorAll("span").forEach(function(node) {
+    if (!root.contains(node) || node.closest("p, h1, h2, h3, h4, h5, h6, pre, code, kbd, samp") ||
+        Array.from(node.querySelectorAll("*")).some(function(child) { return child.localName !== "span"; })) return;
+    var text = normalizeText(node.textContent);
+    if (!node.children.length) {
+      var filtered = stripGenericListControlPhrases(text);
+      if (filtered !== text) {
+        if (filtered) node.textContent = filtered;
+        else node.remove();
+        return;
+      }
+    }
+    var structured = Array.from(node.childNodes).map(function(child) { return child.textContent || ""; }).join(" ");
+    if (genericListControlText(text) || genericListControlMetadataSegment(text) ||
+        genericListControlMetadataSegment(structured)) node.remove();
+  });
+}
+
 function sourceOrderedRepeatedRecordMarkdown(item) {
   var clone = safeDeepClone(item.card, document);
+  pruneSourceOrderedRecordControls(clone);
   var title = normalizeText(item.text || "");
   var destination = materializedHttpUrl(item.url || "");
   clone.querySelectorAll("a[href] img[src]").forEach(function(image) {
