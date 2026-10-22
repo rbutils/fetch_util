@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve every data row in headerless tables by generating an empty Markdown
+  header instead of assigning header roles to the first published record.
+
 - Preserve source-owned embedded resources through article and document cleanup,
   retaining their section ownership, visibility and independent occurrences.
 

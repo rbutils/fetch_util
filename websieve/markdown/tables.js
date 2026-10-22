@@ -201,16 +201,6 @@
     return null;
   }
 
-  function headerlessDefinitionTable(table) {
-    var definition = table.closest("dl > dd");
-    if (!definition || table.parentElement.closest("table") ||
-        table.closest("nav, form, button, pre, code, kbd, samp, details:not([open]), [role='navigation'], [role='menu'], [role='menubar'], [role='toolbar'], [role='dialog']")) return false;
-
-    var term = definition.previousElementSibling;
-    while (term && term.tagName === "DD") term = term.previousElementSibling;
-    return !!(term && term.tagName === "DT" && normalizeText(term.textContent));
-  }
-
   function tableToMarkdown(table, content) {
     var compact = compactTableMarkdown(table);
     if (compact) return compact;
@@ -238,11 +228,9 @@
       return row;
     });
 
-    // Facts, definitions and nested data tables have no declared header.
+    // Markdown requires a header row even when the source declares none.
     // Keep every physical TD as data instead of promoting the first row.
-    var nestedDataTable = !!(table.parentElement && table.parentElement.closest("table"));
-    if (!table.querySelector("th, thead") &&
-        (nestedDataTable || atomicFooterDataGroup(table) || headerlessDefinitionTable(table))) {
+    if (!table.querySelector("th, thead")) {
       rows.unshift(Array.from({ length: width }, function() { return ""; }));
     }
     var header = rows[0];
