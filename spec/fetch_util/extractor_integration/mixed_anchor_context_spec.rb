@@ -21,14 +21,20 @@ RSpec.describe FetchUtil::Extractor, "mixed sibling anchor context" do
   it "does not borrow neighboring headlines from a mixed image and plain-link collection" do
     html = mixed_anchor_page("<img src='/lead.jpg' alt=''><span>Independent sibling headline number 1</span>")
     with_url_page("https://bulletin.example/", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
       payload = extract_payload(page)
       markdown = payload.fetch("markdown")
+      image = "![](https://bulletin.example/lead.jpg)"
 
       (1..8).each do |number|
         line = markdown.lines.find { |entry| entry.include?("https://bulletin.example/peer/#{number})") }
-        expect(line.to_s.strip).to eq("- [Independent sibling headline number #{number}](https://bulletin.example/peer/#{number})")
+        expected = "- [Independent sibling headline number #{number}](https://bulletin.example/peer/#{number})"
+        expected += " - #{image}" if number == 1
+        expect(line.to_s.strip).to eq(expected)
       end
+      expect(markdown.scan(image).length).to eq(1)
       expect(markdown).to include("These stories cover the latest regional developments.")
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
     end
   end
 
