@@ -77,7 +77,9 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
       </main></body></html>
     HTML
 
-    extract_from_url('https://newsroom.example/archive', html, reader_mode: false) do |payload|
+    with_url_page('https://newsroom.example/archive', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      payload = extract_payload(page, reader_mode: false)
       story_lines = payload['markdown'].lines.grep(%r{^- .*?/stories/})
       first_story = story_lines.find { |line| line.include?('/stories/1)') }
       seventh_story = story_lines.find { |line| line.include?('/stories/7)') }
@@ -85,9 +87,23 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
       expect(payload['contentType']).to eq('list')
       expect(first_story).to include('[Alice Reporter](https://newsroom.example/authors/alice-reporter)')
       expect(seventh_story).to include('[Ivan Reporter](https://newsroom.example/authors/ivan)')
-      expect(story_lines.join).not_to match(/Bob Reporter|Carol Reporter|Dave Reporter|Eve Commenter|Frank Reporter|Grace Reporter|Heidi Reporter|Alex Reporter/)
+      expect(story_lines.join).not_to match(/Bob Reporter|Carol Reporter|Dave Reporter|Eve Commenter|Grace Reporter|Heidi Reporter|Alex Reporter/)
+      primary_fifth = story_lines.find { |line| line.include?('[Primary newsroom story 5]') }
+      expect(primary_fifth.strip).to eq('- [Primary newsroom story 5](https://newsroom.example/stories/5)')
+      independent_fifth = '- [Different report sharing story 5](https://newsroom.example/stories/5) - [Frank Reporter](https://newsroom.example/authors/frank-reporter)'
+      expect(story_lines.map(&:strip)).to include(independent_fifth)
+      expect(story_lines.join.scan('Frank Reporter').length).to eq(1)
       story_numbers = story_lines.map { |line| line[%r{/stories/(\d+)}, 1].to_i }
-      expect(story_numbers).to eq((1..10).to_a)
+      expect(story_numbers).to eq([*(1..8), 5, 9, 10])
+      source = Nokogiri::HTML5.parse(html).at_css('main')
+      native = Nokogiri::HTML5.fragment(payload.fetch('html'))
+      headings = ->(root) { root.css('h1,h2,h3,h4,h5,h6').map { |node| [node.name, node.text] } }
+      references = lambda do |root|
+        root.css('a[href]').map { |node| [node.text, URI.join('https://newsroom.example/archive', node['href']).to_s] }
+      end
+      expect(headings.call(native)).to eq(headings.call(source))
+      expect(references.call(native)).to eq(references.call(source))
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 
