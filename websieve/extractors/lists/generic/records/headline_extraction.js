@@ -1,4 +1,4 @@
-  function extractFallbackHeadlineItems(node, existingContext) {
+  function extractFallbackHeadlineItems(node, existingContext, repeatedRecordByLink) {
     if (!node || !node.querySelectorAll) return [];
     var seen = {};
     var ranked = [];
@@ -37,6 +37,9 @@
       if (genericListStructuredCardLink(candidate.card) === link || (primary && primary.sourceNode === link) || ownSection) {
         addCardContext(candidate, candidate.card);
       }
+      var repeatedRecord = repeatedRecordByLink && repeatedRecordByLink.get(link);
+      applyRepeatedRecordIdentity(candidate, repeatedRecord);
+      if (repeatedRecordOwnsHeadlineCard(candidate, repeatedRecord)) candidate.sourceOrderedRepeatedRecord = true;
       pushUniqueListCandidate(ranked, seen, candidate);
     });
     return ranked;

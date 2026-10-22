@@ -1,3 +1,20 @@
+  function applyRepeatedRecordIdentity(candidate, record) {
+    if (!record) return;
+    candidate.repeatedRecordIdentity = record.identity;
+    candidate.dedupeKey = record.identity;
+  }
+
+  function repeatedRecordOwnsHeadlineCard(candidate, record) {
+    var card = candidate.card;
+    var link = candidate.sourceNode;
+    if (!record || !card || card !== record.node || !card.matches("article, div, section") ||
+        !link || !card.contains(link)) return false;
+    var headings = Array.prototype.filter.call(card.querySelectorAll("h1, h2, h3, h4, h5, h6"), function(heading) {
+      return heading.contains(link) || link.contains(heading);
+    });
+    return headings.length === 1;
+  }
+
   function pushUniqueListCandidate(candidates, seen, candidate) {
     if (!candidate) return false;
 

@@ -134,11 +134,18 @@ RSpec.describe 'FetchUtil extractor integration' do
     HTML
 
     with_url_page("https://university.example/", html) do |page|
+      before = page.evaluate("document.body.innerHTML")
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload["contentType"]).to eq("list")
-      expect(payload["markdown"].scan(/^- \[/).length).to eq(8)
+      expect(payload["markdown"].lines.grep(/^## \[/).map(&:chomp)).to eq(
+        (1..8).map { |number| "## [University research story #{number}](https://university.example/stories/#{number})" }
+      )
+      (1..8).each do |number|
+        expect(payload["markdown"]).to include("Research summary #{number} with enough substantive context for a visible homepage record.")
+      end
       expect(payload["publishedTime"]).to be_nil
+      expect(page.evaluate("document.body.innerHTML")).to eq(before)
     end
   end
 

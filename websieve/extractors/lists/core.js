@@ -131,7 +131,8 @@
       sourceOwnedResultCountNodes: sourceOwnedResultCountNodeSet
     }) : listDescriptionMarkdown(root);
     var fallbackItems = materialResultsRetainProvenItems(
-      extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks), materialResultsProof);
+      extractFallbackHeadlineItems(extractionRoot, items.__fetchUtilSupportingLinks,
+        items.__fetchUtilRepeatedRecordByLink), materialResultsProof);
     mergeDuplicateRecordAuthorContext(root, fallbackItems);
     var fallbackQuality = listItemsQualityScore(fallbackItems);
     if ((items.length < 3 && fallbackItems.length > items.length) || fallbackQuality > itemQuality + 180) {

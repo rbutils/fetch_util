@@ -130,9 +130,7 @@
           var alt = normalizeText(image.getAttribute("alt") || "");
           if (!imageUrl || !imageDestination || listCanonicalKey(imageDestination) !== titleLink.key ||
               image.matches("[role='presentation'], [role='none'], [aria-hidden='true']")) return media;
-          var imageAlt = alt || titleLink.title;
-          if (alt && alt.toLowerCase() !== titleLink.title.toLowerCase() &&
-              titleLink.title.toLowerCase().indexOf(alt.toLowerCase()) === -1) imageAlt += " " + titleLink.title;
+          var imageAlt = repeatedRecordMediaAltText(alt, titleLink.title);
           var escapedAlt = imageAlt.replace(/\\/g, "\\\\").replace(/([\[\]])/g, "\\$1");
           media.push("[![" + escapedAlt + "](" + imageUrl + ")](" + imageDestination + ")");
           return media;

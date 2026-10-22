@@ -1,3 +1,19 @@
+function sourceOrderedRepeatedRecordMarkdown(item) {
+  var clone = safeDeepClone(item.card, document);
+  var title = normalizeText(item.text || "");
+  var destination = materializedHttpUrl(item.url || "");
+  clone.querySelectorAll("a[href] img[src]").forEach(function(image) {
+    if (!materializedHttpUrl(image.getAttribute("src")) ||
+        image.matches("[role='presentation'], [role='none'], [aria-hidden='true']") ||
+        image.closest("pre, code, kbd, samp") || listImageWithinClosedDisclosure(image)) return;
+    var link = image.closest("a[href]");
+    var imageDestination = materializedHttpUrl(link.getAttribute("href"));
+    if (!destination || !imageDestination || listCanonicalKey(destination) !== listCanonicalKey(imageDestination)) return;
+    image.setAttribute("alt", repeatedRecordMediaAltText(normalizeText(image.getAttribute("alt") || ""), title));
+  });
+  return markdownFor(listHtmlWithoutUnsafeDestinations(clone)).trim();
+}
+
 function listImageWithinClosedDisclosure(image) {
   var ancestor = image.parentElement;
   while (ancestor) {

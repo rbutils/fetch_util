@@ -81,6 +81,14 @@
     return [];
   }
 
+  function repeatedRecordMediaAltText(alt, title) {
+    if (!alt) return title;
+    if (alt.toLowerCase() !== title.toLowerCase() && title.toLowerCase().indexOf(alt.toLowerCase()) === -1) {
+      return alt + " " + title;
+    }
+    return alt;
+  }
+
   function sourceOwnedRecordMediaForItems(collection, extraction) {
     if (!collection || !extraction || !extraction.collectionOwnerMapped ||
         extraction.collectionOwnerSourceNode !== collection.owner) return;

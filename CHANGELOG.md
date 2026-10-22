@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independently authored repeated-record identities when evaluating
+  alternate headline candidates, retaining complete linked-cover collections.
+
 - Retain a collection's source-owned section heading across inert wrappers while
   preserving every physical record and rejecting unrelated or hidden context.
 

@@ -3,25 +3,35 @@
 RSpec.describe 'Physical collection section heading ownership' do
   include_context 'extractor integration helpers'
 
-  def section_records
+  def section_records(linked: false)
     [1, 2, 3, 4, 1].map do |number|
-      <<~HTML
-        <div class="story-card">
-          <img src="/covers/#{number}.png" alt="Cover #{number}">
-          <h2>Field report #{number}</h2>
-          <p>Published June #{number}, 2026</p><a href="/reports/#{number}">Read field report</a>
-        </div>
-      HTML
+      if linked
+        <<~HTML
+          <div class="story-card">
+            <a href="/reports/#{number}"><img src="/covers/#{number}.png" alt="Cover #{number}"></a>
+            <h2><a href="/reports/#{number}">Field report #{number}</a></h2>
+            <p>Published June #{number}, 2026</p>
+          </div>
+        HTML
+      else
+        <<~HTML
+          <div class="story-card">
+            <img src="/covers/#{number}.png" alt="Cover #{number}">
+            <h2>Field report #{number}</h2>
+            <p>Published June #{number}, 2026</p><a href="/reports/#{number}">Read field report</a>
+          </div>
+        HTML
+      end
     end.join
   end
 
-  def section_page(heading: '<div id="section-label"><h2>Recent field reports</h2></div>', before: '', after: '', owner: 'div')
+  def section_page(heading: '<div id="section-label"><h2>Recent field reports</h2></div>', before: '', after: '', owner: 'div', linked: false)
     <<~HTML
       <html><head><title>Publication archive</title></head><body><form id="page-shell">
         <#{owner} id="publication-section">
           <div id="section-target"></div>#{heading}#{before}
           <div id="record-branch"><span><div><div>
-            <div><span id="records">#{section_records}</span></div>
+            <div><span id="records">#{section_records(linked: linked)}</span></div>
             <div aria-label="Collection navigation"><span></span><span></span></div>
           </div></div><script type="text/javascript">window.collectionReady = true;</script></span>
           <div style="display:none"><a href="javascript:void(0)">Previous</a><a href="javascript:void(0)">Next</a></div></div>
@@ -83,6 +93,33 @@ RSpec.describe 'Physical collection section heading ownership' do
       expect(proof.fetch('nodes')).to include('section-label', 'record-branch')
       expected_headings = [['h2', 'Recent field reports'], *[1, 2, 3, 4, 1].map { |number| ['h2', "Field report #{number}"] }]
       expect(proof.fetch('headings')).to eq(expected_headings)
+      expect(page.evaluate('document.body.innerHTML')).to eq(body)
+    end
+  end
+
+  it 'preserves all linked-cover records when the headline fallback ranks their destinations more highly' do
+    with_url_page('https://records.publication.example.test/archive/', section_page(linked: true)) do |page|
+      body = page.evaluate('document.body.innerHTML')
+      payload = extract_payload(page)
+      output = Nokogiri::HTML5.fragment(payload.fetch('html'))
+      expected_titles = ['Recent field reports', *[1, 2, 3, 4, 1].map { |number| "Field report #{number}" }]
+      expect(output.css('h2').map(&:text)).to eq(expected_titles)
+      expect(output.css('p').map(&:text)).to eq([1, 2, 3, 4, 1].map { |number| "Published June #{number}, 2026" })
+      expect(output.css('img').map { |image| image['alt'] }).to eq([1, 2, 3, 4, 1].map { |number| "Cover #{number}" })
+      markdown = payload.fetch('markdown')
+      expect(markdown).to include('## Recent field reports')
+      expect(markdown.index('## Recent field reports')).to be < markdown.index('Field report 1')
+      expect(markdown.scan('](https://records.publication.example.test/reports/1)').length).to eq(4)
+      expect(markdown.scan('https://records.publication.example.test/covers/1.png').length).to eq(2)
+      expected_records = [1, 2, 3, 4, 1].flat_map do |number|
+        destination = "https://records.publication.example.test/reports/#{number}"
+        [
+          "[![Cover #{number} Field report #{number}](https://records.publication.example.test/covers/#{number}.png)](#{destination})",
+          "## [Field report #{number}](#{destination})",
+          "Published June #{number}, 2026"
+        ]
+      end
+      expect(markdown).to eq(['## Recent field reports', *expected_records].join("\n\n"))
       expect(page.evaluate('document.body.innerHTML')).to eq(body)
     end
   end

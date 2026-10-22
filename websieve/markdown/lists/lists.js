@@ -203,6 +203,9 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
     if (referenceOwner) {
       return referenceOwner === item ? "\n\n" + listSelectedReferenceGroupMarkdown(item.card, primaryRecordKeys.recordContext) + "\n\n" : "";
     }
+    if (item.sourceOrderedRepeatedRecord && item.card) {
+      return "\n\n" + sourceOrderedRepeatedRecordMarkdown(item) + "\n\n";
+    }
     if (item.sourceOrderedStructuredCard && item.card) {
       return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();
     }

@@ -88,9 +88,8 @@
       addCardContext(candidate, candidate.card);
       var repeatedRecord = repeatedRecordByLink.get(link);
       if (repeatedRecord) {
+        applyRepeatedRecordIdentity(candidate, repeatedRecord);
         candidate.text = repeatedRecord.title;
-        candidate.repeatedRecordIdentity = repeatedRecord.identity;
-        candidate.dedupeKey = repeatedRecord.identity;
         candidate.rankScore = candidate.text.length + normalizeText(candidate.detail || "").length;
         if (repeatedRecord.mediaMarkdown.length) candidate.image = repeatedRecord.mediaMarkdown.join(" ");
       }
@@ -178,7 +177,7 @@
       var container = link.closest("tr, li, article, figure, section, div") || link.parentElement;
       pushLink(link, container);
     });
-    extractFallbackHeadlineItems(root, context).forEach(function(candidate) {
+    extractFallbackHeadlineItems(root, context, repeatedRecordByLink).forEach(function(candidate) {
       if (acceptedLinks.has(candidate.sourceNode)) return;
       if (candidate.sourceNode && dataTables.some(function(table) { return table.contains(candidate.sourceNode); })) return;
       if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.sourceNode);
@@ -189,6 +188,7 @@
     });
 
     Object.defineProperty(candidates, "__fetchUtilSupportingLinks", { value: context.supportingLinks });
+    Object.defineProperty(candidates, "__fetchUtilRepeatedRecordByLink", { value: repeatedRecordByLink });
     return candidates;
   }
 
