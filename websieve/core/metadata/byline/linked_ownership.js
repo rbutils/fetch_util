@@ -18,13 +18,17 @@ function bylineLinkedTitleFields(owner, byline) {
   });
 }
 
-function bylineForeignPublicationLink(link) {
-  if (!link || link.matches("[rel~='author'], [itemprop~='author']") || elementVisuallyHidden(link)) return null;
-  var href = materializedHttpUrl(link.getAttribute("href"));
+function bylineForeignPublicationDestination(value) {
+  var href = materializedHttpUrl(value);
   if (!href || localizedAuthorProfilePath(href)) return null;
   var target = href.split("#")[0];
   var pageUrls = [location.href, materializedCanonicalUrl()].filter(Boolean);
-  return pageUrls.some(function(url) { return url.split("#")[0] === target; }) ? null : link;
+  return pageUrls.some(function(url) { return url.split("#")[0] === target; }) ? null : href;
+}
+
+function bylineForeignPublicationLink(link) {
+  if (!link || link.matches("[rel~='author'], [itemprop~='author']") || elementVisuallyHidden(link)) return null;
+  return bylineForeignPublicationDestination(link.getAttribute("href")) ? link : null;
 }
 
 function bylineForeignTitleLink(field, byline, owner) {
@@ -103,6 +107,77 @@ function bylineOutsideTitleRecord(field, byline, owner) {
     boundary = boundary.parentElement;
   }
   return false;
+}
+
+function bylineUnlinkedPrincipalTitle(owner, byline) {
+  var fields = bylineLinkedTitleFields(owner, byline);
+  if (!fields.length || fields.some(function(field) { return !field.matches("h1, h2, h3, h4, h5, h6"); })) return null;
+  var rank = fields.reduce(function(minimum, field) {
+    return Math.min(minimum, Number(field.tagName.substring(1)));
+  }, Infinity);
+  var principal = fields.filter(function(field) { return Number(field.tagName.substring(1)) === rank; });
+  if (principal.length !== 1) return null;
+  var title = principal[0];
+  return title.closest("a[href]") || title.querySelector("a[href]") ? null : title;
+}
+
+function bylineLiteralPublicationDestination(owner) {
+  var assignment = owner.getAttribute("onclick") || "";
+  var match = assignment.match(/^\s*(?:window\.)?location(?:\.href)?\s*=\s*(["'])([^"'\\\r\n]+)\1\s*;?\s*$/);
+  return match ? bylineForeignPublicationDestination(match[2]) : null;
+}
+
+function bylineAnchorlessPublication(owner, byline) {
+  if (elementVisuallyHidden(owner) || owner.querySelector("a[href]") || !bylineUnlinkedPrincipalTitle(owner, byline)) return false;
+  return Array.from(owner.querySelectorAll("p")).some(function(paragraph) {
+    return !elementVisuallyHidden(paragraph) && normalizeText(paragraph.textContent || "");
+  });
+}
+
+function bylineLiteralPublicationNavigation(owner, byline) {
+  var destination = bylineLiteralPublicationDestination(owner);
+  if (!destination) return null;
+  var confirmedLink = Array.from(owner.querySelectorAll("a[href]")).find(function(link) {
+    return bylineForeignPublicationLink(link) && materializedHttpUrl(link.getAttribute("href")) === destination;
+  });
+  if (confirmedLink) return confirmedLink;
+  if (!owner.parentElement || !bylineAnchorlessPublication(owner, byline)) return null;
+  var independentPeer = Array.from(owner.parentElement.children).some(function(peer) {
+    if (peer === owner || peer.tagName !== owner.tagName) return false;
+    var peerDestination = bylineLiteralPublicationDestination(peer);
+    return peerDestination && peerDestination !== destination && bylineAnchorlessPublication(peer, byline);
+  });
+  return independentPeer ? owner : null;
+}
+
+function bylineCoveringPublicationLink(owner, title, byline) {
+  var branch = title;
+  while (branch && branch.parentElement !== owner) branch = branch.parentElement;
+  if (!branch || !branch.contains(byline)) return null;
+  var links = Array.from(owner.children).filter(function(link) {
+    if (!link.matches("a[href]") || link.children.length || normalizeText(link.textContent || "")) return false;
+    var marker = (link.getAttribute("class") || "").replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+    var declaredCover = /(?:^|[\s_:.-])(?:post|article|entry|card)[\s_:.-]+(?:link|overlay)(?:$|[\s_:.-])/i.test(marker) ||
+      /(?:^|[\s_:.-])(?:overlay|stretched|cover)[\s_:.-]+link(?:$|[\s_:.-])/i.test(marker);
+    return declaredCover && bylineForeignPublicationLink(link);
+  });
+  return links.length === 1 ? links[0] : null;
+}
+
+function unlinkedPublicationBylineOwner(node) {
+  var owner = node && node.parentElement;
+  while (owner && !owner.matches("html, body, main, [role='main']")) {
+    var hasNavigation = owner.hasAttribute("onclick") || Array.from(owner.children).some(function(child) {
+      return child.matches("a[href]") && !child.children.length && !normalizeText(child.textContent || "");
+    });
+    if (hasNavigation && !elementVisuallyHidden(owner)) {
+      var title = bylineUnlinkedPrincipalTitle(owner, node);
+      if (title && !bylineOutsideTitleRecord(title, node, owner) &&
+          (bylineLiteralPublicationNavigation(owner, node) || bylineCoveringPublicationLink(owner, title, node))) return owner;
+    }
+    owner = owner.parentElement;
+  }
+  return null;
 }
 
 function linkedPublicationBylineOwner(node) {

@@ -16,5 +16,5 @@
 
   function articleBylineNode(node) {
     return !linkedArticleResourceFigure(node.closest("figure")) && !bylinePublicationHeadingField(node) &&
-      !linkedPublicationBylineOwner(node);
+      !linkedPublicationBylineOwner(node) && !unlinkedPublicationBylineOwner(node);
   }

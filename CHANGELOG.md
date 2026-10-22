@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep publication credits with unlinked titles whose physical owners declare
+  covering links or independently confirmed literal navigation destinations.
+
 - Keep principal publication headings and subordinate metadata from becoming
   page authors, preserving explicit names and independently owned page bylines.
 
