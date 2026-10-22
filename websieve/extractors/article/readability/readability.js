@@ -14,6 +14,7 @@
         clone.body.replaceChildren(selectedOwner);
       }
       stripSourceOwnedTerminalArticleFurniture(clone.documentElement, sourceClones);
+      materializeEditorialPreviewImages(document.documentElement, clone.documentElement, sourceClones);
       materializeEditorialFrameLinks(document.documentElement, clone.documentElement, sourceClones);
       clone.querySelectorAll("a[href]").forEach(function(node) {
         if (articleCommentCountControl(node)) node.remove();

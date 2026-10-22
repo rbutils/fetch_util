@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve source-owned visible gallery preview images in article output while
+  keeping hidden galleries, form controls and ambiguous destinations excluded.
+
 - Retain complete source-owned footer contact information after publication
   collections, preserving visible addresses and labeled email and telephone references.
 

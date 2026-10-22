@@ -182,6 +182,7 @@
   }
 
   function cleanClonedContent(source, clone, preserveSelector, elementMap) {
+    elementMap = materializeEditorialPreviewImages(source, clone, elementMap);
     materializeEditorialFrameLinks(source, clone, elementMap);
     preserveSvgCloneVisibility(source, clone, elementMap);
     prepareSourceOwnedEngagementClone(source, clone, elementMap);
