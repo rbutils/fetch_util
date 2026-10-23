@@ -33,7 +33,7 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
     HTML
   end
 
-  it 'merges only unambiguous locally owned authors from duplicate semantic records' do
+  it 'preserves every independently owned record and author reference without borrowing a page byline' do
     alice = authored_duplicate(1, 'Alice Reporter').sub('</h3></a>', '</h3><span>Breaking</span></a>')
     bob = authored_duplicate(2, 'Bob Reporter')
     carol = authored_duplicate(2, 'Carol Reporter')
@@ -80,27 +80,43 @@ RSpec.describe 'FetchUtil duplicate record metadata' do
     with_url_page('https://newsroom.example/archive', html) do |page|
       before = page.evaluate('document.body.outerHTML')
       payload = extract_payload(page, reader_mode: false)
-      story_lines = payload['markdown'].lines.grep(%r{^- .*?/stories/})
-      first_story = story_lines.find { |line| line.include?('/stories/1)') }
-      seventh_story = story_lines.find { |line| line.include?('/stories/7)') }
-
-      expect(payload['contentType']).to eq('list')
-      expect(first_story).to include('[Alice Reporter](https://newsroom.example/authors/alice-reporter)')
-      expect(seventh_story).to include('[Ivan Reporter](https://newsroom.example/authors/ivan)')
-      expect(story_lines.join).not_to match(/Bob Reporter|Carol Reporter|Dave Reporter|Eve Commenter|Grace Reporter|Heidi Reporter|Alex Reporter/)
-      primary_fifth = story_lines.find { |line| line.include?('[Primary newsroom story 5]') }
-      expect(primary_fifth.strip).to eq('- [Primary newsroom story 5](https://newsroom.example/stories/5)')
-      independent_fifth = '- [Different report sharing story 5](https://newsroom.example/stories/5) - [Frank Reporter](https://newsroom.example/authors/frank-reporter)'
-      expect(story_lines.map(&:strip)).to include(independent_fifth)
-      expect(story_lines.join.scan('Frank Reporter').length).to eq(1)
-      story_numbers = story_lines.map { |line| line[%r{/stories/(\d+)}, 1].to_i }
-      expect(story_numbers).to eq([*(1..8), 5, 9, 10])
+      markdown = payload.fetch('markdown')
       source = Nokogiri::HTML5.parse(html).at_css('main')
       native = Nokogiri::HTML5.fragment(payload.fetch('html'))
       headings = ->(root) { root.css('h1,h2,h3,h4,h5,h6').map { |node| [node.name, node.text] } }
       references = lambda do |root|
         root.css('a[href]').map { |node| [node.text, URI.join('https://newsroom.example/archive', node['href']).to_s] }
       end
+
+      markdown_headings = markdown.scan(%r{<h[1-6]\b[^>]*>.*?</h[1-6]>|^\#{1,6} [^\n]+}m).map do |heading|
+        if heading.start_with?('<')
+          node = Nokogiri::HTML5.fragment(heading).at_css('h1,h2,h3,h4,h5,h6')
+          [node.name, node.text]
+        else
+          rank = heading[/\A(#+) /, 1].length
+          text = heading.sub(/\A#+ /, '').gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
+          ["h#{rank}", text]
+        end
+      end
+      markdown_urls = markdown.scan(%r{https://newsroom\.example/(?:stories/\d+|authors/[a-z-]+|sources/wire)})
+      raw_material = Nokogiri::HTML5.fragment(markdown)
+      source_authors = source.css('a[rel="author"]').map(&:text)
+
+      expect(payload['contentType']).to eq('list')
+      expect(payload['byline']).to be_nil
+      expect(payload['publishedTime']).to be_nil
+      expect(markdown_headings).to eq(headings.call(source).reject { |name, _text| name == 'h1' })
+      expect(markdown_urls).to eq(references.call(source).map(&:last))
+      source_authors.tally.each do |author, count|
+        expect(markdown.scan(author).length).to eq(count)
+      end
+      alice_link = raw_material.at_css('article > a[href="https://newsroom.example/stories/1"]')
+      expect(alice_link.text).to eq('Primary newsroom story 1Breaking')
+      expect(alice_link.element_children.map(&:name)).to eq(%w[h3 span])
+      expect(alice_link.parent.css('[rel="author"]').map(&:text)).to eq(['Alice Reporter'])
+      expect(markdown.split('</article>', 2).last)
+        .to match(/\A(?:&#(?:10|13);|[ \t])*\n\n### \[Primary newsroom story 2\]/)
+      expect(raw_material.css('table td').map(&:text)).to eq(source.css('table td').map(&:text))
       expect(headings.call(native)).to eq(headings.call(source))
       expect(references.call(native)).to eq(references.call(source))
       expect(page.evaluate('document.body.outerHTML')).to eq(before)

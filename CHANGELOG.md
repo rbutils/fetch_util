@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete independently owned articles and rich table records between
+  selected list sections, preserving references, programs and source visibility.
+
 - Verify independent source card and reference occurrences in regression contracts,
   retaining complete prose, images, declared destinations and visibility guards.
 

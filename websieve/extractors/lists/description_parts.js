@@ -125,11 +125,13 @@
   }
 
   function listDescriptionParts(root, items, options) {
+    var unselectedRecords = options && options.preserveUnselectedRecordMaterial ?
+      listUnselectedArticleDescriptions(root, items) : { parts: [], covered: new WeakSet() };
     var outerArticles = listOuterArticleDescriptions(root, items);
     var figureParts = listDescriptionFigureParts(root, items).filter(function(part) {
-      return !outerArticles.covered.has(part.node);
+      return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node);
     });
-    var descParts = outerArticles.parts.concat(figureParts);
+    var descParts = unselectedRecords.parts.concat(outerArticles.parts, figureParts);
     var hasItems = items && items.length > 0;
     var includeInlineProse = hasItems && options && options.includeInlineProse;
     var primaryUrls = new Set((items || []).map(function(item) {
@@ -150,7 +152,7 @@
     }).filter(Boolean);
     var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote" : "h1, h2, h3, p, blockquote";
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
-      if (outerArticles.covered.has(el)) return;
+      if (outerArticles.covered.has(el) || unselectedRecords.covered.has(el)) return;
       if (figureParts.some(function(part) { return part.node.contains(el); })) return;
       if (sourceOwnedResultCountNodes && sourceOwnedResultCountNodes.has(el)) {
         var resultCountMarkdown = markdownFor(el.outerHTML).trim();
@@ -205,9 +207,9 @@
       }
     });
     var imageParts = listDescriptionImageParts(root, items, figureParts).filter(function(part) {
-      return !outerArticles.covered.has(part.node);
+      return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node);
     });
-    if (imageParts.length || outerArticles.parts.length) {
+    if (imageParts.length || outerArticles.parts.length || unselectedRecords.parts.length) {
       descParts = descParts.concat(imageParts).sort(function(left, right) {
         var position = left.node.compareDocumentPosition(right.node);
         return position & 4 ? -1 : position & 2 ? 1 : 0;

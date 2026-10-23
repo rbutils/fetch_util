@@ -213,6 +213,10 @@
     })) return null;
     var localParagraphs = new Set();
     var completeItems = sectioned.items.concat(additions).map(function(item) {
+      if (!item.sourceOrderedRepeatedRecord && !item.sourceOrderedStructuredCard &&
+          typeof TurndownService === "function" && sectionArticleRecordOwnsHeading(item)) {
+        item = Object.assign({}, item, { sourceOrderedRepeatedRecord: true });
+      }
       if (!item.card || genericListCardBoundary(item.card) || item.groupLabel != null ||
           sameRootCanonicalDestinations(Array.from(item.card.querySelectorAll("a[href]")).map(function(link) {
             return { url: materializedHttpUrl(link.getAttribute("href")) };
@@ -251,6 +255,7 @@
       }
     });
     var descriptions = listDescriptionParts(root, items, {
+      preserveUnselectedRecordMaterial: true,
       includeInlineProse: true, preserveTextLengths: true,
       pageTitles: pageTitles, preserveUnrepresentedText: true,
       sectionLabels: sectioned.regions.map(function(region) { return region.label; }),

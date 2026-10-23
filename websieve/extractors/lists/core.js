@@ -135,6 +135,7 @@
     if (sectioned && !flatCoverage) {
       var sectionDescriptionParts = listDescriptionParts(root, sectioned.items, {
         excludeRecordCards: true,
+        preserveUnselectedRecordMaterial: true,
         includeInlineProse: true,
         pageTitles: pageTitles,
         preserveTextLengths: true,
@@ -173,6 +174,7 @@
     if (flatCoverage) mergeDuplicateRecordAuthorContext(root, items);
     if (flatCoverage && !flatCoverage.markdown) {
       var flatDescriptions = listDescriptionParts(root, items, {
+        preserveUnselectedRecordMaterial: true,
         includeInlineProse: true, preserveTextLengths: true,
         pageTitles: pageTitles, preserveUnrepresentedText: true,
         sectionLabels: sectioned.regions.map(function(region) { return region.label; }),

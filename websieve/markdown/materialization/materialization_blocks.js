@@ -82,11 +82,14 @@ function materializedMarkdownHtmlBlock(value, position, end, container) {
   }).join("\n");
   var sanitized = materializedHtml(html);
   if (!sanitized) return "";
+  var singleBlock = /^[ \t]*<(?:article|table)(?:\s|>)/i.test(html);
+  if (singleBlock) sanitized = singleBlockMaterializedHtml(sanitized);
 
   var fallbackPrefix = prefixes[prefixes.length - 1] || prefixes[0] || "";
-  return sanitized.split("\n").map(function(line, index) {
+  var materialized = sanitized.split("\n").map(function(line, index) {
     return (prefixes[index] === undefined ? fallbackPrefix : prefixes[index]) + line;
   }).join("\n");
+  return materialized + (singleBlock && /\n$/.test(html) ? "\n" : "");
 }
 
 function markdownHtmlBlockEnd(value, position, containerEnd, container) {

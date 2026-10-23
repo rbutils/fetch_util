@@ -157,3 +157,31 @@
     materializeHttpAttributes(template.content, false, allowArticleMailto === true);
     return template.innerHTML;
   }
+
+  function singleBlockMaterializedHtml(html) {
+    var holder = document.createElement("div");
+    holder.innerHTML = html;
+    var source = holder.innerHTML + holder.textContent;
+    var prefix = "FETCH_UTIL_HTML_LINE_";
+    while (source.indexOf(prefix) >= 0) prefix += "_";
+    var encodeLines = function(value) {
+      return value.replace(/\r/g, prefix + "CR").replace(/\n/g, prefix + "LF");
+    };
+    var roots = [holder];
+    while (roots.length) {
+      var root = roots.pop();
+      Array.from(root.querySelectorAll("*")).forEach(function(node) {
+        Array.from(node.attributes).forEach(function(attribute) {
+          attribute.value = encodeLines(attribute.value);
+        });
+        if (node.localName === "template") roots.push(node.content);
+      });
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      var text;
+      while ((text = walker.nextNode())) text.nodeValue = encodeLines(text.nodeValue);
+    }
+
+    // Blank lines terminate CommonMark HTML blocks; references retain literal text and attribute values.
+    return holder.innerHTML.replace(/\r\n?|\n/g, " ")
+      .split(prefix + "CR").join("&#13;").split(prefix + "LF").join("&#10;").trim();
+  }
