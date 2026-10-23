@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep credits owned by independently identified linked publication covers out of
+  page bylines, preserving genuine author fields and complete publication material.
+
 - Keep dates owned by separately linked resource titles and row headers out of
   page publication metadata while preserving independent current-document dates.
 

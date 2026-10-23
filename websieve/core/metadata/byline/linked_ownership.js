@@ -181,6 +181,8 @@ function unlinkedPublicationBylineOwner(node) {
 }
 
 function linkedPublicationBylineOwner(node) {
+  var mediaOwner = bylineLinkedMediaPublicationOwner(node);
+  if (mediaOwner) return mediaOwner;
   var owner = node && node.parentElement;
   while (owner && !owner.matches("html, body, main, [role='main']")) {
     var fields = bylineLinkedTitleFields(owner, node);

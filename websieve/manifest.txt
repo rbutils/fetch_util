@@ -3,6 +3,7 @@ core/metadata/text_normalization.js
 core/metadata/language.js
 core/metadata/byline_controls.js
 core/metadata/byline/field_roles.js
+core/metadata/byline/linked_media.js
 core/metadata/byline/linked_ownership.js
 core/metadata/visible_metadata.js
 core/metadata/labeled_metadata.js
