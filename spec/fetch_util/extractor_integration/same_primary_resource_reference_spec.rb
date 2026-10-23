@@ -58,10 +58,10 @@ RSpec.describe 'Independently labelled same-primary resource references' do
     page.evaluate('window.__selectedResourceMarkdown()')
   end
 
-  def expect_complete_resource_references(markdown)
+  def expect_complete_resource_references(markdown, primary_occurrences: 1)
     (1..6).each do |number|
       primary = "https://publication.example.test/reports/#{number}"
-      expect(markdown.scan("[Published research report #{number}](#{primary})").size).to eq(1)
+      expect(markdown.scan("[Published research report #{number}](#{primary})").size).to eq(primary_occurrences)
       expect(markdown).to include("[Alternate publication resource #{number}](#{primary})",
                                   "[Reference guide #{number}](https://resources.example.test/guide-#{number})",
                                   "[Complete dataset #{number}](https://resources.example.test/data-#{number})",
@@ -82,7 +82,22 @@ RSpec.describe 'Independently labelled same-primary resource references' do
     with_url_page('https://publication.example.test/', resource_collection_html) do |page|
       before = page.evaluate('document.body.innerHTML')
       payload = extract(page)
-      expect_complete_resource_references(payload.fetch('markdown'))
+      markdown = payload.fetch('markdown')
+      expect_complete_resource_references(markdown, primary_occurrences: 2)
+      expected_destinations = (1..6).flat_map do |number|
+        primary = "https://publication.example.test/reports/#{number}"
+        ["https://publication.example.test/images/report-#{number}.png", primary, primary, primary,
+         "https://resources.example.test/guide-#{number}", primary, "https://resources.example.test/data-#{number}"]
+      end
+      expected_headings = (1..6).map do |number|
+        ["Published research report #{number}", "https://publication.example.test/reports/#{number}"]
+      end
+      expect(markdown.scan(%r{\]\((https?://[^)]+)\)}).flatten).to eq(expected_destinations)
+      expect(markdown.scan(/^### \[([^\]]+)\]\(([^)]+)\)$/)).to eq(expected_headings)
+      expect(markdown.scan(/!\[([^\]]+)\]\(([^)]+)\)/)).to eq((1..6).map do |number|
+        ["Report illustration #{number} Published research report #{number}",
+         "https://publication.example.test/images/report-#{number}.png"]
+      end)
       (1..6).each do |number|
         expect(payload.fetch('html')).to include("Alternate publication resource #{number}",
                                                  "https://resources.example.test/data-#{number}")

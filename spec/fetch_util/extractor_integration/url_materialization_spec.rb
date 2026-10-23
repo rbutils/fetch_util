@@ -673,14 +673,20 @@ RSpec.describe 'FetchUtil public URL materialization' do
     HTML
 
     with_url_page('https://archive.example/releases', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       payload = extract_payload(page)
       markdown = payload['markdown']
+      expected = [
+        '## Spring releases', '### [Spring release](https://archive.example/record)', '2026-03-01', 'Spring context',
+        '## Autumn releases', '### [Autumn release](https://archive.example/record)', '2026-09-01', 'Autumn context',
+        '### [Winter release](https://archive.example/record)', '2026-12-01', 'Winter context',
+        '### [Spring release](https://archive.example/record)', '2026-03-01', 'Spring context'
+      ]
 
       expect(payload['contentType']).to eq('list')
-      expect(markdown).to include('## Spring releases', '## Autumn releases')
-      expect(markdown.scan('](https://archive.example/record)').length).to eq(3)
-      expect(markdown.index('Spring release')).to be < markdown.index('Autumn release')
-      expect(markdown.index('Autumn release')).to be < markdown.index('Winter release')
+      expect(markdown.split("\n\n")).to eq(expected)
+      expect(markdown.scan('](https://archive.example/record)').length).to eq(4)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

@@ -58,6 +58,7 @@ RSpec.describe 'Polish portal homepage fidelity' do
 
   it 'recognizes current and legacy Onet regions without promoting card labels' do
     with_url_page('https://onet.pl/', fixture('fidelity_onet_regions')) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
 
       expected_regions = [
@@ -65,7 +66,7 @@ RSpec.describe 'Polish portal homepage fidelity' do
         'TECHNOLOGIE GRY', 'NAJLEPSZE PREMIUM:', 'FID:visible-small-section'
       ]
       expected_cards = %w[
-        premium-01 premium-02?edition=morning news-01 news-02 sport-01 business-01
+        premium-01 premium-02?edition=morning premium-01?utm_source=mobile news-01 news-02 sport-01 business-01
         offers-01 offers-02?edition=evening tech-01 tech-02 premium-03 card-only
       ]
 
@@ -81,10 +82,11 @@ RSpec.describe 'Polish portal homepage fidelity' do
       expect(card_urls.grep(/premium-02\?edition=morning/).length).to eq(1)
       expect(card_urls.grep(/offers-02\?edition=evening/).length).to eq(1)
       expect(result['markdown']).not_to include(
-        'FID:utility-ad', 'FID:utility-footer',
-        'FID:onet-premium-01 mobile'
+        'FID:utility-ad', 'FID:utility-footer'
       )
+      expect(result['markdown']).to include('### [FID:onet-premium-01 mobile](https://onet.pl/onet/premium-01?utm_source=mobile)')
       expect(card_urls.tally.values).to all(eq(1))
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

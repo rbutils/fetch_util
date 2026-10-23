@@ -202,13 +202,19 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
-  it 'deduplicates responsive cards across named sections in production extraction' do
+  it 'preserves independently visible cards across named sections in production extraction' do
     with_url_page('https://fidelity.test/', fixture('fidelity_generic_cross_section_duplicate')) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
+      expected = [
+        '## FID:latest', '### [FID:shared-earliest](https://fidelity.test/story/shared)', 'FID:earliest-summary',
+        '## FID:featured', '### [FID:shared-responsive-copy](https://fidelity.test/story/shared?utm_source=mobile)',
+        'FID:later-summary', '### [FID:unique-story](https://fidelity.test/story/unique)', 'FID:unique-summary',
+        '### [FID:fourth-story](https://fidelity.test/story/fourth)', 'FID:fourth-summary'
+      ]
 
-      expect(result['markdown'].scan('FID:shared-earliest').length).to eq(1)
-      expect(result['markdown']).to include('FID:shared-earliest', 'FID:earliest-summary', 'FID:unique-story')
-      expect(result['markdown']).not_to include('FID:shared-responsive-copy', 'FID:later-summary')
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
@@ -468,7 +474,7 @@ RSpec.describe 'content fidelity contracts' do
     end
   end
 
-  it 'preserves all cards while letting the earliest canonical card win' do
+  it 'preserves independent same-destination cards and their local prose' do
     html = <<~HTML
       <main><h1>FID:portal</h1>
         <section><h2>FID:first</h2>
@@ -483,14 +489,22 @@ RSpec.describe 'content fidelity contracts' do
     HTML
 
     with_url_page('https://fidelity.test/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
+      expected = ['## FID:first'] + (1..3).map do |index|
+        "### [FID:first-#{index}](https://fidelity.test/story/#{index})"
+      end + [
+        '### [FID:over-quota-later](https://fidelity.test/story/later)', '## FID:second',
+        '### [FID:later-emitted](https://fidelity.test/story/later)', 'FID:later-summary',
+        '### [FID:unique-later](https://fidelity.test/story/unique-later)'
+      ]
 
-      expect(result['markdown']).to include('FID:over-quota-later', 'FID:unique-later')
-      expect(result['markdown']).not_to include('FID:later-emitted', 'FID:later-summary')
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 
-  it 'collapses tracking duplicates but preserves meaningful query-distinct cards' do
+  it 'preserves physical tracking variants and meaningful query-distinct cards' do
     html = <<~HTML
       <main><h1>FID:portal</h1>
         <section><h2>FID:tracking</h2>
@@ -505,10 +519,18 @@ RSpec.describe 'content fidelity contracts' do
     HTML
 
     with_url_page('https://fidelity.test/', html) do |page|
+      before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
+      expected = [
+        '## FID:tracking', '### [FID:tracked-first](https://fidelity.test/story/tracked)',
+        '### [FID:query-one](https://fidelity.test/story/query?page=1)', '## FID:responsive',
+        '### [FID:tracked-copy](https://fidelity.test/story/tracked?utm_source=mobile)',
+        'FID:tracked-responsive-summary must stay suppressed.',
+        '### [FID:query-two](https://fidelity.test/story/query?page=2)'
+      ]
 
-      expect(result['markdown']).to include('FID:tracked-first', 'FID:query-one', 'FID:query-two')
-      expect(result['markdown']).not_to include('FID:tracked-copy', 'FID:tracked-responsive-summary')
+      expect(result['markdown'].split("\n\n")).to eq(expected)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end
 

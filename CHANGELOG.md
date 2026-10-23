@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verify independent source card and reference occurrences in regression contracts,
+  retaining complete prose, images, declared destinations and visibility guards.
+
 - Render a physical record heading once when a complete card already owns the
   section heading, preserving independent headings and partial-record fallbacks.
 
