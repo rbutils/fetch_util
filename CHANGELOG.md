@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain visible, physically owned publication-cover credits in list Markdown,
+  preserving inline formatting, independent occurrences and source visibility.
+
 - Keep credits owned by independently identified linked publication covers out of
   page bylines, preserving genuine author fields and complete publication material.
 

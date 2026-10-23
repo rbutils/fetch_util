@@ -209,8 +209,9 @@
     var imageParts = listDescriptionImageParts(root, items, figureParts).filter(function(part) {
       return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node);
     });
-    if (imageParts.length || outerArticles.parts.length || unselectedRecords.parts.length) {
-      descParts = descParts.concat(imageParts).sort(function(left, right) {
+    var creditParts = listPublicationCreditDescriptionParts(root, items, descParts);
+    if (imageParts.length || creditParts.length || outerArticles.parts.length || unselectedRecords.parts.length) {
+      descParts = descParts.concat(imageParts, creditParts).sort(function(left, right) {
         var position = left.node.compareDocumentPosition(right.node);
         return position & 4 ? -1 : position & 2 ? 1 : 0;
       });

@@ -35,6 +35,28 @@
     return true;
   }
 
+  function listPublicationCreditDescriptionParts(root, items, descriptions) {
+    if (!items || !items.length) return [];
+    return Array.from(root.querySelectorAll("span")).filter(function(node) {
+      var markers = [node.id, node.getAttribute("class"), node.getAttribute("data-testid")];
+      if (!markers.some(inferredBylineFieldMarker) && !node.matches("[itemprop~='author'], [rel~='author']")) return false;
+      if (node.closest("a, p, blockquote, table, ul, ol, pre, code, kbd, samp, nav, header, footer, aside, form, button, label, summary, menu, dialog, [role='button'], [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog']") ||
+          listCardNodeHidden(node) || listNodeWithinClosedDisclosure(node)) return false;
+      if (!normalizeText(node.textContent) ||
+          node.querySelector("p, h1, h2, h3, h4, h5, h6, img, picture, video, audio, iframe, input, select, textarea, button, script, style, template")) return false;
+      if (descriptions.some(function(part) { return part.node && part.node.contains(node); })) return false;
+      if (items.some(function(item) {
+        return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard) &&
+          item.card && item.card.contains(node);
+      })) return false;
+      return !!bylineLinkedMediaPublicationOwner(node);
+    }).map(function(node) {
+      var clone = node.cloneNode(true);
+      pruneListCardVisibility(node, clone);
+      return { node: node, markdown: markdownFor(clone.outerHTML).trim(), publicationCredit: true };
+    }).filter(function(part) { return part.markdown; });
+  }
+
   function listUnownedEmptyReference(link, root, recordContext, descriptionOwners) {
     if (link.querySelector("img, picture, svg, video, audio, canvas, object, iframe") ||
         link.closest("pre, code, [aria-hidden='true' i], [inert]") || listCardNodeHidden(link)) return false;
@@ -115,7 +137,9 @@
     });
     descriptions = descriptions.concat(listUnrepresentedMetadataReferences(extraction, descriptions));
     var wrappedRecords = extraction.items.some(function(item) { return genericListWrappedAnchorCard(item.card); });
-    if (!wrappedRecords && !descriptions.some(function(part) { return part.metadataReference || part.node.tagName === "DIV"; })) return "";
+    if (!wrappedRecords && !descriptions.some(function(part) {
+      return part.metadataReference || part.publicationCredit || part.node.tagName === "DIV";
+    })) return "";
 
     var links = Array.prototype.slice.call(extraction.root.querySelectorAll("a[href]"));
     var cards = extraction.items.map(function(item) {
