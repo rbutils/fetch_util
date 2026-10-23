@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independently materialized section records and their complete headings,
+  prose and references even when separate cards declare the same destination.
+
 - Preserve independently owned unlinked heading roles within repeated semantic
   article records instead of flattening them into list metadata.
 

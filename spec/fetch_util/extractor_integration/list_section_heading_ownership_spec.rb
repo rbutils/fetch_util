@@ -250,7 +250,7 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
       markdown = payload['markdown']
       full_record = '- [Full authored account of the shared public story](https://newsroom.example/stories/shared)'
-      section_alias = '- [Short section angle on the shared story](https://newsroom.example/stories/shared)'
+      section_alias = '### [Short section angle on the shared story](https://newsroom.example/stories/shared)'
 
       expect(payload['contentType']).to eq('list')
       expect(markdown).to include(full_record, section_alias)
@@ -434,8 +434,9 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
       expect(payload['contentType']).to eq('list')
       (1..14).each do |number|
+        prefix = number <= 10 ? '-' : '###'
         expect(payload['markdown']).to include(
-          "- [Independent newsroom story #{number}](https://newsroom.example/stories/#{number})"
+          "#{prefix} [Independent newsroom story #{number}](https://newsroom.example/stories/#{number})"
         )
       end
       expect(payload['markdown']).not_to include('## Independent newsroom story 2')

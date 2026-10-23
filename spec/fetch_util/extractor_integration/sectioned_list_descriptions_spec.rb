@@ -113,7 +113,13 @@ RSpec.describe "Sectioned list descriptions" do
       expect(markdown).to include("Final uncapped guidance marker")
       expect(markdown.index("Choose, configure")).to be < markdown.index("Implementation guides")
       expect(markdown.index("Implementation guides")).to be < markdown.index("Guide 1")
-      expect(markdown.index("Guide 1")).to be < markdown.index("Focused summary for resource record 1")
+      expect(markdown.index("Implementation guides")).to be < markdown.index("Focused summary for resource record 1")
+      expect(markdown.index("Focused summary for resource record 1")).to be < markdown.index("Guide 1")
+      order = [1, 2, 5, 6, 3, 4, 7, 8]
+      expect(markdown.scan(/Focused summary for resource record (\d+)/).flatten).to eq(order.map(&:to_s))
+      expect(markdown.lines.grep(/^### /).map(&:strip)).to eq(order.map do |number|
+        "### [Guide #{number}](https://example.com/articles/#{number})"
+      end)
       expect(markdown.index("Guide 6")).to be < markdown.index("Inter-section guidance")
       expect(markdown.index("Inter-section guidance")).to be < markdown.index("Product resources")
       expect(markdown.index("Guide 8")).to be < markdown.index("Final uncapped guidance marker")

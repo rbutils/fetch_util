@@ -18,7 +18,7 @@ RSpec.describe 'FetchUtil generic visible collections' do
     end.join
   end
 
-  it 'keeps every accepted section card in DOM order with global canonical dedupe' do
+  it 'keeps every independently owned section card in DOM order' do
     html = <<~HTML
       <html><head><title>Daily portal</title></head><body><main>
         <section><h2>First section</h2>#{portal_cards(1, 5)}</section>
@@ -27,19 +27,21 @@ RSpec.describe 'FetchUtil generic visible collections' do
     HTML
 
     with_url_page('https://portal.example/', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
       markdown = payload['markdown']
       urls = markdown.scan(%r{\]\((https://portal\.example/[^)]+)\)}).flatten
 
       expect(payload['contentType']).to eq('list')
-      expect(urls.length).to eq(9)
+      expect(urls.length).to eq(10)
       expect(urls).to eq(
         [
-          'https://portal.example/stories/shared',
+          'https://portal.example/stories/shared?utm_source=first',
           'https://portal.example/stories/1-2',
           'https://portal.example/stories/1-3',
           'https://portal.example/stories/1-4',
           'https://portal.example/stories/1-5',
+          'https://portal.example/stories/shared?fbclid=second',
           'https://portal.example/stories/2-2',
           'https://portal.example/stories/2-3',
           'https://portal.example/stories/2-4',
@@ -48,6 +50,10 @@ RSpec.describe 'FetchUtil generic visible collections' do
       )
       expect(markdown).to include('## First section')
       expect(markdown).to include('## Second section')
+      expect(markdown.lines.grep(/^### /).length).to eq(10)
+      paragraphs = (1..2).flat_map { |section| (1..5).map { |number| "Editorial detail #{section}-#{number}." } }
+      expect(markdown.scan(/Editorial detail \d-\d\./)).to eq(paragraphs)
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 

@@ -121,6 +121,14 @@
     return cards;
   }
 
+  function sectionArticleRecordOwnsHeading(candidate) {
+    var card = candidate.card;
+    var link = candidate.sourceNode;
+    if (!card || card.localName !== "article" || !link) return false;
+    if (link.closest("pre, code, kbd, samp, blockquote, nav, aside, button, details, [role='navigation'], [role='toolbar']")) return false;
+    return repeatedRecordOwnsHeadlineCard(candidate, { node: card });
+  }
+
   function sectionCards(region, options) {
     options = Object.assign({}, options, { listContext: options && options.listContext || listPageContext() });
     var candidates = [];
@@ -138,6 +146,7 @@
           genericListNestedCardReplaces(candidate.card, nested.card);
       });
     }).forEach(function(candidate) {
+      if (typeof TurndownService === "function" && sectionArticleRecordOwnsHeading(candidate)) candidate.sourceOrderedRepeatedRecord = true;
       cards.push(candidate);
     });
 
@@ -163,6 +172,7 @@
     var regions = [];
     var seen = [];
     var material = {};
+    var physicalCards = new Set();
     var candidates = Array.prototype.slice.call(root.querySelectorAll(selector));
 
     if (options.additionalRegions) candidates = candidates.concat(options.additionalRegions(root));
@@ -190,12 +200,14 @@
       if (unlabelled && !genericUnlabelledSectionMaterial(discoveredCards)) return;
 
       var cards = discoveredCards.filter(function(card) {
+        if (physicalCards.has(card.card)) return false;
         var key = card.canonicalKey || sectionCanonicalKey(card.url);
         var time = normalizeText(card.time || "");
         var times = material[key];
-        if (times && (!time || !times.length || times.indexOf(time) >= 0)) return false;
+        if (!sectionArticleRecordOwnsHeading(card) && times && (!time || !times.length || times.indexOf(time) >= 0)) return false;
         if (!times) times = material[key] = [];
         if (time) times.push(time);
+        physicalCards.add(card.card);
         return true;
       });
       if (!cards.length && !options.allowEmptyRegions) return;
