@@ -44,6 +44,7 @@ function visibleForeignPublicationCard(node) {
   } catch (_error) {
     return false;
   }
+  if (visibleForeignRowDate(node, canonical) || visibleForeignTitledRecordDate(node, canonical)) return true;
 
   var record = node.closest(recordSelectors);
   if (record) {
@@ -80,6 +81,36 @@ function visibleForeignPublicationHeading(heading, canonical) {
   } catch (_error) {
     return true;
   }
+}
+
+function visibleForeignRowDate(node, canonical) {
+  var row = node.closest("tr");
+  if (!row || row.closest("thead")) return false;
+  var headers = Array.from(row.children).filter(function(cell) {
+    var scope = (cell.getAttribute("scope") || "row").toLowerCase();
+    return cell.matches("th") && scope === "row" && !elementVisuallyHidden(cell);
+  });
+  if (headers.length !== 1) return false;
+  var header = headers[0];
+  var links = Array.from(header.querySelectorAll("a[href]")).filter(function(link) {
+    return link.closest("tr") === row && !elementVisuallyHidden(link);
+  });
+  return links.length === 1 && !!bylineForeignPublicationLink(links[0]) &&
+    normalizeText(links[0].textContent || "") &&
+    normalizeText(header.textContent || "") === normalizeText(links[0].textContent || "") &&
+    visibleForeignPublicationHeading(links[0], canonical);
+}
+
+function visibleForeignTitledRecordDate(node, canonical) {
+  var owner = linkedPublicationBylineOwner(node);
+  if (!owner) return false;
+  var fields = bylineLinkedTitleFields(owner, node);
+  if (fields.length !== 1) return false;
+  var field = fields[0];
+  var marker = [field.getAttribute("class"), field.getAttribute("data-testid")].join(" ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  var recordTitle = /(?:^|[\s_:.-])(?:item|record|resource|entry|card|post|article|story|news)[\s_:.-]+(?:title|headline|subject)(?:$|[\s_:.-])/i.test(marker);
+  return recordTitle && visibleForeignPublicationHeading(field, canonical);
 }
 
 function visiblePublicationDateLike(value) {

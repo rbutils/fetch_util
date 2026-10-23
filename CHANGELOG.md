@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep dates owned by separately linked resource titles and row headers out of
+  page publication metadata while preserving independent current-document dates.
+
 - Reject unrelated resource URLs before author visibility and publication-owner
   checks, preserving genuine author validation without repeatedly scanning catalogs.
 
