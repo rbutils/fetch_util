@@ -91,14 +91,21 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
     HTML
 
     extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
-      expect(payload['markdown']).to include(
-        '- [Alternate visible angle on newsroom story 2](https://newsroom.example/stories/2)'
+      markdown = payload['markdown']
+      source = Nokogiri::HTML5.parse(html).at_css('main')
+      expected_headings = source.css('h3').map do |heading|
+        format('### [%s](%s)', heading.text, URI.join('https://newsroom.example/', heading.at_css('a')['href']))
+      end
+
+      expect(markdown.scan(/^### .+$/)).to eq(expected_headings)
+      expect(markdown.scan(/\]\(([^)]+)\)/).flatten).to eq(
+        source.css('a[href]').map { |link| URI.join('https://newsroom.example/', link['href']).to_s }
       )
-      expect(payload['markdown']).not_to include('## Alternate visible angle on newsroom story 2')
+      expect(markdown).not_to include('## Alternate visible angle on newsroom story 2')
     end
   end
 
-  it 'keeps a distinct tracking alias linked while suppressing an exact-title duplicate' do
+  it 'keeps independently owned tracking aliases and their declared destinations in source order' do
     html = <<~HTML
       <html><head><title>Tracking alias newsroom</title></head><body><main>
         <h1>Tracking alias newsroom</h1>
@@ -131,6 +138,7 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
         'Independent newsroom story 3',
         'Independent newsroom story 4',
         'Alternate visible angle on the shared story',
+        'Original public account of the shared story',
         'Independent newsroom story 5',
         'Independent newsroom story 6',
         'Independent newsroom story 7',
@@ -139,14 +147,18 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
       ]
 
       expect(markdown).to include(
-        '- [Alternate visible angle on the shared story](https://newsroom.example/stories/shared?utm_medium=rail)'
+        '### [Alternate visible angle on the shared story](https://newsroom.example/stories/shared?utm_medium=rail)'
       )
       expect(markdown).not_to include('## Alternate visible angle on the shared story')
-      expect(markdown.scan('Original public account of the shared story').length).to eq(1)
-      expect(markdown).not_to include('utm_campaign=duplicate')
+      expect(markdown.scan('Original public account of the shared story').length).to eq(2)
+      expect(markdown).to include(
+        '### [Original public account of the shared story](https://newsroom.example/stories/shared?utm_campaign=duplicate)'
+      )
       expect(markdown.scan(/^## .+$/)).to eq(['## Local desk', '## Culture desk'])
-      expect(ordered_titles.map { |title| markdown.index(title) }).to eq(
-        ordered_titles.map { |title| markdown.index(title) }.sort
+      expect(markdown.scan(/\[([^\]]+)\]\([^)]+\)/).flatten).to eq(ordered_titles)
+      source = Nokogiri::HTML5.parse(html).at_css('main')
+      expect(markdown.scan(/\]\(([^)]+)\)/).flatten).to eq(
+        source.css('a[href]').map { |link| URI.join('https://newsroom.example/', link['href']).to_s }
       )
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
@@ -249,11 +261,19 @@ RSpec.describe 'FetchUtil extractor list section heading ownership' do
 
     extract_from_url('https://newsroom.example/', html, reader_mode: false) do |payload|
       markdown = payload['markdown']
-      full_record = '- [Full authored account of the shared public story](https://newsroom.example/stories/shared)'
+      full_record = '### [Full authored account of the shared public story](https://newsroom.example/stories/shared)'
       section_alias = '### [Short section angle on the shared story](https://newsroom.example/stories/shared)'
+      source = Nokogiri::HTML5.parse(html).at_css('main')
+      expected_headings = source.css('h3').map do |heading|
+        format('### [%s](%s)', heading.text, URI.join('https://newsroom.example/', heading.at_css('a')['href']))
+      end
 
       expect(payload['contentType']).to eq('list')
       expect(markdown).to include(full_record, section_alias)
+      expect(markdown.scan(/^### .+$/)).to eq(expected_headings)
+      expect(markdown.scan(/\]\(([^)]+)\)/).flatten).to eq(
+        source.css('a[href]').map { |link| URI.join('https://newsroom.example/', link['href']).to_s }
+      )
       expect(markdown.scan('](https://newsroom.example/reporters/lead)').length).to eq(1)
       expect(markdown.index(full_record)).to be < markdown.index('## Local desk')
       expect(markdown.index('## Local desk')).to be < markdown.index(section_alias)
