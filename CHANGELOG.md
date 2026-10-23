@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep visible flat-record time labels beside their literal declarations,
+  preserving inline roles, independent occurrences and source visibility.
+
 - Keep portal section headings and introductions at their physical source position,
   preserving independent repeated paragraphs and captured disclosure visibility.
 

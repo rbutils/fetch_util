@@ -37,12 +37,16 @@ function sourceOrderedRepeatedRecordMarkdown(item) {
   return markdownFor(listHtmlWithoutUnsafeDestinations(clone)).trim();
 }
 
+function listTimeDeclarationVisible(root, time) {
+  if (listCardNodeHidden(time) || listNodeWithinClosedDisclosure(time) ||
+      time.closest("pre, code, kbd, samp, button, nav, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']")) return false;
+  var form = time.closest("form, [role='form']");
+  return !form || !root.contains(form);
+}
+
 function materializeListTimeDeclarations(root, clone, sourceClones, times) {
   times.forEach(function(time) {
-    if (listCardNodeHidden(time) || listNodeWithinClosedDisclosure(time) ||
-        time.closest("pre, code, kbd, samp, button, nav, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']")) return;
-    var form = time.closest("form, [role='form']");
-    if (form && root.contains(form)) return;
+    if (!listTimeDeclarationVisible(root, time)) return;
     var target = sourceClones.get(time);
     if (!target || target.localName !== "time" || !clone.contains(target) ||
         target.getAttribute("datetime") !== time.getAttribute("datetime")) return;
@@ -51,6 +55,19 @@ function materializeListTimeDeclarations(root, clone, sourceClones, times) {
     if (!value || label.indexOf(value) !== -1) return;
     target.appendChild(target.ownerDocument.createTextNode(label ? " (" + value + ")" : value));
   });
+}
+
+function listTimeMetadataContext(root, time, value) {
+  if (!time || !time.matches("time[datetime]") ||
+      normalizeText(time.getAttribute("datetime")) !== normalizeText(value) ||
+      !listTimeDeclarationVisible(root, time)) return value;
+  var authoredBlock = time.closest("p, h1, h2, h3, h4, h5, h6, blockquote");
+  if (authoredBlock && root.contains(authoredBlock)) return value;
+  var sourceClones = new WeakMap();
+  var clone = visibilityPrunedClone(time, document, sourceClones);
+  if (!clone) return value;
+  materializeListTimeDeclarations(root, clone, sourceClones, [time]);
+  return markdownFor(listHtmlWithoutUnsafeDestinations(clone)).trim() || value;
 }
 
 function listNodeWithinClosedDisclosure(node) {

@@ -120,11 +120,12 @@ function listItemSocialFields(item) {
     }),
     community: cardField(card, communitySelector, item.url)
   };
+  var timeNode = card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null;
   return {
-    timeNode: card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null,
+    timeNode: timeNode,
     scoreNode: card && card.querySelector ? cardOwnedNodes(card, scoreSelector)[0] : null,
     author: owned.author || item.author,
-    time: owned.time || item.time,
+    time: listTimeMetadataContext(card, timeNode, owned.time || item.time),
     score: owned.score || item.score,
     replyCount: owned.replyCount || item.replyCount,
     community: owned.community || item.community,
