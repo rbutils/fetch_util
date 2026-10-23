@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical author ownership when Readability reparses attributed paragraphs,
+  retaining genuine page authors without borrowing independently owned record credits.
+
 - Retain visible, physically owned publication-cover credits in list Markdown,
   preserving inline formatting, independent occurrences and source visibility.
 

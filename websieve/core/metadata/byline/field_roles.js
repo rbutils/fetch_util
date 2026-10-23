@@ -78,3 +78,27 @@ function inferredBylineSourceNodes(sourceClones) {
   });
   return sources;
 }
+
+function inferredBylineSourceResolver(sourceClones, sourceIdentities, marker) {
+  var sources = inferredBylineSourceNodes(sourceClones);
+  var paragraphs = new Map();
+  sourceIdentities.forEach(function(identity, source) {
+    var clone = sourceClones.get(source);
+    var token = clone && clone.getAttribute("data-fetchutil-reader-source-paragraph");
+    if (source.localName !== "p" || !token || token.indexOf(marker + ":") !== 0) return;
+    paragraphs.set(token, paragraphs.has(token) ? null : {
+      source: source, id: identity.id, text: identity.visibleText
+    });
+  });
+  return function(node) {
+    if (!node || node.nodeType !== 1) return null;
+    var source = sources.get(node);
+    if (source) return source;
+    var token = node.getAttribute("data-fetchutil-reader-source-paragraph");
+    if (!token || token.indexOf(marker + ":") !== 0) return node;
+    var paragraph = paragraphs.get(token);
+    if (!paragraph || node.localName !== paragraph.source.localName ||
+        node.getAttribute("id") !== paragraph.id || normalizeText(node.textContent || "") !== paragraph.text) return null;
+    return paragraph.source;
+  };
+}

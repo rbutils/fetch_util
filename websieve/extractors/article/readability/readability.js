@@ -50,11 +50,11 @@
       var headingRoles = readabilityRetainedHeadingRoleSnapshots(clone, sourceClones, sourceIdentities);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
-      var bylineSources = inferredBylineSourceNodes(sourceClones);
+      var bylineSource = inferredBylineSourceResolver(sourceClones, sourceIdentities, excerptMarker);
       // Readability removes accepted fields; retain their role before clone cleanup.
       reader._checkByline = function(node, matchString) {
         if (this._articleByline) return false;
-        return inferredArticleBylineNode(bylineSources.get(node) || node) && checkByline.call(this, node, matchString);
+        return inferredArticleBylineNode(bylineSource(node)) && checkByline.call(this, node, matchString);
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);
