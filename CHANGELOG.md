@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verify complete event-list sections, record headings, prose and visible time
+  labels together with their separately declared date values.
+
 - Verify linked images as both physical image resources and their enclosing
   references, retaining source labels and independently owned destinations.
 

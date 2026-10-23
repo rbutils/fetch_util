@@ -311,7 +311,18 @@ RSpec.describe 'FetchUtil event extraction' do
     extract_from_url('https://university.example.test/', html) do |payload|
       expect_content_type(payload, 'list')
       expect(payload['markdown']).to include('Campus story 1', 'Research update 4', 'Academic date 3')
-      expect(payload['markdown'].scan(/^- \[/).length).to eq(11)
+      expected_blocks = Nokogiri::HTML5.parse(html).css('main > section').flat_map do |section|
+        records = section.css('article').flat_map do |record|
+          link = record.at_css('h3 a')
+          heading = "### [#{link.text}](#{URI.join("https://university.example.test/", link["href"])})"
+          times = record.css('time').map { |time| "#{time.text} (#{time["datetime"]})" }
+          [heading, *record.css('p').map(&:text), *times]
+        end
+        ["## #{section.at_css("h2").text}", *records]
+      end
+      expect(payload['markdown'].split(/\n\n+/)).to eq(expected_blocks)
+      expect(payload['byline']).to be_nil
+      expect(payload['publishedTime']).to be_nil
     end
   end
 
