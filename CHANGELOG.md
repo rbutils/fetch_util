@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reject unrelated resource URLs before author visibility and publication-owner
+  checks, preserving genuine author validation without repeatedly scanning catalogs.
+
 - Verify physical record boundaries while retaining separate images, heading
   roles, complete prose and time blocks in their source order.
 

@@ -136,9 +136,9 @@ function localizedAuthorMetadataOwner(node, root) {
 }
 
 function localizedAuthorLinkContext(node, root) {
-  if (!node || elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return false;
+  if (!node || !localizedAuthorProfilePath(node.getAttribute("href") || "")) return false;
+  if (elementVisuallyHidden(node) || node.closest("nav, footer, aside")) return false;
   if (!articleBylineNode(node)) return false;
-  if (!localizedAuthorProfilePath(node.getAttribute("href") || "")) return false;
 
   var parent = node.parentElement;
   if (!parent) return false;
