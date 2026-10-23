@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve independently owned unlinked heading roles within repeated semantic
+  article records instead of flattening them into list metadata.
+
 - Keep visible flat-record time labels beside their literal declarations,
   preserving inline roles, independent occurrences and source visibility.
 

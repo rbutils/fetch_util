@@ -232,6 +232,7 @@
 
     var leadRoot = genericHomepageLeadRoot(metadata, { minItems: 4 });
     if (!leadRoot) return null;
+    leadRoot = homepageLeadForSelectedMaterial(leadRoot, sectioned);
 
     var title = leadRoot.hero || (metadata && metadata.title) || document.title || location.hostname;
     var markdownParts = [];
@@ -254,6 +255,9 @@
     var supplemented = supplementedHomepageLead(leadRoot, sectioned);
     if (supplemented) markdown = supplemented.markdown;
     if (normalizeText(markdown).length < 180) return null;
+
+    var retained = homepageLeadRetainingSelectedMaterial(leadRoot, sectioned, markdown);
+    if (retained) return codeAwareHomepageList(retained);
 
     var result = listContentResult({
       title: title,

@@ -59,12 +59,19 @@ RSpec.describe 'FetchUtil generic visible collections' do
     html = "<html><head><title>Portal</title></head><body><main><h1>Portal home</h1>#{headings}</main></body></html>"
 
     with_url_page('https://flat.example/', html) do |page|
+      before = page.evaluate('document.body.outerHTML')
       payload = FetchUtil::Extractor.new(reader_mode: false).extract(page)
 
       expect(payload['contentType']).to eq('list')
-      expect(payload['markdown'].scan(/^-/).length).to eq(26)
-      expect(payload['markdown']).to include('- Portal heading 13')
+      expected_headings = (1..13).map { |number| "## Portal heading #{number}" }
+      expect(payload['markdown'].lines.grep(/^## Portal heading /).map(&:strip)).to eq(expected_headings)
+      expected_urls = (1..13).map { |number| "https://flat.example/items/#{number}" }
+      expect(payload['markdown'].scan(%r{\]\((https://flat\.example/[^)]+)\)}).flatten).to eq(expected_urls)
+      expected_headings.each_with_index do |heading, index|
+        expect(payload['markdown'].index(heading)).to be < payload['markdown'].index(expected_urls.fetch(index))
+      end
       expect(payload['markdown']).to include('Portal item 13 with useful detail')
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 

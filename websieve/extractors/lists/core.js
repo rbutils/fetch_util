@@ -7,7 +7,8 @@
     var cloneSource = primaryMainSourceNode &&
       (node === document.body || node === primaryMainSourceNode || primaryMainSourceNode.contains(node)) ?
       primaryMainSourceNode : (renderOwnerSourceNode && renderOwnerSourceNode.contains(node) ? renderOwnerSourceNode : node);
-    var elementMap = repeatedCollection || options.institutionalCaseIndex || options.materialResultsOwner ? new Map() : null;
+    var elementMap = repeatedCollection || options.institutionalCaseIndex || options.materialResultsOwner ||
+      options.portalRoot ? new Map() : null;
     var clonedSourceRoot = visibleListClone(cloneSource, options.preservedRoots, elementMap);
     var clonedPrimaryMain = elementMap && primaryMainSourceNode && elementMap.get(primaryMainSourceNode);
     var clonedCollectionOwner = elementMap && collectionOwnerSourceNode && elementMap.get(collectionOwnerSourceNode);
@@ -147,6 +148,7 @@
 
       return {
         sourceNode: node,
+        sourceClones: elementMap,
         root: root,
         sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
         primaryMainMapped: primaryMainMapped,
@@ -199,6 +201,7 @@
 
     return {
       sourceNode: node,
+      sourceClones: elementMap,
       root: root,
       sourceOwnedDescriptionNodes: sourceOwnedDescriptionNodes,
       primaryMainMapped: primaryMainMapped,

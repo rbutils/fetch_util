@@ -357,6 +357,7 @@ systems/products/software_landing/content.js
 systems/news_engines/portal_lead_records.js
 systems/news_engines/owned_portal.js
 systems/news_engines/portal_lead_context.js
+systems/news_engines/portal_record_material.js
 systems/news_engines/generic_portal_homepages.js
 profiles/host_aware.js
 profiles/social/search.js
