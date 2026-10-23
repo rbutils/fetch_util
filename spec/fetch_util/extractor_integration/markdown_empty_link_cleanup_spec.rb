@@ -38,10 +38,14 @@ RSpec.describe 'FetchUtil extractor empty markdown link cleanup' do
         markdown = payload.fetch('markdown')
         public_root = Nokogiri::HTML5.fragment(payload.fetch('html'))
 
-        expect(markdown).to include("\n\n## Culture desk\n\n- [Independent report number 5")
+        expect(markdown).to include("\n\n## Culture desk\n\n### [Independent report number 5")
         expect(markdown).not_to include('- ## Culture desk')
         expect(markdown).to include('Supporting details')
         expect(markdown).not_to include('closed-support.png', 'interface-only.png')
+        expected_headings = (1..8).map do |number|
+          "### [Independent report number #{number}](https://newsroom.example/stories/#{number})"
+        end
+        expect(markdown.lines.grep(/^### /).map(&:strip)).to eq(expected_headings)
         (1..8).each do |number|
           expect(markdown).to include("Independent report number #{number}", "Locally owned context for independent report number #{number}.")
         end

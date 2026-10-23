@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verify physical record boundaries while retaining separate images, heading
+  roles, complete prose and time blocks in their source order.
+
 - Verify complete event-list sections, record headings, prose and visible time
   labels together with their separately declared date values.
 

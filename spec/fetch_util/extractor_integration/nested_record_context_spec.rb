@@ -45,9 +45,18 @@ RSpec.describe 'source-owned material around nested records' do
       expect(markdown.index('FID:outer-action')).to be < markdown.index('FID:outer-image')
       expect(markdown.index('FID:outer-image')).to be < markdown.index('FID:outer-summary')
       expect(markdown.index('FID:outer-summary')).to be < markdown.index('FID:inner-title')
-      inner = markdown.lines.find { |line| line.include?('[FID:inner-title]') }
-      expect(inner).to include('FID:inner-summary', 'FID:inner-image', 'FID:inner-time')
-      expect(inner).not_to include('FID:outer-action', 'FID:outer-summary', 'FID:outer-image')
+      blocks = markdown.split(/\n\n+/)
+      inner_start = blocks.index('![FID:inner-image](https://fidelity.test/inner.jpg)')
+      expect(inner_start).not_to be_nil
+      inner = blocks.slice(inner_start, 4)
+      expect(inner).to eq(
+        [
+          '![FID:inner-image](https://fidelity.test/inner.jpg)',
+          '### [FID:inner-title](https://fidelity.test/story/inner)',
+          'FID:inner-summary', 'FID:inner-time'
+        ]
+      )
+      expect(inner.join("\n")).not_to include('FID:outer-action', 'FID:outer-summary', 'FID:outer-image')
       expect(page.evaluate('document.body.innerHTML')).to eq(body)
     end
   end
