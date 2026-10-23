@@ -54,12 +54,12 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         [
           "Choose projections and build detailed interactive maps for your community.",
           "Compare historical maps with current land use before publishing your results.",
-          "Cartography", "Map comparison preview", "2026-09-06"
+          "Cartography", "Map comparison preview", "2026-09-06", "September 6, 2026"
         ].each do |text|
           expect(markdown.scan(text)).to eq([text])
         end
         expect(markdown).to include("[Learn maps](https://learning.example/learn/maps)")
-        expect(markdown).not_to include("September 6, 2026")
+        expect(markdown).to include("September 6, 2026 (2026-09-06)")
       end
     end
   end
