@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Render a physical record heading once when a complete card already owns the
+  section heading, preserving independent headings and partial-record fallbacks.
+
 - Keep closed disclosure bodies out of source-bound plain text while preserving
   visible summaries, open content, literal programs and original HTML.
 
