@@ -1588,6 +1588,7 @@ RSpec.describe "extract asset bundle" do
         extractors/lists/generic/records/nested_coverage.js
         extractors/lists/generic/records/table_records.js
         extractors/lists/generic/records/outer_card_descriptions.js
+        extractors/lists/generic/records/unselected_material.js
       ], "extractors/lists/description_parts.js"],
       ["extractors/lists/description_parts.js", %w[
         extractors/lists/generic/records/flat_extraction.js
