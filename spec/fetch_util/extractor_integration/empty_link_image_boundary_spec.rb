@@ -63,14 +63,15 @@ RSpec.describe 'Empty link and physical image boundaries' do
       (1..6).each do |number|
         expect(markdown).to include("Independent publication report #{number}")
         expect(markdown).to match(/Complete context for report #{number} remains available\\?!/)
-        expect(markdown).to include("[Publication resource #{number}](https://support.example.test/resource-#{number})")
+        expect(markdown).to include("[![Publication resource #{number}](https://images.example.test/logo-#{number}.png)]" \
+                                    "(https://support.example.test/resource-#{number})")
         expect(markdown).not_to match(%r{(?<!\\)!\[Publication resource #{number}\]\(https://support\.example\.test/resource-#{number}\)})
         expect(payload.fetch('html')).to include("https://images.example.test/logo-#{number}.png")
       end
       expected_images = (1..6).map do |number|
         ["Publication resource #{number}", "https://images.example.test/logo-#{number}.png"]
       end
-      expect(markdown.scan(%r{!\[([^\]]*)\]\((https://images\.example\.test/logo-\d+\.png)\)})).to eq(expected_images)
+      expect(markdown.scan(%r{(?<!\\)!\[([^\]]*)\]\((https://images\.example\.test/logo-\d+\.png)\)})).to eq(expected_images)
       expect(markdown).to include('Its final sentence still belongs to this report.')
       expect(markdown).not_to include('![](https://support.example.test/')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
@@ -102,7 +103,10 @@ RSpec.describe 'Empty link and physical image boundaries' do
       (1..6).each do |number|
         expect(markdown.scan("Authored report diagram #{number}").length).to eq(1)
         expect(markdown).to include("[Independent publication report #{number}](https://publication.example.test/reports/#{number})",
-                                    "[Supplemental resource #{number}](https://resources.example.test/related-#{number})")
+                                    "[![Authored report diagram #{number} Independent publication report #{number}]" \
+                                    "(https://images.example.test/report-#{number}.png)](https://publication.example.test/reports/#{number})",
+                                    "[![Supplemental resource #{number}](https://images.example.test/related-#{number}.png)]" \
+                                    "(https://resources.example.test/related-#{number})")
       end
       expect(markdown).to include('The final sentence remains part of the report.')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)

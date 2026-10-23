@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verify linked images as both physical image resources and their enclosing
+  references, retaining source labels and independently owned destinations.
+
 - Retain complete independently owned articles and rich table records between
   selected list sections, preserving references, programs and source visibility.
 
