@@ -69,6 +69,7 @@ core/dom/cleanup/svg_text.js
 core/dom/cleanup/footer_data.js
 core/dom/cleanup/editorial_frames.js
 core/dom/cleanup/preview_images.js
+core/dom/cleanup/disclosure_text.js
 core/dom/base.js
 core/dom/public_preview_cleanup.js
 core/dom/cleanup.js

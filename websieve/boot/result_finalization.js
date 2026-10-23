@@ -48,6 +48,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   content = sourceOwnedReaderMissingHeadlineContent(content, metadata);
   content = contentsComponentFinalizationHtml(content);
   content = applyMediaOwnedArticleMetadata(content, metadata);
+  content.textContent = plainTextWithoutClosedDisclosures(content.html, content.textContent);
   var contentByline = sanitizeByline(content.byline);
   var sourceOwnedLiveblogParent = content.sourceOwnedLiveblog === true && !content.isolatedLiveblogEntry;
   var sourceOwnedArticlePublication = content.contentType === "article" && content.sourceOwnedArticlePublicationResolved === true;
@@ -228,7 +229,7 @@ function finalizeExtractResult(content, metadata, pageText, signals, medicalArti
   markdown = contentsComponentFinalizationMarkdown(content, markdown);
   markdown = stripStructuredCardFieldMarkers(markdown);
   markdown = materializedMarkdown(markdown, inlineArticleMailtoAllowed(content));
-  content.textContent = stripStructuredCardFieldMarkers(content.textContent);
+  content.textContent = plainTextWithoutClosedDisclosures(content.html, stripStructuredCardFieldMarkers(content.textContent));
   var pageTextLength = normalizeText(pageText || "").length;
   var markdownLength = normalizeText(markdown || "").length;
   var completenessRatio = pageTextLength > 0 ? Math.round((markdownLength / pageTextLength) * 100) / 100 : 1.0;

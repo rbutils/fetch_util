@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep closed disclosure bodies out of source-bound plain text while preserving
+  visible summaries, open content, literal programs and original HTML.
+
 - Preserve independently materialized section records and their complete headings,
   prose and references even when separate cards declare the same destination.
 
