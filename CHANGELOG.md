@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical selectable program paragraphs and their named-target offsets,
+  retaining complete line boundaries, literal whitespace and independent programs.
+
 - Retain captured, source-labeled Devsite video destinations through documentation
   cleanup, preserving complete URLs, independent occurrences and source visibility.
 

@@ -26,16 +26,11 @@
           (node.hasAttribute("id") || node.matches("a[name]"))) {
         bindings.push({ kind: "target", node: node, offset: length });
       }
-      var children = Array.prototype.slice.call(node.childNodes);
-      var lines = children.filter(function(child) {
-        return child.nodeType === 1 && child.matches("div, p, li");
-      });
-      if (lines.length && children.every(function(child) {
-        return child.nodeType === 1 && child.matches("div, p, li") || child.nodeType === 3 && !child.textContent.trim();
-      })) {
+      var lines = codeSurfaceBlockLines(node);
+      if (lines) {
         lines.forEach(function(line, index) { if (index) append("\n"); walk(line); });
       } else {
-        children.forEach(walk);
+        Array.prototype.forEach.call(node.childNodes, walk);
       }
       if (reference) {
         reference.end = length;

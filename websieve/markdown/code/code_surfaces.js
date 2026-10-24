@@ -1,19 +1,25 @@
+  function codeSurfaceBlockLines(node) {
+    var children = Array.prototype.slice.call(node.childNodes);
+    var blockLines = children.filter(function(child) {
+      return child.nodeType === 1 && child.matches("div, p, li, span[data-selectable-paragraph]");
+    });
+    if (blockLines.length && children.every(function(child) {
+      return blockLines.indexOf(child) >= 0 || child.nodeType === 3 && !child.textContent.trim();
+    })) {
+      return blockLines;
+    }
+    return null;
+  }
+
   function codeSurfaceText(node) {
     if (node.nodeType === 3) return node.textContent;
     if (node.nodeType !== 1) return "";
     if (node.matches("br")) return "\n";
     if (node.matches("button, [role='button' i], script, style, template, [hidden], [aria-hidden='true']")) return "";
 
-    var children = Array.prototype.slice.call(node.childNodes);
-    var blockLines = children.filter(function(child) {
-      return child.nodeType === 1 && child.matches("div, p, li");
-    });
-    if (blockLines.length && children.every(function(child) {
-      return blockLines.indexOf(child) >= 0 || child.nodeType === 3 && !child.textContent.trim();
-    })) {
-      return blockLines.map(codeSurfaceText).join("\n");
-    }
-    return children.map(codeSurfaceText).join("");
+    var blockLines = codeSurfaceBlockLines(node);
+    if (blockLines) return blockLines.map(codeSurfaceText).join("\n");
+    return Array.prototype.map.call(node.childNodes, codeSurfaceText).join("");
   }
 
   function normalizedCodeElement(text, language, source) {
