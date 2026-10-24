@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Resolve every declared resource in preserved table material using the existing
+  URL and contact-permission rules, without changing literal program values.
+
 - Preserve complete block material and merged-cell structure inside data tables,
   including nested lists, independent paragraphs, literal programs and references.
 

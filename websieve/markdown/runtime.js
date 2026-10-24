@@ -29,7 +29,7 @@
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     materializeMarkdownFrameReferences(root, frameReferences);
-    var blockMaterialTables = prepareBlockMaterialTables(root);
+    var blockMaterialTables = prepareBlockMaterialTables(root, allowArticleMailto);
     normalizeCodeBlocks(root);
     var blockOwnedPrograms = prepareBlockOwnedLiteralPrograms(root);
     preserveWholeInlineCodeLinks(root);

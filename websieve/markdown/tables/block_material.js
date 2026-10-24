@@ -6,7 +6,7 @@
     });
   }
 
-  function blockMaterialTableHtml(table) {
+  function blockMaterialTableHtml(table, allowArticleMailto) {
     var clone = table.cloneNode(true);
     var walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
     var comments = [];
@@ -14,10 +14,13 @@
     while ((comment = walker.nextNode())) comments.push(comment);
     // Serialized comment markup must never become active table material later.
     comments.forEach(function(node) { node.remove(); });
+    var holder = document.createElement("div");
+    holder.appendChild(clone);
+    materializeHttpAttributes(holder, false, allowArticleMailto !== false);
     return singleBlockMaterializedHtml(sanitizedHtml(clone.outerHTML));
   }
 
-  function prepareBlockMaterialTables(root) {
+  function prepareBlockMaterialTables(root, allowArticleMailto) {
     var attribute = "data-fetch-util-table-block";
     while (root.hasAttribute(attribute) || root.querySelector("[" + attribute + "]")) attribute += "-owned";
     var prefix = "FETCHUTILTABLEBLOCK";
@@ -26,7 +29,7 @@
     root.querySelectorAll("table").forEach(function(table) {
       if (table.parentElement && table.parentElement.closest("table, pre, code")) return;
       if (!tableRequiresBlockMaterial(table)) return;
-      tables.push(blockMaterialTableHtml(table));
+      tables.push(blockMaterialTableHtml(table, allowArticleMailto));
       table.setAttribute(attribute, String(tables.length - 1));
       // The complete snapshot owns every descendant; discarded vendor traversal
       // must not normalize literal programs or flatten the original cell roles.

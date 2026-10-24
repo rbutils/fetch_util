@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'support/extractor_integration_helpers'
+require 'nokogiri'
 
 RSpec.describe 'Complete inline code presentation' do
   include_context 'extractor integration helpers'
@@ -156,9 +157,24 @@ RSpec.describe 'Complete inline code presentation' do
       FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
       page.add_script_tag(content: inline_presentation_probe('return markdownFor(document.body.innerHTML, false, true, true);'))
       markdown = page.evaluate('inlinePresentationProbe({})')
-      (1..160).each do |number|
-        expect(markdown).to include("`Vector<Value#{number}>`", "`fn<T>(row#{number});`", "`` `edge#{number}` ``")
+      table = Nokogiri::HTML.fragment(markdown).at_css('table')
+      expect(table).not_to be_nil
+      rendered_rows = table.css('tr')
+      expect(rendered_rows.length).to eq(162)
+      expect(rendered_rows.first.css('th').map(&:text)).to eq(%w[Literal Program Edge])
+      rendered_rows[1..-2].each_with_index do |row, index|
+        number = index + 1
+        expect(row.element_children.map(&:name)).to eq(%w[td td td])
+        expect(row.css('code').map(&:text)).to eq(["Vector<Value#{number}>", "`edge#{number}`"])
+        expect(row.css('pre').map(&:text)).to eq(["fn<T>(row#{number});"])
       end
+      expect(rendered_rows.last.css('td').map(&:text)).to eq(['Published field', '', 'Complete'])
+      expect(table.css('a').map { |link| [link.text, link['href']] }).to eq(
+        [['Published field', 'https://publication.example.test/field']]
+      )
+      expect(table.css('img').map { |image| [image['src'], image['alt']] }).to eq(
+        [['https://publication.example.test/diagram.svg', 'Published diagram']]
+      )
       expect(markdown).to include('https://publication.example.test/field', 'https://publication.example.test/diagram.svg')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
