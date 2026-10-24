@@ -117,6 +117,7 @@
       var networks = text.match(/\b(?:facebook|whatsapp|twitter|instagram|telegram|linkedin|pinterest)\b/gi) || [];
       if (networks.length >= 2 && /\b(?:copy|copiar|copier)\s+(?:link|lien|enlace)\b/i.test(text)) el.remove();
     });
+    var mediaControlIds = playerTimestampMediaIds(root);
     root.querySelectorAll("a, button, span, div").forEach(function(el) {
       var text = normalizeText(el.textContent).toLowerCase();
       var ownsMaterialMedia = !el.matches("a, button") && !!el.querySelector("img[src], picture, video, audio");
@@ -124,7 +125,9 @@
           !el.querySelector("a, button, input, select, textarea")) return;
       if (UI_ACTION_TEXT_PATTERN.test(text) && textLength(el) < 60 && !codeContentNode(el) && !ownsMaterialMedia &&
           !authoredInlineActionReference(el) && !authoredSectionActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
-      if (playerControlText(text) && textLength(el) < 80 && !codeContentNode(el) && !ownsMaterialMedia &&
+      var playerText = playerControlText(text) &&
+        (!PLAYER_TIMESTAMP_PATTERN.test(text) || playerTimestampControlNode(el, mediaControlIds));
+      if (playerText && textLength(el) < 80 && !codeContentNode(el) && !ownsMaterialMedia &&
           !authoredInlineActionReference(el) && !authoredSectionActionReference(el) && !docsAuthoredReferenceNode(root, el)) el.remove();
     });
 

@@ -58,6 +58,7 @@
       };
       preserveReadabilityOwnedReferenceBlocks(reader, selectedOwner, sourceClones);
       preserveReadabilityOwnedNamedSvgBlocks(reader, clone, sourceClones, excerptMarker);
+      preserveReadabilityNumericStatistics(reader);
       var tableContext = preserveReadabilityDataTableSelection(reader, clone, sourceClones, metadata, sourceIdentities, headingRoles);
       preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks);
       var article = reader.parse();

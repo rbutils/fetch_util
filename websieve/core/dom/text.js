@@ -178,6 +178,33 @@
       PLAYER_TIMESTAMP_PATTERN.test(normalized);
   }
 
+  function playerTimestampMediaIds(root) {
+    var targets = new Map();
+    var nodes = Array.from(root.querySelectorAll("[id]"));
+    if (root.id) nodes.unshift(root);
+    nodes.forEach(function(node) {
+      if (!node.id) return;
+      targets.set(node.id, targets.has(node.id) ? null : node);
+    });
+    var mediaIds = new Set();
+    targets.forEach(function(node, id) {
+      if (node && node.matches("video, audio")) mediaIds.add(id);
+    });
+    return mediaIds;
+  }
+
+  function playerTimestampControlNode(node, mediaIds) {
+    if (!mediaIds.size) return false;
+    var selector = "button, input[type='range'], [role='button'], [role='slider'], " +
+      "[role='progressbar'], [role='toolbar'], [role='group']";
+    for (var owner = node; owner; owner = owner.parentElement) {
+      if (!owner.matches(selector)) continue;
+      var targets = (owner.getAttribute("aria-controls") || "").trim().split(/\s+/).filter(Boolean);
+      if (targets.length && targets.every(function(id) { return mediaIds.has(id); })) return true;
+    }
+    return false;
+  }
+
   function meaningfulButtonText(text) {
     var normalized = normalizeText(text || "");
     if (!normalized) return false;

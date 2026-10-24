@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain independent numeric statistics unless their physical controls explicitly
+  target uniquely identified media, preserving complete values and occurrences
+  through shared cleanup and article selection.
+
 - Preserve physical selectable program paragraphs and their named-target offsets,
   retaining complete line boundaries, literal whitespace and independent programs.
 
