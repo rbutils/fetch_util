@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical table row headers, mixed header/data roles and independent
+  cell cardinality when a Markdown pipe table cannot represent them completely.
+
 - Retain independent numeric statistics unless their physical controls explicitly
   target uniquely identified media, preserving complete values and occurrences
   through shared cleanup and article selection.

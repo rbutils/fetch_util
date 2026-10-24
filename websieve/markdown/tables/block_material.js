@@ -1,4 +1,23 @@
+  function tableHasUnrepresentableCellRoles(table) {
+    var rows = Array.from(table.querySelectorAll("tr")).filter(function(row) {
+      return row.closest("table") === table;
+    });
+    var columns = null;
+    return rows.some(function(row, index) {
+      var cells = Array.from(row.children).filter(function(cell) { return cell.matches("th, td"); });
+      if (!cells.length) return true;
+      if (columns === null) columns = cells.length;
+      if (cells.length !== columns) return true;
+      var headers = cells.filter(function(cell) { return cell.tagName === "TH"; }).length;
+      if (index > 0 && headers) return true;
+      if (index === 0 && headers && headers !== cells.length) return true;
+      if (index === 0 && !headers && row.parentElement.tagName === "THEAD") return true;
+      return cells.some(function(cell) { return cell.matches("th[scope='row'], th[scope='rowgroup']"); });
+    });
+  }
+
   function tableRequiresBlockMaterial(table) {
+    if (tableHasUnrepresentableCellRoles(table)) return true;
     return Array.from(table.querySelectorAll("th, td")).some(function(cell) {
       if (cell.matches("[rowspan], [colspan]")) return true;
       if (cell.querySelector("ul, ol, dl, blockquote, pre, table, h1, h2, h3, h4, h5, h6, hr, details, figure, br")) return true;
