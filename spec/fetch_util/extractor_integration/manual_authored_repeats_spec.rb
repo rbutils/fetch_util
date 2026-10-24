@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'Complete physical manual authored repetition' do
   include_context 'extractor integration helpers'
 
@@ -75,12 +77,32 @@ RSpec.describe 'Complete physical manual authored repetition' do
            '<pre><code class="language-example">read(example);</code></pre></article>'
     with_url_page('https://publication.example.test/reference/table-programs', body) do |page|
       page.evaluate('document.title = "Example Language Reference Manual"')
+      before_html = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new.extract(page)
-      (1..160).each do |number|
-        expect(payload.fetch('markdown')).to include("`vector<T> value_#{number}; consume(value_#{number});`")
+      markdown = payload.fetch('markdown')
+      rendered = Nokogiri::HTML.fragment(markdown)
+      expect(rendered.css('table').length).to eq(1)
+      table = rendered.at_css('table')
+      expect(table.css('tr').length).to eq(161)
+      expect(table.css('th').map(&:text)).to eq(%w[Example Program])
+      expect(table.css('td').length).to eq(320)
+      expect(table.css('pre').length).to eq(160)
+      expect(table.css('code').length).to eq(160)
+      expect(table.css('a, img')).to be_empty
+      programs = (1..160).map { |number| "vector<T> value_#{number}; consume(value_#{number});" }
+      table.css('tr').drop(1).each_with_index do |row, index|
+        expect(row.element_children.map(&:name)).to eq(%w[td td])
+        expect(row.element_children.first.text).to eq("Example #{index + 1}")
+        expect(row.element_children.last.element_children.map(&:name)).to eq(['pre'])
+        expect(row.css('pre code').map(&:text)).to eq([programs.fetch(index)])
       end
-      expect(payload.fetch('markdown')).to include('`Root > Branch > Leaf`')
+      native = Nokogiri::HTML.fragment(payload.fetch('html'))
+      expect(native.css('pre code').map(&:text)).to eq(programs + ['read(example);'])
+      expect(markdown.scan('read(example);').length).to eq(1)
+      expect(markdown).to match(/(?:^|\n)(`{3,}|~{3,})[^\n]*\nread\(example\);\n\1(?:\n|$)/)
+      expect(markdown).to include('`Root > Branch > Leaf`')
       expect(payload.fetch('html')).to include('vector&lt;T&gt; value_160;', 'Root &gt; Branch &gt; Leaf')
+      expect(page.evaluate('document.body.innerHTML')).to eq(before_html)
     end
   end
 end
