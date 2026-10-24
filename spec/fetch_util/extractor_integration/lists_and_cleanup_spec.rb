@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
+
 RSpec.describe 'FetchUtil extractor integration' do
   include_context 'extractor integration helpers'
 
@@ -1622,15 +1624,32 @@ RSpec.describe 'FetchUtil extractor integration' do
 
     url = "https://treaties.un.org/pages/ViewDetails.aspx?src=TREATY&mtdsg_no=IV-9&chapter=4"
     with_url_page(url, html) do |page|
+      before_html = page.evaluate('document.body.innerHTML')
       payload = FetchUtil::Extractor.new.extract(page)
       markdown = payload["markdown"]
+      table = Nokogiri::HTML.fragment(markdown).at_css('table')
 
-      expect(markdown).to include("Austria [15](#{url}#15) _Declaration:_")
-      expect(markdown).to include("Bangladesh [17](#{url}#17), [18](#{url}#18) _Declaration:_")
-      expect(markdown).to include("Bahamas (The) _Reservations:_")
+      expect(table.css('tr').length).to eq(3)
+      expect(table.css('td').length).to eq(3)
+      expect(table.css('th')).to be_empty
+      expect(table.css('td').map { |cell| cell.css('p').map { |p| p.text.gsub(/\s+/, ' ').strip } }).to eq(
+        [
+          ['Austria 15', 'Declaration:', 'Austria regards article 15 as the legal basis for inadmissibility.'],
+          ['Bangladesh 17, 18', 'Declaration:', 'The Government makes this declaration upon ratification.'],
+          ['Bahamas (The)', 'Reservations:', 'The Government does not recognize article 20 competence.']
+        ]
+      )
+      expect(table.css('i, em').map(&:text)).to eq(['Declaration:', 'Declaration:', 'Reservations:'])
+      expect(table.css('div').map { |body| body['id'] }).to eq(
+        (3..5).map { |index| "ctl00_ContentPlaceHolder1_dgDec_ctl0#{index}_divText" }
+      )
+      expect(table.css('a').map { |link| [link.text, link['href']] }).to eq(
+        [['15', "#{url}#15"], ['17', "#{url}#17"], ['18', "#{url}#18"]]
+      )
       expect(markdown.scan("Austria").length).to eq(2)
       expect(markdown.scan("Bangladesh").length).to eq(1)
       expect(markdown.scan("Bahamas (The)").length).to eq(1)
+      expect(page.evaluate('document.body.innerHTML')).to eq(before_html)
     end
   end
 

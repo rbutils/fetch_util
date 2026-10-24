@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Remove only positively owned generated table-label copies while retaining
+  complete declarations, footnotes, independent repeated prose and named targets.
+
 - Resolve every declared resource in preserved table material using the existing
   URL and contact-permission rules, without changing literal program values.
 
