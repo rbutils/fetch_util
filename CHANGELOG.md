@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete physically block-owned multiline code programs in Markdown,
+  including comments, literal fences, blank lines and original program whitespace.
+
 - Preserve physical author ownership when Readability reparses attributed paragraphs,
   retaining genuine page authors without borrowing independently owned record credits.
 

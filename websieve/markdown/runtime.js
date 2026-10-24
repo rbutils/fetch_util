@@ -30,6 +30,7 @@
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     materializeMarkdownFrameReferences(root, frameReferences);
     normalizeCodeBlocks(root);
+    var blockOwnedPrograms = prepareBlockOwnedLiteralPrograms(root);
     preserveWholeInlineCodeLinks(root);
     preserveStructuredCardLinks(root);
     unwrapWrapperDivs(root);
@@ -92,6 +93,7 @@
         return fencedCodeBlock(language, text);
       }
     });
+    addBlockOwnedLiteralProgramRule(service, blockOwnedPrograms);
 
     service.addRule("blockCodeWrappers", {
       filter: function(node) {
