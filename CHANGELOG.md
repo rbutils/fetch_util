@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain captured, source-labeled Devsite video destinations through documentation
+  cleanup, preserving complete URLs, independent occurrences and source visibility.
+
 - Remove only positively owned generated table-label copies while retaining
   complete declarations, footnotes, independent repeated prose and named targets.
 

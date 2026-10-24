@@ -83,6 +83,24 @@
     return result;
   }
 
+  function prepareDevsiteVideoResources(root) {
+    root.querySelectorAll("devsite-video[video-id] > iframe[src]").forEach(function(frame) {
+      if (frame.hasAttribute("srcdoc") || editorialFrameInterface(frame) || frame.closest("a[href]")) return;
+      var component = frame.parentElement;
+      var identifier = normalizeText(component.getAttribute("video-id"));
+      var label = normalizeText(frame.getAttribute("aria-label") || frame.getAttribute("title") || "");
+      var href = materializedHttpUrl(frame.getAttribute("src"));
+      if (!identifier || !label || !href) return;
+      var pathIdentifier = new URL(href).pathname.split("/").filter(Boolean).pop();
+      if (pathIdentifier !== identifier) return;
+
+      var link = root.ownerDocument.createElement("a");
+      link.href = href;
+      link.textContent = label;
+      frame.replaceWith(link);
+    });
+  }
+
   function googleDevsiteContent(metadata, info) {
     info = info || docsSystemInfo(metadata);
     if (!info || info.system !== "google_devsite") return null;
@@ -102,6 +120,7 @@
 
     return docsArticleContent(metadata, node, {
       title: devsiteTitleClean(firstText(["devsite-content h1", "article h1", "main h1"]) || metadata.title || document.title),
+      prepareRoot: prepareDevsiteVideoResources,
       rewriteRoot: function(root) {
         root.querySelectorAll("devsite-header, devsite-toc, devsite-nav, devsite-page-rating, devsite-feedback, devsite-thumb-rating, devsite-bookmark, devsite-feature-tooltip, nav, aside, footer").forEach(function(el) {
           el.remove();
