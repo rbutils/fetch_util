@@ -111,6 +111,7 @@ core/docs_cleanup/materialized_sections.js
 markdown/code/code_helpers.js
 markdown/code/code_surfaces.js
 markdown/code/literal_programs.js
+markdown/tables/block_material.js
 markdown/tables.js
 markdown/materialization/headings.js
 markdown/materialization/materialization_inline.js

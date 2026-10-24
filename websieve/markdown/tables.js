@@ -202,6 +202,9 @@
   }
 
   function tableToMarkdown(table, content) {
+    if (tableRequiresBlockMaterial(table)) {
+      return blockMaterialTableHtml(table);
+    }
     var compact = compactTableMarkdown(table);
     if (compact) return compact;
 

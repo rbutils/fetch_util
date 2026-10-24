@@ -29,6 +29,7 @@
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     materializeMarkdownFrameReferences(root, frameReferences);
+    var blockMaterialTables = prepareBlockMaterialTables(root);
     normalizeCodeBlocks(root);
     var blockOwnedPrograms = prepareBlockOwnedLiteralPrograms(root);
     preserveWholeInlineCodeLinks(root);
@@ -70,6 +71,8 @@
         return node.nodeName === "TABLE";
       },
       replacement: function(content, node) {
+        var blockMaterial = blockMaterialTableToken(node, blockMaterialTables);
+        if (blockMaterial !== null) return "\n\n" + blockMaterial + "\n\n";
         var prepared = preparedDataTableMarkdown(node, preparedTables);
         if (prepared !== null) return "\n\n" + prepared + "\n\n";
         return "\n\n" + tableToMarkdown(node, content) + "\n\n";
@@ -207,7 +210,8 @@
     md = md.replace(/(```[\s\S]*?```|`[^`\n]+`)|<\/?[a-z][^>]*>/gi, function(match, codeBlock, offset, text) {
       return codeBlock || markdownEscapedAt(text, offset) ? match : "";
     });
-    return restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
+    var restored = restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
+    return restoreBlockMaterialTables(restored, blockMaterialTables);
   }
 
   function paragraphLikeDiv(node) {

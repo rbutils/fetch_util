@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete block material and merged-cell structure inside data tables,
+  including nested lists, independent paragraphs, literal programs and references.
+
 - Preserve complete physically block-owned multiline code programs in Markdown,
   including comments, literal fences, blank lines and original program whitespace.
 

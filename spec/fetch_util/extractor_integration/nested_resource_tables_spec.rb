@@ -162,14 +162,16 @@ RSpec.describe "Complete source-owned nested resource tables" do
     with_url_page("https://publication.example.test/provider-plans/", nested_provider_page) do |page|
       before = page.evaluate("document.body.outerHTML")
       result = nested_provider_reader(page)
-      tables = result.fetch("markdown").scan(/\|[^\n]*(?:\n\|[^\n]*)+/)
-      expected_data = [
-        "| [Standard north](https://provider.example.test/north/) | [Shared north](https://provider.example.test/shared/) |",
-        "| [Standard south](https://provider.example.test/south/) | [Shared south](https://provider.example.test/shared/) |"
-      ]
-
-      expect(tables.map { |table| table.lines.first.strip }).to eq(["|  |  |", "|  |  |"])
-      expect(tables.flat_map { |table| table.lines.drop(2).map(&:strip) }).to eq(expected_data)
+      source = Nokogiri::HTML5(nested_provider_page).at_css("#providers")
+      source.css('[style="display:none"]').remove
+      rendered = Nokogiri::HTML5.fragment(result.fetch("markdown")).at_css("#providers")
+      expect(rendered).not_to be_nil
+      expect(rendered.css("table").length).to eq(source.css("table").length)
+      source_cells = source.css("td,th").map { |cell| [cell.name, cell.text.gsub(/\s+/, " ").strip] }
+      expect(rendered.css("td,th").map { |cell| [cell.name, cell.text.gsub(/\s+/, " ").strip] }).to eq(source_cells)
+      expect(rendered.css("th")).to be_empty
+      references = source.css("a[href]").map { |link| [link.text.strip, link["href"]] }
+      expect(rendered.css("a[href]").map { |link| [link.text.strip, link["href"]] }).to eq(references)
       expect(result.fetch("markdown")).to include("if (provider) {\n  publish(\"all plans\");\n}")
       expect(result.fetch("markdown")).not_to include("Hidden plan", "Hidden destination", "Account interface")
       expect(page.evaluate("document.body.outerHTML")).to eq(before)
