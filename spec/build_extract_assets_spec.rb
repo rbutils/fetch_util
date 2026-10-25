@@ -1574,6 +1574,8 @@ RSpec.describe "extract asset bundle" do
         extractors/article/readability/source_node_provenance.js
         extractors/article/readability/headings/retained_roles.js
         extractors/article/readability/attribution/conflicting_credit_restoration.js
+        extractors/article/readability/cards/ownership.js
+        extractors/article/readability/cards/selection.js
         extractors/article/readability/readability.js
         extractors/article/readability/attribution/header_byline.js
         extractors/article/coverage/hidden_substantive_main.js

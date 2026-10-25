@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete source-owned peer-card articles through reader selection,
+  retaining independent image/title references, prose and physical heading roles.
+
 - Preserve readable destination and title labels before snapshotting complete
   empty block links and table resources, retaining independent occurrences.
 
