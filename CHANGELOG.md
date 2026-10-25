@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain independent visible block and paragraph boundaries when unsupported
+  destinations are removed, without changing intentional inline link adjacency.
+
 - Preserve complete source-owned peer-card articles through reader selection,
   retaining independent image/title references, prose and physical heading roles.
 

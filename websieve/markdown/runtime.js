@@ -167,6 +167,8 @@
           !node.querySelector("pre, table, ul, ol, h1, h2, h3, h4, h5, h6");
       },
       replacement: function(content, node) {
+        // Removing a destination does not remove the source-owned block boundaries.
+        if (!listPresentationUrl(node.getAttribute("href"))) return "\n\n" + content.trim() + "\n\n";
         // Markdown link labels cannot contain the blank lines introduced by block children.
         var label = content.trim().replace(/\s*\n+\s*/g, " ");
         return markdownLinkWithFormattedLabel(label, node.getAttribute("href"));
