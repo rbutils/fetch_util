@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve readable destination and title labels before snapshotting complete
+  empty block links and table resources, retaining independent occurrences.
+
 - Retain complete paragraph boundaries, formatting and resources within physical
   block links instead of merging independent records into adjacent inline labels.
 

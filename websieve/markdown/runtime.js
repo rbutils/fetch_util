@@ -29,6 +29,7 @@
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     materializeMarkdownFrameReferences(root, frameReferences);
+    preserveUnlabeledMarkdownDestinations(root);
     var blockMaterialTables = prepareBlockMaterialTables(root, allowArticleMailto);
     var blockMaterialLinks = prepareBlockMaterialLinks(root, allowArticleMailto);
     normalizeCodeBlocks(root);
@@ -39,7 +40,6 @@
     materializeMarkdownHeadingLayouts(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
-    preserveUnlabeledMarkdownDestinations(root);
 
     var literalPrograms = prepareLiteralCodePrograms(root);
 
