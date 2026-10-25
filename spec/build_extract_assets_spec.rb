@@ -1485,6 +1485,7 @@ RSpec.describe "extract asset bundle" do
         markdown/tables/block_material.js
       ], "markdown/tables.js"],
       ["markdown/tables.js", %w[
+        markdown/links/block_material.js
         markdown/materialization/headings.js
         markdown/materialization/materialization_inline.js
         markdown/materialization/disclosure_visibility.js

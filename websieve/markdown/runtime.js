@@ -30,6 +30,7 @@
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
     materializeMarkdownFrameReferences(root, frameReferences);
     var blockMaterialTables = prepareBlockMaterialTables(root, allowArticleMailto);
+    var blockMaterialLinks = prepareBlockMaterialLinks(root, allowArticleMailto);
     normalizeCodeBlocks(root);
     var blockOwnedPrograms = prepareBlockOwnedLiteralPrograms(root);
     preserveWholeInlineCodeLinks(root);
@@ -203,6 +204,7 @@
       }
     });
 
+    addBlockMaterialLinkRule(service, blockMaterialLinks);
     var converted = convertRoot ? convertRoot(service, root) : service.turndown(root);
     var protectedMarkdown = protectMarkdownFences(converted);
     var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();
@@ -211,7 +213,7 @@
       return codeBlock || markdownEscapedAt(text, offset) ? match : "";
     });
     var restored = restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
-    return restoreBlockMaterialTables(restored, blockMaterialTables);
+    return restoreBlockMaterialTables(restoreBlockMaterialLinks(restored, blockMaterialLinks), blockMaterialTables);
   }
 
   function paragraphLikeDiv(node) {

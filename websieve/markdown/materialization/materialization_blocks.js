@@ -82,7 +82,7 @@ function materializedMarkdownHtmlBlock(value, position, end, container) {
   }).join("\n");
   var sanitized = materializedHtml(html);
   if (!sanitized) return "";
-  var singleBlock = /^[ \t]*<(?:article|table)(?:\s|>)/i.test(html);
+  var singleBlock = /^[ \t]*<(?:article|table)(?:\s|>)/i.test(html) || blockMaterialLinkHtmlBlock(html);
   if (singleBlock) sanitized = singleBlockMaterializedHtml(sanitized);
 
   var fallbackPrefix = prefixes[prefixes.length - 1] || prefixes[0] || "";

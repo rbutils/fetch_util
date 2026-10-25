@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete paragraph boundaries, formatting and resources within physical
+  block links instead of merging independent records into adjacent inline labels.
+
 - Preserve physical table row headers, mixed header/data roles and independent
   cell cardinality when a Markdown pipe table cannot represent them completely.
 
