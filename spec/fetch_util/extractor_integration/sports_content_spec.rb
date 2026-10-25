@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe 'FetchUtil sports content extraction' do
-  include_context 'extractor integration helpers'
+  include_context 'complete raw table expectations'
 
   it 'classifies ESPN game pages as sports events and preserves box score tables without nav' do
     html = fixture_contents('spec/fixtures/sports_espn_game.html')
@@ -94,8 +94,7 @@ RSpec.describe 'FetchUtil sports content extraction' do
       payload = extract_payload(page)
 
       expect(html.gsub(/<[^>]+>/, ' ').gsub(/\s+/, ' ').length).to be > 10_000
-      expect(payload['markdown']).to include('| Player 180 | Team 180 | 190 | 183 |')
-      expect(payload['markdown'].index('| Player 1 |')).to be < payload['markdown'].index('| Player 180 |')
+      expect_complete_raw_table_material(payload, source_html: html)
     end
   end
 

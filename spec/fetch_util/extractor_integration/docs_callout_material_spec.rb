@@ -1,7 +1,7 @@
 require 'cgi'
 
 RSpec.describe FetchUtil::Extractor do
-  include_context 'extractor integration helpers'
+  include_context 'complete raw table expectations'
 
   {
     'Docusaurus' => 'Docusaurus v3.9.2',
@@ -84,12 +84,12 @@ RSpec.describe FetchUtil::Extractor do
         expect(markdown).to include(
           '[schema](https://docs.publication.example.test/schema.json)',
           '[guide](https://docs.publication.example.test/guide/)',
-          '[complete records](https://docs.publication.example.test/records/)',
           '![Reference diagram](https://docs.publication.example.test/diagram.svg)',
           '[nested reference](https://docs.publication.example.test/nested/)',
           '[explanation](https://docs.publication.example.test/summary/)',
           '[expanded reference](https://docs.publication.example.test/expanded/)'
         )
+        expect_complete_raw_table_material(payload)
         expect(markdown).not_to include('CLOSED_DO_NOT_PUBLISH', 'closed-body', closed_program)
         expect(page.evaluate('document.body.outerHTML')).to eq(before)
       end

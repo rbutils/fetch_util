@@ -1,5 +1,5 @@
 RSpec.describe FetchUtil::Extractor do
-  include_context 'extractor integration helpers'
+  include_context 'complete raw table expectations'
 
   it 'retains ad-like labels owned by authored prose while removing standalone ad controls' do
     html = <<~HTML
@@ -40,9 +40,9 @@ RSpec.describe FetchUtil::Extractor do
       expect(payload.fetch('markdown')).to include(
         'Readers may contact [sponsors](https://publication.example.test/sponsors/) for preservation funding.',
         'Consult the [sponsored records](https://publication.example.test/sponsored-records/) before evaluating the evidence.',
-        'Review the [sponsor archive](https://publication.example.test/sponsor-archive/) for the complete chronology.',
-        'Read the [advertisement records](https://publication.example.test/advertisement-records/) before comparing the dates.'
+        'Review the [sponsor archive](https://publication.example.test/sponsor-archive/) for the complete chronology.'
       )
+      expect_complete_raw_table_material(payload)
       expect(payload.fetch('html')).not_to include('sponsor-control', 'sponsored-control')
       expect(payload.fetch('markdown')).not_to include('sponsor-control', 'sponsored-control')
       expect(page.evaluate('document.body.outerHTML')).to eq(before)
