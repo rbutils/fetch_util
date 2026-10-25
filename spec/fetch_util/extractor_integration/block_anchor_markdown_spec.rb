@@ -4,7 +4,7 @@ require 'spec_helper'
 require_relative '../../support/extractor_integration_helpers'
 
 RSpec.describe FetchUtil::Extractor do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   def block_anchor_page(body)
     <<~HTML
@@ -31,7 +31,8 @@ RSpec.describe FetchUtil::Extractor do
     HTML
 
     result = extract_from_url('https://guide.example.test/integration', html, reader_mode: false) { |payload| payload }
-    expect(result.fetch('markdown')).to include('[Spectrum components](https://components.example.test/spectrum/#usage)')
+    expect_complete_raw_references(result.fetch('markdown'), 'https://components.example.test/spectrum/#usage', result.fetch('html'))
+    expect_complete_raw_references(result.fetch('markdown'), 'https://components.example.test/controls/', result.fetch('html'))
     expect(result.fetch('markdown')).to include('https://components.example.test/controls/', 'Application controls', 'Accessible component examples')
   end
 
@@ -48,7 +49,7 @@ RSpec.describe FetchUtil::Extractor do
 
     result = extract_from_url('https://guide.example.test/editors', html, reader_mode: false) { |payload| payload }
     expect(result.fetch('markdown')).to include('https://editors.example.test/plugin', 'Editor integration', 'Install the editor plugin')
-    expect(result.fetch('markdown')).to include('![Editor logo](https://images.example.test/editor.svg)')
+    expect_complete_raw_references(result.fetch('markdown'), 'https://editors.example.test/plugin', result.fetch('html'))
     expect(result.fetch('markdown')).not_to include('javascript:', 'user:secret', 'Hidden integration')
   end
 
@@ -94,7 +95,7 @@ RSpec.describe FetchUtil::Extractor do
     expect(result.fetch('html')).not_to include('data-fetch-util-structured-card-field', "\uE000fetch-util-card-field:")
   end
 
-  it 'leaves ambiguous and incomplete block-label links on the established compact path' do
+  it 'retains ambiguous and incomplete block labels without inventing title ownership' do
     html = block_anchor_page(<<~HTML)
       <div class="cards">
         <article><a href="/ambiguous"><img src="/ambiguous.jpg" alt="Ambiguous preview">
@@ -108,10 +109,9 @@ RSpec.describe FetchUtil::Extractor do
     result = extract_from_url('https://guide.example.test/ambiguous-cards', html, reader_mode: false) { |payload| payload }
     markdown = result.fetch('markdown')
 
-    expect(markdown).to include(
-      '[![Ambiguous preview](https://guide.example.test/ambiguous.jpg) Research First title field Second title field 10 September 2026](https://guide.example.test/ambiguous)',
-      '[![Incomplete preview](https://guide.example.test/incomplete.jpg) Incomplete card title 11 September 2026](https://guide.example.test/incomplete)'
-    )
+    expect_complete_raw_references(markdown, 'https://guide.example.test/ambiguous', result.fetch('html'))
+    expect_complete_raw_references(markdown, 'https://guide.example.test/incomplete', result.fetch('html'))
+    expect(markdown).not_to match(/^\#{2,6} (?:First title field|Second title field|Incomplete card title)$/)
   end
 
   it 'preserves every repeated structured card without a presentation cap' do
@@ -213,6 +213,13 @@ RSpec.describe FetchUtil::Extractor do
     HTML
 
     result = extract_from_url('https://guide.example.test/report-link', html, reader_mode: false) { |payload| payload }
-    expect(result.fetch('markdown')).to include('[Read the report](https://guide.example.test/report)')
+    retained = Nokogiri::HTML5.fragment(result.fetch('html'))
+    decoration = retained.css('a[href="https://guide.example.test/report"] figure span[aria-hidden="true"] > svg')
+    expect(decoration.length).to eq(1)
+    expect(retained_reference_node_material(decoration.first)).to eq(
+      ['svg', [], [['path', [['d', 'M0 0h10v10z']], []]]]
+    )
+    decoration.first.remove
+    expect_complete_raw_references(result.fetch('markdown'), 'https://guide.example.test/report', retained.to_html)
   end
 end

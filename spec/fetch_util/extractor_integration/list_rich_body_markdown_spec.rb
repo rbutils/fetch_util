@@ -4,7 +4,7 @@ require 'cgi'
 require 'nokogiri'
 
 RSpec.describe 'Complete rich list-body Markdown' do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   def rich_landing_page(extra = '')
     features = [
@@ -163,7 +163,9 @@ RSpec.describe 'Complete rich list-body Markdown' do
       native = Nokogiri::HTML5(payload.fetch('html'))
       expect(native.css('a[href]').map { |node| node['href'] }).to include('https://publication.example.test/empty-resource/')
       markdown = payload.fetch('markdown')
-      expect(markdown).to match(%r{\[First action\]\(https://publication\.example\.test/first-action/\)\s+\[Second action\]})
+      expect_complete_raw_references(markdown, 'https://publication.example.test/first-action/', payload.fetch('html'))
+      expect(markdown).to include('[Second action](https://publication.example.test/second-action/)')
+      expect(markdown).to match(%r{</a></div>\s+\[Second action\]})
       expect(markdown.gsub(/[[:space:]]+/, ' ')).to include('release firstclient secondclient')
       expect(markdown).to match(%r{Complete publication excerpt\.\s+\[https://publication\.example\.test/empty-resource/})
       expect(page.evaluate('document.body.innerHTML')).to eq(before)

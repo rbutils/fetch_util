@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe FetchUtil::Extractor, 'visible list metadata references' do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   it 'keeps short topic destinations with their visible context instead of promoting them to news records' do
     cards = (1..6).map do |number|
@@ -65,9 +65,12 @@ RSpec.describe FetchUtil::Extractor, 'visible list metadata references' do
            '<a class="CardTag_tag" href="/topic/insurance"><p><span hidden>Topic:</span>Insurance</p></a>' \
            "</li></ul></div>#{cards}</main></body></html>"
     with_url_page('https://publisher.example/', html) do |page|
-      markdown = described_class.new.extract(page).fetch('markdown')
-      expect(markdown).to include('[Insurance](https://publisher.example/topic/insurance)')
-      expect(markdown.scan('https://publisher.example/topic/insurance)').length).to eq(1)
+      payload = described_class.new.extract(page)
+      markdown = payload.fetch('markdown')
+      expect_complete_raw_references(markdown, 'https://publisher.example/topic/insurance', payload.fetch('html'))
+      expect(markdown.scan('https://publisher.example/topic/insurance').length).to eq(1)
+      expect(markdown).not_to include('Topic:')
+      (1..6).each { |number| expect(markdown).to include("https://publisher.example/story/#{number}") }
     end
   end
 end

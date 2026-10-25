@@ -5,7 +5,7 @@ require 'spec_helper'
 require 'support/extractor_integration_helpers'
 
 RSpec.describe 'Authored SVG text material' do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   def svg_native_material(page, html)
     page.evaluate(<<~JS)
@@ -63,9 +63,14 @@ RSpec.describe 'Authored SVG text material' do
       expect(labels.grep(/Consultation|Support|Repeated value|Training|Trial/)).to eq(
         ['Consultation', 'Support', 'Repeated value', 'Training', 'Trial']
       )
-      expect(markdown).to include('[All observations](https://docs.publication.example.test/guide/observations/)',
-                                  '[Mean duration](https://docs.publication.example.test/guide/duration/)',
-                                  '[published method](https://docs.publication.example.test/guide/method/)',
+      {
+        'observations' => 'All observations',
+        'duration' => 'Mean duration'
+      }.each do |destination, label|
+        href = "https://docs.publication.example.test/guide/#{destination}/"
+        expect_complete_raw_references(markdown, href, "<a href='#{href}'><p>#{label}</p></a>")
+      end
+      expect(markdown).to include('[published method](https://docs.publication.example.test/guide/method/)',
                                   "```js\n#{program}\n```", 'Every source label belongs to this independently published chart.',
                                   'Keep the complete published explanation before both independent charts.',
                                   'Keep the complete explanation after the charts')

@@ -3,7 +3,7 @@
 require 'nokogiri'
 
 RSpec.describe 'FetchUtil extractor integration' do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   def related_rail_source_article(paragraphs)
     body = paragraphs.map { |paragraph| "<p>#{paragraph}</p>" }.join
@@ -1530,7 +1530,7 @@ RSpec.describe 'FetchUtil extractor integration' do
       markdown = payload["markdown"]
 
       expect(markdown).to include("### [Folding Design](https://science.example/facts)")
-      expect(markdown).to include("[Webb Detects Methane on Interstellar Comet](https://science.example/blog/one)")
+      expect_complete_raw_references(markdown, "https://science.example/blog/one", payload.fetch("html"))
       expect(markdown).not_to match(/^\s*\[\s*$/)
       expect(markdown).not_to match(%r{^\s*\]\(https?://[^)]+\)\[?\s*$})
     end

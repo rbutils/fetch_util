@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'support/extractor_integration_helpers'
 
 RSpec.describe 'Physical unlabeled reference peers' do
-  include_context 'extractor integration helpers'
+  include_context 'complete block reference expectations'
 
   def peer_reference_markdown(page, structured: false)
     root = File.expand_path('../..', File.dirname(FetchUtil::Extractor.instance_method(:extract).source_location.first))
@@ -48,10 +48,13 @@ RSpec.describe 'Physical unlabeled reference peers' do
       before = page.evaluate('document.body.innerHTML')
       markdown = peer_reference_markdown(page)
       first = '[https://reference.example.test/first](https://reference.example.test/first)'
-      named = '[Named reference](https://reference.example.test/named)'
-      selected = '[Published training resource](https://publication.example.test/training)'
+      named = 'href="https://reference.example.test/named"'
+      selected = 'href="https://publication.example.test/training"'
       expect(markdown.scan(first).size).to eq(2)
-      expect(markdown).to include(named, selected)
+      expect_complete_raw_references(markdown, 'https://reference.example.test/named', html,
+                                     base_url: 'https://publication.example.test/')
+      expect_complete_raw_references(markdown, 'https://publication.example.test/training', html,
+                                     base_url: 'https://publication.example.test/')
       expect(markdown.index(first)).to be < markdown.index(named)
       expect(markdown.index(named)).to be < markdown.index(selected)
       expect(markdown).not_to include('Hidden resource', '/hidden-reference')
@@ -72,10 +75,12 @@ RSpec.describe 'Physical unlabeled reference peers' do
       before = page.evaluate('document.body.innerHTML')
       markdown = peer_reference_markdown(page)
       first = '[https://publication.example.test/first](https://publication.example.test/first)'
-      named = '[**Named resource** with _authored emphasis_](https://publication.example.test/named)'
+      named = 'href="https://publication.example.test/named"'
       selected = '[Selected reference](https://publication.example.test/selected)'
       expect(markdown).to include(first, named, selected)
-      expect(markdown.gsub(/[[:space:]]+/, ' ')).to include("#{first} #{named}")
+      expect_complete_raw_references(markdown, 'https://publication.example.test/named', html,
+                                     base_url: 'https://publication.example.test/')
+      expect(markdown).to match(%r{\[https://publication\.example\.test/first\]\(https://publication\.example\.test/first\)\s+<div><a href="https://publication\.example\.test/named"})
       expect(markdown.index(first)).to be < markdown.index(named)
       expect(markdown.index(named)).to be < markdown.index(selected)
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
