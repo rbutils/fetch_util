@@ -40,6 +40,7 @@
     materializeMarkdownHeadingLayouts(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
+    var responsiveImages = prepareResponsiveImageMarkdown(root);
 
     var literalPrograms = prepareLiteralCodePrograms(root);
 
@@ -108,17 +109,7 @@
       }
     });
 
-    service.addRule("images", {
-      filter: function(node) {
-        return node.nodeName === "IMG";
-      },
-      replacement: function(_content, node) {
-        var src = node.getAttribute("src") || node.getAttribute("data-src") || node.getAttribute("data-lazy-src") || "";
-        var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
-        var url = materializedHttpUrl(src);
-        return url ? "![" + alt + "](" + url + ")" : alt;
-      }
-    });
+    addMarkdownImageRule(service, responsiveImages);
 
     function legalCitationAnchor(node) {
       var href = node.getAttribute("href") || "";
@@ -215,7 +206,8 @@
       return codeBlock || markdownEscapedAt(text, offset) ? match : "";
     });
     var restored = restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
-    return restoreBlockMaterialTables(restoreBlockMaterialLinks(restored, blockMaterialLinks), blockMaterialTables);
+    var material = restoreBlockMaterialTables(restoreBlockMaterialLinks(restored, blockMaterialLinks), blockMaterialTables);
+    return restoreResponsiveImageMarkdown(material, responsiveImages);
   }
 
   function paragraphLikeDiv(node) {

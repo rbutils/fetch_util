@@ -105,6 +105,7 @@ markdown/code/named_targets.js
 markdown/code/linked_programs.js
 markdown/materialization/video_posters.js
 markdown/materialization/frame_references.js
+markdown/materialization/responsive_images.js
 core/docs_cleanup/engines.js
 core/docs_cleanup/literal_projection.js
 core/docs_cleanup/materialized_sections.js

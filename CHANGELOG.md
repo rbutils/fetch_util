@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete responsive image declarations in Markdown when valid source-set
+  candidates supply an image without a fallback source, preserving independent
+  linked occurrences, descriptors, sizes, alternative text and full destinations.
+
 - Prune hidden physical source material before shared profile article cleanup,
   retaining visible descendants, complete programs and semantic code-line targets.
   Keep uniquely declared active narratives during finite initial CSS reveals,
