@@ -188,10 +188,14 @@
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
     });
 
+    // A mixed root still needs the full alternative inventory for selection.
+    var allRecordsTableOwned = candidates.length > 0 && candidates.every(function(candidate) {
+      return candidate.card && dataTables.some(function(table) { return table.contains(candidate.card); });
+    });
     Object.defineProperty(candidates, "__fetchUtilSupportingLinks", { value: context.supportingLinks });
     Object.defineProperty(candidates, "__fetchUtilFallbackContext", { value: {
       supportingLinks: context.supportingLinks,
-      coveredRecordTables: dataTables
+      coveredRecordTables: allRecordsTableOwned ? dataTables : []
     } });
     Object.defineProperty(candidates, "__fetchUtilRepeatedRecordByLink", { value: repeatedRecordByLink });
     return candidates;

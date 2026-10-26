@@ -42,20 +42,25 @@ RSpec.describe 'Complete structured-table discovery work' do
             var before = document.body.outerHTML;
             var originalClone = Node.prototype.cloneNode;
             var originalFallback = extractFallbackHeadlineItems;
-            var fallbackDepth = 0, rowCopies = 0, result;
+            var fallbackDepth = 0, rowCopies = 0, result, fallbackReferences = [];
             Node.prototype.cloneNode = function() {
               if (fallbackDepth && this.nodeType === 1 && this.tagName === 'TR' && this.closest('table')) rowCopies++;
               return originalClone.apply(this, arguments);
             };
             extractFallbackHeadlineItems = function() {
               fallbackDepth++;
-              try { return originalFallback.apply(this, arguments); }
+              try {
+                var fallback = originalFallback.apply(this, arguments);
+                fallbackReferences.push(fallback.map(function(item) { return item.url; }));
+                return fallback;
+              }
               finally { fallbackDepth--; }
             };
             try {
               result = buildListExtraction(source, [document.title], {portalRoot: true});
               return {
                 duplicateRowCopies: rowCopies,
+                fallbackReferences: fallbackReferences,
                 rows: Array.from(result.root.querySelectorAll('tbody > tr')).map(function(row) {
                   return Array.from(row.cells).map(function(cell) { return normalizeText(cell.textContent); });
                 }),
@@ -108,6 +113,26 @@ RSpec.describe 'Complete structured-table discovery work' do
       )
       expect(result.fetch('references').count { |url, _| url == 'https://publication.example.test/entry/1' }).to eq(2)
       expect(result.fetch('sourceUnchanged')).to be(true)
+    end
+  end
+
+  it 'keeps the complete alternative headline inventory when admitted records are not all table-owned' do
+    extra = <<~HTML
+      <article><h2><a href='/entry/1'>Independent contextual publication</a></h2>
+      <p>This separate authored record remains independently eligible beside the complete table.</p></article>
+    HTML
+    with_url_page('https://publication.example.test/ledger.html', ledger_page(extra)) do |page|
+      result = run_table_work_probe(page)
+      expect(result.fetch('rows').length).to eq(12)
+      expect(result.fetch('references').length).to eq(25)
+      expect(result.fetch('items')).to include(
+        ['Independent contextual publication', 'https://publication.example.test/entry/1']
+      )
+      expect(result.fetch('sourceUnchanged')).to be(true)
+      alternative = result.fetch('fallbackReferences').last
+      expect(alternative).to include(*(1..12).map do |number|
+        "https://publication.example.test/entry/#{number}"
+      end)
     end
   end
 

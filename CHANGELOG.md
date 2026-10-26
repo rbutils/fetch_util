@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve the complete alternative headline inventory for roots that mix
+  structured table records with independent cards, retaining selection evidence
+  while avoiding duplicate row work in wholly table-owned collections.
+
 - Avoid rebuilding fallback records for physical tables whose complete structured
   records were already admitted, retaining all rows, references and independent
   outside records within the original extraction resource limits.
