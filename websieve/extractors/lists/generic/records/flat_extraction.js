@@ -151,6 +151,7 @@
     }
 
     var dataTables = structuredListTables(root);
+    context.coveredRecordTables = dataTables;
     dataTables.forEach(function(table) {
       structuredListTableItems(table).forEach(function(candidate) {
         if (pushUniqueListCandidate(candidates, seen, candidate)) sourceNodes.set(candidate, candidate.card);
@@ -188,6 +189,10 @@
     });
 
     Object.defineProperty(candidates, "__fetchUtilSupportingLinks", { value: context.supportingLinks });
+    Object.defineProperty(candidates, "__fetchUtilFallbackContext", { value: {
+      supportingLinks: context.supportingLinks,
+      coveredRecordTables: dataTables
+    } });
     Object.defineProperty(candidates, "__fetchUtilRepeatedRecordByLink", { value: repeatedRecordByLink });
     return candidates;
   }

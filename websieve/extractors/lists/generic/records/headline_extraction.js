@@ -4,6 +4,7 @@
     var ranked = [];
     var context = listPageContext();
     if (existingContext) context.supportingLinks = existingContext.supportingLinks || existingContext;
+    var coveredTables = existingContext && existingContext.coveredRecordTables || [];
     var sectionContext = Object.assign({}, context);
     context.tableIndexPage = !!linkedTableIndexRoot();
     var selectors = [
@@ -14,7 +15,9 @@
     ].join(", ");
 
     Array.prototype.forEach.call(node.querySelectorAll(selectors), function(link) {
-      if (context.supportingLinks.has(link)) return;
+      if (context.supportingLinks.has(link) || coveredTables.some(function(table) {
+        return table.contains(link);
+      })) return;
       var container = link.closest("tr, article, section, li, div") || link.parentElement;
       if (listNavigationNode(link) || listNavigationNode(link.parentElement) || listNavigationAncestor(link)) return;
       var candidate = listLinkCandidate(link, container, context, true);

@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Avoid rebuilding fallback records for physical tables whose complete structured
+  records were already admitted, retaining all rows, references and independent
+  outside records within the original extraction resource limits.
+
 - Retain complete visible button labels and inline material owned by declared
   HTTP resource links, preserving independent destinations and table order while
   keeping interface, submission, unsafe-link, hidden and closed-content guards.
