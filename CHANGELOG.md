@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete visible button labels and inline material owned by declared
+  HTTP resource links, preserving independent destinations and table order while
+  keeping interface, submission, unsafe-link, hidden and closed-content guards.
+
 - Retain complete responsive image declarations in Markdown when valid source-set
   candidates supply an image without a fallback source, preserving independent
   linked occurrences, descriptors, sizes, alternative text and full destinations.
