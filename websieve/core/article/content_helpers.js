@@ -163,11 +163,23 @@
     return WORDPRESS_ARTICLE_REMOVAL_SELECTORS.concat(options.removalSelectors || []);
   }
 
+  function profileArticleClone(node) {
+    if (!node.isConnected || node.ownerDocument !== document || node.getRootNode() !== document) return cleanClone(node);
+
+    // Read physical source visibility before cleanup can discard its style evidence.
+    return withSourceVisibilityRead(function() {
+      var sourceClones = new Map();
+      var clone = visibilityPrunedClone(node, document, sourceClones);
+      if (node.querySelector("pre a[id], pre a[name]")) restorePrunedNamedCodeTargets(node, sourceClones);
+      return cleanClonedContent(node, clone, null, sourceClones);
+    }, { profileRoot: node });
+  }
+
   function profileHtmlContent(metadata, node, options) {
     if (!node) return null;
 
     options = options || {};
-    var root = options.cloneRoot === false ? node : cleanClone(node);
+    var root = options.cloneRoot === false ? node : profileArticleClone(node);
     if (!root) return null;
 
     if (typeof options.rewriteRoot === "function") options.rewriteRoot(root, node);

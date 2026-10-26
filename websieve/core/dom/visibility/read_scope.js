@@ -1,11 +1,32 @@
   var sourceVisibilityReadContext = null;
 
-  function withSourceVisibilityRead(extract) {
+  function clearProfileRevealReads(context, root, nodes) {
+    nodes.forEach(function(node) {
+      context.hidden.delete(node);
+      for (var current = node; current; current = current.parentElement) {
+        context.escaping.delete(current);
+        if (current === root) break;
+      }
+    });
+  }
+
+  function withSourceVisibilityRead(extract, options) {
     var previous = sourceVisibilityReadContext;
-    sourceVisibilityReadContext = { hidden: new WeakMap(), escaping: new WeakMap() };
+    var root = options && options.profileRoot;
+    var shared = previous && root;
+    var declarations = shared ? Array.from(root.querySelectorAll("[data-animation-style]")) : [];
+    if (shared && root.hasAttribute("data-animation-style")) declarations.unshift(root);
+    sourceVisibilityReadContext = {
+      hidden: shared ? previous.hidden : new WeakMap(),
+      escaping: shared ? previous.escaping : new WeakMap(),
+      profileRoot: root
+    };
+    // The physical page is unchanged. Only the scoped reveal interpretation varies.
+    if (shared) clearProfileRevealReads(previous, root, declarations);
     try {
       return extract();
     } finally {
+      if (shared) clearProfileRevealReads(previous, root, declarations);
       sourceVisibilityReadContext = previous;
     }
   }

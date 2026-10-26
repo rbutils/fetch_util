@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- Prune hidden physical source material before shared profile article cleanup,
+  retaining visible descendants, complete programs and semantic code-line targets.
+  Keep uniquely declared active narratives during finite initial CSS reveals,
+  without restoring hidden, inactive, ambiguous or non-revealing peers.
+  Retain profile-owned prose with complete finite initial-fade declarations while
+  keeping omitted initializer and animation-paint state explicitly unverified.
+
 - Retain independent visible block and paragraph boundaries when unsupported
   destinations are removed, without changing intentional inline link adjacency.
 
