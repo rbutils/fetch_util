@@ -4,6 +4,7 @@ require "support/extractor_integration_helpers"
 
 RSpec.describe "Wrapped anchor collections" do
   include_context "extractor integration helpers"
+  include_context "heading record prose"
 
   def wrapped_collection(html)
     root = File.expand_path("../../..", __dir__)
@@ -28,8 +29,12 @@ RSpec.describe "Wrapped anchor collections" do
       };
     JS
     with_url_page("https://publisher.example/", html) do |page|
+      inject_standalone_extractor(page, reader_mode: true)
       page.add_script_tag(content: source)
-      JSON.parse(page.evaluate("window.__wrappedCollection()"))
+      before = page.evaluate("document.body.outerHTML")
+      result = JSON.parse(page.evaluate("window.__wrappedCollection()"))
+      expect(page.evaluate("document.body.outerHTML")).to eq(before)
+      result
     end
   end
 
@@ -44,9 +49,13 @@ RSpec.describe "Wrapped anchor collections" do
     expect(result.fetch("items").map { |item| item.fetch("url") }).to eq(4.times.map { |i| "https://publisher.example/collection/#{i}" })
     expect(result.fetch("figureOwners")).to eq([nil, nil, nil, nil])
     4.times do |i|
-      expect(result.fetch("markdown")).to include(
-        "[Collection number #{i}](https://publisher.example/collection/#{i}) - Independent material description for collection #{i}."
+      destination = "https://publisher.example/collection/#{i}"
+      record = heading_record_prose(
+        result.fetch("markdown"), destination: destination, rank: 2
       )
+      expect(record.css("h2").map(&:text)).to eq(["Collection number #{i}"])
+      expect(record.css("p").map(&:text)).to eq(["Independent material description for collection #{i}."])
+      expect(record.css("a[href]").map { |link| link["href"] }).to eq([destination])
     end
   end
 
