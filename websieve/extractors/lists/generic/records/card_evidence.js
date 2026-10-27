@@ -7,7 +7,7 @@
   function repeatedRecordOwnsHeadlineCard(candidate, record) {
     var card = candidate.card;
     var link = candidate.sourceNode;
-    if (!record || !card || card !== record.node || !card.matches("article, div, section") ||
+    if (!record || !card || card !== record.node || !card.matches("article, div, section, a[href]") ||
         !link || !card.contains(link)) return false;
     var headings = Array.prototype.filter.call(card.querySelectorAll("h1, h2, h3, h4, h5, h6"), function(heading) {
       return heading.contains(link) || link.contains(heading);
@@ -18,12 +18,22 @@
   function pushUniqueListCandidate(candidates, seen, candidate) {
     if (!candidate) return false;
 
+    applyLinkedHeadingRecordIdentity(candidate);
     var canonicalKey = candidate.canonicalKey || listCanonicalKey(candidate.url);
     var dedupeKey = candidate.dedupeKey || canonicalKey;
-    var key = candidate.text + "|" + dedupeKey;
-    if (seen[key] || seen["url:" + dedupeKey]) return false;
-    seen[key] = true;
-    seen["url:" + dedupeKey] = true;
+    if (dedupeKey && dedupeKey.nodeType === 1) {
+      if (!Object.prototype.hasOwnProperty.call(seen, "__fetchUtilPhysicalRecordNodes")) {
+        Object.defineProperty(seen, "__fetchUtilPhysicalRecordNodes", { value: new WeakSet() });
+      }
+      if (seen.__fetchUtilPhysicalRecordNodes.has(dedupeKey)) return false;
+      seen.__fetchUtilPhysicalRecordNodes.add(dedupeKey);
+      seen["url:" + canonicalKey] = true;
+    } else {
+      var key = candidate.text + "|" + dedupeKey;
+      if (seen[key] || seen["url:" + dedupeKey]) return false;
+      seen[key] = true;
+      seen["url:" + dedupeKey] = true;
+    }
     candidate.canonicalKey = canonicalKey;
     candidates.push(candidate);
     return true;

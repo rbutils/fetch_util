@@ -109,6 +109,7 @@
 
     roots.forEach(function(root) {
       var seen = {};
+      var physicalRecords = new WeakSet();
       var items = [];
       var headings = [];
       var hero = normalizeText(((root.querySelector("h1") || {}).textContent) || "");
@@ -137,7 +138,11 @@
         var url = materializedHttpUrl(href);
         var title = leadTitle(link);
         var canonicalUrl = url ? homepageCanonicalUrl(url) : "unlinked:" + title.toLowerCase() + "|href:" + href;
-        if (!title || seen[canonicalUrl]) return;
+        if (!title) return;
+        var headingRecord = { text: title, url: url, card: link, sourceNode: link };
+        applyLinkedHeadingRecordIdentity(headingRecord);
+        var physicalRecord = headingRecord.sourceOrderedHeadingCard ? link : null;
+        if (physicalRecord ? physicalRecords.has(physicalRecord) : seen[canonicalUrl]) return;
 
         var container = link.closest("article, section, li, [class*='card'], [class*='tile'], [class*='item'], [class*='listing'], [class*='result'], [class*='destination'], [class*='route'], [class*='story']") || link.parentElement;
         var cardRoot = homepageCardRoot(link);
@@ -178,6 +183,8 @@
           sourceNode: link
         };
         addCardContext(item, recordRoot);
+        applyLinkedHeadingRecordIdentity(item);
+        if (physicalRecord) physicalRecords.add(physicalRecord);
         if (titleMediaMarkdown) item.image = titleMediaMarkdown;
         items.push(item);
       });

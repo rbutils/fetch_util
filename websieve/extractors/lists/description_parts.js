@@ -2,7 +2,7 @@
     if (!items) return closestGenericListCard(node);
 
     var completeRecord = items.find(function(item) {
-      return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard) &&
+      return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard || item.sourceOrderedHeadingCard) &&
         item.card && item.card.contains(node);
     });
     if (completeRecord) return completeRecord.card;

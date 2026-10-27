@@ -33,7 +33,7 @@
 
   function sectionRegionHeadingMarkdown(region) {
     if (region.headingNode && typeof TurndownService === "function" && (region.cards || []).some(function(item) {
-      return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard) &&
+      return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard || item.sourceOrderedHeadingCard) &&
         item.card && item.card.contains(region.headingNode);
     })) return "";
     return "#".repeat(listMediaSectionHeadingLevel(region.headingNode)) + " " + sectionRegionMarkdown(region);

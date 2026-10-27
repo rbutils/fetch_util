@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'open3'
+
 RSpec.describe "FetchUtil extractor integration - direct prose cards" do
   include_context "extractor integration helpers"
 
@@ -33,6 +35,8 @@ RSpec.describe "FetchUtil extractor integration - direct prose cards" do
     HTML
 
     with_url_page("https://solutions.example/categories", html) do |page|
+      before = page.evaluate('document.body.outerHTML')
+      inject_standalone_extractor(page)
       page.add_script_tag(content: direct_prose_card_source)
       payload = page.evaluate(<<~JAVASCRIPT)
         (() => {
@@ -46,15 +50,31 @@ RSpec.describe "FetchUtil extractor integration - direct prose cards" do
       expect(markdown.scan(%r{https://solutions.example/solutions/\d})).to eq(
         names.each_index.map { |index| "https://solutions.example/solutions/#{index}" }
       )
+      parser = 'import sys; from markdown_it import MarkdownIt; print(MarkdownIt("commonmark").enable("table").render(sys.stdin.read()))'
+      parsed, error, status = Open3.capture3('python3', '-c', parser, stdin_data: markdown)
+      raise "independent CommonMark parser failed: #{error}" unless status.success?
+
+      document = Nokogiri::HTML.fragment(parsed)
+      expect(document.css('h2').map(&:text)).to eq(names)
+      expect(document.css('a[href]').map { |link| link['href'] }).to eq(
+        names.each_index.map { |index| "https://solutions.example/solutions/#{index}" }
+      )
+      paragraphs = names.each_with_index.flat_map do |name, index|
+        [
+          "#{name} helps its own customers build reliable workflows and prepare accurate estimates.",
+          "Its distinct capability number #{index} connects the approved design to production."
+        ]
+      end
+      expect(document.css('p').map(&:text)).to eq(paragraphs)
       names.each_with_index do |name, index|
-        line = markdown.lines.find { |text| text.include?("[#{name}]") }
-        expect(line).to include(
+        expect(document.text).to include(
           "#{name} helps its own customers build reliable workflows and prepare accurate estimates.",
           "Its distinct capability number #{index} connects the approved design to production."
         )
-        expect(line.scan("helps its own customers").length).to eq(1)
+        expect(document.text.scan("#{name} helps its own customers").length).to eq(1)
         expect(markdown.scan("#{name} helps its own customers").length).to eq(1)
       end
+      expect(page.evaluate('document.body.outerHTML')).to eq(before)
     end
   end
 

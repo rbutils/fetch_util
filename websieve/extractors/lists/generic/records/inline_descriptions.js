@@ -46,7 +46,7 @@
           node.querySelector("p, h1, h2, h3, h4, h5, h6, img, picture, video, audio, iframe, input, select, textarea, button, script, style, template")) return false;
       if (descriptions.some(function(part) { return part.node && part.node.contains(node); })) return false;
       if (items.some(function(item) {
-        return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard) &&
+        return (item.sourceOrderedRepeatedRecord || item.sourceOrderedStructuredCard || item.sourceOrderedHeadingCard) &&
           item.card && item.card.contains(node);
       })) return false;
       return !!bylineLinkedMediaPublicationOwner(node);

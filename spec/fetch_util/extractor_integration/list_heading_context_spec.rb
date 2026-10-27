@@ -30,6 +30,7 @@ RSpec.describe 'List section heading context' do
            '<a href="/menu">Complete site menu</a></nav></body></html>'
 
     with_url_page('https://bulletin.example/', html) do |page|
+      inject_standalone_extractor(page)
       page.add_script_tag(content: heading_context_source)
       markdown = page.evaluate('headingContextList().markdown')
 
@@ -55,6 +56,7 @@ RSpec.describe 'List section heading context' do
            '<a href="/account">Manage your account</a></div></body></html>'
 
     with_url_page('https://bulletin.example/', html) do |page|
+      inject_standalone_extractor(page)
       page.add_script_tag(content: heading_context_source)
       expect(page.evaluate('headingContextList().html')).not_to include('Account shortcuts')
     end
@@ -68,6 +70,7 @@ RSpec.describe 'List section heading context' do
            '</section></body></html>'
 
     with_url_page('https://bulletin.example/', html) do |page|
+      inject_standalone_extractor(page)
       page.add_script_tag(content: heading_context_source)
       markdown = page.evaluate('headingContextList().markdown')
       expect(markdown).to include('## Illustrated reports', 'Northern district photo report', 'Southern district photo report')

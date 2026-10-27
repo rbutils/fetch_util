@@ -167,15 +167,10 @@
     });
 
     service.addRule("headingCardLinks", {
-      filter: function(node) {
-        return node.nodeName === "A" && !node.closest("li") && node.querySelector("h1, h2, h3, h4, h5, h6") &&
-          !node.querySelector("pre, table");
-      },
+      filter: headingCardLinkNode,
       replacement: function(content, node) {
         // Associate the destination with the card's heading without flattening its body.
-        var body = content.trim().replace(/^(#{1,6}[ \t]+)([^\n]+)/m, function(_match, prefix, label) {
-          return prefix + markdownLinkWithFormattedLabel(label, node.getAttribute("href"));
-        });
+        var body = headingCardLinkMarkdown(content.trim(), node.getAttribute("href"));
         return "\n\n" + body + "\n\n";
       }
     });

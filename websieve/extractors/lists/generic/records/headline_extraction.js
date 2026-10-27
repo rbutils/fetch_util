@@ -47,3 +47,24 @@
     });
     return ranked;
   }
+
+  function applyLinkedHeadingRecordIdentity(candidate) {
+    var card = candidate && candidate.card;
+    if (!card || candidate.repeatedRecordIdentity || card !== candidate.sourceNode || !card.matches("a[href]") ||
+        !materializedHttpUrl(card.getAttribute("href")) || listCardNodeHidden(card) ||
+        listChromeNode(card) || listChromeAncestor(card) ||
+        card.closest("pre, code, kbd, samp, button, nav, [role='button'], [role='navigation']") ||
+        !genericListDirectAnchorCard(card, card.parentElement)) return;
+    var headings = Array.from(card.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+      return normalizeText(heading.textContent || "") && !listCardNodeHidden(heading) &&
+        heading.closest("a[href]") === card &&
+        !heading.closest("pre, code, kbd, samp, button, nav, [role='button'], [role='navigation']");
+    });
+    var hasProse = Array.from(card.querySelectorAll("p")).some(function(paragraph) {
+      return normalizeText(paragraph.textContent || "") && !listCardNodeHidden(paragraph) &&
+        !paragraph.closest("pre, code, kbd, samp, button, nav");
+    });
+    if (headings.length !== 1 || !hasProse) return;
+    candidate.dedupeKey = card;
+    candidate.sourceOrderedHeadingCard = true;
+  }

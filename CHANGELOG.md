@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Retain physical heading ranks and complete material in independently owned
+  linked records, including records whose root is the destination link itself.
+  Preserve independent equal-destination occurrences instead of flattening their
+  source headings into ordinary list labels.
+
 - Preserve the complete alternative headline inventory for roots that mix
   structured table records with independent cards, retaining selection evidence
   while avoiding duplicate row work in wholly table-owned collections.

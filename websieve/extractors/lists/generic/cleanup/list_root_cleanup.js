@@ -59,11 +59,14 @@
 
   function listHtmlWithoutUnsafeDestinations(root, contactGroups) {
     var clone = safeDeepClone(root, document);
+    clone.removeAttribute("data-fetch-util-structured-card-field");
     clone.querySelectorAll("[data-fetch-util-structured-card-field]").forEach(function(node) {
       node.removeAttribute("data-fetch-util-structured-card-field");
     });
     var sourceLinks = contactGroups ? Array.from(root.querySelectorAll("a[href]")) : [];
     var links = Array.from(clone.querySelectorAll("a[href]"));
+    if (root.matches("a[href]") && contactGroups) sourceLinks.unshift(root);
+    if (clone.matches("a[href]")) links.unshift(clone);
     links.forEach(function(link, index) {
       var source = sourceLinks[index];
       var contact = sourceLinks.length === links.length && source && contactGroups &&
@@ -72,6 +75,7 @@
       var href = contact ? materializedLinkUrl(link.getAttribute("href"), materializedTextAnchor(link)) :
         materializedHttpUrl(link.getAttribute("href"));
       if (!href) link.removeAttribute("href");
+      else if (link === clone) link.setAttribute("href", href);
     });
-    return clone.innerHTML;
+    return clone.tagName === "A" ? clone.outerHTML : clone.innerHTML;
   }

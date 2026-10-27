@@ -45,7 +45,9 @@
     var repeatedRecordByLink = new Map();
     (options && options.repeatedRecordCollection && options.repeatedRecordCollection.records || []).forEach(function(record) {
       if (!record.node || !record.node.querySelectorAll) return;
-      Array.prototype.forEach.call(record.node.querySelectorAll("a[href]"), function(link) {
+      var links = Array.from(record.node.querySelectorAll("a[href]"));
+      if (record.node.matches && record.node.matches("a[href]")) links.unshift(record.node);
+      links.forEach(function(link) {
         if (listCanonicalKey(materializedHttpUrl(link.getAttribute("href")) || "") !== record.destination) return;
         repeatedRecordByLink.set(link, repeatedRecordByLink.has(link) ? null : record);
       });
@@ -92,6 +94,7 @@
         candidate.text = repeatedRecord.title;
         candidate.rankScore = candidate.text.length + normalizeText(candidate.detail || "").length;
         if (repeatedRecord.mediaMarkdown.length) candidate.image = repeatedRecord.mediaMarkdown.join(" ");
+        if (repeatedRecordOwnsHeadlineCard(candidate, repeatedRecord)) candidate.sourceOrderedRepeatedRecord = true;
       }
       if (pushUniqueListCandidate(candidates, seen, candidate)) {
         sourceNodes.set(candidate, link);

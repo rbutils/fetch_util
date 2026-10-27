@@ -213,7 +213,7 @@
     })) return null;
     var localParagraphs = new Set();
     var completeItems = sectioned.items.concat(additions).map(function(item) {
-      if (!item.sourceOrderedRepeatedRecord && !item.sourceOrderedStructuredCard &&
+      if (!item.sourceOrderedRepeatedRecord && !item.sourceOrderedStructuredCard && !item.sourceOrderedHeadingCard &&
           typeof TurndownService === "function" && sectionArticleRecordOwnsHeading(item)) {
         item = Object.assign({}, item, { sourceOrderedRepeatedRecord: true });
       }
