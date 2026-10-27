@@ -20,7 +20,19 @@
     }).length;
   }
 
-  function isProbablyListPage(content) {
+  function listPageProbeRead(content) {
+    var pageRoot = null, selectedRoot = null;
+    return function(selected) {
+      if (selected) {
+        if (!selectedRoot) selectedRoot = pageContentProbe(content);
+        return selectedRoot;
+      }
+      if (!pageRoot) pageRoot = pageContentProbe();
+      return pageRoot;
+    };
+  }
+
+  function isProbablyListPage(content, readProbe) {
     if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
     if (articleRouteFocalContent(content)) return false;
@@ -72,19 +84,19 @@
         (signals.cards >= 4 && signals.headlineLinks >= 4 && signals.headings >= 3 && signals.text.length <= 36000);
     }
 
-    var pageRoot = pageContentProbe();
+    var pageRoot = readProbe ? readProbe(false) : pageContentProbe();
     var pageSignals = listSignals(pageRoot);
 
     if (homepageLike(pageSignals)) return true;
 
-    var root = pageContentProbe(content);
+    var root = readProbe ? readProbe(true) : pageContentProbe(content);
     return homepageLike(listSignals(root));
   }
 
-  function dominantIndexListPage(content) {
+  function dominantIndexListPage(content, readProbe) {
     if (!document.body) return false;
     if (medicalArticlePage(null, content)) return false;
-    var pageRoot = pageContentProbe();
+    var pageRoot = readProbe ? readProbe(false) : pageContentProbe();
     var institutionalCaseIndex = institutionalCaseRecordListPage(pageRoot, null, true, true);
     if (institutionalCaseIndex && institutionalCaseIndex.focalArticle) return false;
     if (institutionalCaseIndex) return true;
@@ -92,7 +104,7 @@
     if (linkedTableIndexPage()) return true;
     if (!likelyListPath() && !queryOrCategoryPage() && !jobResultsPage()) return false;
 
-    var root = pageContentProbe(content);
+    var root = readProbe ? readProbe(true) : pageContentProbe(content);
     var materializedLinks = materializedListLinks(root);
     var links = materializedLinks.length;
     var cards = root.querySelectorAll("article, li, section, [class*='card' i], [class*='item' i], [class*='story' i], [class*='product' i], [class*='tile' i], [class*='job' i], [data-testid*='card' i], [data-testid*='product' i], [data-testid='slider_container'], [data-test='jobListing'], [data-jobid], [data-url*='/remote-jobs/']").length;

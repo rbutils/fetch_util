@@ -33,6 +33,7 @@
 
   function selectIndexListCandidate(content, metadata, options) {
     options = options || {};
+    var readProbe = listPageProbeRead(content);
     var repeatedCollection = options.repeatedCollection;
     var materialResultsOwner = options.materialResultsOwner;
     var institutionalCaseIndex = options.institutionalCaseIndex;
@@ -48,14 +49,14 @@
         sourceOwner: materialResultsOwner.owner,
         materialResultsOwner: materialResultsOwner
       });
-    } else if (indexListAllowed && dominantIndexListPage(content)) {
+    } else if (indexListAllowed && dominantIndexListPage(content, readProbe)) {
       candidate = repeatedCollection ? listContent(metadata, {
         repeatedRecordCollection: repeatedCollection
       }) : listContent(metadata, institutionalCaseIndex ? {
         sourceOwner: institutionalCaseIndex.root,
         institutionalCaseIndex: institutionalCaseIndex
       } : undefined);
-    } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content) || options.articleBodyCollection || repeatedCollection) &&
+    } else if (indexListAllowed && (sourceOwnedIndex || isProbablyListPage(content, readProbe) || options.articleBodyCollection || repeatedCollection) &&
         (likelyListPath() || repeatedCollection ||
           (!cachedFocalArticleContent(content, options.focalArticleRoute) && !articleRouteFocalContent(content))) &&
         (!options.strongArticle || sourceOwnedIndex || repeatedCollection)) {

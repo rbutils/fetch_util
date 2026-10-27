@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Reuse separate, read-only physical-page and selected-content probes within one
+  list-arbitration decision, avoiding repeated full-document parsing while
+  preserving standalone classifier reads and fresh DOM and shadow state on each
+  subsequent decision.
+
 - Avoid duplicating already owned, visibility-pruned list trees during cleanup,
   preserving source mappings, complete material and the original extraction
   resource limits while keeping physical-source and still-owned trees immutable.
