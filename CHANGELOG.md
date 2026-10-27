@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain each visible record-local time label together with its complete declared
+  value when rendering physical heading cards, preserving independent repeated
+  values, inline formatting and existing hidden, closed and literal-code guards.
+
 - Retain physical heading ranks and complete material in independently owned
   linked records, including records whose root is the destination link itself.
   Preserve independent equal-destination occurrences instead of flattening their

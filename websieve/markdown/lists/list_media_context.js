@@ -17,11 +17,16 @@ function pruneSourceOrderedRecordControls(root) {
   });
 }
 
-function sourceOrderedRepeatedRecordMarkdown(item) {
-  var clone = safeDeepClone(item.card, document);
+function listRecordCloneWithTimeDeclarations(card) {
+  var clone = safeDeepClone(card, document);
   var sourceClones = new WeakMap();
-  mapDomCloneElements(item.card, clone, sourceClones);
-  materializeListTimeDeclarations(item.card, clone, sourceClones, cardOwnedNodes(item.card, "time[datetime]"));
+  mapDomCloneElements(card, clone, sourceClones);
+  materializeListTimeDeclarations(card, clone, sourceClones, cardOwnedNodes(card, "time[datetime]"));
+  return clone;
+}
+
+function sourceOrderedRepeatedRecordMarkdown(item) {
+  var clone = listRecordCloneWithTimeDeclarations(item.card);
   pruneSourceOrderedRecordControls(clone);
   var title = normalizeText(item.text || "");
   var destination = materializedHttpUrl(item.url || "");

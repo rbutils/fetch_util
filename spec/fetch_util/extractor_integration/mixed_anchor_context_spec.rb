@@ -3,6 +3,7 @@ require "support/extractor_integration_helpers"
 
 RSpec.describe FetchUtil::Extractor, "mixed sibling anchor context" do
   include_context "extractor integration helpers"
+  include_context 'heading record prose'
 
   def mixed_anchor_page(rich_content, second_content = nil)
     main_cards = (1..4).map do |number|
@@ -47,8 +48,8 @@ RSpec.describe FetchUtil::Extractor, "mixed sibling anchor context" do
       before = page.evaluate("document.body.innerHTML")
       payload = extract_payload(page)
       markdown = payload.fetch("markdown")
-      lead = markdown.lines.find { |line| line.include?("https://bulletin.example/peer/1)") }
-      peer = markdown.lines.find { |line| line.include?("https://bulletin.example/peer/2)") }
+      lead = heading_record_prose(markdown, destination: 'https://bulletin.example/peer/1').text
+      peer = heading_record_prose(markdown, destination: 'https://bulletin.example/peer/2').text
       expect(lead).to include("Reporting unique to the lead record.", "Lead reporter", "2026-09-14")
       expect(lead).not_to include("Context unique to the peer record.", "Peer reporter", "2026-09-13")
       expect(peer).to include("Context unique to the peer record.", "Peer reporter", "2026-09-13")

@@ -208,7 +208,8 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
       return "\n\n" + sourceOrderedRepeatedRecordMarkdown(item) + "\n\n";
     }
     if (item.sourceOrderedHeadingCard && item.card) {
-      return "\n\n" + markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim() + "\n\n";
+      var headingCard = listRecordCloneWithTimeDeclarations(item.card);
+      return "\n\n" + markdownFor(listHtmlWithoutUnsafeDestinations(headingCard)).trim() + "\n\n";
     }
     if (item.sourceOrderedStructuredCard && item.card) {
       return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();

@@ -2,6 +2,7 @@ require 'spec_helper'
 
 RSpec.describe 'FetchUtil flat-record time declarations' do
   include_context 'extractor integration helpers'
+  include_context 'heading record prose'
 
   def flat_time_page(declarations)
     articles = (1..4).map do |number|
@@ -56,19 +57,19 @@ RSpec.describe 'FetchUtil flat-record time declarations' do
     end
   end
 
-  def flat_peer_line(markdown, number)
-    markdown.lines.find { |line| line.include?("https://schedule.publication.example.test/peer/#{number})") }
+  def flat_peer_record(markdown, number)
+    heading_record_prose(markdown, destination: "https://schedule.publication.example.test/peer/#{number}")
   end
 
   it 'retains each visible label beside its own literal declaration without borrowing neighboring metadata' do
     declarations = [['2026-09-14', 'September 14'], ['2026-09-13', 'September 13']]
     with_flat_time_result(declarations) do |markdown|
       declarations.each_with_index do |(value, label), index|
-        line = flat_peer_line(markdown, index + 1)
-        expect(line).to include("#{label} (#{value})", "Regional reporter #{index + 1}")
-        expect(line.scan(value).length).to eq(1)
-        expect(line.scan(label).length).to eq(1)
-        expect(line).not_to include(declarations.fetch(1 - index).fetch(1))
+        record = flat_peer_record(markdown, index + 1).text
+        expect(record).to include("#{label} (#{value})", "Regional reporter #{index + 1}")
+        expect(record.scan(value).length).to eq(1)
+        expect(record.scan(label).length).to eq(1)
+        expect(record).not_to include(*declarations.fetch(1 - index))
         expect(markdown).to include("Complete regional context belonging only to report #{index + 1}.")
       end
     end
@@ -79,7 +80,7 @@ RSpec.describe 'FetchUtil flat-record time declarations' do
     with_flat_time_result(declarations) do |markdown|
       expect(markdown.scan('2026-09-14T09:00:00+02:00').length).to eq(2)
       declarations.each_with_index do |(value, label), index|
-        expect(flat_peer_line(markdown, index + 1)).to include("#{label} (#{value})")
+        expect(flat_peer_record(markdown, index + 1).text).to include("#{label} (#{value})")
       end
     end
   end
@@ -87,17 +88,22 @@ RSpec.describe 'FetchUtil flat-record time declarations' do
   it 'retains authored inline emphasis and code within the visible labels' do
     declarations = [['2026-09-15', '<strong>September 15</strong>'], ['2026-09-16', '<em>Later release</em> <code>revision_2</code>']]
     with_flat_time_result(declarations) do |markdown|
-      expect(flat_peer_line(markdown, 1)).to include('**September 15** (2026-09-15)')
-      expect(flat_peer_line(markdown, 2)).to include('_Later release_ `revision_2` (2026-09-16)')
+      first = flat_peer_record(markdown, 1)
+      second = flat_peer_record(markdown, 2)
+      expect(first.text).to include('September 15 (2026-09-15)')
+      expect(first.css('strong').map(&:text)).to eq(['September 15'])
+      expect(second.text).to include('Later release revision_2 (2026-09-16)')
+      expect(second.css('em').map(&:text)).to eq(['Later release'])
+      expect(second.css('code').map(&:text)).to eq(['revision_2'])
     end
   end
 
   it 'keeps an already represented declaration once and retains an empty-label declaration' do
     declarations = [['2026-09-17', '<span>Updated 2026-09-17</span>'], ['2026-09-18', '']]
     with_flat_time_result(declarations) do |markdown|
-      expect(flat_peer_line(markdown, 1)).to include('Updated 2026-09-17')
-      expect(flat_peer_line(markdown, 1).scan('2026-09-17').length).to eq(1)
-      expect(flat_peer_line(markdown, 2).scan('2026-09-18').length).to eq(1)
+      expect(flat_peer_record(markdown, 1).text).to include('Updated 2026-09-17')
+      expect(flat_peer_record(markdown, 1).text.scan('2026-09-17').length).to eq(1)
+      expect(flat_peer_record(markdown, 2).text.scan('2026-09-18').length).to eq(1)
     end
   end
 
@@ -107,8 +113,12 @@ RSpec.describe 'FetchUtil flat-record time declarations' do
       ['2026-09-20', '<span style="display:none">Styled hidden detail</span><em>September 20</em>']
     ]
     with_flat_time_result(declarations) do |markdown|
-      expect(flat_peer_line(markdown, 1)).to include('**September 19** (2026-09-19)')
-      expect(flat_peer_line(markdown, 2)).to include('_September 20_ (2026-09-20)')
+      first = flat_peer_record(markdown, 1)
+      second = flat_peer_record(markdown, 2)
+      expect(first.text).to include('September 19 (2026-09-19)')
+      expect(first.css('strong').map(&:text)).to eq(['September 19'])
+      expect(second.text).to include('September 20 (2026-09-20)')
+      expect(second.css('em').map(&:text)).to eq(['September 20'])
       expect(markdown).not_to include('Hidden schedule detail', 'Styled hidden detail')
     end
   end
