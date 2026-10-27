@@ -1544,6 +1544,7 @@ RSpec.describe "extract asset bundle" do
         extractors/article/fallback/focal_permalink.js
         extractors/article/fallback/ownership/content/selected_article_lead.js
         extractors/article/fallback/fallback_excerpt.js
+        extractors/article/fallback/resources/linked_sections.js
         extractors/article/fallback/section_ownership.js
         extractors/article/fallback/high_confidence_content.js
         extractors/article/fallback/content_cleanup.js
