@@ -155,12 +155,12 @@
       node.ownerDocument && node.ownerDocument !== document && !node.ownerDocument.defaultView);
   }
 
-  function cleanDisposableClone(node, preserveSelector) {
+  function cleanDisposableClone(node, preserveSelector, elementMap) {
     // Only a caller-owned, detached inert root may be consumed. Physical source
     // nodes and children still owned by another tree retain the copying path.
-    if (!disposableDomRoot(node)) return cleanClone(node, preserveSelector);
+    if (!disposableDomRoot(node)) return cleanClone(node, preserveSelector, elementMap);
     if (cookieChromeNode(node)) return document.createElement("div");
-    return cleanClonedContent(node, node, preserveSelector, null);
+    return cleanClonedContent(node, node, preserveSelector, elementMap);
   }
 
   function articleOwnedFooter(node) {

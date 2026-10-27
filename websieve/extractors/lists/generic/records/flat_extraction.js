@@ -11,7 +11,7 @@
     pruneHiddenClone(node, clone, preservedRoots, null, false, sourceToVisible);
     unwrapListOwnedHeaders(clone);
     preserveHomepageListAsides(clone);
-    var cleaned = cleanClone(clone, "[data-fetchutil-editorial-aside]", visibleToCleaned);
+    var cleaned = cleanDisposableClone(clone, "[data-fetchutil-editorial-aside]", visibleToCleaned);
     if (elementMap) {
       sourceToVisible.forEach(function(visibleNode, sourceNode) {
         var cleanedNode = visibleToCleaned.get(visibleNode);

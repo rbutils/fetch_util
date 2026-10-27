@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Avoid duplicating already owned, visibility-pruned list trees during cleanup,
+  preserving source mappings, complete material and the original extraction
+  resource limits while keeping physical-source and still-owned trees immutable.
+
 - Preserve complete visible heading and linked-image resource sections owned by
   a main document's physical page container, retaining all prior document
   material and independent reference occurrences during fallback selection.
