@@ -165,7 +165,8 @@
   }
 
   function sourceOwnedFallbackContent(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText) {
-    if (!sourceOwnedLinkedPublicationSections(primary, fallback, primaryRoot, fallbackRoot) &&
+    if (!sourceOwnedLinkedResourceSections(primary, fallback, primaryRoot, fallbackRoot) &&
+        !sourceOwnedLinkedPublicationSections(primary, fallback, primaryRoot, fallbackRoot) &&
         !sourceOwnedFallbackSections(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText)) return null;
     fallback.sourceOwnedSections = true;
     return fallback;

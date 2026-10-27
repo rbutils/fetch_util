@@ -20,6 +20,8 @@
       });
     });
     if (focalOwnership && focalOwnership.node && document.body.contains(focalOwnership.node)) candidates.add(focalOwnership.node);
+    var resourceContext = sourceOwnedResourceContext(metadata);
+    if (resourceContext) candidates.add(resourceContext.owner);
 
     var sourceClones = new WeakMap();
     var visibleBody = visibilityPrunedClone(document.body, document, sourceClones);
@@ -80,6 +82,7 @@
         focalOwnership = null;
       }
     }
+    if (!focalOwnership) selected = sourceOwnedResourceFallbackRecord(records, selected, resourceContext);
     var excerptArticleOwner = focalOwnership;
     if (!selected || !focalOwnership || selected.node !== focalOwnership.node) focalOwnership = null;
     var node = selected ? selected.node : document.body;

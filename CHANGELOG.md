@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve complete visible heading and linked-image resource sections owned by
+  a main document's physical page container, retaining all prior document
+  material and independent reference occurrences during fallback selection.
+
 - Retain each visible record-local time label together with its complete declared
   value when rendering physical heading cards, preserving independent repeated
   values, inline formatting and existing hidden, closed and literal-code guards.
