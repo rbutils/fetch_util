@@ -25,7 +25,7 @@ RSpec.describe FetchUtil::Extractor do
   end
 
   it 'loads Ferrum error classes from the public entrypoint' do
-    root = File.expand_path('../..', __dir__)
+    root = ENV.fetch('FETCH_UTIL_BOUND_SOURCE_ROOT') { File.expand_path('../..', __dir__) }
     script = <<~'RUBY'
       require 'fetch_util'
 
