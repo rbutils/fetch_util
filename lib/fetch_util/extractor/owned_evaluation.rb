@@ -11,6 +11,8 @@ module FetchUtil
       end
 
       def call
+        @completed = false
+        @collect_after_finish = false
         @deadline = monotonic_time + @budget
         response = command(
           "Runtime.callFunctionOn",
@@ -25,9 +27,11 @@ module FetchUtil
         properties = command("Runtime.getProperties", objectId: @object_id, ownProperties: true).fetch("result")
         values = properties.to_h { |property| [property.fetch("name"), property["value"]] }
         unless values.dig("owned", "type") == "boolean" && values.dig("finish", "type") == "function" &&
-               (!values.key?("prepare") || values.dig("prepare", "type") == "function")
+               (!values.key?("prepare") || values.dig("prepare", "type") == "function") &&
+               (!values.key?("collectAfterFinish") || values.dig("collectAfterFinish", "type") == "boolean")
           raise ExtractionError, "Invalid owned extraction work descriptor"
         end
+        @collect_after_finish = values.dig("collectAfterFinish", "value") == true
 
         if values.dig("owned", "value") == true
           if values.key?("prepare")
@@ -41,14 +45,17 @@ module FetchUtil
           end
           collect_completed_work
         end
-        command(
+        result = command(
           "Runtime.callFunctionOn",
           objectId: @object_id,
           functionDeclaration: "function() { return this.finish(); }",
           returnByValue: true
         ).fetch("result")["value"]
+        @completed = true
+        result
       ensure
         release_work
+        collect_released_work
       end
 
       private
@@ -80,6 +87,17 @@ module FetchUtil
       rescue Ferrum::BrowserError
         # Older injected transports can lack this optional browser command.
         # The complete owned work still runs; no extraction is retried.
+        nil
+      end
+
+      def collect_released_work
+        return unless @completed && @collect_after_finish
+        return unless monotonic_time < @deadline
+
+        collect_completed_work
+      rescue Ferrum::Error
+        # Retirement is optional after a complete result has been serialized.
+        # Keep that result and never retry extraction or extend its deadline.
         nil
       end
 

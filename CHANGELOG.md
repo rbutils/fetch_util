@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retire explicitly opted-in extraction work after the complete result has been
+  serialized and its remote object group released, using only the remaining
+  original deadline and preserving legacy descriptors and extraction failures.
+
 - Reuse separate, read-only physical-page and selected-content probes within one
   list-arbitration decision, avoiding repeated full-document parsing while
   preserving standalone classifier reads and fresh DOM and shadow state on each

@@ -2,6 +2,7 @@
     var consumed = false;
     return {
       owned: false,
+      collectAfterFinish: true,
       finish: function() {
         if (consumed) throw new Error("Extraction work has already been consumed");
         consumed = true;
@@ -60,6 +61,7 @@
     }
     return {
       owned: true,
+      collectAfterFinish: true,
       prepare: prepare,
       dispose: dispose,
       finish: function() {
