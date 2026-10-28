@@ -46,13 +46,19 @@ RSpec.describe 'Owned extraction runtime', :integration do
       before = page.evaluate('document.body.innerHTML')
       ordinary = page.evaluate('window.FetchUtilExtract.extract({reader_mode: true})')
       calls = []
+      completion_collection_counts = []
       allow(page).to receive(:command).and_wrap_original do |original, method, **parameters|
         calls << method
+        if method == 'Runtime.callFunctionOn' && parameters[:functionDeclaration] == 'function() { return this.finish(); }'
+          completion_collection_counts << calls.count('HeapProfiler.collectGarbage')
+        end
         original.call(method, **parameters)
       end
       actual = FetchUtil::Extractor.new.extract(page)
       expect(actual).to eq(ordinary)
-      expect(calls.count('HeapProfiler.collectGarbage')).to eq(2)
+      expect(completion_collection_counts).to eq([2])
+      expect(calls.count('HeapProfiler.collectGarbage')).to eq(3)
+      expect(calls.last(2)).to eq(['Runtime.releaseObjectGroup', 'HeapProfiler.collectGarbage'])
       expect(actual.fetch('html').scan('<pre').length).to eq(160)
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
