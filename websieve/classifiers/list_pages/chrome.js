@@ -153,6 +153,7 @@
 
     if (!attrs) return false;
     if (/(news|headline|story|article|post|feed|stream|content|result|listing|archive|topic|thread|discussion|feature)/.test(attrs)) return false;
+    if (/(?:^|[\s_-])(?:header|footer)(?:$|[\s_-])/.test(attrs) && listInformationalChromeOwner(node)) return false;
     if (includeSocial && /(?:^|[\s_-])meta(?:data)?(?:$|[\s_-])/.test(attrs)) {
       var card = closestGenericListCard(node.parentElement);
       var primaryLink = card && genericListStructuredCardLink(card);

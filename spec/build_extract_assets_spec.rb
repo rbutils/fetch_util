@@ -1459,6 +1459,7 @@ RSpec.describe "extract asset bundle" do
       ], "classifiers/list_pages/context.js"],
       ["classifiers/list_pages/card_ownership.js", %w[
         extractors/lists/generic/sections/editorial_asides.js
+        classifiers/list_pages/chrome/informational_groups.js
       ], "classifiers/list_pages/chrome.js"],
       ["classifiers/list_pages/ownership/repeated_records.js", [
         "classifiers/list_pages/ownership/runtime_detail_ownership.js"

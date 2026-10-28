@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve complete, physically owned informational heading and paragraph groups
+  when their header or footer class names resemble navigation, retaining their
+  independent references while excluding actual interfaces and hidden content.
+
 - Preserve literal entity-looking text in complete Markdown link and image
   destinations, including repeated materialization, queries and fragments,
   without changing raw HTML resources or literal program values.
