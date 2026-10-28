@@ -72,7 +72,7 @@
         var src = node.getAttribute("src") || node.getAttribute("data-src") || node.getAttribute("data-lazy-src") || "";
         var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
         var url = materializedHttpUrl(src);
-        return url ? "![" + alt + "](" + url + ")" : alt;
+        return url ? "![" + alt + "](" + escapeMarkdownDestination(url) + ")" : alt;
       }
     });
   }

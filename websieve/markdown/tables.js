@@ -76,7 +76,7 @@
     if (node.tagName === "IMG") {
       var alt = normalizeText(node.getAttribute("alt") || "").replace(/[\[\]]/g, "");
       var src = materializedHttpUrl(node.getAttribute("src"));
-      return alt && src ? " ![" + alt + "](" + src.replace(/\|/g, "%7C") + ") " : alt;
+      return alt && src ? " ![" + alt + "](" + escapeMarkdownDestination(src.replace(/\|/g, "%7C")) + ") " : alt;
     }
     var link = node.matches("a[href]");
     var content = Array.from(node.childNodes).map(function(child) {

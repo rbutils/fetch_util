@@ -10,13 +10,13 @@
   function markdownLink(text, url) {
     var href = listPresentationUrl(url);
     if (!normalizeText(text)) text = href || "";
-    return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + href + ")" : text;
+    return href ? "[" + escapeMarkdownLinkLabel(text) + "](" + escapeMarkdownDestination(href) + ")" : text;
   }
 
   function markdownLinkWithFormattedLabel(markdown, url) {
     var href = listPresentationUrl(url);
     if (!normalizeText(markdown)) markdown = href ? escapeMarkdownLinkLabel(href) : "";
-    return href ? "[" + markdown + "](" + href + ")" : markdown;
+    return href ? "[" + markdown + "](" + escapeMarkdownDestination(href) + ")" : markdown;
   }
 
   function preserveAccessibleLinkLabels(root) {

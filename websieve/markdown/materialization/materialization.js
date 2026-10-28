@@ -75,7 +75,7 @@ function materializedMarkdown(markdown, allowArticleMailto) {
     if (link) {
       var label = materializedMarkdown(link.label, allowArticleMailto);
       var url = link.image ? materializedHttpUrl(link.url) : materializedLinkUrl(link.url, allowArticleMailto !== false);
-      output.replace(position, link.end, url ? (link.image ? "!" : "") + "[" + label + "](" + url + link.suffix + ")" : label);
+      output.replace(position, link.end, url ? (link.image ? "!" : "") + "[" + label + "](" + escapeMarkdownDestination(url) + link.suffix + ")" : label);
       position = link.end;
       continue;
     }
@@ -173,12 +173,12 @@ function markdownReferenceDefinitionAt(value, position) {
 
   var absoluteStart = destinationLineStart + destinationOffset + destination.start;
   var absoluteEnd = destinationLineStart + destinationOffset + destination.end;
-  var safeUrl = materializedHttpUrl(destination.url.replace(/\\([\\()])/g, "$1"));
+  var safeUrl = materializedHttpUrl(decodeMarkdownDestination(destination.url));
   if (!safeUrl) {
     return { value: value.slice(position, blockEnd).replace(/[^\n]/g, ""), end: blockEnd };
   }
 
-  var serialized = destination.angle ? "<" + safeUrl + ">" : safeUrl;
+  var serialized = destination.angle ? "<" + escapeMarkdownDestination(safeUrl) + ">" : escapeMarkdownDestination(safeUrl);
   return {
     value: value.slice(position, absoluteStart) + serialized + value.slice(absoluteEnd, blockEnd),
     end: blockEnd

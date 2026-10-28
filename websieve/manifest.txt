@@ -104,6 +104,7 @@ systems/cms/wordpress_homepage.js
 classifiers/list_pages/ownership/homepage_peer_sections.js
 markdown/code/named_targets.js
 markdown/code/linked_programs.js
+markdown/links/destinations.js
 markdown/materialization/video_posters.js
 markdown/materialization/frame_references.js
 markdown/materialization/responsive_images.js

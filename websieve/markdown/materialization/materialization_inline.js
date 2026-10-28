@@ -11,7 +11,7 @@ function inlineMarkdownLinkAt(markdown, position) {
   return {
     image: image,
     label: markdown.slice(bracket + 1, labelEnd),
-    url: destination.url.replace(/\\([\\()])/g, "$1"),
+    url: decodeMarkdownDestination(destination.url),
     suffix: destination.suffix,
     end: destination.end
   };

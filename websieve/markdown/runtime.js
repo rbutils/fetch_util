@@ -40,6 +40,7 @@
     materializeMarkdownHeadingLayouts(root);
     separateAdjacentInlineLinks(root);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
+    var literalDestinations = prepareLiteralDestinationMarkdown(root, blockMaterialLinks);
     var responsiveImages = prepareResponsiveImageMarkdown(root);
 
     var literalPrograms = prepareLiteralCodePrograms(root);
@@ -51,6 +52,7 @@
       bulletListMarker: "-",
       emDelimiter: "_"
     });
+    addLiteralEntityDestinationRule(service);
     var preparedTables = null;
     var prepareLinkBoundaries = prepareMarkdownLinkBoundaryEscaping(service);
     service.options.fetchUtilPrepareRoot = function(normalizedRoot) {
@@ -193,6 +195,7 @@
     });
 
     addBlockMaterialLinkRule(service, blockMaterialLinks);
+    addLiteralDestinationRule(service, literalDestinations);
     var converted = convertRoot ? convertRoot(service, root) : service.turndown(root);
     var protectedMarkdown = protectMarkdownFences(converted);
     var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();
@@ -202,7 +205,7 @@
     });
     var restored = restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
     var material = restoreBlockMaterialTables(restoreBlockMaterialLinks(restored, blockMaterialLinks), blockMaterialTables);
-    return restoreResponsiveImageMarkdown(material, responsiveImages);
+    return restoreLiteralDestinationMarkdown(restoreResponsiveImageMarkdown(material, responsiveImages), literalDestinations);
   }
 
   function paragraphLikeDiv(node) {

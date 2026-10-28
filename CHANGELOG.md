@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve literal entity-looking text in complete Markdown link and image
+  destinations, including repeated materialization, queries and fragments,
+  without changing raw HTML resources or literal program values.
+
 - Retire explicitly opted-in extraction work after the complete result has been
   serialized and its remote object group released, using only the remaining
   original deadline and preserving legacy descriptors and extraction failures.

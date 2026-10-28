@@ -17,6 +17,7 @@
   }
 
   function tableRequiresBlockMaterial(table) {
+    if (literalMarkdownDestinationNodes(table).length) return true;
     if (tableHasUnrepresentableCellRoles(table)) return true;
     return Array.from(table.querySelectorAll("th, td")).some(function(cell) {
       if (cell.matches("[rowspan], [colspan]")) return true;
