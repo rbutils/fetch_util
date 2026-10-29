@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Respect physical hidden and closed-disclosure boundaries when collecting list
+  records, descriptions, figures and topic references, preserving visible
+  first-summary and open-disclosure content.
+
 - Preserve complete physical heading records in sectioned collections, including
   their full query and fragment destinations, independent equal-destination
   occurrences, authored paragraphs and record-owned literal programs.

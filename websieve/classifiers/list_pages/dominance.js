@@ -166,7 +166,7 @@
   }
 
   function listLinkCandidate(link, container, context, retainUnsafeLink) {
-    if (!link) return null;
+    if (!link || listNodeWithinClosedDisclosure(link)) return null;
     if (listExplicitAdvertisementOwner(link)) return null;
 
     var href = link.getAttribute("href");

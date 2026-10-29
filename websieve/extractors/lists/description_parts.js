@@ -69,7 +69,8 @@
   function listDescriptionFigureParts(root, items) {
     if (!items || !items.length) return [];
     var figures = Array.from(root.querySelectorAll("figure")).filter(function(figure) {
-      if (figure.closest("a[href], nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog']") || listCardNodeHidden(figure)) return false;
+      if (figure.closest("a[href], nav, header, footer, form, menu, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog']") ||
+          listCardNodeHidden(figure) || listNodeWithinClosedDisclosure(figure)) return false;
       var caption = figure.querySelector("figcaption");
       if (!caption || caption.closest("figure") !== figure) return false;
       var heading = Array.from(caption.querySelectorAll("h1, h2, h3, h4, h5, h6")).some(function(node) {
@@ -152,6 +153,7 @@
     }).filter(Boolean);
     var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote" : "h1, h2, h3, p, blockquote";
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
+      if (listCardNodeHidden(el) || listNodeWithinClosedDisclosure(el)) return;
       if (outerArticles.covered.has(el) || unselectedRecords.covered.has(el)) return;
       if (figureParts.some(function(part) { return part.node.contains(el); })) return;
       if (sourceOwnedResultCountNodes && sourceOwnedResultCountNodes.has(el)) {
@@ -163,7 +165,6 @@
       var quote = el.tagName === "BLOCKQUOTE";
       var inlineProse = el.tagName === "DIV";
       if (inlineProse && !listInlineDescriptionNode(el)) return;
-      if (quote && listCardNodeHidden(el)) return;
       if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences, primaryUrls)) return;
       var heading = /^H[1-6]$/.test(el.tagName);
       var text = heading ? listHeadingText(el) : normalizeText(el.textContent);
