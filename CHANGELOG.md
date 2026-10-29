@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete standalone literal programs in list context, including
+  independent occurrences and named/reference bindings, in source order while
+  preserving visibility and existing record ownership.
+
 - Respect physical hidden and closed-disclosure boundaries when collecting list
   records, descriptions, figures and topic references, preserving visible
   first-summary and open-disclosure content.

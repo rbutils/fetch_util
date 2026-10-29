@@ -125,6 +125,20 @@
     }).filter(function(part) { return part.markdown; });
   }
 
+  function listDescriptionProgramPart(program, items) {
+    if (program.closest("a[href], table, nav, form, button, menu, dialog, [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog'], [role='button'], [role='tab'], [role='menuitem']")) return null;
+    if ((items || []).some(function(item) {
+      return [item.card, item.contentCard, item.sourceNode].some(function(owner) {
+        return owner && owner.contains(program);
+      });
+    })) return null;
+    var sourceClones = new Map();
+    var clone = visibilityPrunedClone(program, document, sourceClones);
+    restorePrunedNamedCodeTargets(program, sourceClones);
+    var markdown = markdownFor(clone.outerHTML).trim();
+    return markdown ? { node: program, markdown: markdown, descriptiveProgram: true } : null;
+  }
+
   function listDescriptionParts(root, items, options) {
     var unselectedRecords = options && options.preserveUnselectedRecordMaterial ?
       listUnselectedArticleDescriptions(root, items) : { parts: [], covered: new WeakSet() };
@@ -151,7 +165,7 @@
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
-    var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote" : "h1, h2, h3, p, blockquote";
+    var selector = hasItems ? "h1, h2, h3, h4, h5, h6, p, blockquote, pre" : "h1, h2, h3, p, blockquote";
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
       if (listCardNodeHidden(el) || listNodeWithinClosedDisclosure(el)) return;
       if (outerArticles.covered.has(el) || unselectedRecords.covered.has(el)) return;
@@ -161,7 +175,12 @@
         if (resultCountMarkdown) descParts.push({ node: el, markdown: resultCountMarkdown });
         return;
       }
-      if (el.parentElement && el.parentElement.closest("blockquote")) return;
+      if (el.parentElement && el.parentElement.closest("blockquote, pre")) return;
+      if (el.tagName === "PRE") {
+        var programPart = listDescriptionProgramPart(el, items);
+        if (programPart) descParts.push(programPart);
+        return;
+      }
       var quote = el.tagName === "BLOCKQUOTE";
       var inlineProse = el.tagName === "DIV";
       if (inlineProse && !listInlineDescriptionNode(el)) return;

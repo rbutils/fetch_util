@@ -80,7 +80,8 @@
   }
 
   function restorePrunedNamedCodeTargets(sourceRoot, sourceClones) {
-    sourceRoot.querySelectorAll("pre").forEach(function(sourcePre) {
+    var programs = sourceRoot.tagName === "PRE" ? [sourceRoot] : sourceRoot.querySelectorAll("pre");
+    programs.forEach(function(sourcePre) {
       var clonePre = sourceClones.get(sourcePre);
       if (!clonePre) return;
       var sourceCode = sourcePre.querySelector("code") || sourcePre;
