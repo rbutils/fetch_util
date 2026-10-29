@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "support/extractor_integration_helpers"
+require "open3"
 
 RSpec.describe "Wrapped heading card ownership" do
   include_context "extractor integration helpers"
@@ -24,6 +25,7 @@ RSpec.describe "Wrapped heading card ownership" do
       };
     JS
     with_url_page(url, html) do |page|
+      inject_standalone_extractor(page, reader_mode: true)
       page.add_script_tag(content: source.delete_suffix(outro) + export + outro)
       JSON.parse(page.evaluate("JSON.stringify(window.__wrappedHeadingItems(#{fallback}, #{flat}))"))
     end
@@ -72,7 +74,16 @@ RSpec.describe "Wrapped heading card ownership" do
     html = wrapped_heading_page.sub("</h3></a>", "</h3><p>Only this record owns its complete local description.</p></a>")
     markdown = wrapped_heading_items(html, fallback: true)
     expect(markdown.scan("Only this record owns its complete local description.").length).to eq(1)
-    expect(markdown.lines.first).to include("/Regional/0", "Only this record owns")
+    script = "from markdown_it import MarkdownIt; import sys; print(MarkdownIt('commonmark').render(sys.stdin.read()))"
+    output, error, status = Open3.capture3("python3", "-c", script, stdin_data: markdown)
+    raise error unless status.success?
+
+    rendered = Nokogiri::HTML5.fragment(output)
+    expect(rendered.css("h3").map(&:text)).to eq(["Regional report number 0"])
+    expect(rendered.css("p").map(&:text)).to eq(["Only this record owns its complete local description."])
+    expect(rendered.css("h3 > a[href]").map { |link| [link.text, link["href"]] }).to eq(
+      [["Regional report number 0", "https://publisher.example/Regional/0"]]
+    )
   end
 
   it "retains a short series heading and the longer episode heading in one record" do

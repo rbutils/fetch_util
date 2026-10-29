@@ -50,17 +50,27 @@
 
   function applyLinkedHeadingRecordIdentity(candidate) {
     var card = candidate && candidate.card;
-    if (!card || candidate.repeatedRecordIdentity || card !== candidate.sourceNode || !card.matches("a[href]") ||
-        !materializedHttpUrl(card.getAttribute("href")) || listCardNodeHidden(card) ||
-        listChromeNode(card) || listChromeAncestor(card) ||
-        card.closest("pre, code, kbd, samp, button, nav, [role='button'], [role='navigation']") ||
-        !genericListDirectAnchorCard(card, card.parentElement)) return;
-    var headings = Array.from(card.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+    var link = candidate && candidate.sourceNode;
+    if (!card || !link || candidate.repeatedRecordIdentity || !link.matches("a[href]") || !card.contains(link) ||
+        !link.querySelector("h1, h2, h3, h4, h5, h6") || !link.querySelector("p")) return;
+    if (!materializedHttpUrl(link.getAttribute("href")) || listCardNodeHidden(card) || listCardNodeHidden(link) ||
+        listChromeNode(card) || listChromeNode(link) || listChromeAncestor(link) ||
+        link.closest("pre, code, kbd, samp, button, nav, [role='button'], [role='navigation']")) return;
+    var owner = link;
+    while (owner !== card) {
+      var parent = owner.parentElement;
+      if (!parent || Array.from(parent.childNodes).some(function(node) {
+        return node !== owner && (node.nodeType === 1 ||
+          (node.nodeType === 3 && normalizeText(node.nodeValue || "")));
+      })) return;
+      owner = parent;
+    }
+    var headings = Array.from(link.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
       return normalizeText(heading.textContent || "") && !listCardNodeHidden(heading) &&
-        heading.closest("a[href]") === card &&
+        heading.closest("a[href]") === link &&
         !heading.closest("pre, code, kbd, samp, button, nav, [role='button'], [role='navigation']");
     });
-    var hasProse = Array.from(card.querySelectorAll("p")).some(function(paragraph) {
+    var hasProse = Array.from(link.querySelectorAll("p")).some(function(paragraph) {
       return normalizeText(paragraph.textContent || "") && !listCardNodeHidden(paragraph) &&
         !paragraph.closest("pre, code, kbd, samp, button, nav");
     });

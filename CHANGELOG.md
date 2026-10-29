@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain physical heading ranks and complete prose in selected linked records
+  without requiring sibling collection records, preserving independent equal
+  destinations and existing visibility and interface boundaries.
+
 - Preserve complete, physically owned informational heading and paragraph groups
   when their header or footer class names resemble navigation, retaining their
   independent references while excluding actual interfaces and hidden content.
