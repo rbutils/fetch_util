@@ -108,10 +108,13 @@ function listCompactMetadataContains(metadata, node) {
   return !!(metadata && node && metadata.node.contains(node));
 }
 
-function cardField(card, selector, primaryUrl, allowReference, fieldFilter) {
-  if (!card || !card.querySelector) return "";
+function cardFieldNode(card, selector, fieldFilter) {
+  if (!card || !card.querySelector) return null;
   var nodes = cardOwnedNodes(card, selector);
-  var node = fieldFilter ? nodes.filter(fieldFilter)[0] : nodes[0];
+  return (fieldFilter ? nodes.filter(fieldFilter)[0] : nodes[0]) || null;
+}
+
+function cardFieldValue(node, primaryUrl, allowReference) {
   if (!node) return "";
   var nodeUrl = node.matches && node.matches("a[href]") && materializedHttpUrl(node.getAttribute("href"));
   if (nodeUrl && primaryUrl && listCanonicalKey(nodeUrl) === listCanonicalKey(primaryUrl)) {
@@ -123,6 +126,10 @@ function cardField(card, selector, primaryUrl, allowReference, fieldFilter) {
   if (!value) return "";
   if (/^(comment|comments|reply|replies|score|points|likes?)$/i.test(value)) return "";
   return value;
+}
+
+function cardField(card, selector, primaryUrl, allowReference, fieldFilter) {
+  return cardFieldValue(cardFieldNode(card, selector, fieldFilter), primaryUrl, allowReference);
 }
 
 function listCompactMetadataFollowingField(card, metadata, selector, value) {

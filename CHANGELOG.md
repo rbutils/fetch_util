@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Avoid rendering a publication credit twice when its exact physical field and
+  complete material are already represented by a selected record, preserving
+  independent equal credits, rich material and visibility boundaries.
+
 - Retain complete source-owned peer regions when the reader selects one linked
   record, preserving full destinations, physical heading roles and independent
   occurrences without widening global collection thresholds.

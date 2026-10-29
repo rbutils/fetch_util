@@ -109,10 +109,11 @@ function listItemSocialFields(item) {
   var scoreSelector = "[class*='score' i], [data-score], [data-karma]";
   var replySelector = ".reply, .replies, .comment, .comments, [class~='reply'], [class~='replies'], [class~='comment'], [class~='comments'], [class*='reply'], [class*='replie'], [class*='comment'], [data-reply], [data-replies], [data-comment], [data-comments]";
   var communitySelector = "[class*='community' i], [class*='subreddit' i], [data-community]";
+  var authorNode = cardFieldNode(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", function(node) {
+    return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
+  });
   var owned = {
-    author: cardField(card, "[rel~='author'], [itemprop~='author'], [class*='author' i], [class*='byline' i], [data-author]", item.url, true, function(node) {
-      return genericListAuthorMetadataNode(node) && !genericListInteractionOwner(node);
-    }),
+    author: cardFieldValue(authorNode, item.url, true),
     time: cardField(card, timeSelector, item.url),
     score: cardField(card, scoreSelector, item.url),
     replyCount: cardField(card, replySelector, item.url, false, function(node) {
@@ -122,6 +123,7 @@ function listItemSocialFields(item) {
   };
   var timeNode = card && card.querySelector ? cardOwnedNodes(card, timeSelector)[0] : null;
   return {
+    authorNode: owned.author ? authorNode : null,
     timeNode: timeNode,
     scoreNode: card && card.querySelector ? cardOwnedNodes(card, scoreSelector)[0] : null,
     author: owned.author || item.author,
@@ -185,11 +187,18 @@ function listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHe
       });
     }
   }
-  return contextValues.filter(function(value) {
+  var values = contextValues.filter(function(value) {
     return value && !listEmptyRepresentedReference(value, primaryUrls);
   }).filter(function(value, index, values) {
     return values.indexOf(value) === index;
   });
+  if (socialFields.authorNode && socialFields.author && values.indexOf(socialFields.author) !== -1 &&
+      contextValues.filter(function(value) { return value === socialFields.author; }).length === 1) {
+    Object.defineProperty(values, "__fetchUtilAuthorField", {
+      value: { node: socialFields.authorNode, value: socialFields.author }
+    });
+  }
+  return values;
 }
 
 var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {

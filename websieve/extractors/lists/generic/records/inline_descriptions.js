@@ -37,7 +37,7 @@
 
   function listPublicationCreditDescriptionParts(root, items, descriptions) {
     if (!items || !items.length) return [];
-    return Array.from(root.querySelectorAll("span")).filter(function(node) {
+    var parts = Array.from(root.querySelectorAll("span")).filter(function(node) {
       var markers = [node.id, node.getAttribute("class"), node.getAttribute("data-testid")];
       if (!markers.some(inferredBylineFieldMarker) && !node.matches("[itemprop~='author'], [rel~='author']")) return false;
       if (node.closest("a, p, blockquote, table, ul, ol, pre, code, kbd, samp, nav, header, footer, aside, form, button, label, summary, menu, dialog, [role='button'], [role='navigation'], [role='menu'], [role='toolbar'], [role='dialog']") ||
@@ -55,6 +55,23 @@
       pruneListCardVisibility(node, clone);
       return { node: node, markdown: markdownFor(clone.outerHTML).trim(), publicationCredit: true };
     }).filter(function(part) { return part.markdown; });
+    if (!parts.length) return parts;
+    var primaryUrls = new Set(items.map(function(item) {
+      var url = materializedHttpUrl(item.url || "");
+      return url && listCanonicalKey(url);
+    }).filter(Boolean));
+    var primaryRecordKeys = listPrimaryRecordKeys(items);
+    var readTableHeaders = tableIndexHeaderReader();
+    return parts.filter(function(part) {
+      if (part.node.hasAttribute("id") || part.node.hasAttribute("name") || part.node.querySelector("[id], [name]")) return true;
+      return !items.some(function(item) {
+        if (!item.card || !item.card.contains(part.node) ||
+            listSelectedReferenceContextOwner(item.card, primaryRecordKeys.recordContext)) return false;
+        var values = listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders);
+        var represented = values.__fetchUtilAuthorField;
+        return represented && represented.node === part.node && represented.value === part.markdown;
+      });
+    });
   }
 
   function listUnownedEmptyReference(link, root, recordContext, descriptionOwners) {
