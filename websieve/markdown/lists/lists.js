@@ -38,6 +38,9 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
   if (clone.matches && clone.matches("a[href]")) {
     var rootLabel = normalizeText(clone.textContent || clone.getAttribute("aria-label") || "");
     var rootUrl = materializedHttpUrl(clone.getAttribute("href"));
+    var samePrimary = primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl);
+    var rootImageReference = listLinkedImageReferenceMarkdown(clone, !samePrimary, node);
+    if (rootImageReference) return rootImageReference;
     if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
     return markdownLink(rootLabel || inlineLinkLabel(clone) || normalizeText(clone.getAttribute("title")), clone.getAttribute("href"));
   }
@@ -53,6 +56,12 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
     var linked = (!allowedLinks || allowedLinks.has(link)) &&
       !(primaryUrl && url && listCanonicalKey(url) === listCanonicalKey(primaryUrl) &&
         !(primaryProseLinks && primaryProseLinks.has(link)));
+    var imageReference = linked && listLinkedImageReferenceMarkdown(link, true, node);
+    if (imageReference) {
+      escapeMarkdownLinkImageBoundary(link, clone);
+      link.replaceWith(clone.ownerDocument.createTextNode(imageReference));
+      return;
+    }
     if (linked && !label) {
       label = inlineLinkLabel(link) || normalizeText(link.getAttribute("title"));
       if (!label && emptyMarkdownSelfControl(link, url, clone)) linked = false;

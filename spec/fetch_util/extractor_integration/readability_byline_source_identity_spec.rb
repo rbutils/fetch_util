@@ -54,6 +54,15 @@ RSpec.describe 'FetchUtil reparsed paragraph attribution ownership' do
         expected = hidden ? [0, 0] : [1, 1]
         expect(occurrences.call(native.text)).to eq(expected)
         expect(occurrences.call(markdown.text)).to eq(expected)
+        resources = [307, 308].map do |number|
+          ["https://publication.example.test/assets/cover-#{number}.jpg", "Publication number #{number}",
+           "https://publication.example.test/issues/issue-#{number}/"]
+        end
+        [native, markdown].each do |document|
+          expect(document.css('a[href] > img[src]').map do |image|
+            [image['src'], image['alt'], image.parent['href']]
+          end).to eq(resources)
+        end
         expect(markdown.css('pre').map { |node| node.text.delete_suffix("\n") }).to include("first_code()\n\nlast_code()")
         expect(page.evaluate('document.body.outerHTML')).to eq(before)
         expect(payload['byline']).to be_nil

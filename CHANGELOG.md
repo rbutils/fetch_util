@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete image-only resource links in compact list context instead of
+  replacing their images with ALT-label references, preserving full destinations,
+  responsive declarations and independent visible occurrences.
+
 - Avoid rendering a publication credit twice when its exact physical field and
   complete material are already represented by a selected record, preserving
   independent equal credits, rich material and visibility boundaries.

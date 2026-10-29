@@ -89,6 +89,22 @@ function listNodeWithinClosedDisclosure(node) {
   return false;
 }
 
+function listLinkedImageReferenceMarkdown(link, includeDestination, sourceRoot) {
+  var excluded = "pre, code, kbd, samp, button, nav, form, [role='navigation'], [role='toolbar'], [role='button'], [role='tab'], [role='menuitem']";
+  if (!link || !link.matches || !link.matches("a[href]") ||
+      !materializedHttpUrl(link.getAttribute("href")) || normalizeText(link.textContent) ||
+      normalizeText(link.getAttribute("aria-label")) || link.hasAttribute("id") || link.hasAttribute("name") ||
+      link.closest(excluded) || sourceRoot && sourceRoot.closest(excluded) ||
+      listCardNodeHidden(link) || listNodeWithinClosedDisclosure(link) ||
+      link.querySelector("[id], a[name], pre, code, kbd, samp, button, input, select, textarea, picture, svg, video, audio, canvas, iframe, object, embed, math, script, style, template")) return "";
+  var images = Array.from(link.querySelectorAll("img[src]"));
+  if (!images.length || images.some(function(image) {
+    return !materializedHttpUrl(image.getAttribute("src")) || image.closest(excluded) ||
+      listCardNodeHidden(image) || listNodeWithinClosedDisclosure(image);
+  })) return "";
+  return singleBlockMaterializedHtml(materializedHtml(includeDestination ? link.outerHTML : link.innerHTML, false), true);
+}
+
 function listSelectedRecordImageContext(item, primaryRecordKeys) {
   var card = item.contentCard || item.card;
   var source = item.sourceNode;

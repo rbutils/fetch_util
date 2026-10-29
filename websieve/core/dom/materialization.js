@@ -158,7 +158,7 @@
     return template.innerHTML;
   }
 
-  function singleBlockMaterializedHtml(html) {
+  function singleBlockMaterializedHtml(html, preserveAttributeWhitespace) {
     var holder = document.createElement("div");
     holder.innerHTML = html;
     var source = holder.innerHTML + holder.textContent;
@@ -173,6 +173,7 @@
       Array.from(root.querySelectorAll("*")).forEach(function(node) {
         Array.from(node.attributes).forEach(function(attribute) {
           attribute.value = encodeLines(attribute.value);
+          if (preserveAttributeWhitespace) attribute.value = attribute.value.replace(/ /g, prefix + "SP");
         });
         if (node.localName === "template") roots.push(node.content);
       });
@@ -183,5 +184,6 @@
 
     // Blank lines terminate CommonMark HTML blocks; references retain literal text and attribute values.
     return holder.innerHTML.replace(/\r\n?|\n/g, " ")
-      .split(prefix + "CR").join("&#13;").split(prefix + "LF").join("&#10;").trim();
+      .split(prefix + "CR").join("&#13;").split(prefix + "LF").join("&#10;")
+      .split(prefix + "SP").join("&#32;").trim();
   }

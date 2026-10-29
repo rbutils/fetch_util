@@ -74,7 +74,8 @@ RSpec.describe 'Physical publication credit representation' do
       expect(result.fetch('parts')).to eq([])
       expect(result.fetch('markdown')).to eq(
         '- [River report 307](https://publication.example.test/issues/issue-307/river/?edition=2&view=full#details) - Cover | Ari Lens' \
-        ' - [Publication number 307](https://publication.example.test/issues/issue-307/) Issue 307'
+        ' - <a href="https://publication.example.test/issues/issue-307/"><img src="https://publication.example.test/covers/307.png"' \
+        ' alt="Publication&#32;number&#32;307"></a> Issue 307'
       )
       expect(result.fetch('sourceCredits').map { |node| node.fetch('text') }).to eq(['Cover | Ari Lens'])
     end
