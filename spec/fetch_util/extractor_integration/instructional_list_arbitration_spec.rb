@@ -87,7 +87,8 @@ RSpec.describe FetchUtil::Extractor do
     result = extract_from_url("https://compiler.example/", instructional_feed_html(extra), reader_mode: false) { |payload| payload }
 
     expect(result.fetch("contentType")).to eq("list")
-    expect(result.fetch("markdown")).not_to include("hidden_command", "sidebar_command", "navigation_command")
+    expect(result.fetch("markdown").scan(/^```\n(.*?)\n```/m).flatten).to eq(["accessible_hidden_command()"])
+    expect(result.fetch("markdown")).not_to match(/\b(?:hidden_command|sidebar_command|navigation_command)\(\)/)
     expect(result.fetch("markdown").scan(%r{\]\(https://compiler.example/stories/(\d+)\)}).flatten).to eq((0...12).map(&:to_s))
   end
 
