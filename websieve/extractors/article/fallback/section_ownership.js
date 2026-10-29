@@ -164,10 +164,89 @@
     });
   }
 
+  function sourceOwnedPeerRegionRecords(owner) {
+    var navigation = "nav, [role~='navigation' i]";
+    var interfaces = "nav, aside, form, button, input, select, textarea, details, [role~='button' i], [role~='navigation' i], [role~='dialog' i], [role~='toolbar' i]";
+    function children(node) {
+      return Array.from(node.children).filter(function(child) {
+        return !elementSubtreeHidden(child) && !listNodeWithinClosedDisclosure(child);
+      });
+    }
+    function hasDirectText(node) {
+      return Array.from(node.childNodes).some(function(child) {
+        return child.nodeType === Node.TEXT_NODE && !!normalizeText(child.textContent);
+      });
+    }
+    var regions = children(owner).filter(function(child) { return !child.matches(navigation); });
+    if (regions.length < 2 || hasDirectText(owner)) return null;
+    var currentUrls = new Set([location.href].concat(Array.from(document.querySelectorAll("link[rel~='canonical'], meta[property='og:url']")).map(function(node) {
+      return node.getAttribute("href") || node.getAttribute("content");
+    }).filter(Boolean)).map(focalCanonicalUrl).filter(Boolean));
+    var records = [];
+    var complete = regions.every(function(region) {
+      if (!region.matches("section") || hasDirectText(region) || sourceOwnershipInChrome(region)) return false;
+      var fields = children(region);
+      if (fields.length < 2 || !fields[0].matches("h2, h3, h4, h5, h6") ||
+          !normalizeText(fields[0].textContent) || fields[0].querySelector("a, " + interfaces)) return false;
+      return fields.slice(1).every(function(link) {
+        if (!link.matches("a[href]") || link.matches(interfaces) || link.querySelector(interfaces)) return false;
+        var url = materializedHttpUrl(link.getAttribute("href"));
+        if (!url || currentUrls.has(focalCanonicalUrl(url))) return false;
+        var headings = Array.from(link.querySelectorAll("h1, h2, h3, h4, h5, h6")).filter(function(heading) {
+          return !elementSubtreeHidden(heading) && !listNodeWithinClosedDisclosure(heading);
+        });
+        if (headings.length !== 1 || !normalizeText(headings[0].textContent) || headings[0].closest("pre, code, kbd, samp")) return false;
+        if (!Array.from(link.querySelectorAll("p")).some(function(paragraph) {
+          return !elementSubtreeHidden(paragraph) && !listNodeWithinClosedDisclosure(paragraph) &&
+            !paragraph.closest("pre, code, kbd, samp") && !!normalizeText(paragraph.textContent);
+        })) return false;
+        records.push(link);
+        return true;
+      });
+    });
+    return complete ? records : null;
+  }
+
+  function sourceOwnedPeerRegionSections(primary, fallback, primaryRoot, fallbackRoot) {
+    if (!document.body || primary.contentType !== "article" || fallback.contentType !== "article" ||
+        primary.sourceOwnedFocalArticle || fallback.sourceOwnedFocalArticle || articleRouteFocalContent(primary)) return false;
+    var mains = Array.from(document.querySelectorAll("main, [role~='main' i]")).filter(function(node) {
+      return !elementSubtreeHidden(node) && !listNodeWithinClosedDisclosure(node);
+    });
+    if (mains.length !== 1 || sourceOwnershipInChrome(mains[0]) ||
+        mains[0].closest("a, pre, code, kbd, samp, button, [role~='button' i], [role~='dialog' i], [role~='toolbar' i]")) return false;
+    var owner = mains[0];
+    var records = sourceOwnedPeerRegionRecords(owner);
+    if (!records) return false;
+    var sourceClones = new WeakMap();
+    var visibleOwner = visibilityPrunedClone(owner, document, sourceClones);
+    var envelope = document.createElement("div");
+    envelope.appendChild(visibleOwner);
+    try {
+      Array.from(visibleOwner.children).forEach(function(child) {
+        if (child.matches("nav, [role~='navigation' i]")) child.remove();
+      });
+      if (sourceOwnedPublicationMaterial(envelope) !== sourceOwnedPublicationMaterial(fallbackRoot)) return false;
+      var primaryMaterial = sourceOwnedPublicationMaterial(primaryRoot, false);
+      return records.some(function(record) {
+        var visible = sourceClones.get(record);
+        return visible && visibleOwner.contains(visible) && sourceOwnedPublicationMaterial(visible, false) === primaryMaterial;
+      });
+    } finally {
+      envelope.replaceChildren();
+    }
+  }
+
   function sourceOwnedFallbackContent(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText) {
-    if (!sourceOwnedLinkedResourceSections(primary, fallback, primaryRoot, fallbackRoot) &&
-        !sourceOwnedLinkedPublicationSections(primary, fallback, primaryRoot, fallbackRoot) &&
-        !sourceOwnedFallbackSections(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText)) return null;
+    var owned = sourceOwnedLinkedResourceSections(primary, fallback, primaryRoot, fallbackRoot) ||
+      sourceOwnedLinkedPublicationSections(primary, fallback, primaryRoot, fallbackRoot);
+    if (!owned && sourceOwnedPeerRegionSections(primary, fallback, primaryRoot, fallbackRoot)) {
+      var reading = JSON.parse(sourceOwnedPublicationMaterial(fallbackRoot))[0];
+      if (fallback.excerpt === fallback.textContent) fallback.excerpt = reading;
+      fallback.textContent = reading;
+      owned = true;
+    }
+    if (!owned && !sourceOwnedFallbackSections(primary, fallback, primaryRoot, fallbackRoot, primaryText, fallbackText)) return null;
     fallback.sourceOwnedSections = true;
     return fallback;
   }

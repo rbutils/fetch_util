@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete source-owned peer regions when the reader selects one linked
+  record, preserving full destinations, physical heading roles and independent
+  occurrences without widening global collection thresholds.
+
 - Preserve physical heading ranks in admitted list context without changing
   ownership, visibility, complete references or literal program material.
 
