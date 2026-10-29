@@ -402,7 +402,7 @@ RSpec.describe 'content fidelity contracts' do
       before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page, reader_mode: false)
       expected = [
-        '## FID:single-editorial-figure', '## FID:archive',
+        '# FID:single-editorial-figure', '## FID:archive',
         '### [FID:single-figure-record](https://fidelity.test/archive/figure)',
         'FID:single-figure-caption', 'FID:single-figure-parent-context'
       ] + (1..5).map { |index| "### [FID:ordinary-record-#{index}](https://fidelity.test/archive/#{index})" }
@@ -449,7 +449,7 @@ RSpec.describe 'content fidelity contracts' do
       outer_metadata = fields.map { |field| "FID:outer-#{field}" }.join
       nested_metadata = fields.map { |field| "FID:nested-#{field}" }.join
       expected = [
-        '## FID:metadata portal', '### [FID:outer-title](https://fidelity.test/story/outer)',
+        '# FID:metadata portal', '### [FID:outer-title](https://fidelity.test/story/outer)',
         'FID:outer-summary', outer_metadata, nested_metadata
       ] + %w[secondary third fourth fifth].flat_map do |name|
         ["### [FID:#{name}-title](https://fidelity.test/story/#{name})", "FID:#{name}-summary"]
@@ -720,7 +720,7 @@ RSpec.describe 'content fidelity contracts' do
         ['opacity-low', 'FID:opacity-low', 'FID:opacity-low-summary'],
         ['visibility-restored', 'FID:visibility-restored', 'FID:visibility-restored-summary']
       ] + (1..8).map { |index| ["opacity-#{index}", "FID:opacity-record-#{index}", "FID:opacity-record-#{index}-summary"] }
-      expected = ['## FID:opacity-list'] + visible.flat_map do |path, title, summary|
+      expected = ['# FID:opacity-list'] + visible.flat_map do |path, title, summary|
         ["## [#{title} with sufficient title](https://fidelity.test/#{path})", "#{summary} remains visible."]
       end
 

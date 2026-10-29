@@ -43,7 +43,7 @@ RSpec.describe FetchUtil::Extractor, 'alignment utility ownership' do
     with_url_page('https://bulletin.example/', "<main><h1>Community news</h1>#{cards}</main>") do |page|
       before = page.evaluate('document.body.innerHTML')
       result = extract_payload(page)
-      expected = ['## Community news'] + (1..6).flat_map do |index|
+      expected = ['# Community news'] + (1..6).flat_map do |index|
         [
           "## [Neighborhood meeting number #{index}](https://bulletin.example/reports/#{index})",
           "Local account number #{index}.",
