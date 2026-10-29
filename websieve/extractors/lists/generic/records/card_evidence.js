@@ -130,7 +130,6 @@
         var directUrl = materializedHttpUrl(directHref);
         var directCandidate = { text: directText, url: directUrl, detail: "", rankScore: directText.length };
         directCandidate.canonicalKey = directUrl ? listCanonicalKey(directUrl) : "unlinked:" + directText.toLowerCase() + "|href:" + directHref;
-        directCandidate.url = directUrl ? directCandidate.canonicalKey : null;
         directCandidate.card = card;
         directCandidate.sourceNode = directLink;
         addCardContext(directCandidate, card);
@@ -177,7 +176,6 @@
     candidate.domIndex = context.anchorIndices.has(link) ? context.anchorIndices.get(link) : -1;
     if (candidate.url) {
       candidate.canonicalKey = listCanonicalKey(candidate.url);
-      candidate.url = candidate.canonicalKey;
     }
     candidate.card = listCardRoot(link, card, genericListLinkGroup(link, context.linkGroups), context.figureCollections);
     candidate.sourceNode = link;

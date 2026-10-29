@@ -150,6 +150,7 @@
           genericListNestedCardReplaces(candidate.card, nested.card);
       });
     }).forEach(function(candidate) {
+      applyLinkedHeadingRecordIdentity(candidate);
       if (typeof TurndownService === "function" && sectionArticleRecordOwnsHeading(candidate)) candidate.sourceOrderedRepeatedRecord = true;
       cards.push(candidate);
     });
@@ -208,7 +209,8 @@
         var key = card.canonicalKey || sectionCanonicalKey(card.url);
         var time = normalizeText(card.time || "");
         var times = material[key];
-        if (!sectionArticleRecordOwnsHeading(card) && times && (!time || !times.length || times.indexOf(time) >= 0)) return false;
+        if (!card.sourceOrderedHeadingCard && !sectionArticleRecordOwnsHeading(card) &&
+            times && (!time || !times.length || times.indexOf(time) >= 0)) return false;
         if (!times) times = material[key] = [];
         if (time) times.push(time);
         physicalCards.add(card.card);

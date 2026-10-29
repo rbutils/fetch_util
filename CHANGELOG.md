@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve complete physical heading records in sectioned collections, including
+  their full query and fragment destinations, independent equal-destination
+  occurrences, authored paragraphs and record-owned literal programs.
+
 - Retain physical heading ranks and complete prose in selected linked records
   without requiring sibling collection records, preserving independent equal
   destinations and existing visibility and interface boundaries.

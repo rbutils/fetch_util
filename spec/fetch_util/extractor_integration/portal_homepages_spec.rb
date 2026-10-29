@@ -623,7 +623,7 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
     )
   end
 
-  it 'arbitrates Guardian cards in canonical DOM order and deduplicates tracking URLs' do
+  it 'keeps Guardian destinations in DOM order while deduplicating canonical keys' do
     html = <<~HTML
       <main><h1>The Guardian</h1><section><h2>Headlines</h2>
       <div class="dcr-card"><a href="/world/one?utm_source=home"><h3>Guardian first reporting from the capital</h3></a><p>Guardian first context.</p></div>
@@ -641,7 +641,7 @@ RSpec.describe 'FetchUtil extractor integration - portal homepages' do
       cards: [
         [
           'Guardian first reporting from the capital',
-          'https://www.theguardian.com/world/one',
+          'https://www.theguardian.com/world/one?utm_source=home',
           'Guardian first context.'
         ],
         [
