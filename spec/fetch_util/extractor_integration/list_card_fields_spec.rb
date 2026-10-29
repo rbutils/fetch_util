@@ -956,7 +956,8 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
 
       expect(result["scoring"]).to eq("")
       expect(result["empty"]).to eq("")
-      expect(result["description"]).to eq(headings.map { |text| "## #{text.strip}" }.join("\n\n"))
+      expected_headings = headings.each_with_index.map { |text, index| "#{"#" * (index + 1)} #{text.strip}" }
+      expect(result["description"]).to eq(expected_headings.join("\n\n"))
       expect(result["description"]).not_to include("Hidden draft", "Short paragraph", "Weather forecast")
     end
   end
@@ -982,7 +983,7 @@ RSpec.describe "FetchUtil extractor integration - list card fields" do
         })()
       JAVASCRIPT
 
-      expect(description).to eq("## Explore cartography workshops\n\n## Help")
+      expect(description).to eq("###### Explore cartography workshops\n\n#### Help")
     end
   end
 

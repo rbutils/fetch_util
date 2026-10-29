@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical heading ranks in admitted list context without changing
+  ownership, visibility, complete references or literal program material.
+
 - Retain complete standalone literal programs in list context, including
   independent occurrences and named/reference bindings, in source order while
   preserving visibility and existing record ownership.
