@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve physically owned heading-only resource cards and their complete owning
+  destinations through article cleanup, retaining independent equal records while
+  keeping interface, hidden and literal content boundaries intact.
+
 - Retain complete physically owned feature matrices, including unheaded rows,
   independent references and opaque indicator declarations, without interpreting
   font classes or promoting navigation and hidden tables into article content.

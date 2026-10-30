@@ -62,9 +62,11 @@
       var tableContext = preserveReadabilityDataTableSelection(reader, clone, sourceClones, metadata, sourceIdentities, headingRoles);
       preserveReadabilityOwnedCardSelection(reader, clone, ownership, sourceClones, sourceIdentities, headingRoles);
       preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks);
+      var headingCards = preserveReadabilityLinkedHeadingCards(reader, clone, sourceClones);
       var article = reader.parse();
       if (!article || !article.content) return null;
       article.content = restoreReadabilityIndicatorTables(article.content, tableContext.indicatorSnapshots);
+      article.content = restoreReadabilityLinkedHeadingCards(article.content, headingCards);
       if (normalizeText(article.textContent || "").length < 40) return null;
       article.content = stripReadabilityDefinitionClass(article.content, definitionClass);
       article.content = stripReadabilityDefinitionClass(article.content, cardActions.className);
