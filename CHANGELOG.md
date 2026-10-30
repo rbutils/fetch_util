@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain safe image resources and their owning links in table cells when ALT is
+  empty, preserving independent occurrences and existing unsafe-source fallbacks.
+
 - Preserve physically owned heading-only resource cards and their complete owning
   destinations through article cleanup, retaining independent equal records while
   keeping interface, hidden and literal content boundaries intact.
