@@ -57,7 +57,7 @@
     var pageIdentity = [location.pathname, document.title, (document.querySelector("h1") || {}).textContent].join(" ");
     var caseRecordContext = /\b(?:cases?|defendants?|records?|dockets?|matters?)\b/i.test(pageIdentity);
 
-    function looksLikeMetaLink(text, href, container, directAnchorCard, link) {
+    function looksLikeMetaLink(text, href, container, directAnchorCard, link, narrativeRoute) {
       var tableRow = context.tableIndexPage && container && container.matches && container.matches("tr");
       var chromeOwnedCard = !!(link && container && container.parentElement &&
         container.parentElement.__fetchUtilChromeOwnedListRecords && genericListStructuredCardLink(container) === link);
@@ -75,7 +75,7 @@
         genericListControlText(text) ||
         /^[\w.-]+\.[a-z]{2,}$/i.test(text) ||
         /(?:^|[?&])(user|from|site|goto)=/i.test(href) ||
-        looksLikeFooterLink(text, href) ||
+        looksLikeFooterLink(text, narrativeRoute ? "" : href) ||
         listNoiseText(text);
     }
 
@@ -85,7 +85,8 @@
       var href = candidate && (candidate.url || (link && link.getAttribute("href")) || "");
       var directAnchorCard = genericListDirectAnchorCard(link, container) ||
         !!(candidate && (genericListPairedMediaCard(link) === candidate.card || genericListImageTitleCard(link) === candidate.card));
-      if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link)) return;
+      if (!candidate || looksLikeMetaLink(candidate.text, href, container, directAnchorCard, link,
+          candidate.sourceOwnedNarrativeRoute)) return;
       candidate.sourceNode = link;
       addCardContext(candidate, candidate.card);
       var repeatedRecord = repeatedRecordByLink.get(link);

@@ -201,9 +201,10 @@
       if (listCanonicalKey(url) === listCanonicalKey(location.href)) return null;
     }
     if (genericListControlText(text) || genericListCardDiscussionLink(link)) return null;
-    if (/\/(subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/i.test(resolvedPath || href)) return null;
+    var routeCandidate = { card: container, sourceNode: link };
+    if (!applyLinkedNarrativeRouteIdentity(routeCandidate, resolvedPath || href)) return null;
     if (/\/(privacycontrols?|privacy|cookies?|consent)\b/i.test(resolvedPath || href) && text.length < 80) return null;
-    if ((!group && looksLikeFooterLink(text, href)) || (!producerProvenTitle &&
+    if ((!group && looksLikeFooterLink(text, routeCandidate.sourceOwnedNarrativeRoute ? "" : href)) || (!producerProvenTitle &&
         (listChromeNode(link) || listChromeNode(link.parentElement) || listChromeAncestor(link)))) return null;
     if (genericListFigureCollectionRejectsLink(link, container, context.figureCollections)) return null;
 
@@ -233,7 +234,9 @@
     var score = url ? listCandidateScore(text, url, detail, container || link.parentElement, context) : text.length + detail.length;
     if (score === -Infinity) return null;
 
-    var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card };
+    var candidate = { text: text, url: url, detail: detail, rankScore: score, card: card, sourceNode: link };
+    if (routeCandidate.sourceOwnedNarrativeRoute &&
+        !applyLinkedNarrativeRouteIdentity(candidate, resolvedPath || href)) return null;
     if (structuredCardTitle) candidate.sourceOrderedStructuredCard = true;
     if (ownedAnchorTitle) candidate.displayText = ownedAnchorTitle;
     if (card && card.matches && card.matches("tr")) candidate.tableRowDetail = true;

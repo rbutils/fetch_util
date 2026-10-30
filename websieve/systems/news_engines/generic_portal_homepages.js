@@ -147,6 +147,7 @@
         var container = link.closest("article, section, li, [class*='card'], [class*='tile'], [class*='item'], [class*='listing'], [class*='result'], [class*='destination'], [class*='route'], [class*='story']") || link.parentElement;
         var cardRoot = homepageCardRoot(link);
         if (cardRoot && cardRoot !== container && cardRoot.contains(link)) container = cardRoot;
+        if (options.narrativeRoutes && linkedNarrativeActionCard(container)) return;
         if (cardRoot && cardRoot.querySelector("article h1 a[href], article h2 a[href], article h3 a[href], article h4 a[href]") && !cardRoot.querySelector("h1 a[href], h2 a[href], h3 a[href], h4 a[href]").contains(link)) return;
         var recordRoot = leadDetailRoot(link, container, title);
         var supplementalSourceClones = new WeakMap();
@@ -237,7 +238,11 @@
       if (sectioned.portalRootEvidence) return codeAwareHomepageList(sectioned);
     }
 
-    var leadRoot = genericHomepageLeadRoot(metadata, { minItems: 4 });
+    var selectedItems = sectioned && sectioned.listExtraction && sectioned.listExtraction.items;
+    var leadRoot = genericHomepageLeadRoot(metadata, {
+      minItems: 4,
+      narrativeRoutes: selectedItems && selectedItems.some(function(item) { return item.sourceOwnedNarrativeRoute; })
+    });
     if (!leadRoot) return null;
     leadRoot = homepageLeadForSelectedMaterial(leadRoot, sectioned);
 

@@ -78,3 +78,35 @@
     candidate.dedupeKey = card;
     candidate.sourceOrderedHeadingCard = true;
   }
+
+  function linkedNarrativeRouteKind(path) {
+    path = path || "";
+    var routes = /\/(?:subscribe|subscription|abonnement|login|register|newsletter|account|instellingen|settings)\b/ig;
+    var matched = false;
+    var match;
+    while ((match = routes.exec(path))) {
+      matched = true;
+      // A prefixed article slug is not an exact account or subscription action segment.
+      if (!/^-[^/]+(?:\/|$)/.test(path.slice(match.index + match[0].length))) return "action";
+    }
+    return matched ? "slug" : "ordinary";
+  }
+
+  function applyLinkedNarrativeRouteIdentity(candidate, path) {
+    var kind = linkedNarrativeRouteKind(path);
+    if (kind === "action") return false;
+    if (kind === "ordinary") return true;
+    applyLinkedHeadingRecordIdentity(candidate);
+    if (!candidate.sourceOrderedHeadingCard) return false;
+    candidate.sourceOwnedNarrativeRoute = true;
+    return true;
+  }
+
+  function linkedNarrativeActionCard(card) {
+    var link = card.matches("a[href]") ? card : card.querySelector("a[href]");
+    var url = link && materializedHttpUrl(link.getAttribute("href"));
+    if (!url || linkedNarrativeRouteKind(new URL(url).pathname) !== "action") return false;
+    var record = { card: card, sourceNode: link };
+    applyLinkedHeadingRecordIdentity(record);
+    return record.sourceOrderedHeadingCard === true;
+  }

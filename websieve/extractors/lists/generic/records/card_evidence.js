@@ -165,6 +165,7 @@
       var href = link.getAttribute("href");
       var text = normalizeText(link.textContent || link.getAttribute("aria-label") || "");
       var url = materializedHttpUrl(href);
+      if (linkedNarrativeRouteKind(url ? new URL(url).pathname : href) === "action") return null;
       if (href && url && text.length >= 6 && text.length <= 220) candidate = { text: text, url: url, detail: "", rankScore: text.length };
     }
     if (!candidate) return null;

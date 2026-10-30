@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Retain complete physically owned narrative records when their published routes
+  contain account or subscription terms, preserving source and record headings,
+  full query and fragment destinations and independent records while excluding
+  account, subscription and settings action cards from narrative collections.
+
 - Retain complete image-only resource links in compact list context instead of
   replacing their images with ALT-label references, preserving full destinations,
   responsive declarations and independent visible occurrences.

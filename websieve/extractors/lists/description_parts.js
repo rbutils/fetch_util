@@ -162,6 +162,7 @@
     var itemValues = items && items.map(function(item) {
       return listDescriptionItemValues(item, primaryUrls, primaryRecordKeys, readTableHeaders);
     });
+    var preserveSourceTitle = (items || []).some(function(item) { return item.sourceOwnedNarrativeRoute; });
     var pageTitles = (options && options.pageTitles || []).map(function(title) {
       return normalizeText(title).toLowerCase();
     }).filter(Boolean);
@@ -206,7 +207,8 @@
       var sourceOwnedDescription = options && options.sourceOwnedDescriptionNodes && options.sourceOwnedDescriptionNodes.has(el);
       // Linked record titles keep their existing admission, not page-label treatment.
       if (heading && !pageHeading && !/^H[1-3]$/.test(el.tagName)) return;
-      if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1) return;
+      if (heading && pageTitles.indexOf(text.toLowerCase()) !== -1 &&
+          !(preserveSourceTitle && pageHeading && el.tagName === "H1")) return;
        if (!(hasItems && (pageHeading || linkedSectionHeading || inlineProse)) && !(options && options.preserveTextLengths) &&
            !sourceOwnedDescription && (text.length < 30 || text.length > 2000)) return;
       if (listNoiseText(text) || cookieNoticeText(text) || legalFooterText(text) || weatherModuleText(text)) return;

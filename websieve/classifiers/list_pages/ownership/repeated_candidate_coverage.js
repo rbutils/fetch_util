@@ -51,3 +51,28 @@
         !repeatedRecordCandidatePreservesExistingList(current, candidate)) return null;
     return candidate;
   }
+
+  function repeatedRecordCandidateCoversOwner(candidate, collection) {
+    var items = candidate && candidate.listExtraction && candidate.listExtraction.items;
+    var extraction = candidate && candidate.listExtraction;
+    var mappedOwner = extraction && extraction.collectionOwnerMapped &&
+      extraction.collectionOwnerSourceNode === collection.owner && extraction.renderOwnerSourceNode === collection.renderOwner;
+    var mappedMain = collection && collection.primaryMain && extraction && extraction.primaryMainMapped &&
+      extraction.primaryMainSourceNode === collection.primaryMain;
+    if (!items || !collection || !collection.records.length || !collection.owner || !collection.renderOwner ||
+        !mappedOwner || (collection.primaryMain ? !mappedMain : extraction.primaryMainMapped)) return false;
+    var ownsNarrativeRoutes = items.some(function(item) { return item.sourceOwnedNarrativeRoute; });
+    var matched = new Set();
+    return collection.records.every(function(record) {
+      // Only the proved route repair may treat complete action cards as context rather than authored records.
+      if (ownsNarrativeRoutes && linkedNarrativeActionCard(record.node)) return true;
+      var itemIndex = items.findIndex(function(item, index) {
+        if (matched.has(index) || listCanonicalKey(materializedHttpUrl(item.url) || "") !== record.destination) return false;
+        return item.repeatedRecordIdentity === record.identity ||
+          normalizeText(item.text || "").toLowerCase().indexOf(record.title.toLowerCase()) !== -1;
+      });
+      if (itemIndex < 0) return false;
+      matched.add(itemIndex);
+      return true;
+    });
+  }
