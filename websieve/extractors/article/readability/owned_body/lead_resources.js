@@ -97,10 +97,10 @@
       "[role='navigation'], [role='complementary'], [role='dialog'], [role='toolbar'], [role='menu']";
     sourceClones.forEach(function(clone, source) {
       var nestedResource = nestedTables.has(clone);
-      var referenceTable = source.localName === "table" && clone.localName === "table" &&
-        (referenceBlocks.has(clone) || nestedResource);
-      var cardAction = cardActionBlocks && cardActionBlocks.has(clone);
       var tableContext = tableContextBlocks && tableContextBlocks.has(clone);
+      var referenceTable = source.localName === "table" && clone.localName === "table" &&
+        (referenceBlocks.has(clone) || nestedResource || tableContext);
+      var cardAction = cardActionBlocks && cardActionBlocks.has(clone);
       if ((!referenceTable && (source.localName !== "div" || clone.localName !== "div")) || !root.contains(clone) ||
           (!nestedResource && !cardAction && !tableContext && !headingBlocks.has(clone) && !programBlocks.has(clone) && !referenceBlocks.has(clone) &&
             !sections.some(function(section) { return section.contains(source); }))) return;

@@ -64,6 +64,7 @@
       preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks);
       var article = reader.parse();
       if (!article || !article.content) return null;
+      article.content = restoreReadabilityIndicatorTables(article.content, tableContext.indicatorSnapshots);
       if (normalizeText(article.textContent || "").length < 40) return null;
       article.content = stripReadabilityDefinitionClass(article.content, definitionClass);
       article.content = stripReadabilityDefinitionClass(article.content, cardActions.className);

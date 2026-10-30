@@ -11,9 +11,11 @@
     var rows = Array.from(clone.rows);
     if (!rows.length || rows[0].cells.length < 2 || !rows.some(function(row) {
       return Array.from(row.cells).some(function(cell) { return cell.localName === "td"; });
-    }) || !Array.from(rows[0].cells).every(function(cell) {
-      return cell.localName === "th" && !!normalizeText(cell.textContent);
     })) return false;
+    var headed = Array.from(rows[0].cells).every(function(cell) {
+      return cell.localName === "th" && !!normalizeText(cell.textContent);
+    });
+    if (!headed && !readabilityMappedIndicatorTable(source, clone, sourceClones)) return false;
 
     var originals = Array.from(source.rows).filter(function(row) {
       var mapped = sourceClones.get(row);
@@ -87,31 +89,44 @@
     });
   }
 
+  function readabilityMappedDataTableWrapper(source, clone, sourceClones, tables) {
+    if (!clone || sourceClones.get(source) !== clone || source.localName !== clone.localName) return false;
+    if (source.localName === "table") return tables.has(clone);
+    var children = Array.from(source.children).filter(function(child) { return child.localName !== "script"; });
+    if (source.localName !== "div" || source.closest(readabilityDataTableInterfaces()) || elementSubtreeHidden(source) ||
+        children.length !== clone.children.length || Array.from(source.childNodes).some(function(node) {
+          return node.nodeType === Node.TEXT_NODE && !!normalizeText(node.nodeValue);
+        })) return false;
+    if (!children.length) return Array.from(source.attributes).every(function(attribute) { return attribute.name === "class"; });
+    return children.every(function(child, index) {
+      return readabilityMappedDataTableWrapper(child, clone.children[index], sourceClones, tables);
+    });
+  }
+
   function preserveReadabilityDataTableSelection(reader, root, sourceClones, metadata, sourceIdentities, headingRoles) {
     var tables = new WeakMap();
     var headings = new WeakSet();
     var blocks = new WeakSet();
     var publications = new Map();
+    var selected = [];
     sourceClones.forEach(function(clone, source) {
       if (source.localName !== "table" || !root.contains(clone) ||
           !readabilityMappedDataTable(source, clone, sourceClones)) return;
       var publication = readabilityDataPublicationOwner(source, root, sourceClones, metadata, sourceIdentities);
       tables.set(clone, publication ? publication.root : clone);
-      var child = clone;
-      for (var parent = source.parentElement; parent; parent = parent.parentElement) {
-        var mapped = sourceClones.get(parent);
-        if (parent.localName !== "div" || !mapped || mapped.localName !== "div" ||
-            !root.contains(mapped) || child.parentElement !== mapped ||
-            mapped.children.length !== 1 || mapped.firstElementChild !== child ||
-            normalizeText(mapped.textContent) !== normalizeText(child.textContent) ||
-            parent.closest(readabilityDataTableInterfaces()) || elementSubtreeHidden(parent)) break;
-        blocks.add(mapped);
-        child = mapped;
-      }
+      blocks.add(clone);
+      selected.push({ source: source, clone: clone });
       if (publication) {
         publications.set(publication.source, publication);
         headings.add(publication.heading);
         headingRoles.set(publication.sourceHeading, readabilityHeadingRoleSignature(publication.heading));
+      }
+    });
+    selected.forEach(function(entry) {
+      for (var parent = entry.source.parentElement; parent; parent = parent.parentElement) {
+        var mapped = sourceClones.get(parent);
+        if (!mapped || !root.contains(mapped) || !readabilityMappedDataTableWrapper(parent, mapped, sourceClones, tables)) break;
+        blocks.add(mapped);
       }
     });
     readabilityDataPublicationResources(root, sourceClones, publications, blocks);
@@ -139,5 +154,6 @@
     reader._headerDuplicatesTitle = function(node) {
       return headings.has(node) ? false : duplicateTitle.apply(this, arguments);
     };
-    return { blocks: blocks, publications: publications };
+    return { blocks: blocks, publications: publications,
+      indicatorSnapshots: readabilityIndicatorTableSnapshots(root, selected, sourceClones) };
   }

@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Retain complete physically owned feature matrices, including unheaded rows,
+  independent references and opaque indicator declarations, without interpreting
+  font classes or promoting navigation and hidden tables into article content.
+
 - Retain complete physically owned narrative records when their published routes
   contain account or subscription terms, preserving source and record headings,
   full query and fragment destinations and independent records while excluding

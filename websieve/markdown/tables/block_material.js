@@ -16,10 +16,18 @@
     });
   }
 
+  function tableCellOpaqueIndicator(cell) {
+    if (!cell || !/^(td|th)$/.test(cell.localName) || normalizeText(cell.textContent) || cell.children.length !== 1) return null;
+    var indicator = cell.firstElementChild;
+    return indicator.localName === "i" && !indicator.children.length &&
+      !!normalizeText(indicator.getAttribute("class")) ? indicator : null;
+  }
+
   function tableRequiresBlockMaterial(table) {
     if (literalMarkdownDestinationNodes(table).length) return true;
     if (tableHasUnrepresentableCellRoles(table)) return true;
     return Array.from(table.querySelectorAll("th, td")).some(function(cell) {
+      if (tableCellOpaqueIndicator(cell)) return true;
       if (cell.matches("[rowspan], [colspan]")) return true;
       if (cell.querySelector("ul, ol, dl, blockquote, pre, table, h1, h2, h3, h4, h5, h6, hr, details, figure, br")) return true;
       return cell.querySelectorAll("p").length > 1;
