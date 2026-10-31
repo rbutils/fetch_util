@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain ordinary empty fragment-target declarations in Markdown without changing
+  literal programs, hidden interfaces or independent target occurrences.
+
 - Preserve physical Markdown block boundaries around mixed block and inline
   content while continuing to unwrap pure layout containers.
 

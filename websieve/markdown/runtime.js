@@ -19,6 +19,7 @@
 
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     pruneClosedMarkdownDisclosures(root);
+    var namedTargets = prepareEmptyMarkdownNamedTargets(root);
     var frameReferences = markdownFrameReferences(root);
     materializeMarkdownVideoReferences(root);
     materializeMarkdownSvgText(root);
@@ -206,7 +207,8 @@
     });
     var restored = restoreMarkdownFences(md.replace(/\n{3,}/g, "\n\n").trim(), protectedMarkdown.blocks);
     var material = restoreBlockMaterialTables(restoreBlockMaterialLinks(restored, blockMaterialLinks), blockMaterialTables);
-    return restoreLiteralDestinationMarkdown(restoreResponsiveImageMarkdown(material, responsiveImages), literalDestinations);
+    var destinations = restoreLiteralDestinationMarkdown(restoreResponsiveImageMarkdown(material, responsiveImages), literalDestinations);
+    return restoreEmptyMarkdownNamedTargets(destinations, namedTargets);
   }
 
   function paragraphLikeDiv(node) {
