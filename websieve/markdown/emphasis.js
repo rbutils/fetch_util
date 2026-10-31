@@ -62,13 +62,27 @@
     return "";
   }
 
+  function emphasisBoundaryIsWord(text, previous) {
+    if (!text) return false;
+    var offset = previous ? text.length - 1 : 0;
+    var unit = text.charCodeAt(offset);
+    if (previous && offset > 0 && unit >= 0xdc00 && unit <= 0xdfff) {
+      var before = text.charCodeAt(offset - 1);
+      if (before >= 0xd800 && before <= 0xdbff) offset -= 1;
+    }
+    var character = String.fromCodePoint(text.codePointAt(offset));
+    // CommonMark treats format characters and non-ASCII symbols like letters
+    // beside underscore delimiters. Inspect one code point without copying text.
+    return !/[\t\n\f\r\p{Zs}\p{P}$+<=>^`|~]/u.test(character);
+  }
+
   function intrawordEmphasis(node) {
     if (node.nodeName !== "EM" && node.nodeName !== "I") return false;
     var content = (node.textContent || "").trim();
     return /^[\p{L}\p{N}\p{M}]/u.test(content) &&
-      /[\p{L}\p{N}\p{M}]$/u.test(emphasisBoundaryText(node, true)) ||
+      emphasisBoundaryIsWord(emphasisBoundaryText(node, true), true) ||
       /[\p{L}\p{N}\p{M}]$/u.test(content) &&
-      /^[\p{L}\p{N}\p{M}]/u.test(emphasisBoundaryText(node, false));
+      emphasisBoundaryIsWord(emphasisBoundaryText(node, false), false);
   }
 
   function addIntrawordEmphasisRule(service) {
@@ -76,7 +90,7 @@
       filter: intrawordEmphasis,
       replacement: function(content) {
         if (!content) return "";
-        // CommonMark forbids underscores inside words, including Unicode modifier letters.
+        // CommonMark forbids underscores inside words, including invisible boundaries.
         return "*" + content + "*";
       }
     });

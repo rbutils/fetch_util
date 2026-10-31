@@ -50,6 +50,22 @@ RSpec.describe 'FetchUtil intraword emphasis rendering' do
     expect(emphasis_markdowns(samples.keys)).to eq(samples.values)
   end
 
+  it 'uses valid delimiters beside format characters and non-ASCII symbols without changing them' do
+    samples = {
+      "<p><em>Example</em>\u2060</p>" => "*Example*\u2060",
+      "<p>\u2060<em>Example</em></p>" => "\u2060*Example*",
+      "<p><em>Example</em>\u200b</p>" => "*Example*\u200b",
+      "<p>\u200b<em>Example</em></p>" => "\u200b*Example*",
+      "<p><em>Example</em>\u{1f7e2}</p>" => "*Example*\u{1f7e2}",
+      "<p>\u{1f7e2}<em>Example</em></p>" => "\u{1f7e2}*Example*",
+      "<p><em>Example</em>\u20ac</p>" => "*Example*\u20ac",
+      "<p>\u20ac<em>Example</em></p>" => "\u20ac*Example*",
+      "<p><a href=\"https://publication.example.test/resource?edition=full&amp;view=text#record\"><em>Example</em>\u2060</a></p>" =>
+        "[*Example*\u2060](https://publication.example.test/resource?edition=full&view=text#record)"
+    }
+    expect(emphasis_markdowns(samples.keys)).to eq(samples.values)
+  end
+
   it 'reads inline boundary text without crossing paragraphs or deleting punctuation and code' do
     samples = {
       '<p>ʿ<span><em>Aba</em></span>ʾ</p>' => 'ʿ*Aba*ʾ',

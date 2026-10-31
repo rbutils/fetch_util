@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve authored emphasis beside invisible format characters and non-ASCII
+  symbols using valid Markdown delimiters without changing the surrounding text.
+
 - Preserve complete physically owned resource tables and their surrounding authored
   prose in list results without coalescing column references or discarding linked
   instructions, while retaining interface and hidden-content boundaries.
