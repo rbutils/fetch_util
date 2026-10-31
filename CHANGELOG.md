@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve physical Markdown block boundaries around mixed block and inline
+  content while continuing to unwrap pure layout containers.
+
 - Preserve authored horizontal rules as Markdown thematic breaks instead of
   discarding them as breadcrumb separator artifacts.
 

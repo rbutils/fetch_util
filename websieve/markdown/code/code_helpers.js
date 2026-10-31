@@ -137,14 +137,18 @@
       root.querySelectorAll("div").forEach(function(div) {
         if (!div.parentNode) return;
         var hasBlockChild = false;
+        var blockChildrenOnly = true;
         for (var i = 0; i < div.childNodes.length; i++) {
           var child = div.childNodes[i];
           if (child.nodeType === 1 && (BLOCK_TAGS.test(child.nodeName) || child.nodeName === "DIV")) {
             hasBlockChild = true;
-            break;
+          } else if (child.nodeType !== 3 || normalizeText(child.nodeValue)) {
+            blockChildrenOnly = false;
           }
         }
-        if (hasBlockChild) {
+        // Mixed block/inline content belongs to this physical block. Removing
+        // its wrapper would join its inline runs to neighbouring source blocks.
+        if (hasBlockChild && blockChildrenOnly) {
           while (div.firstChild) div.parentNode.insertBefore(div.firstChild, div);
           div.remove();
           changed = true;
