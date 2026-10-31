@@ -50,6 +50,7 @@
       preformattedCode: true,
       codeBlockStyle: "fenced",
       bulletListMarker: "-",
+      hr: "---",
       emDelimiter: "_"
     });
     addLiteralEntityDestinationRule(service);

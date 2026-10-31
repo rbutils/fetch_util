@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve authored horizontal rules as Markdown thematic breaks instead of
+  discarding them as breadcrumb separator artifacts.
+
 - Preserve authored emphasis beside invisible format characters and non-ASCII
   symbols using valid Markdown delimiters without changing the surrounding text.
 
