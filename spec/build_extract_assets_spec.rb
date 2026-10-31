@@ -1615,8 +1615,10 @@ RSpec.describe "extract asset bundle" do
         extractors/lists/list_candidate_selection.js
         extractors/lists/result_status_context.js
         extractors/lists/generic/body_image_markdown.js
+        extractors/lists/source_context/table_regions.js
       ], "extractors/lists/core.js"],
       ["extractors/lists/core.js", %w[
+        extractors/lists/content.js
         extractors/lists/homepage/search_tools.js
         extractors/lists/generic/search_history.js
         extractors/lists/homepage/homepage_lead_mapping.js

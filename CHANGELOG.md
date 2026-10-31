@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Preserve complete physically owned resource tables and their surrounding authored
+  prose in list results without coalescing column references or discarding linked
+  instructions, while retaining interface and hidden-content boundaries.
+
 - Retain safe image resources and their owning links in table cells when ALT is
   empty, preserving independent occurrences and existing unsafe-source fallbacks.
 
