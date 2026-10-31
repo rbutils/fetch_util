@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain authored heading fragment identities alongside their heading content in
+  Markdown without relying on a renderer-specific implicit slug.
+
 - Retain ordinary empty fragment-target declarations in Markdown without changing
   literal programs, hidden interfaces or independent target occurrences.
 

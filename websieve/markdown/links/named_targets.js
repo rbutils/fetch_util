@@ -13,13 +13,52 @@
     return visibility === "hidden" || visibility === "collapse";
   }
 
+  function markdownNamedTargetContext(node, root) {
+    if (node.namespaceURI !== "http://www.w3.org/1999/xhtml") return false;
+    if (node.closest("pre, code, kbd, samp, table, script, style, noscript, template, svg, math, nav, form, button, select, textarea, [role='button' i], [role='tab' i], [role='navigation' i]")) return false;
+    return !emptyMarkdownNamedTargetHidden(node, root);
+  }
+
   function emptyMarkdownNamedTarget(node, root) {
-    if (node.namespaceURI !== "http://www.w3.org/1999/xhtml" || node.childNodes.length) return false;
+    if (node.childNodes.length) return false;
     if (node.nodeName !== "SPAN" && node.nodeName !== "A") return false;
     if (node.nodeName === "A" && node.hasAttribute("href")) return false;
     if (!node.getAttribute("id") && !(node.nodeName === "A" && node.getAttribute("name"))) return false;
-    if (node.closest("pre, code, kbd, samp, table, script, style, noscript, template, svg, math, nav, form, button, select, textarea, [role='button' i], [role='tab' i], [role='navigation' i]")) return false;
-    return !emptyMarkdownNamedTargetHidden(node, root);
+    return markdownNamedTargetContext(node, root);
+  }
+
+  function prepareMarkdownNamedTargets(root) {
+    var headings = Array.from(root.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"));
+    if (root.nodeType === Node.ELEMENT_NODE && /^H[1-6]$/.test(root.nodeName) && root.hasAttribute("id")) {
+      headings.unshift(root);
+    }
+    var records = headings.filter(function(heading) {
+      return heading.getAttribute("id") && markdownNamedTargetContext(heading, root);
+    }).map(function(heading) { return { node: heading, identity: heading.getAttribute("id") }; });
+    var prepared = prepareEmptyMarkdownNamedTargets(root);
+    if (!records.length) return prepared;
+    if (!prepared) prepared = { prefix: emptyMarkdownNamedTargetPrefix(root), targets: [] };
+    prepared.headings = records;
+    return prepared;
+  }
+
+  function materializeMarkdownHeadingTargets(root, prepared) {
+    if (!prepared || !prepared.headings) return prepared;
+    var declarations = [];
+    prepared.headings.forEach(function(record) {
+      var heading = record.node;
+      if (!root.contains(heading) || heading.getAttribute("id") !== record.identity ||
+          !markdownNamedTargetContext(heading, root)) return;
+      var declaration = heading.ownerDocument.createElement("span");
+      declaration.setAttribute("id", record.identity);
+      heading.removeAttribute("id");
+      // Keep the complete heading line intact and its locator at that boundary.
+      if (heading === root) heading.appendChild(declaration);
+      else heading.parentNode.insertBefore(declaration, heading);
+      declarations.push(declaration);
+    });
+    delete prepared.headings;
+    return protectEmptyMarkdownNamedTargets(root, declarations, prepared);
   }
 
   function emptyMarkdownNamedTargetHtml(node) {
@@ -37,21 +76,31 @@
     return "<" + tag + attributes + "></" + tag + ">";
   }
 
-  function prepareEmptyMarkdownNamedTargets(root) {
-    var candidates = Array.from(root.querySelectorAll("span[id], a[id], a[name]")).filter(function(node) {
-      return emptyMarkdownNamedTarget(node, root);
-    });
-    if (!candidates.length) return null;
+  function emptyMarkdownNamedTargetPrefix(root) {
     var prefix = "FETCHUTILNAMEDTARGET";
     var html = root.innerHTML;
     var text = root.textContent;
     while (html.indexOf(prefix) !== -1 || text.indexOf(prefix) !== -1) prefix += "OWNED";
-    var targets = candidates.map(function(node, index) {
+    return prefix;
+  }
+
+  function protectEmptyMarkdownNamedTargets(root, candidates, prepared) {
+    if (!candidates.length) return prepared || null;
+    if (!prepared) prepared = { prefix: emptyMarkdownNamedTargetPrefix(root), targets: [] };
+    candidates.forEach(function(node) {
       var declaration = emptyMarkdownNamedTargetHtml(node);
-      node.replaceWith(root.ownerDocument.createTextNode(prefix + index + "END"));
-      return declaration;
+      var index = prepared.targets.length;
+      prepared.targets.push(declaration);
+      node.replaceWith(root.ownerDocument.createTextNode(prepared.prefix + index + "END"));
     });
-    return { prefix: prefix, targets: targets };
+    return prepared;
+  }
+
+  function prepareEmptyMarkdownNamedTargets(root) {
+    var candidates = Array.from(root.querySelectorAll("span[id], a[id], a[name]")).filter(function(node) {
+      return emptyMarkdownNamedTarget(node, root);
+    });
+    return protectEmptyMarkdownNamedTargets(root, candidates, null);
   }
 
   function restoreEmptyMarkdownNamedTargets(markdown, prepared) {

@@ -19,7 +19,7 @@
 
   function convertMarkdownRoot(root, allowSerializedOwnedPublicPreviews, allowArticleMailto, preserveCleanedRoot, convertRoot) {
     pruneClosedMarkdownDisclosures(root);
-    var namedTargets = prepareEmptyMarkdownNamedTargets(root);
+    var namedTargets = prepareMarkdownNamedTargets(root);
     var frameReferences = markdownFrameReferences(root);
     materializeMarkdownVideoReferences(root);
     materializeMarkdownSvgText(root);
@@ -29,6 +29,7 @@
     mergeAdjacentEmphasis(root);
     preserveLiteralInlineCode(root);
     if (!preserveCleanedRoot) cleanupAgentRoot(root, allowSerializedOwnedPublicPreviews);
+    namedTargets = materializeMarkdownHeadingTargets(root, namedTargets);
     materializeMarkdownFrameReferences(root, frameReferences);
     preserveUnlabeledMarkdownDestinations(root);
     var blockMaterialTables = prepareBlockMaterialTables(root, allowArticleMailto);
