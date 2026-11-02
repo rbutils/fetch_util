@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep empty named-anchor declarations out of classification evidence without
+  changing published Markdown, literal programs or independently repeated targets.
+
 - Retain authored fragment identities on represented populated anchors in Markdown,
   preserving their linked content, complete destinations and independent occurrences.
 

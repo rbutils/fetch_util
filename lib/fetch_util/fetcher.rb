@@ -112,7 +112,7 @@ module FetchUtil
         @canonical_url = canonical_url
         @raw_final_url = raw_final_url
         @raw_canonical_url = raw_canonical_url
-        @markdown = payload["markdown"].to_s
+        @markdown = MarkdownEvidence.new(payload["markdown"].to_s).text
         @normalized_markdown = FetchUtil.normalize_whitespace(@markdown)
         @content_downcase = FetchUtil.normalize_whitespace([payload["title"], @markdown].compact.join(" ")).downcase
         @context = FetchUtil.normalize_whitespace([payload["title"], payload["siteName"], @markdown].join(" "))
