@@ -91,8 +91,13 @@ RSpec.describe 'Complete inline code presentation' do
       FetchUtil::Extractor.new.send(:inject_vendor_assets, page)
       page.add_script_tag(content: inline_presentation_probe('return markdownFor(document.body.innerHTML, false, true, true);'))
       markdown = page.evaluate('inlinePresentationProbe({})')
-      expect(markdown).to include('Published contact: `<person@publication.example.test>`.',
-                                  '`Field` `Records`', '`Alpha` `Beta`', '`Water` `Level`', 'roadmap')
+      declarations = %w[field records alpha beta].map { |name| "<a name=\"#{name}\"></a>" } +
+                     %w[water level].map { |identity| "<a id=\"#{identity}\"></a>" } +
+                     %w[road map].map { |name| "<a name=\"#{name}\"></a>" }
+      declarations.each { |declaration| expect(markdown.scan(declaration).length).to eq(1) }
+      reading = declarations.reduce(markdown) { |text, declaration| text.sub(declaration, '') }
+      expect(reading).to include('Published contact: `<person@publication.example.test>`.',
+                                 '`Field` `Records`', '`Alpha` `Beta`', '`Water` `Level`', 'roadmap')
       expect(page.evaluate('document.body.innerHTML')).to eq(before)
     end
   end

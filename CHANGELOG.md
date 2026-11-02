@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain authored fragment identities on represented populated anchors in Markdown,
+  preserving their linked content, complete destinations and independent occurrences.
+
 - Retain authored heading fragment identities alongside their heading content in
   Markdown without relying on a renderer-specific implicit slug.
 

@@ -27,6 +27,15 @@
     return markdownNamedTargetContext(node, root);
   }
 
+  function markdownNamedAnchorTarget(node, root) {
+    return node.nodeName === "A" && (node.getAttribute("id") || node.getAttribute("name")) &&
+      markdownNamedTargetContext(node, root);
+  }
+
+  function markdownNamedAnchorTargetHtml(node, root) {
+    return node && markdownNamedAnchorTarget(node, root) ? emptyMarkdownNamedTargetHtml(node) : "";
+  }
+
   function prepareMarkdownNamedTargets(root) {
     var headings = Array.from(root.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"));
     if (root.nodeType === Node.ELEMENT_NODE && /^H[1-6]$/.test(root.nodeName) && root.hasAttribute("id")) {
@@ -35,17 +44,23 @@
     var records = headings.filter(function(heading) {
       return heading.getAttribute("id") && markdownNamedTargetContext(heading, root);
     }).map(function(heading) { return { node: heading, identity: heading.getAttribute("id") }; });
+    var anchors = Array.from(root.querySelectorAll("a[id], a[name]")).filter(function(anchor) {
+      return markdownNamedAnchorTarget(anchor, root) && !emptyMarkdownNamedTarget(anchor, root);
+    }).map(function(anchor) {
+      return { node: anchor, id: anchor.getAttribute("id"), name: anchor.getAttribute("name") };
+    });
     var prepared = prepareEmptyMarkdownNamedTargets(root);
-    if (!records.length) return prepared;
+    if (!records.length && !anchors.length) return prepared;
     if (!prepared) prepared = { prefix: emptyMarkdownNamedTargetPrefix(root), targets: [] };
     prepared.headings = records;
+    prepared.anchors = anchors;
     return prepared;
   }
 
   function materializeMarkdownHeadingTargets(root, prepared) {
-    if (!prepared || !prepared.headings) return prepared;
+    if (!prepared) return prepared;
     var declarations = [];
-    prepared.headings.forEach(function(record) {
+    (prepared.headings || []).forEach(function(record) {
       var heading = record.node;
       if (!root.contains(heading) || heading.getAttribute("id") !== record.identity ||
           !markdownNamedTargetContext(heading, root)) return;
@@ -59,6 +74,54 @@
     });
     delete prepared.headings;
     return protectEmptyMarkdownNamedTargets(root, declarations, prepared);
+  }
+
+  function materializeMarkdownAnchorTargets(root, prepared, blockMaterialLinks) {
+    if (!prepared) return prepared;
+    (prepared.anchors || []).forEach(function(record) {
+      var anchor = record.node;
+      if (!root.contains(anchor) || anchor.getAttribute("id") !== record.id ||
+          anchor.getAttribute("name") !== record.name || !markdownNamedAnchorTarget(anchor, root)) return;
+      // Complete HTML link snapshots already retain their own named attributes.
+      if (blockMaterialLinks && anchor.hasAttribute(blockMaterialLinks.attribute)) return;
+      var declaration = anchor.ownerDocument.createElement("a");
+      if (record.id !== null) declaration.setAttribute("id", record.id);
+      if (record.name !== null) declaration.setAttribute("name", record.name);
+      anchor.removeAttribute("id");
+      anchor.removeAttribute("name");
+      anchor.parentNode.insertBefore(declaration, anchor);
+      protectDeferredMarkdownNamedAnchor(root, declaration, prepared);
+    });
+    delete prepared.anchors;
+    return prepared;
+  }
+
+  function protectDeferredMarkdownNamedAnchor(root, node, prepared) {
+    if (!prepared.anchorAttribute) {
+      var attribute = "data-fetch-util-named-anchor";
+      while (root.hasAttribute(attribute) || root.querySelector("[" + attribute + "]")) attribute += "-owned";
+      prepared.anchorAttribute = attribute;
+    }
+    var index = prepared.targets.length;
+    prepared.targets.push(emptyMarkdownNamedTargetHtml(node));
+    node.removeAttribute("id");
+    node.removeAttribute("name");
+    node.setAttribute(prepared.anchorAttribute, String(index));
+  }
+
+  function addMarkdownNamedAnchorRule(service, prepared) {
+    if (!prepared || !prepared.anchorAttribute) return;
+    service.addRule("namedAnchorDeclarations", {
+      filter: function(node) {
+        return node.nodeName === "A" && node.hasAttribute(prepared.anchorAttribute);
+      },
+      replacement: function(_content, node) {
+        var key = node.getAttribute(prepared.anchorAttribute);
+        if (!Object.prototype.hasOwnProperty.call(prepared.targets, key)) throw new Error("Missing named anchor declaration");
+        // Keep the marker out of DOM text so it cannot change rich-label boundaries.
+        return prepared.prefix + key + "END";
+      }
+    });
   }
 
   function emptyMarkdownNamedTargetHtml(node) {

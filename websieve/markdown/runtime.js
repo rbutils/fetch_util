@@ -41,6 +41,7 @@
     unwrapWrapperDivs(root);
     materializeMarkdownHeadingLayouts(root);
     separateAdjacentInlineLinks(root);
+    namedTargets = materializeMarkdownAnchorTargets(root, namedTargets, blockMaterialLinks);
     materializeHttpAttributes(root, false, allowArticleMailto !== false);
     var literalDestinations = prepareLiteralDestinationMarkdown(root, blockMaterialLinks);
     var responsiveImages = prepareResponsiveImageMarkdown(root);
@@ -199,6 +200,7 @@
 
     addBlockMaterialLinkRule(service, blockMaterialLinks);
     addLiteralDestinationRule(service, literalDestinations);
+    addMarkdownNamedAnchorRule(service, namedTargets);
     var converted = convertRoot ? convertRoot(service, root) : service.turndown(root);
     var protectedMarkdown = protectMarkdownFences(converted);
     var md = protectedMarkdown.markdown.replace(/\n{3,}/g, "\n\n").trim();

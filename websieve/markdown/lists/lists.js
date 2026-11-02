@@ -6,6 +6,15 @@ function listItemMaterialIdentity(item, rawHref) {
   ]);
 }
 
+function listItemNamedTarget(item) {
+  var source = item.sourceNode;
+  var card = item.card;
+  if (!source || source.nodeName !== "A" || !card || !card.contains(source)) return "";
+  var destination = materializedHttpUrl(source.getAttribute("href"));
+  if (!destination || destination !== materializedHttpUrl(item.url || "")) return "";
+  return markdownNamedAnchorTargetHtml(source);
+}
+
 function listDetailWithoutContext(detail, contextValues) {
   var remaining = stripGenericListControlPhrases(detail || "");
   if (!remaining) return "";
@@ -42,7 +51,8 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
     var rootImageReference = listLinkedImageReferenceMarkdown(clone, !samePrimary, node);
     if (rootImageReference) return rootImageReference;
     if (primaryUrl && rootUrl && listCanonicalKey(rootUrl) === listCanonicalKey(primaryUrl)) return rootLabel;
-    return markdownLink(rootLabel || inlineLinkLabel(clone) || normalizeText(clone.getAttribute("title")), clone.getAttribute("href"));
+    var rootTarget = !samePrimary ? markdownNamedAnchorTargetHtml(node) : "";
+    return rootTarget + markdownLink(rootLabel || inlineLinkLabel(clone) || normalizeText(clone.getAttribute("title")), clone.getAttribute("href"));
   }
   clone.querySelectorAll("img[src]").forEach(function(image) {
     if (linkedRoot || normalizeText(image.getAttribute("alt") || "") ||
@@ -68,7 +78,8 @@ function listTextWithReferences(node, visibilityChecked, primaryUrl, allowedLink
       if (linked && !label) label = url || "";
     }
     if (linked && url && label) escapeMarkdownLinkImageBoundary(link, clone);
-    link.replaceWith(clone.ownerDocument.createTextNode(linked ? markdownLink(label, url) : label));
+    var target = linked ? markdownNamedAnchorTargetHtml(link, clone) : "";
+    link.replaceWith(clone.ownerDocument.createTextNode(linked ? target + markdownLink(label, url) : label));
   });
   return normalizeText(clone.textContent);
 }
@@ -232,7 +243,7 @@ var listMarkdown = function(items, primaryUrls, primaryRecordKeys) {
     if (item.sourceOrderedStructuredCard && item.card) {
       return markdownFor(listHtmlWithoutUnsafeDestinations(item.card)).trim();
     }
-    var line = "- " + markdownLink(item.displayText || item.text, item.url);
+    var line = "- " + listItemNamedTarget(item) + markdownLink(item.displayText || item.text, item.url);
     var context = listItemContextValues(item, primaryUrls, primaryRecordKeys, readTableHeaders).join(" - ");
     if (context) line += " - " + context;
     return line;
