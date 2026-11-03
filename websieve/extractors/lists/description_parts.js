@@ -190,6 +190,11 @@
       var inlineProse = el.tagName === "DIV";
       if (inlineProse && !listInlineDescriptionNode(el)) return;
       if (listDescriptionCardNode(el, items, options, itemValues, primaryReferences, primaryUrls)) return;
+      var leadPart = options && options.includeOwnedShortLeads === false ? null : listDescriptionLeadPart(el, root, items);
+      if (leadPart) {
+        descParts.push(leadPart);
+        return;
+      }
       var heading = /^H[1-6]$/.test(el.tagName);
       var text = heading ? listHeadingText(el) : normalizeText(el.textContent);
       var recordHeading = listDescriptionRecordHeading(el, text, primaryReferences, primaryUrls);
@@ -247,7 +252,7 @@
 
   function listDescriptionMarkdown(root, items, options) {
     // Typed blocks belong to structured serialization, not prose/scoring evidence.
-    var proseOptions = Object.assign({}, options, { includeNarrativeLists: false });
+    var proseOptions = Object.assign({}, options, { includeNarrativeLists: false, includeOwnedShortLeads: false });
     return listDescriptionParts(root, items, proseOptions).map(function(part) {
       return part.markdown;
     }).join("\n\n");

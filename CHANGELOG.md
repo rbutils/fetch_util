@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete short section leads owned by their headings and following prose,
+  preserving rich inline material and independently authored equal occurrences.
+
 - Retain complete unowned authored lists in collection results, preserving nested
   entries, rich inline content and independent repeated observations.
 
