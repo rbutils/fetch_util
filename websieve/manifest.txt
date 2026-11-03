@@ -18,6 +18,7 @@ classifiers/list_pages/overlay_links.js
 classifiers/list_pages/card_ownership.js
 extractors/lists/generic/sections/editorial_asides.js
 classifiers/list_pages/chrome/informational_groups.js
+classifiers/list_pages/chrome/image_collections.js
 classifiers/list_pages/chrome.js
 classifiers/list_pages/link_groups.js
 markdown/lists/list_record_context.js

@@ -6,12 +6,15 @@
     if (!node || listElementHidden(node)) return document.createElement("div");
     var clone = safeDeepClone(node, document);
     if (node.matches && node.matches("table")) tableIndexAnnotateClone(node, clone);
-    var sourceToVisible = elementMap ? new Map() : null;
-    var visibleToCleaned = elementMap ? new Map() : null;
+    var eventSources = listImageCollectionEventSources(node);
+    var mapElements = !!elementMap || eventSources.length > 0;
+    var sourceToVisible = mapElements ? new Map() : null;
+    var visibleToCleaned = mapElements ? new Map() : null;
     pruneHiddenClone(node, clone, preservedRoots, null, false, sourceToVisible);
     unwrapListOwnedHeaders(clone);
     preserveHomepageListAsides(clone);
     var cleaned = cleanDisposableClone(clone, "[data-fetchutil-editorial-aside]", visibleToCleaned);
+    if (eventSources.length) preserveListImageCollectionEvents(eventSources, sourceToVisible, visibleToCleaned, cleaned);
     if (elementMap) {
       sourceToVisible.forEach(function(visibleNode, sourceNode) {
         var cleanedNode = visibleToCleaned.get(visibleNode);

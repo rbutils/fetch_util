@@ -161,8 +161,8 @@
     }
     var navigation = listNamedSectionLinksNode(node) || /(?:^|[\s_-])(?:site|nav)[-_ ]links?(?:$|[\s_-])/.test(attrs) ||
       /nav(?:igation|bar|menu|links?|items?|list|container)?(?:$|[\s_-])|(?:^|[\s_-])pager(?:$|[\s_-])/.test(attrs);
-    if (includeSocial) return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer|utility|meta|social|share|follow|account|login|signup|register)/.test(attrs);
-    return navigation || /(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer)/.test(attrs);
+    if (includeSocial) return navigation || (/(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer|utility|meta|social|share|follow|account|login|signup|register)/.test(attrs) && !listOwnedImageCollectionNode(node));
+    return navigation || (/(menu|menubar|breadcrumb|breadcrumbs|pagination|footer|header|toolbar|sidebar|drawer)/.test(attrs) && !listOwnedImageCollectionNode(node));
   }
 
   function listChromeNode(node) {

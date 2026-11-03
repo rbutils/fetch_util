@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete source-owned image collections and their local labels through
+  fuzzy chrome cleanup while preserving hidden, interface and literal boundaries.
+
 - Keep empty named-anchor declarations out of classification evidence without
   changing published Markdown, literal programs or independently repeated targets.
 
