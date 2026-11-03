@@ -146,7 +146,11 @@
     var figureParts = listDescriptionFigureParts(root, items).filter(function(part) {
       return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node);
     });
-    var descParts = unselectedRecords.parts.concat(outerArticles.parts, figureParts);
+    var listParts = options && options.includeNarrativeLists === false ? [] : listDescriptionListParts(root, items).filter(function(part) {
+      return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node) &&
+        !figureParts.some(function(figure) { return figure.node.contains(part.node); });
+    });
+    var descParts = unselectedRecords.parts.concat(outerArticles.parts, figureParts, listParts);
     var hasItems = items && items.length > 0;
     var includeInlineProse = hasItems && options && options.includeInlineProse;
     var primaryUrls = new Set((items || []).map(function(item) {
@@ -170,7 +174,7 @@
     root.querySelectorAll(selector + (includeInlineProse ? ", div" : "")).forEach(function(el) {
       if (listCardNodeHidden(el) || listNodeWithinClosedDisclosure(el)) return;
       if (outerArticles.covered.has(el) || unselectedRecords.covered.has(el)) return;
-      if (figureParts.some(function(part) { return part.node.contains(el); })) return;
+      if (figureParts.concat(listParts).some(function(part) { return part.node.contains(el); })) return;
       if (sourceOwnedResultCountNodes && sourceOwnedResultCountNodes.has(el)) {
         var resultCountMarkdown = markdownFor(el.outerHTML).trim();
         if (resultCountMarkdown) descParts.push({ node: el, markdown: resultCountMarkdown });
@@ -228,11 +232,11 @@
         descParts.push({ node: el, markdown: prefix + text });
       }
     });
-    var imageParts = listDescriptionImageParts(root, items, figureParts).filter(function(part) {
+    var imageParts = listDescriptionImageParts(root, items, figureParts.concat(listParts)).filter(function(part) {
       return !outerArticles.covered.has(part.node) && !unselectedRecords.covered.has(part.node);
     });
     var creditParts = listPublicationCreditDescriptionParts(root, items, descParts);
-    if (imageParts.length || creditParts.length || outerArticles.parts.length || unselectedRecords.parts.length) {
+    if (imageParts.length || creditParts.length || outerArticles.parts.length || unselectedRecords.parts.length || listParts.length) {
       descParts = descParts.concat(imageParts, creditParts).sort(function(left, right) {
         var position = left.node.compareDocumentPosition(right.node);
         return position & 4 ? -1 : position & 2 ? 1 : 0;
@@ -242,7 +246,9 @@
   }
 
   function listDescriptionMarkdown(root, items, options) {
-    return listDescriptionParts(root, items, options).map(function(part) {
+    // Typed blocks belong to structured serialization, not prose/scoring evidence.
+    var proseOptions = Object.assign({}, options, { includeNarrativeLists: false });
+    return listDescriptionParts(root, items, proseOptions).map(function(part) {
       return part.markdown;
     }).join("\n\n");
   }

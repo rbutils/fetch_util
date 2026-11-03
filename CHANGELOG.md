@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete unowned authored lists in collection results, preserving nested
+  entries, rich inline content and independent repeated observations.
+
 - Retain complete source-owned image collections and their local labels through
   fuzzy chrome cleanup while preserving hidden, interface and literal boundaries.
 
