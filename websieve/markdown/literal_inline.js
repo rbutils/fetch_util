@@ -55,6 +55,39 @@
     });
   }
 
+  function prepareLinkedInlineCodeWhitespace(service) {
+    var snapshots = new WeakMap();
+    service.addRule("linkedInlineCodeWhitespace", {
+      filter: function(node) {
+        return node.nodeName === "CODE" && snapshots.has(node);
+      },
+      replacement: function(_content, node, options) {
+        var snapshot = snapshots.get(node);
+        if (!snapshot) throw new Error("Missing linked inline-code whitespace snapshot");
+        return snapshot.rule.replacement.call(snapshot.rule, snapshot.text, node, options);
+      }
+    });
+    return function(root) {
+      snapshots = new WeakMap();
+      root.querySelectorAll("a[href] > code").forEach(function(code) {
+        var link = code.parentElement;
+        if (code.namespaceURI !== "http://www.w3.org/1999/xhtml" ||
+            link.namespaceURI !== code.namespaceURI || link.childNodes.length !== 1 ||
+            code.childNodes.length !== 1 || code.firstChild.nodeType !== Node.TEXT_NODE ||
+            code.matches("[id], [name]") ||
+            code.closest("pre, table, button, form, nav, textarea, select, [role='button' i], [role='tab' i], [hidden], [aria-hidden='true'], [inert], [contenteditable], [tabindex]") ||
+            !materializedHttpUrl(link.getAttribute("href"))) return;
+        var text = code.textContent;
+        if (!/\S/.test(text) || /[\r\n]/.test(text) || !/^[ \t]|[ \t]$/.test(text)) return;
+        var rule = service.rules.forNode(code);
+        snapshots.set(code, { text: text, rule: rule });
+        // The whole literal is owned by CODE. Its disposable child conversion
+        // must not expose those same spaces as the parent link's whitespace.
+        code.textContent = "x";
+      });
+    };
+  }
+
   function literalInlinePresentation(code) {
     var descendants = code.querySelectorAll("*");
     return descendants.length > 0 && Array.prototype.every.call(descendants, function(node) {

@@ -59,8 +59,10 @@
     addLiteralEntityDestinationRule(service);
     var preparedTables = null;
     var prepareLinkBoundaries = prepareMarkdownLinkBoundaryEscaping(service);
+    var prepareCodeLinkWhitespace = prepareLinkedInlineCodeWhitespace(service);
     service.options.fetchUtilPrepareRoot = function(normalizedRoot) {
       prepareLinkBoundaries(normalizedRoot);
+      prepareCodeLinkWhitespace(normalizedRoot);
       preparedTables = prepareDataTableMarkdown(normalizedRoot);
     };
     service.remove(["script", "style", "noscript", "template"]);

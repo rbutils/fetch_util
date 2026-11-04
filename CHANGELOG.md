@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve literal whitespace inside complete linked inline programs without
+  duplicating it into paragraph or list indentation and losing real destinations.
+
 - Preserve complete inline emphasis, rich linked labels and literal inline programs
   in ordinary list descriptions without changing plain prose or scoring evidence.
 
