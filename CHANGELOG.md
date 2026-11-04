@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Preserve complete inline emphasis, rich linked labels and literal inline programs
+  in ordinary list descriptions without changing plain prose or scoring evidence.
+
 - Retain complete short section leads owned by their headings and following prose,
   preserving rich inline material and independently authored equal occurrences.
 

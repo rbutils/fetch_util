@@ -224,6 +224,11 @@
       var links = el.querySelectorAll("a[href]").length;
       var words = text.split(/\s+/).length;
       if (linkedSectionHeading || links <= 1 || (links / words) < 0.3) {
+        var richPart = !heading && !(options && options.includeRichProse === false) && listDescriptionRichProsePart(el);
+        if (richPart) {
+          descParts.push(richPart);
+          return;
+        }
         var prefix = heading ? "#".repeat(Number(el.tagName.slice(1))) + " " : "";
         if (linkedSectionHeading) {
           text = markdownFor(el.innerHTML).trim();
@@ -252,7 +257,9 @@
 
   function listDescriptionMarkdown(root, items, options) {
     // Typed blocks belong to structured serialization, not prose/scoring evidence.
-    var proseOptions = Object.assign({}, options, { includeNarrativeLists: false, includeOwnedShortLeads: false });
+    var proseOptions = Object.assign({}, options, {
+      includeNarrativeLists: false, includeOwnedShortLeads: false, includeRichProse: false
+    });
     return listDescriptionParts(root, items, proseOptions).map(function(part) {
       return part.markdown;
     }).join("\n\n");
