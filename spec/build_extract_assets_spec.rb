@@ -1450,6 +1450,9 @@ RSpec.describe "extract asset bundle" do
     )
 
     segments = [
+      ["core/docs_cleanup/controls/labels.js", [
+        "core/docs_cleanup/revision_notes.js"
+      ], "core/docs_cleanup/roots.js"],
       ["classifiers/list_pages/article_body_collection.js", %w[
         classifiers/list_pages/ownership/article_table_material.js
         classifiers/list_pages/ownership/material_loss/complete_sections.js

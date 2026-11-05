@@ -88,6 +88,7 @@ core/article/profile_article.js
 core/simple_article_profile.js
 core/docs_cleanup/controls/authored_references.js
 core/docs_cleanup/controls/labels.js
+core/docs_cleanup/revision_notes.js
 core/docs_cleanup/roots.js
 core/docs_cleanup/article_title_provenance.js
 core/docs_cleanup/declared_article_titles.js

@@ -21,7 +21,7 @@
 
   function cleanupMarkdownNoise(markdown) {
     var protectedMarkdown = protectMarkdownFences(markdown);
-    var result = protectedMarkdown.markdown
+    var result = authoredRevisionMarkdownCleanup(protectedMarkdown.markdown)
       .replace(/Your browser doesn't support HTML5 audio\s*/g, "")
       .replace(/^\s*[-*]\s*$/gm, "")
       .replace(/<iframe\b[^>]*>?(?:<\/iframe>)?/gi, "")
@@ -114,8 +114,6 @@
       .replace(/(\b\d+)_([a-z])_,_/gi, "$1$2,")
       .replace(/(\b\d+)_([a-z])_\\?-/gi, "$1$2-")
       .replace(/(\b\d+)_([a-z])_(?=[\s),.;])/gi, "$1$2")
-      // Strip "Last modified" footer lines
-      .replace(/^\s*Last modified\s+\w+\s+\d{1,2},\s+\d{4}.*$/gmi, "")
       // Strip account/login CTA text that leaks repeatedly
       .replace(MARKDOWN_ACCOUNT_LOGIN_CTA_LINE_PATTERN, "")
       // Drop literal JS placeholder text from image/link titles and image alt labels.

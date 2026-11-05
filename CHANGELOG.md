@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete authored revision dates and their independent references in
+  article and documentation Markdown without removing literal program content.
+
 - Preserve literal whitespace inside complete linked inline programs without
   duplicating it into paragraph or list indentation and losing real destinations.
 

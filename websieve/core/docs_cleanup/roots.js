@@ -137,7 +137,17 @@ function cleanupDocsRoot(root, options) {
   removeNodesByText(root, "a, button, span, div, p, li", /^(copy page|copy for llm|copy page as markdown|copy page as markdown for llms?|view as markdown|open this page as markdown|open in (?:chatgpt|claude|cursor)|get insights from (?:chatgpt|claude)|connect to cursor|download openapi spec(?:ification)?|ask about this section|ask ai|copy link|copy permalink|send feedback|edit this page|report feedback|pdf|rss|focus mode|skip to main content|skip to content|copy item path|view source|view on github|report a problem with this content|open menu|open sidebar|search|settings|help|search or ask copilot|expand description|show more|show less|expand|collapse|javascripttypescript|typescriptjavascript)$/i);
   removeNodesByText(root, "h2, h3, h4, h5, p, div, span, li", /^(on this page|in this article|table of contents|last updated.*|api preferences|select language:.*|breadcrumbs?)$/i);
 
-  // Strip "Feedback" sections and "Last modified" / "Was this page helpful?" footers (common in Hugo docs)
+  var revisionNodes = Array.from(root.querySelectorAll("p, div, span")).filter(function(node) {
+    return /^last modified\s/i.test(normalizeText(node.textContent || ""));
+  });
+  if (revisionNodes.length) {
+    var revisionMarkdowns = authoredRevisionNoteMarkdowns();
+    revisionNodes.forEach(function(node) {
+      if (!authoredRevisionNoteMatches(node, revisionMarkdowns)) node.remove();
+    });
+  }
+
+  // Strip feedback and helpfulness controls.
   root.querySelectorAll("section, div").forEach(function(el) {
     var text = normalizeText(el.textContent);
     if (!text) return;
@@ -150,8 +160,6 @@ function cleanupDocsRoot(root, options) {
       return;
     }
   });
-  removeNodesByText(root, "p, div, span", /^last modified\s/i);
-
   // Strip newsletter / subscribe footer sections (common in docs sites like Bring, etc.)
   root.querySelectorAll("section, div, aside, form").forEach(function(el) {
     var text = normalizeText(el.textContent);
