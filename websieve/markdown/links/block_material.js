@@ -1,8 +1,17 @@
-  function linkRequiresBlockMaterial(link) {
+  function blockMaterialLinkShape(link) {
     if (link.tagName !== "A" || !link.querySelector("div, p, figure")) return false;
-    if (link.querySelector("pre, table, ul, ol, h1, h2, h3, h4, h5, h6")) return false;
+    if (link.querySelector("pre, table, ul, ol")) return false;
     if (link.closest("pre, code, kbd, samp, table, [hidden], details:not([open])")) return false;
     return !!materializedHttpUrl(link.getAttribute("href") || "");
+  }
+
+  function linkRequiresBlockMaterial(link) {
+    if (!blockMaterialLinkShape(link)) return false;
+    if (!link.querySelector("h1, h2, h3, h4, h5, h6")) return true;
+    if (!link.closest("li")) return false;
+    return Array.from(link.querySelectorAll("p")).some(function(paragraph) {
+      return !!normalizeText(paragraph.textContent);
+    });
   }
 
   function blockMaterialLinkHtmlBlock(html) {
@@ -18,7 +27,7 @@
     var children = Array.from(wrapper.childNodes).filter(function(node) {
       return node.nodeType !== Node.TEXT_NODE || node.textContent.trim();
     });
-    return children.length === 1 && children[0].nodeType === Node.ELEMENT_NODE && linkRequiresBlockMaterial(children[0]);
+    return children.length === 1 && children[0].nodeType === Node.ELEMENT_NODE && blockMaterialLinkShape(children[0]);
   }
 
   function blockMaterialLinkHtml(link, allowArticleMailto) {

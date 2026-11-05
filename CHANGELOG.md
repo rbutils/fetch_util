@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete heading-and-prose links inside authored lists, preserving their
+  destinations, heading ranks, rich inline material and independent occurrences.
+
 - Retain complete authored revision dates and their independent references in
   article and documentation Markdown without removing literal program content.
 
