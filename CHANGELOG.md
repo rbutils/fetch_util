@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Retain complete source-owned linked resource button labels and destinations before
+  Readability selection, preserving rich material and independent occurrences.
+
 - Retain complete heading-and-prose links inside authored lists, preserving their
   destinations, heading ranks, rich inline material and independent occurrences.
 

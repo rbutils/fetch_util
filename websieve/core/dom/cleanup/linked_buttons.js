@@ -41,9 +41,50 @@ function linkedResourceButtonOwner(button, root) {
   return owner;
 }
 
-function preserveLinkedResourceButtons(root) {
+function linkedButtonResourceInlineChildren(owner, button) {
+  return Array.from(owner.querySelectorAll("*")).every(function(node) {
+    if (node === button) return true;
+    if (node.namespaceURI && node.namespaceURI !== "http://www.w3.org/1999/xhtml") return false;
+    if (!/^(span|strong|b|em|i|code|br|img)$/i.test(node.localName)) return false;
+    if (elementSubtreeHidden(node) || node.matches("[role], [tabindex], [contenteditable], " +
+        "[aria-controls], [aria-expanded], [aria-haspopup], [aria-pressed]")) return false;
+    if (Array.from(node.attributes).some(function(attribute) { return /^on/i.test(attribute.name); })) return false;
+    return node.localName !== "img" || !!materializedHttpUrl(node.getAttribute("src") || "");
+  });
+}
+
+function linkedButtonResourceSourceBlock(button, owner, root, sourceClones, sourcesByClone) {
+  var sourceButton = sourcesByClone.get(button);
+  if (!sourceButton || !sourceButton.closest("main, article, [itemprop~='articleBody' i]")) return null;
+  var sourceOwner = linkedResourceButtonOwner(sourceButton, sourceButton.ownerDocument);
+  if (!sourceOwner || sourceClones.get(sourceOwner) !== owner) return null;
+  if (!linkedButtonResourceInlineChildren(sourceOwner, sourceButton)) return null;
+  if (normalizeText(sourceOwner.textContent) !== normalizeText(owner.textContent)) return null;
+  var sourceParent = sourceOwner.parentElement;
+  var parent = owner.parentElement;
+  if (!sourceParent || sourceParent.localName !== "div" || !parent || parent.localName !== "div" ||
+      sourceClones.get(sourceParent) !== parent || !root.contains(parent)) return null;
+  if (sourceParent.children.length !== 1 || sourceParent.children[0] !== sourceOwner ||
+      parent.children.length !== 1 || parent.children[0] !== owner) return null;
+  if ([sourceParent, parent].some(function(node) {
+    return Array.from(node.childNodes).some(function(child) {
+      return child.nodeType === Node.TEXT_NODE && !!normalizeText(child.textContent);
+    });
+  })) return null;
+  if (sourceParent.closest("[onclick], [onmousedown], [onpointerdown], [onkeydown], [tabindex], [contenteditable]")) return null;
+  return parent;
+}
+
+function preserveLinkedResourceButtons(root, sourceClones) {
+  var sourcesByClone = sourceClones && new Map();
+  var resourceBlocks = sourceClones && new WeakSet();
+  if (sourcesByClone) {
+    sourceClones.forEach(function(clone, source) { sourcesByClone.set(clone, source); });
+  }
   root.querySelectorAll("button").forEach(function(button) {
-    if (!linkedResourceButtonOwner(button, root)) return;
+    var owner = linkedResourceButtonOwner(button, root);
+    if (!owner) return;
+    var resourceBlock = sourcesByClone && linkedButtonResourceSourceBlock(button, owner, root, sourceClones, sourcesByClone);
     var replacement = button.ownerDocument.createElement("span");
     Array.from(button.attributes).forEach(function(attribute) {
       if (/^on/i.test(attribute.name) || /^(type|form\w*|role|tabindex|disabled|autofocus)$/i.test(attribute.name)) return;
@@ -51,5 +92,8 @@ function preserveLinkedResourceButtons(root) {
     });
     while (button.firstChild) replacement.appendChild(button.firstChild);
     button.replaceWith(replacement);
+    if (sourcesByClone && sourcesByClone.has(button)) sourceClones.set(sourcesByClone.get(button), replacement);
+    if (resourceBlock) resourceBlocks.add(resourceBlock);
   });
+  return resourceBlocks;
 }

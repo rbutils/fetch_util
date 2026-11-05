@@ -48,6 +48,7 @@
       var definitionClass = prepareReadabilityOwnedDefinitions(clone, sourceClones, excerptMarker);
       var cardActions = prepareReadabilityOwnedCardActions(clone, sourceClones, excerptMarker);
       var headingRoles = readabilityRetainedHeadingRoleSnapshots(clone, sourceClones, sourceIdentities);
+      var linkedButtonBlocks = preserveLinkedResourceButtons(clone, sourceClones);
       var reader = new Readability(clone);
       var checkByline = reader._checkByline;
       var bylineSource = inferredBylineSourceResolver(sourceClones, sourceIdentities, excerptMarker);
@@ -61,7 +62,7 @@
       preserveReadabilityNumericStatistics(reader);
       var tableContext = preserveReadabilityDataTableSelection(reader, clone, sourceClones, metadata, sourceIdentities, headingRoles);
       preserveReadabilityOwnedCardSelection(reader, clone, ownership, sourceClones, sourceIdentities, headingRoles);
-      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks);
+      preserveReadabilityOwnedResources(reader, clone, sourceClones, excerptMarker, cardActions.blocks, tableContext.blocks, linkedButtonBlocks);
       var headingCards = preserveReadabilityLinkedHeadingCards(reader, clone, sourceClones);
       var article = reader.parse();
       if (!article || !article.content) return null;
